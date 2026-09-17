@@ -1,0 +1,15 @@
+# The datamine workspace is NEVER shipped in the calculator repo — only the
+# subset written into data.js + assets/ by build-data.mjs is tracked.
+../_su_extract/
+_su_extract/
+
+node_modules/
+*.log
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# scratch
+tmp/
+*.tmp
