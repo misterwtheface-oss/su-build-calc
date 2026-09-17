@@ -29,6 +29,15 @@
   const PRIMARY = D.artifact.primary;                                    // 5 {property,stat,perRank,icon}
   const PRIMARY_ICON = Object.fromEntries(PRIMARY.map(p => [p.property, p.icon]));
   const TRAITITEM = new Map(D.traitItems.map(t => [t.id, t]));
+  const SPELL = new Map((D.spells || []).map(s => [s.id, s]));
+  // fixed artifact slot template (all artifacts, max level): 1 primary + these; nether = 1 slot
+  const ART_SLOTS = [
+    { key: "stat", label: "Stat", max: 3, pick: "stat" },
+    { key: "trick", label: "Trick", max: 2, pick: "trick" },
+    { key: "traits", label: "Trait", max: 1, pick: "trait" },
+    { key: "spells", label: "Spell", max: 1, pick: "spell" },
+    { key: "netherIds", label: "Nether", max: 1, pick: "nether" },
+  ];
   const RELIC = new Map(D.relics.map(r => [r.id, r]));
 
   // ── persistence (schema 2) ─────────────────────────────────────────────────
@@ -56,8 +65,22 @@
   if (!cards || !cards.levels) cards = { levels: {} };
   let nether = jload(LS.nether, null);                      // [{id,name,icon,props:[{type,mode,stats:[{stat,value}]}]}]
   if (!Array.isArray(nether)) nether = [];
-  let artifacts = jload(LS.artifacts, null);                // [{id,name,rank,primary,props[],traitItemIds[],netherIds[]}]
+  let artifacts = jload(LS.artifacts, null);                // [{id,name,rank,primary,stat[],trick[],traits[],spells[],netherIds[]}]
   if (!Array.isArray(artifacts)) artifacts = [];
+  // migrate old artifacts (props[]/traitItemIds[]) → fixed slot template
+  for (const a of artifacts) {
+    if (a.props || a.traitItemIds) {
+      const props = a.props || [];
+      a.stat = props.filter(n => { const g = D.artifact.stat.find(x => x.property === n); return !!g; }).slice(0, 3);
+      const statSet = new Set(a.stat);
+      a.trick = props.filter(n => !statSet.has(n) && D.artifact.trick.find(x => x.property === n)).slice(0, 2);
+      a.traits = (a.traitItemIds || []).slice(0, 1);
+      a.spells = a.spells || [];
+      a.netherIds = (a.netherIds || []).slice(0, 1);
+      delete a.props; delete a.traitItemIds;
+    }
+    a.stat ||= []; a.trick ||= []; a.traits ||= []; a.spells ||= []; a.netherIds ||= [];
+  }
 
   const persistBuild = () => jsave(LS.build, build);
   const persistCards = () => jsave(LS.cards, cards);
@@ -148,7 +171,7 @@
     if (!a) return out;
     const rank = a.rank || 50;
     if (a.primary) { const p = PRIMARY.find(x => x.property === a.primary); if (p) { const k = PROP_STAT[p.stat]; if (k) out[k] += (p.perRank[rank] || 0); } }
-    for (const name of a.props || []) {
+    for (const name of [...(a.stat || []), ...(a.trick || [])]) {
       const grp = propGroups.get(name); if (!grp) continue;
       for (const e of grp.entries) { const k = PROP_STAT[e.stat]; if (k) out[k] += (e.perRank[rank] || 0); }
     }
@@ -169,7 +192,7 @@
   function slotTraitIds(slot) {
     const b = baseStats(slot); const ids = b ? [...b.traitIds] : [];
     const a = resolveArtifact(slot);
-    if (a) for (const tid of a.traitItemIds || []) { const ti = TRAITITEM.get(tid); if (ti && ti.traitId != null) ids.push(ti.traitId); }
+    if (a) for (const tid of a.traits || []) { const ti = TRAITITEM.get(tid); if (ti && ti.traitId != null) ids.push(ti.traitId); }
     return ids;
   }
 
@@ -544,9 +567,8 @@
   function artifactSummary(a) {
     const parts = [];
     if (a.primary) parts.push(a.primary);
-    if ((a.props || []).length) parts.push(`${a.props.length} propert${a.props.length === 1 ? "y" : "ies"}`);
-    if ((a.traitItemIds || []).length) parts.push(`${a.traitItemIds.length} trait`);
-    if ((a.netherIds || []).length) parts.push(`${a.netherIds.length} nether`);
+    const n = (a.stat || []).length + (a.trick || []).length + (a.traits || []).length + (a.spells || []).length + (a.netherIds || []).length;
+    if (n) parts.push(`${n}/8 slots`);
     return `R${a.rank} · ` + (parts.join(" · ") || "empty");
   }
   function renderArtifactLibrary() {
@@ -577,9 +599,9 @@
   function openArtifactBuilder(artId, slotIdx) {
     let draft;
     if (artId != null) draft = JSON.parse(JSON.stringify(artifacts.find(a => a.id === artId)));
-    else draft = { id: null, name: `Artifact ${nextArtId}`, rank: 50, primary: null, props: [], traitItemIds: [], netherIds: [] };
+    else draft = { id: null, name: `Artifact ${nextArtId}`, rank: 50, primary: null, stat: [], trick: [], traits: [], spells: [], netherIds: [] };
     // editing an existing artifact jumps straight to the slots step
-    ovState = { kind: "artbuild", artId, slotIdx, draft, step: artId != null ? "slots" : "type", addCat: null, search: "", render: renderArtifactBuilder };
+    ovState = { kind: "artbuild", artId, slotIdx, draft, step: artId != null ? "slots" : "type", pickType: null, search: "", render: renderArtifactBuilder };
     openOverlay(ovState.render());
   }
   const artStepLabels = { type: "1 · Pick artifact", slots: "2 · Fill slots", name: "3 · Name it" };
@@ -605,61 +627,69 @@
       footer = `<button class="btn-ghost" data-action="artb-cancel">Cancel</button>
         <button class="btn-confirm" data-action="artb-next" ${a.primary ? "" : "disabled"}>Next: Fill slots ›</button>`;
     } else if (st.step === "slots") {
-      // current slots as removable tiles (primary + props + traits + nether), each with its icon
-      const slotTiles = [];
-      if (a.primary) { const p = PRIMARY.find(x => x.property === a.primary);
-        slotTiles.push(`<div class="art-slot primary"><div class="as-ico">${spriteImg(p && p.icon, "px")}</div><div class="as-lab">${esc(a.primary)}</div><div class="as-sub">primary</div></div>`); }
-      for (const nm of a.props) { const g = propGroups.get(nm);
-        const val = g ? g.entries.map(e => PROP_STAT[e.stat] ? `+${e.perRank[rank]}%` : e.perRank[rank]).join(" / ") : "";
-        slotTiles.push(`<div class="art-slot"><button class="as-rm" data-action="art-prop" data-p="${esc(nm)}">✕</button><div class="as-ico glyph">◆</div><div class="as-lab">${esc(nm)}</div><div class="as-sub">${esc(val)}</div></div>`); }
-      for (const id of a.traitItemIds) { const t = TRAITITEM.get(id);
-        slotTiles.push(`<div class="art-slot"><button class="as-rm" data-action="art-item" data-id="${id}">✕</button><div class="as-ico">${t && t.icon ? spriteImg(t.icon, "px") : "✦"}</div><div class="as-lab">${esc(t ? t.name : id)}</div><div class="as-sub">${esc(t ? t.traitName : "")}</div></div>`); }
-      for (const id of a.netherIds) { const n = nether.find(x => x.id === id);
-        slotTiles.push(`<div class="art-slot"><button class="as-rm" data-action="art-nether" data-id="${id}">✕</button><div class="as-ico">${spriteImg(gemPath(n && n.icon), "px")}</div><div class="as-lab">${esc(n ? n.name : id)}</div><div class="as-sub">nether</div></div>`); }
-      const slotsBox = `<div class="art-slot-grid">${slotTiles.join("")}<div class="art-slot add" data-action="artb-addcat" data-c="menu"><div class="as-ico glyph">＋</div><div class="as-lab">Add slot</div></div></div>`;
+      // fixed slot template: 1 primary (from step 1) + stat×3 + trick×2 + trait×1 + spell×1 + nether×1
+      const filledBox = (type, v) => {
+        let ico = `<div class="as-ico glyph">◆</div>`, lab = v, sub = "";
+        if (type === "stat" || type === "trick") { const g = propGroups.get(v); sub = g ? g.entries.map(e => PROP_STAT[e.stat] ? `+${e.perRank[rank]}%` : e.perRank[rank]).join(" / ") : ""; }
+        else if (type === "trait") { const t = TRAITITEM.get(v); ico = `<div class="as-ico">${t && t.icon ? spriteImg(t.icon, "px") : "✦"}</div>`; lab = t ? t.name : v; sub = t ? t.traitName : ""; }
+        else if (type === "spell") { const s = SPELL.get(v); ico = `<div class="as-ico glyph">✷</div>`; lab = s ? s.name : v; sub = "spell"; }
+        else if (type === "nether") { const n = nether.find(x => x.id === v); ico = `<div class="as-ico">${spriteImg(gemPath(n && n.icon), "px")}</div>`; lab = n ? n.name : v; sub = "nether"; }
+        return `<div class="art-slot"><button class="as-rm" data-action="art-rm" data-t="${type}" data-v="${esc(v)}">✕</button>${ico}<div class="as-lab">${esc(lab)}</div><div class="as-sub">${esc(sub)}</div></div>`;
+      };
+      const primaryBox = a.primary
+        ? (() => { const p = PRIMARY.find(x => x.property === a.primary); return `<div class="art-slot primary"><div class="as-ico">${spriteImg(p && p.icon, "px")}</div><div class="as-lab">${esc(a.primary)}</div><div class="as-sub">primary</div></div>`; })()
+        : `<div class="art-slot add" data-action="artb-back"><div class="as-ico glyph">＋</div><div class="as-lab">Primary</div></div>`;
+      const groupsHtml = [`<div class="art-slot-group"><div class="section-label">Primary</div><div class="art-slot-grid">${primaryBox}</div></div>`]
+        .concat(ART_SLOTS.map(sl => {
+          const arr = a[sl.key] || [];
+          const boxes = [];
+          for (let i = 0; i < sl.max; i++) boxes.push(arr[i] !== undefined ? filledBox(sl.pick, arr[i])
+            : `<div class="art-slot add ${st.pickType === sl.pick ? "picking" : ""}" data-action="art-slot" data-t="${sl.pick}"><div class="as-ico glyph">＋</div><div class="as-lab">${sl.label}</div></div>`);
+          return `<div class="art-slot-group"><div class="section-label">${sl.label}</div><div class="art-slot-grid">${boxes.join("")}</div></div>`;
+        })).join("");
 
-      // inline picker for the chosen add-category
+      // inline picker for the slot type being filled
       let picker = "";
-      if (st.addCat === "menu") {
-        picker = `<div class="art-addmenu">
-          <button class="chip" data-action="artb-addcat" data-c="props">◆ Property</button>
-          <button class="chip" data-action="artb-addcat" data-c="traits">✦ Trait slot</button>
-          <button class="chip" data-action="artb-addcat" data-c="nether">◈ Nether socket</button></div>`;
-      } else if (st.addCat) {
+      if (st.pickType) {
         const q = st.search.trim().toLowerCase();
+        const has = (v) => (a[ART_SLOTS.find(s => s.pick === st.pickType).key] || []).includes(v);
         let rows = "";
-        if (st.addCat === "props") {
-          rows = [...propGroups.values()].filter(g => !q || g.name.toLowerCase().includes(q)).map(g => {
-            const on = a.props.includes(g.name);
+        if (st.pickType === "stat" || st.pickType === "trick") {
+          rows = [...propGroups.values()].filter(g => g.group === st.pickType && (!q || g.name.toLowerCase().includes(q))).map(g => {
             const val = g.entries.map(e => PROP_STAT[e.stat] ? `+${e.perRank[rank]}%` : e.perRank[rank]).join(" / ");
-            return `<div class="prop-row ${on ? "chosen" : ""}" data-action="art-prop" data-p="${esc(g.name)}">
+            return `<div class="prop-row ${has(g.name) ? "chosen" : ""}" data-action="art-add" data-t="${st.pickType}" data-v="${esc(g.name)}">
               <span class="prop-name">${esc(g.name)}</span><span class="prop-stat">${esc(g.entries.map(e => e.stat).join(" / "))}</span><span class="prop-val">${esc(val)}</span></div>`;
           }).join("");
-        } else if (st.addCat === "traits") {
+        } else if (st.pickType === "trait") {
           rows = D.traitItems.filter(t => t.traitName && (!q || t.name.toLowerCase().includes(q) || (t.traitName || "").toLowerCase().includes(q))).slice(0, 300)
-            .map(t => `<div class="prop-row ${a.traitItemIds.includes(t.id) ? "chosen" : ""}" data-action="art-item" data-id="${t.id}">
+            .map(t => `<div class="prop-row ${has(t.id) ? "chosen" : ""}" data-action="art-add" data-t="trait" data-v="${t.id}">
               <span class="prop-ico">${t.icon ? spriteImg(t.icon, "px") : ""}</span>
               <span class="prop-name">${esc(t.name)}</span><span class="prop-stat">grants ${esc(t.traitName)}</span></div>`).join("");
+        } else if (st.pickType === "spell") {
+          rows = D.spells.filter(s => !q || s.name.toLowerCase().includes(q) || (s.desc || "").toLowerCase().includes(q)).slice(0, 300)
+            .map(s => `<div class="prop-row ${has(s.id) ? "chosen" : ""}" data-action="art-add" data-t="spell" data-v="${s.id}">
+              <span class="prop-name">${esc(s.name)}</span><span class="prop-stat">${esc((s.desc || "").slice(0, 80))}</span></div>`).join("");
         } else {
-          rows = nether.map(n => `<div class="prop-row ${a.netherIds.includes(n.id) ? "chosen" : ""}" data-action="art-nether" data-id="${n.id}">
+          rows = nether.map(n => `<div class="prop-row ${has(n.id) ? "chosen" : ""}" data-action="art-add" data-t="nether" data-v="${n.id}">
               <span class="prop-ico">${spriteImg(gemPath(n.icon), "px")}</span>
               <span class="prop-name">${esc(n.name)}</span><span class="prop-stat">${esc(netherSummary(n))}</span></div>`).join("")
             || `<div class="slot-sub" style="padding:8px">No Nether Stones yet — add them from the top-bar “Nether Stones” button.</div>`;
         }
         picker = `<div class="art-picker">
-          <div class="ovl-filterbar"><button class="chip" data-action="artb-closecat">‹ Done adding</button>
+          <div class="ovl-filterbar"><button class="chip" data-action="artb-closecat">‹ Done</button>
             <input class="ovl-search" placeholder="Search…" value="${esc(st.search)}" data-action="artb-search"></div>
           <div class="ovl-center-scroll">${rows}</div></div>`;
       }
-      body = `<div class="ovl-center"><div class="ovl-center-scroll">
-        ${slotsBox}${picker}</div></div>`;
+      body = `<div class="ovl-center"><div class="ovl-center-scroll">${groupsHtml}${picker}</div></div>`;
       footer = `<button class="btn-ghost" data-action="artb-back">‹ Back</button>
         <button class="btn-confirm" data-action="artb-next">Next: Name ›</button>`;
     } else { // name
       const chips = [
         ...(a.primary ? [`<span class="slot-chip filled">◆ ${esc(a.primary)}</span>`] : []),
-        ...a.props.map(n => `<span class="slot-chip filled">${esc(n)}</span>`),
-        ...a.traitItemIds.map(id => { const t = TRAITITEM.get(id); return `<span class="slot-chip filled">✦ ${esc(t ? t.traitName : id)}</span>`; }),
+        ...a.stat.map(n => `<span class="slot-chip filled">${esc(n)}</span>`),
+        ...a.trick.map(n => `<span class="slot-chip filled">${esc(n)}</span>`),
+        ...a.traits.map(id => { const t = TRAITITEM.get(id); return `<span class="slot-chip filled">✦ ${esc(t ? t.traitName : id)}</span>`; }),
+        ...a.spells.map(id => { const s = SPELL.get(id); return `<span class="slot-chip filled">✷ ${esc(s ? s.name : id)}</span>`; }),
         ...a.netherIds.map(id => { const n = nether.find(x => x.id === id); return `<span class="slot-chip filled">◈ ${esc(n ? n.name : id)}</span>`; }),
       ].join("") || `<span class="slot-chip">No slots filled</span>`;
       body = `<div class="ovl-center"><div class="ovl-center-scroll">
@@ -749,7 +779,7 @@
             <span style="text-align:right">Artifact</span><span style="text-align:right">Total</span></div>${rows}
             <div class="stat-row hl-high"><span class="stat-name">Total</span><span class="stat-val base">${b.total}</span>
               <span class="stat-val art"></span><span class="stat-val total">${fs.total}</span></div></div>
-          <div class="section-label" style="margin-top:14px">Traits (innate${f ? " + fusion" : ""}${a && (a.traitItemIds || []).length ? " + artifact" : ""})</div>
+          <div class="section-label" style="margin-top:14px">Traits (innate${f ? " + fusion" : ""}${a && (a.traits || []).length ? " + artifact" : ""})</div>
           ${traitHtml || `<div class="slot-sub">No traits.</div>`}
           ${relic ? `<div class="section-label" style="margin-top:14px">Relic</div>
             <div class="primary-traits"><b>${esc(relic.name)}</b> — Rank ${slot.relic.rank}
@@ -925,14 +955,26 @@
       case "art-new": openArtifactBuilder(null, ovState.slotIdx); break;
       case "art-edit": openArtifactBuilder(+t.dataset.id, ovState.slotIdx); break;
       case "art-del": armOrDo(t, () => { const id = +t.dataset.id; artifacts = artifacts.filter(a => a.id !== id); build.slots.forEach(s => { if (s.artifactId === id) s.artifactId = null; }); persistArtifacts(); persistBuild(); refreshOverlay(); }); break;
-      case "artb-next": ovState.step = ovState.step === "type" ? "slots" : "name"; ovState.addCat = null; ovState.search = ""; refreshOverlay(); break;
-      case "artb-back": ovState.step = ovState.step === "name" ? "slots" : "type"; ovState.addCat = null; ovState.search = ""; refreshOverlay(); break;
-      case "artb-addcat": ovState.addCat = t.dataset.c; ovState.search = ""; refreshOverlay(); break;
-      case "artb-closecat": ovState.addCat = null; ovState.search = ""; refreshOverlay(); break;
+      case "artb-next": ovState.step = ovState.step === "type" ? "slots" : "name"; ovState.pickType = null; ovState.search = ""; refreshOverlay(); break;
+      case "artb-back": ovState.step = ovState.step === "name" ? "slots" : "type"; ovState.pickType = null; ovState.search = ""; refreshOverlay(); break;
+      case "artb-closecat": ovState.pickType = null; ovState.search = ""; refreshOverlay(); break;
       case "art-primary": ovState.draft.primary = ovState.draft.primary === t.dataset.p ? null : t.dataset.p; refreshOverlay(); break;
-      case "art-prop": toggleArr(ovState.draft.props, t.dataset.p); refreshOverlay(); break;
-      case "art-item": toggleArr(ovState.draft.traitItemIds, +t.dataset.id); refreshOverlay(); break;
-      case "art-nether": toggleArr(ovState.draft.netherIds, +t.dataset.id); refreshOverlay(); break;
+      case "art-slot": ovState.pickType = t.dataset.t; ovState.search = ""; refreshOverlay(); break;
+      case "art-add": {
+        const type = t.dataset.t, sl = ART_SLOTS.find(s => s.pick === type), arr = ovState.draft[sl.key];
+        const v = (type === "stat" || type === "trick") ? t.dataset.v : +t.dataset.v;
+        const i = arr.indexOf(v);
+        if (i >= 0) arr.splice(i, 1);                        // clicking a chosen one removes it
+        else if (arr.length < sl.max) arr.push(v);           // room → add
+        else if (sl.max === 1) arr[0] = v;                   // single-slot → replace
+        if (arr.length >= sl.max) ovState.pickType = null;   // auto-close when the slot type is full
+        refreshOverlay(); break;
+      }
+      case "art-rm": {
+        const type = t.dataset.t, sl = ART_SLOTS.find(s => s.pick === type), arr = ovState.draft[sl.key];
+        const v = (type === "stat" || type === "trick") ? t.dataset.v : +t.dataset.v;
+        const i = arr.indexOf(v); if (i >= 0) arr.splice(i, 1); refreshOverlay(); break;
+      }
       case "artb-cancel": openArtifactLibrary(ovState.slotIdx); break;
       case "artb-save": {
         const d = ovState.draft;

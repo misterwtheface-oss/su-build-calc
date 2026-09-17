@@ -498,6 +498,9 @@ h1, h2, h3 { margin: 0; }
 .as-sub { font-size: 10px; color: var(--text-dim); line-height: 1.1; max-height: 2.2em; overflow: hidden; }
 .as-rm { position: absolute; top: 2px; right: 2px; width: 18px; height: 18px; border-radius: 50%; border: none;
   background: rgba(0,0,0,.4); color: var(--bad); font-size: 11px; cursor: pointer; line-height: 1; }
+.art-slot-group { margin-bottom: 12px; }
+.art-slot-group .section-label { margin-bottom: 6px; }
+.art-slot.picking { border-color: var(--accent2); box-shadow: inset 0 0 0 2px var(--accent2); }
 .art-addmenu { display: flex; gap: 8px; flex-wrap: wrap; margin: 12px 0; }
 .art-picker { margin-top: 12px; border-top: 1px solid var(--border-dim); padding-top: 8px; }
 .art-picker .prop-ico { width: 20px; height: 20px; flex: 0 0 auto; }

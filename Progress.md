@@ -4,7 +4,20 @@
 Deployed at **https://misterwtheface-oss.github.io/su-build-calc/** (repo `misterwtheface-oss/su-build-calc`,
 Pages on `master`/root, Cloudflare analytics active with the shared github.io token). Auto-deploys on push.
 
-## v2.6 header/artifact/anointment batch (2026-09-17)
+## v2.7 artifact slot template + misc (2026-09-17)
+- **Home tiles mirror creature-card width**: `.home-top` uses the party grid (2/3/6 cols); spec + anoint tiles
+  are vertical cards. **Reverted the spec-selector centering** (was fixed-width flex → shrank icons; back to the
+  original `auto-fill`/`repeat(5,1fr)` grid so icons are full size). **Dropped the per-spec chips** from the
+  Anointments overlay (search + grouped list only).
+- **Chrome sweep**: removed feature-explanation footers, asset/match/active counts, wizard instructional hints.
+- **Artifact = fixed slot template (user ground truth):** 1 Primary + **3 Stat · 2 Trick · 1 Trait · 1 Spell ·
+  1 Nether** (nether has its own internal rules but the artifact holds exactly 1). Model reshaped to
+  `{primary, stat[], trick[], traits[], spells[], netherIds[]}` with per-type caps; **old artifacts migrated**
+  in place (`props[]`→stat/trick by group, `traitItemIds[]`→traits[0..1], nether capped to 1). `artifactPctOf`
+  sums `stat`+`trick`. **Spell data added** (`SU_DATA.spells`, 747 from catalog; name/desc, no icon yet — spell
+  gems span 5 DB fns w/ no clean name-slot). Wizard step 2 now shows the **fixed slots in order by type**
+  (Primary → Stat → Trick → Trait → Spell → Nether); each empty box opens a type-filtered picker, enforcing the
+  counts by construction.
 1. **Header** stacks: title over the action buttons (topbar `flex-direction:column`).
 2. **Artifacts button** in the header → global artifact library in *manage* mode (`openArtifactLibrary(null)`;
    no equip, just edit/delete/build).
