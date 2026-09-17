@@ -4,6 +4,20 @@
 Deployed at **https://misterwtheface-oss.github.io/su-build-calc/** (repo `misterwtheface-oss/su-build-calc`,
 Pages on `master`/root, Cloudflare analytics active with the shared github.io token). Auto-deploys on push.
 
+## v2.4 wardrobe backend (2026-09-17) — data only, no UI yet
+- **Clarified: the current spec "skins" are ICONS.** They come from `spec_<class>_<spec>_<theme>` 32×32
+  single-frame sprites (the decorated spec-select emblems, e.g. `spec_death_necromancer_necronomicon`),
+  not player costumes. Kept as-is for now (still labeled spriteKind `skin`/`icon` in `findSpecSprite`).
+- **Extracted the real player WARDROBE (every costume), code-certain.** `scr_WardrobeSprite` returns each
+  costume's overworld sprite as a tagged immediate (`spriteAssetIndex + 0x1000000`). New durable extract
+  `_su_extract/data/model/wardrobe.json` (**820 costumes**, all 32×32 animated 8-frame, 0 missing PNG) via
+  `_su_extract/code/extract_wardrobe.py` (capstone; `PYTHONSAFEPATH=1`). Categories: 43 specialization/class,
+  597 npc, 142 master (`master_<family>`), 26 creature, 12 animal.
+- **Pipeline pulls ALL 820 costume PNGs → `assets/wardrobe/<sprite>.png`** and emits `SU_DATA.wardrobe`
+  (sprite/key/label/category/frames/order/img). Each spec is joined to its own costume via
+  `spec.costume` (`npc_<slug>` variants / `TS_SU_Costume_<spec>` / `*_overworld`): **38/39** linked —
+  Grovetender genuinely has no wardrobe costume in the game data. **No UI yet (per request — backend first).**
+
 ## v2.3 perk icons (2026-09-17)
 - **Every perk now shows its real in-game icon (600/600, code-certain).** Name-based sprite joins topped
   out at ~88% (three naming schemes: base-15 `<class>_<spec>_<perk>`, modern `<spec>_<perk>`, and
