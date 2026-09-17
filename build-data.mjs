@@ -311,6 +311,20 @@ const spellClassByName = new Map();
   const ref = readJSON(path.join(REF, 'spells_ref.json'));
   for (const r of (ref.records || ref)) if (r.name && r.class) spellClassByName.set(norm(r.name), r.class);
 }
+// fuzzy fallback for ref typos (e.g. "Lucious Lager"/"Ignus Fatuus" vs catalog spelling)
+const lev = (a, b) => { const m = a.length, n = b.length; if (Math.abs(m - n) > 2) return 9;
+  const d = Array.from({ length: m + 1 }, (_, i) => [i, ...Array(n).fill(0)]);
+  for (let j = 0; j <= n; j++) d[0][j] = j;
+  for (let i = 1; i <= m; i++) for (let j = 1; j <= n; j++) d[i][j] = Math.min(d[i-1][j]+1, d[i][j-1]+1, d[i-1][j-1]+(a[i-1]===b[j-1]?0:1));
+  return d[m][n]; };
+const refClassEntries = [...spellClassByName.entries()];
+function spellClass(name) {
+  const n = norm(name);
+  if (spellClassByName.has(n)) return spellClassByName.get(n);
+  let best = null, bd = 3;
+  for (const [rn, cls] of refClassEntries) { const dd = lev(n, rn); if (dd < bd) { bd = dd; best = cls; } }
+  return best;
+}
 // generic per-class spell-gem icons (verified by pixel colour): gems are colour-coded by class, not per-spell
 const GEM_SRC = { Nature: 'gem_nature_lvl4', Chaos: 'gem_chaos_lvl4', Sorcery: 'gem_sorceryB_lvl4', Death: 'gem_sorceryP_lvl4', Life: 'gem_lifeG_lvl4' };
 fs.rmSync(OUT_SPELLGEM, { recursive: true, force: true });
@@ -322,8 +336,8 @@ for (const [cls, base] of Object.entries(GEM_SRC)) {
 }
 let spellNoClass = 0;
 const spells = spellArr.map((s, i) => {
-  const cls = spellClassByName.get(norm(s.name)) || null;
-  if (!cls) spellNoClass++;
+  const cls = spellClass(s.name);
+  if (!cls) { spellNoClass++; warn(`spell "${s.name}" has no class match in spells_ref`); }
   return { id: i, key: s.key, name: s.name, desc: s.desc || '', cls };
 }).filter(s => s.name);
 
