@@ -4,6 +4,17 @@
 Deployed at **https://misterwtheface-oss.github.io/su-build-calc/** (repo `misterwtheface-oss/su-build-calc`,
 Pages on `master`/root, Cloudflare analytics active with the shared github.io token). Auto-deploys on push.
 
+## v2.4b wardrobe names + tiers + Grovetender (2026-09-17)
+- **Grovetender resolved:** it ships internally as **"Herbalist"** (`vocabulary.csv` `L_HERBALIST` == "Grovetender"),
+  so `npc_herbalist_1/2/3` ARE Grovetender's 3-tier costumes. All 39 specs now link (was 38).
+- **All 3 tiers per class grouped:** `spec.costumes = [{tier,sprite,img,variant}]` (tier 1/2/3 + `_alt`/`_minotaur`
+  variants). Every class has a 3-tier set (incl. Pariah & Deprived).
+- **Names from localization (backend, in `wardrobe.json`):** each costume carries `name` + `name_source`:
+  **145 class_vocab** (spec/class display name, authoritative) + **307 L_WD** (`L_WD_*` in `items.csv`, e.g.
+  Cosmic Cat, Void Queen) + **368 derived** (title-cased stem — mostly `ospr_` denizen costumes whose `L_WD` key
+  is semantic, not sprite-derived; would need deeper code pairing to reach 100%). Resolution now lives in
+  `extract_wardrobe.py` so `wardrobe.json` is self-contained; `build-data.mjs` just copies PNGs + groups tiers.
+
 ## v2.4 wardrobe backend (2026-09-17) — data only, no UI yet
 - **Clarified: the current spec "skins" are ICONS.** They come from `spec_<class>_<spec>_<theme>` 32×32
   single-frame sprites (the decorated spec-select emblems, e.g. `spec_death_necromancer_necronomicon`),

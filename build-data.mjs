@@ -324,48 +324,33 @@ for (const [k, v] of Object.entries(labelsMap)) terms[k] = (v && v.name) || k;
 // ── damage / stat model (for fusion + future DPS sim) ──
 const damageModel = readJSON(path.join(MODEL, 'damage_model.json'));
 
-// ── player wardrobe (every equippable player costume, code-certain from scr_WardrobeSprite) ──
-// Pull EVERY costume sprite into assets/wardrobe/<sprite>.png and emit the full inventory.
+// ── player wardrobe (every equippable player costume; names/tiers pre-resolved in wardrobe.json) ──
+// Pull EVERY costume sprite into assets/wardrobe/<sprite>.png; consume the enriched extract artifact.
 fs.rmSync(OUT_WARDROBE, { recursive: true, force: true });
 fs.mkdirSync(OUT_WARDROBE, { recursive: true });
 const wardrobeRecs = readJSON(path.join(MODEL, 'wardrobe.json')).records;
 let wardrobeCopied = 0, wardrobeMissing = 0;
+const nameSrc = { class_vocab: 0, L_WD: 0, derived: 0 };
 const wardrobe = [];
 for (const w of wardrobeRecs) {
   const ok = copyNamedSprite(w.sprite, OUT_WARDROBE, `${w.sprite}.png`);
   if (ok) wardrobeCopied++; else { wardrobeMissing++; warn(`wardrobe costume "${w.sprite}" has no PNG`); }
-  wardrobe.push({ sprite: w.sprite, key: w.sprite, label: w.label, category: w.category,
-                  frames: w.frames, order: w.order, img: ok ? `assets/wardrobe/${w.sprite}.png` : null });
+  nameSrc[w.name_source] = (nameSrc[w.name_source] || 0) + 1;
+  wardrobe.push({ sprite: w.sprite, key: w.sprite, name: w.name, name_source: w.name_source,
+                  spec: w.spec, stem: w.stem, tier: w.tier, variant: w.variant,
+                  category: w.category, frames: w.frames, order: w.order,
+                  img: ok ? `assets/wardrobe/${w.sprite}.png` : null });
 }
-// join each specialization to its own player costume (npc_<slug> variants / TS_SU_Costume_<spec> / *_overworld)
-const wardrobeByNorm = new Map(wardrobe.map(w => [norm(w.sprite), w]));
-const SPEC_COSTUME_ALT = { bloodmage: 'bloodmage', runeknight: 'runeknight', witchdoctor: 'witchdoctor',
-  graveborn: 'graveborne', hellknight: 'hellknight' };
-function findSpecCostume(label) {
-  const k = norm(label), alt = SPEC_COSTUME_ALT[k];
-  const cands = [];
-  for (const base of [k, alt].filter(Boolean))
-    cands.push(`npc${base}`, `npc${base}alt`, `npc${base}1`, `npc${base}01`, `tssucostume${base}1`, `tssucostume${base}`);
-  for (const c of cands) if (wardrobeByNorm.has(c)) return wardrobeByNorm.get(c).sprite;
-  // loose: any wardrobe sprite whose normalized name contains the spec slug and is a spec/npc costume
-  const loose = wardrobe.find(w => (w.category === 'specialization' || w.category === 'npc')
-    && norm(w.sprite).replace(/alt|overworld|[0-9]/g, '').includes(k));
-  return loose ? loose.sprite : null;
-}
+// group all tier costumes per specialization (Grovetender -> herbalist tiers, etc.)
 let specCostumes = 0;
-const specCostumeSprites = new Set();
 for (const s of specs) {
-  const cs = findSpecCostume(s.label);
-  s.costume = cs ? `assets/wardrobe/${cs}.png` : null;
-  s.costumeKey = cs || null;
-  if (cs) { specCostumes++; specCostumeSprites.add(cs); } else warn(`specialization "${s.label}" has no wardrobe costume match`);
-}
-// tighten wardrobe categories: only sprites actually linked to a spec (or known base classes) are "specialization"
-const BASE_CLASS_COSTUMES = new Set(['npc_antiquarian', 'npc_deprived01', 'npc_pariah01', 'npc_herbalist_1', 'npc_royal_1', 'TS_SU_Costume_Antiquarian_1']);
-for (const w of wardrobe) {
-  if (w.category === 'specialization' && !specCostumeSprites.has(w.sprite) && !BASE_CLASS_COSTUMES.has(w.sprite))
-    w.category = 'npc';
-  else if (specCostumeSprites.has(w.sprite)) w.category = 'specialization';
+  const mine = wardrobe.filter(w => w.spec === s.label)
+    .map(w => ({ ...w, effTier: w.tier || (w.variant ? null : 1) }))   // base (no tier, no variant) = tier 1
+    .sort((a, b) => (a.effTier || 9) - (b.effTier || 9) || a.order - b.order);
+  s.costumes = mine.map(w => ({ tier: w.effTier, sprite: w.sprite, img: w.img, variant: w.variant }));
+  s.costume = mine.length ? mine[0].img : null;       // primary (tier 1) costume
+  s.costumeKey = mine.length ? mine[0].sprite : null;
+  if (mine.length) specCostumes++; else warn(`specialization "${s.label}" has no wardrobe costume match`);
 }
 
 // ── data-hygiene report ─────────────────────────────────────────────────
@@ -375,7 +360,8 @@ console.log(`✓ ${checked} records checked · ${creatures.length} playable crea
 console.log(`  cards w/ art ${cardArt}/${cards.length} · artifact-type icons ${artGroup.primary.filter(p => p.icon).length}/5 · gem icons ${gemIcons.length} · class bgs ${Object.keys(classBg).length}`);
 console.log(`  spec sprites: ${specSkins} real skins + ${specs.filter(s => s.spriteKind === 'icon').length} emblem icons · terms ${Object.keys(terms).length}`);
   console.log(`  perk icons: ${perkIconsCopied} copied (code-certain from perk_icons.json)${perkIconsMissing ? ` · ${perkIconsMissing} missing` : ' · 100%'}`);
-  console.log(`  wardrobe: ${wardrobeCopied} player costumes copied (code-certain from wardrobe.json)${wardrobeMissing ? ` · ${wardrobeMissing} missing` : ''} · ${specCostumes}/${specs.length} specs linked to a costume`);
+  console.log(`  wardrobe: ${wardrobeCopied} player costumes copied (code-certain)${wardrobeMissing ? ` · ${wardrobeMissing} missing` : ''} · ${specCostumes}/${specs.length} specs linked (all tiers)`);
+  console.log(`  wardrobe names: ${nameSrc.class_vocab} class-vocab + ${nameSrc.L_WD} L_WD + ${nameSrc.derived} derived (of ${wardrobe.length})`);
 if (errors.length) {
   console.log(`✗ ${errors.length} errors:`);
   for (const e of errors.slice(0, 40)) console.log('    ' + e);
