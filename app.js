@@ -360,7 +360,7 @@
         </div>
         <div class="ovl-right">${selC ? renderCreatureIdentity(selC) : `<div class="slot-sub">Select a creature.</div>`}</div>
       </div>
-      <div class="overlay-footer"><span class="foot-info">${list.length} match${list.length === 1 ? "" : "es"}${st.mode === "fusion" ? " · fusion averages both parents' stats" : ""}</span>
+      <div class="overlay-footer"><span class="foot-info"></span>
         <div><button class="btn-ghost" data-action="close-ovl">Cancel</button>
         <button class="btn-confirm" data-action="crea-confirm" ${st.sel == null ? "disabled" : ""}>Confirm</button></div></div>
     </div></div>`;
@@ -521,7 +521,7 @@
     const groups = {};
     for (const a of list) (groups[a.spec] ||= []).push(a);
     const body = Object.keys(groups).sort().map(sp => `
-      <div class="section-label anoint-grp">${esc(sp)} <span class="foot-info">${groups[sp].length}</span></div>
+      <div class="section-label anoint-grp">${esc(sp)}</div>
       ${groups[sp].map(a => `<div class="perk-line on">
         <span class="perk-ico sm">${a.icon ? spriteImg(a.icon, "px") : ""}</span>
         <b>${esc(a.name)}</b>${a.ascension ? `<span class="anoint-badge asc">Ascension</span>` : ""}
@@ -574,7 +574,7 @@
       <div class="overlay-header"><h2>Artifacts${manage ? "" : " — " + esc(c ? c.name : "")}</h2><button class="ovl-close" data-action="close-ovl">✕</button></div>
       <div class="overlay-body"><div class="ovl-center"><div class="ovl-center-scroll">
         <div class="lib-grid">${tiles}</div></div></div></div>
-      <div class="overlay-footer"><span class="foot-info">Artifacts are saved & reusable across creatures</span>
+      <div class="overlay-footer"><span class="foot-info"></span>
         <div>${equippedId != null ? `<button class="btn-ghost" data-action="art-unequip">Unequip</button>` : ""}
         <button class="btn-confirm" data-action="art-new">＋ Build new artifact</button></div></div>
     </div></div>`;
@@ -608,7 +608,6 @@
       body = `<div class="ovl-center"><div class="ovl-center-scroll">
         <div class="rank-picker" style="margin-bottom:12px"><span class="slot-sub">Rank</span>
           <input type="range" min="1" max="50" value="${rank}" data-action="artb-rank"><span class="rank-badge">${rank}</span></div>
-        <p class="slot-sub" style="margin-bottom:8px">Pick the artifact type — this sets its icon and primary stat.</p>
         <div class="art-type-grid">${tiles}</div></div></div>`;
       footer = `<button class="btn-ghost" data-action="artb-cancel">Cancel</button>
         <button class="btn-confirm" data-action="artb-next" ${a.primary ? "" : "disabled"}>Next: Fill slots ›</button>`;
@@ -660,7 +659,6 @@
           <div class="ovl-center-scroll">${rows}</div></div>`;
       }
       body = `<div class="ovl-center"><div class="ovl-center-scroll">
-        <p class="slot-sub" style="margin-bottom:8px">Add slots one at a time — properties, trait slots, and nether sockets.</p>
         ${slotsBox}${picker}</div></div>`;
       footer = `<button class="btn-ghost" data-action="artb-back">‹ Back</button>
         <button class="btn-confirm" data-action="artb-next">Next: Name ›</button>`;
@@ -689,7 +687,7 @@
         <h2>${esc(a.name)}</h2>${renderArtStepbar(st.step)}
         <button class="ovl-close" data-action="close-ovl">✕</button></div>
       <div class="overlay-body">${body}</div>
-      <div class="overlay-footer"><span class="foot-info">Artifact = container: 1 primary + properties + trait / nether sockets</span>
+      <div class="overlay-footer"><span class="foot-info"></span>
         <div>${footer}</div></div>
     </div></div>`;
   }
@@ -722,7 +720,7 @@
           ${sel ? `<div class="rank-picker"><span class="slot-sub">Rank</span>
             <input type="range" min="10" max="${Math.max(...sel.ranks.map(r => r.rank), 10)}" step="10" value="${st.rank}" data-action="relic-rank"><span class="rank-badge">${st.rank}</span></div>` : ""}
           ${detail}</div></div>
-      <div class="overlay-footer"><span class="foot-info">Relic effects are qualitative (not a stat number)</span>
+      <div class="overlay-footer"><span class="foot-info"></span>
         <div><button class="btn-ghost" data-action="relic-clear">Clear</button>
         <button class="btn-confirm" data-action="relic-confirm" ${st.sel == null ? "disabled" : ""}>Save Relic</button></div></div>
     </div></div>`;
@@ -765,7 +763,7 @@
             <div class="trait-desc">${richText(relic.ranks.filter(r => r.rank <= slot.relic.rank).map(r => "R" + r.rank + ": " + r.desc).join(" ") || "")}</div></div>` : ""}
         </div></div>
       </div>
-      <div class="overlay-footer"><span class="foot-info">Fusion averages both parents' base stats; class follows the secondary parent</span>
+      <div class="overlay-footer"><span class="foot-info"></span>
         <button class="btn-confirm" data-action="close-detail">Done</button></div>
     </div></div>`);
   }
@@ -793,14 +791,13 @@
           <button class="lvl-btn" data-action="card-inc" data-id="${c.id}" ${lv >= c.effects.length ? "disabled" : ""}>＋</button>
         </div></div>`;
     }).join("");
-    const active = D.cards.filter(c => cardLevel(c.id) > 0).length;
     return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel detail">
       <div class="overlay-header"><h2>Realm Cards</h2>
         <input class="ovl-search" placeholder="Search family…" value="${esc(st.search)}" data-action="cards-search">
         <button class="ovl-close" data-action="close-ovl">✕</button></div>
       <div class="overlay-body"><div class="ovl-center"><div class="ovl-filterbar">${clsChips}</div>
         <div class="ovl-center-scroll"><div class="card-grid">${tiles}</div></div></div></div>
-      <div class="overlay-footer"><span class="foot-info">${active}/${D.cards.length} active · default max level · step −/＋ through the 3 effect tiers</span>
+      <div class="overlay-footer"><span class="foot-info"></span>
         <button class="btn-confirm" data-action="close-ovl">Done</button></div>
     </div></div>`;
   }
@@ -867,7 +864,7 @@
           ${st.editId != null ? `<button class="btn-ghost" style="width:100%;margin-top:6px" data-action="nether-cancel-edit">Cancel edit</button>` : ""}
         </div>
       </div>
-      <div class="overlay-footer"><span class="foot-info">Socket saved stones into any artifact’s “Nether Sockets” tab</span>
+      <div class="overlay-footer"><span class="foot-info"></span>
         <button class="btn-confirm" data-action="close-ovl">Done</button></div>
     </div></div>`;
   }
