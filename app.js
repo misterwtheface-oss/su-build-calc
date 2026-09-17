@@ -205,7 +205,6 @@
       <div class="spec-tile anoint-tile" data-action="open-anoint" title="Anointments">
         <div class="spec-tile-icon"><span class="spec-tile-plus">✦</span></div>
         <div class="spec-tile-label">Anointments</div>
-        <div class="spec-tile-sub">Cross-spec perks</div>
       </div>`;
 
     const slots = build.slots.map((s, i) => renderSlot(s, i)).join("");
@@ -539,7 +538,7 @@
         <div class="ovl-filterbar anoint-chips">${specChips}</div>
         <div class="ovl-center-scroll"><div class="perk-list">${body}</div></div>
       </div></div>
-      <div class="overlay-footer"><span class="foot-info">${all.length} anointment-eligible perks · won from False Gods — use perks from other specializations (up to 5 equipped)</span>
+      <div class="overlay-footer"><span class="foot-info"></span>
         <button class="btn-confirm" data-action="close-ovl">Close</button></div>
     </div></div>`;
   }
