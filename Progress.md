@@ -4,6 +4,16 @@
 Deployed at **https://misterwtheface-oss.github.io/su-build-calc/** (repo `misterwtheface-oss/su-build-calc`,
 Pages on `master`/root, Cloudflare analytics active with the shared github.io token). Auto-deploys on push.
 
+## v2.5 spec selector: emblems + animated costume (2026-09-17)
+- **Selector grid now uses the 16×16 `spec_<key>` emblem for every spec** (`spec.emblem`; aliases
+  Rune Knight→`spec_deathknight`, Sorcerer→`spec_sorceror`; Defiler has no 16×16 emblem → falls back to its
+  themed sprite). 38/39 real emblems.
+- **Info panel shows the WARDROBE costume instead of the icon**, and **animates it**: front-facing 2-frame
+  walk (costume frames 0,1 — verified 0↔1 is the closest-matching pair = same/down direction), alternates 8×
+  then advances to the next tier and cycles. `syncSpecAnim()` (280ms) clears/restarts on every spec-picker
+  render (open/select/search) and on close. Pipeline copies frames 0,1 per tier → `spec.costumes[i].frames`.
+- NOTE: "front-facing" frame indices (0,1) are a best-guess from pixel-diff; confirm visually.
+
 ## v2.4b wardrobe names + tiers + Grovetender (2026-09-17)
 - **Grovetender resolved:** it ships internally as **"Herbalist"** (`vocabulary.csv` `L_HERBALIST` == "Grovetender"),
   so `npc_herbalist_1/2/3` ARE Grovetender's 3-tier costumes. All 39 specs now link (was 38).

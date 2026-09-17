@@ -252,11 +252,27 @@
 
   // ── overlay plumbing ───────────────────────────────────────────────────────
   const OV = el("overlay-root"), DOV = el("detail-overlay-root");
-  let ovState = null, dovState = null;
+  let ovState = null, dovState = null, specAnimTimer = null;
+
+  // Animate the spec info-panel costume: front-facing 2-frame walk, alternate 8× then advance a tier (cycles).
+  function syncSpecAnim() {
+    if (specAnimTimer) { clearInterval(specAnimTimer); specAnimTimer = null; }
+    if (!ovState || ovState.kind !== "spec" || ovState.sel == null) return;
+    const spec = SPEC.get(ovState.sel);
+    const tiers = (spec && spec.costumes ? spec.costumes : []).filter(c => c.frames && c.frames.length >= 2);
+    const img = OV.querySelector("#specCostume img");
+    if (!img || !tiers.length) return;
+    let ti = 0, fr = 0, swaps = 0;
+    specAnimTimer = setInterval(() => {
+      fr ^= 1; swaps++;
+      img.src = tiers[ti].frames[fr];
+      if (swaps >= 8) { swaps = 0; fr = 0; ti = (ti + 1) % tiers.length; }
+    }, 280);
+  }
   const SCROLLERS = [".ovl-center-scroll", ".ovl-left", ".ovl-right"];
 
   function openOverlay(html) { OV.innerHTML = html; OV.classList.remove("hidden"); }
-  function closeOverlay() { OV.classList.add("hidden"); OV.innerHTML = ""; ovState = null; }
+  function closeOverlay() { if (specAnimTimer) { clearInterval(specAnimTimer); specAnimTimer = null; } OV.classList.add("hidden"); OV.innerHTML = ""; ovState = null; }
   function openDetail(html) { DOV.innerHTML = html; DOV.classList.remove("hidden"); }
   function closeDetail() { DOV.classList.add("hidden"); DOV.innerHTML = ""; dovState = null; }
 
@@ -268,6 +284,7 @@
     const p2 = OV.querySelector(".overlay-panel");
     SCROLLERS.forEach((sel, k) => { const e = p2 && p2.querySelector(sel); if (e) e.scrollTop = saved[k]; });
     maybeFocusSearch(OV);
+    syncSpecAnim();
   }
   function refreshDetail() {
     if (!dovState) return;
@@ -380,7 +397,7 @@
   // ── specialization selector ────────────────────────────────────────────────
   function openSpecPicker() {
     ovState = { kind: "spec", search: "", sel: build.specId, render: renderSpecPicker };
-    openOverlay(ovState.render()); maybeFocusSearch(OV);
+    openOverlay(ovState.render()); maybeFocusSearch(OV); syncSpecAnim();
   }
   // ── perk allocation (rank-based) ───────────────────────────────────────────
   const perkMax = (p) => p.ranks || 1;
@@ -399,7 +416,7 @@
     const sel = st.sel != null ? SPEC.get(st.sel) : null;
     const tiles = list.map(s => `
       <div class="pick-tile spec-pick ${st.sel === s.id ? "selected" : ""}" data-action="spec-pick" data-id="${s.id}">
-        <div class="pt-sprite">${spriteImg(s.sprite)}</div><div class="pt-name">${esc(s.label)}</div></div>`).join("");
+        <div class="pt-sprite emblem">${spriteImg(s.emblem || s.sprite, "px")}</div><div class="pt-name">${esc(s.label)}</div></div>`).join("");
     let info = `<div class="slot-sub">Select a specialization.</div>`;
     if (sel) {
       const allocCount = allocatedPerks(sel).length, pts = specPoints(sel);
@@ -409,8 +426,10 @@
         const ico = p.icon ? `<span class="perk-ico sm">${spriteImg(p.icon, "px")}</span>` : `<span class="perk-dot"></span>`;
         return `<div class="perk-line ${on ? "on" : "off"}">${ico}${badge}<b>${esc(p.name)}</b>${p.desc ? ` — <span class="perk-desc">${richText(p.desc, r)}</span>` : ""}</div>`;
       }).join("");
+      const cos0 = sel.costumes && sel.costumes.length ? sel.costumes[0] : null;
+      const costumeImg = cos0 ? (cos0.frames && cos0.frames[0]) || cos0.img : sel.sprite;
       info = `<div class="spec-info">
-        <div class="spec-info-sprite">${spriteImg(sel.sprite)}</div>
+        <div class="spec-info-sprite costume" id="specCostume">${spriteImg(costumeImg, "px")}</div>
         <h2 class="spec-info-name">${esc(sel.label)}</h2>
         <div class="trait-desc spec-play">${richText(sel.playstyle || sel.description || "")}</div>
         <div class="section-label" style="margin-top:12px">Perks — ${allocCount}/${sel.perks.length} allocated · ${pts} pts</div>

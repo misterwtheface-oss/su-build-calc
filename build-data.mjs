@@ -36,6 +36,12 @@ function copyNamedSprite(base, outDir, destName) {
   }
   return false;
 }
+// copy a SPECIFIC frame (<base>_<n>.png) into outDir/destName
+function copySpriteFrame(base, n, outDir, destName) {
+  const src = path.join(SRC_SPEC_PNG, `${base}_${n}.png`);
+  if (fs.existsSync(src)) { fs.mkdirSync(outDir, { recursive: true }); fs.copyFileSync(src, path.join(outDir, destName)); return true; }
+  return false;
+}
 
 const STRICT = process.argv.includes('--strict');
 
@@ -203,8 +209,16 @@ const perkStatByKey = new Map(readJSON(path.join(MODEL, 'perk_stats.json')).reco
 // perk KEY -> icon sprite name, code-certain from scr_DatabasePerks (see _su_extract/code/extract_perk_icons.py)
 const perkIconByKey = new Map(readJSON(path.join(MODEL, 'perk_icons.json')).records.map(p => [p.key, p.icon]));
 
+// 16×16 spec emblem lookup (spec_<slug>) — aliases for internally-renamed/misspelled classes
+const EMBLEM_ALIAS = { sorcerer: 'sorceror', runeknight: 'deathknight' };
+function findEmblem(label) {
+  const slug = norm(label), a = EMBLEM_ALIAS[slug];
+  for (const cand of [a, slug].filter(Boolean)) if (metaByName.has(`spec_${cand}`)) return `spec_${cand}`;
+  return null;
+}
+
 const specs = [];
-let specSkins = 0, perkIconsCopied = 0, perkIconsMissing = 0;
+let specSkins = 0, perkIconsCopied = 0, perkIconsMissing = 0, emblemCount = 0;
 for (const s of specRecs) {
   const slug = norm(s.key || s.label);
   const found = findSpecSprite(s.label);
@@ -214,6 +228,10 @@ for (const s of specRecs) {
     if (found.kind === 'skin') specSkins++;
   }
   if (!sprite) err(`specialization "${s.label}" has no sprite`);
+  // 16×16 emblem for the selector grid (falls back to the main sprite if none, e.g. Defiler)
+  let emblem = sprite;
+  const emName = findEmblem(s.label);
+  if (emName && copyNamedSprite(emName, OUT_SPEC, `${slug}_emblem.png`)) { emblem = `assets/specs/${slug}_emblem.png`; emblemCount++; }
   const perks = (s.perks || []).map(p => {
     const st = perkStatByKey.get(p.key);
     let icon = null;
@@ -224,7 +242,7 @@ for (const s of specRecs) {
              cost: st ? st.cost : null, ranks: st ? st.ranks : 1, icon };
   });
   specs.push({
-    id: s.spec_id, key: s.key || slug.toUpperCase(), label: s.label, sprite, spriteKind,
+    id: s.spec_id, key: s.key || slug.toUpperCase(), label: s.label, sprite, spriteKind, emblem,
     playstyle: s.playstyle || '', description: s.description || '',
     perkCount: perks.length, perks,
   });
@@ -342,12 +360,19 @@ for (const w of wardrobeRecs) {
                   img: ok ? `assets/wardrobe/${w.sprite}.png` : null });
 }
 // group all tier costumes per specialization (Grovetender -> herbalist tiers, etc.)
+// For each tier also copy the two FRONT-facing frames (0,1) so the info panel can animate the costume.
 let specCostumes = 0;
 for (const s of specs) {
   const mine = wardrobe.filter(w => w.spec === s.label)
     .map(w => ({ ...w, effTier: w.tier || (w.variant ? null : 1) }))   // base (no tier, no variant) = tier 1
     .sort((a, b) => (a.effTier || 9) - (b.effTier || 9) || a.order - b.order);
-  s.costumes = mine.map(w => ({ tier: w.effTier, sprite: w.sprite, img: w.img, variant: w.variant }));
+  s.costumes = mine.map(w => {
+    const f0 = `${w.sprite}_0.png`, f1 = `${w.sprite}_1.png`;
+    const has0 = copySpriteFrame(w.sprite, 0, OUT_WARDROBE, f0);
+    const has1 = copySpriteFrame(w.sprite, 1, OUT_WARDROBE, f1);
+    const frames = [has0 ? `assets/wardrobe/${f0}` : w.img, has1 ? `assets/wardrobe/${f1}` : w.img].filter(Boolean);
+    return { tier: w.effTier, sprite: w.sprite, img: w.img, variant: w.variant, frames };
+  });
   s.costume = mine.length ? mine[0].img : null;       // primary (tier 1) costume
   s.costumeKey = mine.length ? mine[0].sprite : null;
   if (mine.length) specCostumes++; else warn(`specialization "${s.label}" has no wardrobe costume match`);
@@ -358,7 +383,7 @@ const checked = creatures.length + specs.length + artRef.length + traitItems.len
 console.log('\n── Data hygiene report ──────────────────────────');
 console.log(`✓ ${checked} records checked · ${creatures.length} playable creatures (100% classed) · ${codeStats} w/ code stats · ${spriteCopied} w/ sprites · ${specs.length} spec sprites`);
 console.log(`  cards w/ art ${cardArt}/${cards.length} · artifact-type icons ${artGroup.primary.filter(p => p.icon).length}/5 · gem icons ${gemIcons.length} · class bgs ${Object.keys(classBg).length}`);
-console.log(`  spec sprites: ${specSkins} real skins + ${specs.filter(s => s.spriteKind === 'icon').length} emblem icons · terms ${Object.keys(terms).length}`);
+console.log(`  spec sprites: ${specSkins} real skins + ${specs.filter(s => s.spriteKind === 'icon').length} emblem icons · ${emblemCount}/${specs.length} 16×16 emblems · terms ${Object.keys(terms).length}`);
   console.log(`  perk icons: ${perkIconsCopied} copied (code-certain from perk_icons.json)${perkIconsMissing ? ` · ${perkIconsMissing} missing` : ' · 100%'}`);
   console.log(`  wardrobe: ${wardrobeCopied} player costumes copied (code-certain)${wardrobeMissing ? ` · ${wardrobeMissing} missing` : ''} · ${specCostumes}/${specs.length} specs linked (all tiers)`);
   console.log(`  wardrobe names: ${nameSrc.class_vocab} class-vocab + ${nameSrc.L_WD} L_WD + ${nameSrc.derived} derived (of ${wardrobe.length})`);
