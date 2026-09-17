@@ -27,6 +27,7 @@ const OUT_GEM = path.join(OUT_ASSETS, 'gems');
 const OUT_CARDBG = path.join(OUT_ASSETS, 'cardbg');
 const OUT_PERK = path.join(OUT_ASSETS, 'perks');
 const OUT_WARDROBE = path.join(OUT_ASSETS, 'wardrobe');
+const OUT_MATICON = path.join(OUT_ASSETS, 'maticons');
 
 // copy a named sprite frame from the extract's assets/sprites (<base>_0.png) into outDir/destName
 function copyNamedSprite(base, outDir, destName) {
@@ -279,14 +280,22 @@ for (const p of artGroup.primary) {
   else warn(`artifact type icon missing for ${p.property}`);
 }
 
-// ── trait items (slottable into artifact trait slots) ──
+// ── trait items (slottable into artifact trait slots) — with material icons ──
 const matStats = readJSON(path.join(MODEL, 'material_stats.json'));
 const matRecs = Array.isArray(matStats) ? matStats : matStats.records;
+const matIconByKey = new Map(readJSON(path.join(MODEL, 'material_icons.json')).records.map(r => [r.key, r.icon]));
+fs.rmSync(OUT_MATICON, { recursive: true, force: true });
+let matIconCopied = 0, matIconMissing = 0;
 const traitItems = [];
 for (const m of matRecs) {
   if (m.trait_id == null) continue;
   if (!traits[m.trait_id]) warn(`trait item "${m.name}" grants trait_id ${m.trait_id} not in traits table`);
-  traitItems.push({ id: m.index, name: m.name, traitId: m.trait_id, traitName: m.trait_name || (traits[m.trait_id] && traits[m.trait_id].name) || null });
+  let icon = null;
+  const iconName = matIconByKey.get(m.key);
+  if (iconName && copyNamedSprite(iconName, OUT_MATICON, `${iconName}.png`)) { icon = `assets/maticons/${iconName}.png`; matIconCopied++; }
+  else matIconMissing++;
+  traitItems.push({ id: m.index, name: m.name, traitId: m.trait_id,
+    traitName: m.trait_name || (traits[m.trait_id] && traits[m.trait_id].name) || null, icon });
 }
 
 // ── relics ──
@@ -387,6 +396,7 @@ console.log(`  spec sprites: ${specSkins} real skins + ${specs.filter(s => s.spr
   console.log(`  perk icons: ${perkIconsCopied} copied (code-certain from perk_icons.json)${perkIconsMissing ? ` · ${perkIconsMissing} missing` : ' · 100%'}`);
   console.log(`  wardrobe: ${wardrobeCopied} player costumes copied (code-certain)${wardrobeMissing ? ` · ${wardrobeMissing} missing` : ''} · ${specCostumes}/${specs.length} specs linked (all tiers)`);
   console.log(`  wardrobe names: ${nameSrc.class_vocab} class-vocab + ${nameSrc.L_WD} L_WD + ${nameSrc.derived} derived (of ${wardrobe.length})`);
+  console.log(`  trait-item icons: ${matIconCopied} copied (code-certain from material_icons.json)${matIconMissing ? ` · ${matIconMissing} missing` : ''}`);
 if (errors.length) {
   console.log(`✗ ${errors.length} errors:`);
   for (const e of errors.slice(0, 40)) console.log('    ' + e);
