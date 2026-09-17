@@ -1,5 +1,9 @@
 # Siralim Ultimate Build Calculator — Progress
 
+## LIVE
+Deployed at **https://misterwtheface-oss.github.io/su-build-calc/** (repo `misterwtheface-oss/su-build-calc`,
+Pages on `master`/root, Cloudflare analytics active with the shared github.io token). Auto-deploys on push.
+
 ## Current state (2026-09-16)
 Scaffold complete and runnable. P0 was expanded (per user) to include the artifact + relic builders,
 Nether Stone library, and realm-card collection alongside the creature/spec/fusion core. The build-first
