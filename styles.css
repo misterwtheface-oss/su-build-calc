@@ -260,6 +260,9 @@ h1, h2, h3 { margin: 0; }
 .primary-traits.trait-ghost { border-color: transparent; background: transparent; }
 .primary-traits + .primary-traits.trait-ghost { padding-top: 0; }
 .trait-desc { font-size: 12px; color: var(--text-dim); line-height: 1.4; }
+/* translated parameter words (stats/conditions/actions) — bold + brightened so they pop in dimmed copy */
+.param { font-weight: 700; color: var(--text); }
+.perk-desc .param, .card-effect .param { color: var(--accent); }
 
 /* ── stat table (grid, fixed Base…Total semantics) ──────────────────────── */
 .stat-grid { display: flex; flex-direction: column; gap: 2px; font-variant-numeric: tabular-nums; }

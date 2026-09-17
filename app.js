@@ -73,6 +73,26 @@
   const critFace = (c) => c.sprite ? spriteImg(c.sprite)
     : `<div class="crit-face" style="--face-cls:${clsColor(c.cls)}">${esc((c.name || "?").trim()[0] || "?")}</div>`;
 
+  // translate {PARAM} tokens to plain words (bolded) + drop [icon] tokens; escape the rest.
+  const TERMS = D.terms || {};
+  function termWord(tok) {
+    if (TERMS[tok]) return TERMS[tok];
+    const m = tok.match(/^(?:CONDNAME_(?:BUFF|DEBUFF|MINION)_|CONDDESC_(?:BUFF|DEBUFF|MINION)_|CDESC_|CONDNAME_|STAT_|ACTION_|RACE_|SPELL_|CLASS_)(.+)$/);
+    const raw = m ? m[1] : tok;
+    return raw.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase()).trim() || tok;
+  }
+  function richText(str) {
+    if (!str) return "";
+    const s = String(str), re = /\{([A-Za-z0-9_]+)\}|\[[a-z0-9_]+\]/g;
+    let out = "", last = 0, m;
+    while ((m = re.exec(s))) {
+      out += esc(s.slice(last, m.index));
+      if (m[1] != null) out += `<b class="param">${esc(termWord(m[1]))}</b>`; // {TOKEN} → bold word; [icon] dropped
+      last = re.lastIndex;
+    }
+    return out + esc(s.slice(last));
+  }
+
   // creature synergy tags (from its innate trait's produces/consumes edge tokens)
   const creatureTags = (c) => {
     const t = c.traitId != null ? TRAIT[c.traitId] : null; if (!t) return [];
@@ -316,7 +336,7 @@
           <span class="stat-val total" style="grid-column:2/5">${c[k]}</span></div>`).join("")}
         <div class="stat-row hl-med"><span class="stat-name">Total</span><span class="stat-val total" style="grid-column:2/5">${c.total}</span></div></div>
       ${c.traitId != null ? `<div class="section-label">Innate trait</div>
-        <div class="primary-traits">${traitBanner(c.traitId)}<div class="trait-desc">${esc((TRAIT[c.traitId] || {}).desc || "")}</div></div>` : ""}`;
+        <div class="primary-traits">${traitBanner(c.traitId)}<div class="trait-desc">${richText((TRAIT[c.traitId] || {}).desc || "")}</div></div>` : ""}`;
   }
 
   // ── facet sub-picker (Class / Race / Tag) on the detail layer ───────────────
@@ -364,12 +384,12 @@
       const alloc = allocDefault(sel);
       const perkList = sel.perks.map(p => {
         const on = alloc.includes(p);
-        return `<div class="perk-line ${on ? "on" : "off"}"><span class="perk-dot"></span><b>${esc(p.name)}</b>${p.desc ? ` — <span class="perk-desc">${esc(p.desc)}</span>` : ""}</div>`;
+        return `<div class="perk-line ${on ? "on" : "off"}"><span class="perk-dot"></span><b>${esc(p.name)}</b>${p.desc ? ` — <span class="perk-desc">${richText(p.desc)}</span>` : ""}</div>`;
       }).join("");
       info = `<div class="spec-info">
         <div class="spec-info-sprite">${spriteImg(sel.sprite)}</div>
         <h2 class="spec-info-name">${esc(sel.label)}</h2>
-        <div class="trait-desc spec-play">${esc(sel.playstyle || sel.description || "")}</div>
+        <div class="trait-desc spec-play">${richText(sel.playstyle || sel.description || "")}</div>
         <div class="section-label" style="margin-top:12px">Perks — ${alloc.length}/${sel.perks.length} allocated</div>
         <div class="perk-list">${perkList}</div>
       </div>`;
@@ -407,7 +427,7 @@
       return `<div class="perk-row ${on ? "on" : "off"}" data-action="toggle-perk" data-k="${esc(p.key)}">
         <span class="perk-check">${on ? "✓" : ""}</span>
         <div class="perk-row-main"><b>${esc(p.name)}</b>${p.cost != null ? `<span class="perk-cost">${p.cost}</span>` : ""}
-          ${p.desc ? `<div class="perk-desc">${esc(p.desc)}</div>` : ""}</div></div>`;
+          ${p.desc ? `<div class="perk-desc">${richText(p.desc)}</div>` : ""}</div></div>`;
     }).join("");
     return `<div class="ovl-backdrop" data-action="facet-backdrop"><div class="overlay-panel detail">
       <div class="overlay-header"><h2>${esc(spec.label)} — Perks</h2>
@@ -549,7 +569,7 @@
       <div class="slot-sub" style="margin-bottom:10px">Boosts ${esc(sel.statBonus || "—")}</div>
       ${sel.ranks.map(rk => `<div class="prop-row ${st.rank >= rk.rank ? "chosen" : ""}">
         <span class="prop-name" style="flex:0 0 44px;color:var(--accent)">R${rk.rank}</span>
-        <span class="prop-stat" style="flex:1;text-align:left">${esc(rk.desc)}</span></div>`).join("")}`
+        <span class="prop-stat" style="flex:1;text-align:left">${richText(rk.desc)}</span></div>`).join("")}`
       : `<div class="slot-sub">Select a relic to see its rank effects.</div>`;
     return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel detail">
       <div class="overlay-header"><h2>Relic — ${esc(c ? c.name : "")}</h2>
@@ -579,7 +599,7 @@
     }).join("");
     const traitIds = slotTraitIds(slot);
     const traitHtml = traitIds.map(tid => `<div class="primary-traits" style="margin-bottom:6px">${traitBanner(tid)}
-      <div class="trait-desc">${esc((TRAIT[tid] || {}).desc || "")}</div></div>`).join("");
+      <div class="trait-desc">${richText((TRAIT[tid] || {}).desc || "")}</div></div>`).join("");
     const relic = slot.relic ? RELIC.get(slot.relic.id) : null;
     const a = resolveArtifact(slot);
     dovState = null;
@@ -600,7 +620,7 @@
           ${traitHtml || `<div class="slot-sub">No traits.</div>`}
           ${relic ? `<div class="section-label" style="margin-top:14px">Relic</div>
             <div class="primary-traits"><b>${esc(relic.name)}</b> — Rank ${slot.relic.rank}
-            <div class="trait-desc">${esc(relic.ranks.filter(r => r.rank <= slot.relic.rank).map(r => "R" + r.rank + ": " + r.desc).join(" ") || "")}</div></div>` : ""}
+            <div class="trait-desc">${richText(relic.ranks.filter(r => r.rank <= slot.relic.rank).map(r => "R" + r.rank + ": " + r.desc).join(" ") || "")}</div></div>` : ""}
         </div></div>
       </div>
       <div class="overlay-footer"><span class="foot-info">Fusion averages both parents' base stats; class follows the secondary parent</span>
@@ -618,7 +638,7 @@
     const tiles = list.map(c => {
       const lv = cardLevel(c.id);
       const bg = c.cls && CLASS_BG[c.cls] ? CLASS_BG[c.cls] : null;
-      const effects = c.effects.map((e, i) => `<div class="card-effect ${i < lv ? "on" : "off"}"><span class="ce-tier">${i + 1}</span>${esc(e)}</div>`).join("");
+      const effects = c.effects.map((e, i) => `<div class="card-effect ${i < lv ? "on" : "off"}"><span class="ce-tier">${i + 1}</span>${richText(e)}</div>`).join("");
       return `<div class="card-tile lv${lv}" style="--cardcls:${clsColor(c.cls)}">
         <div class="card-head">
           <div class="card-art">${bg ? `<img class="card-bg" src="${esc(bg)}" alt="">` : ""}${c.sprite ? spriteImg(c.sprite, "card-crit") : ""}</div>

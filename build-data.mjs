@@ -173,16 +173,23 @@ creaturesRef.forEach((r, i) => {
   });
 });
 
-// ── specializations (player slot) — join spec_<key> sprite ──
+// ── specializations (player slot) — prefer the 32×32 character SKIN, else the 16×16 emblem icon ──
+// The `spec_<key>` sprites are tiny 16×16 emblems. The real skins are the 32×32 player-costume sprites
+// (`spec_<class>_<spec>_<theme>` / `spec_<spec>_<theme>`) + the animated `TS_SU_Costume_<Spec>` set.
 const specRecs = readJSON(path.join(MODEL, 'specializations.json')).records.filter(s => s.label);
-// alias map for the few labels whose sprite base differs from the key
-const SPEC_ALIAS = {
-  SORCERER: 'spec_sorceror',
-  RUNEKNIGHT: 'spec_deathknight',            // Rune Knight == renamed Death Knight
-  DEFILER: 'spec_death_defiler_plaguemaggots', // only a costume variant ships a sprite
-};
-const specSpriteFiles = fs.readdirSync(SRC_SPEC_PNG).filter(f => f.startsWith('spec_') && f.endsWith('.png'));
-const specBaseSet = new Set(specSpriteFiles.map(f => f.replace(/_\d+\.png$/, '')));
+const spriteMeta = readJSON(path.join(SRC, 'assets', 'sprite_metadata.json'));
+const metaByName = new Map(spriteMeta.map(r => [r.name, r]));
+const skin32 = spriteMeta.filter(r => r.name.startsWith('spec_') && r.w === 32).map(r => r.name);
+const tsCostumes = spriteMeta.filter(r => r.name.startsWith('TS_SU_Costume_')).map(r => r.name);
+const SPEC_KEY_ALIAS = { runeknight: 'deathknight', grovetender: 'grovekeeper' };
+function findSpecSprite(label) {
+  const keys = [norm(label), SPEC_KEY_ALIAS[norm(label)]].filter(Boolean);
+  for (const n of skin32) { const c = norm(n.slice(5)); if (keys.some(k => c.includes(k))) return { base: n, kind: 'skin' }; }
+  for (const n of tsCostumes) { if (keys.some(k => norm(n).includes(k))) return { base: n, kind: 'skin' }; }
+  if (metaByName.has('spec_' + norm(label))) return { base: 'spec_' + norm(label), kind: 'icon' };
+  if (norm(label) === 'sorcerer' && metaByName.has('spec_sorceror')) return { base: 'spec_sorceror', kind: 'icon' };
+  return null;
+}
 fs.rmSync(OUT_SPEC, { recursive: true, force: true });
 fs.mkdirSync(OUT_SPEC, { recursive: true });
 
@@ -193,27 +200,23 @@ const perkDescByKey = new Map(catalogPerkArr.map(p => [p.key, p.desc || '']));
 const perkStatByKey = new Map(readJSON(path.join(MODEL, 'perk_stats.json')).records.map(p => [p.key, p]));
 
 const specs = [];
+let specSkins = 0;
 for (const s of specRecs) {
   const slug = norm(s.key || s.label);
-  const base = SPEC_ALIAS[s.key] || (specBaseSet.has('spec_' + norm(s.label)) ? 'spec_' + norm(s.label) : null);
-  let sprite = null;
-  if (base) {
-    // pick the lowest frame index that exists
-    const file = specSpriteFiles.find(f => f === base + '_0.png') || specSpriteFiles.find(f => f.startsWith(base + '_'));
-    if (file && fs.existsSync(path.join(SRC_SPEC_PNG, file))) {
-      const dest = `${slug}.png`;
-      fs.copyFileSync(path.join(SRC_SPEC_PNG, file), path.join(OUT_SPEC, dest));
-      sprite = `assets/specs/${dest}`;
-    }
+  const found = findSpecSprite(s.label);
+  let sprite = null, spriteKind = null;
+  if (found && copyNamedSprite(found.base, OUT_SPEC, `${slug}.png`)) {
+    sprite = `assets/specs/${slug}.png`; spriteKind = found.kind;
+    if (found.kind === 'skin') specSkins++;
   }
-  if (!sprite) err(`specialization "${s.label}" (${s.key}) has no sprite — add to SPEC_ALIAS`);
+  if (!sprite) err(`specialization "${s.label}" has no sprite`);
   const perks = (s.perks || []).map(p => {
     const st = perkStatByKey.get(p.key);
     return { key: p.key, name: p.name, desc: perkDescByKey.get(p.key) || '',
              cost: st ? st.cost : null, ranks: st ? st.ranks : 1 };
   });
   specs.push({
-    id: s.spec_id, key: s.key || slug.toUpperCase(), label: s.label, sprite,
+    id: s.spec_id, key: s.key || slug.toUpperCase(), label: s.label, sprite, spriteKind,
     playstyle: s.playstyle || '', description: s.description || '',
     perkCount: perks.length, perks,
   });
@@ -305,6 +308,11 @@ for (const g of GEM_KEYS) {
   if (copyNamedSprite(`jewel_${g}`, OUT_GEM, dest)) gemIcons.push({ key: g, path: `assets/gems/${dest}` });
 }
 
+// ── plain-language term map (labels.json) — turns {TOKEN} params into UI words ──
+const labelsMap = readJSON(path.join(SRC, 'labels.json')).labels;
+const terms = {};
+for (const [k, v] of Object.entries(labelsMap)) terms[k] = (v && v.name) || k;
+
 // ── damage / stat model (for fusion + future DPS sim) ──
 const damageModel = readJSON(path.join(MODEL, 'damage_model.json'));
 
@@ -313,6 +321,7 @@ const checked = creatures.length + specs.length + artRef.length + traitItems.len
 console.log('\n── Data hygiene report ──────────────────────────');
 console.log(`✓ ${checked} records checked · ${creatures.length} playable creatures (100% classed) · ${codeStats} w/ code stats · ${spriteCopied} w/ sprites · ${specs.length} spec sprites`);
 console.log(`  cards w/ art ${cardArt}/${cards.length} · artifact-type icons ${artGroup.primary.filter(p => p.icon).length}/5 · gem icons ${gemIcons.length} · class bgs ${Object.keys(classBg).length}`);
+console.log(`  spec sprites: ${specSkins} real skins + ${specs.filter(s => s.spriteKind === 'icon').length} emblem icons · terms ${Object.keys(terms).length}`);
 if (errors.length) {
   console.log(`✗ ${errors.length} errors:`);
   for (const e of errors.slice(0, 40)) console.log('    ' + e);
@@ -352,6 +361,7 @@ const SU_DATA = {
   relics,
   cards,
   gemIcons,
+  terms,
   damageModel,
 };
 
