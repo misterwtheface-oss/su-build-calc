@@ -4,6 +4,15 @@
 Deployed at **https://misterwtheface-oss.github.io/su-build-calc/** (repo `misterwtheface-oss/su-build-calc`,
 Pages on `master`/root, Cloudflare analytics active with the shared github.io token). Auto-deploys on push.
 
+## v2.1 validation (2026-09-16) — closed the loop
+Re-verified both v2.1 fixes after an interrupted session (commit `7bd676c`, already pushed/live):
+- **Spec skins**: `data.js` = 30 `skin` + 9 `icon`, 0 specs missing a sprite. PNG dims confirm the copy
+  (animator/sorcerer/bloodmage = 32×32 real skins; the 9 fallbacks = 16×16 emblems). Icon-fallback set:
+  Toxicologist, Shadowbringer, Mime, Graveborn, Demonologist, Engineer, Gladiator, Brewmaster, Mesmerist.
+- **Plain-language tokens**: scanned all **3556** game-text fields (traits/specs/perks/cards/relics) through
+  `richText()` → **0 raw `{TOKEN}` leaks**. 155 distinct token types: 67 resolved via the shipped 82-term
+  `terms` map, 88 via the prefix-strip/title-case fallback. `app.js` + `data.js` syntax/load clean.
+
 ## v2.1 fixes (2026-09-16)
 - **Parameter text → plain language + bold.** Perk/relic/card/trait text still carried raw `{ACTION_*}`,
   `{STAT_*}`, `{CONDNAME_*}`, `{RACE_*}` tokens (and `[icon]` refs). Ship `SU_DATA.terms` from the extract's
