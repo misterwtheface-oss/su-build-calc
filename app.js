@@ -712,7 +712,7 @@
         picker = `<div class="art-picker">
           <div class="ovl-filterbar"><button class="chip" data-action="artb-closecat">‹ Done</button>
             <input class="ovl-search" placeholder="Search…" value="${esc(st.search)}" data-action="artb-search"></div>
-          <div class="ovl-center-scroll">${rows}</div></div>`;
+          <div class="art-pick-scroll">${rows}</div></div>`;
       }
       body = `<div class="ovl-center"><div class="ovl-center-scroll">${groupsHtml}${picker}</div></div>`;
       footer = `<button class="btn-ghost" data-action="artb-back">‹ Back</button>
@@ -923,7 +923,7 @@
         picker = `<div class="art-picker">
           <div class="ovl-filterbar"><button class="chip" data-action="nether-closepick">‹ Done</button>
             <input class="ovl-search" placeholder="Search properties…" value="${esc(st.search)}" data-action="nether-search"></div>
-          <div class="ovl-center-scroll">${pr}</div></div>`;
+          <div class="art-pick-scroll">${pr}</div></div>`;
       }
       body = `<div class="ovl-center"><div class="ovl-center-scroll">${slotsBox}${picker}</div></div>`;
       footer = `<button class="btn-ghost" data-action="netherb-back">‹ Back</button>
@@ -1005,7 +1005,7 @@
         picker = `<div class="art-picker">
           <div class="ovl-filterbar"><button class="chip" data-action="sg-closepick">‹ Done</button>
             <input class="ovl-search" placeholder="Search Slates / Curios…" value="${esc(st.search)}" data-action="sg-search"></div>
-          <div class="ovl-center-scroll">${pr}</div></div>`;
+          <div class="art-pick-scroll">${pr}</div></div>`;
       }
       body = `<div class="ovl-center"><div class="ovl-center-scroll">
         <div class="build-section"><h3>Name</h3>
