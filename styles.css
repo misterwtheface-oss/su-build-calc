@@ -376,7 +376,7 @@ h1, h2, h3 { margin: 0; }
 .perk-ico img { width: 28px; height: 28px; object-fit: contain; }
 .perk-ico.sm { width: 20px; height: 20px; border-radius: 4px; align-self: center; }
 .perk-ico.sm img { width: 18px; height: 18px; }
-.perk-rankbadge { flex: 0 0 auto; align-self: center; min-width: 30px; text-align: center; font-size: 10px; font-weight: 800; color: var(--accent2); background: rgba(201,162,75,.14); border: 1px solid var(--border-dim); border-radius: 5px; padding: 1px 4px; }
+.perk-rankbadge { flex: 0 0 auto; box-sizing: border-box; align-self: center; width: 42px; text-align: center; font-size: 10px; font-weight: 800; color: var(--accent2); background: rgba(201,162,75,.14); border: 1px solid var(--border-dim); border-radius: 5px; padding: 1px 2px; font-variant-numeric: tabular-nums; }
 .perk-line.off .perk-rankbadge { color: var(--text-mute); background: none; }
 .perk-desc { color: var(--text-dim); }
 
