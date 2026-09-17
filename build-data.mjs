@@ -269,8 +269,8 @@ artRef.forEach((a, i) => {
     perRank,
   });
 });
-// artifact-type icons for the 5 primary properties (Helmet/Sword/Staff/Shield/Boots)
-const ART_ICON_SRC = { Helmet: 'helmet_1', Sword: 'sword_1', Staff: 'staff_1', Shield: 'shield_1', Boots: 'boots_1' };
+// artifact-type icons for the 5 primary properties — use the HIGHEST tier art available per type
+const ART_ICON_SRC = { Helmet: 'helmet_6', Sword: 'sword_6', Staff: 'staff_5', Shield: 'shield_6', Boots: 'boots_5' };
 fs.rmSync(OUT_ARTTYPE, { recursive: true, force: true });
 for (const p of artGroup.primary) {
   const base = ART_ICON_SRC[p.property];

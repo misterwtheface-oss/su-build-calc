@@ -506,23 +506,25 @@
     return `R${a.rank} · ` + (parts.join(" · ") || "empty");
   }
   function renderArtifactLibrary() {
-    const st = ovState, slot = build.slots[st.slotIdx], c = CREA.get(slot.cid);
+    const st = ovState, manage = st.slotIdx == null;
+    const slot = manage ? null : build.slots[st.slotIdx], c = slot ? CREA.get(slot.cid) : null;
+    const equippedId = slot ? slot.artifactId : null;
     const tiles = artifacts.map(a => `
-      <div class="lib-tile ${slot.artifactId === a.id ? "equipped" : ""}">
-        <div class="lib-icon" data-action="art-equip" data-id="${a.id}">${spriteImg(artIcon(a))}</div>
+      <div class="lib-tile ${equippedId === a.id ? "equipped" : ""}">
+        <div class="lib-icon" data-action="${manage ? "art-edit" : "art-equip"}" data-id="${a.id}">${spriteImg(artIcon(a), "px")}</div>
         <div class="lib-name">${esc(a.name)}</div>
         <div class="lib-sub">${esc(artifactSummary(a))}</div>
         <div class="lib-actions">
-          <button class="slot-mini" data-action="art-equip" data-id="${a.id}">${slot.artifactId === a.id ? "Equipped" : "Equip"}</button>
+          ${manage ? "" : `<button class="slot-mini" data-action="art-equip" data-id="${a.id}">${equippedId === a.id ? "Equipped" : "Equip"}</button>`}
           <button class="slot-mini" data-action="art-edit" data-id="${a.id}">Edit</button>
           <button class="slot-mini danger" data-action="art-del" data-id="${a.id}">✕</button>
         </div></div>`).join("") || `<div class="slot-sub" style="padding:10px">No artifacts yet — build one.</div>`;
     return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel">
-      <div class="overlay-header"><h2>Artifacts — ${esc(c ? c.name : "")}</h2><button class="ovl-close" data-action="close-ovl">✕</button></div>
+      <div class="overlay-header"><h2>Artifacts${manage ? "" : " — " + esc(c ? c.name : "")}</h2><button class="ovl-close" data-action="close-ovl">✕</button></div>
       <div class="overlay-body"><div class="ovl-center"><div class="ovl-center-scroll">
         <div class="lib-grid">${tiles}</div></div></div></div>
       <div class="overlay-footer"><span class="foot-info">Artifacts are saved & reusable across creatures</span>
-        <div>${slot.artifactId != null ? `<button class="btn-ghost" data-action="art-unequip">Unequip</button>` : ""}
+        <div>${equippedId != null ? `<button class="btn-ghost" data-action="art-unequip">Unequip</button>` : ""}
         <button class="btn-confirm" data-action="art-new">＋ Build new artifact</button></div></div>
     </div></div>`;
   }
@@ -795,6 +797,7 @@
       case "remove-creature": armOrDo(t, () => { build.slots[+t.dataset.slot] = emptySlot(); persistBuild(); render(); }); break;
       case "clear-spec": e.stopPropagation(); build.specId = null; persistBuild(); render(); break;
       case "clear-party": armOrDo(t, () => { build = { schema: 2, specId: null, perkAlloc: {}, slots: Array.from({ length: 6 }, emptySlot) }; persistBuild(); render(); }); break;
+      case "open-artifacts": openArtifactLibrary(null); break;
       case "open-cards": openCards(); break;
       case "open-nether": openNether(); break;
 
