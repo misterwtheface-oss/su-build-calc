@@ -406,7 +406,8 @@
       const perkList = sel.perks.map(p => {
         const r = perkRank(sel, p), mx = perkMax(p), on = r > 0;
         const badge = mx > 1 ? `<span class="perk-rankbadge">${r}/${mx}</span>` : (on ? `<span class="perk-rankbadge">✓</span>` : "");
-        return `<div class="perk-line ${on ? "on" : "off"}"><span class="perk-dot"></span>${badge}<b>${esc(p.name)}</b>${p.desc ? ` — <span class="perk-desc">${richText(p.desc, r)}</span>` : ""}</div>`;
+        const ico = p.icon ? `<span class="perk-ico sm">${spriteImg(p.icon, "px")}</span>` : `<span class="perk-dot"></span>`;
+        return `<div class="perk-line ${on ? "on" : "off"}">${ico}${badge}<b>${esc(p.name)}</b>${p.desc ? ` — <span class="perk-desc">${richText(p.desc, r)}</span>` : ""}</div>`;
       }).join("");
       info = `<div class="spec-info">
         <div class="spec-info-sprite">${spriteImg(sel.sprite)}</div>
@@ -453,8 +454,9 @@
         ${mx > 1 ? `<button class="perk-step wide" data-action="perk-max" data-k="${k}" ${r >= mx ? "disabled" : ""}>Max</button>` : ""}
         <button class="perk-step wide" data-action="perk-zero" data-k="${k}" ${r <= 0 ? "disabled" : ""}>0</button></div>`;
       const costLine = p.cost != null ? `<span class="perk-cost">${p.cost} pt${p.cost === 1 ? "" : "s"}/rank${on ? ` · ${p.cost * r} spent` : ""}</span>` : "";
+      const ico = p.icon ? `<div class="perk-ico">${spriteImg(p.icon, "px")}</div>` : "";
       return `<div class="perk-row ${on ? "on" : "off"}">
-        <div class="perk-row-main"><b>${esc(p.name)}</b>${costLine}
+        ${ico}<div class="perk-row-main"><b>${esc(p.name)}</b>${costLine}
           ${p.desc ? `<div class="perk-desc">${richText(p.desc, r)}</div>` : ""}
           ${stepper}</div></div>`;
     }).join("");

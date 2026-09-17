@@ -4,6 +4,19 @@
 Deployed at **https://misterwtheface-oss.github.io/su-build-calc/** (repo `misterwtheface-oss/su-build-calc`,
 Pages on `master`/root, Cloudflare analytics active with the shared github.io token). Auto-deploys on push.
 
+## v2.3 perk icons (2026-09-17)
+- **Every perk now shows its real in-game icon (600/600, code-certain).** Name-based sprite joins topped
+  out at ~88% (three naming schemes: base-15 `<class>_<spec>_<perk>`, modern `<spec>_<perk>`, and
+  `perks_`/`perk_`) and could never resolve codename specs (e.g. Monk's Japanese `nature_monk_kaze`).
+  Solved at the source: each perk's icon is stored in `scr_DatabasePerks` as a **tagged immediate**
+  (`spriteAssetIndex + 0x1000000`); the non-zero tagged value per block is the icon (the other, 0, is a
+  constant `__ppf_spr_ui_checkbox`). New durable extract: `_su_extract/data/model/perk_icons.json`
+  (661 perks, 0 ambiguous) via `_su_extract/code/extract_perk_icons.py` (capstone; run with
+  `PYTHONSAFEPATH=1` — a local `signal.py` shadows stdlib). Validated: the extracted index matched the
+  name-join sprite for all 487 name-matchable perks.
+- Pipeline copies 600 perk PNGs to `assets/perks/<KEY>.png` (`build-data.mjs`, `perkIconByKey`); `data.js`
+  carries `perk.icon`. UI shows the icon in the perk picker rows (32px) and the spec info perk list (20px).
+
 ## v2.2 perk ranks (2026-09-17)
 - **Perks now have levels.** Data already carried `ranks` (max levels) per perk; the UI ignored it. The perk
   picker's binary on/off toggle is replaced by a **rank stepper** (`− rank/max +` plus **Max** / **0**),

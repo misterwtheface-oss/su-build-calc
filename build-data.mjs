@@ -25,6 +25,7 @@ const OUT_SPEC = path.join(OUT_ASSETS, 'specs');
 const OUT_ARTTYPE = path.join(OUT_ASSETS, 'arttypes');
 const OUT_GEM = path.join(OUT_ASSETS, 'gems');
 const OUT_CARDBG = path.join(OUT_ASSETS, 'cardbg');
+const OUT_PERK = path.join(OUT_ASSETS, 'perks');
 
 // copy a named sprite frame from the extract's assets/sprites (<base>_0.png) into outDir/destName
 function copyNamedSprite(base, outDir, destName) {
@@ -198,9 +199,11 @@ const catalogPerks = readJSON(path.join(SRC, 'data', 'catalog', 'perks.json'));
 const catalogPerkArr = Array.isArray(catalogPerks) ? catalogPerks : (catalogPerks.records || Object.values(catalogPerks));
 const perkDescByKey = new Map(catalogPerkArr.map(p => [p.key, p.desc || '']));
 const perkStatByKey = new Map(readJSON(path.join(MODEL, 'perk_stats.json')).records.map(p => [p.key, p]));
+// perk KEY -> icon sprite name, code-certain from scr_DatabasePerks (see _su_extract/code/extract_perk_icons.py)
+const perkIconByKey = new Map(readJSON(path.join(MODEL, 'perk_icons.json')).records.map(p => [p.key, p.icon]));
 
 const specs = [];
-let specSkins = 0;
+let specSkins = 0, perkIconsCopied = 0, perkIconsMissing = 0;
 for (const s of specRecs) {
   const slug = norm(s.key || s.label);
   const found = findSpecSprite(s.label);
@@ -212,8 +215,12 @@ for (const s of specRecs) {
   if (!sprite) err(`specialization "${s.label}" has no sprite`);
   const perks = (s.perks || []).map(p => {
     const st = perkStatByKey.get(p.key);
+    let icon = null;
+    const iconName = perkIconByKey.get(p.key);
+    if (iconName && copyNamedSprite(iconName, OUT_PERK, `${p.key}.png`)) { icon = `assets/perks/${p.key}.png`; perkIconsCopied++; }
+    else { perkIconsMissing++; }
     return { key: p.key, name: p.name, desc: perkDescByKey.get(p.key) || '',
-             cost: st ? st.cost : null, ranks: st ? st.ranks : 1 };
+             cost: st ? st.cost : null, ranks: st ? st.ranks : 1, icon };
   });
   specs.push({
     id: s.spec_id, key: s.key || slug.toUpperCase(), label: s.label, sprite, spriteKind,
@@ -322,6 +329,7 @@ console.log('\n── Data hygiene report ────────────�
 console.log(`✓ ${checked} records checked · ${creatures.length} playable creatures (100% classed) · ${codeStats} w/ code stats · ${spriteCopied} w/ sprites · ${specs.length} spec sprites`);
 console.log(`  cards w/ art ${cardArt}/${cards.length} · artifact-type icons ${artGroup.primary.filter(p => p.icon).length}/5 · gem icons ${gemIcons.length} · class bgs ${Object.keys(classBg).length}`);
 console.log(`  spec sprites: ${specSkins} real skins + ${specs.filter(s => s.spriteKind === 'icon').length} emblem icons · terms ${Object.keys(terms).length}`);
+  console.log(`  perk icons: ${perkIconsCopied} copied (code-certain from perk_icons.json)${perkIconsMissing ? ` · ${perkIconsMissing} missing` : ' · 100%'}`);
 if (errors.length) {
   console.log(`✗ ${errors.length} errors:`);
   for (const e of errors.slice(0, 40)) console.log('    ' + e);
