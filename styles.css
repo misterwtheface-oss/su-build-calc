@@ -345,7 +345,9 @@ h1, h2, h3 { margin: 0; }
 /* ══ v2 components (spec/perks/facets/cards/nether/artifact-library) ══════════ */
 
 /* home spec tile — small */
-.home-top { margin-bottom: 14px; }
+.home-top { margin-bottom: 14px; display: flex; flex-wrap: wrap; gap: 10px; }
+.anoint-tile { padding-right: 14px; }
+.anoint-tile .spec-tile-plus { font-size: 20px; }
 .spec-tile {
   position: relative; display: inline-flex; align-items: center; gap: 10px;
   padding: 7px 30px 7px 7px; max-width: 280px;

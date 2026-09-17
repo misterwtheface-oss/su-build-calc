@@ -201,9 +201,16 @@
         ${spec ? `<button class="slot-remove" data-action="clear-spec" title="Remove">✕</button>` : ""}
       </div>`;
 
+    const anointTile = `
+      <div class="spec-tile anoint-tile" data-action="open-anoint" title="Anointments">
+        <div class="spec-tile-icon"><span class="spec-tile-plus">✦</span></div>
+        <div class="spec-tile-label">Anointments</div>
+        <div class="spec-tile-sub">Nether Orb</div>
+      </div>`;
+
     const slots = build.slots.map((s, i) => renderSlot(s, i)).join("");
     return `
-      <div class="home-top">${specTile}</div>
+      <div class="home-top">${specTile}${anointTile}</div>
       <div class="section-label">Party — 6 Creatures</div>
       <div class="party-grid">${slots}</div>
       ${renderPartySummary()}
@@ -489,6 +496,23 @@
       </div></div>
       <div class="overlay-footer"><span class="foot-info">${allocCount}/${spec.perks.length} allocated · ${pts} pts</span>
         <button class="btn-confirm" data-action="close-detail">Done</button></div>
+    </div></div>`;
+  }
+
+  // ── anointments (placeholder — per-spec anointment lists need a decompile pass) ──
+  function openAnoint() {
+    ovState = { kind: "anoint", render: renderAnoint };
+    openOverlay(ovState.render());
+  }
+  function renderAnoint() {
+    return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel">
+      <div class="overlay-header"><h2>Anointments</h2><button class="ovl-close" data-action="close-ovl">✕</button></div>
+      <div class="overlay-body"><div class="ovl-center"><div class="ovl-center-scroll" style="padding:16px">
+        <p class="slot-sub" style="line-height:1.6">Anointments are perks you apply to your <b class="param">Nether Orb</b>, chosen per specialization.</p>
+        <p class="slot-sub" style="line-height:1.6;margin-top:10px">The per-spec anointment lists live in the game's <code>scr_AnointmentsListBySpec</code>, which needs a decompile pass to extract cleanly (the perk-icon heuristic mixes them with normal spec perks). This screen is a placeholder until that data lands.</p>
+      </div></div></div>
+      <div class="overlay-footer"><span class="foot-info">Coming soon</span>
+        <button class="btn-confirm" data-action="close-ovl">Close</button></div>
     </div></div>`;
   }
 
@@ -837,6 +861,7 @@
       case "clear-spec": e.stopPropagation(); build.specId = null; persistBuild(); render(); break;
       case "clear-party": armOrDo(t, () => { build = { schema: 2, specId: null, perkAlloc: {}, slots: Array.from({ length: 6 }, emptySlot) }; persistBuild(); render(); }); break;
       case "open-artifacts": openArtifactLibrary(null); break;
+      case "open-anoint": openAnoint(); break;
       case "open-cards": openCards(); break;
       case "open-nether": openNether(); break;
 

@@ -4,6 +4,22 @@
 Deployed at **https://misterwtheface-oss.github.io/su-build-calc/** (repo `misterwtheface-oss/su-build-calc`,
 Pages on `master`/root, Cloudflare analytics active with the shared github.io token). Auto-deploys on push.
 
+## v2.6 header/artifact/anointment batch (2026-09-17)
+1. **Header** stacks: title over the action buttons (topbar `flex-direction:column`).
+2. **Artifacts button** in the header → global artifact library in *manage* mode (`openArtifactLibrary(null)`;
+   no equip, just edit/delete/build).
+3. **Spec grid centered**: `.spec-grid` is now centered flex-wrap so the last partial row centers.
+4. **Anointments button** added next to the Specialization tile on home → placeholder overlay. NOTE: real
+   per-spec anointment lists need `scr_AnointmentsListBySpec` **decompiled** (like `scr_PerkGetPerkList.c` for
+   specs); the perk-icon heuristic mixes anointments with normal spec perks (48/64 overlap), so data deferred.
+5. **Highest-tier artifact icons**: `ART_ICON_SRC` → helmet_6/sword_6/staff_5/shield_6/boots_5.
+6. **Artifact modal → 3-step wizard**: (1) pick artifact type (hi-tier icon tiles + rank), (2) fill slots one
+   at a time (add-menu → inline picker for property/trait/nether, each slot shown as an icon tile w/ remove),
+   (3) name + live-bonus preview + save. Reuses the existing toggle handlers; editing jumps to step 2.
+7. **Trait-item icons**: new `_su_extract/code/extract_material_icons.py` merges `scr_DatabaseMaterials`/`2`/`3`
+   (tagged sprite immediates, same trick as perk icons) → `data/model/material_icons.json` (1841 mapped, 99%
+   of trait-materials). Pipeline copies to `assets/maticons/<sprite>.png`, sets `traitItem.icon` (1817/1830).
+
 ## v2.5 spec selector: emblems + animated costume (2026-09-17)
 - **Selector grid now uses the 16×16 `spec_<key>` emblem for every spec** (`spec.emblem`; aliases
   Rune Knight→`spec_deathknight`, Sorcerer→`spec_sorceror`; Defiler has no 16×16 emblem → falls back to its
