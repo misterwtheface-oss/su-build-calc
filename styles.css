@@ -357,6 +357,7 @@ h1, h2, h3 { margin: 0; }
 .spec-tile-icon img { width: 100%; height: 100%; object-fit: contain; }
 .spec-tile-plus { font-size: 24px; color: var(--accent2); }
 .spec-tile-label { font-weight: 600; font-size: 14px; }
+.spec-tile-sub { font-size: 11px; color: var(--text-dim); margin-top: 2px; }
 .spec-tile .slot-remove { display: block; top: 50%; transform: translateY(-50%); }
 
 /* spec selector — bigger info panel, sprite above name */
@@ -371,17 +372,24 @@ h1, h2, h3 { margin: 0; }
 .perk-line { font-size: 12px; line-height: 1.35; padding: 3px 6px; border-radius: 5px; background: var(--surface); display: flex; gap: 6px; align-items: baseline; }
 .perk-line .perk-dot { width: 7px; height: 7px; border-radius: 50%; flex: 0 0 auto; background: var(--good); align-self: center; }
 .perk-line.off { opacity: .45; } .perk-line.off .perk-dot { background: var(--text-mute); }
+.perk-rankbadge { flex: 0 0 auto; align-self: center; min-width: 30px; text-align: center; font-size: 10px; font-weight: 800; color: var(--accent2); background: rgba(201,162,75,.14); border: 1px solid var(--border-dim); border-radius: 5px; padding: 1px 4px; }
+.perk-line.off .perk-rankbadge { color: var(--text-mute); background: none; }
 .perk-desc { color: var(--text-dim); }
 
 /* perk picker overlay */
 .perk-picker { display: flex; flex-direction: column; gap: 5px; }
-.perk-row { display: flex; gap: 9px; align-items: flex-start; padding: 8px 10px; background: var(--surface); border: 1px solid var(--border-dim); border-radius: 8px; cursor: pointer; }
+.perk-row { display: flex; gap: 9px; align-items: flex-start; padding: 8px 10px; background: var(--surface); border: 1px solid var(--border-dim); border-radius: 8px; }
 .perk-row.on { border-color: var(--good); }
-.perk-row.off { opacity: .5; }
-.perk-check { width: 20px; height: 20px; flex: 0 0 auto; border-radius: 5px; border: 1px solid var(--border-dim); display: flex; align-items: center; justify-content: center; color: var(--good); font-weight: 800; }
-.perk-row.on .perk-check { border-color: var(--good); background: rgba(91,214,116,.15); }
+.perk-row.off .perk-row-main > b, .perk-row.off .perk-desc { opacity: .55; }
 .perk-row-main { flex: 1; min-width: 0; }
-.perk-cost { float: right; color: var(--accent); font-weight: 700; }
+.perk-cost { float: right; color: var(--accent); font-weight: 700; font-size: 11px; }
+.perk-stepper { display: flex; align-items: center; gap: 5px; margin-top: 7px; }
+.perk-step { min-width: 26px; height: 26px; padding: 0 7px; border-radius: 6px; border: 1px solid var(--border-dim); background: var(--panel); color: var(--text); font-weight: 800; cursor: pointer; line-height: 1; }
+.perk-step.wide { font-size: 11px; font-weight: 700; }
+.perk-step:hover:not(:disabled) { border-color: var(--accent2); color: var(--accent2); }
+.perk-step:disabled { opacity: .32; cursor: default; }
+.perk-rank-val { min-width: 46px; text-align: center; font-weight: 800; color: var(--accent2); font-variant-numeric: tabular-nums; }
+.perk-rank-max { color: var(--text-mute); font-weight: 600; }
 
 /* creature faceted filters */
 .facet { font-size: 13px; padding: 6px 11px; border-radius: 8px; background: var(--surface2); border: 1px solid var(--border-dim); color: var(--text-dim); display: inline-flex; align-items: center; gap: 6px; }

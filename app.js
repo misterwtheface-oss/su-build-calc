@@ -38,7 +38,16 @@
 
   const emptySlot = () => ({ cid: null, fusion: null, artifactId: null, relic: null });
   let build = jload(LS.build, null);
-  if (!build || build.schema !== 2) build = { schema: 2, specId: null, perkAlloc: {}, slots: Array.from({ length: 6 }, emptySlot) };
+  // schema 2 stored perkAlloc as a binary de-allocation map ({key:1} = deallocated).
+  // schema 3 stores an allocated rank count ({key:R}; absent key = fully allocated = maxRanks).
+  // migrate in place so the current party survives: each old-present key (deallocated) → rank 0.
+  if (build && build.schema === 2) {
+    for (const sid of Object.keys(build.perkAlloc || {})) {
+      const m = build.perkAlloc[sid]; for (const k of Object.keys(m)) m[k] = 0;
+    }
+    build.schema = 3;
+  }
+  if (!build || build.schema !== 3) build = { schema: 3, specId: null, perkAlloc: {}, slots: Array.from({ length: 6 }, emptySlot) };
   build.perkAlloc = build.perkAlloc || {};
   while (build.slots.length < 6) build.slots.push(emptySlot());
   build.slots = build.slots.map(s => Object.assign(emptySlot(), s));
@@ -81,16 +90,21 @@
     const raw = m ? m[1] : tok;
     return raw.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase()).trim() || tok;
   }
-  function richText(str) {
+  const fmtNum = (n) => Number.isInteger(n) ? String(n) : String(Math.round(n * 100) / 100);
+  // richText: {TOKEN} → bold plain word, [icon] dropped, <N> → the value scaled by `rank`.
+  // In perk descriptions <N> is the PER-RANK increment, so the shown value is N × rank
+  // (e.g. "<1> random buffs" at rank 3 → "3 random buffs"). Only perks carry <N>.
+  function richText(str, rank) {
     if (!str) return "";
-    const s = String(str), re = /\{([A-Za-z0-9_]+)\}|\[[a-z0-9_]+\]/g;
+    const s = String(str), re = /\{([A-Za-z0-9_]+)\}|\[[a-z0-9_]+\]|<(\d+(?:\.\d+)?)>/g;
     let out = "", last = 0, m;
     while ((m = re.exec(s))) {
       out += esc(s.slice(last, m.index));
       if (m[1] != null) out += `<b class="param">${esc(termWord(m[1]))}</b>`; // {TOKEN} → bold word; [icon] dropped
+      else if (m[2] != null) { const per = parseFloat(m[2]); out += `<b class="param">${fmtNum(rank != null ? per * rank : per)}</b>`; }
       last = re.lastIndex;
     }
-    return out + esc(s.slice(last));
+    return (out + esc(s.slice(last))).replace(/\\n|\n/g, "<br>"); // literal \n and real newlines → line breaks
   }
 
   // creature synergy tags (from its innate trait's produces/consumes edge tokens)
@@ -183,6 +197,7 @@
       <div class="spec-tile ${spec ? "filled" : ""}" data-action="pick-spec" title="Specialization">
         <div class="spec-tile-icon">${spec && spec.sprite ? spriteImg(spec.sprite) : `<span class="spec-tile-plus">✦</span>`}</div>
         <div class="spec-tile-label">${spec ? esc(spec.label) : "Specialization"}</div>
+        ${spec ? `<div class="spec-tile-sub">${allocatedPerks(spec).length}/${spec.perks.length} perks · ${specPoints(spec)} pts</div>` : ""}
         ${spec ? `<button class="slot-remove" data-action="clear-spec" title="Remove">✕</button>` : ""}
       </div>`;
 
@@ -367,10 +382,16 @@
     ovState = { kind: "spec", search: "", sel: build.specId, render: renderSpecPicker };
     openOverlay(ovState.render()); maybeFocusSearch(OV);
   }
-  function allocDefault(spec) { // returns the set of allocated perk keys (default = all)
-    const dealloc = build.perkAlloc[spec.id] || {};
-    return spec.perks.filter(p => !dealloc[p.key]);
+  // ── perk allocation (rank-based) ───────────────────────────────────────────
+  const perkMax = (p) => p.ranks || 1;
+  function perkRank(spec, p) { const m = build.perkAlloc[spec.id] || {}; return (p.key in m) ? m[p.key] : perkMax(p); }
+  function setPerkRank(spec, p, r) {
+    const m = build.perkAlloc[spec.id] = build.perkAlloc[spec.id] || {};
+    r = Math.max(0, Math.min(perkMax(p), r));
+    if (r === perkMax(p)) delete m[p.key]; else m[p.key] = r; // absence = fully allocated
   }
+  const allocatedPerks = (spec) => spec.perks.filter(p => perkRank(spec, p) > 0);
+  const specPoints = (spec) => spec.perks.reduce((s, p) => s + (p.cost || 0) * perkRank(spec, p), 0);
   function renderSpecPicker() {
     const st = ovState;
     const q = st.search.trim().toLowerCase();
@@ -381,16 +402,17 @@
         <div class="pt-sprite">${spriteImg(s.sprite)}</div><div class="pt-name">${esc(s.label)}</div></div>`).join("");
     let info = `<div class="slot-sub">Select a specialization.</div>`;
     if (sel) {
-      const alloc = allocDefault(sel);
+      const allocCount = allocatedPerks(sel).length, pts = specPoints(sel);
       const perkList = sel.perks.map(p => {
-        const on = alloc.includes(p);
-        return `<div class="perk-line ${on ? "on" : "off"}"><span class="perk-dot"></span><b>${esc(p.name)}</b>${p.desc ? ` — <span class="perk-desc">${richText(p.desc)}</span>` : ""}</div>`;
+        const r = perkRank(sel, p), mx = perkMax(p), on = r > 0;
+        const badge = mx > 1 ? `<span class="perk-rankbadge">${r}/${mx}</span>` : (on ? `<span class="perk-rankbadge">✓</span>` : "");
+        return `<div class="perk-line ${on ? "on" : "off"}"><span class="perk-dot"></span>${badge}<b>${esc(p.name)}</b>${p.desc ? ` — <span class="perk-desc">${richText(p.desc, r)}</span>` : ""}</div>`;
       }).join("");
       info = `<div class="spec-info">
         <div class="spec-info-sprite">${spriteImg(sel.sprite)}</div>
         <h2 class="spec-info-name">${esc(sel.label)}</h2>
         <div class="trait-desc spec-play">${richText(sel.playstyle || sel.description || "")}</div>
-        <div class="section-label" style="margin-top:12px">Perks — ${alloc.length}/${sel.perks.length} allocated</div>
+        <div class="section-label" style="margin-top:12px">Perks — ${allocCount}/${sel.perks.length} allocated · ${pts} pts</div>
         <div class="perk-list">${perkList}</div>
       </div>`;
     }
@@ -411,33 +433,40 @@
     </div></div>`;
   }
 
-  // ── perk selector (Customize) — default fully allocated, permit deallocation ─
+  // ── perk selector (Customize) — per-perk rank stepper (default fully allocated) ─
   function openPerkPicker(specId) {
     dovState = { kind: "perks", specId, search: "", render: renderPerkPicker };
     openDetail(dovState.render()); maybeFocusSearch(DOV);
   }
   function renderPerkPicker() {
     const st = dovState, spec = SPEC.get(st.specId);
-    const dealloc = build.perkAlloc[spec.id] || {};
     const q = st.search.trim().toLowerCase();
     const list = spec.perks.filter(p => !q || p.name.toLowerCase().includes(q) || (p.desc || "").toLowerCase().includes(q));
-    const allocCount = spec.perks.filter(p => !dealloc[p.key]).length;
+    const allocCount = allocatedPerks(spec).length, pts = specPoints(spec);
     const rows = list.map(p => {
-      const on = !dealloc[p.key];
-      return `<div class="perk-row ${on ? "on" : "off"}" data-action="toggle-perk" data-k="${esc(p.key)}">
-        <span class="perk-check">${on ? "✓" : ""}</span>
-        <div class="perk-row-main"><b>${esc(p.name)}</b>${p.cost != null ? `<span class="perk-cost">${p.cost}</span>` : ""}
-          ${p.desc ? `<div class="perk-desc">${richText(p.desc)}</div>` : ""}</div></div>`;
+      const r = perkRank(spec, p), mx = perkMax(p), on = r > 0;
+      const k = esc(p.key);
+      const stepper = `<div class="perk-stepper">
+        <button class="perk-step" data-action="perk-dec" data-k="${k}" ${r <= 0 ? "disabled" : ""}>−</button>
+        <span class="perk-rank-val">${r}<span class="perk-rank-max">/${mx}</span></span>
+        <button class="perk-step" data-action="perk-inc" data-k="${k}" ${r >= mx ? "disabled" : ""}>+</button>
+        ${mx > 1 ? `<button class="perk-step wide" data-action="perk-max" data-k="${k}" ${r >= mx ? "disabled" : ""}>Max</button>` : ""}
+        <button class="perk-step wide" data-action="perk-zero" data-k="${k}" ${r <= 0 ? "disabled" : ""}>0</button></div>`;
+      const costLine = p.cost != null ? `<span class="perk-cost">${p.cost} pt${p.cost === 1 ? "" : "s"}/rank${on ? ` · ${p.cost * r} spent` : ""}</span>` : "";
+      return `<div class="perk-row ${on ? "on" : "off"}">
+        <div class="perk-row-main"><b>${esc(p.name)}</b>${costLine}
+          ${p.desc ? `<div class="perk-desc">${richText(p.desc, r)}</div>` : ""}
+          ${stepper}</div></div>`;
     }).join("");
     return `<div class="ovl-backdrop" data-action="facet-backdrop"><div class="overlay-panel detail">
       <div class="overlay-header"><h2>${esc(spec.label)} — Perks</h2>
         <input class="ovl-search" placeholder="Search perks…" value="${esc(st.search)}" data-action="perk-search">
         <button class="ovl-close" data-action="close-detail">✕</button></div>
       <div class="overlay-body"><div class="ovl-center">
-        <div class="ovl-filterbar"><button class="chip" data-action="perk-all">Allocate all</button><button class="chip" data-action="perk-none">Deallocate all</button></div>
+        <div class="ovl-filterbar"><button class="chip" data-action="perk-all">Max all</button><button class="chip" data-action="perk-none">Clear all</button></div>
         <div class="ovl-center-scroll"><div class="perk-picker">${rows}</div></div>
       </div></div>
-      <div class="overlay-footer"><span class="foot-info">${allocCount}/${spec.perks.length} allocated · click to toggle</span>
+      <div class="overlay-footer"><span class="foot-info">${allocCount}/${spec.perks.length} allocated · ${pts} pts</span>
         <button class="btn-confirm" data-action="close-detail">Done</button></div>
     </div></div>`;
   }
@@ -776,9 +805,14 @@
       case "spec-pick": ovState.sel = ovState.sel === +t.dataset.id ? null : +t.dataset.id; refreshOverlay(); break;
       case "spec-confirm": build.specId = ovState.sel; persistBuild(); closeOverlay(); render(); break;
       case "customize-perks": if (ovState.sel != null) openPerkPicker(ovState.sel); break;
-      case "toggle-perk": { const sid = dovState.specId, k = t.dataset.k; const m = build.perkAlloc[sid] = build.perkAlloc[sid] || {}; if (m[k]) delete m[k]; else m[k] = 1; persistBuild(); refreshDetail(); break; }
-      case "perk-all": { build.perkAlloc[dovState.specId] = {}; persistBuild(); refreshDetail(); break; }
-      case "perk-none": { const sp = SPEC.get(dovState.specId); const m = {}; sp.perks.forEach(p => m[p.key] = 1); build.perkAlloc[dovState.specId] = m; persistBuild(); refreshDetail(); break; }
+      case "perk-inc": case "perk-dec": case "perk-max": case "perk-zero": {
+        const sp = SPEC.get(dovState.specId), p = sp.perks.find(x => x.key === t.dataset.k); if (!p) break;
+        const cur = perkRank(sp, p);
+        const next = A === "perk-inc" ? cur + 1 : A === "perk-dec" ? cur - 1 : A === "perk-max" ? perkMax(p) : 0;
+        setPerkRank(sp, p, next); persistBuild(); refreshDetail(); break;
+      }
+      case "perk-all": { build.perkAlloc[dovState.specId] = {}; persistBuild(); refreshDetail(); break; } // absence = max
+      case "perk-none": { const sp = SPEC.get(dovState.specId); const m = {}; sp.perks.forEach(p => m[p.key] = 0); build.perkAlloc[dovState.specId] = m; persistBuild(); refreshDetail(); break; }
 
       // artifact library + builder
       case "art-equip": build.slots[ovState.slotIdx].artifactId = +t.dataset.id; persistBuild(); closeOverlay(); render(); break;

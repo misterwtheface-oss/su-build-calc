@@ -4,6 +4,19 @@
 Deployed at **https://misterwtheface-oss.github.io/su-build-calc/** (repo `misterwtheface-oss/su-build-calc`,
 Pages on `master`/root, Cloudflare analytics active with the shared github.io token). Auto-deploys on push.
 
+## v2.2 perk ranks (2026-09-17)
+- **Perks now have levels.** Data already carried `ranks` (max levels) per perk; the UI ignored it. The perk
+  picker's binary on/off toggle is replaced by a **rank stepper** (`− rank/max +` plus **Max** / **0**),
+  so each perk allocates 0..maxRanks. `build.perkAlloc[specId][key]` changed from a binary de-allocation map
+  to an **allocated rank count** (absent key = fully allocated = maxRanks). **Schema 2→3 migrated in place**
+  (old deallocated keys → rank 0) so the current party/spec survives.
+- **`<N>` scaling values render.** Perk descriptions carry `<N>` = the **per-rank increment** (e.g. Anguish
+  Through Awareness `<1>`, 5 ranks → "starts battles with **5** random buffs" at max; **0** if unallocated).
+  `richText(str, rank)` now substitutes `<N>` → `N × rank` (handles decimals: Perseverance `<2.5>`×20 = 50%,
+  Anemia `<5>`×20 = 100%). 220 perks carry `<N>`; combined `<N>` + `{TOKEN}` render cleanly with no leaks.
+- Spec info panel + home spec tile now show **allocated/total perks · points** (points = Σ cost×rank).
+- Bonus: `richText` converts literal `\n`/newlines → `<br>` so multi-paragraph perk text reads correctly.
+
 ## v2.1 validation (2026-09-16) — closed the loop
 Re-verified both v2.1 fixes after an interrupted session (commit `7bd676c`, already pushed/live):
 - **Spec skins**: `data.js` = 30 `skin` + 9 `icon`, 0 specs missing a sprite. PNG dims confirm the copy
