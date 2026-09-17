@@ -106,6 +106,9 @@
   // ── shared render bits ─────────────────────────────────────────────────────
   const spriteImg = (src, cls) =>
     src ? `<img src="${esc(src)}" alt="" class="${cls || ""}" onerror="this.style.visibility='hidden'">` : "";
+  // creature face: real battle sprite, or a class-tinted monogram when the extract lacks the sprite
+  const critFace = (c) => c.sprite ? spriteImg(c.sprite)
+    : `<div class="crit-face" style="--face-cls:${clsColor(c.cls)}">${esc((c.name || "?").trim()[0] || "?")}</div>`;
 
   function traitBanner(tid, opts = {}) {
     const t = TRAIT[tid]; if (!t) return "";
@@ -163,7 +166,7 @@
     const cls = b.cls;
     return `<div class="slot filled" data-slot="${i}" style="--slot-cls:${clsColor(cls)}">
       <button class="slot-remove" data-action="remove-creature" data-slot="${i}" title="Remove">✕</button>
-      <div class="slot-sprite-wrap" data-action="creature-detail" data-slot="${i}">${spriteImg(c.sprite)}</div>
+      <div class="slot-sprite-wrap" data-action="creature-detail" data-slot="${i}">${critFace(c)}</div>
       <div class="slot-name">${esc(c.name)}${f ? ` <span style="color:var(--accent2)">⚭</span>` : ""}</div>
       <div class="slot-sub"><span class="cls-chip" style="color:${clsColor(cls)}">${esc(cls || "—")}</span>${c.race ? " · " + esc(c.race) : ""}</div>
       <div class="slot-actions">
@@ -247,7 +250,7 @@
     const tiles = shown.map(c => `
       <div class="pick-tile ${st.sel === c.id ? "selected" : ""}" data-action="crea-pick" data-id="${c.id}">
         <span class="pt-cls" style="--pt-cls:${clsColor(c.cls)}"></span>
-        <div class="pt-sprite">${spriteImg(c.sprite)}</div>
+        <div class="pt-sprite">${critFace(c)}</div>
         <div class="pt-name">${esc(c.name)}</div>
         <div class="pt-total">${c.total}</div>
       </div>`).join("");
@@ -278,7 +281,7 @@
   }
 
   function renderCreatureIdentity(c) {
-    return `<div style="text-align:center">${spriteImg(c.sprite)}</div>
+    return `<div style="text-align:center">${critFace(c)}</div>
       <h3 style="text-align:center;margin:6px 0">${esc(c.name)}</h3>
       <div class="slot-sub" style="margin-bottom:10px">
         <span style="color:${clsColor(c.cls)};font-weight:700">${esc(c.cls || "—")}</span>${c.race ? " · " + esc(c.race) : ""}</div>
@@ -477,7 +480,7 @@
         <button class="ovl-close" data-action="close-detail">✕</button></div>
       <div class="overlay-body">
         <div class="ovl-left" style="width:180px;text-align:center">
-          ${spriteImg(c.sprite)}
+          ${critFace(c)}
           <div class="slot-sub" style="margin-top:6px"><span style="color:${clsColor(b.cls)};font-weight:700">${esc(b.cls || "—")}</span>${c.race ? " · " + esc(c.race) : ""}</div>
           ${f ? `<div class="slot-sub" style="margin-top:8px">Fused with<br><b>${esc(f.name)}</b><br>(class → ${esc(f.cls || "—")})</div>` : ""}
         </div>

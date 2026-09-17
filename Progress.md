@@ -33,12 +33,21 @@ What works end-to-end:
 - [ ] Turn on the Cloudflare analytics beacon at public release (shared github.io token).
 
 ## Known issues / warnings (from build-data hygiene report — non-fatal)
-- **415/1447 creatures have no class** (`cls: null`). The code-authoritative `creature_data` spine (1447)
-  is larger than the collectible `creatures_ref` (1362), and the ~415 unmatched are non-standard/internal
-  entries (generic names: "angel", "spirit", "priest", "paragon") that also lack a classed trait
-  source_creature → unclassifiable from static data. They render with a "—" class (no stripe/filter).
-  **P1 idea:** recover class via a trait-name join or the bosses table. 1032 have a class (ref + trait fallback).
-- **10 creatures without a battle sprite** (null `battle_frame`, e.g. "Nalesath") → placeholder tile.
+- **Roster spine = `creatures_ref` (1362 playable creatures, 100% classed).** `creature_data` was the
+  wrong spine — its export is incomplete/messy (placeholder `Arbiters_1..6`, `ospr_skin_*` records), so it
+  only *enriches* the ref roster. Class dist: Sorcery 316 / Nature 301 / Chaos 261 / Death 258 / Life 226
+  = 1362. ✅ class requirement met.
+- **Sprites: 1355/1362 (99.5%).** Battle sprites are recovered by joining the ref roster to
+  `creature_stats.json` by name (`field0` = the `spr_crits_battle` frame) and copying
+  `assets/sprites/spr_crits_battle_<frame>.png` — this reaches the ~330 creatures `creature_data`'s export
+  missed (Amphisbaena, Amaranths, Arbiters, etc.). Frame is taken from the capstone `creature_data`
+  battle_frame where available (authoritative), else the legacy `field0` (which matches the authoritative
+  frame 98% of the time on their overlap). Only **7** creatures genuinely lack a battle sprite (frame
+  `null` or the `6969` "no battle sprite" sentinel = gods/specials) → class-tinted monogram fallback.
+- **Stats:** 1358/1362 use code stats (`statSource` `code` = capstone / `code-legacy` = older `creature_stats`);
+  4 fall back to `creatures_ref` community base stats (`community`).
+- **7/1362 creatures don't resolve an innate `traitId`** (trait-name not found in `traits_consolidated`)
+  → their trait shows by name but carries no synergy tags. `traitName` is present for all 1362.
 - **15 trait-items grant `trait_id 2187`** (off-by-one past the 0–2186 trait range) → trait unresolved;
   the item's own `trait_name` is still displayed. Both are recorded, not blocking.
 - Relic contributions are qualitative (no numeric stat) → shown as effect text, deliberately not a stat column.

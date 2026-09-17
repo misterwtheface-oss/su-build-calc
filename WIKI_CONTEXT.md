@@ -44,7 +44,7 @@ artifacts, relics, spell gems, realm cards, Nether Stones, anointments.
 - Which extract files feed the model:
   | data.js field | source (`_su_extract`) |
   |---|---|
-  | creatures | `data/model/creature_data.json` (spine) + `data/reference/creatures_ref.json` (class/race) + `assets/creatures_export/index.csv` (sprite) |
+  | creatures | **spine** `data/reference/creatures_ref.json` (playable roster: class/race/base-stats/trait, all 1362) enriched by `data/model/creature_data.json` (capstone stats + battle_frame) and `data/model/creature_stats.json` (legacy; `field0` = the `spr_crits_battle` frame, covers 1358/1362). Sprite = `assets/sprites/spr_crits_battle_<frame>.png` |
   | traits | `data/model/traits_consolidated.json` (name/desc/class) + `data/model/theorycraft_tags.json` (edge tags) |
   | tagLabels | `theorycraft_tags.json` → `label_map` |
   | specs | `data/model/specializations.json` + `assets/sprites/spec_*.png` |
@@ -54,7 +54,7 @@ artifacts, relics, spell gems, realm cards, Nether Stones, anointments.
   | cards | `data/reference/cards_ref.json` |
   | damageModel | `data/model/damage_model.json` |
 - What ships vs. gitignored:
-  - **SHIPPED**: `data.js`, `assets/creatures/*.png` (1437), `assets/specs/*.png` (39), app code.
+  - **SHIPPED**: `data.js`, `assets/creatures/*.png` (1355), `assets/specs/*.png` (39), app code.
   - **GITIGNORED**: the entire `_su_extract` workspace (raw dumps, decompiled source, full sprite exports,
     the 4–5 MB model JSONs) — only the subset in `data.js` is tracked.
 
@@ -64,7 +64,9 @@ source of truth for how each field is derived and which references are hygiene-c
 ids, missing sprites, unknown artifact slots, duplicate creature ids).
 
 ## Known extract limitations carried into the app
-- 10 creatures have no battle sprite (null `battle_frame`) → placeholder tile (hygiene warning).
+- 7 creatures have no battle sprite (frame `null` or the `6969` sentinel; gods/specials) → class-tinted
+  monogram fallback. The other 1355/1362 have their real `spr_crits_battle` sprite (recovered via
+  `creature_stats.field0`). 4 creatures fall back to community base stats.
 - 15 trait-items grant `trait_id 2187` (off-by-one past the 0–2186 range) → no resolved trait; the
   item's own `trait_name` is still shown (hygiene warning).
 - Nether Stone numerics, class-advantage multiplier, sigil/anointment scaling = runtime/in-game-only

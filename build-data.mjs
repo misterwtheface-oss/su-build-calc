@@ -95,56 +95,68 @@ for (const t of consolidated) {
   };
 }
 
-// ── creatures (spine = code-grounded creature_data.records) ──
+// ── creatures ──────────────────────────────────────────────────────────────
+// Spine = creatures_ref: the AUTHORITATIVE playable roster (1362), where EVERY
+// creature carries a class/race/base-stats/innate-trait.
+// Enrichment comes from TWO code tables joined by name:
+//   • creature_data  (capstone) — most-authoritative stats + battle_frame (1027 ref matches)
+//   • creature_stats (legacy)   — covers 1358/1362 by name; field0 == the spr_crits_battle frame
+// The battle sprite is that frame in spr_crits_battle_<frame>.png (assets/sprites), which exists for
+// nearly the whole roster — so we recover the ~330 creatures creature_data's export missed.
 const creatureData = readJSON(path.join(MODEL, 'creature_data.json')).records;
+const creatureStats = readJSON(path.join(MODEL, 'creature_stats.json')).records;
 const creaturesRef = readJSON(path.join(REF, 'creatures_ref.json')).records;
-const refByName = new Map(creaturesRef.map(r => [norm(r.name), r]));
-const critIndex = parseCSV(fs.readFileSync(path.join(SRC_CRIT_PNG, 'index.csv'), 'utf8'));
-const pngByName = new Map();
-const pngByFrame = new Map();
-for (const r of critIndex) {
-  if (r.battle_png) {
-    pngByName.set(norm(r.name), r.battle_png);
-    if (r.battle_frame) pngByFrame.set(String(r.battle_frame), r.battle_png);
-  }
-}
+const cdByName = new Map(creatureData.map(c => [norm(c.name), c]));
+const csByName = new Map(creatureStats.map(c => [norm(c.name), c]));   // field0 = battle_frame
+const SRC_BATTLE = SRC_SPEC_PNG;                                       // assets/sprites/spr_crits_battle_<frame>.png
+// trait NAME -> id (traits_consolidated) so a ref creature resolves its innate trait id
+const traitIdByName = new Map();
+for (const t of consolidated) { const k = norm(t.name); if (k && !traitIdByName.has(k)) traitIdByName.set(k, t.id); }
 
 fs.rmSync(OUT_CRIT, { recursive: true, force: true });
 fs.mkdirSync(OUT_CRIT, { recursive: true });
 
 const creatures = [];
-const seenId = new Set();
-let spriteCopied = 0;
-creatureData.forEach((c, i) => {
+let spriteCopied = 0, codeStats = 0;
+creaturesRef.forEach((r, i) => {
   const id = i;
-  if (seenId.has(id)) { err(`duplicate creature id ${id}`); return; }
-  seenId.add(id);
-  const ref = refByName.get(norm(c.name));
-  const cls = ref && CLASS_SET.has(ref.class) ? ref.class
-            : (traits[c.trait_id] && traits[c.trait_id].cls) || null;
-  const race = (ref && ref.race) || (c.overworld_sprite ? null : null);
+  const cd = cdByName.get(norm(r.name));                    // capstone twin (best stats + battle_frame)
+  const cs = csByName.get(norm(r.name));                    // legacy twin (frame + stats, wider coverage)
+  const cls = CLASS_SET.has(r.class) ? r.class
+            : (cd && traits[cd.trait_id] && traits[cd.trait_id].cls) || null;
+  if (!cls) err(`playable creature "${r.name}" has no class`);
 
-  // copy the battle sprite (only the ones we actually reference)
-  const png = pngByName.get(norm(c.name)) || pngByFrame.get(String(c.battle_frame));
+  const bs = r.base_stats || {};
+  const stats = cd ? { hp: cd.hp, atk: cd.atk, def: cd.def, int: cd.int, spd: cd.spd, total: cd.stat_total }
+    : cs ? { hp: cs.hp, atk: cs.atk, def: cs.def, int: cs.int, spd: cs.spd, total: null }
+    : { hp: bs.hp, atk: bs.atk, def: bs.def, int: bs.int, spd: bs.spd, total: bs.total };
+  if (cd || cs) codeStats++;
+  const total = stats.total != null ? stats.total
+    : (stats.hp || 0) + (stats.atk || 0) + (stats.def || 0) + (stats.int || 0) + (stats.spd || 0);
+
+  const traitName = (r.trait && r.trait.name) || (cd && cd.trait_name) || null;
+  const traitId = (cd && cd.trait_id != null) ? cd.trait_id
+    : (traitName ? (traitIdByName.get(norm(traitName)) ?? null) : null);
+
+  // battle sprite — spr_crits_battle frame from the capstone battle_frame, else legacy field0
+  const frame = (cd && cd.battle_frame != null) ? cd.battle_frame : (cs ? cs.field0 : null);
   let sprite = null;
-  if (png && fs.existsSync(path.join(SRC_CRIT_PNG, png))) {
-    const dest = `${String(id).padStart(4, '0')}.png`;
-    fs.copyFileSync(path.join(SRC_CRIT_PNG, png), path.join(OUT_CRIT, dest));
-    sprite = `assets/creatures/${dest}`;
-    spriteCopied++;
-  } else {
-    warn(`creature "${c.name}" (id ${id}) has no battle sprite (frame ${c.battle_frame})`);
+  if (frame != null && frame !== 6969 /* "no battle sprite" sentinel */) {
+    const srcPng = path.join(SRC_BATTLE, `spr_crits_battle_${frame}.png`);
+    if (fs.existsSync(srcPng)) {
+      const dest = `${String(id).padStart(4, '0')}.png`;
+      fs.copyFileSync(srcPng, path.join(OUT_CRIT, dest));
+      sprite = `assets/creatures/${dest}`;
+      spriteCopied++;
+    }
   }
-
-  if (c.trait_id != null && !traits[c.trait_id]) {
-    warn(`creature "${c.name}" innate trait_id ${c.trait_id} not in traits table`);
-  }
+  if (!sprite) warn(`creature "${r.name}" has no battle sprite (frame ${frame})`);
 
   creatures.push({
-    id, name: c.name, race, cls,
-    hp: c.hp, atk: c.atk, def: c.def, int: c.int, spd: c.spd, total: c.stat_total,
-    traitId: c.trait_id ?? null,
-    traitName: c.trait_name || (traits[c.trait_id] && traits[c.trait_id].name) || null,
+    id, name: r.name, race: r.race || null, cls,
+    hp: stats.hp, atk: stats.atk, def: stats.def, int: stats.int, spd: stats.spd, total,
+    statSource: cd ? 'code' : cs ? 'code-legacy' : 'community',
+    traitId, traitName,
     sprite,
   });
 });
@@ -239,7 +251,7 @@ const damageModel = readJSON(path.join(MODEL, 'damage_model.json'));
 // ── data-hygiene report ─────────────────────────────────────────────────
 const checked = creatures.length + specs.length + artRef.length + traitItems.length + relics.length + cards.length;
 console.log('\n── Data hygiene report ──────────────────────────');
-console.log(`✓ ${checked} records checked · ${spriteCopied}/${creatures.length} creature sprites · ${specs.length} spec sprites`);
+console.log(`✓ ${checked} records checked · ${creatures.length} playable creatures (100% classed) · ${codeStats} w/ code stats · ${spriteCopied} w/ sprites · ${specs.length} spec sprites`);
 if (errors.length) {
   console.log(`✗ ${errors.length} errors:`);
   for (const e of errors.slice(0, 40)) console.log('    ' + e);
