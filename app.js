@@ -508,16 +508,12 @@
     return ANOINTS;
   }
   function openAnoint() {
-    ovState = { kind: "anoint", search: "", specFilter: null, render: renderAnoint };
+    ovState = { kind: "anoint", search: "", render: renderAnoint };
     openOverlay(ovState.render()); maybeFocusSearch(OV);
   }
   function renderAnoint() {
     const st = ovState, q = st.search.trim().toLowerCase();
-    const all = anointList();
-    const specs = [...new Set(all.map(a => a.spec))].sort();
-    const list = all.filter(a => (!st.specFilter || a.spec === st.specFilter)
-      && (!q || a.name.toLowerCase().includes(q) || (a.desc || "").toLowerCase().includes(q)));
-    // group by spec
+    const list = anointList().filter(a => !q || a.name.toLowerCase().includes(q) || (a.desc || "").toLowerCase().includes(q));
     const groups = {};
     for (const a of list) (groups[a.spec] ||= []).push(a);
     const body = Object.keys(groups).sort().map(sp => `
@@ -528,14 +524,11 @@
         ${a.ranks > 1 ? `<span class="perk-rankbadge">${a.ranks}×</span>` : ""}
         ${a.desc ? ` — <span class="perk-desc">${richText(a.desc, a.ranks)}</span>` : ""}</div>`).join("")}`).join("")
       || `<div class="slot-sub" style="padding:10px">No anointments match.</div>`;
-    const specChips = `<button class="chip ${!st.specFilter ? "on" : ""}" data-action="anoint-spec" data-s="">All</button>` +
-      specs.map(sp => `<button class="chip ${st.specFilter === sp ? "on" : ""}" data-action="anoint-spec" data-s="${esc(sp)}">${esc(sp)}</button>`).join("");
     return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel">
       <div class="overlay-header"><h2>Anointments</h2>
         <input class="ovl-search" placeholder="Search anointments…" value="${esc(st.search)}" data-action="anoint-search">
         <button class="ovl-close" data-action="close-ovl">✕</button></div>
       <div class="overlay-body"><div class="ovl-center">
-        <div class="ovl-filterbar anoint-chips">${specChips}</div>
         <div class="ovl-center-scroll"><div class="perk-list">${body}</div></div>
       </div></div>
       <div class="overlay-footer"><span class="foot-info"></span>
@@ -886,7 +879,6 @@
       case "clear-party": armOrDo(t, () => { build = { schema: 2, specId: null, perkAlloc: {}, slots: Array.from({ length: 6 }, emptySlot) }; persistBuild(); render(); }); break;
       case "open-artifacts": openArtifactLibrary(null); break;
       case "open-anoint": openAnoint(); break;
-      case "anoint-spec": ovState.specFilter = t.dataset.s || null; refreshOverlay(); break;
       case "open-cards": openCards(); break;
       case "open-nether": openNether(); break;
 
