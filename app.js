@@ -74,13 +74,18 @@
 
   let cards = jload(LS.cards, null);                        // { levels: {cardId: 0..3} } — absent == 3 (max)
   if (!cards || !cards.levels) cards = { levels: {} };
-  let nether = jload(LS.nether, null);                      // [{id,name,icon,props:[{prop,value}]}]  (prop = artifact property name)
+  let nether = jload(LS.nether, null);                      // [{id,name,icon,props:[{cat,key,value}]}]
   if (!Array.isArray(nether)) nether = [];
-  // migrate old nether props ({type:'stat',stats:[{stat,value}]}) → flat {prop,value} from the full property pool
+  // migrate nether props to the category model {cat,key,value}: old {type,stats[]} and {prop,value} → {cat,key,value}
   for (const n of nether) {
-    if (Array.isArray(n.props) && n.props.some(p => p && p.stats)) {
+    if (Array.isArray(n.props)) {
       const flat = [];
-      for (const p of n.props) for (const s of (p.stats || [])) flat.push({ prop: s.stat, value: Number(s.value) || 0 });
+      for (const p of n.props) {
+        if (!p) continue;
+        if (p.cat) { flat.push(p); continue; }                    // already migrated
+        if (p.stats) for (const s of p.stats) flat.push({ cat: (propGroups.get(s.stat) || {}).group || "stat", key: s.stat, value: Number(s.value) || 0 });
+        else if (p.prop) flat.push({ cat: (propGroups.get(p.prop) || {}).group || "stat", key: p.prop, value: Number(p.value) || 0 });
+      }
       n.props = flat;
     }
     n.props ||= [];
@@ -205,9 +210,10 @@
     for (const nid of a.netherIds || []) {
       const n = nether.find(x => x.id === nid); if (!n) continue;
       for (const pr of n.props || []) {
-        const grp = propGroups.get(pr.prop);
+        if (pr.cat !== "stat" && pr.cat !== "trick") continue;   // only stat/trick properties hit the stat table
+        const grp = propGroups.get(pr.key);
         if (grp) { for (const e of grp.entries) { const k = PROP_STAT[e.stat]; if (k) out[k] += (Number(pr.value) || 0); } }
-        else { const k = PROP_STAT[pr.prop]; if (k) out[k] += (Number(pr.value) || 0); }
+        else { const k = PROP_STAT[pr.key]; if (k) out[k] += (Number(pr.value) || 0); }
       }
     }
     return out;
@@ -861,7 +867,15 @@
 
   // ── nether stones: library + stepped builder wizard (full stat+trick property pool) ──
   const gemPath = (key) => { const g = GEM_ICONS.find(x => x.key === key); return g ? g.path : (GEM_ICONS[0] && GEM_ICONS[0].path); };
-  const netherSummary = (n) => (n.props || []).map(p => `+${p.value}% ${p.prop}`).join(" · ") || "no properties";
+  const NETHER_CATS = [
+    { c: "stat", label: "Stat" }, { c: "trick", label: "Trick" }, { c: "trait", label: "Trait" }, { c: "spell", label: "Spell" },
+  ];
+  function netherPropLabel(p) {
+    if (p.cat === "trait") { const t = TRAITITEM.get(p.key); return t ? t.name : p.key; }
+    if (p.cat === "spell") { const s = SPELLPROP.get(p.key); return s ? s.name : p.key; }
+    return `+${p.value}% ${p.key}`;
+  }
+  const netherSummary = (n) => (n.props || []).map(netherPropLabel).join(" · ") || "no properties";
   function openNether() {   // library
     ovState = { kind: "nether", render: renderNether };
     openOverlay(ovState.render());
@@ -909,21 +923,39 @@
       footer = `<button class="btn-ghost" data-action="nether-cancel">Cancel</button>
         <button class="btn-confirm" data-action="netherb-next">Next: Properties ›</button>`;
     } else {
-      const rows = s.props.map((p, i) => `<div class="art-slot"><button class="as-rm" data-action="nether-prop-del" data-i="${i}">✕</button>
-        <div class="as-lab">${esc(p.prop)}</div>
-        <div class="as-sub"><input type="number" class="np-num" data-action="nether-propval" data-i="${i}" value="${p.value}">%</div></div>`).join("");
-      const slotsBox = `<div class="art-slot-grid">${rows}<div class="art-slot add ${st.picking ? "picking" : ""}" data-action="nether-addprop"><div class="as-ico glyph">＋</div><div class="as-lab">Add property</div></div></div>`;
+      // each prop = {cat,key,value}; stat/trick carry a % value, trait/spell are item refs (icon)
+      const rows = s.props.map((p, i) => {
+        const isItem = p.cat === "trait" || p.cat === "spell";
+        const it = p.cat === "trait" ? TRAITITEM.get(p.key) : p.cat === "spell" ? SPELLPROP.get(p.key) : null;
+        const ico = isItem ? `<div class="as-ico">${it && it.icon ? spriteImg(it.icon, "px") : "◆"}</div>` : `<div class="as-ico glyph">◆</div>`;
+        const sub = isItem ? `<div class="as-sub">${esc(p.cat)}</div>`
+          : `<div class="as-sub"><input type="number" class="np-num" data-action="nether-propval" data-i="${i}" value="${p.value}">%</div>`;
+        return `<div class="art-slot"><button class="as-rm" data-action="nether-prop-del" data-i="${i}">✕</button>${ico}
+          <div class="as-lab">${esc(isItem ? (it ? it.name : p.key) : p.key)}</div>${sub}</div>`;
+      }).join("");
+      const slotsBox = `<div class="art-slot-grid">${rows}<div class="art-slot add ${st.picking ? "picking" : ""}" data-action="nether-addprop"><div class="as-ico glyph">＋</div><div class="as-lab">Add</div></div></div>`;
       let picker = "";
-      if (st.picking) {
-        const q = st.search.trim().toLowerCase();
-        const pr = [...propGroups.values()].filter(g => !q || g.name.toLowerCase().includes(q)).map(g =>
-          `<div class="prop-row" data-action="nether-pickprop" data-p="${esc(g.name)}">
-            <span class="prop-name">${esc(g.name)}</span><span class="prop-stat">${esc(g.entries.map(e => e.stat).join(" / "))}</span>
-            <span class="prop-val">${g.group}</span></div>`).join("");
+      if (st.picking === "menu") {
+        picker = `<div class="art-addmenu">${NETHER_CATS.map(x => `<button class="chip" data-action="nether-pickcat" data-c="${x.c}">${x.label}</button>`).join("")}</div>`;
+      } else if (st.picking) {
+        const q = st.search.trim().toLowerCase(); let rowsHtml = "";
+        if (st.picking === "stat" || st.picking === "trick") {
+          rowsHtml = [...propGroups.values()].filter(g => g.group === st.picking && (!q || g.name.toLowerCase().includes(q))).map(g =>
+            `<div class="prop-row" data-action="nether-pickprop" data-k="${esc(g.name)}">
+              <span class="prop-name">${esc(g.name)}</span><span class="prop-stat">${esc(g.entries.map(e => e.stat).join(" / "))}</span></div>`).join("");
+        } else if (st.picking === "trait") {
+          rowsHtml = D.traitItems.filter(t => t.traitName && (!q || t.name.toLowerCase().includes(q) || (t.traitName || "").toLowerCase().includes(q))).slice(0, 300).map(t =>
+            `<div class="prop-row" data-action="nether-pickprop" data-k="${t.id}">
+              <span class="prop-ico">${t.icon ? spriteImg(t.icon, "px") : ""}</span><span class="prop-name">${esc(t.name)}</span><span class="prop-stat">grants ${esc(t.traitName)}</span></div>`).join("");
+        } else {
+          rowsHtml = D.spellProps.filter(p => !q || p.name.toLowerCase().includes(q) || (p.effect || "").toLowerCase().includes(q)).map(p =>
+            `<div class="prop-row" data-action="nether-pickprop" data-k="${p.id}">
+              <span class="prop-ico">${p.icon ? spriteImg(p.icon, "px") : ""}</span><span class="prop-name">${esc(p.name)}</span><span class="prop-stat">${esc(p.effect || "")}</span></div>`).join("");
+        }
         picker = `<div class="art-picker">
-          <div class="ovl-filterbar"><button class="chip" data-action="nether-closepick">‹ Done</button>
-            <input class="ovl-search" placeholder="Search properties…" value="${esc(st.search)}" data-action="nether-search"></div>
-          <div class="art-pick-scroll">${pr}</div></div>`;
+          <div class="ovl-filterbar"><button class="chip" data-action="nether-addprop">‹ Category</button>
+            <input class="ovl-search" placeholder="Search…" value="${esc(st.search)}" data-action="nether-search"></div>
+          <div class="art-pick-scroll">${rowsHtml}</div></div>`;
       }
       body = `<div class="ovl-center"><div class="ovl-center-scroll">${slotsBox}${picker}</div></div>`;
       footer = `<button class="btn-ghost" data-action="netherb-back">‹ Back</button>
@@ -994,17 +1026,18 @@
         const pid = g.propIds[i];
         if (pid !== undefined) { const p = SPELLPROP.get(pid);
           boxes.push(`<div class="art-slot"><button class="as-rm" data-action="sg-prop-rm" data-i="${i}">✕</button>
-            <div class="as-ico">${p && p.icon ? spriteImg(p.icon, "px") : "◆"}</div><div class="as-lab">${esc(p ? p.name : pid)}</div></div>`); }
+            <div class="as-ico">${p && p.icon ? spriteImg(p.icon, "px") : "◆"}</div><div class="as-lab">${esc(p ? p.name : pid)}</div>
+            <div class="as-sub">${esc(p ? (p.effect || "").split(":")[0].slice(0, 24) : "")}</div></div>`); }
         else boxes.push(`<div class="art-slot add ${st.picking ? "picking" : ""}" data-action="sg-addprop"><div class="as-ico glyph">＋</div><div class="as-lab">Property</div></div>`);
       }
       let picker = "";
       if (st.picking) {
-        const pr = D.spellProps.filter(p => !q || p.name.toLowerCase().includes(q)).map(p =>
+        const pr = D.spellProps.filter(p => !q || p.name.toLowerCase().includes(q) || (p.effect || "").toLowerCase().includes(q)).map(p =>
           `<div class="prop-row ${g.propIds.includes(p.id) ? "chosen" : ""}" data-action="sg-pickprop" data-id="${p.id}">
-            <span class="prop-ico">${p.icon ? spriteImg(p.icon, "px") : ""}</span><span class="prop-name">${esc(p.name)}</span></div>`).join("");
+            <span class="prop-ico">${p.icon ? spriteImg(p.icon, "px") : ""}</span><span class="prop-name">${esc(p.name)}</span><span class="prop-stat">${esc(p.effect || "")}</span></div>`).join("");
         picker = `<div class="art-picker">
           <div class="ovl-filterbar"><button class="chip" data-action="sg-closepick">‹ Done</button>
-            <input class="ovl-search" placeholder="Search Slates / Curios…" value="${esc(st.search)}" data-action="sg-search"></div>
+            <input class="ovl-search" placeholder="Search gemstone enchantments…" value="${esc(st.search)}" data-action="sg-search"></div>
           <div class="art-pick-scroll">${pr}</div></div>`;
       }
       body = `<div class="ovl-center"><div class="ovl-center-scroll">
@@ -1147,9 +1180,14 @@
       case "netherb-back": ovState.step = "basics"; ovState.picking = false; refreshOverlay(); break;
       case "nether-icon": ovState.draft.icon = t.dataset.k; refreshOverlay(); break;
       case "nether-rand": { const g = GEM_ICONS[Math.floor((Date.now() >> 4) % GEM_ICONS.length)] || GEM_ICONS[0]; ovState.draft.icon = g && g.key; refreshOverlay(); break; }
-      case "nether-addprop": ovState.picking = true; ovState.search = ""; refreshOverlay(); break;
+      case "nether-addprop": ovState.picking = "menu"; ovState.search = ""; refreshOverlay(); break;
+      case "nether-pickcat": ovState.picking = t.dataset.c; ovState.search = ""; refreshOverlay(); break;
       case "nether-closepick": ovState.picking = false; refreshOverlay(); break;
-      case "nether-pickprop": ovState.draft.props.push({ prop: t.dataset.p, value: 10 }); ovState.picking = false; refreshOverlay(); break;
+      case "nether-pickprop": {
+        const cat = ovState.picking, isItem = cat === "trait" || cat === "spell";
+        ovState.draft.props.push({ cat, key: isItem ? +t.dataset.k : t.dataset.k, value: isItem ? null : 10 });
+        ovState.picking = false; refreshOverlay(); break;
+      }
       case "nether-prop-del": ovState.draft.props.splice(+t.dataset.i, 1); refreshOverlay(); break;
       case "nether-save": {
         const d = ovState.draft;

@@ -359,13 +359,28 @@ for (const m of matRecs) {
     traitName: m.trait_name || (traits[m.trait_id] && traits[m.trait_id].name) || null, icon });
 }
 
-// ── spell-gem property items (Slates / Curios / Cripplers — item_class 1) ──
-const spellProps = matRecs.filter(m => m.item_class === 1).map(m => {
-  let icon = null;
-  const iconName = matIconByKey.get(m.key);
-  if (iconName && copyNamedSprite(iconName, OUT_MATICON, `${iconName}.png`)) icon = `assets/maticons/${iconName}.png`;
-  return { id: m.index, key: m.key, name: m.name, icon };
-});
+// localization loader → Map(tag -> English) (parseCSV returns header-keyed objects; use positional values)
+function loadLoc(file) {
+  const rows = parseCSV(fs.readFileSync(path.join(SRC, 'data', 'localization', file), 'utf8'));
+  const m = new Map();
+  for (const r of rows) { const v = Object.values(r); if (v[0] && /^L_/.test(v[0])) m.set(v[0], (v[2] || '').trim()); }
+  return m;
+}
+// ── spell-gem enchant items = "Dust" (L_IN_DUST_<gem>); property from L_ID_DUST_<gem>, used at the Enchanter ──
+const itemsLoc = loadLoc('items.csv');
+const dustIcon = copyNamedSprite('spr_gem_dust', OUT_MATICON, 'spr_gem_dust.png') ? 'assets/maticons/spr_gem_dust.png' : null;
+const spellProps = [];
+{
+  let idx = 0;
+  for (const [tag, name] of itemsLoc) {
+    if (!/^L_IN_DUST_/.test(tag)) continue;
+    const gem = tag.slice('L_IN_DUST_'.length);
+    const desc = itemsLoc.get('L_ID_DUST_' + gem) || '';
+    // desc = "…add the following property to your Spell Gems:\n\n<PROPERTY>"
+    let effect = desc.split(/Spell Gems:/i).pop().replace(/\\n|\n/g, ' ').trim();
+    spellProps.push({ id: idx++, key: gem, name, effect, icon: dustIcon });
+  }
+}
 
 // ── relics ──
 const relicRef = readJSON(path.join(REF, 'relics_ref.json')).records;

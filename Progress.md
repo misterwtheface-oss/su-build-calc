@@ -4,6 +4,21 @@
 Deployed at **https://misterwtheface-oss.github.io/su-build-calc/** (repo `misterwtheface-oss/su-build-calc`,
 Pages on `master`/root, Cloudflare analytics active with the shared github.io token). Auto-deploys on push.
 
+## v2.10 taxonomy fix + wizard polish (2026-09-17)
+- **Spell-gem enchant items corrected**: they are the **"Dust" items** (`L_IN_DUST_<gem>`: Jasper, Topaz, Citrine…
+  21) whose effect (More Charges, Defense Penetration, Cascading…) comes from `L_ID_DUST_<gem>` — used at the
+  Enchanter. `SU_DATA.spellProps` now = these 21 dusts (name + effect). (Slates/Curios are TRICK items, Ambers are
+  STAT items — noted for future artifact re-model.) NOTE: per-gem dust icons aren't in the sprite set by name and
+  aren't code-tagged (dust defined in an unnamed vm_group region with no sprite immediate) → using a shared
+  gem-dust icon for now; flag to revisit if the icon source surfaces.
+- **Picker scroll fixed** (#1/#4): inline slot pickers used a nested `.ovl-center-scroll` that collapsed to 0 height
+  (couldn't scroll; artifact `+` looked like it only highlighted) → dedicated bounded `.art-pick-scroll`.
+- **Spec/anoint tiles**: shorter again (fixed 44px icon; keep creature-card width).
+- **Mobile**: artifact wizard tiles shrunk so the build fits without scrolling.
+- **Nether wizard → category flow** (#6): `+` → choose category (Stat / Trick / Trait / Spell) → picker, mirroring
+  artifacts. Prop model now `{cat,key,value}` (stat/trick carry %, trait/spell are item refs); migrated from
+  `{prop,value}`. `artifactPctOf` only sums stat/trick nether props into the stat table.
+
 ## v2.9 spell gems as first-class entities (2026-09-17)
 Per user: artifacts, nether stones, and spell gems are three SEPARATE buildable entities. A **spell gem = 1 spell
 + up to 3 property items** (Slates/Curios/Cripplers = the `item_class:1` materials, 47, `SU_DATA.spellProps` w/ icons).
