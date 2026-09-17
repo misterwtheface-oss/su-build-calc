@@ -22,6 +22,18 @@ const SRC_SPEC_PNG = path.join(SRC, 'assets', 'sprites');
 const OUT_ASSETS = path.join(ROOT, 'assets');
 const OUT_CRIT = path.join(OUT_ASSETS, 'creatures');
 const OUT_SPEC = path.join(OUT_ASSETS, 'specs');
+const OUT_ARTTYPE = path.join(OUT_ASSETS, 'arttypes');
+const OUT_GEM = path.join(OUT_ASSETS, 'gems');
+const OUT_CARDBG = path.join(OUT_ASSETS, 'cardbg');
+
+// copy a named sprite frame from the extract's assets/sprites (<base>_0.png) into outDir/destName
+function copyNamedSprite(base, outDir, destName) {
+  for (const cand of [`${base}_0.png`, `${base}.png`]) {
+    const src = path.join(SRC_SPEC_PNG, cand);
+    if (fs.existsSync(src)) { fs.mkdirSync(outDir, { recursive: true }); fs.copyFileSync(src, path.join(outDir, destName)); return true; }
+  }
+  return false;
+}
 
 const STRICT = process.argv.includes('--strict');
 
@@ -174,6 +186,12 @@ const specBaseSet = new Set(specSpriteFiles.map(f => f.replace(/_\d+\.png$/, '')
 fs.rmSync(OUT_SPEC, { recursive: true, force: true });
 fs.mkdirSync(OUT_SPEC, { recursive: true });
 
+// perk descriptions (catalog) + cost/ranks (perk_stats) keyed by perk KEY
+const catalogPerks = readJSON(path.join(SRC, 'data', 'catalog', 'perks.json'));
+const catalogPerkArr = Array.isArray(catalogPerks) ? catalogPerks : (catalogPerks.records || Object.values(catalogPerks));
+const perkDescByKey = new Map(catalogPerkArr.map(p => [p.key, p.desc || '']));
+const perkStatByKey = new Map(readJSON(path.join(MODEL, 'perk_stats.json')).records.map(p => [p.key, p]));
+
 const specs = [];
 for (const s of specRecs) {
   const slug = norm(s.key || s.label);
@@ -189,9 +207,15 @@ for (const s of specRecs) {
     }
   }
   if (!sprite) err(`specialization "${s.label}" (${s.key}) has no sprite — add to SPEC_ALIAS`);
+  const perks = (s.perks || []).map(p => {
+    const st = perkStatByKey.get(p.key);
+    return { key: p.key, name: p.name, desc: perkDescByKey.get(p.key) || '',
+             cost: st ? st.cost : null, ranks: st ? st.ranks : 1 };
+  });
   specs.push({
     id: s.spec_id, key: s.key || slug.toUpperCase(), label: s.label, sprite,
-    playstyle: s.playstyle || '', perkCount: s.perk_count || (s.perks ? s.perks.length : 0),
+    playstyle: s.playstyle || '', description: s.description || '',
+    perkCount: perks.length, perks,
   });
 }
 
@@ -216,6 +240,15 @@ artRef.forEach((a, i) => {
     perRank,
   });
 });
+// artifact-type icons for the 5 primary properties (Helmet/Sword/Staff/Shield/Boots)
+const ART_ICON_SRC = { Helmet: 'helmet_1', Sword: 'sword_1', Staff: 'staff_1', Shield: 'shield_1', Boots: 'boots_1' };
+fs.rmSync(OUT_ARTTYPE, { recursive: true, force: true });
+for (const p of artGroup.primary) {
+  const base = ART_ICON_SRC[p.property];
+  const dest = `${norm(p.property)}.png`;
+  if (base && copyNamedSprite(base, OUT_ARTTYPE, dest)) p.icon = `assets/arttypes/${dest}`;
+  else warn(`artifact type icon missing for ${p.property}`);
+}
 
 // ── trait items (slottable into artifact trait slots) ──
 const matStats = readJSON(path.join(MODEL, 'material_stats.json'));
@@ -236,14 +269,41 @@ const relics = relicRef.map((r, i) => ({
   ranks: (r.ranks || []).map(x => ({ rank: pct(x.rank), desc: x.description || '' })),
 }));
 
-// ── cards (realm cards — collection toggle) ──
+// ── cards (realm cards — leveled collection) ──
+// each card family maps to a creature race → borrow that creature's sprite + class for the tile.
+const critByRace = new Map();
+for (const c of creatures) { const k = norm(c.race); if (c.sprite && k && !critByRace.has(k)) critByRace.set(k, c); }
 const cardRef = readJSON(path.join(REF, 'cards_ref.json')).records;
-const cards = cardRef.map((c, i) => ({
-  id: i,
-  family: c.family,
-  tiers: String(c.tiers || '').split('/').map(x => pct(x)).filter(x => x != null),
-  effects: [c.unlock_1, c.unlock_2, c.unlock_3].filter(Boolean),
-}));
+let cardArt = 0;
+const cards = cardRef.map((c, i) => {
+  const rep = critByRace.get(norm(c.family));
+  if (rep) cardArt++; else warn(`card family "${c.family}" has no matching creature race for art`);
+  return {
+    id: i,
+    family: c.family,
+    cls: rep ? rep.cls : null,
+    sprite: rep ? rep.sprite : null,
+    tiers: String(c.tiers || '').split('/').map(x => pct(x)).filter(x => x != null),
+    effects: [c.unlock_1, c.unlock_2, c.unlock_3].filter(Boolean),
+  };
+});
+
+// class-tinted card backgrounds (card_bg_<class>)
+fs.rmSync(OUT_CARDBG, { recursive: true, force: true });
+const classBg = {};
+for (const cl of CLASSES) {
+  const dest = `${norm(cl.key)}.png`;
+  if (copyNamedSprite(`card_bg_${norm(cl.key)}`, OUT_CARDBG, dest)) classBg[cl.key] = `assets/cardbg/${dest}`;
+}
+
+// nether-stone gem icons (user randomizes / picks one)
+fs.rmSync(OUT_GEM, { recursive: true, force: true });
+const GEM_KEYS = ['amethyst', 'bismuth', 'diamond', 'emerald', 'obsidian', 'opal', 'ruby', 'sapphire', 'topaz'];
+const gemIcons = [];
+for (const g of GEM_KEYS) {
+  const dest = `${g}.png`;
+  if (copyNamedSprite(`jewel_${g}`, OUT_GEM, dest)) gemIcons.push({ key: g, path: `assets/gems/${dest}` });
+}
 
 // ── damage / stat model (for fusion + future DPS sim) ──
 const damageModel = readJSON(path.join(MODEL, 'damage_model.json'));
@@ -252,6 +312,7 @@ const damageModel = readJSON(path.join(MODEL, 'damage_model.json'));
 const checked = creatures.length + specs.length + artRef.length + traitItems.length + relics.length + cards.length;
 console.log('\n── Data hygiene report ──────────────────────────');
 console.log(`✓ ${checked} records checked · ${creatures.length} playable creatures (100% classed) · ${codeStats} w/ code stats · ${spriteCopied} w/ sprites · ${specs.length} spec sprites`);
+console.log(`  cards w/ art ${cardArt}/${cards.length} · artifact-type icons ${artGroup.primary.filter(p => p.icon).length}/5 · gem icons ${gemIcons.length} · class bgs ${Object.keys(classBg).length}`);
 if (errors.length) {
   console.log(`✗ ${errors.length} errors:`);
   for (const e of errors.slice(0, 40)) console.log('    ' + e);
@@ -281,6 +342,7 @@ const SU_DATA = {
               artifactProps: artRef.length },
   },
   classes: CLASSES,
+  classBg,
   creatures,
   specs,
   traits,
@@ -289,6 +351,7 @@ const SU_DATA = {
   traitItems,
   relics,
   cards,
+  gemIcons,
   damageModel,
 };
 

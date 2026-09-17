@@ -9,13 +9,16 @@
   // ── indices ──────────────────────────────────────────────────────────────
   const CREA = new Map(D.creatures.map(c => [c.id, c]));
   const SPEC = new Map(D.specs.map(s => [s.id, s]));
-  const TRAIT = D.traits;                                   // id -> {name,desc,cls,...}
+  const TRAIT = D.traits;                                   // id -> {name,desc,cls,produces,consumes,labels}
   const CLS_COLOR = Object.fromEntries(D.classes.map(c => [c.key, c.color]));
+  const CLASS_BG = D.classBg || {};
+  const GEM_ICONS = D.gemIcons || [];
   const STAT_KEYS = ["hp", "atk", "def", "int", "spd"];
   const STAT_LABEL = { hp: "Health", atk: "Attack", def: "Defense", int: "Intelligence", spd: "Speed" };
+  const CORE_STATS = ["Health", "Attack", "Defense", "Intelligence", "Speed"];
   const PROP_STAT = { Health: "hp", Attack: "atk", Defense: "def", Intelligence: "int", Speed: "spd" };
 
-  // group artifact stat/trick properties by property name (dual-stat -> multiple entries)
+  // artifact property groups + primary type icons
   const propGroups = new Map();  // name -> {group, entries:[{stat,unit,perRank}]}
   for (const g of ["stat", "trick"]) {
     for (const p of D.artifact[g]) {
@@ -23,44 +26,77 @@
       propGroups.get(p.property).entries.push({ stat: p.stat, unit: p.unit, perRank: p.perRank });
     }
   }
-  const PRIMARY = D.artifact.primary;                        // 5 records, each {property,stat,perRank}
+  const PRIMARY = D.artifact.primary;                                    // 5 {property,stat,perRank,icon}
+  const PRIMARY_ICON = Object.fromEntries(PRIMARY.map(p => [p.property, p.icon]));
   const TRAITITEM = new Map(D.traitItems.map(t => [t.id, t]));
   const RELIC = new Map(D.relics.map(r => [r.id, r]));
 
-  // ── persistence ────────────────────────────────────────────────────────────
-  const LS = {
-    build: "subc.build", cards: "subc.cards", nether: "subc.nether",
-  };
-  const jload = (k, dflt) => { try { return JSON.parse(localStorage.getItem(k)) ?? dflt; } catch { return dflt; } };
+  // ── persistence (schema 2) ─────────────────────────────────────────────────
+  const LS = { build: "subc.build", cards: "subc.cards", nether: "subc.nether", artifacts: "subc.artifacts" };
+  const jload = (k, dflt) => { try { const v = JSON.parse(localStorage.getItem(k)); return v == null ? dflt : v; } catch { return dflt; } };
   const jsave = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} };
 
-  const emptySlot = () => ({ cid: null, fusion: null, artifact: null, relic: null });
+  const emptySlot = () => ({ cid: null, fusion: null, artifactId: null, relic: null });
   let build = jload(LS.build, null);
-  if (!build || build.schema !== 1) build = { schema: 1, specId: null, slots: Array.from({ length: 6 }, emptySlot) };
-  // defensive fill
+  if (!build || build.schema !== 2) build = { schema: 2, specId: null, perkAlloc: {}, slots: Array.from({ length: 6 }, emptySlot) };
+  build.perkAlloc = build.perkAlloc || {};
   while (build.slots.length < 6) build.slots.push(emptySlot());
   build.slots = build.slots.map(s => Object.assign(emptySlot(), s));
 
-  let cards = jload(LS.cards, null) || { notOwned: {}, disabled: {} };   // default: all owned + enabled
-  let nether = jload(LS.nether, null) || [];                            // user library
+  let cards = jload(LS.cards, null);                        // { levels: {cardId: 0..3} } — absent == 3 (max)
+  if (!cards || !cards.levels) cards = { levels: {} };
+  let nether = jload(LS.nether, null);                      // [{id,name,icon,props:[{type,mode,stats:[{stat,value}]}]}]
+  if (!Array.isArray(nether)) nether = [];
+  let artifacts = jload(LS.artifacts, null);                // [{id,name,rank,primary,props[],traitItemIds[],netherIds[]}]
+  if (!Array.isArray(artifacts)) artifacts = [];
 
   const persistBuild = () => jsave(LS.build, build);
   const persistCards = () => jsave(LS.cards, cards);
   const persistNether = () => jsave(LS.nether, nether);
+  const persistArtifacts = () => jsave(LS.artifacts, artifacts);
+  let nextNetherId = nether.reduce((m, n) => Math.max(m, n.id || 0), 0) + 1;
+  let nextArtId = artifacts.reduce((m, a) => Math.max(m, a.id || 0), 0) + 1;
+
+  const cardLevel = (id) => cards.levels[id] == null ? 3 : cards.levels[id];
 
   // ── util ─────────────────────────────────────────────────────────────────
   const el = (id) => document.getElementById(id);
   const esc = (s) => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
   const clsColor = (cls) => CLS_COLOR[cls] || "var(--border-dim)";
-  // contrast-chosen text colour for a trait banner background
   function textOn(hex) {
     const h = String(hex).replace("#", ""); if (h.length < 6) return "#fff";
     const r = parseInt(h.slice(0, 2), 16), g = parseInt(h.slice(2, 4), 16), b = parseInt(h.slice(4, 6), 16);
     return (0.299 * r + 0.587 * g + 0.114 * b) > 150 ? "#150e26" : "#fff";
   }
+  const spriteImg = (src, cls) =>
+    src ? `<img src="${esc(src)}" alt="" class="${cls || ""}" onerror="this.style.visibility='hidden'">` : "";
+  const critFace = (c) => c.sprite ? spriteImg(c.sprite)
+    : `<div class="crit-face" style="--face-cls:${clsColor(c.cls)}">${esc((c.name || "?").trim()[0] || "?")}</div>`;
 
-  // ── stat computation (fusion + artifact) ──────────────────────────────────
-  // Fusion (codex): offspring base = per-stat AVERAGE of both parents; class = SECONDARY parent's.
+  // creature synergy tags (from its innate trait's produces/consumes edge tokens)
+  const creatureTags = (c) => {
+    const t = c.traitId != null ? TRAIT[c.traitId] : null; if (!t) return [];
+    return [...new Set([...(t.produces || []), ...(t.consumes || [])])];
+  };
+  const tagLabel = (tok) => (D.tagLabels[tok] && (D.tagLabels[tok].produces || D.tagLabels[tok].consumes)) || tok;
+  // full tag option list (tokens present on at least one creature), sorted by label
+  let TAG_OPTIONS = null;
+  function tagOptions() {
+    if (TAG_OPTIONS) return TAG_OPTIONS;
+    const set = new Set();
+    for (const c of D.creatures) for (const tok of creatureTags(c)) set.add(tok);
+    TAG_OPTIONS = [...set].map(tok => ({ tok, label: tagLabel(tok) })).sort((a, b) => a.label.localeCompare(b.label));
+    return TAG_OPTIONS;
+  }
+  let RACE_OPTIONS = null;
+  function raceOptions() {
+    if (RACE_OPTIONS) return RACE_OPTIONS;
+    RACE_OPTIONS = [...new Set(D.creatures.map(c => c.race).filter(Boolean))].sort();
+    return RACE_OPTIONS;
+  }
+
+  // ── stat computation (fusion + artifact + socketed nether) ─────────────────
+  function resolveArtifact(slot) { return slot.artifactId != null ? artifacts.find(a => a.id === slot.artifactId) : null; }
   function baseStats(slot) {
     const c = CREA.get(slot.cid); if (!c) return null;
     const f = slot.fusion != null ? CREA.get(slot.fusion) : null;
@@ -72,21 +108,23 @@
     out.total = STAT_KEYS.reduce((s, k) => s + out[k], 0);
     return out;
   }
-  // artifact % contribution per base stat (primary + chosen stat/trick properties)
-  function artifactPct(slot) {
+  // % contribution per base stat from an artifact object (primary + props + socketed nether)
+  function artifactPctOf(a) {
     const out = { hp: 0, atk: 0, def: 0, int: 0, spd: 0 };
-    const a = slot.artifact; if (!a) return out;
+    if (!a) return out;
     const rank = a.rank || 50;
-    if (a.primary) {
-      const p = PRIMARY.find(x => x.property === a.primary);
-      if (p) { const k = PROP_STAT[p.stat]; if (k) out[k] += (p.perRank[rank] || 0); }
-    }
+    if (a.primary) { const p = PRIMARY.find(x => x.property === a.primary); if (p) { const k = PROP_STAT[p.stat]; if (k) out[k] += (p.perRank[rank] || 0); } }
     for (const name of a.props || []) {
       const grp = propGroups.get(name); if (!grp) continue;
       for (const e of grp.entries) { const k = PROP_STAT[e.stat]; if (k) out[k] += (e.perRank[rank] || 0); }
     }
+    for (const nid of a.netherIds || []) {
+      const n = nether.find(x => x.id === nid); if (!n) continue;
+      for (const pr of n.props || []) if (pr.type === "stat") for (const s of pr.stats || []) { const k = PROP_STAT[s.stat]; if (k) out[k] += (Number(s.value) || 0); }
+    }
     return out;
   }
+  const artifactPct = (slot) => artifactPctOf(resolveArtifact(slot));
   function finalStats(slot) {
     const b = baseStats(slot); if (!b) return null;
     const pct = artifactPct(slot);
@@ -94,21 +132,12 @@
     for (const k of STAT_KEYS) final[k] = Math.round(b[k] * (1 + pct[k] / 100));
     return { base: b, pct, final, total: STAT_KEYS.reduce((s, k) => s + final[k], 0) };
   }
-  // all traits granted to a creature: innate (+fused parent) + artifact trait-items + nether stones
   function slotTraitIds(slot) {
     const b = baseStats(slot); const ids = b ? [...b.traitIds] : [];
-    if (slot.artifact) for (const tid of slot.artifact.traitItemIds || []) {
-      const ti = TRAITITEM.get(tid); if (ti && ti.traitId != null) ids.push(ti.traitId);
-    }
+    const a = resolveArtifact(slot);
+    if (a) for (const tid of a.traitItemIds || []) { const ti = TRAITITEM.get(tid); if (ti && ti.traitId != null) ids.push(ti.traitId); }
     return ids;
   }
-
-  // ── shared render bits ─────────────────────────────────────────────────────
-  const spriteImg = (src, cls) =>
-    src ? `<img src="${esc(src)}" alt="" class="${cls || ""}" onerror="this.style.visibility='hidden'">` : "";
-  // creature face: real battle sprite, or a class-tinted monogram when the extract lacks the sprite
-  const critFace = (c) => c.sprite ? spriteImg(c.sprite)
-    : `<div class="crit-face" style="--face-cls:${clsColor(c.cls)}">${esc((c.name || "?").trim()[0] || "?")}</div>`;
 
   function traitBanner(tid, opts = {}) {
     const t = TRAIT[tid]; if (!t) return "";
@@ -118,34 +147,28 @@
       style="--aff-color:${color};--aff-text:${textOn(color === "var(--border-dim)" ? "#6d5a2e" : color)}" title="${esc(t.name)}">
       <span class="trait-banner-label">${esc(label)}</span></span>`;
   }
+  const artIcon = (a) => a && a.primary ? PRIMARY_ICON[a.primary] : null;
 
   // ── HOME (build-first) ─────────────────────────────────────────────────────
   function render() {
     const app = el("app");
     const scroll = app.scrollTop;
     app.innerHTML = renderHome();
-    app.scrollTop = scroll;                                  // never jump to top
+    app.scrollTop = scroll;
   }
 
   function renderHome() {
     const spec = build.specId != null ? SPEC.get(build.specId) : null;
-    const playerCard = `
-      <div class="slot slot-player ${spec ? "filled" : ""}" style="--slot-cls:var(--accent2)">
-        <div class="slot-sprite-wrap" data-action="pick-spec">
-          ${spec && spec.sprite ? spriteImg(spec.sprite) : `<div class="slot-empty-icon">✦</div>`}
-        </div>
-        <div class="slot-name">${spec ? esc(spec.label) : "Choose Specialization"}</div>
-        <div class="slot-sub">${spec ? esc((spec.playstyle || "").slice(0, 42)) + "…" : "Player class"}</div>
+    const specTile = `
+      <div class="spec-tile ${spec ? "filled" : ""}" data-action="pick-spec" title="Specialization">
+        <div class="spec-tile-icon">${spec && spec.sprite ? spriteImg(spec.sprite) : `<span class="spec-tile-plus">✦</span>`}</div>
+        <div class="spec-tile-label">${spec ? esc(spec.label) : "Specialization"}</div>
         ${spec ? `<button class="slot-remove" data-action="clear-spec" title="Remove">✕</button>` : ""}
       </div>`;
 
     const slots = build.slots.map((s, i) => renderSlot(s, i)).join("");
-
     return `
-      <div class="player-row">
-        <div class="section-label">Specialization</div>
-        <div class="party-grid" style="grid-template-columns:minmax(0,1fr)">${playerCard}</div>
-      </div>
+      <div class="home-top">${specTile}</div>
       <div class="section-label">Party — 6 Creatures</div>
       <div class="party-grid">${slots}</div>
       ${renderPartySummary()}
@@ -156,14 +179,13 @@
     const c = CREA.get(slot.cid);
     if (!c) {
       return `<div class="slot" data-slot="${i}">
-        <div class="slot-sprite-wrap" data-action="pick-creature" data-slot="${i}">
-          <div class="slot-empty-icon">＋</div></div>
-        <div class="slot-name">Empty</div>
-        <div class="slot-sub">Tap to add a creature</div></div>`;
+        <div class="slot-sprite-wrap" data-action="pick-creature" data-slot="${i}"><div class="slot-empty-icon">＋</div></div>
+        <div class="slot-name">Empty</div><div class="slot-sub">Tap to add a creature</div></div>`;
     }
     const b = baseStats(slot);
     const f = slot.fusion != null ? CREA.get(slot.fusion) : null;
     const cls = b.cls;
+    const a = resolveArtifact(slot);
     return `<div class="slot filled" data-slot="${i}" style="--slot-cls:${clsColor(cls)}">
       <button class="slot-remove" data-action="remove-creature" data-slot="${i}" title="Remove">✕</button>
       <div class="slot-sprite-wrap" data-action="creature-detail" data-slot="${i}">${critFace(c)}</div>
@@ -171,7 +193,7 @@
       <div class="slot-sub"><span class="cls-chip" style="color:${clsColor(cls)}">${esc(cls || "—")}</span>${c.race ? " · " + esc(c.race) : ""}</div>
       <div class="slot-actions">
         <button class="slot-mini ${f ? "on" : ""}" data-action="pick-fusion" data-slot="${i}" title="Fusion partner">${f ? "Fused" : "Fuse"}</button>
-        <button class="slot-mini ${slot.artifact ? "on" : ""}" data-action="build-artifact" data-slot="${i}" title="Artifact">Artifact</button>
+        <button class="slot-mini ${a ? "on" : ""}" data-action="equip-artifact" data-slot="${i}" title="Artifact">${a ? "Artifact ✓" : "Artifact"}</button>
         <button class="slot-mini ${slot.relic ? "on" : ""}" data-action="build-relic" data-slot="${i}" title="Relic">Relic</button>
       </div></div>`;
   }
@@ -179,14 +201,12 @@
   function renderPartySummary() {
     const filled = build.slots.filter(s => s.cid != null);
     if (!filled.length) return "";
-    const rows = build.slots.map((s, i) => {
+    const rows = build.slots.map((s) => {
       const c = CREA.get(s.cid); if (!c) return "";
       const fs = finalStats(s);
       return `<div class="stat-row"><span class="stat-name">${esc(c.name)}</span>
-        <span class="stat-val base">${fs.final.hp}</span>
-        <span class="stat-val">${fs.final.atk}</span>
-        <span class="stat-val">${fs.final.def}</span>
-        <span class="stat-val total">${fs.total}</span></div>`;
+        <span class="stat-val base">${fs.final.hp}</span><span class="stat-val">${fs.final.atk}</span>
+        <span class="stat-val">${fs.final.def}</span><span class="stat-val total">${fs.total}</span></div>`;
     }).join("");
     return `<div class="party-summary"><div class="section-label">Party stat overview (after fusion + artifact)</div>
       <div class="stat-grid">
@@ -195,17 +215,16 @@
         ${rows}</div></div>`;
   }
 
-  // ── overlay plumbing (two layers, static frame, scroll-preserving refresh) ──
+  // ── overlay plumbing ───────────────────────────────────────────────────────
   const OV = el("overlay-root"), DOV = el("detail-overlay-root");
-  let ovState = null;   // {kind, ...} current selector overlay
+  let ovState = null, dovState = null;
   const SCROLLERS = [".ovl-center-scroll", ".ovl-left", ".ovl-right"];
 
   function openOverlay(html) { OV.innerHTML = html; OV.classList.remove("hidden"); }
   function closeOverlay() { OV.classList.add("hidden"); OV.innerHTML = ""; ovState = null; }
   function openDetail(html) { DOV.innerHTML = html; DOV.classList.remove("hidden"); }
-  function closeDetail() { DOV.classList.add("hidden"); DOV.innerHTML = ""; }
+  function closeDetail() { DOV.classList.add("hidden"); DOV.innerHTML = ""; dovState = null; }
 
-  // re-render the current selector overlay body WITHOUT losing scroll positions
   function refreshOverlay() {
     if (!ovState) return;
     const panel = OV.querySelector(".overlay-panel"); if (!panel) return;
@@ -213,177 +232,272 @@
     panel.outerHTML = ovState.render();
     const p2 = OV.querySelector(".overlay-panel");
     SCROLLERS.forEach((sel, k) => { const e = p2 && p2.querySelector(sel); if (e) e.scrollTop = saved[k]; });
-    maybeFocusSearch();
+    maybeFocusSearch(OV);
   }
-  function maybeFocusSearch() {
-    const input = OV.querySelector(".ovl-search");
+  function refreshDetail() {
+    if (!dovState) return;
+    const panel = DOV.querySelector(".overlay-panel"); if (!panel) return;
+    const saved = SCROLLERS.map(sel => { const e = panel.querySelector(sel); return e ? e.scrollTop : 0; });
+    panel.outerHTML = dovState.render();
+    const p2 = DOV.querySelector(".overlay-panel");
+    SCROLLERS.forEach((sel, k) => { const e = p2 && p2.querySelector(sel); if (e) e.scrollTop = saved[k]; });
+  }
+  function maybeFocusSearch(root) {
+    const input = root.querySelector(".ovl-search");
     const isTouch = window.matchMedia && window.matchMedia("(pointer: coarse)").matches;
     if (input && !isTouch) input.focus();
   }
 
-  // ── creature / fusion selector ────────────────────────────────────────────
-  function openCreaturePicker(slotIdx, mode /* 'primary' | 'fusion' */) {
+  // ── creature / fusion selector (with faceted filters) ──────────────────────
+  function openCreaturePicker(slotIdx, mode) {
     const slot = build.slots[slotIdx];
     ovState = {
       kind: "creature", slotIdx, mode,
-      search: "", clsFilter: null,
+      search: "", clsFilter: null, raceFilter: null, tagFilters: [],
       sel: mode === "fusion" ? slot.fusion : slot.cid,
       render: renderCreaturePicker,
     };
-    openOverlay(ovState.render());
-    maybeFocusSearch();
+    openOverlay(ovState.render()); maybeFocusSearch(OV);
   }
-
+  function creatureMatches(c, st) {
+    if (st.clsFilter && c.cls !== st.clsFilter) return false;
+    if (st.raceFilter && c.race !== st.raceFilter) return false;
+    if (st.tagFilters.length) { const tags = creatureTags(c); if (!st.tagFilters.every(t => tags.includes(t))) return false; }
+    if (st.search) { const q = st.search.toLowerCase(); if (!c.name.toLowerCase().includes(q) && !(c.race || "").toLowerCase().includes(q)) return false; }
+    return true;
+  }
   function renderCreaturePicker() {
     const st = ovState;
-    const q = st.search.trim().toLowerCase();
-    let list = D.creatures;
-    if (st.clsFilter) list = list.filter(c => c.cls === st.clsFilter);
-    if (q) list = list.filter(c => c.name.toLowerCase().includes(q) || (c.race || "").toLowerCase().includes(q));
+    const list = D.creatures.filter(c => creatureMatches(c, st));
     const shown = list.slice(0, 400);
     const selC = st.sel != null ? CREA.get(st.sel) : null;
 
-    const clsChips = D.classes.map(cl =>
-      `<button class="chip ${st.clsFilter === cl.key ? "on" : ""}" data-cls="${cl.key}" data-action="crea-cls" data-c="${cl.key}"
-        style="--c:${cl.color}">${cl.key}</button>`).join("");
+    const facet = (lbl, val, action) =>
+      `<button class="facet ${val ? "on" : ""}" data-action="${action}">${lbl}${val ? `: <b>${esc(val)}</b>` : ""}${val ? ` <span class="facet-x" data-action="${action}-clear">✕</span>` : " ▾"}</button>`;
+    const tagChips = st.tagFilters.map((t, i) =>
+      `<button class="facet on tag" data-action="rm-tag" data-i="${i}">${esc(tagLabel(t))} <span class="facet-x">✕</span></button>`).join("");
+    const filterbar = `<div class="ovl-filterbar">
+      ${facet("Class", st.clsFilter, "facet-class")}
+      ${facet("Race", st.raceFilter, "facet-race")}
+      ${tagChips}
+      <button class="facet add" data-action="facet-tag">＋ Tag</button>
+    </div>`;
 
     const tiles = shown.map(c => `
       <div class="pick-tile ${st.sel === c.id ? "selected" : ""}" data-action="crea-pick" data-id="${c.id}">
         <span class="pt-cls" style="--pt-cls:${clsColor(c.cls)}"></span>
         <div class="pt-sprite">${critFace(c)}</div>
-        <div class="pt-name">${esc(c.name)}</div>
-        <div class="pt-total">${c.total}</div>
+        <div class="pt-name">${esc(c.name)}</div><div class="pt-total">${c.total}</div>
       </div>`).join("");
 
     const title = st.mode === "fusion" ? "Choose Fusion Partner (secondary)" : "Choose Creature";
     return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel">
-      <div class="overlay-header">
-        <h2>${title}</h2>
+      <div class="overlay-header"><h2>${title}</h2>
         <input class="ovl-search" placeholder="Search name / race…" value="${esc(st.search)}" data-action="crea-search">
-        <button class="ovl-close" data-action="close-ovl">✕</button>
-      </div>
+        <button class="ovl-close" data-action="close-ovl">✕</button></div>
       <div class="overlay-body">
-        <div class="ovl-center">
-          <div class="ovl-filterbar">${clsChips}
-            <button class="chip ${st.clsFilter ? "" : "on"}" data-action="crea-cls" data-c="">All</button></div>
+        <div class="ovl-center">${filterbar}
           <div class="ovl-center-scroll"><div class="pick-grid">${tiles}</div>
-            ${list.length > 400 ? `<div class="slot-sub" style="margin-top:10px">Showing 400 of ${list.length} — refine your search.</div>` : ""}
-          </div>
+            ${list.length > 400 ? `<div class="slot-sub" style="margin-top:10px">Showing 400 of ${list.length} — refine your filters.</div>` : ""}</div>
         </div>
         <div class="ovl-right">${selC ? renderCreatureIdentity(selC) : `<div class="slot-sub">Select a creature.</div>`}</div>
       </div>
-      <div class="overlay-footer">
-        <span class="foot-info">${list.length} match${list.length === 1 ? "" : "es"}${st.mode === "fusion" ? " · fusion averages both parents' stats" : ""}</span>
+      <div class="overlay-footer"><span class="foot-info">${list.length} match${list.length === 1 ? "" : "es"}${st.mode === "fusion" ? " · fusion averages both parents' stats" : ""}</span>
         <div><button class="btn-ghost" data-action="close-ovl">Cancel</button>
-        <button class="btn-confirm" data-action="crea-confirm" ${st.sel == null ? "disabled" : ""}>Confirm</button></div>
-      </div>
+        <button class="btn-confirm" data-action="crea-confirm" ${st.sel == null ? "disabled" : ""}>Confirm</button></div></div>
     </div></div>`;
   }
-
   function renderCreatureIdentity(c) {
     return `<div style="text-align:center">${critFace(c)}</div>
       <h3 style="text-align:center;margin:6px 0">${esc(c.name)}</h3>
-      <div class="slot-sub" style="margin-bottom:10px">
-        <span style="color:${clsColor(c.cls)};font-weight:700">${esc(c.cls || "—")}</span>${c.race ? " · " + esc(c.race) : ""}</div>
+      <div class="slot-sub" style="margin-bottom:10px"><span style="color:${clsColor(c.cls)};font-weight:700">${esc(c.cls || "—")}</span>${c.race ? " · " + esc(c.race) : ""}</div>
       <div class="stat-grid" style="margin-bottom:10px">
         ${STAT_KEYS.map(k => `<div class="stat-row"><span class="stat-name">${STAT_LABEL[k]}</span>
           <span class="stat-val total" style="grid-column:2/5">${c[k]}</span></div>`).join("")}
-        <div class="stat-row hl-med"><span class="stat-name">Total</span>
-          <span class="stat-val total" style="grid-column:2/5">${c.total}</span></div>
-      </div>
+        <div class="stat-row hl-med"><span class="stat-name">Total</span><span class="stat-val total" style="grid-column:2/5">${c.total}</span></div></div>
       ${c.traitId != null ? `<div class="section-label">Innate trait</div>
-        <div class="primary-traits">${traitBanner(c.traitId)}
-        <div class="trait-desc">${esc((TRAIT[c.traitId] || {}).desc || "")}</div></div>` : ""}`;
+        <div class="primary-traits">${traitBanner(c.traitId)}<div class="trait-desc">${esc((TRAIT[c.traitId] || {}).desc || "")}</div></div>` : ""}`;
+  }
+
+  // ── facet sub-picker (Class / Race / Tag) on the detail layer ───────────────
+  function openFacetPicker(kind) {
+    dovState = { kind: "facet", facet: kind, search: "", render: renderFacetPicker };
+    openDetail(dovState.render()); maybeFocusSearch(DOV);
+  }
+  function renderFacetPicker() {
+    const st = dovState, q = st.search.trim().toLowerCase();
+    let opts, title;
+    if (st.facet === "class") { title = "Filter by Class"; opts = D.classes.map(c => ({ v: c.key, label: c.key, color: c.color })); }
+    else if (st.facet === "race") { title = "Filter by Race"; opts = raceOptions().map(r => ({ v: r, label: r })); }
+    else { title = "Add a Tag (synergy edge)"; opts = tagOptions().map(t => ({ v: t.tok, label: t.label })); }
+    if (q) opts = opts.filter(o => o.label.toLowerCase().includes(q));
+    const rows = opts.slice(0, 400).map(o =>
+      `<button class="opt-row" data-action="facet-pick" data-v="${esc(o.v)}">${o.color ? `<span class="opt-dot" style="background:${o.color}"></span>` : ""}${esc(o.label)}</button>`).join("");
+    return `<div class="ovl-backdrop" data-action="facet-backdrop"><div class="overlay-panel detail facet-panel">
+      <div class="overlay-header"><h2>${title}</h2>
+        <input class="ovl-search" placeholder="Search…" value="${esc(st.search)}" data-action="facet-search">
+        <button class="ovl-close" data-action="close-detail">✕</button></div>
+      <div class="overlay-body"><div class="ovl-center"><div class="ovl-center-scroll"><div class="opt-list">${rows}</div>
+        ${opts.length > 400 ? `<div class="slot-sub" style="margin-top:8px">Showing 400 of ${opts.length}.</div>` : ""}</div></div></div>
+    </div></div>`;
   }
 
   // ── specialization selector ────────────────────────────────────────────────
   function openSpecPicker() {
     ovState = { kind: "spec", search: "", sel: build.specId, render: renderSpecPicker };
-    openOverlay(ovState.render()); maybeFocusSearch();
+    openOverlay(ovState.render()); maybeFocusSearch(OV);
+  }
+  function allocDefault(spec) { // returns the set of allocated perk keys (default = all)
+    const dealloc = build.perkAlloc[spec.id] || {};
+    return spec.perks.filter(p => !dealloc[p.key]);
   }
   function renderSpecPicker() {
     const st = ovState;
     const q = st.search.trim().toLowerCase();
-    const list = D.specs.filter(s => !q || s.label.toLowerCase().includes(q));
+    const list = D.specs.filter(s => !q || s.label.toLowerCase().includes(q)).slice().sort((a, b) => a.label.localeCompare(b.label));
     const sel = st.sel != null ? SPEC.get(st.sel) : null;
     const tiles = list.map(s => `
-      <div class="pick-tile ${st.sel === s.id ? "selected" : ""}" data-action="spec-pick" data-id="${s.id}">
-        <div class="pt-sprite">${spriteImg(s.sprite)}</div>
-        <div class="pt-name">${esc(s.label)}</div></div>`).join("");
+      <div class="pick-tile spec-pick ${st.sel === s.id ? "selected" : ""}" data-action="spec-pick" data-id="${s.id}">
+        <div class="pt-sprite">${spriteImg(s.sprite)}</div><div class="pt-name">${esc(s.label)}</div></div>`).join("");
+    let info = `<div class="slot-sub">Select a specialization.</div>`;
+    if (sel) {
+      const alloc = allocDefault(sel);
+      const perkList = sel.perks.map(p => {
+        const on = alloc.includes(p);
+        return `<div class="perk-line ${on ? "on" : "off"}"><span class="perk-dot"></span><b>${esc(p.name)}</b>${p.desc ? ` — <span class="perk-desc">${esc(p.desc)}</span>` : ""}</div>`;
+      }).join("");
+      info = `<div class="spec-info">
+        <div class="spec-info-sprite">${spriteImg(sel.sprite)}</div>
+        <h2 class="spec-info-name">${esc(sel.label)}</h2>
+        <div class="trait-desc spec-play">${esc(sel.playstyle || sel.description || "")}</div>
+        <div class="section-label" style="margin-top:12px">Perks — ${alloc.length}/${sel.perks.length} allocated</div>
+        <div class="perk-list">${perkList}</div>
+      </div>`;
+    }
     return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel">
       <div class="overlay-header"><h2>Choose Specialization</h2>
         <input class="ovl-search" placeholder="Search…" value="${esc(st.search)}" data-action="spec-search">
         <button class="ovl-close" data-action="close-ovl">✕</button></div>
       <div class="overlay-body">
-        <div class="ovl-center"><div class="ovl-center-scroll"><div class="pick-grid">${tiles}</div></div></div>
-        <div class="ovl-right">${sel ? `<h3 style="text-align:center">${esc(sel.label)}</h3>
-          <div style="text-align:center;margin:6px 0">${spriteImg(sel.sprite)}</div>
-          <div class="trait-desc">${esc(sel.playstyle || "")}</div>
-          <div class="slot-sub" style="margin-top:8px">${sel.perkCount} perks</div>` : `<div class="slot-sub">Select a specialization.</div>`}</div>
+        <div class="ovl-center"><div class="ovl-center-scroll"><div class="pick-grid spec-grid">${tiles}</div></div></div>
+        <div class="ovl-right spec-right">${info}</div>
       </div>
-      <div class="overlay-footer"><span class="foot-info">${list.length} specializations</span>
-        <div><button class="btn-ghost" data-action="close-ovl">Cancel</button>
-        <button class="btn-confirm" data-action="spec-confirm" ${st.sel == null ? "disabled" : ""}>Confirm</button></div></div>
+      <div class="overlay-footer"><span class="foot-info"></span>
+        <div>
+          <button class="btn-ghost" data-action="close-ovl">Cancel</button>
+          <button class="btn-ghost" data-action="customize-perks" ${sel ? "" : "disabled"}>Customize</button>
+          <button class="btn-confirm" data-action="spec-confirm" ${st.sel == null ? "disabled" : ""}>Confirm</button>
+        </div></div>
     </div></div>`;
   }
 
-  // ── artifact builder ───────────────────────────────────────────────────────
-  function openArtifactBuilder(slotIdx) {
-    const slot = build.slots[slotIdx];
-    const a = slot.artifact || { rank: 50, primary: null, props: [], traitItemIds: [], netherIds: [] };
-    ovState = { kind: "artifact", slotIdx, draft: JSON.parse(JSON.stringify(a)), tab: "props", search: "", render: renderArtifactBuilder };
+  // ── perk selector (Customize) — default fully allocated, permit deallocation ─
+  function openPerkPicker(specId) {
+    dovState = { kind: "perks", specId, search: "", render: renderPerkPicker };
+    openDetail(dovState.render()); maybeFocusSearch(DOV);
+  }
+  function renderPerkPicker() {
+    const st = dovState, spec = SPEC.get(st.specId);
+    const dealloc = build.perkAlloc[spec.id] || {};
+    const q = st.search.trim().toLowerCase();
+    const list = spec.perks.filter(p => !q || p.name.toLowerCase().includes(q) || (p.desc || "").toLowerCase().includes(q));
+    const allocCount = spec.perks.filter(p => !dealloc[p.key]).length;
+    const rows = list.map(p => {
+      const on = !dealloc[p.key];
+      return `<div class="perk-row ${on ? "on" : "off"}" data-action="toggle-perk" data-k="${esc(p.key)}">
+        <span class="perk-check">${on ? "✓" : ""}</span>
+        <div class="perk-row-main"><b>${esc(p.name)}</b>${p.cost != null ? `<span class="perk-cost">${p.cost}</span>` : ""}
+          ${p.desc ? `<div class="perk-desc">${esc(p.desc)}</div>` : ""}</div></div>`;
+    }).join("");
+    return `<div class="ovl-backdrop" data-action="facet-backdrop"><div class="overlay-panel detail">
+      <div class="overlay-header"><h2>${esc(spec.label)} — Perks</h2>
+        <input class="ovl-search" placeholder="Search perks…" value="${esc(st.search)}" data-action="perk-search">
+        <button class="ovl-close" data-action="close-detail">✕</button></div>
+      <div class="overlay-body"><div class="ovl-center">
+        <div class="ovl-filterbar"><button class="chip" data-action="perk-all">Allocate all</button><button class="chip" data-action="perk-none">Deallocate all</button></div>
+        <div class="ovl-center-scroll"><div class="perk-picker">${rows}</div></div>
+      </div></div>
+      <div class="overlay-footer"><span class="foot-info">${allocCount}/${spec.perks.length} allocated · click to toggle</span>
+        <button class="btn-confirm" data-action="close-detail">Done</button></div>
+    </div></div>`;
+  }
+
+  // ── artifact library (equip) ───────────────────────────────────────────────
+  function openArtifactLibrary(slotIdx) {
+    ovState = { kind: "artlib", slotIdx, render: renderArtifactLibrary };
+    openOverlay(ovState.render());
+  }
+  function artifactSummary(a) {
+    const parts = [];
+    if (a.primary) parts.push(a.primary);
+    if ((a.props || []).length) parts.push(`${a.props.length} propert${a.props.length === 1 ? "y" : "ies"}`);
+    if ((a.traitItemIds || []).length) parts.push(`${a.traitItemIds.length} trait`);
+    if ((a.netherIds || []).length) parts.push(`${a.netherIds.length} nether`);
+    return `R${a.rank} · ` + (parts.join(" · ") || "empty");
+  }
+  function renderArtifactLibrary() {
+    const st = ovState, slot = build.slots[st.slotIdx], c = CREA.get(slot.cid);
+    const tiles = artifacts.map(a => `
+      <div class="lib-tile ${slot.artifactId === a.id ? "equipped" : ""}">
+        <div class="lib-icon" data-action="art-equip" data-id="${a.id}">${spriteImg(artIcon(a))}</div>
+        <div class="lib-name">${esc(a.name)}</div>
+        <div class="lib-sub">${esc(artifactSummary(a))}</div>
+        <div class="lib-actions">
+          <button class="slot-mini" data-action="art-equip" data-id="${a.id}">${slot.artifactId === a.id ? "Equipped" : "Equip"}</button>
+          <button class="slot-mini" data-action="art-edit" data-id="${a.id}">Edit</button>
+          <button class="slot-mini danger" data-action="art-del" data-id="${a.id}">✕</button>
+        </div></div>`).join("") || `<div class="slot-sub" style="padding:10px">No artifacts yet — build one.</div>`;
+    return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel">
+      <div class="overlay-header"><h2>Artifacts — ${esc(c ? c.name : "")}</h2><button class="ovl-close" data-action="close-ovl">✕</button></div>
+      <div class="overlay-body"><div class="ovl-center"><div class="ovl-center-scroll">
+        <div class="lib-grid">${tiles}</div></div></div></div>
+      <div class="overlay-footer"><span class="foot-info">Artifacts are saved & reusable across creatures</span>
+        <div>${slot.artifactId != null ? `<button class="btn-ghost" data-action="art-unequip">Unequip</button>` : ""}
+        <button class="btn-confirm" data-action="art-new">＋ Build new artifact</button></div></div>
+    </div></div>`;
+  }
+
+  // ── artifact builder (create/edit a saved artifact) ────────────────────────
+  function openArtifactBuilder(artId, slotIdx) {
+    let draft;
+    if (artId != null) draft = JSON.parse(JSON.stringify(artifacts.find(a => a.id === artId)));
+    else draft = { id: null, name: `Artifact ${nextArtId}`, rank: 50, primary: null, props: [], traitItemIds: [], netherIds: [] };
+    ovState = { kind: "artbuild", artId, slotIdx, draft, tab: "props", search: "", render: renderArtifactBuilder };
     openOverlay(ovState.render());
   }
   function renderArtifactBuilder() {
-    const st = ovState, a = st.draft, slot = build.slots[st.slotIdx], c = CREA.get(slot.cid);
+    const st = ovState, a = st.draft;
     const rank = a.rank;
-    // left: current stat preview
-    const preview = { hp: 0, atk: 0, def: 0, int: 0, spd: 0 };
-    if (a.primary) { const p = PRIMARY.find(x => x.property === a.primary); if (p) { const k = PROP_STAT[p.stat]; if (k) preview[k] += p.perRank[rank] || 0; } }
-    for (const n of a.props) { const g = propGroups.get(n); if (g) for (const e of g.entries) { const k = PROP_STAT[e.stat]; if (k) preview[k] += e.perRank[rank] || 0; } }
-
+    const preview = artifactPctOf(a);
     const primaryRows = PRIMARY.map(p => `
       <div class="prop-row ${a.primary === p.property ? "chosen" : ""}" data-action="art-primary" data-p="${esc(p.property)}">
+        <span class="prop-ico">${spriteImg(p.icon)}</span>
         <span class="prop-name">${esc(p.property)}</span><span class="prop-stat">${esc(p.stat)}</span>
         <span class="prop-val">+${p.perRank[rank]}%</span></div>`).join("");
 
-    // props tab: stat + trick groups, searchable
     const q = st.search.trim().toLowerCase();
     const groups = [...propGroups.values()].filter(g => !q || g.name.toLowerCase().includes(q));
     const propRows = groups.map(g => {
       const on = a.props.includes(g.name);
       const val = g.entries.map(e => PROP_STAT[e.stat] ? `+${e.perRank[rank]}%` : e.perRank[rank]).join(" / ");
-      const stats = g.entries.map(e => e.stat).join(" / ");
       return `<div class="prop-row ${on ? "chosen" : ""}" data-action="art-prop" data-p="${esc(g.name)}">
-        <span class="prop-name">${esc(g.name)}</span><span class="prop-stat">${esc(stats)}</span>
+        <span class="prop-name">${esc(g.name)}</span><span class="prop-stat">${esc(g.entries.map(e => e.stat).join(" / "))}</span>
         <span class="prop-val">${esc(val)}</span></div>`;
     }).join("");
 
-    // trait-item tab
     const qi = st.search.trim().toLowerCase();
     const items = st.tab === "traits"
-      ? D.traitItems.filter(t => t.traitName && (!qi || t.name.toLowerCase().includes(qi) || (t.traitName || "").toLowerCase().includes(qi))).slice(0, 300)
-      : [];
-    const itemRows = items.map(t => {
-      const on = a.traitItemIds.includes(t.id);
-      return `<div class="prop-row ${on ? "chosen" : ""}" data-action="art-item" data-id="${t.id}">
-        <span class="prop-name">${esc(t.name)}</span>
-        <span class="prop-stat">grants ${esc(t.traitName)}</span></div>`;
-    }).join("");
+      ? D.traitItems.filter(t => t.traitName && (!qi || t.name.toLowerCase().includes(qi) || (t.traitName || "").toLowerCase().includes(qi))).slice(0, 300) : [];
+    const itemRows = items.map(t => `<div class="prop-row ${a.traitItemIds.includes(t.id) ? "chosen" : ""}" data-action="art-item" data-id="${t.id}">
+        <span class="prop-name">${esc(t.name)}</span><span class="prop-stat">grants ${esc(t.traitName)}</span></div>`).join("");
 
-    // nether tab
-    const netherRows = nether.map(n => {
-      const on = a.netherIds.includes(n.id);
-      return `<div class="prop-row ${on ? "chosen" : ""}" data-action="art-nether" data-id="${n.id}">
-        <span class="prop-name">${esc(n.name)}</span><span class="prop-stat">${esc((n.lines || []).length)} propert${(n.lines || []).length === 1 ? "y" : "ies"} · ${esc(n.rarity || "")}</span></div>`;
-    }).join("") || `<div class="slot-sub" style="padding:8px">No Nether Stones yet — add them from the “Nether Stones” button in the top bar.</div>`;
+    const netherRows = nether.map(n => `<div class="prop-row ${a.netherIds.includes(n.id) ? "chosen" : ""}" data-action="art-nether" data-id="${n.id}">
+        <span class="prop-ico">${spriteImg(gemPath(n.icon))}</span>
+        <span class="prop-name">${esc(n.name)}</span><span class="prop-stat">${esc(netherSummary(n))}</span></div>`).join("")
+      || `<div class="slot-sub" style="padding:8px">No Nether Stones yet — add them from the top-bar “Nether Stones” button.</div>`;
 
-    const tabBtn = (id, lab) => `<button class="chip ${st.tab === id ? "on" : ""}" data-action="art-tab" data-t="${id}">${lab}</button>`;
-    const centerBody =
-      st.tab === "props" ? propRows :
-      st.tab === "traits" ? itemRows :
-      netherRows;
-
+    const tabBtn = (id, lab) => `<button class="chip ${st.tab === id ? "on" : ""}" data-action="artb-tab" data-t="${id}">${lab}</button>`;
+    const centerBody = st.tab === "props" ? propRows : st.tab === "traits" ? itemRows : netherRows;
     const chips = [
       ...(a.primary ? [`<span class="slot-chip filled">◆ ${esc(a.primary)}</span>`] : []),
       ...a.props.map(n => `<span class="slot-chip filled">${esc(n)}</span>`),
@@ -392,38 +506,36 @@
     ].join("") || `<span class="slot-chip">No properties yet</span>`;
 
     return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel detail">
-      <div class="overlay-header"><h2>Artifact — ${esc(c ? c.name : "")}</h2>
-        ${st.tab !== "props" ? `<input class="ovl-search" placeholder="Search…" value="${esc(st.search)}" data-action="art-search">` : ""}
+      <div class="overlay-header">
+        <span class="hdr-ico">${spriteImg(artIcon(a))}</span>
+        <input class="ovl-search name-field" placeholder="Artifact name" value="${esc(a.name)}" data-action="artb-name" style="max-width:260px">
+        ${st.tab !== "props" ? `<input class="ovl-search" placeholder="Search…" value="${esc(st.search)}" data-action="artb-search">` : ""}
         <button class="ovl-close" data-action="close-ovl">✕</button></div>
       <div class="overlay-body">
         <div class="ovl-left">
           <div class="rank-picker"><span class="slot-sub">Rank</span>
-            <input type="range" min="1" max="50" value="${rank}" data-action="art-rank">
-            <span class="rank-badge">${rank}</span></div>
-          <div class="build-section"><h3>Primary stat</h3>${primaryRows}</div>
-          <div class="build-section"><h3>Live bonus</h3>
-            <div class="stat-grid">${STAT_KEYS.map(k => `<div class="stat-row ${preview[k] ? "hl-med" : ""}">
-              <span class="stat-name">${STAT_LABEL[k]}</span>
-              <span class="stat-val art" style="grid-column:2/5">${preview[k] ? "+" + preview[k] + "%" : "—"}</span></div>`).join("")}</div>
-          </div>
+            <input type="range" min="1" max="50" value="${rank}" data-action="artb-rank"><span class="rank-badge">${rank}</span></div>
+          <div class="build-section"><h3>Primary stat (sets type + icon)</h3>${primaryRows}</div>
+          <div class="build-section"><h3>Live bonus</h3><div class="stat-grid">
+            ${STAT_KEYS.map(k => `<div class="stat-row ${preview[k] ? "hl-med" : ""}"><span class="stat-name">${STAT_LABEL[k]}</span>
+              <span class="stat-val art" style="grid-column:2/5">${preview[k] ? "+" + preview[k] + "%" : "—"}</span></div>`).join("")}</div></div>
         </div>
         <div class="ovl-center">
           <div class="ovl-filterbar">${tabBtn("props", "Properties")}${tabBtn("traits", "Trait Slots")}${tabBtn("nether", "Nether Sockets")}</div>
           <div class="ovl-center-scroll">${centerBody}</div>
         </div>
-        <div class="ovl-right"><div class="section-label">Equipped</div>${chips}</div>
+        <div class="ovl-right"><div class="section-label">Contents</div>${chips}</div>
       </div>
-      <div class="overlay-footer"><span class="foot-info">Artifact is a container: 1 primary + properties + trait / nether sockets</span>
-        <div><button class="btn-ghost" data-action="art-clear">Clear</button>
-        <button class="btn-confirm" data-action="art-confirm">Save Artifact</button></div></div>
+      <div class="overlay-footer"><span class="foot-info">Artifact = container: 1 primary + properties + trait / nether sockets</span>
+        <div><button class="btn-ghost" data-action="artb-cancel">Cancel</button>
+        <button class="btn-confirm" data-action="artb-save">Save Artifact</button></div></div>
     </div></div>`;
   }
 
   // ── relic builder ──────────────────────────────────────────────────────────
   function openRelicBuilder(slotIdx) {
     const slot = build.slots[slotIdx];
-    ovState = { kind: "relic", slotIdx, sel: slot.relic ? slot.relic.id : null,
-      rank: slot.relic ? slot.relic.rank : 50, search: "", render: renderRelicBuilder };
+    ovState = { kind: "relic", slotIdx, sel: slot.relic ? slot.relic.id : null, rank: slot.relic ? slot.relic.rank : 50, search: "", render: renderRelicBuilder };
     openOverlay(ovState.render());
   }
   function renderRelicBuilder() {
@@ -443,62 +555,52 @@
       <div class="overlay-header"><h2>Relic — ${esc(c ? c.name : "")}</h2>
         <input class="ovl-search" placeholder="Search relic / stat…" value="${esc(st.search)}" data-action="relic-search">
         <button class="ovl-close" data-action="close-ovl">✕</button></div>
-      <div class="overlay-body">
-        <div class="ovl-center"><div class="ovl-center-scroll">${rows}</div></div>
+      <div class="overlay-body"><div class="ovl-center"><div class="ovl-center-scroll">${rows}</div></div>
         <div class="ovl-right">
           ${sel ? `<div class="rank-picker"><span class="slot-sub">Rank</span>
-            <input type="range" min="10" max="${Math.max(...sel.ranks.map(r => r.rank), 10)}" step="10" value="${st.rank}" data-action="relic-rank">
-            <span class="rank-badge">${st.rank}</span></div>` : ""}
-          ${detail}</div>
-      </div>
+            <input type="range" min="10" max="${Math.max(...sel.ranks.map(r => r.rank), 10)}" step="10" value="${st.rank}" data-action="relic-rank"><span class="rank-badge">${st.rank}</span></div>` : ""}
+          ${detail}</div></div>
       <div class="overlay-footer"><span class="foot-info">Relic effects are qualitative (not a stat number)</span>
         <div><button class="btn-ghost" data-action="relic-clear">Clear</button>
         <button class="btn-confirm" data-action="relic-confirm" ${st.sel == null ? "disabled" : ""}>Save Relic</button></div></div>
     </div></div>`;
   }
 
-  // ── creature detail (stat table w/ fusion + artifact) ──────────────────────
+  // ── creature detail ────────────────────────────────────────────────────────
   function openCreatureDetail(slotIdx) {
     const slot = build.slots[slotIdx], c = CREA.get(slot.cid); if (!c) return;
     const fs = finalStats(slot), b = fs.base;
     const f = slot.fusion != null ? CREA.get(slot.fusion) : null;
     const rows = STAT_KEYS.map(k => {
       const pct = fs.pct[k], touched = pct !== 0;
-      return `<div class="stat-row ${touched ? "hl-med" : ""}">
-        <span class="stat-name">${STAT_LABEL[k]}</span>
-        <span class="stat-val base">${b[k]}</span>
-        <span class="stat-val art">${touched ? "+" + pct + "%" : "—"}</span>
+      return `<div class="stat-row ${touched ? "hl-med" : ""}"><span class="stat-name">${STAT_LABEL[k]}</span>
+        <span class="stat-val base">${b[k]}</span><span class="stat-val art">${touched ? "+" + pct + "%" : "—"}</span>
         <span class="stat-val total">${fs.final[k]}</span></div>`;
     }).join("");
     const traitIds = slotTraitIds(slot);
     const traitHtml = traitIds.map(tid => `<div class="primary-traits" style="margin-bottom:6px">${traitBanner(tid)}
       <div class="trait-desc">${esc((TRAIT[tid] || {}).desc || "")}</div></div>`).join("");
     const relic = slot.relic ? RELIC.get(slot.relic.id) : null;
-
+    const a = resolveArtifact(slot);
+    dovState = null;
     openDetail(`<div class="ovl-backdrop" data-action="detail-backdrop"><div class="overlay-panel detail">
-      <div class="overlay-header"><h2>${esc(c.name)}${f ? " ⚭ " + esc(f.name) : ""}</h2>
-        <button class="ovl-close" data-action="close-detail">✕</button></div>
+      <div class="overlay-header"><h2>${esc(c.name)}${f ? " ⚭ " + esc(f.name) : ""}</h2><button class="ovl-close" data-action="close-detail">✕</button></div>
       <div class="overlay-body">
-        <div class="ovl-left" style="width:180px;text-align:center">
-          ${critFace(c)}
+        <div class="ovl-left" style="width:180px;text-align:center">${critFace(c)}
           <div class="slot-sub" style="margin-top:6px"><span style="color:${clsColor(b.cls)};font-weight:700">${esc(b.cls || "—")}</span>${c.race ? " · " + esc(c.race) : ""}</div>
           ${f ? `<div class="slot-sub" style="margin-top:8px">Fused with<br><b>${esc(f.name)}</b><br>(class → ${esc(f.cls || "—")})</div>` : ""}
-        </div>
+          ${a ? `<div class="slot-sub" style="margin-top:8px">Artifact<br><b>${esc(a.name)}</b></div>` : ""}</div>
         <div class="ovl-center"><div class="ovl-center-scroll">
           <div class="section-label">Stats — Base · Artifact · Total</div>
-          <div class="stat-grid">
-            <div class="stat-header"><span>Stat</span><span style="text-align:right">Base</span>
-              <span style="text-align:right">Artifact</span><span style="text-align:right">Total</span></div>
-            ${rows}
-            <div class="stat-row hl-high"><span class="stat-name">Total</span>
-              <span class="stat-val base">${b.total}</span><span class="stat-val art"></span>
-              <span class="stat-val total">${fs.total}</span></div>
-          </div>
-          <div class="section-label" style="margin-top:14px">Traits (innate${f ? " + fusion" : ""}${slot.artifact && (slot.artifact.traitItemIds||[]).length ? " + artifact" : ""})</div>
+          <div class="stat-grid"><div class="stat-header"><span>Stat</span><span style="text-align:right">Base</span>
+            <span style="text-align:right">Artifact</span><span style="text-align:right">Total</span></div>${rows}
+            <div class="stat-row hl-high"><span class="stat-name">Total</span><span class="stat-val base">${b.total}</span>
+              <span class="stat-val art"></span><span class="stat-val total">${fs.total}</span></div></div>
+          <div class="section-label" style="margin-top:14px">Traits (innate${f ? " + fusion" : ""}${a && (a.traitItemIds || []).length ? " + artifact" : ""})</div>
           ${traitHtml || `<div class="slot-sub">No traits.</div>`}
           ${relic ? `<div class="section-label" style="margin-top:14px">Relic</div>
             <div class="primary-traits"><b>${esc(relic.name)}</b> — Rank ${slot.relic.rank}
-            <div class="trait-desc">${esc((relic.ranks.filter(r => r.rank <= slot.relic.rank).map(r => "R" + r.rank + ": " + r.desc).join(" ")) || "")}</div></div>` : ""}
+            <div class="trait-desc">${esc(relic.ranks.filter(r => r.rank <= slot.relic.rank).map(r => "R" + r.rank + ": " + r.desc).join(" ") || "")}</div></div>` : ""}
         </div></div>
       </div>
       <div class="overlay-footer"><span class="foot-info">Fusion averages both parents' base stats; class follows the secondary parent</span>
@@ -506,70 +608,101 @@
     </div></div>`);
   }
 
-  // ── cards collection (owned + disable toggles) ─────────────────────────────
-  function openCards() {
-    ovState = { kind: "cards", search: "", render: renderCards };
-    openOverlay(ovState.render()); maybeFocusSearch();
-  }
+  // ── realm cards (leveled collection) ───────────────────────────────────────
+  function openCards() { ovState = { kind: "cards", search: "", clsFilter: null, render: renderCards }; openOverlay(ovState.render()); maybeFocusSearch(OV); }
   function renderCards() {
     const st = ovState, q = st.search.trim().toLowerCase();
-    const list = D.cards.filter(c => !q || c.family.toLowerCase().includes(q));
-    const rows = list.map(c => {
-      const owned = !cards.notOwned[c.id], enabled = owned && !cards.disabled[c.id];
-      return `<div class="prop-row ${enabled ? "chosen" : ""}">
-        <span class="prop-name">${esc(c.family)}</span>
-        <span class="prop-stat">${esc((c.effects[0] || "").slice(0, 60))}…</span>
-        <button class="chip ${owned ? "on" : ""}" data-action="card-own" data-id="${c.id}">${owned ? "Owned" : "Not owned"}</button>
-        <button class="chip ${enabled ? "on" : ""}" data-action="card-toggle" data-id="${c.id}" ${owned ? "" : "disabled"}>${enabled ? "On" : "Off"}</button>
-      </div>`;
+    const list = D.cards.filter(c => (!q || c.family.toLowerCase().includes(q)) && (!st.clsFilter || c.cls === st.clsFilter));
+    const clsChips = D.classes.map(cl => `<button class="chip ${st.clsFilter === cl.key ? "on" : ""}" data-cls="${cl.key}" data-action="cards-cls" data-c="${cl.key}" style="--c:${cl.color}">${cl.key}</button>`).join("")
+      + `<button class="chip ${st.clsFilter ? "" : "on"}" data-action="cards-cls" data-c="">All</button>`;
+    const tiles = list.map(c => {
+      const lv = cardLevel(c.id);
+      const bg = c.cls && CLASS_BG[c.cls] ? CLASS_BG[c.cls] : null;
+      const effects = c.effects.map((e, i) => `<div class="card-effect ${i < lv ? "on" : "off"}"><span class="ce-tier">${i + 1}</span>${esc(e)}</div>`).join("");
+      return `<div class="card-tile lv${lv}" style="--cardcls:${clsColor(c.cls)}">
+        <div class="card-head">
+          <div class="card-art">${bg ? `<img class="card-bg" src="${esc(bg)}" alt="">` : ""}${c.sprite ? spriteImg(c.sprite, "card-crit") : ""}</div>
+          <div class="card-title"><b>${esc(c.family)}</b><span class="cls-chip" style="color:${clsColor(c.cls)}">${esc(c.cls || "—")}</span></div>
+        </div>
+        <div class="card-effects">${effects}</div>
+        <div class="card-level">
+          <button class="lvl-btn" data-action="card-dec" data-id="${c.id}" ${lv === 0 ? "disabled" : ""}>−</button>
+          <span class="lvl-badge">${lv === 0 ? "Off" : "Lv " + lv}</span>
+          <button class="lvl-btn" data-action="card-inc" data-id="${c.id}" ${lv >= c.effects.length ? "disabled" : ""}>＋</button>
+        </div></div>`;
     }).join("");
-    const activeCount = D.cards.filter(c => !cards.notOwned[c.id] && !cards.disabled[c.id]).length;
+    const active = D.cards.filter(c => cardLevel(c.id) > 0).length;
     return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel detail">
       <div class="overlay-header"><h2>Realm Cards</h2>
         <input class="ovl-search" placeholder="Search family…" value="${esc(st.search)}" data-action="cards-search">
         <button class="ovl-close" data-action="close-ovl">✕</button></div>
-      <div class="overlay-body"><div class="ovl-center"><div class="ovl-center-scroll">${rows}</div></div></div>
-      <div class="overlay-footer"><span class="foot-info">${activeCount}/${D.cards.length} active · default all owned & on — toggle to match your game</span>
+      <div class="overlay-body"><div class="ovl-center"><div class="ovl-filterbar">${clsChips}</div>
+        <div class="ovl-center-scroll"><div class="card-grid">${tiles}</div></div></div></div>
+      <div class="overlay-footer"><span class="foot-info">${active}/${D.cards.length} active · default max level · step −/＋ through the 3 effect tiers</span>
         <button class="btn-confirm" data-action="close-ovl">Done</button></div>
     </div></div>`;
   }
 
-  // ── nether stones (user-entered library) ───────────────────────────────────
+  // ── nether stones (user library, structured stat properties) ───────────────
+  const gemPath = (key) => { const g = GEM_ICONS.find(x => x.key === key); return g ? g.path : (GEM_ICONS[0] && GEM_ICONS[0].path); };
+  function netherSummary(n) {
+    const parts = [];
+    for (const p of n.props || []) if (p.type === "stat") parts.push((p.stats || []).map(s => `+${s.value}% ${s.stat}`).join(" & "));
+    return parts.join(" · ") || "no properties";
+  }
   function openNether() {
-    ovState = { kind: "nether", draftName: "", draftRarity: "Normal", draftLine: "", editId: null, render: renderNether };
+    ovState = { kind: "nether", editId: null, draft: null, render: renderNether };
     openOverlay(ovState.render());
   }
+  function blankNether() { return { id: null, name: `Nether Stone ${nextNetherId}`, icon: (GEM_ICONS[0] || {}).key, props: [] }; }
+  function curNether() { const st = ovState; if (st.editId != null) return nether.find(n => n.id === st.editId); if (!st.draft) st.draft = blankNether(); return st.draft; }
   function renderNether() {
     const st = ovState;
-    const editing = st.editId != null ? nether.find(n => n.id === st.editId) : null;
-    const lines = editing ? editing.lines : (st._lines || []);
     const listRows = nether.map(n => `<div class="prop-row ${st.editId === n.id ? "chosen" : ""}">
-      <span class="prop-name">${esc(n.name)}</span>
-      <span class="prop-stat">${esc(n.rarity)} · ${esc((n.lines || []).join("; ").slice(0, 60))}</span>
+      <span class="prop-ico">${spriteImg(gemPath(n.icon))}</span>
+      <span class="prop-name">${esc(n.name)}</span><span class="prop-stat">${esc(netherSummary(n))}</span>
       <button class="chip" data-action="nether-edit" data-id="${n.id}">Edit</button>
-      <button class="chip" data-action="nether-del" data-id="${n.id}">Delete</button></div>`).join("")
+      <button class="chip danger" data-action="nether-del" data-id="${n.id}">✕</button></div>`).join("")
       || `<div class="slot-sub" style="padding:8px">No Nether Stones saved yet.</div>`;
-    const lineChips = lines.map((l, i) => `<span class="slot-chip filled">${esc(l)}
-      <b data-action="nether-line-del" data-i="${i}" style="cursor:pointer;color:var(--bad)">✕</b></span>`).join("");
-    return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel detail">
+
+    const s = curNether();
+    const gemChoices = GEM_ICONS.map(g => `<button class="gem-choice ${s.icon === g.key ? "on" : ""}" data-action="nether-icon" data-k="${g.key}" title="${g.key}">${spriteImg(g.path)}</button>`).join("");
+    const propChips = s.props.map((p, i) => `<div class="np-chip">${esc((p.stats || []).map(x => `+${x.value}% ${x.stat}`).join(" & ") || "stat")}
+      <b data-action="nether-prop-del" data-i="${i}">✕</b></div>`).join("") || `<span class="slot-chip">No properties yet</span>`;
+
+    // structured "add property" builder held in st.pb (Add → Stat effect → Single/Double → stat(s)+value)
+    const pb = st.pb;
+    let builder = `<button class="btn-ghost" data-action="np-add" style="width:100%">＋ Add property</button>`;
+    if (pb) {
+      const statSel = (idx) => `<select data-action="np-stat" data-i="${idx}" class="np-select">
+        ${CORE_STATS.map(x => `<option ${pb.stats[idx].stat === x ? "selected" : ""}>${x}</option>`).join("")}</select>
+        <input type="number" class="np-num" data-action="np-val" data-i="${idx}" value="${pb.stats[idx].value}" placeholder="%">`;
+      builder = `<div class="np-builder">
+        <div class="np-step"><span class="np-lbl">Type</span><span class="chip on">Stat effect</span></div>
+        <div class="np-step"><span class="np-lbl">Count</span>
+          <button class="chip ${pb.mode === "single" ? "on" : ""}" data-action="np-mode" data-m="single">Single</button>
+          <button class="chip ${pb.mode === "double" ? "on" : ""}" data-action="np-mode" data-m="double">Double</button></div>
+        <div class="np-step"><span class="np-lbl">Stat 1</span>${statSel(0)}</div>
+        ${pb.mode === "double" ? `<div class="np-step"><span class="np-lbl">Stat 2</span>${statSel(1)}</div>` : ""}
+        <div class="np-actions"><button class="btn-ghost" data-action="np-cancel">Cancel</button>
+          <button class="btn-confirm" data-action="np-commit">Add</button></div></div>`;
+    }
+
+    return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel nether-panel">
       <div class="overlay-header"><h2>Nether Stones — your library</h2><button class="ovl-close" data-action="close-ovl">✕</button></div>
       <div class="overlay-body">
         <div class="ovl-center"><div class="ovl-center-scroll">
           <div class="section-label">Saved stones (stored in this browser)</div>${listRows}</div></div>
-        <div class="ovl-right" style="width:320px">
-          <div class="section-label">${editing ? "Edit stone" : "Add a stone"}</div>
-          <input class="ovl-search" style="max-width:none;width:100%;margin-bottom:6px" placeholder="Name (e.g. Glowing Orb of Power)"
-            value="${esc(editing ? editing.name : st.draftName)}" data-action="nether-name">
-          <select data-action="nether-rarity" style="width:100%;margin-bottom:8px;background:var(--bg);color:var(--text);border:1px solid var(--border-dim);border-radius:8px;padding:8px">
-            ${["Normal", "Rare", "Epic", "Legendary"].map(r => `<option ${(editing ? editing.rarity : st.draftRarity) === r ? "selected" : ""}>${r}</option>`).join("")}
-          </select>
-          <div class="section-label">Properties (type what your in-game stone rolled)</div>
-          <div style="display:flex;gap:6px;margin-bottom:6px">
-            <input class="ovl-search" style="max-width:none;flex:1" placeholder="e.g. +50% Attack, Grants Poison…" value="${esc(st.draftLine)}" data-action="nether-line">
-            <button class="tb-btn" data-action="nether-line-add">Add</button></div>
-          <div style="margin-bottom:10px">${lineChips || `<span class="slot-chip">No properties yet</span>`}</div>
-          <button class="btn-confirm" style="width:100%" data-action="nether-save">${editing ? "Update Stone" : "Save Stone"}</button>
-          ${editing ? `<button class="btn-ghost" style="width:100%;margin-top:6px" data-action="nether-cancel">Cancel edit</button>` : ""}
+        <div class="ovl-right nether-form">
+          <div class="section-label">${st.editId != null ? "Edit stone" : "Add a stone"}</div>
+          <div class="nf-row"><input class="ovl-search" style="max-width:none;flex:1" placeholder="Name" value="${esc(s.name)}" data-action="nether-name">
+            <button class="chip" data-action="nether-rand" title="Random gem">🎲</button></div>
+          <div class="section-label">Icon</div><div class="gem-picker">${gemChoices}</div>
+          <div class="section-label">Properties (drive stat calc when socketed)</div>
+          <div class="np-list">${propChips}</div>
+          ${builder}
+          <button class="btn-confirm" style="width:100%;margin-top:10px" data-action="nether-save">${st.editId != null ? "Update Stone" : "Save Stone"}</button>
+          ${st.editId != null ? `<button class="btn-ghost" style="width:100%;margin-top:6px" data-action="nether-cancel-edit">Cancel edit</button>` : ""}
         </div>
       </div>
       <div class="overlay-footer"><span class="foot-info">Socket saved stones into any artifact’s “Nether Sockets” tab</span>
@@ -578,127 +711,142 @@
   }
 
   // ── event delegation ───────────────────────────────────────────────────────
-  let nextNetherId = (nether.reduce((m, n) => Math.max(m, n.id || 0), 0)) + 1;
-
   function onClick(e) {
     const t = e.target.closest("[data-action]"); if (!t) return;
     const A = t.dataset.action;
-    const slotIdx = t.dataset.slot != null ? +t.dataset.slot : (ovState ? ovState.slotIdx : null);
-
     switch (A) {
       // home
       case "pick-creature": openCreaturePicker(+t.dataset.slot, "primary"); break;
-      case "pick-fusion":   openCreaturePicker(+t.dataset.slot, "fusion"); break;
-      case "build-artifact": openArtifactBuilder(+t.dataset.slot); break;
-      case "build-relic":   openRelicBuilder(+t.dataset.slot); break;
+      case "pick-fusion": openCreaturePicker(+t.dataset.slot, "fusion"); break;
+      case "equip-artifact": openArtifactLibrary(+t.dataset.slot); break;
+      case "build-relic": openRelicBuilder(+t.dataset.slot); break;
       case "creature-detail": openCreatureDetail(+t.dataset.slot); break;
       case "pick-spec": openSpecPicker(); break;
       case "remove-creature": armOrDo(t, () => { build.slots[+t.dataset.slot] = emptySlot(); persistBuild(); render(); }); break;
-      case "clear-spec": build.specId = null; persistBuild(); render(); break;
-      case "clear-party": armOrDo(t, () => { build = { schema: 1, specId: null, slots: Array.from({ length: 6 }, emptySlot) }; persistBuild(); render(); }); break;
+      case "clear-spec": e.stopPropagation(); build.specId = null; persistBuild(); render(); break;
+      case "clear-party": armOrDo(t, () => { build = { schema: 2, specId: null, perkAlloc: {}, slots: Array.from({ length: 6 }, emptySlot) }; persistBuild(); render(); }); break;
       case "open-cards": openCards(); break;
       case "open-nether": openNether(); break;
 
       // overlay chrome
-      case "close-ovl": case "backdrop": if (A === "backdrop" && e.target !== t) break; closeOverlay(); break;
-      case "close-detail": case "detail-backdrop": if (A === "detail-backdrop" && e.target !== t) break; closeDetail(); break;
+      case "close-ovl": closeOverlay(); break;
+      case "backdrop": if (e.target === t) closeOverlay(); break;
+      case "close-detail": closeDetail(); break;
+      case "detail-backdrop": if (e.target === t) closeDetail(); break;
+      case "facet-backdrop": if (e.target === t) closeDetail(); break;
 
-      // creature picker
-      case "crea-cls": ovState.clsFilter = t.dataset.c || null; refreshOverlay(); break;
+      // creature picker + facets
       case "crea-pick": ovState.sel = ovState.sel === +t.dataset.id ? null : +t.dataset.id; refreshOverlay(); break;
-      case "crea-confirm": {
-        const s = build.slots[ovState.slotIdx];
-        if (ovState.mode === "fusion") s.fusion = ovState.sel; else s.cid = ovState.sel;
-        persistBuild(); closeOverlay(); render(); break;
+      case "crea-confirm": { const s = build.slots[ovState.slotIdx]; if (ovState.mode === "fusion") s.fusion = ovState.sel; else s.cid = ovState.sel; persistBuild(); closeOverlay(); render(); break; }
+      case "facet-class": openFacetPicker("class"); break;
+      case "facet-race": openFacetPicker("race"); break;
+      case "facet-tag": openFacetPicker("tag"); break;
+      case "facet-class-clear": e.stopPropagation(); ovState.clsFilter = null; refreshOverlay(); break;
+      case "facet-race-clear": e.stopPropagation(); ovState.raceFilter = null; refreshOverlay(); break;
+      case "rm-tag": ovState.tagFilters.splice(+t.dataset.i, 1); refreshOverlay(); break;
+      case "facet-pick": {
+        const v = t.dataset.v;
+        if (dovState.facet === "class") ovState.clsFilter = v;
+        else if (dovState.facet === "race") ovState.raceFilter = v;
+        else if (!ovState.tagFilters.includes(v)) ovState.tagFilters.push(v);
+        closeDetail(); refreshOverlay(); break;
       }
-      // spec picker
+
+      // spec picker + perks
       case "spec-pick": ovState.sel = ovState.sel === +t.dataset.id ? null : +t.dataset.id; refreshOverlay(); break;
       case "spec-confirm": build.specId = ovState.sel; persistBuild(); closeOverlay(); render(); break;
+      case "customize-perks": if (ovState.sel != null) openPerkPicker(ovState.sel); break;
+      case "toggle-perk": { const sid = dovState.specId, k = t.dataset.k; const m = build.perkAlloc[sid] = build.perkAlloc[sid] || {}; if (m[k]) delete m[k]; else m[k] = 1; persistBuild(); refreshDetail(); break; }
+      case "perk-all": { build.perkAlloc[dovState.specId] = {}; persistBuild(); refreshDetail(); break; }
+      case "perk-none": { const sp = SPEC.get(dovState.specId); const m = {}; sp.perks.forEach(p => m[p.key] = 1); build.perkAlloc[dovState.specId] = m; persistBuild(); refreshDetail(); break; }
 
-      // trait nav (stub detail — full trait page is P1)
-      case "nav-trait": { const tr = TRAIT[+t.dataset.tid]; if (tr) alert(tr.name + "\n\n" + (tr.desc || "")); break; }
-
-      // artifact builder
-      case "art-tab": ovState.tab = t.dataset.t; ovState.search = ""; refreshOverlay(); break;
+      // artifact library + builder
+      case "art-equip": build.slots[ovState.slotIdx].artifactId = +t.dataset.id; persistBuild(); closeOverlay(); render(); break;
+      case "art-unequip": build.slots[ovState.slotIdx].artifactId = null; persistBuild(); closeOverlay(); render(); break;
+      case "art-new": openArtifactBuilder(null, ovState.slotIdx); break;
+      case "art-edit": openArtifactBuilder(+t.dataset.id, ovState.slotIdx); break;
+      case "art-del": armOrDo(t, () => { const id = +t.dataset.id; artifacts = artifacts.filter(a => a.id !== id); build.slots.forEach(s => { if (s.artifactId === id) s.artifactId = null; }); persistArtifacts(); persistBuild(); refreshOverlay(); }); break;
+      case "artb-tab": ovState.tab = t.dataset.t; ovState.search = ""; refreshOverlay(); break;
       case "art-primary": ovState.draft.primary = ovState.draft.primary === t.dataset.p ? null : t.dataset.p; refreshOverlay(); break;
       case "art-prop": toggleArr(ovState.draft.props, t.dataset.p); refreshOverlay(); break;
       case "art-item": toggleArr(ovState.draft.traitItemIds, +t.dataset.id); refreshOverlay(); break;
       case "art-nether": toggleArr(ovState.draft.netherIds, +t.dataset.id); refreshOverlay(); break;
-      case "art-clear": ovState.draft = { rank: 50, primary: null, props: [], traitItemIds: [], netherIds: [] }; refreshOverlay(); break;
-      case "art-confirm": {
+      case "artb-cancel": openArtifactLibrary(ovState.slotIdx); break;
+      case "artb-save": {
         const d = ovState.draft;
-        const empty = !d.primary && !d.props.length && !d.traitItemIds.length && !d.netherIds.length;
-        build.slots[ovState.slotIdx].artifact = empty ? null : d;
-        persistBuild(); closeOverlay(); render(); break;
+        if (!d.name || !d.name.trim()) d.name = `Artifact ${nextArtId}`;
+        if (d.id == null) { d.id = nextArtId++; artifacts.push(d); }
+        else { const idx = artifacts.findIndex(a => a.id === d.id); if (idx >= 0) artifacts[idx] = d; }
+        persistArtifacts();
+        if (ovState.slotIdx != null) { build.slots[ovState.slotIdx].artifactId = d.id; persistBuild(); }
+        closeOverlay(); render(); break;
       }
-      // relic builder
+
+      // relic
       case "relic-pick": ovState.sel = ovState.sel === +t.dataset.id ? null : +t.dataset.id; refreshOverlay(); break;
       case "relic-clear": build.slots[ovState.slotIdx].relic = null; persistBuild(); closeOverlay(); render(); break;
       case "relic-confirm": build.slots[ovState.slotIdx].relic = { id: ovState.sel, rank: ovState.rank }; persistBuild(); closeOverlay(); render(); break;
 
       // cards
-      case "card-own": { const id = +t.dataset.id; if (cards.notOwned[id]) delete cards.notOwned[id]; else cards.notOwned[id] = 1; persistCards(); refreshOverlay(); break; }
-      case "card-toggle": { const id = +t.dataset.id; if (cards.disabled[id]) delete cards.disabled[id]; else cards.disabled[id] = 1; persistCards(); refreshOverlay(); break; }
+      case "cards-cls": ovState.clsFilter = t.dataset.c || null; refreshOverlay(); break;
+      case "card-inc": { const id = +t.dataset.id, c = D.cards.find(x => x.id === id); cards.levels[id] = Math.min(cardLevel(id) + 1, c.effects.length); persistCards(); refreshOverlay(); break; }
+      case "card-dec": { const id = +t.dataset.id; cards.levels[id] = Math.max(cardLevel(id) - 1, 0); persistCards(); refreshOverlay(); break; }
 
       // nether
-      case "nether-edit": ovState.editId = +t.dataset.id; refreshOverlay(); break;
-      case "nether-cancel": ovState.editId = null; ovState._lines = []; refreshOverlay(); break;
-      case "nether-del": nether = nether.filter(n => n.id !== +t.dataset.id); if (ovState.editId === +t.dataset.id) ovState.editId = null; persistNether(); refreshOverlay(); break;
-      case "nether-line-add": {
-        const v = (ovState.draftLine || "").trim(); if (!v) break;
-        if (ovState.editId != null) { const n = nether.find(x => x.id === ovState.editId); n.lines.push(v); persistNether(); }
-        else { ovState._lines = ovState._lines || []; ovState._lines.push(v); }
-        ovState.draftLine = ""; refreshOverlay(); break;
+      case "nether-edit": ovState.editId = +t.dataset.id; ovState.draft = null; ovState.pb = null; refreshOverlay(); break;
+      case "nether-cancel-edit": ovState.editId = null; ovState.draft = null; ovState.pb = null; refreshOverlay(); break;
+      case "nether-del": armOrDo(t, () => { const id = +t.dataset.id; nether = nether.filter(n => n.id !== id); artifacts.forEach(a => a.netherIds = (a.netherIds || []).filter(x => x !== id)); if (ovState.editId === id) { ovState.editId = null; ovState.draft = null; } persistNether(); persistArtifacts(); refreshOverlay(); }); break;
+      case "nether-icon": curNether().icon = t.dataset.k; if (ovState.editId != null) persistNether(); refreshOverlay(); break;
+      case "nether-rand": { const g = GEM_ICONS[Math.floor((Date.now() >> 4) % GEM_ICONS.length)] || GEM_ICONS[0]; curNether().icon = g && g.key; if (ovState.editId != null) persistNether(); refreshOverlay(); break; }
+      case "np-add": ovState.pb = { type: "stat", mode: "single", stats: [{ stat: "Health", value: 10 }, { stat: "Attack", value: 10 }] }; refreshOverlay(); break;
+      case "np-mode": ovState.pb.mode = t.dataset.m; refreshOverlay(); break;
+      case "np-cancel": ovState.pb = null; refreshOverlay(); break;
+      case "np-commit": {
+        const pb = ovState.pb, n = pb.mode === "double" ? 2 : 1;
+        curNether().props.push({ type: "stat", mode: pb.mode, stats: pb.stats.slice(0, n).map(s => ({ stat: s.stat, value: Number(s.value) || 0 })) });
+        ovState.pb = null; if (ovState.editId != null) persistNether(); refreshOverlay(); break;
       }
-      case "nether-line-del": {
-        const i = +t.dataset.i;
-        if (ovState.editId != null) { const n = nether.find(x => x.id === ovState.editId); n.lines.splice(i, 1); persistNether(); }
-        else { (ovState._lines || []).splice(i, 1); }
-        refreshOverlay(); break;
-      }
+      case "nether-prop-del": curNether().props.splice(+t.dataset.i, 1); if (ovState.editId != null) persistNether(); refreshOverlay(); break;
       case "nether-save": {
-        if (ovState.editId != null) { persistNether(); ovState.editId = null; ovState._lines = []; refreshOverlay(); break; }
-        const name = (ovState.draftName || "").trim() || `Nether Stone ${nextNetherId}`;
-        nether.push({ id: nextNetherId++, name, rarity: ovState.draftRarity, lines: (ovState._lines || []).slice() });
-        ovState.draftName = ""; ovState._lines = []; persistNether(); refreshOverlay(); break;
+        if (ovState.editId != null) { persistNether(); ovState.editId = null; ovState.draft = null; ovState.pb = null; refreshOverlay(); break; }
+        const d = ovState.draft || blankNether();
+        if (!d.name || !d.name.trim()) d.name = `Nether Stone ${nextNetherId}`;
+        d.id = nextNetherId++; nether.push(d); ovState.draft = null; ovState.pb = null; persistNether(); refreshOverlay(); break;
       }
+
+      // trait nav (stub — full trait page is P1)
+      case "nav-trait": { const tr = TRAIT[+t.dataset.tid]; if (tr) alert(tr.name + "\n\n" + (tr.desc || "")); break; }
     }
   }
 
-  // two-tap destructive: first tap arms (turns red), second within 2.5s acts
-  function armOrDo(t, fn) {
-    if (t.classList.contains("armed")) { fn(); return; }
-    t.classList.add("armed");
-    setTimeout(() => t.classList.remove("armed"), 2500);
-  }
+  function armOrDo(t, fn) { if (t.classList.contains("armed")) { fn(); return; } t.classList.add("armed"); setTimeout(() => t.classList.remove("armed"), 2500); }
   function toggleArr(arr, v) { const i = arr.indexOf(v); if (i >= 0) arr.splice(i, 1); else arr.push(v); }
 
   function onInput(e) {
-    const t = e.target.closest("[data-action]"); if (!t || !ovState) return;
+    const t = e.target.closest("[data-action]"); if (!t) return;
     const A = t.dataset.action, v = t.value;
-    const map = {
-      "crea-search": "search", "spec-search": "search", "art-search": "search",
-      "relic-search": "search", "cards-search": "search", "nether-line": "draftLine", "nether-name": "draftName",
-    };
-    if (A === "art-rank") { ovState.draft.rank = +v; refreshOverlay(); return; }
+    // range sliders / selects
+    if (A === "artb-rank") { ovState.draft.rank = +v; refreshOverlay(); return; }
     if (A === "relic-rank") { ovState.rank = +v; refreshOverlay(); return; }
-    if (A === "nether-rarity") { if (ovState.editId != null) { const n = nether.find(x => x.id === ovState.editId); n.rarity = v; persistNether(); } else ovState.draftRarity = v; return; }
-    if (A === "nether-name" && ovState.editId != null) { const n = nether.find(x => x.id === ovState.editId); n.name = v; persistNether(); return; }
-    if (map[A]) {
-      ovState[map[A]] = v;
-      // live-filter search without losing input focus/caret: only re-render the grid-bearing overlays
-      if (A.endsWith("-search")) {
-        const panel = OV.querySelector(".overlay-panel");
-        const scroller = panel && panel.querySelector(".ovl-center-scroll");
-        const sc = scroller ? scroller.scrollTop : 0;
-        // targeted: re-render but keep the search box focused
-        const active = document.activeElement, caret = active && active.selectionStart;
-        panel.outerHTML = ovState.render();
-        const p2 = OV.querySelector(".overlay-panel");
-        const inp = p2 && p2.querySelector(".ovl-search");
-        if (inp) { inp.focus(); try { inp.setSelectionRange(caret, caret); } catch {} }
-        const s2 = p2 && p2.querySelector(".ovl-center-scroll"); if (s2) s2.scrollTop = sc;
-      }
+    if (A === "np-stat") { ovState.pb.stats[+t.dataset.i].stat = v; return; }
+    if (A === "np-val") { ovState.pb.stats[+t.dataset.i].value = v; return; }
+    // name fields (no re-render — keep focus/caret)
+    if (A === "artb-name") { ovState.draft.name = v; return; }
+    if (A === "nether-name") { curNether().name = v; if (ovState.editId != null) persistNether(); return; }
+    // search fields — live filter without losing caret
+    const searchMap = { "crea-search": [OV, ovState], "spec-search": [OV, ovState], "artb-search": [OV, ovState],
+      "relic-search": [OV, ovState], "cards-search": [OV, ovState], "facet-search": [DOV, dovState], "perk-search": [DOV, dovState] };
+    if (searchMap[A]) {
+      const [root, state] = searchMap[A]; state.search = v;
+      const panel = root.querySelector(".overlay-panel");
+      const scroller = panel && panel.querySelector(".ovl-center-scroll");
+      const sc = scroller ? scroller.scrollTop : 0;
+      const caret = t.selectionStart;
+      panel.outerHTML = state.render();
+      const p2 = root.querySelector(".overlay-panel");
+      const inp = p2 && p2.querySelector(".ovl-search");
+      if (inp) { inp.focus(); try { inp.setSelectionRange(caret, caret); } catch {} }
+      const s2 = p2 && p2.querySelector(".ovl-center-scroll"); if (s2) s2.scrollTop = sc;
     }
   }
 

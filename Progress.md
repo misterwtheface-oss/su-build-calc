@@ -4,6 +4,23 @@
 Deployed at **https://misterwtheface-oss.github.io/su-build-calc/** (repo `misterwtheface-oss/su-build-calc`,
 Pages on `master`/root, Cloudflare analytics active with the shared github.io token). Auto-deploys on push.
 
+## v2 rework (2026-09-16) — big feature batch
+- **Spec**: home spec tile shrunk to a small chip; selector labels dropped; alpha-sorted, ≥5/row on mobile;
+  info panel enlarged with the skin sprite above the name, playstyle, and a perk list; **Customize** button
+  opens a perk selector (all perks allocated by default, click to deallocate; allocate/deallocate-all).
+  `build.perkAlloc[specId]` stores only deallocated keys.
+- **Creature filters**: class chips replaced by faceted **Class / Race / +Tag** buttons opening sub-selectors;
+  each +Tag added leaves a fresh +Tag so multiple synergy-edge tags AND-narrow the list (tags = the innate
+  trait's produces/consumes edge tokens, 112 options).
+- **Cards**: large tiles with representative art (family→creature-race sprite on a class-tinted bg), all 3
+  effect tiers shown, and a 0–3 **level stepper** (default max). `subc.cards.levels`.
+- **Nether stones**: rarity removed; centered overlay; **structured property builder** (Add → Stat effect →
+  Single/Double → stat(s) + numeric %) that **drives stat calc when socketed**; 9 gem icons (pick or 🎲 random).
+- **Artifacts**: now a saved, nameable, reusable **library** (`subc.artifacts`) equipped per creature by id;
+  builder shows the artifact-type icon (Helmet/Sword/Staff/Shield/Boots → Health/Attack/Int/Def/Speed).
+- Pipeline ships new assets: 5 artifact-type icons, 9 gem icons, 5 class-bg, card art via family→race join
+  (138/141). Build schema bumped to 2. Verified all 24 flows in headless Chrome (0 JS errors).
+
 ## Current state (2026-09-16)
 Scaffold complete and runnable. P0 was expanded (per user) to include the artifact + relic builders,
 Nether Stone library, and realm-card collection alongside the creature/spec/fusion core. The build-first
