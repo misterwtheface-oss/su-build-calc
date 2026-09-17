@@ -202,15 +202,17 @@ h1, h2, h3 { margin: 0; }
   border: 1px solid var(--border-dim); border-radius: 9px; padding: 10px 16px; font-size: 14px;
 }
 
-.overlay-body { flex: 1; overflow: hidden; display: flex; }   /* holds the scroll regions */
+/* min-height:0 is load-bearing: a flex child defaults to min-height:auto (content
+   height), which stops a descendant's overflow-y from ever scrolling. */
+.overlay-body { flex: 1; min-height: 0; overflow: hidden; display: flex; }   /* holds the scroll regions */
 
 /* three independently-scrolling regions inside the fixed body */
 .ovl-left, .ovl-right { width: 260px; flex-shrink: 0; overflow-y: auto; overscroll-behavior: contain; padding: 12px; }
 .ovl-left  { border-right: 1px solid var(--border-dim); }
 .ovl-right { border-left: 1px solid var(--border-dim); }
-.ovl-center { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+.ovl-center { flex: 1; display: flex; flex-direction: column; min-width: 0; min-height: 0; }
 .ovl-filterbar { flex-shrink: 0; padding: 8px 12px; border-bottom: 1px solid var(--border-dim); display: flex; gap: 6px; flex-wrap: wrap; }
-.ovl-center-scroll { flex: 1; overflow-y: auto; overscroll-behavior: contain; padding: 12px; }
+.ovl-center-scroll { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 12px; }
 
 /* selection grid of sprite tiles */
 .pick-grid { display: grid; gap: 8px; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); }
@@ -326,9 +328,11 @@ h1, h2, h3 { margin: 0; }
   }
   .ovl-backdrop { padding: 0; }
   .overlay-body { flex-direction: column; }
-  /* exactly two scroll regions on phones: grid on top, one info scroller below */
+  /* exactly two scroll regions on phones: grid on top (flexes to fill, scrolls),
+     one info scroller below (capped so it can't eat the grid) */
   .ovl-left, .ovl-right {
-    width: auto; border: none; border-top: 1px solid var(--border-dim);
+    width: auto; flex: 0 1 auto; min-height: 0; max-height: 42vh;
+    border: none; border-top: 1px solid var(--border-dim);
     -webkit-overflow-scrolling: touch;
   }
   .ovl-center-scroll { -webkit-overflow-scrolling: touch; }
