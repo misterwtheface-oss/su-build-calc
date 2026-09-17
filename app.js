@@ -30,6 +30,8 @@
   const PRIMARY_ICON = Object.fromEntries(PRIMARY.map(p => [p.property, p.icon]));
   const TRAITITEM = new Map(D.traitItems.map(t => [t.id, t]));
   const SPELL = new Map((D.spells || []).map(s => [s.id, s]));
+  const SPELLGEM = D.spellGems || {};                       // class -> class-coloured gem icon
+  const spellIcon = (s) => s && s.cls ? SPELLGEM[s.cls] : null;
   // fixed artifact slot template (all artifacts, max level): 1 primary + these; nether = 1 slot
   const ART_SLOTS = [
     { key: "stat", label: "Stat", max: 3, pick: "stat" },
@@ -632,7 +634,7 @@
         let ico = `<div class="as-ico glyph">◆</div>`, lab = v, sub = "";
         if (type === "stat" || type === "trick") { const g = propGroups.get(v); sub = g ? g.entries.map(e => PROP_STAT[e.stat] ? `+${e.perRank[rank]}%` : e.perRank[rank]).join(" / ") : ""; }
         else if (type === "trait") { const t = TRAITITEM.get(v); ico = `<div class="as-ico">${t && t.icon ? spriteImg(t.icon, "px") : "✦"}</div>`; lab = t ? t.name : v; sub = t ? t.traitName : ""; }
-        else if (type === "spell") { const s = SPELL.get(v); ico = `<div class="as-ico glyph">✷</div>`; lab = s ? s.name : v; sub = "spell"; }
+        else if (type === "spell") { const s = SPELL.get(v); const gi = spellIcon(s); ico = `<div class="as-ico">${gi ? spriteImg(gi, "px") : "✷"}</div>`; lab = s ? s.name : v; sub = s && s.cls ? s.cls : "spell"; }
         else if (type === "nether") { const n = nether.find(x => x.id === v); ico = `<div class="as-ico">${spriteImg(gemPath(n && n.icon), "px")}</div>`; lab = n ? n.name : v; sub = "nether"; }
         return `<div class="art-slot"><button class="as-rm" data-action="art-rm" data-t="${type}" data-v="${esc(v)}">✕</button>${ico}<div class="as-lab">${esc(lab)}</div><div class="as-sub">${esc(sub)}</div></div>`;
       };
@@ -668,6 +670,7 @@
         } else if (st.pickType === "spell") {
           rows = D.spells.filter(s => !q || s.name.toLowerCase().includes(q) || (s.desc || "").toLowerCase().includes(q)).slice(0, 300)
             .map(s => `<div class="prop-row ${has(s.id) ? "chosen" : ""}" data-action="art-add" data-t="spell" data-v="${s.id}">
+              <span class="prop-ico">${spellIcon(s) ? spriteImg(spellIcon(s), "px") : ""}</span>
               <span class="prop-name">${esc(s.name)}</span><span class="prop-stat">${esc((s.desc || "").slice(0, 80))}</span></div>`).join("");
         } else {
           rows = nether.map(n => `<div class="prop-row ${has(n.id) ? "chosen" : ""}" data-action="art-add" data-t="nether" data-v="${n.id}">

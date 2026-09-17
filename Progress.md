@@ -14,8 +14,11 @@ Pages on `master`/root, Cloudflare analytics active with the shared github.io to
   1 Nether** (nether has its own internal rules but the artifact holds exactly 1). Model reshaped to
   `{primary, stat[], trick[], traits[], spells[], netherIds[]}` with per-type caps; **old artifacts migrated**
   in place (`props[]`→stat/trick by group, `traitItemIds[]`→traits[0..1], nether capped to 1). `artifactPctOf`
-  sums `stat`+`trick`. **Spell data added** (`SU_DATA.spells`, 747 from catalog; name/desc, no icon yet — spell
-  gems span 5 DB fns w/ no clean name-slot). Wizard step 2 now shows the **fixed slots in order by type**
+  sums `stat`+`trick`. **Spell data added** (`SU_DATA.spells`, 747 from catalog; `cls` joined from `spells_ref.json`, 745/747).
+  **Spell-gem icons are generic + class-coloured** (not per-spell): `gem_<colour>_lvl4` mapped to class by pixel
+  colour — Nature=nature, Chaos=chaos, Sorcery=sorceryB(blue), Death=sorceryP(purple), Life=lifeG(gold) →
+  `assets/spellgems/<class>.png`, `SU_DATA.spellGems`. Spell slot + picker show the class gem.
+  Wizard step 2 now shows the **fixed slots in order by type**
   (Primary → Stat → Trick → Trait → Spell → Nether); each empty box opens a type-filtered picker, enforcing the
   counts by construction.
 1. **Header** stacks: title over the action buttons (topbar `flex-direction:column`).
