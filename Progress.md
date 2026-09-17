@@ -4,7 +4,17 @@
 Deployed at **https://misterwtheface-oss.github.io/su-build-calc/** (repo `misterwtheface-oss/su-build-calc`,
 Pages on `master`/root, Cloudflare analytics active with the shared github.io token). Auto-deploys on push.
 
-## v2.7 artifact slot template + misc (2026-09-17)
+## v2.8 nether wizard + spell gems (2026-09-17)
+- **Spell-gem class icons** (from prior): spells carry `cls` (spells_ref, fuzzy-fixed 747/747); artifact spell
+  slot + picker show the class-coloured gem.
+- **Spell WIZARD deferred** (user choice): the spell-gem property list needs a decompile pass (no clean loc tags);
+  kept the existing spell picker in the artifact slot rather than ship a redundant wizard.
+- **Nether stone builder → library + stepped wizard** (user: "wizard + full property pool"): `openNether` is now a
+  library (tiles + Build new); `openNetherBuilder` is a 2-step wizard (gem+name → properties). Properties now draw
+  from the **full artifact property pool (stat + trick), unrestricted** — each = `{prop, value}` (property name +
+  user-entered %). Old nether props (`{type,stats[]}`) migrated to flat `{prop,value}`. `artifactPctOf` resolves
+  each nether prop via `propGroups` (core-stat props add to the stat table; trick props display only, like artifact
+  tricks). `netherSummary` + input handlers updated; removed the old single/double stat builder.
 - **Home tiles mirror creature-card width**: `.home-top` uses the party grid (2/3/6 cols); spec + anoint tiles
   are vertical cards. **Reverted the spec-selector centering** (was fixed-width flex → shrank icons; back to the
   original `auto-fill`/`repeat(5,1fr)` grid so icons are full size). **Dropped the per-spec chips** from the

@@ -65,8 +65,17 @@
 
   let cards = jload(LS.cards, null);                        // { levels: {cardId: 0..3} } — absent == 3 (max)
   if (!cards || !cards.levels) cards = { levels: {} };
-  let nether = jload(LS.nether, null);                      // [{id,name,icon,props:[{type,mode,stats:[{stat,value}]}]}]
+  let nether = jload(LS.nether, null);                      // [{id,name,icon,props:[{prop,value}]}]  (prop = artifact property name)
   if (!Array.isArray(nether)) nether = [];
+  // migrate old nether props ({type:'stat',stats:[{stat,value}]}) → flat {prop,value} from the full property pool
+  for (const n of nether) {
+    if (Array.isArray(n.props) && n.props.some(p => p && p.stats)) {
+      const flat = [];
+      for (const p of n.props) for (const s of (p.stats || [])) flat.push({ prop: s.stat, value: Number(s.value) || 0 });
+      n.props = flat;
+    }
+    n.props ||= [];
+  }
   let artifacts = jload(LS.artifacts, null);                // [{id,name,rank,primary,stat[],trick[],traits[],spells[],netherIds[]}]
   if (!Array.isArray(artifacts)) artifacts = [];
   // migrate old artifacts (props[]/traitItemIds[]) → fixed slot template
@@ -179,7 +188,11 @@
     }
     for (const nid of a.netherIds || []) {
       const n = nether.find(x => x.id === nid); if (!n) continue;
-      for (const pr of n.props || []) if (pr.type === "stat") for (const s of pr.stats || []) { const k = PROP_STAT[s.stat]; if (k) out[k] += (Number(s.value) || 0); }
+      for (const pr of n.props || []) {
+        const grp = propGroups.get(pr.prop);
+        if (grp) { for (const e of grp.entries) { const k = PROP_STAT[e.stat]; if (k) out[k] += (Number(pr.value) || 0); } }
+        else { const k = PROP_STAT[pr.prop]; if (k) out[k] += (Number(pr.value) || 0); }
+      }
     }
     return out;
   }
@@ -828,70 +841,82 @@
     </div></div>`;
   }
 
-  // ── nether stones (user library, structured stat properties) ───────────────
+  // ── nether stones: library + stepped builder wizard (full stat+trick property pool) ──
   const gemPath = (key) => { const g = GEM_ICONS.find(x => x.key === key); return g ? g.path : (GEM_ICONS[0] && GEM_ICONS[0].path); };
-  function netherSummary(n) {
-    const parts = [];
-    for (const p of n.props || []) if (p.type === "stat") parts.push((p.stats || []).map(s => `+${s.value}% ${s.stat}`).join(" & "));
-    return parts.join(" · ") || "no properties";
-  }
-  function openNether() {
-    ovState = { kind: "nether", editId: null, draft: null, render: renderNether };
+  const netherSummary = (n) => (n.props || []).map(p => `+${p.value}% ${p.prop}`).join(" · ") || "no properties";
+  function openNether() {   // library
+    ovState = { kind: "nether", render: renderNether };
     openOverlay(ovState.render());
   }
-  function blankNether() { return { id: null, name: `Nether Stone ${nextNetherId}`, icon: (GEM_ICONS[0] || {}).key, props: [] }; }
-  function curNether() { const st = ovState; if (st.editId != null) return nether.find(n => n.id === st.editId); if (!st.draft) st.draft = blankNether(); return st.draft; }
   function renderNether() {
-    const st = ovState;
-    const listRows = nether.map(n => `<div class="prop-row ${st.editId === n.id ? "chosen" : ""}">
-      <span class="prop-ico">${spriteImg(gemPath(n.icon))}</span>
-      <span class="prop-name">${esc(n.name)}</span><span class="prop-stat">${esc(netherSummary(n))}</span>
-      <button class="chip" data-action="nether-edit" data-id="${n.id}">Edit</button>
-      <button class="chip danger" data-action="nether-del" data-id="${n.id}">✕</button></div>`).join("")
-      || `<div class="slot-sub" style="padding:8px">No Nether Stones saved yet.</div>`;
-
-    const s = curNether();
-    const gemChoices = GEM_ICONS.map(g => `<button class="gem-choice ${s.icon === g.key ? "on" : ""}" data-action="nether-icon" data-k="${g.key}" title="${g.key}">${spriteImg(g.path)}</button>`).join("");
-    const propChips = s.props.map((p, i) => `<div class="np-chip">${esc((p.stats || []).map(x => `+${x.value}% ${x.stat}`).join(" & ") || "stat")}
-      <b data-action="nether-prop-del" data-i="${i}">✕</b></div>`).join("") || `<span class="slot-chip">No properties yet</span>`;
-
-    // structured "add property" builder held in st.pb (Add → Stat effect → Single/Double → stat(s)+value)
-    const pb = st.pb;
-    let builder = `<button class="btn-ghost" data-action="np-add" style="width:100%">＋ Add property</button>`;
-    if (pb) {
-      const statSel = (idx) => `<select data-action="np-stat" data-i="${idx}" class="np-select">
-        ${CORE_STATS.map(x => `<option ${pb.stats[idx].stat === x ? "selected" : ""}>${x}</option>`).join("")}</select>
-        <input type="number" class="np-num" data-action="np-val" data-i="${idx}" value="${pb.stats[idx].value}" placeholder="%">`;
-      builder = `<div class="np-builder">
-        <div class="np-step"><span class="np-lbl">Type</span><span class="chip on">Stat effect</span></div>
-        <div class="np-step"><span class="np-lbl">Count</span>
-          <button class="chip ${pb.mode === "single" ? "on" : ""}" data-action="np-mode" data-m="single">Single</button>
-          <button class="chip ${pb.mode === "double" ? "on" : ""}" data-action="np-mode" data-m="double">Double</button></div>
-        <div class="np-step"><span class="np-lbl">Stat 1</span>${statSel(0)}</div>
-        ${pb.mode === "double" ? `<div class="np-step"><span class="np-lbl">Stat 2</span>${statSel(1)}</div>` : ""}
-        <div class="np-actions"><button class="btn-ghost" data-action="np-cancel">Cancel</button>
-          <button class="btn-confirm" data-action="np-commit">Add</button></div></div>`;
-    }
-
-    return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel nether-panel">
-      <div class="overlay-header"><h2>Nether Stones — your library</h2><button class="ovl-close" data-action="close-ovl">✕</button></div>
-      <div class="overlay-body">
-        <div class="ovl-center"><div class="ovl-center-scroll">
-          <div class="section-label">Saved stones (stored in this browser)</div>${listRows}</div></div>
-        <div class="ovl-right nether-form">
-          <div class="section-label">${st.editId != null ? "Edit stone" : "Add a stone"}</div>
-          <div class="nf-row"><input class="ovl-search" style="max-width:none;flex:1" placeholder="Name" value="${esc(s.name)}" data-action="nether-name">
-            <button class="chip" data-action="nether-rand" title="Random gem">🎲</button></div>
-          <div class="section-label">Icon</div><div class="gem-picker">${gemChoices}</div>
-          <div class="section-label">Properties (drive stat calc when socketed)</div>
-          <div class="np-list">${propChips}</div>
-          ${builder}
-          <button class="btn-confirm" style="width:100%;margin-top:10px" data-action="nether-save">${st.editId != null ? "Update Stone" : "Save Stone"}</button>
-          ${st.editId != null ? `<button class="btn-ghost" style="width:100%;margin-top:6px" data-action="nether-cancel-edit">Cancel edit</button>` : ""}
-        </div>
-      </div>
+    const tiles = nether.map(n => `
+      <div class="lib-tile">
+        <div class="lib-icon" data-action="nether-edit" data-id="${n.id}">${spriteImg(gemPath(n.icon), "px")}</div>
+        <div class="lib-name">${esc(n.name)}</div>
+        <div class="lib-sub">${esc(netherSummary(n))}</div>
+        <div class="lib-actions">
+          <button class="slot-mini" data-action="nether-edit" data-id="${n.id}">Edit</button>
+          <button class="slot-mini danger" data-action="nether-del" data-id="${n.id}">✕</button>
+        </div></div>`).join("") || `<div class="slot-sub" style="padding:10px">No Nether Stones yet — build one.</div>`;
+    return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel">
+      <div class="overlay-header"><h2>Nether Stones</h2><button class="ovl-close" data-action="close-ovl">✕</button></div>
+      <div class="overlay-body"><div class="ovl-center"><div class="ovl-center-scroll">
+        <div class="lib-grid">${tiles}</div></div></div></div>
       <div class="overlay-footer"><span class="foot-info"></span>
-        <button class="btn-confirm" data-action="close-ovl">Done</button></div>
+        <button class="btn-confirm" data-action="nether-new">＋ Build new stone</button></div>
+    </div></div>`;
+  }
+
+  // stepped nether wizard: 1) gem + name  2) properties (any number, from the full stat+trick pool)
+  function openNetherBuilder(id) {
+    const draft = id != null ? JSON.parse(JSON.stringify(nether.find(n => n.id === id)))
+      : { id: null, name: `Nether Stone ${nextNetherId}`, icon: (GEM_ICONS[0] || {}).key, props: [] };
+    ovState = { kind: "netherbuild", editId: id, draft, step: id != null ? "props" : "basics", picking: false, search: "", render: renderNetherBuilder };
+    openOverlay(ovState.render());
+  }
+  const netherStepLabels = { basics: "1 · Gem & name", props: "2 · Properties" };
+  const renderNetherStepbar = (step) => `<div class="art-steps">${["basics", "props"].map(s =>
+    `<span class="art-step ${s === step ? "on" : ""} ${["basics", "props"].indexOf(s) < ["basics", "props"].indexOf(step) ? "done" : ""}">${netherStepLabels[s]}</span>`).join("<span class='art-step-sep'>›</span>")}</div>`;
+  function renderNetherBuilder() {
+    const st = ovState, s = st.draft;
+    let body = "", footer = "";
+    if (st.step === "basics") {
+      const gemChoices = GEM_ICONS.map(g => `<button class="gem-choice ${s.icon === g.key ? "on" : ""}" data-action="nether-icon" data-k="${g.key}" title="${g.key}">${spriteImg(g.path, "px")}</button>`).join("");
+      body = `<div class="ovl-center"><div class="ovl-center-scroll">
+        <div class="build-section"><h3>Name</h3>
+          <div class="nf-row"><input class="ovl-search name-field" style="max-width:none;flex:1" placeholder="Name" value="${esc(s.name)}" data-action="nether-name">
+            <button class="chip" data-action="nether-rand" title="Random gem">🎲</button></div></div>
+        <div class="build-section"><h3>Gem icon</h3><div class="gem-picker">${gemChoices}</div></div>
+      </div></div>`;
+      footer = `<button class="btn-ghost" data-action="nether-cancel">Cancel</button>
+        <button class="btn-confirm" data-action="netherb-next">Next: Properties ›</button>`;
+    } else {
+      const rows = s.props.map((p, i) => `<div class="art-slot"><button class="as-rm" data-action="nether-prop-del" data-i="${i}">✕</button>
+        <div class="as-lab">${esc(p.prop)}</div>
+        <div class="as-sub"><input type="number" class="np-num" data-action="nether-propval" data-i="${i}" value="${p.value}">%</div></div>`).join("");
+      const slotsBox = `<div class="art-slot-grid">${rows}<div class="art-slot add ${st.picking ? "picking" : ""}" data-action="nether-addprop"><div class="as-ico glyph">＋</div><div class="as-lab">Add property</div></div></div>`;
+      let picker = "";
+      if (st.picking) {
+        const q = st.search.trim().toLowerCase();
+        const pr = [...propGroups.values()].filter(g => !q || g.name.toLowerCase().includes(q)).map(g =>
+          `<div class="prop-row" data-action="nether-pickprop" data-p="${esc(g.name)}">
+            <span class="prop-name">${esc(g.name)}</span><span class="prop-stat">${esc(g.entries.map(e => e.stat).join(" / "))}</span>
+            <span class="prop-val">${g.group}</span></div>`).join("");
+        picker = `<div class="art-picker">
+          <div class="ovl-filterbar"><button class="chip" data-action="nether-closepick">‹ Done</button>
+            <input class="ovl-search" placeholder="Search properties…" value="${esc(st.search)}" data-action="nether-search"></div>
+          <div class="ovl-center-scroll">${pr}</div></div>`;
+      }
+      body = `<div class="ovl-center"><div class="ovl-center-scroll">${slotsBox}${picker}</div></div>`;
+      footer = `<button class="btn-ghost" data-action="netherb-back">‹ Back</button>
+        <button class="btn-confirm" data-action="nether-save">Save Stone</button>`;
+    }
+    return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel detail">
+      <div class="overlay-header"><span class="hdr-ico">${spriteImg(gemPath(s.icon), "px")}</span>
+        <h2>${esc(s.name)}</h2>${renderNetherStepbar(st.step)}
+        <button class="ovl-close" data-action="close-ovl">✕</button></div>
+      <div class="overlay-body">${body}</div>
+      <div class="overlay-footer"><span class="foot-info"></span><div>${footer}</div></div>
     </div></div>`;
   }
 
@@ -999,26 +1024,25 @@
       case "card-inc": { const id = +t.dataset.id, c = D.cards.find(x => x.id === id); cards.levels[id] = Math.min(cardLevel(id) + 1, c.effects.length); persistCards(); refreshOverlay(); break; }
       case "card-dec": { const id = +t.dataset.id; cards.levels[id] = Math.max(cardLevel(id) - 1, 0); persistCards(); refreshOverlay(); break; }
 
-      // nether
-      case "nether-edit": ovState.editId = +t.dataset.id; ovState.draft = null; ovState.pb = null; refreshOverlay(); break;
-      case "nether-cancel-edit": ovState.editId = null; ovState.draft = null; ovState.pb = null; refreshOverlay(); break;
-      case "nether-del": armOrDo(t, () => { const id = +t.dataset.id; nether = nether.filter(n => n.id !== id); artifacts.forEach(a => a.netherIds = (a.netherIds || []).filter(x => x !== id)); if (ovState.editId === id) { ovState.editId = null; ovState.draft = null; } persistNether(); persistArtifacts(); refreshOverlay(); }); break;
-      case "nether-icon": curNether().icon = t.dataset.k; if (ovState.editId != null) persistNether(); refreshOverlay(); break;
-      case "nether-rand": { const g = GEM_ICONS[Math.floor((Date.now() >> 4) % GEM_ICONS.length)] || GEM_ICONS[0]; curNether().icon = g && g.key; if (ovState.editId != null) persistNether(); refreshOverlay(); break; }
-      case "np-add": ovState.pb = { type: "stat", mode: "single", stats: [{ stat: "Health", value: 10 }, { stat: "Attack", value: 10 }] }; refreshOverlay(); break;
-      case "np-mode": ovState.pb.mode = t.dataset.m; refreshOverlay(); break;
-      case "np-cancel": ovState.pb = null; refreshOverlay(); break;
-      case "np-commit": {
-        const pb = ovState.pb, n = pb.mode === "double" ? 2 : 1;
-        curNether().props.push({ type: "stat", mode: pb.mode, stats: pb.stats.slice(0, n).map(s => ({ stat: s.stat, value: Number(s.value) || 0 })) });
-        ovState.pb = null; if (ovState.editId != null) persistNether(); refreshOverlay(); break;
-      }
-      case "nether-prop-del": curNether().props.splice(+t.dataset.i, 1); if (ovState.editId != null) persistNether(); refreshOverlay(); break;
+      // nether library + wizard
+      case "nether-new": openNetherBuilder(null); break;
+      case "nether-edit": openNetherBuilder(+t.dataset.id); break;
+      case "nether-del": armOrDo(t, () => { const id = +t.dataset.id; nether = nether.filter(n => n.id !== id); artifacts.forEach(a => a.netherIds = (a.netherIds || []).filter(x => x !== id)); persistNether(); persistArtifacts(); refreshOverlay(); }); break;
+      case "nether-cancel": openNether(); break;
+      case "netherb-next": ovState.step = "props"; ovState.picking = false; ovState.search = ""; refreshOverlay(); break;
+      case "netherb-back": ovState.step = "basics"; ovState.picking = false; refreshOverlay(); break;
+      case "nether-icon": ovState.draft.icon = t.dataset.k; refreshOverlay(); break;
+      case "nether-rand": { const g = GEM_ICONS[Math.floor((Date.now() >> 4) % GEM_ICONS.length)] || GEM_ICONS[0]; ovState.draft.icon = g && g.key; refreshOverlay(); break; }
+      case "nether-addprop": ovState.picking = true; ovState.search = ""; refreshOverlay(); break;
+      case "nether-closepick": ovState.picking = false; refreshOverlay(); break;
+      case "nether-pickprop": ovState.draft.props.push({ prop: t.dataset.p, value: 10 }); ovState.picking = false; refreshOverlay(); break;
+      case "nether-prop-del": ovState.draft.props.splice(+t.dataset.i, 1); refreshOverlay(); break;
       case "nether-save": {
-        if (ovState.editId != null) { persistNether(); ovState.editId = null; ovState.draft = null; ovState.pb = null; refreshOverlay(); break; }
-        const d = ovState.draft || blankNether();
+        const d = ovState.draft;
         if (!d.name || !d.name.trim()) d.name = `Nether Stone ${nextNetherId}`;
-        d.id = nextNetherId++; nether.push(d); ovState.draft = null; ovState.pb = null; persistNether(); refreshOverlay(); break;
+        if (ovState.editId != null) { const idx = nether.findIndex(n => n.id === ovState.editId); if (idx >= 0) nether[idx] = d; }
+        else { d.id = nextNetherId++; nether.push(d); }
+        persistNether(); openNether(); break;
       }
 
       // trait nav (stub — full trait page is P1)
@@ -1035,14 +1059,13 @@
     // range sliders / selects
     if (A === "artb-rank") { ovState.draft.rank = +v; refreshOverlay(); return; }
     if (A === "relic-rank") { ovState.rank = +v; refreshOverlay(); return; }
-    if (A === "np-stat") { ovState.pb.stats[+t.dataset.i].stat = v; return; }
-    if (A === "np-val") { ovState.pb.stats[+t.dataset.i].value = v; return; }
+    if (A === "nether-propval") { ovState.draft.props[+t.dataset.i].value = Number(v) || 0; return; }
     // name fields (no re-render — keep focus/caret)
     if (A === "artb-name") { ovState.draft.name = v; return; }
-    if (A === "nether-name") { curNether().name = v; if (ovState.editId != null) persistNether(); return; }
+    if (A === "nether-name") { ovState.draft.name = v; return; }
     // search fields — live filter without losing caret
     const searchMap = { "crea-search": [OV, ovState], "spec-search": [OV, ovState], "artb-search": [OV, ovState],
-      "relic-search": [OV, ovState], "cards-search": [OV, ovState], "anoint-search": [OV, ovState], "facet-search": [DOV, dovState], "perk-search": [DOV, dovState] };
+      "relic-search": [OV, ovState], "cards-search": [OV, ovState], "anoint-search": [OV, ovState], "nether-search": [OV, ovState], "facet-search": [DOV, dovState], "perk-search": [DOV, dovState] };
     if (searchMap[A]) {
       const [root, state] = searchMap[A]; state.search = v;
       const panel = root.querySelector(".overlay-panel");
