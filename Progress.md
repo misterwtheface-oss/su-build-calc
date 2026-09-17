@@ -4,6 +4,17 @@
 Deployed at **https://misterwtheface-oss.github.io/su-build-calc/** (repo `misterwtheface-oss/su-build-calc`,
 Pages on `master`/root, Cloudflare analytics active with the shared github.io token). Auto-deploys on push.
 
+## v2.9 spell gems as first-class entities (2026-09-17)
+Per user: artifacts, nether stones, and spell gems are three SEPARATE buildable entities. A **spell gem = 1 spell
++ up to 3 property items** (Slates/Curios/Cripplers = the `item_class:1` materials, 47, `SU_DATA.spellProps` w/ icons).
+- **Spell Gems library + wizard** (new top-bar "Spell Gems" button; `subc.spellgems`): step 1 pick spell (class
+  gem icon) → step 2 add ≤3 property items + name. Library tiles show the class gem + spell + prop count.
+- **Creature spell slots**: new per-creature "Spells" action (alongside Fuse/Artifact/Relic) equips up to 3 spell
+  gems (`slot.spellGemIds`, cap 3; "modifiable by trait/perk" noted, cap fixed at 3 for now). Manual/trait cast.
+- **Artifact spell slot** now equips a built spell **gem** (not a raw spell); auto-triggers per artifact kind.
+  `artifact.spells` migrated (old raw-spell ids cleared). Deleting a gem unequips it everywhere.
+- Data: `spellProps` (47 property items) added to pipeline w/ material icons.
+
 ## v2.8 nether wizard + spell gems (2026-09-17)
 - **Spell-gem class icons** (from prior): spells carry `cls` (spells_ref, fuzzy-fixed 747/747); artifact spell
   slot + picker show the class-coloured gem.

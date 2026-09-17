@@ -32,6 +32,14 @@
   const SPELL = new Map((D.spells || []).map(s => [s.id, s]));
   const SPELLGEM = D.spellGems || {};                       // class -> class-coloured gem icon
   const spellIcon = (s) => s && s.cls ? SPELLGEM[s.cls] : null;
+  const SPELLPROP = new Map((D.spellProps || []).map(p => [p.id, p]));   // spell-gem property items (Slates/Curios)
+  const SPELLGEM_MAX_PROPS = 3;                             // each spell gem holds up to 3 property items
+  // built spell-gem helpers (a gem = {id,name,spellId,propIds[]})
+  const gemSpell = (g) => g ? SPELL.get(g.spellId) : null;
+  const gemIcon = (g) => spellIcon(gemSpell(g));
+  const gemName = (g) => g ? (g.name || (gemSpell(g) ? gemSpell(g).name : "Spell Gem")) : "";
+  const gemSummary = (g) => { const s = gemSpell(g); const np = (g.propIds || []).length;
+    return (s ? s.name : "—") + (np ? ` · ${np} propert${np === 1 ? "y" : "ies"}` : ""); };
   // fixed artifact slot template (all artifacts, max level): 1 primary + these; nether = 1 slot
   const ART_SLOTS = [
     { key: "stat", label: "Stat", max: 3, pick: "stat" },
@@ -43,11 +51,11 @@
   const RELIC = new Map(D.relics.map(r => [r.id, r]));
 
   // ── persistence (schema 2) ─────────────────────────────────────────────────
-  const LS = { build: "subc.build", cards: "subc.cards", nether: "subc.nether", artifacts: "subc.artifacts" };
+  const LS = { build: "subc.build", cards: "subc.cards", nether: "subc.nether", artifacts: "subc.artifacts", spellgems: "subc.spellgems" };
   const jload = (k, dflt) => { try { const v = JSON.parse(localStorage.getItem(k)); return v == null ? dflt : v; } catch { return dflt; } };
   const jsave = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} };
 
-  const emptySlot = () => ({ cid: null, fusion: null, artifactId: null, relic: null });
+  const emptySlot = () => ({ cid: null, fusion: null, artifactId: null, relic: null, spellGemIds: [] });
   let build = jload(LS.build, null);
   // schema 2 stored perkAlloc as a binary de-allocation map ({key:1} = deallocated).
   // schema 3 stores an allocated rank count ({key:R}; absent key = fully allocated = maxRanks).
@@ -62,6 +70,7 @@
   build.perkAlloc = build.perkAlloc || {};
   while (build.slots.length < 6) build.slots.push(emptySlot());
   build.slots = build.slots.map(s => Object.assign(emptySlot(), s));
+  build.slots.forEach(s => { if (!Array.isArray(s.spellGemIds)) s.spellGemIds = []; });
 
   let cards = jload(LS.cards, null);                        // { levels: {cardId: 0..3} } — absent == 3 (max)
   if (!cards || !cards.levels) cards = { levels: {} };
@@ -91,14 +100,21 @@
       delete a.props; delete a.traitItemIds;
     }
     a.stat ||= []; a.trick ||= []; a.traits ||= []; a.spells ||= []; a.netherIds ||= [];
+    if (!a._gemMigrated) { a.spells = []; a._gemMigrated = true; }   // artifact.spells now holds spell-GEM ids, not raw spells
   }
+
+  // spell gems (built entities: 1 spell + up to 3 property items) — slottable into artifacts or creatures
+  let spellGems = jload(LS.spellgems, null);                // [{id,name,spellId,propIds:[]}]
+  if (!Array.isArray(spellGems)) spellGems = [];
 
   const persistBuild = () => jsave(LS.build, build);
   const persistCards = () => jsave(LS.cards, cards);
   const persistNether = () => jsave(LS.nether, nether);
   const persistArtifacts = () => jsave(LS.artifacts, artifacts);
+  const persistSpellGems = () => jsave(LS.spellgems, spellGems);
   let nextNetherId = nether.reduce((m, n) => Math.max(m, n.id || 0), 0) + 1;
   let nextArtId = artifacts.reduce((m, a) => Math.max(m, a.id || 0), 0) + 1;
+  let nextSpellGemId = spellGems.reduce((m, g) => Math.max(m, g.id || 0), 0) + 1;
 
   const cardLevel = (id) => cards.levels[id] == null ? 3 : cards.levels[id];
 
@@ -274,6 +290,7 @@
         <button class="slot-mini ${f ? "on" : ""}" data-action="pick-fusion" data-slot="${i}" title="Fusion partner">${f ? "Fused" : "Fuse"}</button>
         <button class="slot-mini ${a ? "on" : ""}" data-action="equip-artifact" data-slot="${i}" title="Artifact">${a ? "Artifact ✓" : "Artifact"}</button>
         <button class="slot-mini ${slot.relic ? "on" : ""}" data-action="build-relic" data-slot="${i}" title="Relic">Relic</button>
+        <button class="slot-mini ${(slot.spellGemIds || []).length ? "on" : ""}" data-action="creature-spells" data-slot="${i}" title="Spell gems (up to 3)">Spells${(slot.spellGemIds || []).length ? ` ${slot.spellGemIds.length}` : ""}</button>
       </div></div>`;
   }
 
@@ -647,7 +664,7 @@
         let ico = `<div class="as-ico glyph">◆</div>`, lab = v, sub = "";
         if (type === "stat" || type === "trick") { const g = propGroups.get(v); sub = g ? g.entries.map(e => PROP_STAT[e.stat] ? `+${e.perRank[rank]}%` : e.perRank[rank]).join(" / ") : ""; }
         else if (type === "trait") { const t = TRAITITEM.get(v); ico = `<div class="as-ico">${t && t.icon ? spriteImg(t.icon, "px") : "✦"}</div>`; lab = t ? t.name : v; sub = t ? t.traitName : ""; }
-        else if (type === "spell") { const s = SPELL.get(v); const gi = spellIcon(s); ico = `<div class="as-ico">${gi ? spriteImg(gi, "px") : "✷"}</div>`; lab = s ? s.name : v; sub = s && s.cls ? s.cls : "spell"; }
+        else if (type === "spell") { const g = spellGems.find(x => x.id === v); const gi = gemIcon(g); ico = `<div class="as-ico">${gi ? spriteImg(gi, "px") : "✷"}</div>`; lab = g ? gemName(g) : v; sub = g ? gemSummary(g) : "spell gem"; }
         else if (type === "nether") { const n = nether.find(x => x.id === v); ico = `<div class="as-ico">${spriteImg(gemPath(n && n.icon), "px")}</div>`; lab = n ? n.name : v; sub = "nether"; }
         return `<div class="art-slot"><button class="as-rm" data-action="art-rm" data-t="${type}" data-v="${esc(v)}">✕</button>${ico}<div class="as-lab">${esc(lab)}</div><div class="as-sub">${esc(sub)}</div></div>`;
       };
@@ -681,10 +698,11 @@
               <span class="prop-ico">${t.icon ? spriteImg(t.icon, "px") : ""}</span>
               <span class="prop-name">${esc(t.name)}</span><span class="prop-stat">grants ${esc(t.traitName)}</span></div>`).join("");
         } else if (st.pickType === "spell") {
-          rows = D.spells.filter(s => !q || s.name.toLowerCase().includes(q) || (s.desc || "").toLowerCase().includes(q)).slice(0, 300)
-            .map(s => `<div class="prop-row ${has(s.id) ? "chosen" : ""}" data-action="art-add" data-t="spell" data-v="${s.id}">
-              <span class="prop-ico">${spellIcon(s) ? spriteImg(spellIcon(s), "px") : ""}</span>
-              <span class="prop-name">${esc(s.name)}</span><span class="prop-stat">${esc((s.desc || "").slice(0, 80))}</span></div>`).join("");
+          rows = spellGems.filter(g => !q || gemName(g).toLowerCase().includes(q)).map(g =>
+            `<div class="prop-row ${has(g.id) ? "chosen" : ""}" data-action="art-add" data-t="spell" data-v="${g.id}">
+              <span class="prop-ico">${gemIcon(g) ? spriteImg(gemIcon(g), "px") : ""}</span>
+              <span class="prop-name">${esc(gemName(g))}</span><span class="prop-stat">${esc(gemSummary(g))}</span></div>`).join("")
+            || `<div class="slot-sub" style="padding:8px">No spell gems yet — build them from the top-bar “Spell Gems” button.</div>`;
         } else {
           rows = nether.map(n => `<div class="prop-row ${has(n.id) ? "chosen" : ""}" data-action="art-add" data-t="nether" data-v="${n.id}">
               <span class="prop-ico">${spriteImg(gemPath(n.icon), "px")}</span>
@@ -705,7 +723,7 @@
         ...a.stat.map(n => `<span class="slot-chip filled">${esc(n)}</span>`),
         ...a.trick.map(n => `<span class="slot-chip filled">${esc(n)}</span>`),
         ...a.traits.map(id => { const t = TRAITITEM.get(id); return `<span class="slot-chip filled">✦ ${esc(t ? t.traitName : id)}</span>`; }),
-        ...a.spells.map(id => { const s = SPELL.get(id); return `<span class="slot-chip filled">✷ ${esc(s ? s.name : id)}</span>`; }),
+        ...a.spells.map(id => { const g = spellGems.find(x => x.id === id); return `<span class="slot-chip filled">✷ ${esc(g ? gemName(g) : id)}</span>`; }),
         ...a.netherIds.map(id => { const n = nether.find(x => x.id === id); return `<span class="slot-chip filled">◈ ${esc(n ? n.name : id)}</span>`; }),
       ].join("") || `<span class="slot-chip">No slots filled</span>`;
       body = `<div class="ovl-center"><div class="ovl-center-scroll">
@@ -920,6 +938,102 @@
     </div></div>`;
   }
 
+  // ── spell gems: library + stepped wizard (1 spell + up to 3 property items) ──
+  function openSpellGems() {   // library (manage mode when equipCtx is null)
+    ovState = { kind: "spellgemlib", equipCtx: null, render: renderSpellGemLib };
+    openOverlay(ovState.render());
+  }
+  function renderSpellGemLib() {
+    const st = ovState, ctx = st.equipCtx;   // {kind:'artifact'|'creature'} when equipping
+    const equipped = ctx ? new Set(ctx.equipped()) : null;
+    const tiles = spellGems.map(g => {
+      const on = equipped ? equipped.has(g.id) : false;
+      return `<div class="lib-tile ${on ? "equipped" : ""}">
+        <div class="lib-icon" data-action="${ctx ? "sg-equip" : "sg-edit"}" data-id="${g.id}">${spriteImg(gemIcon(g), "px")}</div>
+        <div class="lib-name">${esc(gemName(g))}</div>
+        <div class="lib-sub">${esc(gemSummary(g))}</div>
+        <div class="lib-actions">
+          ${ctx ? `<button class="slot-mini" data-action="sg-equip" data-id="${g.id}">${on ? "Equipped" : "Equip"}</button>` : ""}
+          <button class="slot-mini" data-action="sg-edit" data-id="${g.id}">Edit</button>
+          <button class="slot-mini danger" data-action="sg-del" data-id="${g.id}">✕</button>
+        </div></div>`;
+    }).join("") || `<div class="slot-sub" style="padding:10px">No spell gems yet — build one.</div>`;
+    return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel">
+      <div class="overlay-header"><h2>Spell Gems${ctx ? " — equip" : ""}</h2><button class="ovl-close" data-action="close-ovl">✕</button></div>
+      <div class="overlay-body"><div class="ovl-center"><div class="ovl-center-scroll">
+        <div class="lib-grid">${tiles}</div></div></div></div>
+      <div class="overlay-footer"><span class="foot-info"></span>
+        <button class="btn-confirm" data-action="sg-new">＋ Build new spell gem</button></div>
+    </div></div>`;
+  }
+  function openSpellGemBuilder(id) {
+    const draft = id != null ? JSON.parse(JSON.stringify(spellGems.find(g => g.id === id)))
+      : { id: null, name: "", spellId: null, propIds: [] };
+    ovState = { kind: "sgbuild", editId: id, draft, step: id != null ? "props" : "spell", search: "", render: renderSpellGemBuilder };
+    openOverlay(ovState.render());
+  }
+  const sgStepLabels = { spell: "1 · Pick spell", props: "2 · Properties" };
+  const renderSgStepbar = (step) => `<div class="art-steps">${["spell", "props"].map(s =>
+    `<span class="art-step ${s === step ? "on" : ""} ${["spell", "props"].indexOf(s) < ["spell", "props"].indexOf(step) ? "done" : ""}">${sgStepLabels[s]}</span>`).join("<span class='art-step-sep'>›</span>")}</div>`;
+  function renderSpellGemBuilder() {
+    const st = ovState, g = st.draft, q = st.search.trim().toLowerCase();
+    let body = "", footer = "";
+    if (st.step === "spell") {
+      const rows = D.spells.filter(s => !q || s.name.toLowerCase().includes(q) || (s.desc || "").toLowerCase().includes(q)).slice(0, 300)
+        .map(s => `<div class="prop-row ${g.spellId === s.id ? "chosen" : ""}" data-action="sg-spell" data-id="${s.id}">
+          <span class="prop-ico">${spellIcon(s) ? spriteImg(spellIcon(s), "px") : ""}</span>
+          <span class="prop-name">${esc(s.name)}</span><span class="prop-stat">${esc((s.desc || "").slice(0, 80))}</span></div>`).join("");
+      body = `<div class="ovl-center">
+        <div class="ovl-filterbar"><input class="ovl-search" placeholder="Search spells…" value="${esc(st.search)}" data-action="sg-search"></div>
+        <div class="ovl-center-scroll">${rows}</div></div>`;
+      footer = `<button class="btn-ghost" data-action="sg-cancel">Cancel</button>
+        <button class="btn-confirm" data-action="sgb-next" ${g.spellId != null ? "" : "disabled"}>Next: Properties ›</button>`;
+    } else {
+      const boxes = [];
+      for (let i = 0; i < SPELLGEM_MAX_PROPS; i++) {
+        const pid = g.propIds[i];
+        if (pid !== undefined) { const p = SPELLPROP.get(pid);
+          boxes.push(`<div class="art-slot"><button class="as-rm" data-action="sg-prop-rm" data-i="${i}">✕</button>
+            <div class="as-ico">${p && p.icon ? spriteImg(p.icon, "px") : "◆"}</div><div class="as-lab">${esc(p ? p.name : pid)}</div></div>`); }
+        else boxes.push(`<div class="art-slot add ${st.picking ? "picking" : ""}" data-action="sg-addprop"><div class="as-ico glyph">＋</div><div class="as-lab">Property</div></div>`);
+      }
+      let picker = "";
+      if (st.picking) {
+        const pr = D.spellProps.filter(p => !q || p.name.toLowerCase().includes(q)).map(p =>
+          `<div class="prop-row ${g.propIds.includes(p.id) ? "chosen" : ""}" data-action="sg-pickprop" data-id="${p.id}">
+            <span class="prop-ico">${p.icon ? spriteImg(p.icon, "px") : ""}</span><span class="prop-name">${esc(p.name)}</span></div>`).join("");
+        picker = `<div class="art-picker">
+          <div class="ovl-filterbar"><button class="chip" data-action="sg-closepick">‹ Done</button>
+            <input class="ovl-search" placeholder="Search Slates / Curios…" value="${esc(st.search)}" data-action="sg-search"></div>
+          <div class="ovl-center-scroll">${pr}</div></div>`;
+      }
+      body = `<div class="ovl-center"><div class="ovl-center-scroll">
+        <div class="build-section"><h3>Name</h3>
+          <input class="ovl-search name-field" placeholder="${esc(gemSpell(g) ? gemSpell(g).name : "Spell gem name")}" value="${esc(g.name)}" data-action="sg-name" style="max-width:320px"></div>
+        <div class="art-slot-group"><div class="section-label">Property items</div><div class="art-slot-grid">${boxes.join("")}</div></div>
+        ${picker}</div></div>`;
+      footer = `<button class="btn-ghost" data-action="sgb-back">‹ Back</button>
+        <button class="btn-confirm" data-action="sg-save">Save Spell Gem</button>`;
+    }
+    return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel detail">
+      <div class="overlay-header"><span class="hdr-ico">${spriteImg(gemIcon(g), "px")}</span>
+        <h2>${esc(gemName(g) || "New Spell Gem")}</h2>${renderSgStepbar(st.step)}
+        <button class="ovl-close" data-action="close-ovl">✕</button></div>
+      <div class="overlay-body">${body}</div>
+      <div class="overlay-footer"><span class="foot-info"></span><div>${footer}</div></div>
+    </div></div>`;
+  }
+
+  // creature spell slots (up to 3 equipped spell gems) — equip from the library
+  function openCreatureSpells(slotIdx) {
+    ovState = { kind: "spellgemlib", equipCtx: {
+      kind: "creature", slotIdx,
+      equipped: () => build.slots[slotIdx].spellGemIds,
+      max: 3,
+    }, render: renderSpellGemLib };
+    openOverlay(ovState.render());
+  }
+
   // ── event delegation ───────────────────────────────────────────────────────
   function onClick(e) {
     const t = e.target.closest("[data-action]"); if (!t) return;
@@ -1045,6 +1159,42 @@
         persistNether(); openNether(); break;
       }
 
+      // spell gems: library + wizard + equip
+      case "open-spellgems": openSpellGems(); break;
+      case "creature-spells": openCreatureSpells(+t.dataset.slot); break;
+      case "sg-new": openSpellGemBuilder(null); break;
+      case "sg-edit": openSpellGemBuilder(+t.dataset.id); break;
+      case "sg-del": armOrDo(t, () => { const id = +t.dataset.id; spellGems = spellGems.filter(g => g.id !== id);
+        artifacts.forEach(a => a.spells = (a.spells || []).filter(x => x !== id));
+        build.slots.forEach(s => s.spellGemIds = (s.spellGemIds || []).filter(x => x !== id));
+        persistSpellGems(); persistArtifacts(); persistBuild(); refreshOverlay(); }); break;
+      case "sg-cancel": openSpellGems(); break;
+      case "sg-spell": ovState.draft.spellId = ovState.draft.spellId === +t.dataset.id ? null : +t.dataset.id; refreshOverlay(); break;
+      case "sgb-next": ovState.step = "props"; ovState.picking = false; ovState.search = ""; refreshOverlay(); break;
+      case "sgb-back": ovState.step = "spell"; ovState.picking = false; ovState.search = ""; refreshOverlay(); break;
+      case "sg-addprop": ovState.picking = true; ovState.search = ""; refreshOverlay(); break;
+      case "sg-closepick": ovState.picking = false; refreshOverlay(); break;
+      case "sg-pickprop": { const id = +t.dataset.id, arr = ovState.draft.propIds;
+        const i = arr.indexOf(id); if (i >= 0) arr.splice(i, 1); else if (arr.length < SPELLGEM_MAX_PROPS) arr.push(id);
+        if (arr.length >= SPELLGEM_MAX_PROPS) ovState.picking = false; refreshOverlay(); break; }
+      case "sg-prop-rm": ovState.draft.propIds.splice(+t.dataset.i, 1); refreshOverlay(); break;
+      case "sg-save": {
+        const d = ovState.draft;
+        if (d.spellId == null) break;
+        if (!d.name || !d.name.trim()) d.name = (SPELL.get(d.spellId) || {}).name || `Spell Gem ${nextSpellGemId}`;
+        if (ovState.editId != null) { const idx = spellGems.findIndex(g => g.id === ovState.editId); if (idx >= 0) spellGems[idx] = d; }
+        else { d.id = nextSpellGemId++; spellGems.push(d); }
+        persistSpellGems(); openSpellGems(); break;
+      }
+      case "sg-equip": {
+        const id = +t.dataset.id, ctx = ovState.equipCtx; if (!ctx) break;
+        const arr = ctx.equipped(); const i = arr.indexOf(id);
+        if (i >= 0) arr.splice(i, 1);
+        else if (arr.length < ctx.max) arr.push(id);
+        else if (ctx.max === 1) arr[0] = id;
+        persistBuild(); persistArtifacts(); refreshOverlay(); break;
+      }
+
       // trait nav (stub — full trait page is P1)
       case "nav-trait": { const tr = TRAIT[+t.dataset.tid]; if (tr) alert(tr.name + "\n\n" + (tr.desc || "")); break; }
     }
@@ -1063,9 +1213,10 @@
     // name fields (no re-render — keep focus/caret)
     if (A === "artb-name") { ovState.draft.name = v; return; }
     if (A === "nether-name") { ovState.draft.name = v; return; }
+    if (A === "sg-name") { ovState.draft.name = v; return; }
     // search fields — live filter without losing caret
     const searchMap = { "crea-search": [OV, ovState], "spec-search": [OV, ovState], "artb-search": [OV, ovState],
-      "relic-search": [OV, ovState], "cards-search": [OV, ovState], "anoint-search": [OV, ovState], "nether-search": [OV, ovState], "facet-search": [DOV, dovState], "perk-search": [DOV, dovState] };
+      "relic-search": [OV, ovState], "cards-search": [OV, ovState], "anoint-search": [OV, ovState], "nether-search": [OV, ovState], "sg-search": [OV, ovState], "facet-search": [DOV, dovState], "perk-search": [DOV, dovState] };
     if (searchMap[A]) {
       const [root, state] = searchMap[A]; state.search = v;
       const panel = root.querySelector(".overlay-panel");
