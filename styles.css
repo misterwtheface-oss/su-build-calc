@@ -348,6 +348,11 @@ h1, h2, h3 { margin: 0; }
 .home-top { margin-bottom: 14px; display: flex; flex-wrap: wrap; gap: 10px; }
 .anoint-tile { padding-right: 14px; }
 .anoint-tile .spec-tile-plus { font-size: 20px; }
+.anoint-chips { flex-wrap: wrap; gap: 4px; }
+.anoint-grp { margin-top: 12px; display: flex; gap: 8px; align-items: baseline; }
+.anoint-grp:first-child { margin-top: 0; }
+.anoint-badge.asc { flex: 0 0 auto; align-self: center; font-size: 9px; font-weight: 800; text-transform: uppercase;
+  color: var(--accent); background: rgba(201,162,75,.16); border: 1px solid var(--border-dim); border-radius: 4px; padding: 1px 4px; }
 .spec-tile {
   position: relative; display: inline-flex; align-items: center; gap: 10px;
   padding: 7px 30px 7px 7px; max-width: 280px;

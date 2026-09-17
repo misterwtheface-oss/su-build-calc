@@ -499,19 +499,47 @@
     </div></div>`;
   }
 
-  // ── anointments (placeholder — per-spec anointment lists need a decompile pass) ──
+  // ── anointments — browse every anointment-eligible perk (flags from Perk_REF.csv) ──
+  let ANOINTS = null;
+  function anointList() {
+    if (ANOINTS) return ANOINTS;
+    ANOINTS = [];
+    for (const s of D.specs) for (const p of s.perks) if (p.anointment) ANOINTS.push({ ...p, spec: s.label });
+    ANOINTS.sort((a, b) => a.spec.localeCompare(b.spec) || a.name.localeCompare(b.name));
+    return ANOINTS;
+  }
   function openAnoint() {
-    ovState = { kind: "anoint", render: renderAnoint };
-    openOverlay(ovState.render());
+    ovState = { kind: "anoint", search: "", specFilter: null, render: renderAnoint };
+    openOverlay(ovState.render()); maybeFocusSearch(OV);
   }
   function renderAnoint() {
+    const st = ovState, q = st.search.trim().toLowerCase();
+    const all = anointList();
+    const specs = [...new Set(all.map(a => a.spec))].sort();
+    const list = all.filter(a => (!st.specFilter || a.spec === st.specFilter)
+      && (!q || a.name.toLowerCase().includes(q) || (a.desc || "").toLowerCase().includes(q)));
+    // group by spec
+    const groups = {};
+    for (const a of list) (groups[a.spec] ||= []).push(a);
+    const body = Object.keys(groups).sort().map(sp => `
+      <div class="section-label anoint-grp">${esc(sp)} <span class="foot-info">${groups[sp].length}</span></div>
+      ${groups[sp].map(a => `<div class="perk-line on">
+        <span class="perk-ico sm">${a.icon ? spriteImg(a.icon, "px") : ""}</span>
+        <b>${esc(a.name)}</b>${a.ascension ? `<span class="anoint-badge asc">Ascension</span>` : ""}
+        ${a.ranks > 1 ? `<span class="perk-rankbadge">${a.ranks}×</span>` : ""}
+        ${a.desc ? ` — <span class="perk-desc">${richText(a.desc, a.ranks)}</span>` : ""}</div>`).join("")}`).join("")
+      || `<div class="slot-sub" style="padding:10px">No anointments match.</div>`;
+    const specChips = `<button class="chip ${!st.specFilter ? "on" : ""}" data-action="anoint-spec" data-s="">All</button>` +
+      specs.map(sp => `<button class="chip ${st.specFilter === sp ? "on" : ""}" data-action="anoint-spec" data-s="${esc(sp)}">${esc(sp)}</button>`).join("");
     return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel">
-      <div class="overlay-header"><h2>Anointments</h2><button class="ovl-close" data-action="close-ovl">✕</button></div>
-      <div class="overlay-body"><div class="ovl-center"><div class="ovl-center-scroll" style="padding:16px">
-        <p class="slot-sub" style="line-height:1.6">Anointments are perks you apply to your <b class="param">Nether Orb</b>, chosen per specialization.</p>
-        <p class="slot-sub" style="line-height:1.6;margin-top:10px">The per-spec anointment lists live in the game's <code>scr_AnointmentsListBySpec</code>, which needs a decompile pass to extract cleanly (the perk-icon heuristic mixes them with normal spec perks). This screen is a placeholder until that data lands.</p>
-      </div></div></div>
-      <div class="overlay-footer"><span class="foot-info">Coming soon</span>
+      <div class="overlay-header"><h2>Anointments</h2>
+        <input class="ovl-search" placeholder="Search anointments…" value="${esc(st.search)}" data-action="anoint-search">
+        <button class="ovl-close" data-action="close-ovl">✕</button></div>
+      <div class="overlay-body"><div class="ovl-center">
+        <div class="ovl-filterbar anoint-chips">${specChips}</div>
+        <div class="ovl-center-scroll"><div class="perk-list">${body}</div></div>
+      </div></div>
+      <div class="overlay-footer"><span class="foot-info">${all.length} anointment-eligible perks · apply to your Nether Orb from any specialization</span>
         <button class="btn-confirm" data-action="close-ovl">Close</button></div>
     </div></div>`;
   }
@@ -862,6 +890,7 @@
       case "clear-party": armOrDo(t, () => { build = { schema: 2, specId: null, perkAlloc: {}, slots: Array.from({ length: 6 }, emptySlot) }; persistBuild(); render(); }); break;
       case "open-artifacts": openArtifactLibrary(null); break;
       case "open-anoint": openAnoint(); break;
+      case "anoint-spec": ovState.specFilter = t.dataset.s || null; refreshOverlay(); break;
       case "open-cards": openCards(); break;
       case "open-nether": openNether(); break;
 
@@ -980,7 +1009,7 @@
     if (A === "nether-name") { curNether().name = v; if (ovState.editId != null) persistNether(); return; }
     // search fields — live filter without losing caret
     const searchMap = { "crea-search": [OV, ovState], "spec-search": [OV, ovState], "artb-search": [OV, ovState],
-      "relic-search": [OV, ovState], "cards-search": [OV, ovState], "facet-search": [DOV, dovState], "perk-search": [DOV, dovState] };
+      "relic-search": [OV, ovState], "cards-search": [OV, ovState], "anoint-search": [OV, ovState], "facet-search": [DOV, dovState], "perk-search": [DOV, dovState] };
     if (searchMap[A]) {
       const [root, state] = searchMap[A]; state.search = v;
       const panel = root.querySelector(".overlay-panel");

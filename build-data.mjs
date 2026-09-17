@@ -210,6 +210,24 @@ const perkStatByKey = new Map(readJSON(path.join(MODEL, 'perk_stats.json')).reco
 // perk KEY -> icon sprite name, code-certain from scr_DatabasePerks (see _su_extract/code/extract_perk_icons.py)
 const perkIconByKey = new Map(readJSON(path.join(MODEL, 'perk_icons.json')).records.map(p => [p.key, p.icon]));
 
+// user-provided Perk_REF.csv → per-perk Anointment / Ascension flags (user-confident source of truth)
+const perkRef = new Map();          // norm(name)|norm(spec) -> {anoint, asc}
+const perkRefByName = new Map();    // norm(name) -> {anoint, asc}  (fuzzy/spec-agnostic fallback)
+{
+  const rows = parseCSV(fs.readFileSync(path.join(SRC, 'data', 'reference', '_raw_csv', 'Perk_REF.csv'), 'utf8'));
+  for (const r of rows) {
+    if (!r.Name) continue;
+    const rec = { anoint: /yes/i.test(r.Annointment || ''), asc: /yes/i.test(r.Ascension || '') };
+    perkRef.set(norm(r.Name) + '|' + norm(r.Specialization), rec);
+    perkRefByName.set(norm(r.Name), rec);
+  }
+}
+const SPEC_REF_ALIAS = { grovetender: 'herbalist' };  // display label -> CSV Specialization
+function perkFlags(perkName, specLabel) {
+  const n = norm(perkName), sp = norm(specLabel), spCsv = SPEC_REF_ALIAS[sp] || sp;
+  return perkRef.get(n + '|' + spCsv) || perkRef.get(n + '|' + sp) || perkRefByName.get(n) || null;
+}
+
 // 16×16 spec emblem lookup (spec_<slug>) — aliases for internally-renamed/misspelled classes
 const EMBLEM_ALIAS = { sorcerer: 'sorceror', runeknight: 'deathknight' };
 function findEmblem(label) {
@@ -219,7 +237,7 @@ function findEmblem(label) {
 }
 
 const specs = [];
-let specSkins = 0, perkIconsCopied = 0, perkIconsMissing = 0, emblemCount = 0;
+let specSkins = 0, perkIconsCopied = 0, perkIconsMissing = 0, emblemCount = 0, anointFlagged = 0, perkRefMisses = 0;
 for (const s of specRecs) {
   const slug = norm(s.key || s.label);
   const found = findSpecSprite(s.label);
@@ -239,8 +257,11 @@ for (const s of specRecs) {
     const iconName = perkIconByKey.get(p.key);
     if (iconName && copyNamedSprite(iconName, OUT_PERK, `${p.key}.png`)) { icon = `assets/perks/${p.key}.png`; perkIconsCopied++; }
     else { perkIconsMissing++; }
+    const fl = perkFlags(p.name, s.label);       // Anointment / Ascension from Perk_REF.csv
+    if (fl) { if (fl.anoint) anointFlagged++; } else perkRefMisses++;
     return { key: p.key, name: p.name, desc: perkDescByKey.get(p.key) || '',
-             cost: st ? st.cost : null, ranks: st ? st.ranks : 1, icon };
+             cost: st ? st.cost : null, ranks: st ? st.ranks : 1, icon,
+             anointment: fl ? fl.anoint : false, ascension: fl ? fl.asc : false };
   });
   specs.push({
     id: s.spec_id, key: s.key || slug.toUpperCase(), label: s.label, sprite, spriteKind, emblem,
@@ -394,6 +415,7 @@ console.log(`✓ ${checked} records checked · ${creatures.length} playable crea
 console.log(`  cards w/ art ${cardArt}/${cards.length} · artifact-type icons ${artGroup.primary.filter(p => p.icon).length}/5 · gem icons ${gemIcons.length} · class bgs ${Object.keys(classBg).length}`);
 console.log(`  spec sprites: ${specSkins} real skins + ${specs.filter(s => s.spriteKind === 'icon').length} emblem icons · ${emblemCount}/${specs.length} 16×16 emblems · terms ${Object.keys(terms).length}`);
   console.log(`  perk icons: ${perkIconsCopied} copied (code-certain from perk_icons.json)${perkIconsMissing ? ` · ${perkIconsMissing} missing` : ' · 100%'}`);
+  console.log(`  perk flags (Perk_REF.csv): ${anointFlagged} anointments${perkRefMisses ? ` · ${perkRefMisses} perks not in CSV` : ' · all matched'}`);
   console.log(`  wardrobe: ${wardrobeCopied} player costumes copied (code-certain)${wardrobeMissing ? ` · ${wardrobeMissing} missing` : ''} · ${specCostumes}/${specs.length} specs linked (all tiers)`);
   console.log(`  wardrobe names: ${nameSrc.class_vocab} class-vocab + ${nameSrc.L_WD} L_WD + ${nameSrc.derived} derived (of ${wardrobe.length})`);
   console.log(`  trait-item icons: ${matIconCopied} copied (code-certain from material_icons.json)${matIconMissing ? ` · ${matIconMissing} missing` : ''}`);

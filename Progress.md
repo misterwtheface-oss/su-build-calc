@@ -9,9 +9,12 @@ Pages on `master`/root, Cloudflare analytics active with the shared github.io to
 2. **Artifacts button** in the header → global artifact library in *manage* mode (`openArtifactLibrary(null)`;
    no equip, just edit/delete/build).
 3. **Spec grid centered**: `.spec-grid` is now centered flex-wrap so the last partial row centers.
-4. **Anointments button** added next to the Specialization tile on home → placeholder overlay. NOTE: real
-   per-spec anointment lists need `scr_AnointmentsListBySpec` **decompiled** (like `scr_PerkGetPerkList.c` for
-   specs); the perk-icon heuristic mixes anointments with normal spec perks (48/64 overlap), so data deferred.
+4. **Anointments** — button next to the Specialization tile → browsable overlay (search + per-spec chips, grouped
+   list w/ perk icons, rank-scaled descriptions, Ascension badges). Data comes from the user's
+   `_su_extract/data/reference/_raw_csv/Perk_REF.csv` (`Annointment`/`Ascension` columns): `build-data.mjs` joins
+   it to perks by name+spec (99%, `perkFlags()`, Grovetender→Herbalist alias) and sets `perk.anointment` /
+   `perk.ascension`. 570 anointments, 11 ascension; 6 perks not in CSV → default false. (Avoids the
+   `scr_AnointmentsListBySpec` decompile — the user vouched for CSV accuracy.)
 5. **Highest-tier artifact icons**: `ART_ICON_SRC` → helmet_6/sword_6/staff_5/shield_6/boots_5.
 6. **Artifact modal → 3-step wizard**: (1) pick artifact type (hi-tier icon tiles + rank), (2) fill slots one
    at a time (add-menu → inline picker for property/trait/nether, each slot shown as an icon tile w/ remove),
