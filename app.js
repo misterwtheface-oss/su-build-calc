@@ -56,13 +56,15 @@
     { key: "netherIds", label: "Nether", max: 1, pick: "nether" },
   ];
   const RELIC = new Map(D.relics.map(r => [r.id, r]));
+  const PERS = new Map((D.personalities || []).map(p => [p.key, p]));   // personality key -> {name,raise,lower}
+  const SCROLL_MAX = D.scrollMax || 15;                                  // total stat scrolls per creature (each +1 base)
 
   // ── persistence (schema 2) ─────────────────────────────────────────────────
   const LS = { build: "subc.build", cards: "subc.cards", nether: "subc.nether", artifacts: "subc.artifacts", spellgems: "subc.spellgems" };
   const jload = (k, dflt) => { try { const v = JSON.parse(localStorage.getItem(k)); return v == null ? dflt : v; } catch { return dflt; } };
   const jsave = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} };
 
-  const emptySlot = () => ({ cid: null, fusion: null, artifactId: null, relic: null, spellGemIds: [] });
+  const emptySlot = () => ({ cid: null, fusion: null, artifactId: null, relic: null, spellGemIds: [], personality: null, scrolls: {} });
   let build = jload(LS.build, null);
   // schema 2 stored perkAlloc as a binary de-allocation map ({key:1} = deallocated).
   // schema 3 stores an allocated rank count ({key:R}; absent key = fully allocated = maxRanks).
@@ -78,7 +80,7 @@
   build.anoints = Array.isArray(build.anoints) ? build.anoints : [];   // equipped anointments [{specId,key}], max 5
   while (build.slots.length < 6) build.slots.push(emptySlot());
   build.slots = build.slots.map(s => Object.assign(emptySlot(), s));
-  build.slots.forEach(s => { if (!Array.isArray(s.spellGemIds)) s.spellGemIds = []; });
+  build.slots.forEach(s => { if (!Array.isArray(s.spellGemIds)) s.spellGemIds = []; if (!s.scrolls || typeof s.scrolls !== "object") s.scrolls = {}; if (!("personality" in s)) s.personality = null; });
 
   let cards = jload(LS.cards, null);                        // { levels: {cardId: 0..3} } — absent == 3 (max)
   if (!cards || !cards.levels) cards = { levels: {} };
@@ -221,7 +223,8 @@
     const f = slot.fusion != null ? CREA.get(slot.fusion) : null;
     const avg = (a, b) => f ? Math.round((a + b) / 2) : a;
     const out = { fused: !!f };
-    for (const k of STAT_KEYS) out[k] = avg(c[k], f ? f[k] : 0);
+    const sc = slot.scrolls || {};
+    for (const k of STAT_KEYS) out[k] = avg(c[k], f ? f[k] : 0) + (sc[k] || 0);   // scrolls add +1 base each
     out.cls = f ? (f.cls || c.cls) : c.cls;                 // secondary's class on fusion
     out.traitIds = [c.traitId, f ? f.traitId : null].filter(x => x != null);
     out.total = STAT_KEYS.reduce((s, k) => s + out[k], 0);
@@ -405,6 +408,7 @@
     ovState = {
       kind: "creature", slotIdx, step: "primary",
       primaryId: slot.cid, fusionId: slot.fusion,
+      personality: slot.personality || null, scrolls: { ...(slot.scrolls || {}) },
       search: "", clsFilter: null, raceFilter: null, taxoFilters: [],
       render: renderCreaturePicker,
     };
@@ -412,6 +416,7 @@
   }
   const creaStepSel = (st) => st.step === "fusion" ? st.fusionId : st.primaryId;
   function creatureMatches(c, st) {
+    if (st.step === "fusion" && st.primaryId != null && c.id === st.primaryId) return false;  // can't fuse a creature with itself
     if (st.clsFilter && c.cls !== st.clsFilter) return false;
     if (st.raceFilter && c.race !== st.raceFilter) return false;
     if (st.taxoFilters.length) { const tx = creatureTaxo(c); if (!st.taxoFilters.every(k => tx.includes(k))) return false; }
@@ -461,9 +466,12 @@
       : `<button class="btn-ghost" data-action="close-ovl">Cancel</button>
          <button class="btn-confirm" data-action="crea-next" ${st.primaryId == null ? "disabled" : ""}>Next: Fusion ›</button>`;
     // right panel: the currently-highlighted pick, plus the fusion preview once both are chosen
+    // step 2 (fusion) also carries the per-creature customization (personality + scrolls) before commit
     let side = "";
-    if (fusion && primaryC && (selC || st.fusionId != null)) side = renderFusionPreview(primaryC, selC);
-    else if (selC) side = renderCreatureIdentity(selC);
+    if (fusion) {
+      const preview = (primaryC && selC) ? renderFusionPreview(primaryC, selC) : (primaryC ? renderCreatureIdentity(primaryC) : "");
+      side = preview + renderCreatureCustomize(st);
+    } else if (selC) side = renderCreatureIdentity(selC);
 
     return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel">
       <div class="overlay-header"><h2>${title}</h2>${steps}
@@ -509,6 +517,47 @@
         <div class="stat-row hl-med"><span class="stat-name">Total</span><span class="stat-val total">${STAT_KEYS.reduce((s, k) => s + avg(primary[k], secondary[k]), 0)}</span></div></div>`;
   }
 
+  // per-creature customization in the wizard: Personality (growth ↑/↓) + Scrolls (+1 base each, cap 15 total)
+  const scrollTotal = (sc) => STAT_KEYS.reduce((n, k) => n + (sc[k] || 0), 0);
+  function renderCreatureCustomize(st) {
+    const p = st.personality ? PERS.get(st.personality) : null;
+    const sc = st.scrolls || {}, tot = scrollTotal(sc);
+    const persBtn = p
+      ? `<button class="facet on tag" data-action="crea-pers-clear">${esc(p.name)}: <b>↑${STAT_LABEL[p.raise]} ↓${STAT_LABEL[p.lower]}</b> <span class="facet-x">✕</span></button>`
+      : `<button class="facet add" data-action="crea-pers">＋ Personality</button>`;
+    const rows = STAT_KEYS.map(k => `<div class="scroll-row">
+        <span class="scroll-lbl">${STAT_LABEL[k]}</span>
+        <button class="perk-step" data-action="crea-scroll-dec" data-k="${k}" ${(sc[k] || 0) <= 0 ? "disabled" : ""}>−</button>
+        <span class="scroll-val">+${sc[k] || 0}</span>
+        <button class="perk-step" data-action="crea-scroll-inc" data-k="${k}" ${tot >= SCROLL_MAX ? "disabled" : ""}>+</button></div>`).join("");
+    return `<div class="crea-customize">
+      <div class="section-label">Personality</div>
+      <div class="cc-persbar">${persBtn}</div>
+      <div class="section-label" style="margin-top:10px">Scrolls · ${tot}/${SCROLL_MAX}</div>
+      <div class="scroll-grid">${rows}</div></div>`;
+  }
+  function openPersonalityPicker() {
+    dovState = { kind: "pers", search: "", render: renderPersonalityPicker };
+    openDetail(dovState.render()); maybeFocusSearch(DOV);
+  }
+  function renderPersonalityPicker() {
+    const st = dovState, q = st.search.trim().toLowerCase();
+    const groups = {}; for (const p of D.personalities) (groups[p.raise] ||= []).push(p);
+    const body = STAT_KEYS.filter(rk => groups[rk]).map(rk => {
+      const opts = groups[rk].filter(p => !q || p.name.toLowerCase().includes(q));
+      if (!opts.length) return "";
+      return `<div class="section-label">↑ ${STAT_LABEL[rk]} growth</div>
+        ${opts.map(p => `<button class="opt-row" data-action="crea-pers-pick" data-k="${p.key}">
+          <span>${esc(p.name)}</span><span class="opt-sub">↑ ${STAT_LABEL[p.raise]} · ↓ ${STAT_LABEL[p.lower]}</span></button>`).join("")}`;
+    }).join("");
+    return `<div class="ovl-backdrop" data-action="facet-backdrop"><div class="overlay-panel detail facet-panel">
+      <div class="overlay-header"><h2>Choose Personality</h2>
+        <input class="ovl-search" placeholder="Search…" value="${esc(st.search)}" data-action="pers-search">
+        <button class="ovl-close" data-action="close-detail">✕</button></div>
+      <div class="overlay-body"><div class="ovl-center"><div class="ovl-center-scroll"><div class="opt-list">${body}</div></div></div></div>
+    </div></div>`;
+  }
+
   // ── facet sub-picker (Class / Race / Tag) on the detail layer ───────────────
   // opts.idx = taxonomy index to browse (defaults to creatures); opts.onPick = callback for taxo-val
   function openFacetPicker(kind, opts = {}) {
@@ -521,6 +570,7 @@
     const idx = st.idx || taxoIndex();
     let opts, title, back = "";
     if (st.facet === "class") { title = "Filter by Class"; opts = D.classes.map(c => ({ v: c.key, label: c.key, color: c.color })); }
+    else if (st.facet === "anoint-spec") { title = "Filter by Specialization"; opts = anointSpecs().map(s => ({ v: s, label: s })); }
     else if (st.facet === "race") { title = "Filter by Race"; opts = raceOptions().map(r => ({ v: r, label: r })); }
     else if (st.facet === "taxo-cat") { title = "Filter by mechanic"; opts = [...idx.keys()].map(cat => ({ v: cat, label: cat })); }
     else { // taxo-val
@@ -672,18 +722,24 @@
   const anointEquipped = (a) => build.anoints.some(x => x.specId === a.specId && x.key === a.key);
   const equippedAnointObjs = () => build.anoints.map(x => anointList().find(a => a.specId === x.specId && a.key === x.key)).filter(Boolean);
   function openAnoint() {
-    ovState = { kind: "anoint", search: "", taxoFilters: [], render: renderAnoint };
+    ovState = { kind: "anoint", search: "", taxoFilters: [], specFilter: null, render: renderAnoint };
     openOverlay(ovState.render()); maybeFocusSearch(OV);
   }
+  let ANOINT_SPECS = null;
+  const anointSpecs = () => ANOINT_SPECS || (ANOINT_SPECS = [...new Set(anointList().map(a => a.spec))].sort());
   const anointTaxoIndex = () => taxoIndexFor("anoint", anointList(), a => a.taxo || []);
   function renderAnoint() {
     const st = ovState, q = st.search.trim().toLowerCase();
     const list = anointList().filter(a =>
       (!q || a.name.toLowerCase().includes(q) || (a.desc || "").toLowerCase().includes(q)) &&
+      (!st.specFilter || a.spec === st.specFilter) &&
       (!st.taxoFilters.length || st.taxoFilters.every(k => (a.taxo || []).includes(k))));
+    const specChip = st.specFilter
+      ? `<button class="facet on" data-action="anoint-spec">Spec: <b>${esc(st.specFilter)}</b> <span class="facet-x" data-action="anoint-spec-clear">✕</span></button>`
+      : `<button class="facet" data-action="anoint-spec">Spec ▾</button>`;
     const taxoChips = st.taxoFilters.map((k, i) =>
       `<button class="facet on tag" data-action="rm-taxo" data-i="${i}">${esc(taxoCatName(k))}: <b>${esc(taxoValName(k))}</b> <span class="facet-x">✕</span></button>`).join("");
-    const filterbar = `<div class="ovl-filterbar">${taxoChips}<button class="facet add" data-action="anoint-taxo">＋ Filter</button></div>`;
+    const filterbar = `<div class="ovl-filterbar">${specChip}${taxoChips}<button class="facet add" data-action="anoint-taxo">＋ Filter</button></div>`;
     const groups = {};
     for (const a of list) (groups[a.spec] ||= []).push(a);
     const full = build.anoints.length >= ANOINT_MAX;
@@ -974,12 +1030,16 @@
     const slot = build.slots[slotIdx], c = CREA.get(slot.cid); if (!c) return;
     const fs = finalStats(slot), b = fs.base;
     const f = slot.fusion != null ? CREA.get(slot.fusion) : null;
+    const pers = slot.personality ? PERS.get(slot.personality) : null;
+    const growth = (k) => pers ? (pers.raise === k ? ` <span class="growth up" title="Personality: 40% growth rate">↑</span>`
+      : pers.lower === k ? ` <span class="growth down" title="Personality: 20% growth rate">↓</span>` : "") : "";
     const rows = STAT_KEYS.map(k => {
       const pct = fs.pct[k], touched = pct !== 0;
-      return `<div class="stat-row ${touched ? "hl-med" : ""}"><span class="stat-name">${STAT_LABEL[k]}</span>
+      return `<div class="stat-row ${touched ? "hl-med" : ""}"><span class="stat-name">${STAT_LABEL[k]}${growth(k)}</span>
         <span class="stat-val base">${b[k]}</span><span class="stat-val art">${touched ? "+" + pct + "%" : "—"}</span>
         <span class="stat-val total">${fs.final[k]}</span></div>`;
     }).join("");
+    const scT = scrollTotal(slot.scrolls || {});
     const traitIds = slotTraitIds(slot);
     const traitHtml = traitIds.map(tid => `<div class="primary-traits" style="margin-bottom:6px">${traitBanner(tid)}
       <div class="trait-desc">${richText((TRAIT[tid] || {}).desc || "")}</div></div>`).join("");
@@ -992,7 +1052,9 @@
         <div class="ovl-left" style="width:180px;text-align:center">${critFace(c)}
           <div class="slot-sub" style="margin-top:6px"><span style="color:${clsColor(b.cls)};font-weight:700">${esc(b.cls || "—")}</span>${c.race ? " · " + esc(c.race) : ""}</div>
           ${f ? `<div class="slot-sub" style="margin-top:8px">Fused with<br><b>${esc(f.name)}</b><br>(class → ${esc(f.cls || "—")})</div>` : ""}
-          ${a ? `<div class="slot-sub" style="margin-top:8px">Artifact<br><b>${esc(a.name)}</b></div>` : ""}</div>
+          ${a ? `<div class="slot-sub" style="margin-top:8px">Artifact<br><b>${esc(a.name)}</b></div>` : ""}
+          ${pers ? `<div class="slot-sub" style="margin-top:8px">Personality<br><b>${esc(pers.name)}</b><br>↑ ${STAT_LABEL[pers.raise]} · ↓ ${STAT_LABEL[pers.lower]}</div>` : ""}
+          ${scT ? `<div class="slot-sub" style="margin-top:8px">Scrolls (${scT}/${SCROLL_MAX})<br>${STAT_KEYS.filter(k => (slot.scrolls || {})[k]).map(k => `+${slot.scrolls[k]} ${STAT_LABEL[k]}`).join("<br>")}</div>` : ""}</div>
         <div class="ovl-center"><div class="ovl-center-scroll">
           <div class="section-label">Stats — Base · Artifact · Total</div>
           <div class="stat-grid"><div class="stat-header"><span>Stat</span><span style="text-align:right">Base</span>
@@ -1299,12 +1361,22 @@
         if (ovState.primaryId == null) break;
         const s = build.slots[ovState.slotIdx];
         s.cid = ovState.primaryId; s.fusion = ovState.fusionId;
+        s.personality = ovState.personality; s.scrolls = ovState.scrolls || {};
         persistBuild(); closeOverlay(); render(); break;
       }
+      case "crea-pers": openPersonalityPicker(); break;
+      case "crea-pers-pick": ovState.personality = t.dataset.k; closeDetail(); refreshOverlay(); break;
+      case "crea-pers-clear": ovState.personality = null; refreshOverlay(); break;
+      case "crea-scroll-inc": { const k = t.dataset.k; const sc = ovState.scrolls;
+        if (scrollTotal(sc) < SCROLL_MAX) { sc[k] = (sc[k] || 0) + 1; refreshOverlay(); } break; }
+      case "crea-scroll-dec": { const k = t.dataset.k; const sc = ovState.scrolls;
+        if (sc[k] > 0) { sc[k]--; if (!sc[k]) delete sc[k]; refreshOverlay(); } break; }
       case "facet-class": openFacetPicker("class"); break;
       case "facet-race": openFacetPicker("race"); break;
       case "facet-taxo": openFacetPicker("taxo-cat"); break;
       case "anoint-taxo": openFacetPicker("taxo-cat", { idx: anointTaxoIndex() }); break;
+      case "anoint-spec": openFacetPicker("anoint-spec"); break;
+      case "anoint-spec-clear": e.stopPropagation(); ovState.specFilter = null; refreshOverlay(); break;
       case "taxo-back": dovState.facet = "taxo-cat"; dovState.taxoCat = null; dovState.search = ""; refreshDetail(); break;
       case "facet-class-clear": e.stopPropagation(); ovState.clsFilter = null; refreshOverlay(); break;
       case "facet-race-clear": e.stopPropagation(); ovState.raceFilter = null; refreshOverlay(); break;
@@ -1312,6 +1384,7 @@
       case "facet-pick": {
         const v = t.dataset.v;
         if (dovState.facet === "class") { ovState.clsFilter = v; closeDetail(); refreshOverlay(); }
+        else if (dovState.facet === "anoint-spec") { ovState.specFilter = v; closeDetail(); refreshOverlay(); }
         else if (dovState.facet === "race") { ovState.raceFilter = v; closeDetail(); refreshOverlay(); }
         else if (dovState.facet === "taxo-cat") { dovState.facet = "taxo-val"; dovState.taxoCat = v; dovState.search = ""; refreshDetail(); }
         else if (dovState.onPick) { dovState.onPick(v); closeDetail(); refreshOverlay(); }  // context-specific target (e.g. trait-item picker)
@@ -1485,7 +1558,7 @@
     if (A === "sg-name") { ovState.draft.name = v; return; }
     // search fields — live filter without losing caret
     const searchMap = { "crea-search": [OV, ovState], "spec-search": [OV, ovState], "artb-search": [OV, ovState],
-      "relic-search": [OV, ovState], "cards-search": [OV, ovState], "anoint-search": [OV, ovState], "nether-search": [OV, ovState], "sg-search": [OV, ovState], "facet-search": [DOV, dovState], "perk-search": [DOV, dovState] };
+      "relic-search": [OV, ovState], "cards-search": [OV, ovState], "anoint-search": [OV, ovState], "nether-search": [OV, ovState], "sg-search": [OV, ovState], "facet-search": [DOV, dovState], "perk-search": [DOV, dovState], "pers-search": [DOV, dovState] };
     if (searchMap[A]) {
       const [root, state] = searchMap[A]; state.search = v;
       const panel = root.querySelector(".overlay-panel");

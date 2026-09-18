@@ -10,6 +10,23 @@ descriptions via the classification pipeline in `_su_extract` (codebook + batch 
 code decode — full rationale in `_su_extract/code/TRAIT_EFFECT_DECODE_FINDINGS.md`, taxonomy details in
 `_su_extract/data/model/TAG_TAXONOMY.md`.
 
+## v2.20 anoint spec filter · no self-fusion · personality + scrolls (2026-09-18)
+1. **Spec filter on Anointments** — a `Spec ▾` facet next to the ＋ Filter tag chips; opens the shared facet
+   picker (`anoint-spec`, list = specs that have anointments), applies a chip, narrows the grouped list.
+2. **No self-fusion** — the fusion step now excludes the primary creature from the list
+   (`creatureMatches`: `step==='fusion' && c.id===primaryId → false`), so a creature can't be fused with itself.
+3. **Personality + Scrolls in the creature wizard** (fusion step's right panel = fusion preview + a Customize
+   section). Data from `build-data.mjs`: `SU_DATA.personalities` (20, codex `L_CODD_CREATURES_*_PERSONALITIES`;
+   each raises one stat's growth to 40% / lowers another to 20%) + `SU_DATA.scrollMax=15`.
+   - **Scrolls** (`L_ID_SCROLL_*`): +1 **base** stat each, max 15 total; folded into `baseStats` (artifact %
+     applies on top). Per-stat steppers with a running `N/15`; stored `slot.scrolls={hp,atk,…}`.
+   - **Personality**: grouped picker (by raised stat); stored `slot.personality`. It's a **growth-rate** effect
+     (not a base-stat delta — the level curve is runtime/exponential, not statically closed), so it's recorded
+     and the creature-detail stat table marks the raised stat ↑ (40%) and lowered ↓ (20%) rather than
+     fabricating a number. Detail also shows Personality + Scrolls summary lines.
+   - Slot schema gained `personality`/`scrolls` (migrated in place); editing a creature reopens the wizard
+     prefilled. Verified via jsdom (78 assertions, 0 errors).
+
 ## v2.19b anointment rank validated in code → render at rank 1 (2026-09-18)
 Validated against the decompiled exe (Ghidra, `_su_extract/code/anoint_decomp/`) whether a multi-rank
 perk grants its full effect from one anoint. **It does not — an anointment applies the perk at RANK 1.**

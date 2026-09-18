@@ -549,6 +549,21 @@ h1, h2, h3 { margin: 0; }
 .art-pv .btn-confirm { width: 100%; }
 .btn-confirm.danger-confirm { background: var(--bad); color: #1a1230; }
 
+/* creature wizard: personality + scroll customization (right panel) */
+.crea-customize { margin-top: 14px; border-top: 1px solid var(--border-dim); padding-top: 10px; text-align: left; }
+.cc-persbar { display: flex; flex-wrap: wrap; gap: 6px; }
+.scroll-grid { display: flex; flex-direction: column; gap: 4px; }
+.scroll-row { display: grid; grid-template-columns: 1fr 26px 44px 26px; align-items: center; gap: 6px; }
+.scroll-lbl { font-size: 12px; color: var(--text-dim); }
+.scroll-val { text-align: center; font-weight: 800; color: var(--accent2); font-variant-numeric: tabular-nums; }
+.scroll-row .perk-step { min-width: 26px; }
+/* personality growth markers in the stat table */
+.growth { font-weight: 800; font-size: 12px; }
+.growth.up { color: var(--good); }
+.growth.down { color: var(--bad); }
+/* personality picker option sub-label */
+.opt-row .opt-sub { margin-left: auto; font-size: 11px; color: var(--text-dim); }
+
 /* "No fusion" tile in the fusion step */
 .pick-tile.nofuse .pt-sprite { color: var(--text-mute); }
 .nofuse-glyph { font-size: 34px; color: var(--text-mute); }
