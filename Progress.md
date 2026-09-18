@@ -4,6 +4,23 @@
 Deployed at **https://misterwtheface-oss.github.io/su-build-calc/** (repo `misterwtheface-oss/su-build-calc`,
 Pages on `master`/root, Cloudflare analytics active with the shared github.io token). Auto-deploys on push.
 
+## v2.13 tag taxonomy re-grounded on the game's structured markup (2026-09-18)
+User flagged erroneous filter output (e.g. Alcoholism tagged "Attack"). Root-caused it to the code-effect
+layer, then did a full battle-interpreter RE in Ghidra (all logged in `_su_extract/code/TRAIT_EFFECT_DECODE_FINDINGS.md`):
+- Fixed a real block-slurp bug in the trait-handler extractor (`SuTraitOperands2.java`; 43,751→~1,000-token blocks).
+- **Definitive finding:** SU stores NO structured trigger/effect metadata — behaviour is defined by each
+  trait's authored `description` and executed by scattered opaque `if(hasPassive){…}` code that doesn't
+  encode the trigger (verified via disasm, decompiler control-flow, and the passive DB itself). So the
+  handler decode caps at ~30-60% precision and can't back a trustworthy filter.
+- **Rebuilt `build_taxonomy_tags.py` to ground on the game's own structured description markup**
+  (`{CONDNAME_}/{STAT_}/{RACE_}/{CLASS_}/{ACTION_}/{TIMELINE}/{SPELL_}`) + unambiguous keywords +
+  random-collapse. Every tag is correct-by-construction. Fixes the errors: Alcoholism → Timeline only;
+  Black Hole Halo → Scorned (tokens even corrected a wrong condition-id decode).
+- Coverage: 2,008/2,187 traits tagged; 9 of 24 categories are token-groundable and shown (Related
+  Buff/Debuff/Minion/Stat/Types, Action/Mechanic, Related Trait, Effect Limitation). The 15 trigger-direction
+  / effect-magnitude categories are honest gaps (prose-only) — hidden in the picker, marked `status:gap`.
+- Verified via jsdom: Related Debuff→Poisoned filters 400→27 with 27/27 correct, 0 JS errors.
+
 ## v2.12 human tag taxonomy → Category→Value trait filter (2026-09-18)
 Conformed the trait tag layer to the user's authored 24-category taxonomy (broad condition → specific
 segment). New pipeline in `_su_extract`:
