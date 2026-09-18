@@ -30,8 +30,11 @@ Four fixes from the user's punch-list:
 4. **Spell-gem property icons cleaned.** All 21 hand-cropped Enchanter icons carried a stray fragment in their
    trailing columns (grey UI-border bars; bright-green XP-bar bits on Agate/Sapphire), separated from the gem by
    a wide transparent gap. Cleaner crops each at its widest ≥3px zero-run and tight-bounds the result (source
-   `_su_extract/assets/spell_gem_property_icons/*`, dirty originals kept in `*_dirty_bak`). ONYX was an
-   unsalvageable partial crop → removed, so it falls back to the generic dust icon (20/21 custom now).
+   `_su_extract/assets/spell_gem_property_icons/*`, dirty originals kept in `*_dirty_bak`).
+   **ONYX recovered (21/21):** its v2.10 crop was botched into a partial fragment; the raw menu column survived
+   as the prior session's `iconstrip.png` (176×2348, Agate→Opal alphabetical), so ONYX was re-cropped from band
+   17 (a dark navy obelisk w/ silver crown) and downscaled ×0.5 (NEAREST) — the same scale every sibling used
+   (each was ~½ of the same strip). Source screenshot itself wasn't bad; only the original crop was.
 
 ## v2.10 taxonomy fix + wizard polish (2026-09-17)
 - **Spell-gem enchant items corrected**: they are the **"Dust" items** (`L_IN_DUST_<gem>`: Jasper, Topaz, Citrine…
