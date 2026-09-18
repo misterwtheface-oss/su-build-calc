@@ -4,6 +4,39 @@
 Deployed at **https://misterwtheface-oss.github.io/su-build-calc/** (repo `misterwtheface-oss/su-build-calc`,
 Pages on `master`/root, Cloudflare analytics active with the shared github.io token). Auto-deploys on push.
 
+**Taxonomy filter now spans all 4 buildcraft surfaces** (＋ Filter, Category→Value drill-down): creatures
+(innate trait), artifact trait-items (inherited), spell gems (per-spell), and perks (per-perk). Grounded on
+descriptions via the classification pipeline in `_su_extract` (codebook + batch agents), NOT the unreliable
+code decode — full rationale in `_su_extract/code/TRAIT_EFFECT_DECODE_FINDINGS.md`, taxonomy details in
+`_su_extract/data/model/TAG_TAXONOMY.md`.
+
+## v2.16 taxonomy → spells + perks (2026-09-18)
+Extended the per-item classification to the last two surfaces (user: "keep going"). SPELLS (747/747, 5015 tags):
+spell-specific rubric (actions not triggers; self-categorize Damaging/Healing/Single/Multi-Target/element) →
+`spell_taxonomy_tags.json`; ＋Filter on the spell-gem builder's spell picker (reuses the facet drill-down via
+source-aware `taxoIndexFor`/`openFacetPicker(kind,{idx,onPick})`). PERKS (599/600; 1 empty = out-of-combat
+drop-rate perk): trait-like rubric → `perk_taxonomy_tags.json` (by `spec_id:perk_key`); INLINE Category→Value
+filter in the perk picker (it's a detail overlay, can't nest the facet). Generic `_su_extract/code/aggregate_surface.py`.
+Verified jsdom: spell Related Debuff→Burning 300→29 (29/29 correct), perk 15→4, 0 errors.
+
+## v2.15 taxonomy → artifact trait-items (2026-09-18)
+Trait-slot materials inherit their granted trait's full taxonomy (exact `traits[trait_id].taxo` join in
+build-data.mjs; traitName↔trait.name 0 mismatches / 1775; 1745/1790 tagged). ＋Filter drill-down added to the
+artifact-builder trait picker. Generalized `taxoIndexFor(key,items,getTags)` + `openFacetPicker(kind,{idx,onPick})`
+so surfaces share the picker (creature picker unchanged). Verified Related Debuff→Poisoned 300→40, 40/40 correct.
+
+## v2.14a/b/c agent-note review, vocab expansion, boss/NYI backend (2026-09-18)
+- **Corrections** (reproducible in `aggregate_taxonomy.py`, keyed by id/desc): dropped Peace-family
+  debuff-immunity mis-tag; added once-gate repeating triggers; class-FILTERED-damage keeps Take Less Damage but
+  drops erroneous Change Class; Blessing From Below + Pact of the Gods remapped to user spec; 4 mis-flagged-as-flavor
+  traits fixed (Angry Army, Who Am I? None, Seethe, Torun).
+- **Vocab expanded** to full referenced rosters (158 races → Related Types; all `[icons]` spells validated vs
+  canon; +Littletorun/Illusion minions). UI hides values with no member trait.
+- **Boss/NYI backend**: 15 boss/god flavor traits mapped from the (noisy) code decode with enemy-actor triggers
+  (`trait_meta.scope=boss_enemy_flavor`, "verify in-game") for a future boss-prep planner; 10 NYI traits flagged
+  `scope=nyi` "recheck on game update". All 25 are non-playable → absent from the live filter; correction: earlier
+  "no effect" was a description read, NOT code-validated (several DO carry coded effects).
+
 ## v2.14 full per-trait taxonomy (all 24 categories, triggers + ally/enemy) (2026-09-18)
 Per user direction ("do the hard labor, resolve each trait independently"), classified every trait's
 description individually against a fixed codebook (`_su_extract/code/TRAIT_CLASSIFICATION_CODEBOOK.md`) —
@@ -268,14 +301,20 @@ What works end-to-end:
 - Realm Cards → owned + on/off toggles per family, stored in `subc.cards`.
 
 ## Backlog
+### Done (2026-09-18) — human tag taxonomy
+- [x] 24-category Category→Value trait filter, grounded on descriptions (all 24 categories incl. Ally/Enemy triggers).
+- [x] Extended to artifact trait-items (inherited), spell gems (per-spell), perks (per-perk). All 4 surfaces filterable.
+- [x] Boss/NYI trait taxo mapped on the backend for a future boss-prep planner (`trait_meta.scope`).
+
 ### Next up (P1)
-- [ ] Trait cross-reference matrix (party creatures × produces/consumes tags). CSS is already in `styles.css`
-      (`.xref-*`); need the data wiring + glyph cells (● on / ◆ active / ○ latent) + Shared row.
+- [ ] **Boss-prep planner element** — surface the boss/enemy trait taxo (`trait_meta.scope=boss_enemy_flavor`,
+      already in `data.js`) as a "prepare for this fight / what to expect" view. Verify tags in-game first.
+- [ ] Taxonomy of remaining surfaces if wanted: cards / relics / nether stones (stat/trick artifact materials
+      only map to Related Stat / Affect-on-Stats — narrow, from material_stats).
 - [ ] Real trait detail page (replace the `nav-trait` `alert()` stub) with tags + "shared by N party members".
 - [ ] DPS / effective-stat simulation from `damageModel` (spell & melee, crit/dodge, defending). Expose
       class-advantage multiplier as a toggle (unconfirmed in extract).
-- [ ] Feed cards / relics / nether / trait-items into the synergy edge graph (they carry produces/consumes tags in `theorycraft_tags.json`).
-- [ ] Perk-tree picker per specialization (perks[] already in data; needs perk icons + tree layout).
+- [ ] Perk-tree picker per specialization (perks[] already in data + now taxo-tagged; needs tree layout).
 
 ### Later (P2)
 - [ ] Spell-gem loadouts (potency tiers already in `damageModel`).
