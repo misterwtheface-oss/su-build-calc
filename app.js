@@ -666,12 +666,18 @@
     return ANOINTS;
   }
   function openAnoint() {
-    ovState = { kind: "anoint", search: "", render: renderAnoint };
+    ovState = { kind: "anoint", search: "", taxoFilters: [], render: renderAnoint };
     openOverlay(ovState.render()); maybeFocusSearch(OV);
   }
+  const anointTaxoIndex = () => taxoIndexFor("anoint", anointList(), a => a.taxo || []);
   function renderAnoint() {
     const st = ovState, q = st.search.trim().toLowerCase();
-    const list = anointList().filter(a => !q || a.name.toLowerCase().includes(q) || (a.desc || "").toLowerCase().includes(q));
+    const list = anointList().filter(a =>
+      (!q || a.name.toLowerCase().includes(q) || (a.desc || "").toLowerCase().includes(q)) &&
+      (!st.taxoFilters.length || st.taxoFilters.every(k => (a.taxo || []).includes(k))));
+    const taxoChips = st.taxoFilters.map((k, i) =>
+      `<button class="facet on tag" data-action="rm-taxo" data-i="${i}">${esc(taxoCatName(k))}: <b>${esc(taxoValName(k))}</b> <span class="facet-x">✕</span></button>`).join("");
+    const filterbar = `<div class="ovl-filterbar">${taxoChips}<button class="facet add" data-action="anoint-taxo">＋ Filter</button></div>`;
     const groups = {};
     for (const a of list) (groups[a.spec] ||= []).push(a);
     const body = Object.keys(groups).sort().map(sp => `
@@ -689,6 +695,7 @@
         <input class="ovl-search" placeholder="Search anointments…" value="${esc(st.search)}" data-action="anoint-search">
         <button class="ovl-close" data-action="close-ovl">✕</button></div>
       <div class="overlay-body"><div class="ovl-center">
+        ${filterbar}
         <div class="ovl-center-scroll"><div class="perk-list">${body}</div></div>
       </div></div>
       <div class="overlay-footer"><span class="foot-info"></span>
@@ -1280,6 +1287,7 @@
       case "facet-class": openFacetPicker("class"); break;
       case "facet-race": openFacetPicker("race"); break;
       case "facet-taxo": openFacetPicker("taxo-cat"); break;
+      case "anoint-taxo": openFacetPicker("taxo-cat", { idx: anointTaxoIndex() }); break;
       case "taxo-back": dovState.facet = "taxo-cat"; dovState.taxoCat = null; dovState.search = ""; refreshDetail(); break;
       case "facet-class-clear": e.stopPropagation(); ovState.clsFilter = null; refreshOverlay(); break;
       case "facet-race-clear": e.stopPropagation(); ovState.raceFilter = null; refreshOverlay(); break;
