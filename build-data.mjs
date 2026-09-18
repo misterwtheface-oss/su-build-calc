@@ -369,7 +369,8 @@ for (const m of matRecs) {
   if (m.item_class === 1) continue;                        // trick materials belong to the Trick slot, not Trait
   if (!traits[m.trait_id]) warn(`trait item "${m.name}" grants trait_id ${m.trait_id} not in traits table`);
   traitItems.push({ id: m.index, name: m.name, traitId: m.trait_id,
-    traitName: m.trait_name || (traits[m.trait_id] && traits[m.trait_id].name) || null, icon: matIcon(m) });
+    traitName: m.trait_name || (traits[m.trait_id] && traits[m.trait_id].name) || null, icon: matIcon(m),
+    taxo: (traits[m.trait_id] && traits[m.trait_id].taxo) || [] });   // inherits its granted trait's taxonomy tags
 }
 
 // ── Stat materials (Ambers) → Stat-slot properties (1:1, by record order) ──

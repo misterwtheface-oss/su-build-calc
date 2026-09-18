@@ -174,25 +174,27 @@
     const t = c.traitId != null ? TRAIT[c.traitId] : null;
     return t && t.taxo ? t.taxo : [];
   };
-  // index of taxonomy values that actually match ≥1 creature, grouped by category
-  // (counts are used only to hide empty values — never displayed, per minimal-chrome)
-  let TAXO_INDEX = null;
-  function taxoIndex() {
-    if (TAXO_INDEX) return TAXO_INDEX;
+  // index of taxonomy values that match ≥1 member of a source list, grouped by category
+  // (counts only hide empty values — never displayed, per minimal-chrome). Source-parameterized so
+  // creatures, trait-items, (later) spell gems / perks can each reuse the same drill-down picker.
+  const TAXO_IDX_CACHE = {};
+  function taxoIndexFor(key, items, getTags) {
+    if (TAXO_IDX_CACHE[key]) return TAXO_IDX_CACHE[key];
     const counts = new Map();
-    for (const c of D.creatures) for (const k of creatureTaxo(c)) counts.set(k, (counts.get(k) || 0) + 1);
+    for (const it of items) for (const k of getTags(it)) counts.set(k, (counts.get(k) || 0) + 1);
     const byCat = new Map();
     for (const catObj of (D.taxonomy ? D.taxonomy.categories : [])) {
       const rows = [];
       for (const val of catObj.values) {
-        const key = catObj.category + "::" + val;
-        if (counts.get(key)) rows.push({ val, key });
+        const kk = catObj.category + "::" + val;
+        if (counts.get(kk)) rows.push({ val, key: kk });
       }
       if (rows.length) byCat.set(catObj.category, rows);
     }
-    TAXO_INDEX = byCat;
-    return TAXO_INDEX;
+    TAXO_IDX_CACHE[key] = byCat;
+    return byCat;
   }
+  const taxoIndex = () => taxoIndexFor("crea", D.creatures, creatureTaxo);
   const taxoValName = (k) => { const i = k.indexOf("::"); return i < 0 ? k : k.slice(i + 2); };
   const taxoCatName = (k) => { const i = k.indexOf("::"); return i < 0 ? "" : k.slice(0, i); };
 
@@ -458,20 +460,23 @@
   }
 
   // ── facet sub-picker (Class / Race / Tag) on the detail layer ───────────────
-  function openFacetPicker(kind) {
-    dovState = { kind: "facet", facet: kind, search: "", render: renderFacetPicker };
+  // opts.idx = taxonomy index to browse (defaults to creatures); opts.onPick = callback for taxo-val
+  function openFacetPicker(kind, opts = {}) {
+    dovState = { kind: "facet", facet: kind, search: "", render: renderFacetPicker,
+                 idx: opts.idx || null, onPick: opts.onPick || null };
     openDetail(dovState.render()); maybeFocusSearch(DOV);
   }
   function renderFacetPicker() {
     const st = dovState, q = st.search.trim().toLowerCase();
+    const idx = st.idx || taxoIndex();
     let opts, title, back = "";
     if (st.facet === "class") { title = "Filter by Class"; opts = D.classes.map(c => ({ v: c.key, label: c.key, color: c.color })); }
     else if (st.facet === "race") { title = "Filter by Race"; opts = raceOptions().map(r => ({ v: r, label: r })); }
-    else if (st.facet === "taxo-cat") { title = "Filter by mechanic"; opts = [...taxoIndex().keys()].map(cat => ({ v: cat, label: cat })); }
+    else if (st.facet === "taxo-cat") { title = "Filter by mechanic"; opts = [...idx.keys()].map(cat => ({ v: cat, label: cat })); }
     else { // taxo-val
       title = st.taxoCat;
       back = `<button class="facet" data-action="taxo-back">‹ Categories</button>`;
-      opts = (taxoIndex().get(st.taxoCat) || []).map(r => ({ v: r.key, label: r.val }));
+      opts = (idx.get(st.taxoCat) || []).map(r => ({ v: r.key, label: r.val }));
     }
     if (q) opts = opts.filter(o => o.label.toLowerCase().includes(q));
     const rows = opts.slice(0, 400).map(o =>
@@ -731,7 +736,9 @@
               <span class="prop-name">${esc(m.name)}</span><span class="prop-stat">${esc(m.property)}</span><span class="prop-val">${esc(val)}</span></div>`;
           }).join("");
         } else if (st.pickType === "trait") {
-          rows = D.traitItems.filter(t => t.traitName && (!q || t.name.toLowerCase().includes(q) || (t.traitName || "").toLowerCase().includes(q))).slice(0, 300)
+          rows = D.traitItems.filter(t => t.traitName
+              && (!q || t.name.toLowerCase().includes(q) || (t.traitName || "").toLowerCase().includes(q))
+              && (!st.traitTaxo || (t.taxo || []).includes(st.traitTaxo))).slice(0, 300)
             .map(t => `<div class="prop-row ${has(t.id) ? "chosen" : ""}" data-action="art-add" data-t="trait" data-v="${t.id}">
               <span class="prop-ico">${t.icon ? spriteImg(t.icon, "px") : ""}</span>
               <span class="prop-name">${esc(t.name)}</span><span class="prop-stat">grants ${esc(t.traitName)}</span></div>`).join("");
@@ -747,9 +754,14 @@
               <span class="prop-name">${esc(n.name)}</span><span class="prop-stat">${esc(netherSummary(n))}</span></div>`).join("")
             || `<div class="slot-sub" style="padding:8px">No Nether Stones yet — add them from the top-bar “Nether Stones” button.</div>`;
         }
+        const traitFilter = st.pickType === "trait"
+          ? (st.traitTaxo
+              ? `<button class="facet on tag" data-action="artb-traitfilter-clear">${esc(taxoCatName(st.traitTaxo))}: <b>${esc(taxoValName(st.traitTaxo))}</b> <span class="facet-x">✕</span></button>`
+              : `<button class="facet add" data-action="artb-traitfilter">＋ Filter</button>`)
+          : "";
         picker = `<div class="art-picker">
           <div class="ovl-filterbar"><button class="chip" data-action="artb-closecat">‹ Done</button>
-            <input class="ovl-search" placeholder="Search…" value="${esc(st.search)}" data-action="artb-search"></div>
+            <input class="ovl-search" placeholder="Search…" value="${esc(st.search)}" data-action="artb-search">${traitFilter}</div>
           <div class="art-pick-scroll">${rows}</div></div>`;
       }
       body = `<div class="ovl-center"><div class="ovl-center-scroll">${groupsHtml}${picker}</div></div>`;
@@ -1141,6 +1153,7 @@
         if (dovState.facet === "class") { ovState.clsFilter = v; closeDetail(); refreshOverlay(); }
         else if (dovState.facet === "race") { ovState.raceFilter = v; closeDetail(); refreshOverlay(); }
         else if (dovState.facet === "taxo-cat") { dovState.facet = "taxo-val"; dovState.taxoCat = v; dovState.search = ""; refreshDetail(); }
+        else if (dovState.onPick) { dovState.onPick(v); closeDetail(); refreshOverlay(); }  // context-specific target (e.g. trait-item picker)
         else { if (!ovState.taxoFilters.includes(v)) ovState.taxoFilters.push(v); closeDetail(); refreshOverlay(); }
         break;
       }
@@ -1167,6 +1180,10 @@
       case "artb-next": ovState.step = ovState.step === "type" ? "slots" : "name"; ovState.pickType = null; ovState.search = ""; refreshOverlay(); break;
       case "artb-back": ovState.step = ovState.step === "name" ? "slots" : "type"; ovState.pickType = null; ovState.search = ""; refreshOverlay(); break;
       case "artb-closecat": ovState.pickType = null; ovState.search = ""; refreshOverlay(); break;
+      case "artb-traitfilter": openFacetPicker("taxo-cat", {
+        idx: taxoIndexFor("titem", D.traitItems, ti => ti.taxo || []),
+        onPick: (v) => { ovState.traitTaxo = v; } }); break;
+      case "artb-traitfilter-clear": ovState.traitTaxo = null; refreshOverlay(); break;
       case "art-primary": ovState.draft.primary = ovState.draft.primary === t.dataset.p ? null : t.dataset.p; refreshOverlay(); break;
       case "art-slot": ovState.pickType = t.dataset.t; ovState.search = ""; refreshOverlay(); break;
       case "art-add": {
