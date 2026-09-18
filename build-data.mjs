@@ -29,6 +29,8 @@ const OUT_PERK = path.join(OUT_ASSETS, 'perks');
 const OUT_WARDROBE = path.join(OUT_ASSETS, 'wardrobe');
 const OUT_MATICON = path.join(OUT_ASSETS, 'maticons');
 const OUT_SPELLGEM = path.join(OUT_ASSETS, 'spellgems');
+const OUT_PROPGEM = path.join(OUT_ASSETS, 'propgems');
+const SRC_PROPGEM = path.join(SRC, 'assets', 'spell_gem_property_icons'); // hand-cropped from in-game Enchanter/Materials UI (no named sprite in the dump)
 
 // copy a named sprite frame from the extract's assets/sprites (<base>_0.png) into outDir/destName
 function copyNamedSprite(base, outDir, destName) {
@@ -369,7 +371,25 @@ function loadLoc(file) {
 // ── spell-gem enchant items = "Dust" (L_IN_DUST_<gem>); property from L_ID_DUST_<gem>, used at the Enchanter ──
 const itemsLoc = loadLoc('items.csv');
 const dustIcon = copyNamedSprite('spr_gem_dust', OUT_MATICON, 'spr_gem_dust.png') ? 'assets/maticons/spr_gem_dust.png' : null;
+// per-gem property icons: hand-cropped from the in-game Enchanter/Materials UI (these items have no
+// named sprite in the dump — the game picks the icon by dust-type index at draw time). Copied here
+// keyed by the L_IN_DUST_<GEM> key; gems without a captured icon fall back to the generic dust pile.
+fs.rmSync(OUT_PROPGEM, { recursive: true, force: true });
+const copyPropGem = (gem, dest) => {
+  const src = path.join(SRC_PROPGEM, `${gem}.png`);
+  if (!fs.existsSync(src)) return false;
+  fs.mkdirSync(OUT_PROPGEM, { recursive: true });
+  fs.copyFileSync(src, path.join(OUT_PROPGEM, dest));
+  return true;
+};
+// each property gem is a Tier-4 Favor reward sold by exactly one god (God Shop_REF → god_shop_ref.json).
+const gemGod = new Map();
+for (const r of readJSON(path.join(REF, 'god_shop_ref.json')).records) {
+  if ((r.type || '').toLowerCase() === 'crafting material' && /property to a Spell Gem/i.test(r.description || ''))
+    gemGod.set((r.item || '').toUpperCase(), r.god);
+}
 const spellProps = [];
+let propGemIcons = 0, propGemGods = 0;
 {
   let idx = 0;
   for (const [tag, name] of itemsLoc) {
@@ -378,8 +398,14 @@ const spellProps = [];
     const desc = itemsLoc.get('L_ID_DUST_' + gem) || '';
     // desc = "…add the following property to your Spell Gems:\n\n<PROPERTY>"
     let effect = desc.split(/Spell Gems:/i).pop().replace(/\\n|\n/g, ' ').trim();
-    spellProps.push({ id: idx++, key: gem, name, effect, icon: dustIcon });
+    let icon = dustIcon;
+    if (copyPropGem(gem, `${gem}.png`)) { icon = `assets/propgems/${gem}.png`; propGemIcons++; }
+    const god = gemGod.get(gem) || null;
+    if (god) propGemGods++;
+    spellProps.push({ id: idx++, key: gem, name, effect, icon, god });
   }
+  warn(`spell-gem property icons: ${propGemIcons}/${spellProps.length} captured (rest use generic dust pile)`);
+  warn(`spell-gem property gods: ${propGemGods}/${spellProps.length} mapped from god_shop_ref`);
 }
 
 // ── relics ──
