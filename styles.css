@@ -549,6 +549,12 @@ h1, h2, h3 { margin: 0; }
 .art-pv .btn-confirm { width: 100%; }
 .btn-confirm.danger-confirm { background: var(--bad); color: #1a1230; }
 
+/* level lens: base stays round at Lv1; higher levels reveal personality growth divergence */
+.level-bar { display: flex; align-items: center; gap: 8px; margin: 6px 0 12px; }
+.level-bar input[type=range] { flex: 1; accent-color: var(--accent2); min-width: 80px; }
+.level-lbl { font-size: 12px; color: var(--text-mute); text-transform: uppercase; letter-spacing: .5px; }
+.level-badge { min-width: 48px; text-align: center; font-weight: 800; color: var(--accent); font-variant-numeric: tabular-nums; }
+
 /* creature wizard: personality + scroll customization (right panel) */
 .crea-customize { margin-top: 14px; border-top: 1px solid var(--border-dim); padding-top: 10px; text-align: left; }
 .cc-persbar { display: flex; flex-wrap: wrap; gap: 6px; }

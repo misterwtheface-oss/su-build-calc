@@ -78,6 +78,7 @@
   if (!build || build.schema !== 3) build = { schema: 3, specId: null, perkAlloc: {}, slots: Array.from({ length: 6 }, emptySlot) };
   build.perkAlloc = build.perkAlloc || {};
   build.anoints = Array.isArray(build.anoints) ? build.anoints : [];   // equipped anointments [{specId,key}], max 5
+  build.previewLevel = Number(build.previewLevel) > 0 ? Number(build.previewLevel) : 1;   // level lens for stat projection
   while (build.slots.length < 6) build.slots.push(emptySlot());
   build.slots = build.slots.map(s => Object.assign(emptySlot(), s));
   build.slots.forEach(s => { if (!Array.isArray(s.spellGemIds)) s.spellGemIds = []; if (!s.scrolls || typeof s.scrolls !== "object") s.scrolls = {}; if (!("personality" in s)) s.personality = null; });
@@ -224,15 +225,9 @@
     const avg = (a, b) => f ? Math.round((a + b) / 2) : a;
     const out = { fused: !!f };
     const sc = slot.scrolls || {};
-    // Personality applies to BASE stats (in-game: Level·BaseStat·mod/100, at every level incl. 1). The
-    // modifier is 30 neutral / 40 raised / 20 lowered, so vs a neutral build the effect is a level-independent
-    // ratio: raised ×40/30, lowered ×20/30, others unchanged. Scrolls (+1 base each) are part of BaseStat.
-    const pers = slot.personality ? PERS.get(slot.personality) : null;
-    for (const k of STAT_KEYS) {
-      let v = avg(c[k], f ? f[k] : 0) + (sc[k] || 0);       // scrolls add +1 base each
-      if (pers) { const mod = pers.raise === k ? 40 : pers.lower === k ? 20 : 30; v = Math.round(v * mod / 30); }
-      out[k] = v;
-    }
+    // BASE stats are level-1 and personality-independent (round). Scrolls (+1 base each) are part of BaseStat.
+    // Personality is NOT applied here — it changes the per-LEVEL growth rate, applied in leveledStats().
+    for (const k of STAT_KEYS) out[k] = avg(c[k], f ? f[k] : 0) + (sc[k] || 0);
     out.cls = f ? (f.cls || c.cls) : c.cls;                 // secondary's class on fusion
     out.traitIds = [c.traitId, f ? f.traitId : null].filter(x => x != null);
     out.total = STAT_KEYS.reduce((s, k) => s + out[k], 0);
@@ -260,12 +255,23 @@
     return out;
   }
   const artifactPct = (slot) => artifactPctOf(resolveArtifact(slot));
-  function finalStats(slot) {
+  // per-level growth modifier for a stat: 30% base gain/level, personality sets its raised stat to 40, lowered to 20.
+  const persMod = (slot, k) => { const p = slot.personality ? PERS.get(slot.personality) : null; return p ? (p.raise === k ? 40 : p.lower === k ? 20 : 30) : 30; };
+  // stats projected to `level`: leveled = base × (1 + (L-1)·mod/100) — L1 == round base (personality-neutral),
+  // divergence grows with level. Artifact % applies on top of the leveled value.
+  function finalStats(slot, level) {
     const b = baseStats(slot); if (!b) return null;
     const pct = artifactPct(slot);
-    const final = {};
-    for (const k of STAT_KEYS) final[k] = Math.round(b[k] * (1 + pct[k] / 100));
-    return { base: b, pct, final, total: STAT_KEYS.reduce((s, k) => s + final[k], 0) };
+    const L = Math.max(1, level || 1);
+    const leveled = {}, final = {};
+    for (const k of STAT_KEYS) {
+      const lv = b[k] * (1 + (L - 1) * persMod(slot, k) / 100);
+      leveled[k] = Math.round(lv);
+      final[k] = Math.round(lv * (1 + pct[k] / 100));
+    }
+    return { base: b, pct, leveled, final, level: L,
+             baseTotal: STAT_KEYS.reduce((s, k) => s + b[k], 0),
+             total: STAT_KEYS.reduce((s, k) => s + final[k], 0) };
   }
   function slotTraitIds(slot) {
     const b = baseStats(slot); const ids = b ? [...b.traitIds] : [];
@@ -342,17 +348,26 @@
       </div></div>`;
   }
 
+  const MAX_LEVEL = 100;
+  // level lens: base stats stay round at Lv 1; raising the level reveals each personality's growth divergence.
+  const renderLevelBar = () => `<div class="level-bar">
+      <span class="level-lbl">Level</span>
+      <input type="range" min="1" max="${MAX_LEVEL}" value="${build.previewLevel}" data-action="preview-level">
+      <span class="level-badge">Lv ${build.previewLevel}</span>
+      ${build.previewLevel > 1 ? `<button class="chip" data-action="preview-level-reset" title="Back to level 1">Lv 1</button>` : ""}</div>`;
   function renderPartySummary() {
     const filled = build.slots.filter(s => s.cid != null);
     if (!filled.length) return "";
+    const L = build.previewLevel;
     const rows = build.slots.map((s) => {
       const c = CREA.get(s.cid); if (!c) return "";
-      const fs = finalStats(s);
+      const fs = finalStats(s, L);
       return `<div class="stat-row"><span class="stat-name">${esc(c.name)}</span>
         <span class="stat-val base">${fs.final.hp}</span><span class="stat-val">${fs.final.atk}</span>
         <span class="stat-val">${fs.final.def}</span><span class="stat-val total">${fs.total}</span></div>`;
     }).join("");
-    return `<div class="party-summary"><div class="section-label">Party</div>
+    return `<div class="party-summary"><div class="section-label">Party — Lv ${L}</div>
+      ${renderLevelBar()}
       <div class="stat-grid">
         <div class="stat-header"><span>Creature</span><span style="text-align:right">HP</span>
           <span style="text-align:right">ATK</span><span style="text-align:right">DEF</span><span style="text-align:right">Total</span></div>
@@ -513,20 +528,21 @@
     const secondary = st.fusionId != null ? CREA.get(st.fusionId) : null;
     const tempSlot = { cid: st.primaryId, fusion: st.fusionId, personality: st.personality, scrolls: st.scrolls || {},
                        artifactId: null, relic: null, spellGemIds: [] };
-    const b = baseStats(tempSlot);
+    const fs = finalStats(tempSlot, build.previewLevel), b = fs.base, L = fs.level;
     const pers = st.personality ? PERS.get(st.personality) : null;
-    const mark = (k) => pers ? (pers.raise === k ? ` <span class="growth up" title="Personality: ×40/30">↑</span>`
-      : pers.lower === k ? ` <span class="growth down" title="Personality: ×20/30">↓</span>` : "") : "";
+    const mark = (k) => pers ? (pers.raise === k ? ` <span class="growth up" title="Personality: grows 40%/level">↑</span>`
+      : pers.lower === k ? ` <span class="growth down" title="Personality: grows 20%/level">↓</span>` : "") : "";
     const traitIds = [primary.traitId, secondary ? secondary.traitId : null].filter(x => x != null);
     return `<div style="text-align:center">${critFace(primary)}</div>
       <h3 style="text-align:center;margin:6px 0">${esc(primary.name)}${secondary ? ` <span style="color:var(--accent2)">⚭</span> ${esc(secondary.name)}` : ""}</h3>
       <div class="slot-sub" style="margin-bottom:10px"><span style="color:${clsColor(b.cls)};font-weight:700">${esc(b.cls || "—")}</span></div>
       ${traitIds.length ? `<div class="section-label">Traits</div><div style="margin-bottom:10px">${traitIds.map(tid => `<div class="primary-traits" style="margin-bottom:6px">${traitBanner(tid)}<div class="trait-desc">${richText((TRAIT[tid] || {}).desc || "")}</div></div>`).join("")}</div>` : ""}
-      <div class="section-label">Base stats${pers || scrollTotal(st.scrolls || {}) ? " (personality + scrolls)" : ""}</div>
+      <div class="section-label">Stats — Lv ${L}</div>
       <div class="stat-grid single">
         ${STAT_KEYS.map(k => `<div class="stat-row"><span class="stat-name">${STAT_LABEL[k]}${mark(k)}</span>
-          <span class="stat-val total">${b[k]}</span></div>`).join("")}
-        <div class="stat-row hl-med"><span class="stat-name">Total</span><span class="stat-val total">${b.total}</span></div></div>`;
+          <span class="stat-val total">${fs.final[k]}</span></div>`).join("")}
+        <div class="stat-row hl-med"><span class="stat-name">Total</span><span class="stat-val total">${fs.total}</span></div></div>
+      ${renderLevelBar()}`;
   }
 
   // per-creature customization in the wizard: Personality (base-stat ↑/↓) + Scrolls (+1 base each, cap 15 total)
@@ -1040,11 +1056,16 @@
   // ── creature detail ────────────────────────────────────────────────────────
   function openCreatureDetail(slotIdx) {
     const slot = build.slots[slotIdx], c = CREA.get(slot.cid); if (!c) return;
-    const fs = finalStats(slot), b = fs.base;
+    dovState = { kind: "creature-detail", slotIdx, render: () => renderCreatureDetail(slotIdx) };
+    openDetail(dovState.render());
+  }
+  function renderCreatureDetail(slotIdx) {
+    const slot = build.slots[slotIdx], c = CREA.get(slot.cid); if (!c) return "";
+    const fs = finalStats(slot, build.previewLevel), b = fs.base, L = fs.level;
     const f = slot.fusion != null ? CREA.get(slot.fusion) : null;
     const pers = slot.personality ? PERS.get(slot.personality) : null;
-    const growth = (k) => pers ? (pers.raise === k ? ` <span class="growth up" title="Personality raised (×40/30 vs neutral)">↑</span>`
-      : pers.lower === k ? ` <span class="growth down" title="Personality lowered (×20/30 vs neutral)">↓</span>` : "") : "";
+    const growth = (k) => pers ? (pers.raise === k ? ` <span class="growth up" title="Personality: grows 40%/level (vs 30% neutral)">↑</span>`
+      : pers.lower === k ? ` <span class="growth down" title="Personality: grows 20%/level (vs 30% neutral)">↓</span>` : "") : "";
     const rows = STAT_KEYS.map(k => {
       const pct = fs.pct[k], touched = pct !== 0;
       return `<div class="stat-row ${touched ? "hl-med" : ""}"><span class="stat-name">${STAT_LABEL[k]}${growth(k)}</span>
@@ -1057,8 +1078,7 @@
       <div class="trait-desc">${richText((TRAIT[tid] || {}).desc || "")}</div></div>`).join("");
     const relic = slot.relic ? RELIC.get(slot.relic.id) : null;
     const a = resolveArtifact(slot);
-    dovState = null;
-    openDetail(`<div class="ovl-backdrop" data-action="detail-backdrop"><div class="overlay-panel detail">
+    return `<div class="ovl-backdrop" data-action="detail-backdrop"><div class="overlay-panel detail">
       <div class="overlay-header"><h2>${esc(c.name)}${f ? " ⚭ " + esc(f.name) : ""}</h2><button class="ovl-close" data-action="close-detail">✕</button></div>
       <div class="overlay-body">
         <div class="ovl-left" style="width:180px;text-align:center">${critFace(c)}
@@ -1068,11 +1088,13 @@
           ${pers ? `<div class="slot-sub" style="margin-top:8px">Personality<br><b>${esc(pers.name)}</b><br>↑ ${STAT_LABEL[pers.raise]} · ↓ ${STAT_LABEL[pers.lower]}</div>` : ""}
           ${scT ? `<div class="slot-sub" style="margin-top:8px">Scrolls (${scT}/${SCROLL_MAX})<br>${STAT_KEYS.filter(k => (slot.scrolls || {})[k]).map(k => `+${slot.scrolls[k]} ${STAT_LABEL[k]}`).join("<br>")}</div>` : ""}</div>
         <div class="ovl-center"><div class="ovl-center-scroll">
-          <div class="section-label">Stats — Base · Artifact · Total</div>
+          <div class="section-label">Stats — Base · Artifact · Lv ${L}</div>
+          ${renderLevelBar()}
           <div class="stat-grid"><div class="stat-header"><span>Stat</span><span style="text-align:right">Base</span>
-            <span style="text-align:right">Artifact</span><span style="text-align:right">Total</span></div>${rows}
+            <span style="text-align:right">Artifact</span><span style="text-align:right">Lv ${L}</span></div>${rows}
             <div class="stat-row hl-high"><span class="stat-name">Total</span><span class="stat-val base">${b.total}</span>
               <span class="stat-val art"></span><span class="stat-val total">${fs.total}</span></div></div>
+          ${pers ? `<div class="slot-sub" style="margin-top:6px">Personality <b>${esc(pers.name)}</b>: ${STAT_LABEL[pers.raise]} grows 40%/lvl, ${STAT_LABEL[pers.lower]} grows 20%/lvl (others 30%). Base stays level 1.</div>` : ""}
           <div class="section-label" style="margin-top:14px">Traits (innate${f ? " + fusion" : ""}${a && (a.traits || []).length ? " + artifact" : ""})</div>
           ${traitHtml || `<div class="slot-sub">No traits.</div>`}
           ${relic ? `<div class="section-label" style="margin-top:14px">Relic</div>
@@ -1082,7 +1104,7 @@
       </div>
       <div class="overlay-footer"><span class="foot-info"></span>
         <button class="btn-confirm" data-action="close-detail">Done</button></div>
-    </div></div>`);
+    </div></div>`;
   }
 
   // ── realm cards (leveled collection) ───────────────────────────────────────
@@ -1342,6 +1364,9 @@
       case "clear-party": armOrDo(t, () => { build = { schema: 2, specId: null, perkAlloc: {}, slots: Array.from({ length: 6 }, emptySlot) }; persistBuild(); render(); }); break;
       case "open-artifacts": openArtifactLibrary(null); break;
       case "open-anoint": openAnoint(); break;
+      case "preview-level-reset": build.previewLevel = 1; persistBuild(); render();
+        if (!OV.classList.contains("hidden")) refreshOverlay();
+        if (!DOV.classList.contains("hidden")) refreshDetail(); break;
       case "anoint-toggle": {
         const sid = +t.dataset.sid, k = t.dataset.k;
         const i = build.anoints.findIndex(x => x.specId === sid && x.key === k);
@@ -1561,6 +1586,13 @@
     const t = e.target.closest("[data-action]"); if (!t) return;
     const A = t.dataset.action, v = t.value;
     // range sliders / selects
+    if (A === "preview-level") {
+      build.previewLevel = Math.max(1, Math.min(MAX_LEVEL, Math.round(+v) || 1)); persistBuild();
+      render();
+      if (!OV.classList.contains("hidden")) refreshOverlay();
+      if (!DOV.classList.contains("hidden")) refreshDetail();
+      return;
+    }
     if (A === "artb-rank") { ovState.draft.rank = +v; refreshOverlay(); return; }
     if (A === "relic-rank") { ovState.rank = +v; refreshOverlay(); return; }
     if (A === "nether-propval") { ovState.draft.props[+t.dataset.i].value = Number(v) || 0; return; }

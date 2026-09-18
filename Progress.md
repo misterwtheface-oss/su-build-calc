@@ -20,12 +20,16 @@ code decode — full rationale in `_su_extract/code/TRAIT_EFFECT_DECODE_FINDINGS
    each raises one stat's growth to 40% / lowers another to 20%) + `SU_DATA.scrollMax=15`.
    - **Scrolls** (`L_ID_SCROLL_*`): +1 **base** stat each, max 15 total; folded into `baseStats` (artifact %
      applies on top). Per-stat steppers with a running `N/15`; stored `slot.scrolls={hp,atk,…}`.
-   - **Personality**: grouped picker (by raised stat); stored `slot.personality`. **Correction (user):
-     personality applies to BASE stats at every level**, not just growth — in-game `Level·BaseStat·mod/100`
-     with mod = 30 neutral / 40 raised / 20 lowered. Since the app shows a level-independent base, the effect
-     is the ratio vs neutral: **raised ×40/30, lowered ×20/30**, others unchanged; applied in `baseStats()`
-     (scrolls are part of BaseStat, so they're multiplied too). The wizard step-2 preview + creature detail
-     show the adjusted stats with ↑/↓ markers. (Supersedes the initial "growth-rate only, no number" take.)
+   - **Personality**: grouped picker (by raised stat); stored `slot.personality`. **Final model (user):
+     base stats are UNAFFECTED (round at Lv 1); personality changes the per-LEVEL growth** — you gain 30% of
+     base/level normally, 40% on the raised stat, 20% on the lowered. So `finalStats(slot, L)` projects
+     `stat(L) = base × (1 + (L-1)·mod/100)` then applies artifact %; at L1 every stat == its round base
+     (personality-neutral), and divergence grows with level. A **Level lens** slider (`build.previewLevel`,
+     1–100, persisted, `renderLevelBar`) drives the party summary, creature detail (Base · Artifact · Lv N),
+     and wizard preview; ↑/↓ markers flag the raised/lowered stats. `baseStats()` is personality-free again
+     (only scrolls fold into base). Creature detail refactored to a stateful `renderCreatureDetail` so the
+     slider live-updates. jsdom-verified: Lv1 base unchanged; Lv11 raised ×(1+10·.4)/lowered ×(1+10·.2)/
+     neutral ×(1+10·.3). (Supersedes the two earlier takes — growth-only, then base-ratio.)
    - Slot schema gained `personality`/`scrolls` (migrated in place); editing a creature reopens the wizard
      prefilled. Verified via jsdom (78 assertions, 0 errors).
 
