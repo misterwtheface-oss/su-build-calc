@@ -4,6 +4,21 @@
 Deployed at **https://misterwtheface-oss.github.io/su-build-calc/** (repo `misterwtheface-oss/su-build-calc`,
 Pages on `master`/root, Cloudflare analytics active with the shared github.io token). Auto-deploys on push.
 
+## v2.12 human tag taxonomy → Category→Value trait filter (2026-09-18)
+Conformed the trait tag layer to the user's authored 24-category taxonomy (broad condition → specific
+segment). New pipeline in `_su_extract`:
+- `code/build_taxonomy_tags.py` maps each trait's **code + structured-token** signals onto taxonomy
+  values (code-grounded only; no prose-mining) → `data/model/tag_taxonomy.json` (canonical taxonomy +
+  per-value status) + `trait_taxonomy_tags.json` (per-trait `[{cat,val}]`). Doc: `data/model/TAG_TAXONOMY.md`.
+- Coverage: **2107/2187 traits tagged, 14,583 assignments; 197/337 values covered, 140 gaps** — gaps
+  cleanly classified `actor-split` (all `Enemy …` variants) and `desc-only` (magnitude/direction, "for-each"
+  counts, named spells). Flagged for a future controlled prose pass; kept out so data stays code-certain.
+
+App: `build-data.mjs` bundles `SU_DATA.taxonomy` + `traits[id].taxo`. The creature/fusion picker's flat
+"＋ Tag" facet was replaced with a two-level **＋ Filter** drill-down (Category → Value, back button,
+multi-filter AND). Empty values hidden; counts computed but never shown (minimal-chrome). Verified via
+jsdom smoke test: 400→54 on Related Debuff→Poisoned (54/54 correct), 54→28 when AND-ed with Attack, 0 JS errors.
+
 ## v2.11 artifact material model + icon/align fixes (2026-09-17)
 Four fixes from the user's punch-list:
 1. **Trait slot no longer shows trick materials.** `traitItems` was built from *every* material with a

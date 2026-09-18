@@ -103,6 +103,9 @@ const tagByTraitId = new Map();
 for (const e of tc.entities) {
   if (e.surface === 'trait') tagByTraitId.set(e.key, e);
 }
+// human-facing 2-level tag taxonomy (Category -> Value) + per-trait assignments
+const taxonomy = readJSON(path.join(MODEL, 'tag_taxonomy.json'));
+const taxoTags = readJSON(path.join(MODEL, 'trait_taxonomy_tags.json')).by_trait;
 const traits = {};
 for (const t of consolidated) {
   const tag = tagByTraitId.get(t.id) || {};
@@ -116,6 +119,7 @@ for (const t of consolidated) {
     consumes: tag.consumes || [],
     labels: tag.labels || [],
     stats: tag.stats || [],
+    taxo: (taxoTags[String(t.id)] || []).map(a => a.cat + '::' + a.val),
   };
 }
 
@@ -592,6 +596,7 @@ const SU_DATA = {
   specs,
   traits,
   tagLabels,
+  taxonomy: { categories: taxonomy.categories, status: taxonomy.status },
   artifact: artGroup,
   traitItems,
   statMats,
