@@ -540,23 +540,49 @@ for (const w of wardrobeRecs) {
                   category: w.category, frames: w.frames, order: w.order,
                   img: ok ? `assets/wardrobe/${w.sprite}.png` : null });
 }
-// group all tier costumes per specialization (Grovetender -> herbalist tiers, etc.)
-// For each tier also copy the two FRONT-facing frames (0,1) so the info panel can animate the costume.
+// group the THREE canonical tier costumes per specialization (Grovetender -> herbalist tiers, etc.).
+// The info panel animates one costume per tier, so the set must be exactly tiers 1/2/3 — NOT the extra
+// `_alt`/`_robe`/`_minotaur` variants or legacy `ospr_*` duplicates (those inflated the cycle count and
+// mis-attributed the first frame, e.g. Reaver showing 4 cycles). Tier naming is inconsistent across specs:
+//   canonical  npc_<stem>_1 / _2 / _3   ·  numbered  npc_<stem>01 / 02 / 03
+//   suffix     npc_<stem>   (bare = tier 1) + _2 / _3
+// so derive a tier number per record and prefer an explicit tier over a bare-stem fallback.
 let specCostumes = 0;
+const isOspr = (sp) => sp.startsWith('ospr_');
 for (const s of specs) {
-  const mine = wardrobe.filter(w => w.spec === s.label)
-    .map(w => ({ ...w, effTier: w.tier || (w.variant ? null : 1) }))   // base (no tier, no variant) = tier 1
-    .sort((a, b) => (a.effTier || 9) - (b.effTier || 9) || a.order - b.order);
-  s.costumes = mine.map(w => {
+  const recs = wardrobe.filter(w => w.spec === s.label);
+  const real = recs.filter(w => !w.variant && !isOspr(w.sprite)).map(w => {
+    const t = Number(w.tier);
+    let tierNum, explicit;
+    if (t === 1 || t === 2 || t === 3) { tierNum = t; explicit = true; }
+    else { const m = w.sprite.match(/(\d{1,2})$/); if (m) { tierNum = parseInt(m[1], 10); explicit = true; }
+           else { tierNum = 1; explicit = false; } }          // bare npc_<stem> = tier 1
+    return { ...w, tierNum, explicit };
+  });
+  // one costume per tier: prefer an explicit tier over the bare-stem fallback, then the lower sprite order
+  const byTier = new Map();
+  for (const w of real) {
+    const cur = byTier.get(w.tierNum);
+    if (!cur || (w.explicit && !cur.explicit) || (w.explicit === cur.explicit && w.order < cur.order)) byTier.set(w.tierNum, w);
+  }
+  let chosen = [1, 2, 3].map(t => byTier.get(t)).filter(Boolean);
+  if (!chosen.length) {                                        // data gap: only a variant shipped (Defiler/Tribalist)
+    const v = recs.filter(w => w.variant).sort((a, b) => a.order - b.order);
+    chosen = v.length ? [{ ...v[0], tierNum: null }] : [];
+    if (chosen.length) warn(`spec "${s.label}" has no standard tier costume; using variant "${chosen[0].sprite}"`);
+  } else if (chosen.length < 3) {
+    warn(`spec "${s.label}" has only ${chosen.length} tier costume(s) in the extract (missing tier ${[1, 2, 3].filter(t => !byTier.get(t)).join('/')})`);
+  }
+  s.costumes = chosen.map(w => {
     const f0 = `${w.sprite}_0.png`, f1 = `${w.sprite}_1.png`;
     const has0 = copySpriteFrame(w.sprite, 0, OUT_WARDROBE, f0);
     const has1 = copySpriteFrame(w.sprite, 1, OUT_WARDROBE, f1);
     const frames = [has0 ? `assets/wardrobe/${f0}` : w.img, has1 ? `assets/wardrobe/${f1}` : w.img].filter(Boolean);
-    return { tier: w.effTier, sprite: w.sprite, img: w.img, variant: w.variant, frames };
+    return { tier: w.tierNum, sprite: w.sprite, img: w.img, variant: w.variant, frames };
   });
-  s.costume = mine.length ? mine[0].img : null;       // primary (tier 1) costume
-  s.costumeKey = mine.length ? mine[0].sprite : null;
-  if (mine.length) specCostumes++; else warn(`specialization "${s.label}" has no wardrobe costume match`);
+  s.costume = s.costumes.length ? s.costumes[0].img : null;    // primary (tier 1) costume
+  s.costumeKey = s.costumes.length ? s.costumes[0].sprite : null;
+  if (s.costumes.length) specCostumes++; else warn(`specialization "${s.label}" has no wardrobe costume match`);
 }
 
 // ── data-hygiene report ─────────────────────────────────────────────────

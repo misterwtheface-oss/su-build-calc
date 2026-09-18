@@ -10,6 +10,22 @@ descriptions via the classification pipeline in `_su_extract` (codebook + batch 
 code decode — full rationale in `_su_extract/code/TRAIT_EFFECT_DECODE_FINDINGS.md`, taxonomy details in
 `_su_extract/data/model/TAG_TAXONOMY.md`.
 
+## v2.18 spec costume-animation audit + fix (2026-09-18)
+The spec info-panel animates one costume per tier; it should be exactly the 3 canonical tiers
+(3 cycles / 6 frames). Audited all 39 specs and found **16** off — the grouping was sweeping in
+`_alt`/`_robe`/`_minotaur` variants and legacy `ospr_*` duplicates (Reaver showed 4 cycles: 3 real
+tiers + a stray `_alt`), and one spec (Inquisitor) hit a count of 3 with a *wrong* composition
+(tiers 2/3 + alt, no tier-1). Root cause: tier naming is inconsistent across specs — canonical
+`npc_<stem>_1/_2/_3`, numbered `npc_<stem>01/02/03`, and suffix `npc_<stem>`(bare = tier 1) + `_2/_3`.
+`build-data.mjs` now derives a tier number per costume record, keeps only tiers 1/2/3 (one per tier,
+preferring an explicit tier over the bare-stem fallback), and drops variants + `ospr_*`. Result:
+**36/39 specs animate exactly 3 cycles.** The 3 remaining are honest extraction gaps (verified — the
+tiers don't exist in the game data): Inquisitor ships only tiers 2/3 (no tier-1 → 2 cycles);
+Defiler/Tribalist ship only an `_alt` costume (1 cycle). Those emit a build warning. Reaver is now
+`npc_reaver / _2 / _3` (3 cycles). The unused per-tier animation frames for the dropped costumes were
+removed from `assets/wardrobe/`; the full 820-costume wardrobe set stays in `SU_DATA.wardrobe` for a
+future costume picker.
+
 ## v2.17 UX pass — perks, creature wizard, artifact socketing (2026-09-18)
 Eight-item punch-list from the user, verified via jsdom smoke (38/38, 0 errors).
 1. **Perk rows standardized** in both the spec info list and the Customize picker (and the Anointments
