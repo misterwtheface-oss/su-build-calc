@@ -169,6 +169,14 @@
     return (out + esc(s.slice(last))).replace(/\\n|\n/g, "<br>"); // literal \n and real newlines → line breaks
   }
 
+  // perk / anointment descriptions append the referenced condition's full tooltip as a
+  // {CONDDESC_*}/{CDESC_*} block (e.g. "…gains {CONDNAME_MINION_ANIMATEDWEAPON}.\n\n{CONDDESC_…}").
+  // That appendix is redundant here and blows up the row height — strip it (and its leading
+  // blank lines) so every perk row is a tight, uniform "effect only" line.
+  const stripCondDesc = (desc) =>
+    String(desc || "").replace(/(?:\\n|\n|\s)*\{C(?:OND)?DESC_[A-Za-z0-9_]+\}/g, "").trim();
+  const perkText = (desc, rank) => richText(stripCondDesc(desc), rank);
+
   // taxonomy filter: a creature's innate trait's human-facing tags ("Category::Value")
   const creatureTaxo = (c) => {
     const t = c.traitId != null ? TRAIT[c.traitId] : null;
@@ -314,7 +322,7 @@
       <div class="slot-name">${esc(c.name)}${f ? ` <span style="color:var(--accent2)">⚭</span>` : ""}</div>
       <div class="slot-sub"><span class="cls-chip" style="color:${clsColor(cls)}">${esc(cls || "—")}</span>${c.race ? " · " + esc(c.race) : ""}</div>
       <div class="slot-actions">
-        <button class="slot-mini ${f ? "on" : ""}" data-action="pick-fusion" data-slot="${i}" title="Fusion partner">${f ? "Fused" : "Fuse"}</button>
+        <button class="slot-mini ${f ? "on" : ""}" data-action="pick-creature" data-slot="${i}" title="Edit creature / fusion">${f ? "Edit ⚭" : "Edit"}</button>
         <button class="slot-mini ${a ? "on" : ""}" data-action="equip-artifact" data-slot="${i}" title="Artifact">${a ? "Artifact ✓" : "Artifact"}</button>
         <button class="slot-mini ${slot.relic ? "on" : ""}" data-action="build-relic" data-slot="${i}" title="Relic">Relic</button>
         <button class="slot-mini ${(slot.spellGemIds || []).length ? "on" : ""}" data-action="creature-spells" data-slot="${i}" title="Spell gems (up to 3)">Spells${(slot.spellGemIds || []).length ? ` ${slot.spellGemIds.length}` : ""}</button>
@@ -331,7 +339,7 @@
         <span class="stat-val base">${fs.final.hp}</span><span class="stat-val">${fs.final.atk}</span>
         <span class="stat-val">${fs.final.def}</span><span class="stat-val total">${fs.total}</span></div>`;
     }).join("");
-    return `<div class="party-summary"><div class="section-label">Party stat overview (after fusion + artifact)</div>
+    return `<div class="party-summary"><div class="section-label">Party</div>
       <div class="stat-grid">
         <div class="stat-header"><span>Creature</span><span style="text-align:right">HP</span>
           <span style="text-align:right">ATK</span><span style="text-align:right">DEF</span><span style="text-align:right">Total</span></div>
@@ -357,7 +365,7 @@
       if (swaps >= 8) { swaps = 0; fr = 0; ti = (ti + 1) % tiers.length; }
     }, 280);
   }
-  const SCROLLERS = [".ovl-center-scroll", ".ovl-left", ".ovl-right"];
+  const SCROLLERS = [".ovl-center-scroll", ".ovl-left", ".ovl-right", ".art-side-list"];
 
   function openOverlay(html) { OV.innerHTML = html; OV.classList.remove("hidden"); }
   function closeOverlay() { if (specAnimTimer) { clearInterval(specAnimTimer); specAnimTimer = null; } OV.classList.add("hidden"); OV.innerHTML = ""; ovState = null; }
@@ -388,17 +396,19 @@
     if (input && !isTouch) input.focus();
   }
 
-  // ── creature / fusion selector (with faceted filters) ──────────────────────
-  function openCreaturePicker(slotIdx, mode) {
+  // ── creature selector — guided wizard: 1) creature  2) fusion (or skip) → commit ──
+  // editing a filled slot re-opens the same wizard pre-filled so either half can change.
+  function openCreaturePicker(slotIdx) {
     const slot = build.slots[slotIdx];
     ovState = {
-      kind: "creature", slotIdx, mode,
+      kind: "creature", slotIdx, step: "primary",
+      primaryId: slot.cid, fusionId: slot.fusion,
       search: "", clsFilter: null, raceFilter: null, taxoFilters: [],
-      sel: mode === "fusion" ? slot.fusion : slot.cid,
       render: renderCreaturePicker,
     };
     openOverlay(ovState.render()); maybeFocusSearch(OV);
   }
+  const creaStepSel = (st) => st.step === "fusion" ? st.fusionId : st.primaryId;
   function creatureMatches(c, st) {
     if (st.clsFilter && c.cls !== st.clsFilter) return false;
     if (st.raceFilter && c.race !== st.raceFilter) return false;
@@ -407,10 +417,12 @@
     return true;
   }
   function renderCreaturePicker() {
-    const st = ovState;
+    const st = ovState, fusion = st.step === "fusion";
+    const sel = creaStepSel(st);
     const list = D.creatures.filter(c => creatureMatches(c, st));
     const shown = list.slice(0, 400);
-    const selC = st.sel != null ? CREA.get(st.sel) : null;
+    const selC = sel != null ? CREA.get(sel) : null;
+    const primaryC = st.primaryId != null ? CREA.get(st.primaryId) : null;
 
     const facet = (lbl, val, action) =>
       `<button class="facet ${val ? "on" : ""}" data-action="${action}">${lbl}${val ? `: <b>${esc(val)}</b>` : ""}${val ? ` <span class="facet-x" data-action="${action}-clear">✕</span>` : " ▾"}</button>`;
@@ -423,16 +435,36 @@
       <button class="facet add" data-action="facet-taxo">＋ Filter</button>
     </div>`;
 
-    const tiles = shown.map(c => `
-      <div class="pick-tile ${st.sel === c.id ? "selected" : ""}" data-action="crea-pick" data-id="${c.id}">
+    // fusion step leads with a "No fusion" tile so skipping is a first-class choice
+    const noFuseTile = fusion ? `
+      <div class="pick-tile nofuse ${st.fusionId == null ? "selected" : ""}" data-action="crea-nofuse">
+        <div class="pt-sprite"><span class="nofuse-glyph">∅</span></div>
+        <div class="pt-name">No fusion</div>
+      </div>` : "";
+    const tiles = noFuseTile + shown.map(c => `
+      <div class="pick-tile ${sel === c.id ? "selected" : ""}" data-action="crea-pick" data-id="${c.id}">
         <span class="pt-cls" style="--pt-cls:${clsColor(c.cls)}"></span>
         <div class="pt-sprite">${critFace(c)}</div>
-        <div class="pt-name">${esc(c.name)}</div><div class="pt-total">${c.total}</div>
+        <div class="pt-name">${esc(c.name)}</div>
       </div>`).join("");
 
-    const title = st.mode === "fusion" ? "Choose Fusion Partner (secondary)" : "Choose Creature";
+    const title = fusion ? "2 · Fusion partner (optional)" : "1 · Choose creature";
+    const steps = `<div class="art-steps">
+      <span class="art-step ${!fusion ? "on" : "done"}">1 · Creature</span>
+      <span class="art-step-sep">›</span>
+      <span class="art-step ${fusion ? "on" : ""}">2 · Fusion</span></div>`;
+    const footer = fusion
+      ? `<button class="btn-ghost" data-action="crea-back">‹ Back</button>
+         <button class="btn-confirm" data-action="crea-confirm" ${st.primaryId == null ? "disabled" : ""}>${st.fusionId == null ? "Commit (no fusion)" : "Commit fusion"}</button>`
+      : `<button class="btn-ghost" data-action="close-ovl">Cancel</button>
+         <button class="btn-confirm" data-action="crea-next" ${st.primaryId == null ? "disabled" : ""}>Next: Fusion ›</button>`;
+    // right panel: the currently-highlighted pick, plus the fusion preview once both are chosen
+    let side = "";
+    if (fusion && primaryC && (selC || st.fusionId != null)) side = renderFusionPreview(primaryC, selC);
+    else if (selC) side = renderCreatureIdentity(selC);
+
     return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel">
-      <div class="overlay-header"><h2>${title}</h2>
+      <div class="overlay-header"><h2>${title}</h2>${steps}
         <input class="ovl-search" placeholder="Search name / race…" value="${esc(st.search)}" data-action="crea-search">
         <button class="ovl-close" data-action="close-ovl">✕</button></div>
       <div class="overlay-body">
@@ -440,23 +472,39 @@
           <div class="ovl-center-scroll"><div class="pick-grid">${tiles}</div>
             ${list.length > 400 ? `<div class="slot-sub" style="margin-top:10px">Showing 400 of ${list.length} — refine your filters.</div>` : ""}</div>
         </div>
-        <div class="ovl-right">${selC ? renderCreatureIdentity(selC) : `<div class="slot-sub">Select a creature.</div>`}</div>
+        <div class="ovl-right">${side}</div>
       </div>
-      <div class="overlay-footer"><span class="foot-info"></span>
-        <div><button class="btn-ghost" data-action="close-ovl">Cancel</button>
-        <button class="btn-confirm" data-action="crea-confirm" ${st.sel == null ? "disabled" : ""}>Confirm</button></div></div>
+      <div class="overlay-footer"><span class="foot-info"></span><div>${footer}</div></div>
     </div></div>`;
   }
+  // creature info panel: trait leads, stat table follows (per house layout)
   function renderCreatureIdentity(c) {
     return `<div style="text-align:center">${critFace(c)}</div>
       <h3 style="text-align:center;margin:6px 0">${esc(c.name)}</h3>
       <div class="slot-sub" style="margin-bottom:10px"><span style="color:${clsColor(c.cls)};font-weight:700">${esc(c.cls || "—")}</span>${c.race ? " · " + esc(c.race) : ""}</div>
-      <div class="stat-grid single" style="margin-bottom:10px">
+      ${c.traitId != null ? `<div class="section-label">Innate trait</div>
+        <div class="primary-traits" style="margin-bottom:12px">${traitBanner(c.traitId)}<div class="trait-desc">${richText((TRAIT[c.traitId] || {}).desc || "")}</div></div>` : ""}
+      <div class="section-label">Base stats</div>
+      <div class="stat-grid single">
         ${STAT_KEYS.map(k => `<div class="stat-row"><span class="stat-name">${STAT_LABEL[k]}</span>
           <span class="stat-val total">${c[k]}</span></div>`).join("")}
-        <div class="stat-row hl-med"><span class="stat-name">Total</span><span class="stat-val total">${c.total}</span></div></div>
-      ${c.traitId != null ? `<div class="section-label">Innate trait</div>
-        <div class="primary-traits">${traitBanner(c.traitId)}<div class="trait-desc">${richText((TRAIT[c.traitId] || {}).desc || "")}</div></div>` : ""}`;
+        <div class="stat-row hl-med"><span class="stat-name">Total</span><span class="stat-val total">${c.total}</span></div></div>`;
+  }
+  // fusion preview: averaged stats + secondary's class + both innate traits (codex-accurate)
+  function renderFusionPreview(primary, secondary) {
+    if (!secondary) return renderCreatureIdentity(primary);
+    const avg = (a, b) => Math.round((a + b) / 2);
+    const traitIds = [primary.traitId, secondary.traitId].filter(x => x != null);
+    return `<div style="text-align:center">${critFace(primary)}</div>
+      <h3 style="text-align:center;margin:6px 0">${esc(primary.name)} <span style="color:var(--accent2)">⚭</span> ${esc(secondary.name)}</h3>
+      <div class="slot-sub" style="margin-bottom:10px">Class → <span style="color:${clsColor(secondary.cls)};font-weight:700">${esc(secondary.cls || "—")}</span></div>
+      <div class="section-label">Traits (both)</div>
+      <div style="margin-bottom:12px">${traitIds.map(tid => `<div class="primary-traits" style="margin-bottom:6px">${traitBanner(tid)}<div class="trait-desc">${richText((TRAIT[tid] || {}).desc || "")}</div></div>`).join("")}</div>
+      <div class="section-label">Fused base stats (averaged)</div>
+      <div class="stat-grid single">
+        ${STAT_KEYS.map(k => `<div class="stat-row"><span class="stat-name">${STAT_LABEL[k]}</span>
+          <span class="stat-val total">${avg(primary[k], secondary[k])}</span></div>`).join("")}
+        <div class="stat-row hl-med"><span class="stat-name">Total</span><span class="stat-val total">${STAT_KEYS.reduce((s, k) => s + avg(primary[k], secondary[k]), 0)}</span></div></div>`;
   }
 
   // ── facet sub-picker (Class / Race / Tag) on the detail layer ───────────────
@@ -515,14 +563,18 @@
     const tiles = list.map(s => `
       <div class="pick-tile spec-pick ${st.sel === s.id ? "selected" : ""}" data-action="spec-pick" data-id="${s.id}">
         <div class="pt-sprite emblem">${spriteImg(s.emblem || s.sprite, "px")}</div><div class="pt-name">${esc(s.label)}</div></div>`).join("");
-    let info = `<div class="slot-sub">Select a specialization.</div>`;
+    let info = "";
     if (sel) {
       const allocCount = allocatedPerks(sel).length, pts = specPoints(sel);
       const perkList = sel.perks.map(p => {
         const r = perkRank(sel, p), mx = perkMax(p), on = r > 0;
         const badge = mx > 1 ? `<span class="perk-rankbadge">${r}/${mx}</span>` : (on ? `<span class="perk-rankbadge">✓</span>` : "");
-        const ico = p.icon ? `<span class="perk-ico sm">${spriteImg(p.icon, "px")}</span>` : `<span class="perk-dot"></span>`;
-        return `<div class="perk-line ${on ? "on" : "off"}">${ico}${badge}<b>${esc(p.name)}</b>${p.desc ? ` — <span class="perk-desc">${richText(p.desc, r)}</span>` : ""}</div>`;
+        const ico = p.icon ? `<span class="perk-ico sm">${spriteImg(p.icon, "px")}</span>` : `<span class="perk-ico sm empty"></span>`;
+        return `<div class="perk-line ${on ? "on" : "off"}">${ico}
+          <div class="perk-line-body">
+            <div class="perk-line-head"><b>${esc(p.name)}</b>${badge}</div>
+            ${p.desc ? `<div class="perk-desc">${perkText(p.desc, r)}</div>` : ""}
+          </div></div>`;
       }).join("");
       const cos0 = sel.costumes && sel.costumes.length ? sel.costumes[0] : null;
       const costumeImg = cos0 ? (cos0.frames && cos0.frames[0]) || cos0.img : sel.sprite;
@@ -583,11 +635,12 @@
         <button class="perk-step" data-action="perk-inc" data-k="${k}" ${r >= mx ? "disabled" : ""}>+</button>
         ${mx > 1 ? `<button class="perk-step wide" data-action="perk-max" data-k="${k}" ${r >= mx ? "disabled" : ""}>Max</button>` : ""}
         <button class="perk-step wide" data-action="perk-zero" data-k="${k}" ${r <= 0 ? "disabled" : ""}>0</button></div>`;
-      const costLine = p.cost != null ? `<span class="perk-cost">${p.cost} pt${p.cost === 1 ? "" : "s"}/rank${on ? ` · ${p.cost * r} spent` : ""}</span>` : "";
-      const ico = p.icon ? `<div class="perk-ico">${spriteImg(p.icon, "px")}</div>` : "";
+      const costLine = p.cost != null ? `<span class="perk-meta">${p.cost} pt${p.cost === 1 ? "" : "s"}/rank${on ? ` · ${p.cost * r} spent` : ""}</span>` : "";
+      const ico = p.icon ? `<div class="perk-ico">${spriteImg(p.icon, "px")}</div>` : `<div class="perk-ico empty"></div>`;
       return `<div class="perk-row ${on ? "on" : "off"}">
-        ${ico}<div class="perk-row-main"><b>${esc(p.name)}</b>${costLine}
-          ${p.desc ? `<div class="perk-desc">${richText(p.desc, r)}</div>` : ""}
+        ${ico}<div class="perk-row-main">
+          <div class="perk-row-head"><b>${esc(p.name)}</b>${costLine}</div>
+          ${p.desc ? `<div class="perk-desc">${perkText(p.desc, r)}</div>` : ""}
           ${stepper}</div></div>`;
     }).join("");
     return `<div class="ovl-backdrop" data-action="facet-backdrop"><div class="overlay-panel detail">
@@ -625,9 +678,11 @@
       <div class="section-label anoint-grp">${esc(sp)}</div>
       ${groups[sp].map(a => `<div class="perk-line on">
         <span class="perk-ico sm">${a.icon ? spriteImg(a.icon, "px") : ""}</span>
-        <b>${esc(a.name)}</b>${a.ascension ? `<span class="anoint-badge asc">Ascension</span>` : ""}
-        ${a.ranks > 1 ? `<span class="perk-rankbadge">${a.ranks}×</span>` : ""}
-        ${a.desc ? ` — <span class="perk-desc">${richText(a.desc, a.ranks)}</span>` : ""}</div>`).join("")}`).join("")
+        <div class="perk-line-body">
+          <div class="perk-line-head"><b>${esc(a.name)}</b>
+            <span class="perk-line-meta">${a.ascension ? `<span class="anoint-badge asc">Ascension</span>` : ""}${a.ranks > 1 ? `<span class="perk-rankbadge">${a.ranks}×</span>` : ""}</span></div>
+          ${a.desc ? `<div class="perk-desc">${perkText(a.desc, a.ranks)}</div>` : ""}
+        </div></div>`).join("")}`).join("")
       || `<div class="slot-sub" style="padding:10px">No anointments match.</div>`;
     return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel">
       <div class="overlay-header"><h2>Anointments</h2>
@@ -691,6 +746,96 @@
     return `<div class="art-steps">${["type", "slots", "name"].map(s =>
       `<span class="art-step ${s === step ? "on" : ""} ${["type", "slots", "name"].indexOf(s) < ["type", "slots", "name"].indexOf(step) ? "done" : ""}">${artStepLabels[s]}</span>`).join("<span class='art-step-sep'>›</span>")}</div>`;
   }
+  // artifact slots step — right-hand info panel: picker list › item preview (confirm) › live bonus
+  const artSlotKey = (type) => (ART_SLOTS.find(s => s.pick === type) || {}).key;
+  const artHas = (a, type, v) => (a[artSlotKey(type)] || []).includes(v);
+  function renderArtPicker(st, a, rank) {
+    const type = st.pickType, q = st.search.trim().toLowerCase();
+    const has = (v) => artHas(a, type, v);
+    const matchTaxo = (taxo) => q && (taxo || []).some(k => taxoValName(k).toLowerCase().includes(q));
+    let rows = "";
+    if (type === "stat" || type === "trick") {
+      const pool = type === "stat" ? STATMAT : TRICKMAT;
+      rows = pool.filter(m => !q || m.name.toLowerCase().includes(q) || m.property.toLowerCase().includes(q)).map(m => {
+        const g = propGroups.get(m.property);
+        const val = g ? g.entries.map(e => PROP_STAT[e.stat] ? `+${e.perRank[rank]}%` : e.perRank[rank]).join(" / ") : "";
+        return `<div class="prop-row ${has(m.property) ? "chosen" : ""}" data-action="art-preview" data-t="${type}" data-v="${esc(m.property)}">
+          <span class="prop-ico">${m.icon ? spriteImg(m.icon, "px") : ""}</span>
+          <span class="prop-name">${esc(m.name)}</span><span class="prop-val">${esc(val)}</span></div>`;
+      }).join("");
+    } else if (type === "trait") {
+      rows = D.traitItems.filter(t => t.traitName
+          && (!q || t.name.toLowerCase().includes(q) || (t.traitName || "").toLowerCase().includes(q) || matchTaxo(t.taxo))
+          && (!st.traitTaxo || (t.taxo || []).includes(st.traitTaxo))).slice(0, 300)
+        .map(t => `<div class="prop-row ${has(t.id) ? "chosen" : ""}" data-action="art-preview" data-t="trait" data-v="${t.id}">
+          <span class="prop-ico">${t.icon ? spriteImg(t.icon, "px") : ""}</span>
+          <span class="prop-name">${esc(t.name)}</span><span class="prop-stat">${esc(t.traitName)}</span></div>`).join("");
+    } else if (type === "spell") {
+      rows = spellGems.filter(g => { const sp = gemSpell(g); return !q || gemName(g).toLowerCase().includes(q) || (sp && matchTaxo(sp.taxo)); }).map(g =>
+        `<div class="prop-row ${has(g.id) ? "chosen" : ""}" data-action="art-preview" data-t="spell" data-v="${g.id}">
+          <span class="prop-ico">${gemIcon(g) ? spriteImg(gemIcon(g), "px") : ""}</span>
+          <span class="prop-name">${esc(gemName(g))}</span></div>`).join("")
+        || `<div class="slot-sub" style="padding:8px">No spell gems yet — build them from the top-bar “Spell Gems” button.</div>`;
+    } else {
+      rows = nether.filter(n => !q || n.name.toLowerCase().includes(q)).map(n => `<div class="prop-row ${has(n.id) ? "chosen" : ""}" data-action="art-preview" data-t="nether" data-v="${n.id}">
+          <span class="prop-ico">${spriteImg(gemPath(n.icon), "px")}</span>
+          <span class="prop-name">${esc(n.name)}</span></div>`).join("")
+        || `<div class="slot-sub" style="padding:8px">No Nether Stones yet — add them from the top-bar “Nether Stones” button.</div>`;
+    }
+    const traitFilter = type === "trait"
+      ? (st.traitTaxo
+          ? `<button class="facet on tag" data-action="artb-traitfilter-clear">${esc(taxoCatName(st.traitTaxo))}: <b>${esc(taxoValName(st.traitTaxo))}</b> <span class="facet-x">✕</span></button>`
+          : `<button class="facet add" data-action="artb-traitfilter">＋ Filter</button>`)
+      : "";
+    const label = (ART_SLOTS.find(s => s.pick === type) || {}).label || "";
+    return `<div class="art-side-head"><b>Add ${esc(label)}</b><button class="chip" data-action="artb-closecat">Done</button></div>
+      <input class="ovl-search" placeholder="Search by name or tag…" value="${esc(st.search)}" data-action="artb-search" style="max-width:none;width:100%;margin-bottom:8px">
+      ${traitFilter ? `<div class="art-side-filter">${traitFilter}</div>` : ""}
+      <div class="art-side-list">${rows}</div>`;
+  }
+  // item preview with an explicit confirm — socketing never applies silently (shows the effect first)
+  function renderArtPreview(type, v, rank, has) {
+    let icon = null, name = String(v), sub = "", lines = "";
+    if (type === "stat" || type === "trick") {
+      const mat = MAT_BY_PROP.get(v), g = propGroups.get(v);
+      icon = mat && mat.icon; name = mat ? mat.name : v; sub = v;
+      lines = g ? g.entries.map(e => `<div class="art-pv-line">${PROP_STAT[e.stat] ? `<b>+${e.perRank[rank]}%</b> ${esc(e.stat)}` : `<b>${e.perRank[rank]}</b> ${esc(e.stat)}`}</div>`).join("") : "";
+    } else if (type === "trait") {
+      const t = TRAITITEM.get(v), tr = t && t.traitId != null ? TRAIT[t.traitId] : null;
+      icon = t && t.icon; name = t ? t.name : v; sub = t ? `grants ${t.traitName}` : "";
+      lines = tr ? `<div class="trait-desc">${richText(tr.desc || "")}</div>` : `<div class="slot-sub">${esc(t ? t.traitName : "")}</div>`;
+    } else if (type === "spell") {
+      const g = spellGems.find(x => x.id === v), sp = gemSpell(g);
+      icon = gemIcon(g); name = g ? gemName(g) : v; sub = g ? gemSummary(g) : "spell gem";
+      lines = sp ? `<div class="trait-desc">${richText(sp.desc || "")}</div>` : "";
+    } else {
+      const n = nether.find(x => x.id === v);
+      icon = gemPath(n && n.icon); name = n ? n.name : v; sub = "nether stone";
+      lines = n ? `<div class="trait-desc">${esc(netherSummary(n))}</div>` : "";
+    }
+    return `<div class="art-side-head"><button class="chip" data-action="art-preview-back">‹ Back</button></div>
+      <div class="art-pv">
+        <div class="art-pv-top"><div class="as-ico">${icon ? spriteImg(icon, "px") : "◆"}</div>
+          <div><div class="art-pv-name">${esc(name)}</div><div class="slot-sub">${esc(sub)}</div></div></div>
+        <div class="art-pv-body">${lines || `<div class="slot-sub">No numeric effect.</div>`}</div>
+        <button class="btn-confirm ${has ? "danger-confirm" : ""}" data-action="art-confirm-add" data-t="${type}" data-v="${esc(String(v))}">${has ? "Remove from artifact" : "Add to artifact"}</button>
+      </div>`;
+  }
+  function renderArtLiveBonus(a, rank, pct) {
+    const chips = [
+      ...(a.primary ? [`<span class="slot-chip filled">◆ ${esc(a.primary)}</span>`] : []),
+      ...a.stat.map(n => { const m = MAT_BY_PROP.get(n); return `<span class="slot-chip filled">${esc(m ? m.name : n)}</span>`; }),
+      ...a.trick.map(n => { const m = MAT_BY_PROP.get(n); return `<span class="slot-chip filled">${esc(m ? m.name : n)}</span>`; }),
+      ...a.traits.map(id => { const t = TRAITITEM.get(id); return `<span class="slot-chip filled">✦ ${esc(t ? t.traitName : id)}</span>`; }),
+      ...a.spells.map(id => { const g = spellGems.find(x => x.id === id); return `<span class="slot-chip filled">✷ ${esc(g ? gemName(g) : id)}</span>`; }),
+      ...a.netherIds.map(id => { const n = nether.find(x => x.id === id); return `<span class="slot-chip filled">◈ ${esc(n ? n.name : id)}</span>`; }),
+    ].join("") || `<span class="slot-sub">Tap a slot to add a material.</span>`;
+    return `<div class="section-label">Live bonus · rank ${rank}</div>
+      <div class="stat-grid single" style="margin-bottom:12px">
+        ${STAT_KEYS.map(k => `<div class="stat-row ${pct[k] ? "hl-med" : ""}"><span class="stat-name">${STAT_LABEL[k]}</span>
+          <span class="stat-val art">${pct[k] ? "+" + pct[k] + "%" : "—"}</span></div>`).join("")}</div>
+      <div class="section-label">Contents</div><div>${chips}</div>`;
+  }
   function renderArtifactBuilder() {
     const st = ovState, a = st.draft, rank = a.rank;
     const preview = artifactPctOf(a);
@@ -733,51 +878,13 @@
           return `<div class="art-slot-group"><div class="section-label">${sl.label}</div><div class="art-slot-grid">${boxes.join("")}</div></div>`;
         })).join("");
 
-      // inline picker for the slot type being filled
-      let picker = "";
-      if (st.pickType) {
-        const q = st.search.trim().toLowerCase();
-        const has = (v) => (a[ART_SLOTS.find(s => s.pick === st.pickType).key] || []).includes(v);
-        let rows = "";
-        if (st.pickType === "stat" || st.pickType === "trick") {
-          const pool = st.pickType === "stat" ? STATMAT : TRICKMAT;
-          rows = pool.filter(m => !q || m.name.toLowerCase().includes(q) || m.property.toLowerCase().includes(q)).map(m => {
-            const g = propGroups.get(m.property);
-            const val = g ? g.entries.map(e => PROP_STAT[e.stat] ? `+${e.perRank[rank]}%` : e.perRank[rank]).join(" / ") : "";
-            return `<div class="prop-row ${has(m.property) ? "chosen" : ""}" data-action="art-add" data-t="${st.pickType}" data-v="${esc(m.property)}">
-              <span class="prop-ico">${m.icon ? spriteImg(m.icon, "px") : ""}</span>
-              <span class="prop-name">${esc(m.name)}</span><span class="prop-stat">${esc(m.property)}</span><span class="prop-val">${esc(val)}</span></div>`;
-          }).join("");
-        } else if (st.pickType === "trait") {
-          rows = D.traitItems.filter(t => t.traitName
-              && (!q || t.name.toLowerCase().includes(q) || (t.traitName || "").toLowerCase().includes(q))
-              && (!st.traitTaxo || (t.taxo || []).includes(st.traitTaxo))).slice(0, 300)
-            .map(t => `<div class="prop-row ${has(t.id) ? "chosen" : ""}" data-action="art-add" data-t="trait" data-v="${t.id}">
-              <span class="prop-ico">${t.icon ? spriteImg(t.icon, "px") : ""}</span>
-              <span class="prop-name">${esc(t.name)}</span><span class="prop-stat">grants ${esc(t.traitName)}</span></div>`).join("");
-        } else if (st.pickType === "spell") {
-          rows = spellGems.filter(g => !q || gemName(g).toLowerCase().includes(q)).map(g =>
-            `<div class="prop-row ${has(g.id) ? "chosen" : ""}" data-action="art-add" data-t="spell" data-v="${g.id}">
-              <span class="prop-ico">${gemIcon(g) ? spriteImg(gemIcon(g), "px") : ""}</span>
-              <span class="prop-name">${esc(gemName(g))}</span><span class="prop-stat">${esc(gemSummary(g))}</span></div>`).join("")
-            || `<div class="slot-sub" style="padding:8px">No spell gems yet — build them from the top-bar “Spell Gems” button.</div>`;
-        } else {
-          rows = nether.map(n => `<div class="prop-row ${has(n.id) ? "chosen" : ""}" data-action="art-add" data-t="nether" data-v="${n.id}">
-              <span class="prop-ico">${spriteImg(gemPath(n.icon), "px")}</span>
-              <span class="prop-name">${esc(n.name)}</span><span class="prop-stat">${esc(netherSummary(n))}</span></div>`).join("")
-            || `<div class="slot-sub" style="padding:8px">No Nether Stones yet — add them from the top-bar “Nether Stones” button.</div>`;
-        }
-        const traitFilter = st.pickType === "trait"
-          ? (st.traitTaxo
-              ? `<button class="facet on tag" data-action="artb-traitfilter-clear">${esc(taxoCatName(st.traitTaxo))}: <b>${esc(taxoValName(st.traitTaxo))}</b> <span class="facet-x">✕</span></button>`
-              : `<button class="facet add" data-action="artb-traitfilter">＋ Filter</button>`)
-          : "";
-        picker = `<div class="art-picker">
-          <div class="ovl-filterbar"><button class="chip" data-action="artb-closecat">‹ Done</button>
-            <input class="ovl-search" placeholder="Search…" value="${esc(st.search)}" data-action="artb-search">${traitFilter}</div>
-          <div class="art-pick-scroll">${rows}</div></div>`;
-      }
-      body = `<div class="ovl-center"><div class="ovl-center-scroll">${groupsHtml}${picker}</div></div>`;
+      // info panel (right): item preview (confirm) › picker list › live bonus — never appended below the slots
+      let side;
+      if (st.preview) side = renderArtPreview(st.preview.type, st.preview.value, rank, artHas(a, st.preview.type, st.preview.value));
+      else if (st.pickType) side = renderArtPicker(st, a, rank);
+      else side = renderArtLiveBonus(a, rank, preview);
+      body = `<div class="ovl-center"><div class="ovl-center-scroll">${groupsHtml}</div></div>
+        <div class="ovl-right art-side">${side}</div>`;
       footer = `<button class="btn-ghost" data-action="artb-back">‹ Back</button>
         <button class="btn-confirm" data-action="artb-next">Next: Name ›</button>`;
     } else { // name
@@ -830,7 +937,7 @@
       ${sel.ranks.map(rk => `<div class="prop-row ${st.rank >= rk.rank ? "chosen" : ""}">
         <span class="prop-name" style="flex:0 0 44px;color:var(--accent)">R${rk.rank}</span>
         <span class="prop-stat" style="flex:1;text-align:left">${richText(rk.desc)}</span></div>`).join("")}`
-      : `<div class="slot-sub">Select a relic to see its rank effects.</div>`;
+      : "";
     return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel detail">
       <div class="overlay-header"><h2>Relic — ${esc(c ? c.name : "")}</h2>
         <input class="ovl-search" placeholder="Search relic / stat…" value="${esc(st.search)}" data-action="relic-search">
@@ -1134,8 +1241,7 @@
     const A = t.dataset.action;
     switch (A) {
       // home
-      case "pick-creature": openCreaturePicker(+t.dataset.slot, "primary"); break;
-      case "pick-fusion": openCreaturePicker(+t.dataset.slot, "fusion"); break;
+      case "pick-creature": openCreaturePicker(+t.dataset.slot); break;
       case "equip-artifact": openArtifactLibrary(+t.dataset.slot); break;
       case "build-relic": openRelicBuilder(+t.dataset.slot); break;
       case "creature-detail": openCreatureDetail(+t.dataset.slot); break;
@@ -1156,8 +1262,21 @@
       case "facet-backdrop": if (e.target === t) closeDetail(); break;
 
       // creature picker + facets
-      case "crea-pick": ovState.sel = ovState.sel === +t.dataset.id ? null : +t.dataset.id; refreshOverlay(); break;
-      case "crea-confirm": { const s = build.slots[ovState.slotIdx]; if (ovState.mode === "fusion") s.fusion = ovState.sel; else s.cid = ovState.sel; persistBuild(); closeOverlay(); render(); break; }
+      case "crea-pick": {
+        const id = +t.dataset.id;
+        if (ovState.step === "fusion") ovState.fusionId = ovState.fusionId === id ? null : id;
+        else ovState.primaryId = ovState.primaryId === id ? null : id;
+        refreshOverlay(); break;
+      }
+      case "crea-nofuse": ovState.fusionId = null; refreshOverlay(); break;
+      case "crea-next": if (ovState.primaryId != null) { ovState.step = "fusion"; ovState.search = ""; refreshOverlay(); } break;
+      case "crea-back": ovState.step = "primary"; ovState.search = ""; refreshOverlay(); break;
+      case "crea-confirm": {
+        if (ovState.primaryId == null) break;
+        const s = build.slots[ovState.slotIdx];
+        s.cid = ovState.primaryId; s.fusion = ovState.fusionId;
+        persistBuild(); closeOverlay(); render(); break;
+      }
       case "facet-class": openFacetPicker("class"); break;
       case "facet-race": openFacetPicker("race"); break;
       case "facet-taxo": openFacetPicker("taxo-cat"); break;
@@ -1194,9 +1313,9 @@
       case "art-new": openArtifactBuilder(null, ovState.slotIdx); break;
       case "art-edit": openArtifactBuilder(+t.dataset.id, ovState.slotIdx); break;
       case "art-del": armOrDo(t, () => { const id = +t.dataset.id; artifacts = artifacts.filter(a => a.id !== id); build.slots.forEach(s => { if (s.artifactId === id) s.artifactId = null; }); persistArtifacts(); persistBuild(); refreshOverlay(); }); break;
-      case "artb-next": ovState.step = ovState.step === "type" ? "slots" : "name"; ovState.pickType = null; ovState.search = ""; refreshOverlay(); break;
-      case "artb-back": ovState.step = ovState.step === "name" ? "slots" : "type"; ovState.pickType = null; ovState.search = ""; refreshOverlay(); break;
-      case "artb-closecat": ovState.pickType = null; ovState.search = ""; refreshOverlay(); break;
+      case "artb-next": ovState.step = ovState.step === "type" ? "slots" : "name"; ovState.pickType = null; ovState.preview = null; ovState.search = ""; refreshOverlay(); break;
+      case "artb-back": ovState.step = ovState.step === "name" ? "slots" : "type"; ovState.pickType = null; ovState.preview = null; ovState.search = ""; refreshOverlay(); break;
+      case "artb-closecat": ovState.pickType = null; ovState.preview = null; ovState.search = ""; refreshOverlay(); break;
       case "artb-traitfilter": openFacetPicker("taxo-cat", {
         idx: taxoIndexFor("titem", D.traitItems, ti => ti.taxo || []),
         onPick: (v) => { ovState.traitTaxo = v; } }); break;
@@ -1213,15 +1332,23 @@
       case "perk-taxo-clear": dovState.perkTaxo = null; dovState.perkCat = null; dovState.perkBrowse = false; refreshDetail(); break;
       case "perk-taxo-back": if (dovState.perkCat) dovState.perkCat = null; else dovState.perkBrowse = false; refreshDetail(); break;
       case "art-primary": ovState.draft.primary = ovState.draft.primary === t.dataset.p ? null : t.dataset.p; refreshOverlay(); break;
-      case "art-slot": ovState.pickType = t.dataset.t; ovState.search = ""; refreshOverlay(); break;
-      case "art-add": {
+      case "art-slot": ovState.pickType = t.dataset.t; ovState.preview = null; ovState.search = ""; refreshOverlay(); break;
+      // socketing is a two-step: preview the item's effect, then confirm (never applies silently)
+      case "art-preview": {
+        const type = t.dataset.t;
+        ovState.preview = { type, value: (type === "stat" || type === "trick") ? t.dataset.v : +t.dataset.v };
+        refreshOverlay(); break;
+      }
+      case "art-preview-back": ovState.preview = null; refreshOverlay(); break;
+      case "art-confirm-add": {
         const type = t.dataset.t, sl = ART_SLOTS.find(s => s.pick === type), arr = ovState.draft[sl.key];
         const v = (type === "stat" || type === "trick") ? t.dataset.v : +t.dataset.v;
         const i = arr.indexOf(v);
-        if (i >= 0) arr.splice(i, 1);                        // clicking a chosen one removes it
+        if (i >= 0) arr.splice(i, 1);                        // already socketed → remove
         else if (arr.length < sl.max) arr.push(v);           // room → add
         else if (sl.max === 1) arr[0] = v;                   // single-slot → replace
-        if (arr.length >= sl.max) ovState.pickType = null;   // auto-close when the slot type is full
+        ovState.preview = null;
+        if (arr.length >= sl.max) ovState.pickType = null;   // slot type full → back to the grid
         refreshOverlay(); break;
       }
       case "art-rm": {
@@ -1337,14 +1464,13 @@
     if (searchMap[A]) {
       const [root, state] = searchMap[A]; state.search = v;
       const panel = root.querySelector(".overlay-panel");
-      const scroller = panel && panel.querySelector(".ovl-center-scroll");
-      const sc = scroller ? scroller.scrollTop : 0;
+      const saved = SCROLLERS.map(sel => { const e = panel && panel.querySelector(sel); return e ? e.scrollTop : 0; });
       const caret = t.selectionStart;
       panel.outerHTML = state.render();
       const p2 = root.querySelector(".overlay-panel");
       const inp = p2 && p2.querySelector(".ovl-search");
       if (inp) { inp.focus(); try { inp.setSelectionRange(caret, caret); } catch {} }
-      const s2 = p2 && p2.querySelector(".ovl-center-scroll"); if (s2) s2.scrollTop = sc;
+      SCROLLERS.forEach((sel, k) => { const e = p2 && p2.querySelector(sel); if (e) e.scrollTop = saved[k]; });
     }
   }
 

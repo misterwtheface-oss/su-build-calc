@@ -10,6 +10,32 @@ descriptions via the classification pipeline in `_su_extract` (codebook + batch 
 code decode — full rationale in `_su_extract/code/TRAIT_EFFECT_DECODE_FINDINGS.md`, taxonomy details in
 `_su_extract/data/model/TAG_TAXONOMY.md`.
 
+## v2.17 UX pass — perks, creature wizard, artifact socketing (2026-09-18)
+Eight-item punch-list from the user, verified via jsdom smoke (38/38, 0 errors).
+1. **Perk rows standardized** in both the spec info list and the Customize picker (and the Anointments
+   list): fixed-icon + a head line (`<b>name</b>` ↔ right-aligned rank/cost meta) + desc block. Replaced
+   the old `float:right` cost (which drifted with name length) with a flex header — rows are now uniform
+   regardless of name length or point value. Structure: `.perk-line-body/.perk-line-head/.perk-line-meta`
+   and `.perk-row-head/.perk-meta`.
+2. **Dropped the CONDDESC bloat.** 103 perk/anoint descs append the referenced condition's full tooltip
+   (`\n\n{CONDDESC_*}`/`{CDESC_*}`), which blew up rows. New `stripCondDesc()` + `perkText()` remove that
+   appendix; perk/anoint text is now effect-only.
+3. **Removed placeholder banners** ("Select a specialization/creature/relic" info-panel stubs, which render
+   at the bottom on mobile) + trimmed the home "Party stat overview (after fusion + artifact)" → "Party".
+4. **Creature selector info panel leads with the innate trait**, then base stats; **dropped the per-tile
+   base-stat total** under every creature tile.
+5. **Creature selection is now a guided wizard**: 1 · Choose creature → 2 · Fusion partner (or a first-class
+   "No fusion" tile) → Commit. Editing a filled slot re-opens the same wizard pre-filled so either half can
+   change (the slot's "Fuse" button became "Edit"); the fusion step shows a live averaged-stats + both-traits
+   preview. `openCreaturePicker(slotIdx)` now stateful (`step/primaryId/fusionId`).
+6. **Centered the ✕ buttons** (`.ovl-close/.slot-remove/.as-rm`) via flex centering + padding:0 (the glyph
+   sat slightly right).
+7. **Artifact builder uses an info panel** (right `.ovl-right.art-side`) instead of appending the picker to
+   the bottom of the scroll: default = live-bonus; tap a slot → filterable picker; **search matches name OR
+   tag** (taxonomy value names, for trait items/spell gems).
+8. **Socketing no longer applies silently** — tapping an item opens a preview showing its effect with an
+   explicit **Add to artifact** / **Remove from artifact** confirm (`art-preview` → `art-confirm-add`).
+
 ## v2.16 taxonomy → spells + perks (2026-09-18)
 Extended the per-item classification to the last two surfaces (user: "keep going"). SPELLS (747/747, 5015 tags):
 spell-specific rubric (actions not triggers; self-categorize Damaging/Healing/Single/Multi-Target/element) →

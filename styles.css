@@ -143,11 +143,11 @@ h1, h2, h3 { margin: 0; }
 .slot-mini:hover { border-color: var(--border); color: var(--text); }
 .slot-remove {
   position: absolute; top: 5px; right: 6px; z-index: 2;
-  width: 22px; height: 22px; border-radius: 50%; line-height: 1;
+  width: 22px; height: 22px; border-radius: 50%; line-height: 1; padding: 0;
   background: rgba(20,14,30,.8); border: 1px solid var(--border-dim); color: var(--text-dim);
-  font-size: 13px; display: none;
+  font-size: 13px; display: none; align-items: center; justify-content: center;
 }
-.slot.filled .slot-remove { display: block; }         /* visible on touch, not hover-only */
+.slot.filled .slot-remove { display: flex; }         /* visible on touch, not hover-only */
 .slot-remove.armed { background: var(--bad); color: #1a1230; border-color: var(--bad); }
 
 /* mini stat readout under the party */
@@ -181,6 +181,7 @@ h1, h2, h3 { margin: 0; }
 .overlay-header .ovl-close {
   background: var(--surface2); border: 1px solid var(--border-dim); color: var(--text);
   border-radius: 8px; width: 34px; height: 34px; font-size: 18px;
+  display: flex; align-items: center; justify-content: center; padding: 0; line-height: 1;
 }
 .ovl-search {
   flex: 1; min-width: 120px; max-width: 340px;
@@ -368,7 +369,7 @@ h1, h2, h3 { margin: 0; }
 .spec-tile-plus { font-size: 24px; color: var(--accent2); }
 .spec-tile-label { font-weight: 600; font-size: 13px; line-height: 1.15; }
 .spec-tile-sub { font-size: 11px; color: var(--text-dim); }
-.spec-tile .slot-remove { display: block; top: 6px; right: 6px; }
+.spec-tile .slot-remove { display: flex; top: 6px; right: 6px; }
 
 /* spec selector — bigger info panel, sprite above name */
 .spec-right { width: 340px; }
@@ -378,25 +379,31 @@ h1, h2, h3 { margin: 0; }
 .spec-info-name { font-size: 22px; margin-bottom: 8px; }
 .spec-play { text-align: left; }
 .spec-grid { grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); }
-.perk-list { text-align: left; display: flex; flex-direction: column; gap: 3px; }
-.perk-line { font-size: 12px; line-height: 1.35; padding: 3px 6px; border-radius: 5px; background: var(--surface); display: flex; gap: 6px; align-items: baseline; }
-.perk-line .perk-dot { width: 7px; height: 7px; border-radius: 50%; flex: 0 0 auto; background: var(--good); align-self: center; }
-.perk-line.off { opacity: .45; } .perk-line.off .perk-dot { background: var(--text-mute); }
+/* standardized perk row: fixed icon · body (head line + desc) — uniform regardless of name/cost length */
+.perk-list { text-align: left; display: flex; flex-direction: column; gap: 4px; }
+.perk-line { font-size: 12px; line-height: 1.35; padding: 6px 8px; border-radius: 6px; background: var(--surface); display: flex; gap: 8px; align-items: flex-start; }
+.perk-line.off { opacity: .5; }
+.perk-line-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.perk-line-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.perk-line-head > b { min-width: 0; }
+.perk-line-meta { flex: 0 0 auto; display: inline-flex; align-items: center; gap: 5px; }
 .perk-ico { flex: 0 0 auto; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,.25); border: 1px solid var(--border-dim); border-radius: 6px; }
 .perk-ico img { width: 28px; height: 28px; object-fit: contain; }
-.perk-ico.sm { width: 20px; height: 20px; border-radius: 4px; align-self: center; }
+.perk-ico.empty { background: none; border-color: transparent; }
+.perk-ico.sm { width: 22px; height: 22px; border-radius: 4px; }
 .perk-ico.sm img { width: 18px; height: 18px; }
-.perk-rankbadge { flex: 0 0 auto; box-sizing: border-box; align-self: center; width: 42px; text-align: center; font-size: 10px; font-weight: 800; color: var(--accent2); background: rgba(201,162,75,.14); border: 1px solid var(--border-dim); border-radius: 5px; padding: 1px 2px; font-variant-numeric: tabular-nums; }
+.perk-rankbadge { flex: 0 0 auto; box-sizing: border-box; text-align: center; font-size: 10px; font-weight: 800; color: var(--accent2); background: rgba(201,162,75,.14); border: 1px solid var(--border-dim); border-radius: 5px; padding: 1px 6px; font-variant-numeric: tabular-nums; }
 .perk-line.off .perk-rankbadge { color: var(--text-mute); background: none; }
 .perk-desc { color: var(--text-dim); }
 
-/* perk picker overlay */
-.perk-picker { display: flex; flex-direction: column; gap: 5px; }
+/* perk picker overlay — same fixed-icon + head-line structure */
+.perk-picker { display: flex; flex-direction: column; gap: 6px; }
 .perk-row { display: flex; gap: 9px; align-items: flex-start; padding: 8px 10px; background: var(--surface); border: 1px solid var(--border-dim); border-radius: 8px; }
 .perk-row.on { border-color: var(--good); }
-.perk-row.off .perk-row-main > b, .perk-row.off .perk-desc { opacity: .55; }
-.perk-row-main { flex: 1; min-width: 0; }
-.perk-cost { float: right; color: var(--accent); font-weight: 700; font-size: 11px; }
+.perk-row.off .perk-row-head > b, .perk-row.off .perk-desc { opacity: .55; }
+.perk-row-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.perk-row-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.perk-meta { flex: 0 0 auto; color: var(--accent); font-weight: 700; font-size: 11px; white-space: nowrap; }
 .perk-stepper { display: flex; align-items: center; gap: 5px; margin-top: 7px; }
 .perk-step { min-width: 26px; height: 26px; padding: 0 7px; border-radius: 6px; border: 1px solid var(--border-dim); background: var(--panel); color: var(--text); font-weight: 800; cursor: pointer; line-height: 1; }
 .perk-step.wide { font-size: 11px; font-weight: 700; }
@@ -500,7 +507,8 @@ h1, h2, h3 { margin: 0; }
 .as-lab { font-size: 11px; font-weight: 600; line-height: 1.1; max-height: 2.3em; overflow: hidden; }
 .as-sub { font-size: 10px; color: var(--text-dim); line-height: 1.1; max-height: 2.2em; overflow: hidden; }
 .as-rm { position: absolute; top: 2px; right: 2px; width: 18px; height: 18px; border-radius: 50%; border: none;
-  background: rgba(0,0,0,.4); color: var(--bad); font-size: 11px; cursor: pointer; line-height: 1; }
+  background: rgba(0,0,0,.4); color: var(--bad); font-size: 11px; cursor: pointer; line-height: 1;
+  display: flex; align-items: center; justify-content: center; padding: 0; }
 .art-slot-group { margin-bottom: 12px; }
 .art-slot-group .section-label { margin-bottom: 6px; }
 .art-slot.picking { border-color: var(--accent2); box-shadow: inset 0 0 0 2px var(--accent2); }
@@ -510,6 +518,29 @@ h1, h2, h3 { margin: 0; }
 .art-pick-scroll { max-height: 44vh; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
 .art-picker .prop-ico { width: 20px; height: 20px; flex: 0 0 auto; }
 .art-picker .prop-ico img { width: 100%; height: 100%; object-fit: contain; }
+
+/* artifact builder info panel (right) — picker list / item preview / live bonus */
+.ovl-right.art-side { display: flex; flex-direction: column; overflow: hidden; }
+.art-side-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; flex: 0 0 auto; }
+.art-side-head b { font-size: 13px; }
+.art-side-filter { flex: 0 0 auto; margin-bottom: 8px; }
+.art-side-list { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
+.art-side .prop-row .prop-ico { width: 20px; height: 20px; flex: 0 0 auto; }
+.art-side .prop-row .prop-ico img { width: 100%; height: 100%; object-fit: contain; }
+.art-pv { display: flex; flex-direction: column; }
+.art-pv-top { display: flex; gap: 10px; align-items: center; margin-bottom: 10px; }
+.art-pv-top .as-ico { width: 40px; height: 40px; }
+.art-pv-name { font-weight: 700; font-size: 15px; line-height: 1.15; }
+.art-pv-body { margin-bottom: 12px; }
+.art-pv-line { font-size: 13px; padding: 2px 0; }
+.art-pv-line b { color: #9fd0ff; }
+.art-pv .btn-confirm { width: 100%; }
+.btn-confirm.danger-confirm { background: var(--bad); color: #1a1230; }
+
+/* "No fusion" tile in the fusion step */
+.pick-tile.nofuse .pt-sprite { color: var(--text-mute); }
+.nofuse-glyph { font-size: 34px; color: var(--text-mute); }
+.pick-tile.nofuse.selected .nofuse-glyph { color: var(--accent2); }
 
 /* mobile overrides for v2 components */
 @media (max-width: 600px) {
