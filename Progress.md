@@ -4,6 +4,21 @@
 Deployed at **https://misterwtheface-oss.github.io/su-build-calc/** (repo `misterwtheface-oss/su-build-calc`,
 Pages on `master`/root, Cloudflare analytics active with the shared github.io token). Auto-deploys on push.
 
+## v2.14 full per-trait taxonomy (all 24 categories, triggers + ally/enemy) (2026-09-18)
+Per user direction ("do the hard labor, resolve each trait independently"), classified every trait's
+description individually against a fixed codebook (`_su_extract/code/TRAIT_CLASSIFICATION_CODEBOOK.md`) —
+21 parallel agents, ~100 traits each, reading each description on its own merits (the localization wording
+is inconsistent, so per-trait reading beats regex). Aggregated + validated every emitted tag against the
+fixed vocabulary (`code/aggregate_taxonomy.py`, 5/12,556 invalid dropped), merged with the token-exact
+Related-* tags.
+- Result: **all 24 categories now populated** (was 9), incl. Activates When/at WITH Ally/Enemy actor
+  direction, Affect-on-X, Active If, Multiplied by. 2,187 traits, 13,933 assignments.
+- Correct: Alcoholism → Enemy is Debuffed + Send to Bottom; Reinvigoration → Ally Attacks; Seize → Enemy Dodges.
+- Verified via jsdom: 24 categories shown, Activates When has all 34 Ally/Enemy values, Enemy Dodges filters
+  400→10 (10/10 correct), 0 JS errors.
+- The RE detour (why the code couldn't back this) is preserved in `_su_extract/code/TRAIT_EFFECT_DECODE_FINDINGS.md`;
+  the actor mechanism (crit-arg source) corroborates the classification's Ally/Enemy calls.
+
 ## v2.13 tag taxonomy re-grounded on the game's structured markup (2026-09-18)
 User flagged erroneous filter output (e.g. Alcoholism tagged "Attack"). Root-caused it to the code-effect
 layer, then did a full battle-interpreter RE in Ghidra (all logged in `_su_extract/code/TRAIT_EFFECT_DECODE_FINDINGS.md`):
