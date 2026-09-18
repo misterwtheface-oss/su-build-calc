@@ -20,10 +20,12 @@ code decode — full rationale in `_su_extract/code/TRAIT_EFFECT_DECODE_FINDINGS
    each raises one stat's growth to 40% / lowers another to 20%) + `SU_DATA.scrollMax=15`.
    - **Scrolls** (`L_ID_SCROLL_*`): +1 **base** stat each, max 15 total; folded into `baseStats` (artifact %
      applies on top). Per-stat steppers with a running `N/15`; stored `slot.scrolls={hp,atk,…}`.
-   - **Personality**: grouped picker (by raised stat); stored `slot.personality`. It's a **growth-rate** effect
-     (not a base-stat delta — the level curve is runtime/exponential, not statically closed), so it's recorded
-     and the creature-detail stat table marks the raised stat ↑ (40%) and lowered ↓ (20%) rather than
-     fabricating a number. Detail also shows Personality + Scrolls summary lines.
+   - **Personality**: grouped picker (by raised stat); stored `slot.personality`. **Correction (user):
+     personality applies to BASE stats at every level**, not just growth — in-game `Level·BaseStat·mod/100`
+     with mod = 30 neutral / 40 raised / 20 lowered. Since the app shows a level-independent base, the effect
+     is the ratio vs neutral: **raised ×40/30, lowered ×20/30**, others unchanged; applied in `baseStats()`
+     (scrolls are part of BaseStat, so they're multiplied too). The wizard step-2 preview + creature detail
+     show the adjusted stats with ↑/↓ markers. (Supersedes the initial "growth-rate only, no number" take.)
    - Slot schema gained `personality`/`scrolls` (migrated in place); editing a creature reopens the wizard
      prefilled. Verified via jsdom (78 assertions, 0 errors).
 

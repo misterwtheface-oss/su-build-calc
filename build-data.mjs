@@ -616,9 +616,10 @@ if (effectiveErrors) {
 }
 
 // ── emit data.js ─────────────────────────────────────────────────────────
-// Personalities (codex L_CODD_CREATURES_*_PERSONALITIES): each raises one stat's growth rate to 40%
-// and lowers another's to 20%. 20 total, grouped by the stat they raise. (Growth-rate effect — it changes
-// how the creature scales with level, not its base-stat numbers; the app records it + marks the ↑/↓ stats.)
+// Personalities (codex L_CODD_CREATURES_*_PERSONALITIES): each raises one stat's modifier to 40 and lowers
+// another's to 20 (neutral = 30). 20 total, grouped by the stat they raise. Applies to BASE stats at every
+// level (in-game: Level·BaseStat·mod/100), so vs a neutral build the effect is a level-independent ratio —
+// raised ×40/30, lowered ×20/30. The app applies this in baseStats().
 const PERSONALITIES = [
   { key: 'lazy', name: 'Lazy', raise: 'hp', lower: 'atk' }, { key: 'apathetic', name: 'Apathetic', raise: 'hp', lower: 'def' },
   { key: 'relaxed', name: 'Relaxed', raise: 'hp', lower: 'spd' }, { key: 'indifferent', name: 'Indifferent', raise: 'hp', lower: 'int' },

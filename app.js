@@ -224,7 +224,15 @@
     const avg = (a, b) => f ? Math.round((a + b) / 2) : a;
     const out = { fused: !!f };
     const sc = slot.scrolls || {};
-    for (const k of STAT_KEYS) out[k] = avg(c[k], f ? f[k] : 0) + (sc[k] || 0);   // scrolls add +1 base each
+    // Personality applies to BASE stats (in-game: Level·BaseStat·mod/100, at every level incl. 1). The
+    // modifier is 30 neutral / 40 raised / 20 lowered, so vs a neutral build the effect is a level-independent
+    // ratio: raised ×40/30, lowered ×20/30, others unchanged. Scrolls (+1 base each) are part of BaseStat.
+    const pers = slot.personality ? PERS.get(slot.personality) : null;
+    for (const k of STAT_KEYS) {
+      let v = avg(c[k], f ? f[k] : 0) + (sc[k] || 0);       // scrolls add +1 base each
+      if (pers) { const mod = pers.raise === k ? 40 : pers.lower === k ? 20 : 30; v = Math.round(v * mod / 30); }
+      out[k] = v;
+    }
     out.cls = f ? (f.cls || c.cls) : c.cls;                 // secondary's class on fusion
     out.traitIds = [c.traitId, f ? f.traitId : null].filter(x => x != null);
     out.total = STAT_KEYS.reduce((s, k) => s + out[k], 0);
@@ -469,8 +477,7 @@
     // step 2 (fusion) also carries the per-creature customization (personality + scrolls) before commit
     let side = "";
     if (fusion) {
-      const preview = (primaryC && selC) ? renderFusionPreview(primaryC, selC) : (primaryC ? renderCreatureIdentity(primaryC) : "");
-      side = preview + renderCreatureCustomize(st);
+      side = renderWizardPreview(st) + renderCreatureCustomize(st);
     } else if (selC) side = renderCreatureIdentity(selC);
 
     return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel">
@@ -500,24 +507,29 @@
           <span class="stat-val total">${c[k]}</span></div>`).join("")}
         <div class="stat-row hl-med"><span class="stat-name">Total</span><span class="stat-val total">${c.total}</span></div></div>`;
   }
-  // fusion preview: averaged stats + secondary's class + both innate traits (codex-accurate)
-  function renderFusionPreview(primary, secondary) {
-    if (!secondary) return renderCreatureIdentity(primary);
-    const avg = (a, b) => Math.round((a + b) / 2);
-    const traitIds = [primary.traitId, secondary.traitId].filter(x => x != null);
+  // wizard step-2 preview: the actual built creature (fusion + personality + scrolls) via the real stat calc
+  function renderWizardPreview(st) {
+    const primary = CREA.get(st.primaryId); if (!primary) return "";
+    const secondary = st.fusionId != null ? CREA.get(st.fusionId) : null;
+    const tempSlot = { cid: st.primaryId, fusion: st.fusionId, personality: st.personality, scrolls: st.scrolls || {},
+                       artifactId: null, relic: null, spellGemIds: [] };
+    const b = baseStats(tempSlot);
+    const pers = st.personality ? PERS.get(st.personality) : null;
+    const mark = (k) => pers ? (pers.raise === k ? ` <span class="growth up" title="Personality: ×40/30">↑</span>`
+      : pers.lower === k ? ` <span class="growth down" title="Personality: ×20/30">↓</span>` : "") : "";
+    const traitIds = [primary.traitId, secondary ? secondary.traitId : null].filter(x => x != null);
     return `<div style="text-align:center">${critFace(primary)}</div>
-      <h3 style="text-align:center;margin:6px 0">${esc(primary.name)} <span style="color:var(--accent2)">⚭</span> ${esc(secondary.name)}</h3>
-      <div class="slot-sub" style="margin-bottom:10px">Class → <span style="color:${clsColor(secondary.cls)};font-weight:700">${esc(secondary.cls || "—")}</span></div>
-      <div class="section-label">Traits (both)</div>
-      <div style="margin-bottom:12px">${traitIds.map(tid => `<div class="primary-traits" style="margin-bottom:6px">${traitBanner(tid)}<div class="trait-desc">${richText((TRAIT[tid] || {}).desc || "")}</div></div>`).join("")}</div>
-      <div class="section-label">Fused base stats (averaged)</div>
+      <h3 style="text-align:center;margin:6px 0">${esc(primary.name)}${secondary ? ` <span style="color:var(--accent2)">⚭</span> ${esc(secondary.name)}` : ""}</h3>
+      <div class="slot-sub" style="margin-bottom:10px"><span style="color:${clsColor(b.cls)};font-weight:700">${esc(b.cls || "—")}</span></div>
+      ${traitIds.length ? `<div class="section-label">Traits</div><div style="margin-bottom:10px">${traitIds.map(tid => `<div class="primary-traits" style="margin-bottom:6px">${traitBanner(tid)}<div class="trait-desc">${richText((TRAIT[tid] || {}).desc || "")}</div></div>`).join("")}</div>` : ""}
+      <div class="section-label">Base stats${pers || scrollTotal(st.scrolls || {}) ? " (personality + scrolls)" : ""}</div>
       <div class="stat-grid single">
-        ${STAT_KEYS.map(k => `<div class="stat-row"><span class="stat-name">${STAT_LABEL[k]}</span>
-          <span class="stat-val total">${avg(primary[k], secondary[k])}</span></div>`).join("")}
-        <div class="stat-row hl-med"><span class="stat-name">Total</span><span class="stat-val total">${STAT_KEYS.reduce((s, k) => s + avg(primary[k], secondary[k]), 0)}</span></div></div>`;
+        ${STAT_KEYS.map(k => `<div class="stat-row"><span class="stat-name">${STAT_LABEL[k]}${mark(k)}</span>
+          <span class="stat-val total">${b[k]}</span></div>`).join("")}
+        <div class="stat-row hl-med"><span class="stat-name">Total</span><span class="stat-val total">${b.total}</span></div></div>`;
   }
 
-  // per-creature customization in the wizard: Personality (growth ↑/↓) + Scrolls (+1 base each, cap 15 total)
+  // per-creature customization in the wizard: Personality (base-stat ↑/↓) + Scrolls (+1 base each, cap 15 total)
   const scrollTotal = (sc) => STAT_KEYS.reduce((n, k) => n + (sc[k] || 0), 0);
   function renderCreatureCustomize(st) {
     const p = st.personality ? PERS.get(st.personality) : null;
@@ -1031,8 +1043,8 @@
     const fs = finalStats(slot), b = fs.base;
     const f = slot.fusion != null ? CREA.get(slot.fusion) : null;
     const pers = slot.personality ? PERS.get(slot.personality) : null;
-    const growth = (k) => pers ? (pers.raise === k ? ` <span class="growth up" title="Personality: 40% growth rate">↑</span>`
-      : pers.lower === k ? ` <span class="growth down" title="Personality: 20% growth rate">↓</span>` : "") : "";
+    const growth = (k) => pers ? (pers.raise === k ? ` <span class="growth up" title="Personality raised (×40/30 vs neutral)">↑</span>`
+      : pers.lower === k ? ` <span class="growth down" title="Personality lowered (×20/30 vs neutral)">↓</span>` : "") : "";
     const rows = STAT_KEYS.map(k => {
       const pct = fs.pct[k], touched = pct !== 0;
       return `<div class="stat-row ${touched ? "hl-med" : ""}"><span class="stat-name">${STAT_LABEL[k]}${growth(k)}</span>
