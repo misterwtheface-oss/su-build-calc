@@ -10,6 +10,22 @@ descriptions via the classification pipeline in `_su_extract` (codebook + batch 
 code decode — full rationale in `_su_extract/code/TRAIT_EFFECT_DECODE_FINDINGS.md`, taxonomy details in
 `_su_extract/data/model/TAG_TAXONOMY.md`.
 
+## v2.19 spell text, anointment equipping, artifact search fix (2026-09-18)
+1. **Spell descriptions now render bolded plain text** — the spell-gem builder's spell picker was
+   showing raw `{TOKEN}` params (`esc(desc.slice(0,80))`); it now uses `perkText` (richText + CONDDESC
+   strip) in a rich two-line row (name over a clamped effect line), matching the perk visual language.
+   Artifact trait/spell previews also switched to `perkText` (bold params + no `{CONDDESC_*}` appendix).
+2. **Perk visual language carried to spells + material items**: new `.prop-row.rich`/`.prop-body`/
+   `.prop-sub` (name-over-effect, bolded `.param`, 2-line clamp).
+3. **Fixed the enormous artifact-wizard search box** — the side panel is a column flex, and `.ovl-search`'s
+   base `flex:1` was stretching the input vertically. Added `.art-side .ovl-search.art-side-search
+   { flex:0 0 auto; width:100%; max-width:none }`.
+4. **Anointments are now equippable into the build** (was a read-only viewer). New persistent
+   `build.anoints` (`[{specId,key}]`, cap **5** = the in-game limit). Each anoint row has an Equip/Equipped
+   toggle (disabled at cap), the footer shows `N/5 equipped`, the home Anointments tile shows the count,
+   and the tag-filter chips still apply. `anointList()` now carries `specId`; helpers `anointEquipped` /
+   `equippedAnointObjs`. Verified via jsdom (62/62).
+
 ## v2.18 spec costume-animation audit + fix (2026-09-18)
 The spec info-panel animates one costume per tier; it should be exactly the 3 canonical tiers
 (3 cycles / 6 frames). Audited all 39 specs and found **16** off — the grouping was sweeping in

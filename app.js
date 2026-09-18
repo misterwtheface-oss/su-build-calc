@@ -75,6 +75,7 @@
   }
   if (!build || build.schema !== 3) build = { schema: 3, specId: null, perkAlloc: {}, slots: Array.from({ length: 6 }, emptySlot) };
   build.perkAlloc = build.perkAlloc || {};
+  build.anoints = Array.isArray(build.anoints) ? build.anoints : [];   // equipped anointments [{specId,key}], max 5
   while (build.slots.length < 6) build.slots.push(emptySlot());
   build.slots = build.slots.map(s => Object.assign(emptySlot(), s));
   build.slots.forEach(s => { if (!Array.isArray(s.spellGemIds)) s.spellGemIds = []; });
@@ -291,9 +292,10 @@
       </div>`;
 
     const anointTile = `
-      <div class="spec-tile anoint-tile" data-action="open-anoint" title="Anointments">
+      <div class="spec-tile anoint-tile ${build.anoints.length ? "filled" : ""}" data-action="open-anoint" title="Anointments">
         <div class="spec-tile-icon"><span class="spec-tile-plus">✦</span></div>
         <div class="spec-tile-label">Anointments</div>
+        ${build.anoints.length ? `<div class="spec-tile-sub">${build.anoints.length}/${ANOINT_MAX} equipped</div>` : ""}
       </div>`;
 
     const slots = build.slots.map((s, i) => renderSlot(s, i)).join("");
@@ -656,15 +658,19 @@
     </div></div>`;
   }
 
-  // ── anointments — browse every anointment-eligible perk (flags from Perk_REF.csv) ──
+  // ── anointments — equip up to 5 anointment-eligible perks from any spec (flags from Perk_REF.csv) ──
+  // In-game, anointments let you slot perks from OTHER specializations; the cap is 5 equipped.
+  const ANOINT_MAX = 5;
   let ANOINTS = null;
   function anointList() {
     if (ANOINTS) return ANOINTS;
     ANOINTS = [];
-    for (const s of D.specs) for (const p of s.perks) if (p.anointment) ANOINTS.push({ ...p, spec: s.label });
+    for (const s of D.specs) for (const p of s.perks) if (p.anointment) ANOINTS.push({ ...p, spec: s.label, specId: s.id });
     ANOINTS.sort((a, b) => a.spec.localeCompare(b.spec) || a.name.localeCompare(b.name));
     return ANOINTS;
   }
+  const anointEquipped = (a) => build.anoints.some(x => x.specId === a.specId && x.key === a.key);
+  const equippedAnointObjs = () => build.anoints.map(x => anointList().find(a => a.specId === x.specId && a.key === x.key)).filter(Boolean);
   function openAnoint() {
     ovState = { kind: "anoint", search: "", taxoFilters: [], render: renderAnoint };
     openOverlay(ovState.render()); maybeFocusSearch(OV);
@@ -680,15 +686,18 @@
     const filterbar = `<div class="ovl-filterbar">${taxoChips}<button class="facet add" data-action="anoint-taxo">＋ Filter</button></div>`;
     const groups = {};
     for (const a of list) (groups[a.spec] ||= []).push(a);
+    const full = build.anoints.length >= ANOINT_MAX;
     const body = Object.keys(groups).sort().map(sp => `
       <div class="section-label anoint-grp">${esc(sp)}</div>
-      ${groups[sp].map(a => `<div class="perk-line on">
+      ${groups[sp].map(a => { const on = anointEquipped(a); return `<div class="perk-line ${on ? "equipped" : ""}">
         <span class="perk-ico sm">${a.icon ? spriteImg(a.icon, "px") : ""}</span>
         <div class="perk-line-body">
           <div class="perk-line-head"><b>${esc(a.name)}</b>
             <span class="perk-line-meta">${a.ascension ? `<span class="anoint-badge asc">Ascension</span>` : ""}${a.ranks > 1 ? `<span class="perk-rankbadge">${a.ranks}×</span>` : ""}</span></div>
           ${a.desc ? `<div class="perk-desc">${perkText(a.desc, a.ranks)}</div>` : ""}
-        </div></div>`).join("")}`).join("")
+        </div>
+        <button class="slot-mini anoint-eq ${on ? "on" : ""}" data-action="anoint-toggle" data-sid="${a.specId}" data-k="${esc(a.key)}" ${(!on && full) ? "disabled" : ""}>${on ? "Equipped ✓" : "Equip"}</button>
+        </div>`; }).join("")}`).join("")
       || `<div class="slot-sub" style="padding:10px">No anointments match.</div>`;
     return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel">
       <div class="overlay-header"><h2>Anointments</h2>
@@ -698,8 +707,8 @@
         ${filterbar}
         <div class="ovl-center-scroll"><div class="perk-list">${body}</div></div>
       </div></div>
-      <div class="overlay-footer"><span class="foot-info"></span>
-        <button class="btn-confirm" data-action="close-ovl">Close</button></div>
+      <div class="overlay-footer"><span class="foot-info">${build.anoints.length}/${ANOINT_MAX} equipped${full ? " · full" : ""}</span>
+        <button class="btn-confirm" data-action="close-ovl">Done</button></div>
     </div></div>`;
   }
 
@@ -796,7 +805,7 @@
       : "";
     const label = (ART_SLOTS.find(s => s.pick === type) || {}).label || "";
     return `<div class="art-side-head"><b>Add ${esc(label)}</b><button class="chip" data-action="artb-closecat">Done</button></div>
-      <input class="ovl-search" placeholder="Search by name or tag…" value="${esc(st.search)}" data-action="artb-search" style="max-width:none;width:100%;margin-bottom:8px">
+      <input class="ovl-search art-side-search" placeholder="Search by name or tag…" value="${esc(st.search)}" data-action="artb-search">
       ${traitFilter ? `<div class="art-side-filter">${traitFilter}</div>` : ""}
       <div class="art-side-list">${rows}</div>`;
   }
@@ -810,11 +819,11 @@
     } else if (type === "trait") {
       const t = TRAITITEM.get(v), tr = t && t.traitId != null ? TRAIT[t.traitId] : null;
       icon = t && t.icon; name = t ? t.name : v; sub = t ? `grants ${t.traitName}` : "";
-      lines = tr ? `<div class="trait-desc">${richText(tr.desc || "")}</div>` : `<div class="slot-sub">${esc(t ? t.traitName : "")}</div>`;
+      lines = tr ? `<div class="trait-desc">${perkText(tr.desc || "")}</div>` : `<div class="slot-sub">${esc(t ? t.traitName : "")}</div>`;
     } else if (type === "spell") {
       const g = spellGems.find(x => x.id === v), sp = gemSpell(g);
       icon = gemIcon(g); name = g ? gemName(g) : v; sub = g ? gemSummary(g) : "spell gem";
-      lines = sp ? `<div class="trait-desc">${richText(sp.desc || "")}</div>` : "";
+      lines = sp ? `<div class="trait-desc">${perkText(sp.desc || "")}</div>` : "";
     } else {
       const n = nether.find(x => x.id === v);
       icon = gemPath(n && n.icon); name = n ? n.name : v; sub = "nether stone";
@@ -1184,9 +1193,10 @@
     if (st.step === "spell") {
       const rows = D.spells.filter(s => (!q || s.name.toLowerCase().includes(q) || (s.desc || "").toLowerCase().includes(q))
           && (!st.spellTaxo || (s.taxo || []).includes(st.spellTaxo))).slice(0, 300)
-        .map(s => `<div class="prop-row ${g.spellId === s.id ? "chosen" : ""}" data-action="sg-spell" data-id="${s.id}">
+        .map(s => `<div class="prop-row rich ${g.spellId === s.id ? "chosen" : ""}" data-action="sg-spell" data-id="${s.id}">
           <span class="prop-ico">${spellIcon(s) ? spriteImg(spellIcon(s), "px") : ""}</span>
-          <span class="prop-name">${esc(s.name)}</span><span class="prop-stat">${esc((s.desc || "").slice(0, 80))}</span></div>`).join("");
+          <div class="prop-body"><div class="prop-name">${esc(s.name)}</div>
+            ${s.desc ? `<div class="prop-sub clamp">${perkText(s.desc)}</div>` : ""}</div></div>`).join("");
       const sTaxo = st.spellTaxo
         ? `<button class="facet on tag" data-action="sg-taxofilter-clear">${esc(taxoCatName(st.spellTaxo))}: <b>${esc(taxoValName(st.spellTaxo))}</b> <span class="facet-x">✕</span></button>`
         : `<button class="facet add" data-action="sg-taxofilter">＋ Filter</button>`;
@@ -1258,6 +1268,13 @@
       case "clear-party": armOrDo(t, () => { build = { schema: 2, specId: null, perkAlloc: {}, slots: Array.from({ length: 6 }, emptySlot) }; persistBuild(); render(); }); break;
       case "open-artifacts": openArtifactLibrary(null); break;
       case "open-anoint": openAnoint(); break;
+      case "anoint-toggle": {
+        const sid = +t.dataset.sid, k = t.dataset.k;
+        const i = build.anoints.findIndex(x => x.specId === sid && x.key === k);
+        if (i >= 0) build.anoints.splice(i, 1);
+        else if (build.anoints.length < ANOINT_MAX) build.anoints.push({ specId: sid, key: k });
+        persistBuild(); refreshOverlay(); render(); break;   // refresh overlay + home tile count
+      }
       case "open-cards": openCards(); break;
       case "open-nether": openNether(); break;
 
