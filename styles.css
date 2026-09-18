@@ -272,6 +272,8 @@ h1, h2, h3 { margin: 0; }
 }
 .stat-grid.with-relic .stat-header,
 .stat-grid.with-relic .stat-row { grid-template-columns: 1fr 56px 56px 56px 68px; }
+/* single-value stat panel (creature selector info): name flexes, one right-aligned value column */
+.stat-grid.single .stat-row { grid-template-columns: 1fr auto; }
 .stat-header { font-size: 11px; letter-spacing: .6px; text-transform: uppercase; color: var(--text-mute); }
 .stat-row { background: var(--surface); }
 .stat-row .stat-name { text-align: left; font-weight: 600; font-size: 13px; }

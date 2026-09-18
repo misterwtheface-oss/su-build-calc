@@ -28,6 +28,13 @@
   }
   const PRIMARY = D.artifact.primary;                                    // 5 {property,stat,perRank,icon}
   const PRIMARY_ICON = Object.fromEntries(PRIMARY.map(p => [p.property, p.icon]));
+  // artifact enchant materials: Stat slot = Ambers, Trick slot = Slates/Curios/Cripplers/… — each maps 1:1
+  // to a stat/trick property. Slots still STORE the property name (calc + migration unchanged); the picker
+  // and slot chips surface the real material (name + icon).
+  const STATMAT = D.statMats || [];
+  const TRICKMAT = D.trickMats || [];
+  const MAT_BY_PROP = new Map();                                         // property name -> material {name,icon,property}
+  for (const m of [...STATMAT, ...TRICKMAT]) MAT_BY_PROP.set(m.property, m);
   const TRAITITEM = new Map(D.traitItems.map(t => [t.id, t]));
   const SPELL = new Map((D.spells || []).map(s => [s.id, s]));
   const SPELLGEM = D.spellGems || {};                       // class -> class-coloured gem icon
@@ -430,10 +437,10 @@
     return `<div style="text-align:center">${critFace(c)}</div>
       <h3 style="text-align:center;margin:6px 0">${esc(c.name)}</h3>
       <div class="slot-sub" style="margin-bottom:10px"><span style="color:${clsColor(c.cls)};font-weight:700">${esc(c.cls || "—")}</span>${c.race ? " · " + esc(c.race) : ""}</div>
-      <div class="stat-grid" style="margin-bottom:10px">
+      <div class="stat-grid single" style="margin-bottom:10px">
         ${STAT_KEYS.map(k => `<div class="stat-row"><span class="stat-name">${STAT_LABEL[k]}</span>
-          <span class="stat-val total" style="grid-column:2/5">${c[k]}</span></div>`).join("")}
-        <div class="stat-row hl-med"><span class="stat-name">Total</span><span class="stat-val total" style="grid-column:2/5">${c.total}</span></div></div>
+          <span class="stat-val total">${c[k]}</span></div>`).join("")}
+        <div class="stat-row hl-med"><span class="stat-name">Total</span><span class="stat-val total">${c.total}</span></div></div>
       ${c.traitId != null ? `<div class="section-label">Innate trait</div>
         <div class="primary-traits">${traitBanner(c.traitId)}<div class="trait-desc">${richText((TRAIT[c.traitId] || {}).desc || "")}</div></div>` : ""}`;
   }
@@ -668,7 +675,10 @@
       // fixed slot template: 1 primary (from step 1) + stat×3 + trick×2 + trait×1 + spell×1 + nether×1
       const filledBox = (type, v) => {
         let ico = `<div class="as-ico glyph">◆</div>`, lab = v, sub = "";
-        if (type === "stat" || type === "trick") { const g = propGroups.get(v); sub = g ? g.entries.map(e => PROP_STAT[e.stat] ? `+${e.perRank[rank]}%` : e.perRank[rank]).join(" / ") : ""; }
+        if (type === "stat" || type === "trick") { const mat = MAT_BY_PROP.get(v), g = propGroups.get(v);
+          ico = `<div class="as-ico">${mat && mat.icon ? spriteImg(mat.icon, "px") : "◆"}</div>`;
+          lab = mat ? mat.name : v;
+          sub = g ? g.entries.map(e => PROP_STAT[e.stat] ? `+${e.perRank[rank]}%` : e.perRank[rank]).join(" / ") : ""; }
         else if (type === "trait") { const t = TRAITITEM.get(v); ico = `<div class="as-ico">${t && t.icon ? spriteImg(t.icon, "px") : "✦"}</div>`; lab = t ? t.name : v; sub = t ? t.traitName : ""; }
         else if (type === "spell") { const g = spellGems.find(x => x.id === v); const gi = gemIcon(g); ico = `<div class="as-ico">${gi ? spriteImg(gi, "px") : "✷"}</div>`; lab = g ? gemName(g) : v; sub = g ? gemSummary(g) : "spell gem"; }
         else if (type === "nether") { const n = nether.find(x => x.id === v); ico = `<div class="as-ico">${spriteImg(gemPath(n && n.icon), "px")}</div>`; lab = n ? n.name : v; sub = "nether"; }
@@ -693,10 +703,13 @@
         const has = (v) => (a[ART_SLOTS.find(s => s.pick === st.pickType).key] || []).includes(v);
         let rows = "";
         if (st.pickType === "stat" || st.pickType === "trick") {
-          rows = [...propGroups.values()].filter(g => g.group === st.pickType && (!q || g.name.toLowerCase().includes(q))).map(g => {
-            const val = g.entries.map(e => PROP_STAT[e.stat] ? `+${e.perRank[rank]}%` : e.perRank[rank]).join(" / ");
-            return `<div class="prop-row ${has(g.name) ? "chosen" : ""}" data-action="art-add" data-t="${st.pickType}" data-v="${esc(g.name)}">
-              <span class="prop-name">${esc(g.name)}</span><span class="prop-stat">${esc(g.entries.map(e => e.stat).join(" / "))}</span><span class="prop-val">${esc(val)}</span></div>`;
+          const pool = st.pickType === "stat" ? STATMAT : TRICKMAT;
+          rows = pool.filter(m => !q || m.name.toLowerCase().includes(q) || m.property.toLowerCase().includes(q)).map(m => {
+            const g = propGroups.get(m.property);
+            const val = g ? g.entries.map(e => PROP_STAT[e.stat] ? `+${e.perRank[rank]}%` : e.perRank[rank]).join(" / ") : "";
+            return `<div class="prop-row ${has(m.property) ? "chosen" : ""}" data-action="art-add" data-t="${st.pickType}" data-v="${esc(m.property)}">
+              <span class="prop-ico">${m.icon ? spriteImg(m.icon, "px") : ""}</span>
+              <span class="prop-name">${esc(m.name)}</span><span class="prop-stat">${esc(m.property)}</span><span class="prop-val">${esc(val)}</span></div>`;
           }).join("");
         } else if (st.pickType === "trait") {
           rows = D.traitItems.filter(t => t.traitName && (!q || t.name.toLowerCase().includes(q) || (t.traitName || "").toLowerCase().includes(q))).slice(0, 300)
@@ -726,8 +739,8 @@
     } else { // name
       const chips = [
         ...(a.primary ? [`<span class="slot-chip filled">◆ ${esc(a.primary)}</span>`] : []),
-        ...a.stat.map(n => `<span class="slot-chip filled">${esc(n)}</span>`),
-        ...a.trick.map(n => `<span class="slot-chip filled">${esc(n)}</span>`),
+        ...a.stat.map(n => { const m = MAT_BY_PROP.get(n); return `<span class="slot-chip filled">${esc(m ? m.name : n)}</span>`; }),
+        ...a.trick.map(n => { const m = MAT_BY_PROP.get(n); return `<span class="slot-chip filled">${esc(m ? m.name : n)}</span>`; }),
         ...a.traits.map(id => { const t = TRAITITEM.get(id); return `<span class="slot-chip filled">✦ ${esc(t ? t.traitName : id)}</span>`; }),
         ...a.spells.map(id => { const g = spellGems.find(x => x.id === id); return `<span class="slot-chip filled">✷ ${esc(g ? gemName(g) : id)}</span>`; }),
         ...a.netherIds.map(id => { const n = nether.find(x => x.id === id); return `<span class="slot-chip filled">◈ ${esc(n ? n.name : id)}</span>`; }),

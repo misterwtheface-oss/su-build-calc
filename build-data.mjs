@@ -349,17 +349,67 @@ const matRecs = Array.isArray(matStats) ? matStats : matStats.records;
 const matIconByKey = new Map(readJSON(path.join(MODEL, 'material_icons.json')).records.map(r => [r.key, r.icon]));
 fs.rmSync(OUT_MATICON, { recursive: true, force: true });
 let matIconCopied = 0, matIconMissing = 0;
+const matIcon = (m) => {                                    // copy a material's sprite → assets/maticons, return web path (or null)
+  const iconName = matIconByKey.get(m.key);
+  if (iconName && copyNamedSprite(iconName, OUT_MATICON, `${iconName}.png`)) { matIconCopied++; return `assets/maticons/${iconName}.png`; }
+  matIconMissing++; return null;
+};
+// item_class discriminates the artifact slot a material enchants:
+//   2  → trait material (grants a creature trait)         → Trait slot
+//   1  → trick material (Slate/Curio/Crippler/…)          → Trick slot
+//   null + trait_id → the 5 strays that ARE trait mats (Thrasher Tooth, Oni Fragment, …) → Trait slot
+//   null + no trait_id → Amber                            → Stat slot
 const traitItems = [];
 for (const m of matRecs) {
   if (m.trait_id == null) continue;
+  if (m.item_class === 1) continue;                        // trick materials belong to the Trick slot, not Trait
   if (!traits[m.trait_id]) warn(`trait item "${m.name}" grants trait_id ${m.trait_id} not in traits table`);
-  let icon = null;
-  const iconName = matIconByKey.get(m.key);
-  if (iconName && copyNamedSprite(iconName, OUT_MATICON, `${iconName}.png`)) { icon = `assets/maticons/${iconName}.png`; matIconCopied++; }
-  else matIconMissing++;
   traitItems.push({ id: m.index, name: m.name, traitId: m.trait_id,
-    traitName: m.trait_name || (traits[m.trait_id] && traits[m.trait_id].name) || null, icon });
+    traitName: m.trait_name || (traits[m.trait_id] && traits[m.trait_id].name) || null, icon: matIcon(m) });
 }
+
+// ── Stat materials (Ambers) → Stat-slot properties (1:1, by record order) ──
+// The 15 Ambers map, in database order, onto the 15 unique Stat properties (verified: exact count match,
+// Amber field1 runs 1-4/None then 54-63 = singles then double-combos, same order as artifacts_ref Stat slot).
+const statProps = [...new Set(artGroup.stat.map(p => p.property))];        // 15, ordered
+const statMats = [];
+{
+  const ambers = matRecs.filter(m => m.item_class == null && m.trait_id == null);   // 15, in db order
+  if (ambers.length !== statProps.length)
+    warn(`stat-material map: ${ambers.length} Ambers vs ${statProps.length} Stat properties (expected equal)`);
+  ambers.forEach((m, i) => {
+    const property = statProps[i];
+    if (property) statMats.push({ id: m.index, name: m.name, key: m.key, property, icon: matIcon(m) });
+  });
+}
+
+// ── Trick materials (Slates/Curios/Cripplers/generics) → Trick-slot properties (1:1, by name) ──
+const trickProps = [...new Set(artGroup.trick.map(p => p.property))];             // 47
+const statusToProp = new Map(artGroup.trick.map(p => [p.stat, p.property]));      // status word → "X On Damage"
+const TRICK_GENERIC = { 'Pump Drill': 'Spell Gem Slots', 'Slippery Stone': 'Dodge Chance', 'Jagged Rock': 'Critical Chance',
+  'Whetstone': 'Attack Damage', 'Armor Scrap': 'Damage Reduction', 'Arcane Sigil': 'Spell Potency' };
+const TRICK_NOUN_STATUS = { arcana: 'Arcane', invisibility: 'Invisible', berserking: 'Berserk', mending: 'Mending',
+  sheltering: 'Shelled', grace: 'Agile', leeching: 'Leeching', savagery: 'Savage', warding: 'Warded', taunting: 'Taunting',
+  protection: 'Protected', splashing: 'Splashing', barriers: 'Barrier', resistance: 'Repelling', defensiveness: 'Defensive',
+  proficiency: 'Proficient', immunity: 'Immune', rebirth: 'Rebirth', poisoning: 'Poisoned', burning: 'Burning',
+  confusion: 'Confused', freezing: 'Frozen', slumbering: 'Sleep', weakness: 'Weak', cursing: 'Cursed', ensnaring: 'Snared',
+  silencing: 'Silenced', blindness: 'Blind', scorning: 'Scorned', bleeding: 'Bleeding', blighting: 'Blighted',
+  vulnerability: 'Vulnerable', fearfulness: 'Feared', disarming: 'Disarmed', bombing: 'Bomb', stone: 'Stone' };
+const trickToProp = (name) => {
+  if (TRICK_GENERIC[name]) return TRICK_GENERIC[name];
+  if (/ Crippler$/.test(name)) return `${name.split(' ')[0]} Strength`;
+  const m = /^(?:Slate|Curio) of (.+)$/.exec(name);
+  if (m) { const st = TRICK_NOUN_STATUS[m[1].toLowerCase()]; if (st) return statusToProp.get(st) || null; }
+  return null;
+};
+const trickMats = [];
+for (const m of matRecs) {
+  if (m.item_class !== 1) continue;
+  const property = trickToProp(m.name);
+  if (!property || !trickProps.includes(property)) { warn(`trick-material map: "${m.name}" → no Trick property`); continue; }
+  trickMats.push({ id: m.index, name: m.name, key: m.key, property, icon: matIcon(m) });
+}
+warn(`stat materials: ${statMats.length}/${statProps.length} · trick materials: ${trickMats.length}/${trickProps.length} mapped to properties`);
 
 // localization loader → Map(tag -> English) (parseCSV returns header-keyed objects; use positional values)
 function loadLoc(file) {
@@ -544,6 +594,8 @@ const SU_DATA = {
   tagLabels,
   artifact: artGroup,
   traitItems,
+  statMats,
+  trickMats,
   relics,
   cards,
   gemIcons,

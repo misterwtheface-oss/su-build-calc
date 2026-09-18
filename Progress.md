@@ -4,6 +4,35 @@
 Deployed at **https://misterwtheface-oss.github.io/su-build-calc/** (repo `misterwtheface-oss/su-build-calc`,
 Pages on `master`/root, Cloudflare analytics active with the shared github.io token). Auto-deploys on push.
 
+## v2.11 artifact material model + icon/align fixes (2026-09-17)
+Four fixes from the user's punch-list:
+1. **Trait slot no longer shows trick materials.** `traitItems` was built from *every* material with a
+   `trait_id` — which swept in the 47 Slates/Curios/Cripplers (`item_class:1`, they carry a status trait_id).
+   `build-data.mjs` now `continue`s on `item_class === 1`, so the Trait picker holds only real trait mats
+   (`item_class:2` + the 5 `item_class:null`-with-trait_id strays). Trait pool 1830→1790.
+2. **Stat & Trick slots are now real material pickers** (user chose "Real material pickers"). The item_class
+   split drives three artifact material pools, each mapped 1:1 to its property:
+   - **Stat = Ambers** (`item_class:null`, no trait_id; 15). Map onto the 15 unique Stat properties **by db
+     order** (Red→Attack, Purple→Defense, …, Bold→Attack/Defense, …, Shiny→Intelligence/Speed — verified:
+     exact count match, Amber field1 runs singles then double-combos in artifacts_ref order). `SU_DATA.statMats`.
+   - **Trick = Slates/Curios/Cripplers/generics** (`item_class:1`; 47). Mapped **by name** (perfect 47↔47,
+     0 gaps/dupes): `Curio of Poisoning`→"Poisoned On Damage", `Life Crippler`→"Life Strength", 6 generics
+     (Whetstone→Attack Damage, Arcane Sigil→Spell Potency, Jagged Rock→Critical Chance, Slippery Stone→Dodge
+     Chance, Armor Scrap→Damage Reduction, Pump Drill→Spell Gem Slots) via explicit dict. `SU_DATA.trickMats`.
+   - All 15+47 materials have icons (copied to `assets/maticons`). **Slots still STORE the property name**, so
+     `artifactPctOf` + old-artifact migration are untouched; the picker/slot-chips resolve the material via
+     `MAT_BY_PROP` (property→material) to show its real name + icon. app.js: picker rows, `filledBox`, name-step
+     chips switched to materials.
+3. **Creature-selector stat table realigned.** `renderCreatureIdentity` reused the wide detail `.stat-row`
+   grid (`1fr 60px 60px 68px`) with the single value merged `grid-column:2/5` — in the 260/210px `.ovl-right`
+   that squeezed the name column to ~40px (0/overflow on mobile), throwing the values off. Added
+   `.stat-grid.single .stat-row { grid-template-columns: 1fr auto; }` and dropped the merge span.
+4. **Spell-gem property icons cleaned.** All 21 hand-cropped Enchanter icons carried a stray fragment in their
+   trailing columns (grey UI-border bars; bright-green XP-bar bits on Agate/Sapphire), separated from the gem by
+   a wide transparent gap. Cleaner crops each at its widest ≥3px zero-run and tight-bounds the result (source
+   `_su_extract/assets/spell_gem_property_icons/*`, dirty originals kept in `*_dirty_bak`). ONYX was an
+   unsalvageable partial crop → removed, so it falls back to the generic dust icon (20/21 custom now).
+
 ## v2.10 taxonomy fix + wizard polish (2026-09-17)
 - **Spell-gem enchant items corrected**: they are the **"Dust" items** (`L_IN_DUST_<gem>`: Jasper, Topaz, Citrine…
   21) whose effect (More Charges, Defense Penetration, Cascading…) comes from `L_ID_DUST_<gem>` — used at the
