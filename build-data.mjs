@@ -243,6 +243,12 @@ function findEmblem(label) {
   return null;
 }
 
+// per-surface taxonomy tags (LLM-classified against the codebook; optional until generated)
+const loadTaxoBy = (fname) => { const p = path.join(MODEL, fname); return fs.existsSync(p) ? (readJSON(p).by_key || {}) : {}; };
+const spellTaxo = loadTaxoBy('spell_taxonomy_tags.json');
+const perkTaxo = loadTaxoBy('perk_taxonomy_tags.json');
+const taxoStrs = (arr) => (arr || []).map(a => a.cat + '::' + a.val);
+
 const specs = [];
 let specSkins = 0, perkIconsCopied = 0, perkIconsMissing = 0, emblemCount = 0, anointFlagged = 0, perkRefMisses = 0;
 for (const s of specRecs) {
@@ -268,7 +274,8 @@ for (const s of specRecs) {
     if (fl) { if (fl.anoint) anointFlagged++; } else perkRefMisses++;
     return { key: p.key, name: p.name, desc: perkDescByKey.get(p.key) || '',
              cost: st ? st.cost : null, ranks: st ? st.ranks : 1, icon,
-             anointment: fl ? fl.anoint : false, ascension: fl ? fl.asc : false };
+             anointment: fl ? fl.anoint : false, ascension: fl ? fl.asc : false,
+             taxo: taxoStrs(perkTaxo[s.spec_id + ':' + p.key]) };
   });
   specs.push({
     id: s.spec_id, key: s.key || slug.toUpperCase(), label: s.label, sprite, spriteKind, emblem,
@@ -344,7 +351,7 @@ let spellNoClass = 0;
 const spells = spellArr.map((s, i) => {
   const cls = spellClass(s.name);
   if (!cls) { spellNoClass++; warn(`spell "${s.name}" has no class match in spells_ref`); }
-  return { id: i, key: s.key, name: s.name, desc: s.desc || '', cls };
+  return { id: i, key: s.key, name: s.name, desc: s.desc || '', cls, taxo: taxoStrs(spellTaxo[String(i)]) };
 }).filter(s => s.name);
 
 // ── trait items (slottable into artifact trait slots) — with material icons ──

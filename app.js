@@ -559,7 +559,20 @@
   function renderPerkPicker() {
     const st = dovState, spec = SPEC.get(st.specId);
     const q = st.search.trim().toLowerCase();
-    const list = spec.perks.filter(p => !q || p.name.toLowerCase().includes(q) || (p.desc || "").toLowerCase().includes(q));
+    const list = spec.perks.filter(p => (!q || p.name.toLowerCase().includes(q) || (p.desc || "").toLowerCase().includes(q))
+      && (!st.perkTaxo || (p.taxo || []).includes(st.perkTaxo)));
+    // inline taxonomy drill-down over THIS spec's perks (values with ≥1 member only)
+    const valsByCat = new Map();
+    for (const p of spec.perks) for (const k of (p.taxo || [])) {
+      const c = taxoCatName(k); if (!valsByCat.has(c)) valsByCat.set(c, new Set()); valsByCat.get(c).add(k);
+    }
+    let taxobar;
+    if (st.perkTaxo) taxobar = `<button class="facet on tag" data-action="perk-taxo-clear">${esc(taxoCatName(st.perkTaxo))}: <b>${esc(taxoValName(st.perkTaxo))}</b> <span class="facet-x">✕</span></button>`;
+    else if (st.perkCat) taxobar = `<button class="facet" data-action="perk-taxo-back">‹</button>` +
+      [...valsByCat.get(st.perkCat) || []].sort().map(k => `<button class="facet" data-action="perk-taxo-val" data-v="${esc(k)}">${esc(taxoValName(k))}</button>`).join("");
+    else if (st.perkBrowse) taxobar = `<button class="facet" data-action="perk-taxo-back">‹</button>` +
+      [...valsByCat.keys()].sort().map(c => `<button class="facet" data-action="perk-taxo-cat" data-c="${esc(c)}">${esc(c)} ›</button>`).join("");
+    else taxobar = `<button class="facet add" data-action="perk-taxo-open">＋ Filter</button>`;
     const allocCount = allocatedPerks(spec).length, pts = specPoints(spec);
     const rows = list.map(p => {
       const r = perkRank(spec, p), mx = perkMax(p), on = r > 0;
@@ -582,7 +595,7 @@
         <input class="ovl-search" placeholder="Search perks…" value="${esc(st.search)}" data-action="perk-search">
         <button class="ovl-close" data-action="close-detail">✕</button></div>
       <div class="overlay-body"><div class="ovl-center">
-        <div class="ovl-filterbar"><button class="chip" data-action="perk-all">Max all</button><button class="chip" data-action="perk-none">Clear all</button></div>
+        <div class="ovl-filterbar"><button class="chip" data-action="perk-all">Max all</button><button class="chip" data-action="perk-none">Clear all</button>${taxobar}</div>
         <div class="ovl-center-scroll"><div class="perk-picker">${rows}</div></div>
       </div></div>
       <div class="overlay-footer"><span class="foot-info">${allocCount}/${spec.perks.length} allocated · ${pts} pts</span>
@@ -1055,12 +1068,16 @@
     const st = ovState, g = st.draft, q = st.search.trim().toLowerCase();
     let body = "", footer = "";
     if (st.step === "spell") {
-      const rows = D.spells.filter(s => !q || s.name.toLowerCase().includes(q) || (s.desc || "").toLowerCase().includes(q)).slice(0, 300)
+      const rows = D.spells.filter(s => (!q || s.name.toLowerCase().includes(q) || (s.desc || "").toLowerCase().includes(q))
+          && (!st.spellTaxo || (s.taxo || []).includes(st.spellTaxo))).slice(0, 300)
         .map(s => `<div class="prop-row ${g.spellId === s.id ? "chosen" : ""}" data-action="sg-spell" data-id="${s.id}">
           <span class="prop-ico">${spellIcon(s) ? spriteImg(spellIcon(s), "px") : ""}</span>
           <span class="prop-name">${esc(s.name)}</span><span class="prop-stat">${esc((s.desc || "").slice(0, 80))}</span></div>`).join("");
+      const sTaxo = st.spellTaxo
+        ? `<button class="facet on tag" data-action="sg-taxofilter-clear">${esc(taxoCatName(st.spellTaxo))}: <b>${esc(taxoValName(st.spellTaxo))}</b> <span class="facet-x">✕</span></button>`
+        : `<button class="facet add" data-action="sg-taxofilter">＋ Filter</button>`;
       body = `<div class="ovl-center">
-        <div class="ovl-filterbar"><input class="ovl-search" placeholder="Search spells…" value="${esc(st.search)}" data-action="sg-search"></div>
+        <div class="ovl-filterbar"><input class="ovl-search" placeholder="Search spells…" value="${esc(st.search)}" data-action="sg-search">${sTaxo}</div>
         <div class="ovl-center-scroll">${rows}</div></div>`;
       footer = `<button class="btn-ghost" data-action="sg-cancel">Cancel</button>
         <button class="btn-confirm" data-action="sgb-next" ${g.spellId != null ? "" : "disabled"}>Next: Properties ›</button>`;
@@ -1184,6 +1201,17 @@
         idx: taxoIndexFor("titem", D.traitItems, ti => ti.taxo || []),
         onPick: (v) => { ovState.traitTaxo = v; } }); break;
       case "artb-traitfilter-clear": ovState.traitTaxo = null; refreshOverlay(); break;
+      // spell-gem builder spell picker filter (reuses the facet detail picker)
+      case "sg-taxofilter": openFacetPicker("taxo-cat", {
+        idx: taxoIndexFor("spell", D.spells, s => s.taxo || []),
+        onPick: (v) => { ovState.spellTaxo = v; } }); break;
+      case "sg-taxofilter-clear": ovState.spellTaxo = null; refreshOverlay(); break;
+      // perk picker inline taxonomy filter
+      case "perk-taxo-open": dovState.perkBrowse = true; refreshDetail(); break;
+      case "perk-taxo-cat": dovState.perkCat = t.dataset.c; refreshDetail(); break;
+      case "perk-taxo-val": dovState.perkTaxo = t.dataset.v; dovState.perkBrowse = false; dovState.perkCat = null; refreshDetail(); break;
+      case "perk-taxo-clear": dovState.perkTaxo = null; dovState.perkCat = null; dovState.perkBrowse = false; refreshDetail(); break;
+      case "perk-taxo-back": if (dovState.perkCat) dovState.perkCat = null; else dovState.perkBrowse = false; refreshDetail(); break;
       case "art-primary": ovState.draft.primary = ovState.draft.primary === t.dataset.p ? null : t.dataset.p; refreshOverlay(); break;
       case "art-slot": ovState.pickType = t.dataset.t; ovState.search = ""; refreshOverlay(); break;
       case "art-add": {
