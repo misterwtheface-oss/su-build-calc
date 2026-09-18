@@ -10,6 +10,17 @@ descriptions via the classification pipeline in `_su_extract` (codebook + batch 
 code decode — full rationale in `_su_extract/code/TRAIT_EFFECT_DECODE_FINDINGS.md`, taxonomy details in
 `_su_extract/data/model/TAG_TAXONOMY.md`.
 
+## v2.20b personality shown as a base-stat modifier (deviation lens) (2026-09-18)
+Follow-up: the absolute level projection ballooned (base×~2000 at the user's level 5000). Reworked the
+lens to show personality as a **modifier on the base stat**. The shared 30%/level growth hits every stat
+equally (doesn't change the build), so it's **factored out** and only the personality **deviation vs a
+neutral build** is shown: `ratio = (1+(L-1)·mod/100)/(1+(L-1)·0.30)`. At Lv1 = 1 (base stays the round
+anchor); converges to `mod/30` → **raised +33.3%, lowered −33.3%** by end-game (≈exact by the time you're
+at level thousands). `finalStats` now returns `adj` (base×ratio), `modPct` (the ±% shown next to ↑/↓), and
+`final` (adj×artifact). Level control gained a **number field** (`preview-level-num`, commits on
+blur/Enter) so an exact level (e.g. 5000) can be entered alongside the 1–100 slider; `MAX_LEVEL` 100000.
+Neutral stats show no deviation (ratio 1). jsdom-verified: Lv1 unchanged, Lv11 ±25%, Lv5000 →±33.3%.
+
 ## v2.20 anoint spec filter · no self-fusion · personality + scrolls (2026-09-18)
 1. **Spec filter on Anointments** — a `Spec ▾` facet next to the ＋ Filter tag chips; opens the shared facet
    picker (`anoint-spec`, list = specs that have anointments), applies a chip, narrows the grouped list.
