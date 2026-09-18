@@ -693,8 +693,8 @@
         <span class="perk-ico sm">${a.icon ? spriteImg(a.icon, "px") : ""}</span>
         <div class="perk-line-body">
           <div class="perk-line-head"><b>${esc(a.name)}</b>
-            <span class="perk-line-meta">${a.ascension ? `<span class="anoint-badge asc">Ascension</span>` : ""}${a.ranks > 1 ? `<span class="perk-rankbadge">${a.ranks}×</span>` : ""}</span></div>
-          ${a.desc ? `<div class="perk-desc">${perkText(a.desc, a.ranks)}</div>` : ""}
+            <span class="perk-line-meta">${a.ascension ? `<span class="anoint-badge asc">Ascension</span>` : ""}${a.ranks > 1 ? `<span class="perk-rankbadge" title="Anointments apply this perk at rank 1">R1</span>` : ""}</span></div>
+          ${a.desc ? `<div class="perk-desc">${perkText(a.desc, 1)}</div>` : ""}
         </div>
         <button class="slot-mini anoint-eq ${on ? "on" : ""}" data-action="anoint-toggle" data-sid="${a.specId}" data-k="${esc(a.key)}" ${(!on && full) ? "disabled" : ""}>${on ? "Equipped ✓" : "Equip"}</button>
         </div>`; }).join("")}`).join("")

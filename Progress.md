@@ -10,6 +10,17 @@ descriptions via the classification pipeline in `_su_extract` (codebook + batch 
 code decode — full rationale in `_su_extract/code/TRAIT_EFFECT_DECODE_FINDINGS.md`, taxonomy details in
 `_su_extract/data/model/TAG_TAXONOMY.md`.
 
+## v2.19b anointment rank validated in code → render at rank 1 (2026-09-18)
+Validated against the decompiled exe (Ghidra, `_su_extract/code/anoint_decomp/`) whether a multi-rank
+perk grants its full effect from one anoint. **It does not — an anointment applies the perk at RANK 1.**
+Chain: `scr_AnointmentToggle` is a boolean list toggle; `scr_AnointmentUnlocked` (boolean) is UI-only;
+battle reads `scr_PerkLevel` from caches built by `scr_PerkLevelsUpdate`, which applies each anointed perk
+with the literal 1.0 and **never** fetches a per-perk max-rank count (zero calls to scr_DatabasePerks /
+scr_PerkGetNextPerkCost / scr_PerkAddPoints across the whole anoint→level pipeline). Full finding in
+`_su_extract/code/SIGILS_ANOINTMENTS_FINDINGS.md`. App fix: `renderAnoint` was over-stating multi-rank
+anointments (`perkText(desc, a.ranks)`); now renders `perkText(desc, 1)` and shows an `R1` badge (tooltip
+"Anointments apply this perk at rank 1") instead of the misleading `N×` badge.
+
 ## v2.19 spell text, anointment equipping, artifact search fix (2026-09-18)
 1. **Spell descriptions now render bolded plain text** — the spell-gem builder's spell picker was
    showing raw `{TOKEN}` params (`esc(desc.slice(0,80))`); it now uses `perkText` (richText + CONDDESC
