@@ -447,7 +447,11 @@
     if (st.clsFilter && c.cls !== st.clsFilter) return false;
     if (st.raceFilter && c.race !== st.raceFilter) return false;
     if (st.taxoFilters.length) { const tx = creatureTaxo(c); if (!st.taxoFilters.every(k => tx.includes(k))) return false; }
-    if (st.search) { const q = st.search.toLowerCase(); if (!c.name.toLowerCase().includes(q) && !(c.race || "").toLowerCase().includes(q)) return false; }
+    if (st.search) {
+      const q = st.search.toLowerCase();
+      const trait = c.traitName || (TRAIT[c.traitId] || {}).name || "";
+      if (!c.name.toLowerCase().includes(q) && !(c.race || "").toLowerCase().includes(q) && !trait.toLowerCase().includes(q)) return false;
+    }
     return true;
   }
   function renderCreaturePicker() {
@@ -501,7 +505,7 @@
 
     return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel">
       <div class="overlay-header"><h2>${title}</h2>${steps}
-        <input class="ovl-search" placeholder="Search name / race…" value="${esc(st.search)}" data-action="crea-search">
+        <input class="ovl-search" placeholder="Search name / trait / race…" value="${esc(st.search)}" data-action="crea-search">
         <button class="ovl-close" data-action="close-ovl">✕</button></div>
       <div class="overlay-body">
         <div class="ovl-center">${filterbar}
