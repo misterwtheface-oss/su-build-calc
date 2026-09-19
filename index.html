@@ -17,10 +17,16 @@
       <h1>Siralim Ultimate <span>Build Calculator</span></h1>
     </div>
     <div class="topbar-actions">
-      <button class="tb-btn" data-action="open-artifacts" title="Manage your saved artifacts">Artifacts</button>
-      <button class="tb-btn" data-action="open-spellgems" title="Build & manage spell gems">Spell Gems</button>
-      <button class="tb-btn" data-action="open-cards" title="Toggle owned realm cards">Cards</button>
-      <button class="tb-btn" data-action="open-nether" title="Manage your Nether Stones">Nether Stones</button>
+      <button class="tb-btn" data-action="open-appendix" title="Search anything by tag — perks, creatures, traits, spells…">Appendix</button>
+      <div class="menu-wrap">
+        <button class="tb-btn menu-btn" data-action="toggle-menu" title="Menu">Menu <span class="chev">▾</span></button>
+        <div class="menu-dropdown hidden" id="main-menu">
+          <button class="menu-item" data-action="open-artifacts">Artifacts</button>
+          <button class="menu-item" data-action="open-spellgems">Spell Gems</button>
+          <button class="menu-item" data-action="open-cards">Cards</button>
+          <button class="menu-item" data-action="open-nether">Nether Stones</button>
+        </div>
+      </div>
       <button class="tb-btn tb-danger" data-action="clear-party" title="Clear the whole party">Reset</button>
     </div>
   </header>

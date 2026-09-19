@@ -731,6 +731,96 @@
     </div></div>`;
   }
 
+  // ── Appendix — cross-entity tag search: one tag surfaces every matching creature,
+  //    trait, perk, spell and artifact trait-item across the whole dataset. ──────────
+  let APPENDIX_TAGS = null;
+  function appendixTagList() {
+    if (APPENDIX_TAGS) return APPENDIX_TAGS;
+    const set = new Set();
+    const add = (arr) => { for (const k of (arr || [])) set.add(k); };
+    for (const c of D.creatures) add(creatureTaxo(c));
+    for (const id in D.traits) add(D.traits[id].taxo);
+    for (const s of D.specs) for (const p of s.perks) add(p.taxo);
+    for (const s of (D.spells || [])) add(s.taxo);
+    for (const ti of (D.traitItems || [])) add(ti.taxo);
+    APPENDIX_TAGS = [...set].map(k => ({ key: k, cat: taxoCatName(k), val: taxoValName(k) }))
+      .sort((a, b) => a.cat.localeCompare(b.cat) || a.val.localeCompare(b.val));
+    return APPENDIX_TAGS;
+  }
+  function appendixResults(tag) {
+    const has = (x) => (x || []).includes(tag);
+    return {
+      creatures: D.creatures.filter(c => creatureTaxo(c).includes(tag)),
+      traits: Object.values(D.traits).filter(t => has(t.taxo)),
+      perks: D.specs.flatMap(s => s.perks.filter(p => has(p.taxo)).map(p => ({ ...p, spec: s.label }))),
+      spells: (D.spells || []).filter(s => has(s.taxo)),
+      traitItems: (D.traitItems || []).filter(ti => has(ti.taxo)),
+    };
+  }
+  function openAppendix() {
+    ovState = { kind: "appendix", search: "", tag: null, render: renderAppendix };
+    openOverlay(ovState.render()); maybeFocusSearch(OV);
+  }
+  function renderAppendix() {
+    const st = ovState, q = st.search.trim().toLowerCase();
+    let body, sub;
+    if (!st.tag) {
+      let tags = appendixTagList();
+      if (q) tags = tags.filter(t => t.val.toLowerCase().includes(q) || t.cat.toLowerCase().includes(q));
+      const rows = tags.slice(0, 600).map(t =>
+        `<button class="opt-row" data-action="appendix-tag" data-k="${esc(t.key)}">
+          <span><b>${esc(t.val)}</b></span><span class="opt-chev">${esc(t.cat)}</span></button>`).join("")
+        || `<div class="slot-sub" style="padding:10px">No tags match.</div>`;
+      sub = `<div class="ovl-filterbar"><span class="foot-info">Pick a tag to surface everything that carries it.</span></div>`;
+      body = `<div class="opt-list">${rows}${tags.length > 600 ? `<div class="slot-sub" style="padding:6px">Showing 600 of ${tags.length}.</div>` : ""}</div>`;
+    } else {
+      const res = appendixResults(st.tag);
+      const CAP = 60;
+      const section = (title, items, renderRow) => {
+        let list = items;
+        if (q) list = list.filter(x => (x.name || "").toLowerCase().includes(q));
+        if (!list.length) return "";
+        return `<div class="section-label">${title} — ${list.length}</div>
+          <div class="perk-list">${list.slice(0, CAP).map(renderRow).join("")}
+          ${list.length > CAP ? `<div class="slot-sub" style="padding:6px">Showing ${CAP} of ${list.length}.</div>` : ""}</div>`;
+      };
+      const line = (ico, name, meta, desc) => `<div class="perk-line">
+        <span class="perk-ico sm">${ico || ""}</span>
+        <div class="perk-line-body">
+          <div class="perk-line-head"><b>${esc(name)}</b>${meta ? `<span class="perk-line-meta">${meta}</span>` : ""}</div>
+          ${desc ? `<div class="perk-desc">${desc}</div>` : ""}
+        </div></div>`;
+      const body_sections = [
+        section("Creatures", res.creatures, c => line(critFace(c), c.name,
+          `<span class="anoint-spec-tag">${esc(c.cls || "—")}${c.race ? " · " + esc(c.race) : ""}</span>`,
+          (TRAIT[c.traitId] || {}).name ? `Trait: ${esc((TRAIT[c.traitId] || {}).name)}` : "")),
+        section("Traits", res.traits, t => line("", t.name, "", richText(t.desc || ""))),
+        section("Perks", res.perks, p => line(p.icon ? spriteImg(p.icon, "px") : "", p.name,
+          `<span class="anoint-spec-tag">${esc(p.spec)}</span>`, perkText(p.desc, p.ranks))),
+        section("Spells", res.spells, s => line("", s.name,
+          s.cls ? `<span class="anoint-spec-tag">${esc(s.cls)}</span>` : "", perkText(s.desc, null))),
+        section("Trait Items", res.traitItems, ti => line(ti.icon ? spriteImg(ti.icon, "px") : "", ti.name,
+          "", ti.traitName ? `Grants <b>${esc(ti.traitName)}</b>` : "")),
+      ].join("");
+      const total = res.creatures.length + res.traits.length + res.perks.length + res.spells.length + res.traitItems.length;
+      sub = `<div class="ovl-filterbar">
+        <button class="facet on" data-action="appendix-clear-tag">${esc(taxoCatName(st.tag))}: <b>${esc(taxoValName(st.tag))}</b> <span class="facet-x">✕</span></button>
+        <span class="foot-info">${total} result${total === 1 ? "" : "s"}</span></div>`;
+      body = body_sections || `<div class="slot-sub" style="padding:10px">Nothing matches this tag.</div>`;
+    }
+    return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel">
+      <div class="overlay-header"><h2>Appendix</h2>
+        <input class="ovl-search" placeholder="${st.tag ? "Filter results…" : "Search tags…"}" value="${esc(st.search)}" data-action="appendix-search">
+        <button class="ovl-close" data-action="close-ovl">✕</button></div>
+      <div class="overlay-body"><div class="ovl-center">
+        ${sub}
+        <div class="ovl-center-scroll">${body}</div>
+      </div></div>
+      <div class="overlay-footer"><span class="foot-info"></span>
+        <button class="btn-confirm" data-action="close-ovl">Done</button></div>
+    </div></div>`;
+  }
+
   // ── anointments — equip up to 5 anointment-eligible perks from any spec (flags from Perk_REF.csv) ──
   // In-game, anointments let you slot perks from OTHER specializations; the cap is 5 equipped.
   // A single Anointment point grants the perk's FULL bonus (as if maxed), so descriptions here
@@ -1358,8 +1448,12 @@
 
   // ── event delegation ───────────────────────────────────────────────────────
   function onClick(e) {
-    const t = e.target.closest("[data-action]"); if (!t) return;
-    const A = t.dataset.action;
+    const t = e.target.closest("[data-action]");
+    const A = t ? t.dataset.action : null;
+    // close the header Menu dropdown on any click except the toggle itself
+    const menu = el("main-menu");
+    if (menu && A !== "toggle-menu") menu.classList.add("hidden");
+    if (!t) return;
     switch (A) {
       // home
       case "pick-creature": openCreaturePicker(+t.dataset.slot); break;
@@ -1371,6 +1465,10 @@
       case "clear-spec": e.stopPropagation(); build.specId = null; persistBuild(); render(); break;
       case "clear-party": armOrDo(t, () => { build = { schema: 2, specId: null, perkAlloc: {}, slots: Array.from({ length: 6 }, emptySlot) }; persistBuild(); render(); }); break;
       case "open-artifacts": openArtifactLibrary(null); break;
+      case "toggle-menu": e.stopPropagation(); el("main-menu").classList.toggle("hidden"); break;
+      case "open-appendix": openAppendix(); break;
+      case "appendix-tag": ovState.tag = t.dataset.k; ovState.search = ""; refreshOverlay(); break;
+      case "appendix-clear-tag": e.stopPropagation(); ovState.tag = null; ovState.search = ""; refreshOverlay(); break;
       case "open-anoint": openAnoint(); break;
       case "anoint-toggle": {
         const sid = +t.dataset.sid, k = t.dataset.k;
@@ -1603,7 +1701,7 @@
     if (A === "sg-name") { ovState.draft.name = v; return; }
     // search fields — live filter without losing caret
     const searchMap = { "crea-search": [OV, ovState], "spec-search": [OV, ovState], "artb-search": [OV, ovState],
-      "relic-search": [OV, ovState], "cards-search": [OV, ovState], "anoint-search": [OV, ovState], "nether-search": [OV, ovState], "sg-search": [OV, ovState], "facet-search": [DOV, dovState], "perk-search": [DOV, dovState], "pers-search": [DOV, dovState] };
+      "relic-search": [OV, ovState], "cards-search": [OV, ovState], "anoint-search": [OV, ovState], "nether-search": [OV, ovState], "sg-search": [OV, ovState], "appendix-search": [OV, ovState], "facet-search": [DOV, dovState], "perk-search": [DOV, dovState], "pers-search": [DOV, dovState] };
     if (searchMap[A]) {
       const [root, state] = searchMap[A]; state.search = v;
       const panel = root.querySelector(".overlay-panel");
