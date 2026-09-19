@@ -250,7 +250,11 @@ h1, h2, h3 { margin: 0; }
 .pick-tile:hover { border-color: var(--border); }
 .pick-tile .pt-sprite { width: 100%; aspect-ratio: 1; display: flex; align-items: center; justify-content: center; }
 .pick-tile .pt-sprite img { width: 80%; height: 80%; object-fit: contain; }
-.pick-tile .pt-name { font-size: 11px; text-align: center; line-height: 1.1; max-height: 2.4em; overflow: hidden; }
+/* fixed 2-line name box so every tile is the same height regardless of name length */
+.pick-tile .pt-name {
+  font-size: 11px; text-align: center; line-height: 1.1; height: 2.2em; width: 100%; overflow: hidden;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+}
 .pick-tile .pt-total { font-size: 10px; color: var(--text-dim); }
 /* selection reads through busy icons: inset ring + tint, not just a border */
 .pick-tile.selected { border-color: var(--accent2); box-shadow: inset 0 0 0 2px var(--accent2); }
