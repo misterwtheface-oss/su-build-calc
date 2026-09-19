@@ -249,8 +249,29 @@ const spellTaxo = loadTaxoBy('spell_taxonomy_tags.json');
 const perkTaxo = loadTaxoBy('perk_taxonomy_tags.json');
 const taxoStrs = (arr) => (arr || []).map(a => a.cat + '::' + a.val);
 
+// ── False Gods — each specialization is affiliated with one of the 10 False Gods
+// (siralimultimate.wiki.gg/wiki/Guilds). A False God is fought as 6 independent
+// "creatures" whose battle sprites tile into one massive creature; the composite
+// portraits are pre-built by tools/build_falsegods.py into assets/falsegods/<key>.png.
+const OUT_FGOD = path.join(OUT_ASSETS, 'falsegods');
+const FALSE_GODS = [
+  { key: 'THEANCESTOR',   name: 'The Ancestor',      specs: ['Bloodmage', 'Inquisitor', 'Purgatorian'] },
+  { key: 'SAINTALTHEA',   name: 'Saint Althea',      specs: ['Cleric', 'Fanatic', 'Paladin', 'Shadowbringer', 'Mermaid'] },
+  { key: 'CALIBAN',       name: 'Caliban',           specs: ['Evoker', 'Trickster', 'Demonologist', 'Pariah'] },
+  { key: 'NEBODAR',       name: 'Nebodar',           specs: ['Hell Knight', 'Pyromancer', 'Gladiator'] },
+  { key: 'LOIDPRIME',     name: 'Loid Prime',        specs: ['Defiler', 'Necromancer', 'Reaver', 'Mime'] },
+  { key: 'MINDWURM',      name: 'Mindwurm',          specs: ['Cabalist', 'Dreamshade', 'Sorcerer', 'Graveborn', 'Mesmerist'] },
+  { key: 'HYDRANOX',      name: 'Hydranox',          specs: ['Astrologer', 'Animator', 'Doombringer', 'Spellweaver', 'Toxicologist'] },
+  { key: 'IMPIMPINGTON',  name: 'Imp Impington',     specs: ['Druid', 'Tribalist', 'Windrunner', 'Deprived', 'Grovetender'] },
+  { key: 'JOTUNIR',       name: 'Jotunir',           specs: ['Monk', 'Warden', 'Witch Doctor', 'Brewmaster'] },
+  { key: 'LOSTCONSTRUCT', name: 'The Lost Construct', specs: ['Rune Knight', 'Siegemaster', 'Engineer', 'Antiquarian'] },
+];
+const godBySpec = new Map();       // norm(spec label) -> god key
+for (const g of FALSE_GODS) for (const sp of g.specs) godBySpec.set(norm(sp), g.key);
+
 const specs = [];
 let specSkins = 0, perkIconsCopied = 0, perkIconsMissing = 0, emblemCount = 0, anointFlagged = 0, perkRefMisses = 0;
+let specGodMisses = 0;
 for (const s of specRecs) {
   const slug = norm(s.key || s.label);
   const found = findSpecSprite(s.label);
@@ -277,11 +298,26 @@ for (const s of specRecs) {
              anointment: fl ? fl.anoint : false, ascension: fl ? fl.asc : false,
              taxo: taxoStrs(perkTaxo[s.spec_id + ':' + p.key]) };
   });
+  const falseGod = godBySpec.get(norm(s.label)) || null;
+  if (!falseGod) { specGodMisses++; warn(`specialization "${s.label}" has no False God mapping`); }
   specs.push({
     id: s.spec_id, key: s.key || slug.toUpperCase(), label: s.label, sprite, spriteKind, emblem,
     playstyle: s.playstyle || '', description: s.description || '',
-    perkCount: perks.length, perks,
+    perkCount: perks.length, perks, falseGod,
   });
+}
+
+// ── False God output list (only gods that have ≥1 specialization present) + composite check ──
+const specGodKeys = new Set(specs.map(s => s.falseGod).filter(Boolean));
+const falseGods = [];
+let fgodImgMisses = 0;
+for (const g of FALSE_GODS) {
+  if (!specGodKeys.has(g.key)) continue;
+  const rel = `assets/falsegods/${g.key}.png`;
+  if (!fs.existsSync(path.join(OUT_FGOD, `${g.key}.png`))) {
+    fgodImgMisses++; warn(`False God "${g.name}" composite missing (${rel}) — run tools/build_falsegods.py`);
+  }
+  falseGods.push({ key: g.key, name: g.name, img: rel });
 }
 
 // ── artifacts (container properties) ──
@@ -593,6 +629,7 @@ console.log(`  cards w/ art ${cardArt}/${cards.length} · artifact-type icons ${
 console.log(`  spec sprites: ${specSkins} real skins + ${specs.filter(s => s.spriteKind === 'icon').length} emblem icons · ${emblemCount}/${specs.length} 16×16 emblems · terms ${Object.keys(terms).length}`);
   console.log(`  perk icons: ${perkIconsCopied} copied (code-certain from perk_icons.json)${perkIconsMissing ? ` · ${perkIconsMissing} missing` : ' · 100%'}`);
   console.log(`  perk flags (Perk_REF.csv): ${anointFlagged} anointments${perkRefMisses ? ` · ${perkRefMisses} perks not in CSV` : ' · all matched'}`);
+  console.log(`  False Gods: ${falseGods.length} with specs · ${specs.length - specGodMisses}/${specs.length} specs mapped${fgodImgMisses ? ` · ${fgodImgMisses} composites MISSING (run tools/build_falsegods.py)` : ' · composites ✓'}`);
   console.log(`  wardrobe: ${wardrobeCopied} player costumes copied (code-certain)${wardrobeMissing ? ` · ${wardrobeMissing} missing` : ''} · ${specCostumes}/${specs.length} specs linked (all tiers)`);
   console.log(`  wardrobe names: ${nameSrc.class_vocab} class-vocab + ${nameSrc.L_WD} L_WD + ${nameSrc.derived} derived (of ${wardrobe.length})`);
   console.log(`  trait-item icons: ${matIconCopied} copied (code-certain from material_icons.json)${matIconMissing ? ` · ${matIconMissing} missing` : ''}`);
@@ -645,6 +682,7 @@ const SU_DATA = {
   classBg,
   creatures,
   specs,
+  falseGods,
   traits,
   tagLabels,
   taxonomy: { categories: taxonomy.categories, status: taxonomy.status },
