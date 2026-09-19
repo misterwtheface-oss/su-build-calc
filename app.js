@@ -78,7 +78,6 @@
   if (!build || build.schema !== 3) build = { schema: 3, specId: null, perkAlloc: {}, slots: Array.from({ length: 6 }, emptySlot) };
   build.perkAlloc = build.perkAlloc || {};
   build.anoints = Array.isArray(build.anoints) ? build.anoints : [];   // equipped anointments [{specId,key}], max 5
-  build.previewLevel = Number(build.previewLevel) > 0 ? Number(build.previewLevel) : 1;   // level lens for stat projection
   while (build.slots.length < 6) build.slots.push(emptySlot());
   build.slots = build.slots.map(s => Object.assign(emptySlot(), s));
   build.slots.forEach(s => { if (!Array.isArray(s.spellGemIds)) s.spellGemIds = []; if (!s.scrolls || typeof s.scrolls !== "object") s.scrolls = {}; if (!("personality" in s)) s.personality = null; });
@@ -255,25 +254,18 @@
     return out;
   }
   const artifactPct = (slot) => artifactPctOf(resolveArtifact(slot));
-  // per-level growth modifier for a stat: 30% base gain/level, personality sets its raised stat to 40, lowered to 20.
-  const persMod = (slot, k) => { const p = slot.personality ? PERS.get(slot.personality) : null; return p ? (p.raise === k ? 40 : p.lower === k ? 20 : 30) : 30; };
-  // Personality shows as a MODIFIER on the base stat: the common 30%/level growth hits every stat equally
-  // (doesn't change the build), so we factor it out and show only the personality DEVIATION vs a neutral
-  // build: ratio = (1+(L-1)·mod/100)/(1+(L-1)·0.30). At L1 = 1 (round base kept); converges to mod/30 —
-  // raised → +33.3%, lowered → −33.3% — by end-game. `adj` = base×ratio; `final` = adj×artifact%.
-  function finalStats(slot, level) {
+  // Personality = flat ±33% on the base stat: raised ×4/3 (+33%), lowered ×2/3 (−33%), others unchanged.
+  const persRatio = (slot, k) => { const p = slot.personality ? PERS.get(slot.personality) : null; return p ? (p.raise === k ? 4 / 3 : p.lower === k ? 2 / 3 : 1) : 1; };
+  function finalStats(slot) {
     const b = baseStats(slot); if (!b) return null;
     const pct = artifactPct(slot);
-    const L = Math.max(1, level || 1), g = L - 1, neutral = 1 + g * 0.30;
-    const adj = {}, final = {}, modPct = {};
+    const adj = {}, final = {};
     for (const k of STAT_KEYS) {
-      const ratio = (1 + g * persMod(slot, k) / 100) / neutral;   // 1 for neutral stats (no deviation)
-      const a = b[k] * ratio;
+      const a = b[k] * persRatio(slot, k);
       adj[k] = Math.round(a);
       final[k] = Math.round(a * (1 + pct[k] / 100));
-      modPct[k] = Math.round((ratio - 1) * 100);
     }
-    return { base: b, pct, adj, modPct, final, level: L,
+    return { base: b, pct, adj, final,
              baseTotal: STAT_KEYS.reduce((s, k) => s + b[k], 0),
              total: STAT_KEYS.reduce((s, k) => s + final[k], 0) };
   }
@@ -352,27 +344,17 @@
       </div></div>`;
   }
 
-  const MAX_LEVEL = 100000;
-  // level lens: base stays round at Lv 1; higher levels reveal each personality's deviation (converges to
-  // ±33.3% by end-game). Slider (1–100) shows the ramp; the number field takes any exact level (e.g. 5000).
-  const renderLevelBar = () => { const L = build.previewLevel; return `<div class="level-bar">
-      <span class="level-lbl">Level</span>
-      <input type="range" min="1" max="100" value="${Math.min(L, 100)}" data-action="preview-level">
-      <input type="number" class="level-num" min="1" max="${MAX_LEVEL}" value="${L}" data-action="preview-level-num" title="Type your exact level">
-      ${L > 1 ? `<button class="chip" data-action="preview-level-reset" title="Back to level 1">Lv 1</button>` : ""}</div>`; };
   function renderPartySummary() {
     const filled = build.slots.filter(s => s.cid != null);
     if (!filled.length) return "";
-    const L = build.previewLevel;
     const rows = build.slots.map((s) => {
       const c = CREA.get(s.cid); if (!c) return "";
-      const fs = finalStats(s, L);
+      const fs = finalStats(s);
       return `<div class="stat-row"><span class="stat-name">${esc(c.name)}</span>
         <span class="stat-val base">${fs.final.hp}</span><span class="stat-val">${fs.final.atk}</span>
         <span class="stat-val">${fs.final.def}</span><span class="stat-val total">${fs.total}</span></div>`;
     }).join("");
-    return `<div class="party-summary"><div class="section-label">Party — Lv ${L}</div>
-      ${renderLevelBar()}
+    return `<div class="party-summary"><div class="section-label">Party</div>
       <div class="stat-grid">
         <div class="stat-header"><span>Creature</span><span style="text-align:right">HP</span>
           <span style="text-align:right">ATK</span><span style="text-align:right">DEF</span><span style="text-align:right">Total</span></div>
@@ -533,23 +515,20 @@
     const secondary = st.fusionId != null ? CREA.get(st.fusionId) : null;
     const tempSlot = { cid: st.primaryId, fusion: st.fusionId, personality: st.personality, scrolls: st.scrolls || {},
                        artifactId: null, relic: null, spellGemIds: [] };
-    const fs = finalStats(tempSlot, build.previewLevel), b = fs.base, L = fs.level;
+    const fs = finalStats(tempSlot), b = fs.base;
     const pers = st.personality ? PERS.get(st.personality) : null;
-    const mark = (k) => { if (!pers) return ""; const mp = fs.modPct[k];
-      if (pers.raise === k) return ` <span class="growth up" title="Personality: converges to +33%">↑${mp ? ` +${mp}%` : ""}</span>`;
-      if (pers.lower === k) return ` <span class="growth down" title="Personality: converges to −33%">↓${mp ? ` ${mp}%` : ""}</span>`;
-      return ""; };
+    const mark = (k) => { if (!pers) return ""; if (pers.raise === k) return ` <span class="growth up" title="Personality +33%">↑</span>`;
+      if (pers.lower === k) return ` <span class="growth down" title="Personality −33%">↓</span>`; return ""; };
     const traitIds = [primary.traitId, secondary ? secondary.traitId : null].filter(x => x != null);
     return `<div style="text-align:center">${critFace(primary)}</div>
       <h3 style="text-align:center;margin:6px 0">${esc(primary.name)}${secondary ? ` <span style="color:var(--accent2)">⚭</span> ${esc(secondary.name)}` : ""}</h3>
       <div class="slot-sub" style="margin-bottom:10px"><span style="color:${clsColor(b.cls)};font-weight:700">${esc(b.cls || "—")}</span></div>
       ${traitIds.length ? `<div class="section-label">Traits</div><div style="margin-bottom:10px">${traitIds.map(tid => `<div class="primary-traits" style="margin-bottom:6px">${traitBanner(tid)}<div class="trait-desc">${richText((TRAIT[tid] || {}).desc || "")}</div></div>`).join("")}</div>` : ""}
-      <div class="section-label">Stats — Lv ${L}</div>
+      <div class="section-label">Stats</div>
       <div class="stat-grid single">
         ${STAT_KEYS.map(k => `<div class="stat-row"><span class="stat-name">${STAT_LABEL[k]}${mark(k)}</span>
           <span class="stat-val total">${fs.final[k]}</span></div>`).join("")}
-        <div class="stat-row hl-med"><span class="stat-name">Total</span><span class="stat-val total">${fs.total}</span></div></div>
-      ${renderLevelBar()}`;
+        <div class="stat-row hl-med"><span class="stat-name">Total</span><span class="stat-val total">${fs.total}</span></div></div>`;
   }
 
   // per-creature customization in the wizard: Personality (base-stat ↑/↓) + Scrolls (+1 base each, cap 15 total)
@@ -1068,15 +1047,13 @@
   }
   function renderCreatureDetail(slotIdx) {
     const slot = build.slots[slotIdx], c = CREA.get(slot.cid); if (!c) return "";
-    const fs = finalStats(slot, build.previewLevel), b = fs.base, L = fs.level;
+    const fs = finalStats(slot), b = fs.base;
     const f = slot.fusion != null ? CREA.get(slot.fusion) : null;
     const pers = slot.personality ? PERS.get(slot.personality) : null;
-    const growth = (k) => { if (!pers) return ""; const mp = fs.modPct[k];
-      if (pers.raise === k) return ` <span class="growth up" title="Personality: grows 40%/level (vs 30% neutral); converges to +33%">↑${mp ? ` +${mp}%` : ""}</span>`;
-      if (pers.lower === k) return ` <span class="growth down" title="Personality: grows 20%/level (vs 30% neutral); converges to −33%">↓${mp ? ` ${mp}%` : ""}</span>`;
-      return ""; };
+    const growth = (k) => { if (!pers) return ""; if (pers.raise === k) return ` <span class="growth up" title="Personality +33%">↑</span>`;
+      if (pers.lower === k) return ` <span class="growth down" title="Personality −33%">↓</span>`; return ""; };
     const rows = STAT_KEYS.map(k => {
-      const pct = fs.pct[k], touched = pct !== 0 || fs.modPct[k] !== 0;
+      const pct = fs.pct[k], touched = pct !== 0 || (pers && (pers.raise === k || pers.lower === k));
       return `<div class="stat-row ${touched ? "hl-med" : ""}"><span class="stat-name">${STAT_LABEL[k]}${growth(k)}</span>
         <span class="stat-val base">${b[k]}</span><span class="stat-val art">${pct ? "+" + pct + "%" : "—"}</span>
         <span class="stat-val total">${fs.final[k]}</span></div>`;
@@ -1097,13 +1074,11 @@
           ${pers ? `<div class="slot-sub" style="margin-top:8px">Personality<br><b>${esc(pers.name)}</b><br>↑ ${STAT_LABEL[pers.raise]} · ↓ ${STAT_LABEL[pers.lower]}</div>` : ""}
           ${scT ? `<div class="slot-sub" style="margin-top:8px">Scrolls (${scT}/${SCROLL_MAX})<br>${STAT_KEYS.filter(k => (slot.scrolls || {})[k]).map(k => `+${slot.scrolls[k]} ${STAT_LABEL[k]}`).join("<br>")}</div>` : ""}</div>
         <div class="ovl-center"><div class="ovl-center-scroll">
-          <div class="section-label">Stats — Base · Artifact · Effective (Lv ${L})</div>
-          ${renderLevelBar()}
+          <div class="section-label">Stats — Base · Artifact · Total</div>
           <div class="stat-grid"><div class="stat-header"><span>Stat</span><span style="text-align:right">Base</span>
-            <span style="text-align:right">Artifact</span><span style="text-align:right">Lv ${L}</span></div>${rows}
+            <span style="text-align:right">Artifact</span><span style="text-align:right">Total</span></div>${rows}
             <div class="stat-row hl-high"><span class="stat-name">Total</span><span class="stat-val base">${b.total}</span>
               <span class="stat-val art"></span><span class="stat-val total">${fs.total}</span></div></div>
-          ${pers ? `<div class="slot-sub" style="margin-top:6px">Personality <b>${esc(pers.name)}</b> — the ↑/↓ % is its deviation from base at Lv ${L} (${STAT_LABEL[pers.raise]} 40%/lvl, ${STAT_LABEL[pers.lower]} 20%/lvl vs 30% neutral; converges to ±33% by end-game). The shared 30%/level growth is factored out, so base stays the Lv 1 anchor.</div>` : ""}
           <div class="section-label" style="margin-top:14px">Traits (innate${f ? " + fusion" : ""}${a && (a.traits || []).length ? " + artifact" : ""})</div>
           ${traitHtml || `<div class="slot-sub">No traits.</div>`}
           ${relic ? `<div class="section-label" style="margin-top:14px">Relic</div>
@@ -1373,9 +1348,6 @@
       case "clear-party": armOrDo(t, () => { build = { schema: 2, specId: null, perkAlloc: {}, slots: Array.from({ length: 6 }, emptySlot) }; persistBuild(); render(); }); break;
       case "open-artifacts": openArtifactLibrary(null); break;
       case "open-anoint": openAnoint(); break;
-      case "preview-level-reset": build.previewLevel = 1; persistBuild(); render();
-        if (!OV.classList.contains("hidden")) refreshOverlay();
-        if (!DOV.classList.contains("hidden")) refreshDetail(); break;
       case "anoint-toggle": {
         const sid = +t.dataset.sid, k = t.dataset.k;
         const i = build.anoints.findIndex(x => x.specId === sid && x.key === k);
@@ -1595,13 +1567,6 @@
     const t = e.target.closest("[data-action]"); if (!t) return;
     const A = t.dataset.action, v = t.value;
     // range sliders / selects
-    if (A === "preview-level") {
-      build.previewLevel = Math.max(1, Math.min(MAX_LEVEL, Math.round(+v) || 1)); persistBuild();
-      render();
-      if (!OV.classList.contains("hidden")) refreshOverlay();
-      if (!DOV.classList.contains("hidden")) refreshDetail();
-      return;
-    }
     if (A === "artb-rank") { ovState.draft.rank = +v; refreshOverlay(); return; }
     if (A === "relic-rank") { ovState.rank = +v; refreshOverlay(); return; }
     if (A === "nether-propval") { ovState.draft.props[+t.dataset.i].value = Number(v) || 0; return; }
@@ -1627,14 +1592,6 @@
 
   document.addEventListener("click", onClick);
   document.addEventListener("input", onInput);
-  // exact-level number field commits on blur/Enter (no live re-render → typing isn't disrupted)
-  document.addEventListener("change", (e) => {
-    const t = e.target.closest("[data-action='preview-level-num']"); if (!t) return;
-    build.previewLevel = Math.max(1, Math.min(MAX_LEVEL, Math.round(+t.value) || 1)); persistBuild();
-    render();
-    if (!OV.classList.contains("hidden")) refreshOverlay();
-    if (!DOV.classList.contains("hidden")) refreshDetail();
-  });
   document.addEventListener("keydown", (e) => {
     if (e.key === "Escape") { if (!DOV.classList.contains("hidden")) closeDetail(); else if (!OV.classList.contains("hidden")) closeOverlay(); }
   });
