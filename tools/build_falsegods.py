@@ -50,8 +50,14 @@ def build(key, frames):
     canvas = Image.new("RGBA", (CELL * COLS, CELL * ROWS), (0, 0, 0, 0))
     for idx, im in enumerate(imgs):
         r, c = divmod(idx, COLS)                 # reading order: 0,1,2 / 3,4,5
-        x = c * CELL + (CELL - im.width) // 2     # center in cell
-        y = r * CELL + (CELL - im.height)         # baseline-align to cell bottom
+        # The frames are bbox-trimmed, so each part must align toward the composite's
+        # CENTER (where the 3x2 cells meet) for the seams to join into one creature:
+        #   col 0 (parts 1,4) right-aligned · col 1 (2,5) centered · col 2 (3,6) left-aligned
+        #   row 0 (top) bottom-aligned · row 1 (bottom) top-aligned
+        if c == 0:   x = c * CELL + (CELL - im.width)      # right edge of cell
+        elif c == 1: x = c * CELL + (CELL - im.width) // 2  # centered
+        else:        x = c * CELL                           # left edge of cell
+        y = r * CELL + (CELL - im.height) if r == 0 else r * CELL
         canvas.alpha_composite(im, (x, y))
     bbox = canvas.getbbox()                        # trim outer transparency
     if bbox:
