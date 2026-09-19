@@ -733,19 +733,15 @@
 
   // ── Appendix — cross-entity tag search: one tag surfaces every matching creature,
   //    trait, perk, spell and artifact trait-item across the whole dataset. ──────────
-  let APPENDIX_TAGS = null;
-  function appendixTagList() {
-    if (APPENDIX_TAGS) return APPENDIX_TAGS;
-    const set = new Set();
-    const add = (arr) => { for (const k of (arr || [])) set.add(k); };
-    for (const c of D.creatures) add(creatureTaxo(c));
-    for (const id in D.traits) add(D.traits[id].taxo);
-    for (const s of D.specs) for (const p of s.perks) add(p.taxo);
-    for (const s of (D.spells || [])) add(s.taxo);
-    for (const ti of (D.traitItems || [])) add(ti.taxo);
-    APPENDIX_TAGS = [...set].map(k => ({ key: k, cat: taxoCatName(k), val: taxoValName(k) }))
-      .sort((a, b) => a.cat.localeCompare(b.cat) || a.val.localeCompare(b.val));
-    return APPENDIX_TAGS;
+  // Category → Value index across every tagged surface (same drill-down as ＋Filter).
+  function appendixTaxoIndex() {
+    const items = [];
+    for (const c of D.creatures) items.push(creatureTaxo(c));
+    for (const id in D.traits) items.push(D.traits[id].taxo || []);
+    for (const s of D.specs) for (const p of s.perks) items.push(p.taxo || []);
+    for (const s of (D.spells || [])) items.push(s.taxo || []);
+    for (const ti of (D.traitItems || [])) items.push(ti.taxo || []);
+    return taxoIndexFor("appendix", items, (x) => x);
   }
   function appendixResults(tag) {
     const has = (x) => (x || []).includes(tag);
@@ -758,21 +754,35 @@
     };
   }
   function openAppendix() {
-    ovState = { kind: "appendix", search: "", tag: null, render: renderAppendix };
+    ovState = { kind: "appendix", search: "", cat: null, tag: null, render: renderAppendix };
     openOverlay(ovState.render()); maybeFocusSearch(OV);
   }
   function renderAppendix() {
     const st = ovState, q = st.search.trim().toLowerCase();
-    let body, sub;
-    if (!st.tag) {
-      let tags = appendixTagList();
-      if (q) tags = tags.filter(t => t.val.toLowerCase().includes(q) || t.cat.toLowerCase().includes(q));
-      const rows = tags.slice(0, 600).map(t =>
-        `<button class="opt-row" data-action="appendix-tag" data-k="${esc(t.key)}">
-          <span><b>${esc(t.val)}</b></span><span class="opt-chev">${esc(t.cat)}</span></button>`).join("")
+    let body, sub, placeholder;
+    if (!st.tag && !st.cat) {
+      // level 1 — categories (Tag)
+      const idx = appendixTaxoIndex();
+      let cats = [...idx.keys()];
+      if (q) cats = cats.filter(c => c.toLowerCase().includes(q));
+      const rows = cats.sort().map(c =>
+        `<button class="opt-row" data-action="appendix-cat" data-c="${esc(c)}"><span>${esc(c)}</span><span class="opt-chev">›</span></button>`).join("")
+        || `<div class="slot-sub" style="padding:10px">No categories match.</div>`;
+      placeholder = "Search categories…";
+      sub = `<div class="ovl-filterbar"><span class="foot-info">Pick a category, then a tag to surface everything that carries it.</span></div>`;
+      body = `<div class="opt-list">${rows}</div>`;
+    } else if (!st.tag) {
+      // level 2 — values within a category (SubTag)
+      const idx = appendixTaxoIndex();
+      let vals = idx.get(st.cat) || [];
+      if (q) vals = vals.filter(v => v.val.toLowerCase().includes(q));
+      const rows = vals.slice().sort((a, b) => a.val.localeCompare(b.val)).map(v =>
+        `<button class="opt-row" data-action="appendix-tag" data-k="${esc(v.key)}"><span>${esc(v.val)}</span></button>`).join("")
         || `<div class="slot-sub" style="padding:10px">No tags match.</div>`;
-      sub = `<div class="ovl-filterbar"><span class="foot-info">Pick a tag to surface everything that carries it.</span></div>`;
-      body = `<div class="opt-list">${rows}${tags.length > 600 ? `<div class="slot-sub" style="padding:6px">Showing 600 of ${tags.length}.</div>` : ""}</div>`;
+      placeholder = "Search tags…";
+      sub = `<div class="ovl-filterbar"><button class="facet" data-action="appendix-cat-back">‹ Categories</button>
+        <span class="facet on">${esc(st.cat)}</span></div>`;
+      body = `<div class="opt-list">${rows}</div>`;
     } else {
       const res = appendixResults(st.tag);
       const CAP = 60;
@@ -803,14 +813,15 @@
           "", ti.traitName ? `Grants <b>${esc(ti.traitName)}</b>` : "")),
       ].join("");
       const total = res.creatures.length + res.traits.length + res.perks.length + res.spells.length + res.traitItems.length;
-      sub = `<div class="ovl-filterbar">
-        <button class="facet on" data-action="appendix-clear-tag">${esc(taxoCatName(st.tag))}: <b>${esc(taxoValName(st.tag))}</b> <span class="facet-x">✕</span></button>
+      placeholder = "Filter results…";
+      sub = `<div class="ovl-filterbar"><button class="facet" data-action="appendix-clear-tag">‹ ${esc(taxoCatName(st.tag))}</button>
+        <span class="facet on">${esc(taxoValName(st.tag))} <span class="facet-x" data-action="appendix-clear-tag">✕</span></span>
         <span class="foot-info">${total} result${total === 1 ? "" : "s"}</span></div>`;
       body = body_sections || `<div class="slot-sub" style="padding:10px">Nothing matches this tag.</div>`;
     }
     return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel">
       <div class="overlay-header"><h2>Appendix</h2>
-        <input class="ovl-search" placeholder="${st.tag ? "Filter results…" : "Search tags…"}" value="${esc(st.search)}" data-action="appendix-search">
+        <input class="ovl-search" placeholder="${placeholder}" value="${esc(st.search)}" data-action="appendix-search">
         <button class="ovl-close" data-action="close-ovl">✕</button></div>
       <div class="overlay-body"><div class="ovl-center">
         ${sub}
@@ -1467,6 +1478,8 @@
       case "open-artifacts": openArtifactLibrary(null); break;
       case "toggle-menu": e.stopPropagation(); el("main-menu").classList.toggle("hidden"); break;
       case "open-appendix": openAppendix(); break;
+      case "appendix-cat": ovState.cat = t.dataset.c; ovState.search = ""; refreshOverlay(); break;
+      case "appendix-cat-back": ovState.cat = null; ovState.tag = null; ovState.search = ""; refreshOverlay(); break;
       case "appendix-tag": ovState.tag = t.dataset.k; ovState.search = ""; refreshOverlay(); break;
       case "appendix-clear-tag": e.stopPropagation(); ovState.tag = null; ovState.search = ""; refreshOverlay(); break;
       case "open-anoint": openAnoint(); break;
