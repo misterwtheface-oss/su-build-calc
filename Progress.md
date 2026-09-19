@@ -3,12 +3,28 @@
 ## LIVE
 Deployed at **https://misterwtheface-oss.github.io/su-build-calc/** (repo `misterwtheface-oss/su-build-calc`,
 Pages on `master`/root, Cloudflare analytics active with the shared github.io token). Auto-deploys on push.
+No verify-before-push ceremony (no real users yet) — but every change is checked with the jsdom smoke suite
+(scratchpad `smoke.mjs`, ~84 assertions across all flows) before commit.
 
-**Taxonomy filter now spans all 4 buildcraft surfaces** (＋ Filter, Category→Value drill-down): creatures
-(innate trait), artifact trait-items (inherited), spell gems (per-spell), and perks (per-perk). Grounded on
-descriptions via the classification pipeline in `_su_extract` (codebook + batch agents), NOT the unreliable
-code decode — full rationale in `_su_extract/code/TRAIT_EFFECT_DECODE_FINDINGS.md`, taxonomy details in
-`_su_extract/data/model/TAG_TAXONOMY.md`.
+### Current feature snapshot (as of 2026-09-18)
+- **Build-first home**: 6 creature slots + Specialization tile + Anointments tile; party stat overview.
+- **Creature slots** — guided wizard: Choose creature → Fusion (or a first-class "No fusion"; self-fusion
+  blocked) → Commit. Per-creature **Personality** (flat **+33% raised / −33% lowered** stat, ↑/↓ arrows)
+  and **Scrolls** (+1 base each, cap 15). Edit reopens the wizard prefilled. Detail = Base · Artifact · Total.
+- **Specialization**: selector + per-perk rank steppers (Customize), standardized perk rows, `perkText`
+  strips the `{CONDDESC_*}` tooltip bloat.
+- **Anointments**: equip up to **5** (in-game cap; validated in the exe — an anoint applies its perk at
+  **rank 1**, see `_su_extract/code/SIGILS_ANOINTMENTS_FINDINGS.md`); Spec ▾ filter + taxonomy tag chips.
+- **Artifacts**: 3-step builder (type → fill slots via right-hand info panel → name), socketing shows an
+  item preview + explicit Add/Remove confirm, search matches name OR tag. Library + per-creature equip.
+- **Spell Gems** (spell + up to 3 dust enchants, bolded plain-text descriptions), **Nether Stones**,
+  **Relics**, **Realm Cards** collection.
+- **Taxonomy ＋ Filter** (Category→Value drill-down) on all 4 surfaces: creatures (innate trait), artifact
+  trait-items (inherited), spell gems (per-spell), perks (per-perk). Grounded on descriptions via the
+  `_su_extract` classification pipeline (codebook + batch agents), NOT the unreliable code decode — rationale
+  in `_su_extract/code/TRAIT_EFFECT_DECODE_FINDINGS.md`, taxonomy in `_su_extract/data/model/TAG_TAXONOMY.md`.
+- Fed by `_su_extract` via `build-data.mjs` (gitignored extract; only used assets copied). Data model in
+  `SPEC_PLAN.md`, pipeline in `WIKI_CONTEXT.md`.
 
 ## v2.20c personality = flat ±33% on base (final, per user) (2026-09-18)
 Simplified per user: drop the whole level lens (slider/number field/`previewLevel`/`renderLevelBar`/all
@@ -30,16 +46,10 @@ level chrome. (Supersedes v2.20/v2.20b level-projection takes.)
    each raises one stat's growth to 40% / lowers another to 20%) + `SU_DATA.scrollMax=15`.
    - **Scrolls** (`L_ID_SCROLL_*`): +1 **base** stat each, max 15 total; folded into `baseStats` (artifact %
      applies on top). Per-stat steppers with a running `N/15`; stored `slot.scrolls={hp,atk,…}`.
-   - **Personality**: grouped picker (by raised stat); stored `slot.personality`. **Final model (user):
-     base stats are UNAFFECTED (round at Lv 1); personality changes the per-LEVEL growth** — you gain 30% of
-     base/level normally, 40% on the raised stat, 20% on the lowered. So `finalStats(slot, L)` projects
-     `stat(L) = base × (1 + (L-1)·mod/100)` then applies artifact %; at L1 every stat == its round base
-     (personality-neutral), and divergence grows with level. A **Level lens** slider (`build.previewLevel`,
-     1–100, persisted, `renderLevelBar`) drives the party summary, creature detail (Base · Artifact · Lv N),
-     and wizard preview; ↑/↓ markers flag the raised/lowered stats. `baseStats()` is personality-free again
-     (only scrolls fold into base). Creature detail refactored to a stateful `renderCreatureDetail` so the
-     slider live-updates. jsdom-verified: Lv1 base unchanged; Lv11 raised ×(1+10·.4)/lowered ×(1+10·.2)/
-     neutral ×(1+10·.3). (Supersedes the two earlier takes — growth-only, then base-ratio.)
+   - **Personality**: grouped picker (by raised stat); stored `slot.personality`. Picker + storage introduced
+     here; the stat effect went through a few models and **settled in v2.20c: a flat +33% raised / −33% lowered
+     on the base stat** (see that entry — it's the current behavior; the interim level-projection built here was
+     removed). `baseStats()` stays personality-free (only scrolls fold into base).
    - Slot schema gained `personality`/`scrolls` (migrated in place); editing a creature reopens the wizard
      prefilled. Verified via jsdom (78 assertions, 0 errors).
 
@@ -403,7 +413,17 @@ What works end-to-end:
 - Realm Cards → owned + on/off toggles per family, stored in `subc.cards`.
 
 ## Backlog
-### Done (2026-09-18) — human tag taxonomy
+### Done (2026-09-18) — session 2 (UX + mechanics)
+- [x] Perk rows standardized (spec list / Customize / Anointments); `{CONDDESC_*}` tooltip bloat stripped.
+- [x] Creature selection = guided wizard (creature → fusion/skip → commit; **no self-fusion**; edit prefilled).
+- [x] Creature-selector leads with the trait; dropped per-tile stat total; ✕ glyphs centered.
+- [x] Artifact builder → right info panel + preview-before-socket confirm; search by name OR tag.
+- [x] Spell descriptions render bolded plain text; perk visual language carried to spells + material items.
+- [x] Spec costume animation fixed (3 canonical tiers only; 36/39 clean, rest are honest extraction gaps).
+- [x] **Anointments equippable** into the build (cap 5, in-game-validated as rank-1) + Spec filter + tag filter.
+- [x] **Personality** (flat +33% raised / −33% lowered, ↑/↓ arrows) + **Scrolls** (+1 base, cap 15) in the wizard.
+
+### Done (2026-09-18) — session 1 (human tag taxonomy)
 - [x] 24-category Category→Value trait filter, grounded on descriptions (all 24 categories incl. Ally/Enemy triggers).
 - [x] Extended to artifact trait-items (inherited), spell gems (per-spell), perks (per-perk). All 4 surfaces filterable.
 - [x] Boss/NYI trait taxo mapped on the backend for a future boss-prep planner (`trait_meta.scope`).
