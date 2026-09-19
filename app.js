@@ -60,7 +60,7 @@
   const SCROLL_MAX = D.scrollMax || 15;                                  // total stat scrolls per creature (each +1 base)
 
   // ── persistence (schema 2) ─────────────────────────────────────────────────
-  const LS = { build: "subc.build", cards: "subc.cards", nether: "subc.nether", artifacts: "subc.artifacts", spellgems: "subc.spellgems" };
+  const LS = { build: "subc.build", cards: "subc.cards", nether: "subc.nether", artifacts: "subc.artifacts", spellgems: "subc.spellgems", builds: "subc.builds" };
   const jload = (k, dflt) => { try { const v = JSON.parse(localStorage.getItem(k)); return v == null ? dflt : v; } catch { return dflt; } };
   const jsave = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} };
 
@@ -121,6 +121,20 @@
   // spell gems (built entities: 1 spell + up to 3 property items) — slottable into artifacts or creatures
   let spellGems = jload(LS.spellgems, null);                // [{id,name,spellId,propIds:[]}]
   if (!Array.isArray(spellGems)) spellGems = [];
+
+  // saved builds — full party snapshots with a chosen wardrobe sprite as the icon
+  let builds = jload(LS.builds, null);                      // [{id,name,icon,ts,build}]
+  if (!Array.isArray(builds)) builds = [];
+  let nextBuildId = builds.reduce((m, b) => Math.max(m, b.id || 0), 0) + 1;
+  const persistBuilds = () => jsave(LS.builds, builds);
+  const normalizeBuild = (b) => {
+    b.schema = 3; b.perkAlloc = b.perkAlloc || {};
+    b.anoints = Array.isArray(b.anoints) ? b.anoints : [];
+    b.slots = Array.isArray(b.slots) ? b.slots : [];
+    while (b.slots.length < 6) b.slots.push(emptySlot());
+    b.slots = b.slots.slice(0, 6).map(s => Object.assign(emptySlot(), s));
+    return b;
+  };
 
   const persistBuild = () => jsave(LS.build, build);
   const persistCards = () => jsave(LS.cards, cards);
@@ -728,6 +742,91 @@
       </div></div>
       <div class="overlay-footer"><span class="foot-info">${allocCount}/${spec.perks.length} allocated · ${pts} pts</span>
         <button class="btn-confirm" data-action="close-detail">Done</button></div>
+    </div></div>`;
+  }
+
+  // ── saved builds — library + save form; icon chosen from the wardrobe (front-facing frame) ──
+  const buildDefaultIcon = () => {
+    const spec = build.specId != null ? SPEC.get(build.specId) : null;
+    if (spec && spec.costume) return spec.costume;
+    const w = (D.wardrobe || []).find(x => x.category === "specialization") || (D.wardrobe || [])[0];
+    return w ? w.img : null;
+  };
+  const buildSummary = (b) => {
+    const spec = b.specId != null ? SPEC.get(b.specId) : null;
+    const n = (b.slots || []).filter(s => s.cid != null).length;
+    return `${spec ? esc(spec.label) : "No spec"} · ${n} creature${n === 1 ? "" : "s"}`;
+  };
+  function openBuilds() {
+    ovState = { kind: "builds", draft: null, render: renderBuilds };
+    openOverlay(ovState.render());
+  }
+  function renderBuilds() {
+    const st = ovState;
+    if (st.draft) {
+      const d = st.draft;
+      return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel">
+        <div class="overlay-header"><h2>Save Build</h2><button class="ovl-close" data-action="close-ovl">✕</button></div>
+        <div class="overlay-body"><div class="ovl-center"><div class="ovl-center-scroll">
+          <div class="build-section"><h3>Icon</h3>
+            <button class="build-icon-pick" data-action="builds-pick-icon" title="Choose a sprite">
+              ${d.icon ? spriteImg(d.icon, "px") : `<span class="slot-empty-icon">＋</span>`}
+              <span>Choose sprite…</span></button></div>
+          <div class="build-section"><h3>Name</h3>
+            <input class="ovl-search name-field" style="max-width:none;flex:1" placeholder="Build name" value="${esc(d.name)}" data-action="builds-name"></div>
+          <div class="slot-sub" style="padding:0 2px">Saves the current party, specialization, perks and anointments.</div>
+        </div></div></div>
+        <div class="overlay-footer"><span class="foot-info"></span>
+          <div><button class="btn-ghost" data-action="builds-cancel">Cancel</button>
+          <button class="btn-confirm" data-action="builds-save">Save</button></div></div>
+      </div></div>`;
+    }
+    const tiles = builds.slice().sort((a, b) => (b.ts || 0) - (a.ts || 0)).map(b => `
+      <div class="lib-tile">
+        <div class="lib-icon" data-action="builds-load" data-id="${b.id}" title="Load this build">${b.icon ? spriteImg(b.icon, "px") : `<span class="slot-empty-icon">✦</span>`}</div>
+        <div class="lib-name">${esc(b.name)}</div>
+        <div class="lib-sub">${buildSummary(b.build || {})}</div>
+        <div class="lib-actions">
+          <button class="slot-mini" data-action="builds-load" data-id="${b.id}">Load</button>
+          <button class="slot-mini danger" data-action="builds-del" data-id="${b.id}">✕</button>
+        </div></div>`).join("") || `<div class="slot-sub" style="padding:10px">No saved builds yet — save your current party.</div>`;
+    return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel">
+      <div class="overlay-header"><h2>Builds</h2><button class="ovl-close" data-action="close-ovl">✕</button></div>
+      <div class="overlay-body"><div class="ovl-center"><div class="ovl-center-scroll">
+        <div class="lib-grid">${tiles}</div></div></div></div>
+      <div class="overlay-footer"><span class="foot-info"></span>
+        <button class="btn-confirm" data-action="builds-save-new">＋ Save current build</button></div>
+    </div></div>`;
+  }
+
+  // wardrobe icon picker (detail overlay) — full 820 costumes, front-facing frame, search + category
+  const WARDROBE_CATS = ["specialization", "npc", "master", "creature", "animal"];
+  function openIconPicker(onPick) {
+    dovState = { kind: "iconpick", search: "", cat: null, onPick, render: renderIconPicker };
+    openDetail(dovState.render()); maybeFocusSearch(DOV);
+  }
+  function renderIconPicker() {
+    const st = dovState, q = st.search.trim().toLowerCase();
+    let list = (D.wardrobe || []).filter(w => w.img
+      && (!st.cat || w.category === st.cat)
+      && (!q || (w.name || "").toLowerCase().includes(q)));
+    list = list.slice().sort((a, b) => (a.name || "").localeCompare(b.name || ""));
+    const catChips = WARDROBE_CATS.map(c =>
+      `<button class="facet ${st.cat === c ? "on" : ""}" data-action="iconpick-cat" data-c="${c}">${c[0].toUpperCase() + c.slice(1)}</button>`).join("")
+      + (st.cat ? `<button class="facet tag" data-action="iconpick-cat-clear">Clear ✕</button>` : "");
+    const tiles = list.slice(0, 600).map(w => `
+      <div class="pick-tile" data-action="iconpick-pick" data-k="${esc(w.sprite)}">
+        <div class="pt-sprite">${spriteImg(w.img, "px")}</div><div class="pt-name">${esc(w.name)}</div></div>`).join("")
+      || `<div class="slot-sub" style="padding:10px">No sprites match.</div>`;
+    return `<div class="ovl-backdrop" data-action="facet-backdrop"><div class="overlay-panel detail">
+      <div class="overlay-header"><h2>Choose Icon</h2>
+        <input class="ovl-search" placeholder="Search sprites…" value="${esc(st.search)}" data-action="iconpick-search">
+        <button class="ovl-close" data-action="close-detail">✕</button></div>
+      <div class="overlay-body"><div class="ovl-center">
+        <div class="ovl-filterbar">${catChips}</div>
+        <div class="ovl-center-scroll"><div class="pick-grid">${tiles}</div>
+        ${list.length > 600 ? `<div class="slot-sub" style="padding:6px">Showing 600 of ${list.length}.</div>` : ""}</div>
+      </div></div>
     </div></div>`;
   }
 
@@ -1509,6 +1608,24 @@
       case "clear-party": armOrDo(t, () => { build = { schema: 2, specId: null, perkAlloc: {}, slots: Array.from({ length: 6 }, emptySlot) }; persistBuild(); render(); }); break;
       case "open-artifacts": openArtifactLibrary(null); break;
       case "toggle-menu": e.stopPropagation(); el("main-menu").classList.toggle("hidden"); break;
+      case "open-builds": openBuilds(); break;
+      case "builds-save-new": ovState.draft = { name: `Build ${builds.length + 1}`, icon: buildDefaultIcon() }; refreshOverlay(); break;
+      case "builds-cancel": ovState.draft = null; refreshOverlay(); break;
+      case "builds-pick-icon": openIconPicker((w) => { ovState.draft.icon = w.img; }); break;
+      case "builds-save": {
+        const d = ovState.draft;
+        builds.push({ id: nextBuildId++, name: (d.name || "").trim() || `Build ${builds.length + 1}`, icon: d.icon, ts: Date.now(), build: JSON.parse(JSON.stringify(build)) });
+        persistBuilds(); ovState.draft = null; refreshOverlay(); break;
+      }
+      case "builds-load": {
+        const b = builds.find(x => x.id === +t.dataset.id);
+        if (b) { build = normalizeBuild(JSON.parse(JSON.stringify(b.build))); persistBuild(); closeOverlay(); render(); }
+        break;
+      }
+      case "builds-del": armOrDo(t, () => { const id = +t.dataset.id; builds = builds.filter(b => b.id !== id); persistBuilds(); refreshOverlay(); }); break;
+      case "iconpick-cat": dovState.cat = t.dataset.c; refreshDetail(); break;
+      case "iconpick-cat-clear": e.stopPropagation(); dovState.cat = null; refreshDetail(); break;
+      case "iconpick-pick": { const w = (D.wardrobe || []).find(x => x.sprite === t.dataset.k); if (w && dovState.onPick) dovState.onPick(w); closeDetail(); refreshOverlay(); break; }
       case "open-appendix": openAppendix(); break;
       case "appendix-cat": ovState.cat = t.dataset.c; ovState.search = ""; refreshOverlay(); break;
       case "appendix-cat-back": ovState.cat = null; ovState.tag = null; ovState.search = ""; refreshOverlay(); break;
@@ -1744,9 +1861,10 @@
     if (A === "artb-name") { ovState.draft.name = v; return; }
     if (A === "nether-name") { ovState.draft.name = v; return; }
     if (A === "sg-name") { ovState.draft.name = v; return; }
+    if (A === "builds-name") { ovState.draft.name = v; return; }
     // search fields — live filter without losing caret
     const searchMap = { "crea-search": [OV, ovState], "spec-search": [OV, ovState], "artb-search": [OV, ovState],
-      "relic-search": [OV, ovState], "cards-search": [OV, ovState], "anoint-search": [OV, ovState], "nether-search": [OV, ovState], "sg-search": [OV, ovState], "appendix-search": [OV, ovState], "facet-search": [DOV, dovState], "perk-search": [DOV, dovState], "pers-search": [DOV, dovState] };
+      "relic-search": [OV, ovState], "cards-search": [OV, ovState], "anoint-search": [OV, ovState], "nether-search": [OV, ovState], "sg-search": [OV, ovState], "appendix-search": [OV, ovState], "facet-search": [DOV, dovState], "perk-search": [DOV, dovState], "pers-search": [DOV, dovState], "iconpick-search": [DOV, dovState] };
     if (searchMap[A]) {
       const [root, state] = searchMap[A]; state.search = v;
       const panel = root.querySelector(".overlay-panel");

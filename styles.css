@@ -533,6 +533,14 @@ h1, h2, h3 { margin: 0; }
 .hdr-ico { width: 30px; height: 30px; display: flex; flex: 0 0 auto; }
 .hdr-ico img { width: 100%; height: 100%; object-fit: contain; }
 .name-field { font-weight: 700; }
+.build-icon-pick {
+  display: flex; align-items: center; gap: 10px; padding: 8px 12px;
+  background: var(--surface2); border: 1px solid var(--border-dim); border-radius: 10px;
+  color: var(--text); cursor: pointer;
+}
+.build-icon-pick:hover { border-color: var(--accent2); }
+.build-icon-pick > img, .build-icon-pick > .slot-empty-icon { width: 48px; height: 48px; object-fit: contain; }
+.build-icon-pick .slot-empty-icon { font-size: 26px; }
 
 /* artifact builder wizard */
 .art-steps { display: flex; align-items: center; gap: 6px; margin-left: auto; flex-wrap: wrap; }
