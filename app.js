@@ -585,7 +585,7 @@
     let opts, title, back = "";
     if (st.facet === "class") { title = "Filter by Class"; opts = D.classes.map(c => ({ v: c.key, label: c.key, color: c.color })); }
     else if (st.facet === "anoint-spec") { title = "Filter by Specialization"; opts = anointSpecs().map(s => ({ v: s, label: s })); }
-    else if (st.facet === "spec-fgod") { title = "Filter by False God"; opts = (D.falseGods || []).map(g => ({ v: g.key, label: g.name })); }
+    else if (st.facet === "anoint-fgod") { title = "Filter by False God"; opts = (D.falseGods || []).map(g => ({ v: g.key, label: g.name })); }
     else if (st.facet === "race") { title = "Filter by Race"; opts = raceOptions().map(r => ({ v: r, label: r })); }
     else if (st.facet === "taxo-cat") { title = "Filter by mechanic"; opts = [...idx.keys()].map(cat => ({ v: cat, label: cat })); }
     else { // taxo-val
@@ -607,14 +607,14 @@
     </div></div>`;
   }
 
-  // ── specialization selector ────────────────────────────────────────────────
-  // Specs are grouped by the False God they're affiliated with; each group is
-  // headed by the False God's combined 6-part battle portrait (built in the pipeline).
+  // False God lookups — shared by the Anointments overlay (anointments are spec
+  // perks; each affiliated spec belongs to one of the 10 False Gods).
   const FALSE_GODS = D.falseGods || [];
   const godByKey = new Map(FALSE_GODS.map(g => [g.key, g]));
   const godName = (k) => (godByKey.get(k) || {}).name || k;
+  // ── specialization selector ────────────────────────────────────────────────
   function openSpecPicker() {
-    ovState = { kind: "spec", search: "", sel: build.specId, godFilter: null, render: renderSpecPicker };
+    ovState = { kind: "spec", search: "", sel: build.specId, render: renderSpecPicker };
     openOverlay(ovState.render()); maybeFocusSearch(OV); syncSpecAnim();
   }
   // ── perk allocation (rank-based) ───────────────────────────────────────────
@@ -630,35 +630,11 @@
   function renderSpecPicker() {
     const st = ovState;
     const q = st.search.trim().toLowerCase();
-    let list = D.specs.filter(s => !q || s.label.toLowerCase().includes(q));
-    if (st.godFilter) list = list.filter(s => s.falseGod === st.godFilter);
+    const list = D.specs.filter(s => !q || s.label.toLowerCase().includes(q)).slice().sort((a, b) => a.label.localeCompare(b.label));
     const sel = st.sel != null ? SPEC.get(st.sel) : null;
-    const specTile = s => `
+    const tiles = list.map(s => `
       <div class="pick-tile spec-pick ${st.sel === s.id ? "selected" : ""}" data-action="spec-pick" data-id="${s.id}">
-        <div class="pt-sprite emblem">${spriteImg(s.emblem || s.sprite, "px")}</div><div class="pt-name">${esc(s.label)}</div></div>`;
-    const byLabel = (a, b) => a.label.localeCompare(b.label);
-    // grouped by False God (in pipeline order); a live search collapses to a flat list
-    let gridHtml;
-    if (q) {
-      gridHtml = `<div class="pick-grid spec-grid">${list.slice().sort(byLabel).map(specTile).join("") || `<div class="slot-sub" style="padding:10px">No specializations match.</div>`}</div>`;
-    } else {
-      const byGod = new Map();
-      for (const s of list) (byGod.get(s.falseGod) || byGod.set(s.falseGod, []).get(s.falseGod)).push(s);
-      const order = FALSE_GODS.map(g => g.key).filter(k => byGod.has(k));
-      for (const k of byGod.keys()) if (!order.includes(k)) order.push(k);   // any unmapped spec bucket last
-      gridHtml = order.map(k => {
-        const g = godByKey.get(k);
-        const tiles = byGod.get(k).slice().sort(byLabel).map(specTile).join("");
-        const head = g
-          ? `<div class="fgod-head"><div class="fgod-portrait">${spriteImg(g.img, "px")}</div><span class="fgod-name">${esc(g.name)}</span></div>`
-          : `<div class="fgod-head"><span class="fgod-name">Other</span></div>`;
-        return `<div class="fgod-group">${head}<div class="pick-grid spec-grid">${tiles}</div></div>`;
-      }).join("");
-    }
-    const godChip = st.godFilter
-      ? `<button class="facet on" data-action="spec-fgod">False God: <b>${esc(godName(st.godFilter))}</b> <span class="facet-x" data-action="spec-fgod-clear">✕</span></button>`
-      : `<button class="facet" data-action="spec-fgod">False God ▾</button>`;
-    const filterbar = `<div class="ovl-filterbar">${godChip}</div>`;
+        <div class="pt-sprite emblem">${spriteImg(s.emblem || s.sprite, "px")}</div><div class="pt-name">${esc(s.label)}</div></div>`).join("");
     let info = "";
     if (sel) {
       const allocCount = allocatedPerks(sel).length, pts = specPoints(sel);
@@ -674,11 +650,9 @@
       }).join("");
       const cos0 = sel.costumes && sel.costumes.length ? sel.costumes[0] : null;
       const costumeImg = cos0 ? (cos0.frames && cos0.frames[0]) || cos0.img : sel.sprite;
-      const selGod = sel.falseGod ? godByKey.get(sel.falseGod) : null;
       info = `<div class="spec-info">
         <div class="spec-info-sprite costume" id="specCostume">${spriteImg(costumeImg, "px")}</div>
         <h2 class="spec-info-name">${esc(sel.label)}</h2>
-        ${selGod ? `<button class="fgod-info" data-action="spec-fgod-set" data-k="${esc(selGod.key)}" title="Filter to ${esc(selGod.name)}">${spriteImg(selGod.img, "px")}<span>${esc(selGod.name)}</span></button>` : ""}
         <div class="trait-desc spec-play">${richText(sel.playstyle || sel.description || "")}</div>
         <div class="section-label" style="margin-top:12px">Perks — ${allocCount}/${sel.perks.length} allocated · ${pts} pts</div>
         <div class="perk-list">${perkList}</div>
@@ -689,7 +663,7 @@
         <input class="ovl-search" placeholder="Search…" value="${esc(st.search)}" data-action="spec-search">
         <button class="ovl-close" data-action="close-ovl">✕</button></div>
       <div class="overlay-body">
-        <div class="ovl-center">${filterbar}<div class="ovl-center-scroll">${gridHtml}</div></div>
+        <div class="ovl-center"><div class="ovl-center-scroll"><div class="pick-grid spec-grid">${tiles}</div></div></div>
         <div class="ovl-right spec-right">${info}</div>
       </div>
       <div class="overlay-footer"><span class="foot-info"></span>
@@ -763,14 +737,14 @@
   function anointList() {
     if (ANOINTS) return ANOINTS;
     ANOINTS = [];
-    for (const s of D.specs) for (const p of s.perks) if (p.anointment) ANOINTS.push({ ...p, spec: s.label, specId: s.id });
+    for (const s of D.specs) for (const p of s.perks) if (p.anointment) ANOINTS.push({ ...p, spec: s.label, specId: s.id, falseGod: s.falseGod });
     ANOINTS.sort((a, b) => a.spec.localeCompare(b.spec) || a.name.localeCompare(b.name));
     return ANOINTS;
   }
   const anointEquipped = (a) => build.anoints.some(x => x.specId === a.specId && x.key === a.key);
   const equippedAnointObjs = () => build.anoints.map(x => anointList().find(a => a.specId === x.specId && a.key === x.key)).filter(Boolean);
   function openAnoint() {
-    ovState = { kind: "anoint", search: "", taxoFilters: [], specFilter: null, render: renderAnoint };
+    ovState = { kind: "anoint", search: "", taxoFilters: [], specFilter: null, godFilter: null, render: renderAnoint };
     openOverlay(ovState.render()); maybeFocusSearch(OV);
   }
   let ANOINT_SPECS = null;
@@ -780,28 +754,41 @@
     const st = ovState, q = st.search.trim().toLowerCase();
     const list = anointList().filter(a =>
       (!q || a.name.toLowerCase().includes(q) || (a.desc || "").toLowerCase().includes(q)) &&
+      (!st.godFilter || a.falseGod === st.godFilter) &&
       (!st.specFilter || a.spec === st.specFilter) &&
       (!st.taxoFilters.length || st.taxoFilters.every(k => (a.taxo || []).includes(k))));
+    const godChip = st.godFilter
+      ? `<button class="facet on" data-action="anoint-fgod">False God: <b>${esc(godName(st.godFilter))}</b> <span class="facet-x" data-action="anoint-fgod-clear">✕</span></button>`
+      : `<button class="facet" data-action="anoint-fgod">False God ▾</button>`;
     const specChip = st.specFilter
       ? `<button class="facet on" data-action="anoint-spec">Spec: <b>${esc(st.specFilter)}</b> <span class="facet-x" data-action="anoint-spec-clear">✕</span></button>`
       : `<button class="facet" data-action="anoint-spec">Spec ▾</button>`;
     const taxoChips = st.taxoFilters.map((k, i) =>
       `<button class="facet on tag" data-action="rm-taxo" data-i="${i}">${esc(taxoCatName(k))}: <b>${esc(taxoValName(k))}</b> <span class="facet-x">✕</span></button>`).join("");
-    const filterbar = `<div class="ovl-filterbar">${specChip}${taxoChips}<button class="facet add" data-action="anoint-taxo">＋ Filter</button></div>`;
-    const groups = {};
-    for (const a of list) (groups[a.spec] ||= []).push(a);
+    const filterbar = `<div class="ovl-filterbar">${godChip}${specChip}${taxoChips}<button class="facet add" data-action="anoint-taxo">＋ Filter</button></div>`;
     const full = build.anoints.length >= ANOINT_MAX;
-    const body = Object.keys(groups).sort().map(sp => `
-      <div class="section-label anoint-grp">${esc(sp)}</div>
-      ${groups[sp].map(a => { const on = anointEquipped(a); return `<div class="perk-line ${on ? "equipped" : ""}">
+    const anointRow = (a) => { const on = anointEquipped(a); return `<div class="perk-line ${on ? "equipped" : ""}">
         <span class="perk-ico sm">${a.icon ? spriteImg(a.icon, "px") : ""}</span>
         <div class="perk-line-body">
           <div class="perk-line-head"><b>${esc(a.name)}</b>
-            <span class="perk-line-meta">${a.ascension ? `<span class="anoint-badge asc">Ascension</span>` : ""}${a.ranks > 1 ? `<span class="perk-rankbadge" title="An anointment grants this perk's full bonus for a single Anointment point (equivalent to rank ${a.ranks})">Full</span>` : ""}</span></div>
+            <span class="perk-line-meta"><span class="anoint-spec-tag">${esc(a.spec)}</span>${a.ascension ? `<span class="anoint-badge asc">Ascension</span>` : ""}${a.ranks > 1 ? `<span class="perk-rankbadge" title="An anointment grants this perk's full bonus for a single Anointment point (equivalent to rank ${a.ranks})">Full</span>` : ""}</span></div>
           ${a.desc ? `<div class="perk-desc">${perkText(a.desc, a.ranks)}</div>` : ""}
         </div>
         <button class="slot-mini anoint-eq ${on ? "on" : ""}" data-action="anoint-toggle" data-sid="${a.specId}" data-k="${esc(a.key)}" ${(!on && full) ? "disabled" : ""}>${on ? "Equipped ✓" : "Equip"}</button>
-        </div>`; }).join("")}`).join("")
+        </div>`; };
+    const byName = (a, b) => a.spec.localeCompare(b.spec) || a.name.localeCompare(b.name);
+    // group by the affiliated False God (pipeline order), sub-sorted by spec → name
+    const byGod = new Map();
+    for (const a of list) (byGod.get(a.falseGod) || byGod.set(a.falseGod, []).get(a.falseGod)).push(a);
+    const godOrder = FALSE_GODS.map(g => g.key).filter(k => byGod.has(k));
+    for (const k of byGod.keys()) if (!godOrder.includes(k)) godOrder.push(k);   // any unmapped bucket last
+    const body = godOrder.map(k => {
+      const g = godByKey.get(k);
+      const head = g
+        ? `<div class="fgod-head"><div class="fgod-portrait">${spriteImg(g.img, "px")}</div><span class="fgod-name">${esc(g.name)}</span></div>`
+        : `<div class="fgod-head"><span class="fgod-name">Other</span></div>`;
+      return `<div class="fgod-group">${head}${byGod.get(k).slice().sort(byName).map(anointRow).join("")}</div>`;
+    }).join("")
       || `<div class="slot-sub" style="padding:10px">No anointments match.</div>`;
     return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel">
       <div class="overlay-header"><h2>Anointments</h2>
@@ -1429,9 +1416,8 @@
       case "anoint-taxo": openFacetPicker("taxo-cat", { idx: anointTaxoIndex() }); break;
       case "anoint-spec": openFacetPicker("anoint-spec"); break;
       case "anoint-spec-clear": e.stopPropagation(); ovState.specFilter = null; refreshOverlay(); break;
-      case "spec-fgod": openFacetPicker("spec-fgod"); break;
-      case "spec-fgod-clear": e.stopPropagation(); ovState.godFilter = null; refreshOverlay(); break;
-      case "spec-fgod-set": ovState.godFilter = t.dataset.k; refreshOverlay(); break;
+      case "anoint-fgod": openFacetPicker("anoint-fgod"); break;
+      case "anoint-fgod-clear": e.stopPropagation(); ovState.godFilter = null; refreshOverlay(); break;
       case "taxo-back": dovState.facet = "taxo-cat"; dovState.taxoCat = null; dovState.search = ""; refreshDetail(); break;
       case "facet-class-clear": e.stopPropagation(); ovState.clsFilter = null; refreshOverlay(); break;
       case "facet-race-clear": e.stopPropagation(); ovState.raceFilter = null; refreshOverlay(); break;
@@ -1440,7 +1426,7 @@
         const v = t.dataset.v;
         if (dovState.facet === "class") { ovState.clsFilter = v; closeDetail(); refreshOverlay(); }
         else if (dovState.facet === "anoint-spec") { ovState.specFilter = v; closeDetail(); refreshOverlay(); }
-        else if (dovState.facet === "spec-fgod") { ovState.godFilter = v; closeDetail(); refreshOverlay(); }
+        else if (dovState.facet === "anoint-fgod") { ovState.godFilter = v; closeDetail(); refreshOverlay(); }
         else if (dovState.facet === "race") { ovState.raceFilter = v; closeDetail(); refreshOverlay(); }
         else if (dovState.facet === "taxo-cat") { dovState.facet = "taxo-val"; dovState.taxoCat = v; dovState.search = ""; refreshDetail(); }
         else if (dovState.onPick) { dovState.onPick(v); closeDetail(); refreshOverlay(); }  // context-specific target (e.g. trait-item picker)

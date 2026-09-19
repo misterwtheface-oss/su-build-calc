@@ -397,15 +397,11 @@ h1, h2, h3 { margin: 0; }
 .fgod-portrait { flex-shrink: 0; height: 56px; display: flex; align-items: center; }
 .fgod-portrait img { height: 56px; width: auto; object-fit: contain; }
 .fgod-name { font-size: 15px; font-weight: 600; color: var(--text); letter-spacing: .2px; }
-/* False God chip in the selected-spec info panel */
-.fgod-info {
-  display: inline-flex; align-items: center; gap: 8px; margin: 0 auto 10px;
-  padding: 5px 12px 5px 6px; border-radius: 999px; cursor: pointer;
-  background: var(--surface2); border: 1px solid var(--border-dim); color: var(--text-dim);
+/* source-spec tag on each anointment row (rows are grouped by False God, not spec) */
+.anoint-spec-tag {
+  font-size: 10px; color: var(--text-dim); background: var(--surface2);
+  border: 1px solid var(--border-dim); border-radius: 6px; padding: 1px 6px;
 }
-.fgod-info:hover { border-color: var(--accent2); color: var(--text); }
-.fgod-info img { height: 34px; width: auto; object-fit: contain; }
-.fgod-info span { font-size: 13px; }
 /* standardized perk row: fixed icon · body (head line + desc) — uniform regardless of name/cost length */
 .perk-list { text-align: left; display: flex; flex-direction: column; gap: 4px; }
 .perk-line { font-size: 12px; line-height: 1.35; padding: 6px 8px; border-radius: 6px; background: var(--surface); display: flex; gap: 8px; align-items: flex-start; }
