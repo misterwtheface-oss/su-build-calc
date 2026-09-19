@@ -745,13 +745,27 @@
   }
   function appendixResults(tag) {
     const has = (x) => (x || []).includes(tag);
+    // A trait is the canonical entity: the creature that has it as its innate trait and the
+    // trait-items that grant it both carry the same inherited taxo, so they fold into one row.
     return {
-      creatures: D.creatures.filter(c => creatureTaxo(c).includes(tag)),
       traits: Object.values(D.traits).filter(t => has(t.taxo)),
       perks: D.specs.flatMap(s => s.perks.filter(p => has(p.taxo)).map(p => ({ ...p, spec: s.label }))),
       spells: (D.spells || []).filter(s => has(s.taxo)),
-      traitItems: (D.traitItems || []).filter(ti => has(ti.taxo)),
     };
+  }
+  // trait id → the creature that has it innately + the trait-items that grant it (built once)
+  let TRAIT_SOURCES = null;
+  function traitSources() {
+    if (TRAIT_SOURCES) return TRAIT_SOURCES;
+    const creatureByTrait = new Map(), itemsByTrait = new Map();
+    for (const c of D.creatures) if (c.traitId != null && !creatureByTrait.has(c.traitId)) creatureByTrait.set(c.traitId, c);
+    for (const ti of (D.traitItems || [])) {
+      if (ti.traitId == null) continue;
+      if (!itemsByTrait.has(ti.traitId)) itemsByTrait.set(ti.traitId, []);
+      itemsByTrait.get(ti.traitId).push(ti);
+    }
+    TRAIT_SOURCES = { creatureByTrait, itemsByTrait };
+    return TRAIT_SOURCES;
   }
   function openAppendix() {
     ovState = { kind: "appendix", search: "", cat: null, tag: null, render: renderAppendix };
@@ -788,7 +802,7 @@
       const CAP = 60;
       const section = (title, items, renderRow) => {
         let list = items;
-        if (q) list = list.filter(x => (x.name || "").toLowerCase().includes(q));
+        if (q) list = list.filter(x => ((x._search || x.name) || "").toLowerCase().includes(q));
         if (!list.length) return "";
         return `<div class="section-label">${title} — ${list.length}</div>
           <div class="perk-list">${list.slice(0, CAP).map(renderRow).join("")}
@@ -800,19 +814,37 @@
           <div class="perk-line-head"><b>${esc(name)}</b>${meta ? `<span class="perk-line-meta">${meta}</span>` : ""}</div>
           ${desc ? `<div class="perk-desc">${desc}</div>` : ""}
         </div></div>`;
+      // one row per trait, folding in the creature that has it + the items that grant it
+      const { creatureByTrait, itemsByTrait } = traitSources();
+      const traitRows = res.traits.map(t => {
+        const creature = creatureByTrait.get(t.id);
+        const items = itemsByTrait.get(t.id) || [];
+        return { name: t.name, desc: t.desc, creature, items,
+          _search: t.name + " " + (creature ? creature.name : "") + " " + items.map(i => i.name).join(" ") };
+      }).sort((a, b) => a.name.localeCompare(b.name));
+      const traitRow = (g) => {
+        const cIco = g.creature ? `<span class="apx-ico" title="${esc(g.creature.name)}">${critFace(g.creature)}</span>` : "";
+        const iIco = (g.items[0] && g.items[0].icon)
+          ? `<span class="apx-ico" title="${esc(g.items.map(i => i.name).join(", "))}">${spriteImg(g.items[0].icon, "px")}</span>` : "";
+        const meta = [
+          g.creature ? `<span class="anoint-spec-tag">${esc(g.creature.name)}</span>` : "",
+          g.items.length ? `<span class="anoint-spec-tag">${g.items.length} item${g.items.length === 1 ? "" : "s"}</span>` : "",
+        ].join("");
+        return `<div class="perk-line">
+          <span class="apx-icons">${cIco}${iIco}</span>
+          <div class="perk-line-body">
+            <div class="perk-line-head"><b>${esc(g.name)}</b>${meta ? `<span class="perk-line-meta">${meta}</span>` : ""}</div>
+            ${g.desc ? `<div class="perk-desc">${richText(g.desc)}</div>` : ""}
+          </div></div>`;
+      };
       const body_sections = [
-        section("Creatures", res.creatures, c => line(critFace(c), c.name,
-          `<span class="anoint-spec-tag">${esc(c.cls || "—")}${c.race ? " · " + esc(c.race) : ""}</span>`,
-          (TRAIT[c.traitId] || {}).name ? `Trait: ${esc((TRAIT[c.traitId] || {}).name)}` : "")),
-        section("Traits", res.traits, t => line("", t.name, "", richText(t.desc || ""))),
+        section("Traits", traitRows, traitRow),
         section("Perks", res.perks, p => line(p.icon ? spriteImg(p.icon, "px") : "", p.name,
           `<span class="anoint-spec-tag">${esc(p.spec)}</span>`, perkText(p.desc, p.ranks))),
         section("Spells", res.spells, s => line("", s.name,
           s.cls ? `<span class="anoint-spec-tag">${esc(s.cls)}</span>` : "", perkText(s.desc, null))),
-        section("Trait Items", res.traitItems, ti => line(ti.icon ? spriteImg(ti.icon, "px") : "", ti.name,
-          "", ti.traitName ? `Grants <b>${esc(ti.traitName)}</b>` : "")),
       ].join("");
-      const total = res.creatures.length + res.traits.length + res.perks.length + res.spells.length + res.traitItems.length;
+      const total = traitRows.length + res.perks.length + res.spells.length;
       placeholder = "Filter results…";
       sub = `<div class="ovl-filterbar"><button class="facet" data-action="appendix-clear-tag">‹ ${esc(taxoCatName(st.tag))}</button>
         <span class="facet on">${esc(taxoValName(st.tag))} <span class="facet-x" data-action="appendix-clear-tag">✕</span></span>
