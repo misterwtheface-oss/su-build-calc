@@ -372,11 +372,15 @@ h1, h2, h3 { margin: 0; }
   /* exactly two scroll regions on phones: grid on top (flexes to fill, scrolls),
      one info scroller below (capped so it can't eat the grid) */
   .ovl-left, .ovl-right {
-    width: auto; flex: 0 1 auto; min-height: 0; max-height: 42vh;
+    width: auto; flex: 0 1 auto; min-height: 0; max-height: 30vh;   /* smaller info panel → more room for the grid */
     border: none; border-top: 1px solid var(--border-dim);
     -webkit-overflow-scrolling: touch;
   }
   .ovl-center-scroll { -webkit-overflow-scrolling: touch; }
+  .crea-grid { grid-template-columns: repeat(4, 1fr); gap: 6px; }   /* 4 creatures per row on phones */
+  /* tighter overlay chrome so the grid isn't squeezed */
+  .overlay-header { padding: 8px 12px; }
+  .overlay-footer { padding: 7px 12px; }
   .party-summary .stat-header, .party-summary .stat-row { grid-template-columns: 1fr 52px 52px 60px; }
 }
 

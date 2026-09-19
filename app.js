@@ -486,11 +486,7 @@
         <div class="pt-name">${esc(c.name)}</div>
       </div>`).join("");
 
-    const title = fusion ? "2 · Fusion partner (optional)" : "1 · Choose creature";
-    const steps = `<div class="art-steps">
-      <span class="art-step ${!fusion ? "on" : "done"}">1 · Creature</span>
-      <span class="art-step-sep">›</span>
-      <span class="art-step ${fusion ? "on" : ""}">2 · Fusion</span></div>`;
+    const title = fusion ? "Fusion partner" : "Choose creature";
     const footer = fusion
       ? `<button class="btn-ghost" data-action="crea-back">‹ Back</button>
          <button class="btn-confirm" data-action="crea-confirm" ${st.primaryId == null ? "disabled" : ""}>${st.fusionId == null ? "Commit (no fusion)" : "Commit fusion"}</button>`
@@ -504,12 +500,12 @@
     } else if (selC) side = renderCreatureIdentity(selC);
 
     return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel">
-      <div class="overlay-header"><h2>${title}</h2>${steps}
+      <div class="overlay-header"><h2>${title}</h2>
         <input class="ovl-search" placeholder="Search name / trait / race…" value="${esc(st.search)}" data-action="crea-search">
         <button class="ovl-close" data-action="close-ovl">✕</button></div>
       <div class="overlay-body">
         <div class="ovl-center">${filterbar}
-          <div class="ovl-center-scroll"><div class="pick-grid">${tiles}</div>
+          <div class="ovl-center-scroll"><div class="pick-grid crea-grid">${tiles}</div>
             ${list.length > 400 ? `<div class="slot-sub" style="margin-top:10px">Showing 400 of ${list.length} — refine your filters.</div>` : ""}</div>
         </div>
         <div class="ovl-right">${side}</div>
