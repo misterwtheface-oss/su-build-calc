@@ -542,6 +542,27 @@ for (const cl of CLASSES) {
   if (copyNamedSprite(`card_bg_${norm(cl.key)}`, OUT_CARDBG, dest)) classBg[cl.key] = `assets/cardbg/${dest}`;
 }
 
+// class + per-race 16×16 emblem icons (shown top-left on each creature tile in place of the class rail)
+const OUT_CLSICON = path.join(OUT_ASSETS, 'clsicons');
+const OUT_RACEICON = path.join(OUT_ASSETS, 'raceicons');
+const raceClassIcons = readJSON(path.join(MODEL, 'race_class_icons.json'));
+fs.rmSync(OUT_CLSICON, { recursive: true, force: true });
+fs.rmSync(OUT_RACEICON, { recursive: true, force: true });
+const classIcons = {};
+for (const cl of raceClassIcons.classes) {
+  const dest = `${norm(cl.class)}.png`;
+  if (copyNamedSprite(cl.icon, OUT_CLSICON, dest)) classIcons[cl.class] = `assets/clsicons/${dest}`;
+}
+const raceIcons = {};
+let raceIconMisses = 0;
+for (const r of Object.values(raceClassIcons.races)) {
+  if (!r.has_icon || !r.icon) { raceIconMisses++; continue; }
+  const dest = `${norm(r.race)}.png`;
+  if (copyNamedSprite(r.icon, OUT_RACEICON, dest)) raceIcons[r.race] = `assets/raceicons/${dest}`;
+  else raceIconMisses++;
+}
+console.log(`  tile icons: ${Object.keys(classIcons).length}/5 class · ${Object.keys(raceIcons).length}/${Object.keys(raceClassIcons.races).length} race${raceIconMisses ? ` (${raceIconMisses} races w/o 16×16 emblem)` : ''}`);
+
 // nether-stone gem icons (user randomizes / picks one)
 fs.rmSync(OUT_GEM, { recursive: true, force: true });
 const GEM_KEYS = ['amethyst', 'bismuth', 'diamond', 'emerald', 'obsidian', 'opal', 'ruby', 'sapphire', 'topaz'];
@@ -680,6 +701,8 @@ const SU_DATA = {
   },
   classes: CLASSES,
   classBg,
+  classIcons,
+  raceIcons,
   creatures,
   specs,
   falseGods,

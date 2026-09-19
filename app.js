@@ -331,13 +331,16 @@
     const f = slot.fusion != null ? CREA.get(slot.fusion) : null;
     const cls = b.cls;
     const a = resolveArtifact(slot);
-    return `<div class="slot filled" data-slot="${i}" style="--slot-cls:${clsColor(cls)}">
+    const clsIco = cls && D.classIcons && D.classIcons[cls]
+      ? `<span class="tile-badge" title="${esc(cls)}">${spriteImg(D.classIcons[cls], "px")}</span>` : "";
+    const raceIco = c.race && D.raceIcons && D.raceIcons[c.race]
+      ? `<span class="tile-badge" title="${esc(c.race)}">${spriteImg(D.raceIcons[c.race], "px")}</span>` : "";
+    return `<div class="slot filled" data-slot="${i}" title="Right-click to change creature / fusion">
+      <div class="tile-badges">${clsIco}${raceIco}</div>
       <button class="slot-remove" data-action="remove-creature" data-slot="${i}" title="Remove">✕</button>
       <div class="slot-sprite-wrap" data-action="creature-detail" data-slot="${i}">${critFace(c)}</div>
       <div class="slot-name">${esc(c.name)}${f ? ` <span style="color:var(--accent2)">⚭</span>` : ""}</div>
-      <div class="slot-sub"><span class="cls-chip" style="color:${clsColor(cls)}">${esc(cls || "—")}</span>${c.race ? " · " + esc(c.race) : ""}</div>
       <div class="slot-actions">
-        <button class="slot-mini ${f ? "on" : ""}" data-action="pick-creature" data-slot="${i}" title="Edit creature / fusion">${f ? "Edit ⚭" : "Edit"}</button>
         <button class="slot-mini ${a ? "on" : ""}" data-action="equip-artifact" data-slot="${i}" title="Artifact">${a ? "Artifact ✓" : "Artifact"}</button>
         <button class="slot-mini ${slot.relic ? "on" : ""}" data-action="build-relic" data-slot="${i}" title="Relic">Relic</button>
         <button class="slot-mini ${(slot.spellGemIds || []).length ? "on" : ""}" data-action="creature-spells" data-slot="${i}" title="Spell gems (up to 3)">Spells${(slot.spellGemIds || []).length ? ` ${slot.spellGemIds.length}` : ""}</button>
@@ -1615,6 +1618,13 @@
   }
 
   document.addEventListener("click", onClick);
+  // right-click a creature tile to (re)open the creature / fusion selector
+  document.addEventListener("contextmenu", (e) => {
+    const slotEl = e.target.closest(".slot[data-slot]");
+    if (!slotEl || !OV.classList.contains("hidden")) return;   // ignore when an overlay is open
+    e.preventDefault();
+    openCreaturePicker(+slotEl.dataset.slot);
+  });
   document.addEventListener("input", onInput);
   document.addEventListener("keydown", (e) => {
     if (e.key === "Escape") { if (!DOV.classList.contains("hidden")) closeDetail(); else if (!OV.classList.contains("hidden")) closeOverlay(); }
