@@ -797,12 +797,15 @@
   };
   const buildSummary = (b) => {
     const spec = b.specId != null ? SPEC.get(b.specId) : null;
-    const n = (b.slots || []).filter(s => s.cid != null).length;
-    return `${spec ? esc(spec.label) : "No spec"} · ${n} creature${n === 1 ? "" : "s"}`;
+    return spec ? esc(spec.label) : "No specialization";
   };
   function openBuilds() {
-    ovState = { kind: "builds", draft: null, render: renderBuilds };
+    ovState = { kind: "builds", draft: null, sel: null, flash: null, render: renderBuilds };
     openOverlay(ovState.render());
+  }
+  function flashBuild(id) {   // brief "Saved ✓" confirmation on the tile + footer
+    ovState.flash = id; refreshOverlay();
+    setTimeout(() => { if (ovState && ovState.kind === "builds") { ovState.flash = null; refreshOverlay(); } }, 1200);
   }
   function renderBuilds() {
     const st = ovState;
@@ -824,22 +827,26 @@
           <button class="btn-confirm" data-action="builds-save">Save</button></div></div>
       </div></div>`;
     }
+    const sel = st.sel != null ? builds.find(b => b.id === st.sel) : null;
     const tiles = builds.slice().sort((a, b) => (b.ts || 0) - (a.ts || 0)).map(b => `
-      <div class="lib-tile">
-        <div class="lib-icon" data-action="builds-load" data-id="${b.id}" title="Load this build">${b.icon ? spriteImg(b.icon, "px") : `<span class="slot-empty-icon">✦</span>`}</div>
+      <div class="lib-tile ${st.sel === b.id ? "selected" : ""} ${st.flash === b.id ? "flash" : ""}" data-action="builds-sel" data-id="${b.id}">
+        <div class="lib-icon">${b.icon ? spriteImg(b.icon, "px") : `<span class="slot-empty-icon">✦</span>`}</div>
         <div class="lib-name">${esc(b.name)}</div>
         <div class="lib-sub">${buildSummary(b.build || {})}</div>
         <div class="lib-actions">
           <button class="slot-mini" data-action="builds-load" data-id="${b.id}">Load</button>
-          <button class="slot-mini" data-action="builds-overwrite" data-id="${b.id}" title="Save the current party over this build">Save</button>
           <button class="slot-mini danger" data-action="builds-del" data-id="${b.id}">✕</button>
         </div></div>`).join("") || `<div class="slot-sub" style="padding:10px">No saved builds yet — save your current party.</div>`;
+    const footBtn = sel
+      ? `<div><button class="btn-ghost" data-action="builds-save-new">Save as new</button>
+          <button class="btn-confirm" data-action="builds-overwrite" data-id="${sel.id}" title="Overwrite «${esc(sel.name)}» with the current party">Update «${esc(sel.name)}»</button></div>`
+      : `<button class="btn-confirm" data-action="builds-save-new">＋ Save current build</button>`;
     return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel">
       <div class="overlay-header"><h2>Builds</h2><button class="ovl-close" data-action="close-ovl">✕</button></div>
       <div class="overlay-body"><div class="ovl-center"><div class="ovl-center-scroll">
         <div class="lib-grid">${tiles}</div></div></div></div>
-      <div class="overlay-footer"><span class="foot-info"></span>
-        <button class="btn-confirm" data-action="builds-save-new">＋ Save current build</button></div>
+      <div class="overlay-footer"><span class="foot-info">${st.flash ? "Saved ✓" : (sel ? "Select ✕/Load, or Update below" : "")}</span>
+        ${footBtn}</div>
     </div></div>`;
   }
 
@@ -1782,18 +1789,19 @@
       case "builds-save-new": ovState.draft = { name: `Build ${builds.length + 1}`, icon: buildDefaultIcon() }; refreshOverlay(); break;
       case "builds-cancel": ovState.draft = null; refreshOverlay(); break;
       case "builds-pick-icon": openIconPicker((w) => { ovState.draft.icon = w.img; }); break;
+      case "builds-sel": ovState.sel = ovState.sel === +t.dataset.id ? null : +t.dataset.id; refreshOverlay(); break;
       case "builds-save": {
         const d = ovState.draft;
-        builds.push({ id: nextBuildId++, name: (d.name || "").trim() || `Build ${builds.length + 1}`, icon: d.icon, ts: Date.now(), build: JSON.parse(JSON.stringify(build)) });
-        persistBuilds(); ovState.draft = null; refreshOverlay(); break;
+        const nb = { id: nextBuildId++, name: (d.name || "").trim() || `Build ${builds.length + 1}`, icon: d.icon, ts: Date.now(), build: JSON.parse(JSON.stringify(build)) };
+        builds.push(nb); persistBuilds(); ovState.draft = null; ovState.sel = nb.id; flashBuild(nb.id); break;
       }
       case "builds-load": {
         const b = builds.find(x => x.id === +t.dataset.id);
         if (b) { build = normalizeBuild(JSON.parse(JSON.stringify(b.build))); persistBuild(); closeOverlay(); render(); }
         break;
       }
-      case "builds-overwrite": armOrDo(t, () => { const b = builds.find(x => x.id === +t.dataset.id); if (b) { b.build = JSON.parse(JSON.stringify(build)); b.ts = Date.now(); persistBuilds(); refreshOverlay(); } }); break;
-      case "builds-del": armOrDo(t, () => { const id = +t.dataset.id; builds = builds.filter(b => b.id !== id); persistBuilds(); refreshOverlay(); }); break;
+      case "builds-overwrite": { const b = builds.find(x => x.id === +t.dataset.id); if (b) { b.build = JSON.parse(JSON.stringify(build)); b.ts = Date.now(); persistBuilds(); ovState.sel = b.id; flashBuild(b.id); } break; }
+      case "builds-del": armOrDo(t, () => { const id = +t.dataset.id; builds = builds.filter(b => b.id !== id); if (ovState.sel === id) ovState.sel = null; persistBuilds(); refreshOverlay(); }); break;
       case "iconpick-cat": dovState.cat = t.dataset.c; refreshDetail(); break;
       case "iconpick-cat-clear": e.stopPropagation(); dovState.cat = null; refreshDetail(); break;
       case "iconpick-pick": { const w = (D.wardrobe || []).find(x => x.sprite === t.dataset.k); if (w && dovState.onPick) dovState.onPick(w); closeDetail(); refreshOverlay(); break; }
