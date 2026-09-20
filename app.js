@@ -65,6 +65,7 @@
   const jsave = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} };
 
   const emptySlot = () => ({ cid: null, fusion: null, artifactId: null, relic: null, spellGemIds: [], personality: null, scrolls: {} });
+  const freshBuild = () => ({ schema: 3, specId: null, perkAlloc: {}, anoints: [], slots: Array.from({ length: 6 }, emptySlot) });
   let build = jload(LS.build, null);
   // schema 2 stored perkAlloc as a binary de-allocation map ({key:1} = deallocated).
   // schema 3 stores an allocated rank count ({key:R}; absent key = fully allocated = maxRanks).
@@ -75,7 +76,7 @@
     }
     build.schema = 3;
   }
-  if (!build || build.schema !== 3) build = { schema: 3, specId: null, perkAlloc: {}, slots: Array.from({ length: 6 }, emptySlot) };
+  if (!build || build.schema !== 3) build = freshBuild();
   build.perkAlloc = build.perkAlloc || {};
   build.anoints = Array.isArray(build.anoints) ? build.anoints : [];   // equipped anointments [{specId,key}], max 5
   while (build.slots.length < 6) build.slots.push(emptySlot());
@@ -318,9 +319,13 @@
         ${spec ? `<button class="slot-remove" data-action="clear-spec" title="Remove">✕</button>` : ""}
       </div>`;
 
+    const eqAnoints = equippedAnointObjs();
+    const anointIcons = eqAnoints.length
+      ? `<div class="anoint-tile-icons">${eqAnoints.map(a => `<span class="anoint-mini" title="${esc(a.name)}">${a.icon ? spriteImg(a.icon, "px") : "✦"}</span>`).join("")}</div>`
+      : `<span class="spec-tile-plus">✦</span>`;
     const anointTile = `
       <div class="spec-tile anoint-tile ${build.anoints.length ? "filled" : ""}" data-action="open-anoint" title="Anointments">
-        <div class="spec-tile-icon"><span class="spec-tile-plus">✦</span></div>
+        <div class="spec-tile-icon">${anointIcons}</div>
         <div class="spec-tile-label">Anointments</div>
         ${build.anoints.length ? `<div class="spec-tile-sub">${build.anoints.length}/${ANOINT_MAX} equipped</div>` : ""}
       </div>`;
@@ -1587,7 +1592,7 @@
       case "pick-spec": openSpecPicker(); break;
       case "remove-creature": armOrDo(t, () => { build.slots[+t.dataset.slot] = emptySlot(); persistBuild(); render(); }); break;
       case "clear-spec": e.stopPropagation(); build.specId = null; persistBuild(); render(); break;
-      case "clear-party": armOrDo(t, () => { build = { schema: 2, specId: null, perkAlloc: {}, slots: Array.from({ length: 6 }, emptySlot) }; persistBuild(); render(); }); break;
+      case "clear-party": armOrDo(t, () => { build = freshBuild(); persistBuild(); render(); }); break;
       case "open-artifacts": openArtifactLibrary(null); break;
       case "toggle-menu": e.stopPropagation(); el("main-menu").classList.toggle("hidden"); break;
       case "open-builds": openBuilds(); break;

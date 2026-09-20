@@ -408,6 +408,11 @@ h1, h2, h3 { margin: 0; }
 .spec-tile-icon { width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; }
 .spec-tile-icon img { width: 100%; height: 100%; object-fit: contain; }
 .spec-tile-plus { font-size: 24px; color: var(--accent2); }
+/* equipped anointment perk icons shown in the Anointments tile */
+.anoint-tile .spec-tile-icon { width: auto; max-width: 100%; height: auto; min-height: 44px; }
+.anoint-tile-icons { display: flex; flex-wrap: wrap; gap: 3px; justify-content: center; }
+.anoint-mini { width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; }
+.anoint-mini img { width: 100%; height: 100%; object-fit: contain; }
 .spec-tile-label { font-weight: 600; font-size: 13px; line-height: 1.15; }
 .spec-tile-sub { font-size: 11px; color: var(--text-dim); }
 .spec-tile .slot-remove { display: flex; top: 6px; right: 6px; }
