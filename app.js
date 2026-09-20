@@ -60,11 +60,11 @@
   const _sat = (r, g, b) => { const mx = Math.max(r, g, b), mn = Math.min(r, g, b); return mx ? (mx - mn) / mx : 0; };
   const _rgb2hsv = (r, g, b) => { r /= 255; g /= 255; b /= 255; const mx = Math.max(r, g, b), mn = Math.min(r, g, b), dl = mx - mn; let h = 0; if (dl) { if (mx === r) h = ((g - b) / dl + 6) % 6; else if (mx === g) h = (b - r) / dl + 2; else h = (r - g) / dl + 4; h /= 6; } return [h, mx ? dl / mx : 0, mx]; };
   const _hsv2rgb = (h, s, v) => { const i = Math.floor(h * 6), f = h * 6 - i, p = v * (1 - s), q = v * (1 - f * s), u = v * (1 - (1 - f) * s); let r, g, b; switch (i % 6) { case 0: r = v; g = u; b = p; break; case 1: r = q; g = v; b = p; break; case 2: r = p; g = v; b = u; break; case 3: r = p; g = q; b = v; break; case 4: r = u; g = p; b = v; break; default: r = v; g = p; b = q; } return [r * 255, g * 255, b * 255]; };
-  // The 16 cornether base shapes share ONE fixed 13-colour palette = two ramps (purple BODY + blue-grey
-  // OUTLINE). Classify each pixel by nearest ramp member — exact for the palette (0 errors) and correct at
-  // the dark end, where saturation/hue alone confuse dark-purple body with dark-blue-grey outline.
-  const _GEM_OUTLINE_RAMP = [[255, 255, 255], [216, 217, 226], [175, 177, 194], [129, 132, 158], [99, 102, 129], [73, 76, 100]];
-  const _GEM_BODY_RAMP = [[145, 124, 171], [102, 82, 128], [58, 49, 81], [45, 48, 74], [41, 38, 64], [19, 17, 35], [2, 0, 22]];
+  // The 16 cornether base shapes share ONE fixed 13-colour palette = two ramps. This is the HAND-ASSIGNED
+  // routing (user-mapped each base hex to Main or Outline): deterministic, per-pixel, no heuristics.
+  // Outline includes 2D304A (the shadowed rim, 99% border in the base). Each pixel routes by nearest hex.
+  const _GEM_OUTLINE_RAMP = [[255, 255, 255], [216, 217, 226], [175, 177, 194], [129, 132, 158], [99, 102, 129], [73, 76, 100], [45, 48, 74]];
+  const _GEM_BODY_RAMP = [[145, 124, 171], [102, 82, 128], [58, 49, 81], [41, 38, 64], [19, 17, 35], [2, 0, 22]];
   const _nearest = (r, g, b, pal) => { let d = 1e9; for (const c of pal) { const e = (r - c[0]) ** 2 + (g - c[1]) ** 2 + (b - c[2]) ** 2; if (e < d) d = e; } return d; };
   const _isOutlinePx = (r, g, b) => _nearest(r, g, b, _GEM_OUTLINE_RAMP) <= _nearest(r, g, b, _GEM_BODY_RAMP);
   // Each ramp is regenerated from its rolled colour: keep the colour's HUE + SATURATION, ramp the VALUE with
@@ -76,23 +76,19 @@
     if (_gemOut.has(key)) return _gemOut.get(key);
     const src = _gemBase.get(path); if (!src) return null;
     const W = src.width, H = src.height, m = _hex(main), o = _hex(outline), d = new Uint8ClampedArray(src.data);
-    // Outline = the shape's RIM plus the blue-grey highlight ramp. The rim's shadowed (top) side is painted
-    // with body-palette colours in the base, so colour alone misses it — add a border test: any pixel
-    // touching transparency is rim ⇒ outline. Interior blue-grey highlights stay outline by colour.
-    const opaque = (x, y) => x >= 0 && x < W && y >= 0 && y < H && d[(y * W + x) * 4 + 3] >= 8;
-    const isBorder = (x, y) => { for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) if (!opaque(x + dx, y + dy)) return true; return false; };
-    const isOut = (x, y, i) => isBorder(x, y) || _isOutlinePx(d[i], d[i + 1], d[i + 2]);
+    // Deterministic: each pixel routes to Main or Outline purely by which hand-assigned ramp its base
+    // colour is nearest to. No border/shape heuristics.
     let bMn = 255, bMx = 0, oMn = 255, oMx = 0;
-    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
-      const i = (y * W + x) * 4; if (d[i + 3] < 8) continue;
+    for (let i = 0; i < d.length; i += 4) {
+      if (d[i + 3] < 8) continue;
       const l = _lum(d[i], d[i + 1], d[i + 2]);
-      if (isOut(x, y, i)) { if (l < oMn) oMn = l; if (l > oMx) oMx = l; }
+      if (_isOutlinePx(d[i], d[i + 1], d[i + 2])) { if (l < oMn) oMn = l; if (l > oMx) oMx = l; }
       else { if (l < bMn) bMn = l; if (l > bMx) bMx = l; }
     }
-    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
-      const i = (y * W + x) * 4; if (d[i + 3] < 8) continue;
+    for (let i = 0; i < d.length; i += 4) {
+      if (d[i + 3] < 8) continue;
       const l = _lum(d[i], d[i + 1], d[i + 2]);
-      const out = isOut(x, y, i)
+      const out = _isOutlinePx(d[i], d[i + 1], d[i + 2])
         ? _shade(o, (l - oMn) / Math.max(1, oMx - oMn))
         : _shade(m, (l - bMn) / Math.max(1, bMx - bMn));
       d[i] = out[0]; d[i + 1] = out[1]; d[i + 2] = out[2];
