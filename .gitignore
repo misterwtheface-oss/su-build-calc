@@ -13,3 +13,4 @@ Thumbs.db
 # scratch
 tmp/
 *.tmp
+tools/nether_eyedrop.py
