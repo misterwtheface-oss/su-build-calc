@@ -694,6 +694,7 @@ h1, h2, h3 { margin: 0; }
 
 /* mobile overrides for v2 components */
 @media (max-width: 600px) {
+  .cd-left { width: auto; }   /* full-width when stacked on top so the sprite centers */
   .spec-grid { grid-template-columns: repeat(5, 1fr); gap: 6px; }        /* ≥5 per row */
   .spec-pick .pt-name { font-size: 9px; line-height: 1.05; }
   .spec-right, .nether-form { width: auto; }
