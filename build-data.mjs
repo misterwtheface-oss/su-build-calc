@@ -107,21 +107,30 @@ for (const e of tc.entities) {
 const taxonomy = readJSON(path.join(MODEL, 'tag_taxonomy.json'));
 const taxoTags = readJSON(path.join(MODEL, 'trait_taxonomy_tags.json')).by_trait;
 const traits = {};
+let innateTagStripped = 0;
 for (const t of consolidated) {
   const tag = tagByTraitId.get(t.id) || {};
   const cls = (t.source_creature && CLASS_SET.has(t.source_creature.class)) ? t.source_creature.class : null;
+  const desc = t.desc || t.effect_prose || '';
+  // Correction: "Related Trait::Innate Trait" was mass-applied to ~every trait; it should only mark
+  // traits that actually REFERENCE innate traits (their text mentions "innate"). Strip the rest.
+  let taxo = (taxoTags[String(t.id)] || []).map(a => a.cat + '::' + a.val);
+  if (taxo.includes('Related Trait::Innate Trait') && !/innate/i.test(desc)) {
+    taxo = taxo.filter(k => k !== 'Related Trait::Innate Trait'); innateTagStripped++;
+  }
   traits[t.id] = {
     id: t.id,
     name: t.name || t.key || `Trait ${t.id}`,
-    desc: t.desc || t.effect_prose || '',
+    desc,
     cls,
     produces: tag.produces || [],
     consumes: tag.consumes || [],
     labels: tag.labels || [],
     stats: tag.stats || [],
-    taxo: (taxoTags[String(t.id)] || []).map(a => a.cat + '::' + a.val),
+    taxo,
   };
 }
+console.log(`  taxonomy fix: stripped over-applied "Innate Trait" tag from ${innateTagStripped} traits (kept only innate-referencing)`);
 
 // ── creatures ──────────────────────────────────────────────────────────────
 // Spine = creatures_ref: the AUTHORITATIVE playable roster (1362), where EVERY
