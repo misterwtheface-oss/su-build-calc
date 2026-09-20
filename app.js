@@ -67,10 +67,15 @@
   const _GEM_BODY_RAMP = [[145, 124, 171], [102, 82, 128], [58, 49, 81], [41, 38, 64], [19, 17, 35], [2, 0, 22]];
   const _nearest = (r, g, b, pal) => { let d = 1e9; for (const c of pal) { const e = (r - c[0]) ** 2 + (g - c[1]) ** 2 + (b - c[2]) ** 2; if (e < d) d = e; } return d; };
   const _isOutlinePx = (r, g, b) => _nearest(r, g, b, _GEM_OUTLINE_RAMP) <= _nearest(r, g, b, _GEM_BODY_RAMP);
-  // Each ramp is regenerated from its rolled colour: keep the colour's HUE + SATURATION, ramp the VALUE with
-  // the base pixel's luminance (0.42→0.98), easing saturation toward the highlight (×(1-0.35t)) so bright
-  // ends are LIGHT SATURATED TINTS — never white. Matched to eyedropped in-game stones.
-  const _shade = (c, t) => { const hsv = _rgb2hsv(c[0], c[1], c[2]); return _hsv2rgb(hsv[0], hsv[1] * (1 - 0.35 * t), 0.42 + 0.56 * t); };
+  // Each ramp is regenerated from its rolled colour, ANCHORED to that colour's brightness so the gradient
+  // honours the input: shadow = 0.45×value, highlight = only halfway to white (v + (1-v)·0.5). So black →
+  // black-to-grey (not stark white), dark colours stay deep, bright colours stay vibrant but not blown out.
+  // Saturation eases slightly toward the highlight (×(1-0.30t)).
+  const _shade = (c, t) => {
+    const hsv = _rgb2hsv(c[0], c[1], c[2]);
+    const shadowV = hsv[2] * 0.45, highV = hsv[2] + (1 - hsv[2]) * 0.5;
+    return _hsv2rgb(hsv[0], hsv[1] * (1 - 0.30 * t), shadowV + (highV - shadowV) * t);
+  };
   function recolorGem(path, main, outline) {
     const key = path + "|" + main + "|" + outline;
     if (_gemOut.has(key)) return _gemOut.get(key);
