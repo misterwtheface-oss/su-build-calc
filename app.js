@@ -971,49 +971,46 @@
     </div></div>`;
   }
 
-  // ── Tag Synergy — visualize taxonomy tags shared across the whole build ──
-  // Each "carrier" is a build element (the spec, each equipped anointment, each creature with
-  // its innate/fusion/artifact/nether traits + equipped spell gems). Tags on ≥2 carriers overlap.
-  function buildTagCarriers() {
-    const carriers = [];
-    const addAll = (set, arr) => { for (const k of (arr || [])) set.add(k); };
+  // ── Tag Synergy — taxonomy tags shared across the build, at the individual EFFECT level ──
+  // Each effect (a single perk, anointment, trait, or spell) is its own entry with its description
+  // and owner; tags carried by ≥2 effects overlap.
+  function buildTagEffects() {
+    const effects = [];   // {name, desc, tags:[], owner, kind}
     if (build.specId != null) {
       const s = SPEC.get(build.specId);
-      if (s) { const set = new Set(); for (const p of allocatedPerks(s)) addAll(set, p.taxo); if (set.size) carriers.push({ label: s.label, kind: "Spec", tags: set }); }
+      if (s) for (const p of allocatedPerks(s)) if ((p.taxo || []).length) effects.push({ name: p.name, desc: perkText(p.desc, perkRank(s, p)), tags: p.taxo, owner: s.label, kind: "Perk" });
     }
-    for (const a of equippedAnointObjs()) { const set = new Set(a.taxo || []); if (set.size) carriers.push({ label: a.name, kind: "Anoint", tags: set }); }
+    for (const a of equippedAnointObjs()) if ((a.taxo || []).length) effects.push({ name: a.name, desc: perkText(a.desc, a.ranks), tags: a.taxo, owner: a.spec || "Anointment", kind: "Anointment" });
     for (const slot of build.slots) {
       const c = CREA.get(slot.cid); if (!c) continue;
-      const set = new Set();
-      for (const tid of slotTraitIds(slot)) addAll(set, (TRAIT[tid] || {}).taxo);       // innate + fusion + artifact + nether traits
-      for (const gid of slot.spellGemIds || []) { const g = spellGems.find(x => x.id === gid); const sp = g ? gemSpell(g) : null; if (sp) addAll(set, sp.taxo); }
-      if (set.size) carriers.push({ label: c.name, kind: "Creature", tags: set });
+      for (const tid of slotTraitIds(slot)) { const tr = TRAIT[tid]; if (tr && (tr.taxo || []).length) effects.push({ name: tr.name, desc: richText(tr.desc || ""), tags: tr.taxo, owner: c.name, kind: "Trait" }); }
+      for (const gid of slot.spellGemIds || []) { const g = spellGems.find(x => x.id === gid); const sp = g ? gemSpell(g) : null; if (sp && (sp.taxo || []).length) effects.push({ name: sp.name, desc: richText(sp.desc || ""), tags: sp.taxo, owner: c.name, kind: "Spell" }); }
     }
-    return carriers;
+    return effects;
   }
   function openSynergy() { ovState = { kind: "synergy", render: renderSynergy }; openOverlay(ovState.render()); }
   function renderSynergy() {
-    const carriers = buildTagCarriers();
+    const effects = buildTagEffects();
     const tagMap = new Map();
-    for (const car of carriers) for (const k of car.tags) (tagMap.get(k) || tagMap.set(k, []).get(k)).push(car);
-    const shared = [...tagMap.entries()].filter(([, cs]) => cs.length >= 2)
+    for (const ef of effects) for (const k of ef.tags) (tagMap.get(k) || tagMap.set(k, []).get(k)).push(ef);
+    const shared = [...tagMap.entries()].filter(([, es]) => es.length >= 2)
       .sort((a, b) => b[1].length - a[1].length || taxoValName(a[0]).localeCompare(taxoValName(b[0])));
-    const kindCls = { Spec: "k-spec", Anoint: "k-anoint", Creature: "k-crea" };
-    const rows = shared.map(([k, cs]) => `
-      <div class="syn-row">
-        <span class="syn-count" title="${cs.length} sources share this tag">×${cs.length}</span>
-        <div class="syn-main">
-          <div class="syn-head"><b>${esc(taxoValName(k))}</b><span class="opt-chev">${esc(taxoCatName(k))}</span></div>
-          <div class="syn-carriers">${cs.map(c => `<span class="syn-chip ${kindCls[c.kind] || ""}" title="${esc(c.kind)}">${esc(c.label)}</span>`).join("")}</div>
-        </div></div>`).join("")
-      || `<div class="slot-sub" style="padding:12px">${carriers.length ? "No tags are shared across your build yet — add more matching pieces." : "Add a specialization, anointments and creatures to see shared tags."}</div>`;
+    const kindCls = { Perk: "k-spec", Anointment: "k-anoint", Trait: "k-crea", Spell: "k-spell" };
+    const rows = shared.map(([k, es]) => `
+      <div class="syn-group">
+        <div class="syn-tag"><span class="syn-count">×${es.length}</span><b>${esc(taxoValName(k))}</b><span class="opt-chev">${esc(taxoCatName(k))}</span></div>
+        <div class="syn-effs">${es.map(e => `<div class="syn-eff">
+          <div class="syn-eff-head"><b>${esc(e.name)}</b><span class="syn-owner ${kindCls[e.kind] || ""}" title="${esc(e.kind)}">${esc(e.owner)}</span></div>
+          ${e.desc ? `<div class="trait-desc">${e.desc}</div>` : ""}</div>`).join("")}</div>
+      </div>`).join("")
+      || `<div class="slot-sub" style="padding:12px">${effects.length ? "No tags are shared across your build's effects yet — add more matching pieces." : "Add a specialization, anointments and creatures to see shared tags."}</div>`;
     return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel">
       <div class="overlay-header"><h2>Tag Synergy</h2><button class="ovl-close" data-action="close-ovl">✕</button></div>
       <div class="overlay-body"><div class="ovl-center"><div class="ovl-center-scroll">
         ${shared.length ? `<div class="section-label">Shared tags — ${shared.length}</div>` : ""}
         <div class="syn-list">${rows}</div>
       </div></div></div>
-      <div class="overlay-footer"><span class="foot-info">${carriers.length} build source${carriers.length === 1 ? "" : "s"}</span>
+      <div class="overlay-footer"><span class="foot-info">${effects.length} build effect${effects.length === 1 ? "" : "s"}</span>
         <button class="btn-confirm" data-action="close-ovl">Done</button></div>
     </div></div>`;
   }

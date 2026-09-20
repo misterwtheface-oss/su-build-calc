@@ -566,18 +566,22 @@ h1, h2, h3 { margin: 0; }
 .ns-info-actions { justify-content: center; }
 .ovl-right .section-label { text-align: center; }
 .card-tile.locked .card-level { opacity: .5; }   /* apply-all mode: per-card steppers are inert */
-/* Tag Synergy — shared-tag rows */
-.syn-list { display: flex; flex-direction: column; gap: 6px; }
-.syn-row { display: flex; align-items: flex-start; gap: 10px; padding: 8px 10px; background: var(--surface); border: 1px solid var(--border-dim); border-radius: 8px; }
-.syn-count { flex: 0 0 auto; font-weight: 800; color: var(--cap); font-size: 15px; min-width: 30px; text-align: center; }
-.syn-main { flex: 1; min-width: 0; }
-.syn-head { display: flex; align-items: baseline; gap: 8px; margin-bottom: 5px; }
-.syn-head .opt-chev { margin-left: auto; opacity: .55; font-size: 12px; }
-.syn-carriers { display: flex; flex-wrap: wrap; gap: 4px; }
-.syn-chip { font-size: 11px; padding: 2px 7px; border-radius: 999px; background: var(--surface2); border: 1px solid var(--border-dim); color: var(--text-dim); }
-.syn-chip.k-spec { border-color: var(--accent); color: var(--cap); }
-.syn-chip.k-anoint { border-color: var(--accent2); color: var(--text); }
-.syn-chip.k-crea { border-color: var(--border-dim); color: var(--text-dim); }
+/* Tag Synergy — one group per shared tag; each contributing effect shows its description + owner */
+.syn-list { display: flex; flex-direction: column; gap: 10px; }
+.syn-group { border: 1px solid var(--border-dim); border-radius: 8px; overflow: hidden; }
+.syn-tag { display: flex; align-items: baseline; gap: 8px; padding: 7px 10px; background: var(--surface2); border-bottom: 1px solid var(--border-dim); }
+.syn-tag b { font-size: 14px; }
+.syn-tag .syn-count { flex: 0 0 auto; font-weight: 800; color: var(--cap); }
+.syn-tag .opt-chev { margin-left: auto; opacity: .55; font-size: 12px; }
+.syn-effs { display: flex; flex-direction: column; }
+.syn-eff { padding: 7px 10px; border-top: 1px solid var(--border-dim); text-align: left; }
+.syn-eff:first-child { border-top: 0; }
+.syn-eff-head { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; margin-bottom: 3px; }
+.syn-owner { margin-left: auto; font-size: 11px; padding: 1px 7px; border-radius: 999px; background: var(--surface); border: 1px solid var(--border-dim); color: var(--text-dim); }
+.syn-owner.k-spec { border-color: var(--accent); color: var(--cap); }
+.syn-owner.k-anoint { border-color: var(--accent2); color: var(--text); }
+.syn-owner.k-crea { border-color: var(--border-dim); color: var(--text-dim); }
+.syn-owner.k-spell { border-color: #3a6ea5; color: #9fd0ff; }
 /* creature detail left panel — just a centered sprite + class·race */
 .cd-left { width: 180px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; text-align: center; }
 .cd-sprite { width: 130px; height: 130px; display: flex; align-items: center; justify-content: center; }
