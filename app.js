@@ -1096,14 +1096,13 @@
           <button class="slot-mini" data-action="art-edit" data-id="${sel.id}">Edit</button>
           <button class="slot-mini danger" data-action="art-del" data-id="${sel.id}">Delete</button></div>`;
     } else info = `<div class="slot-sub" style="padding:12px">Select an artifact.</div>`;
-    const filterbar = `<div class="ovl-filterbar"><button class="facet ${st.hideEquipped ? "on" : ""}" data-action="artlib-hide-equipped">Hide equipped</button></div>`;
     return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel">
       <div class="overlay-header"><h2>Artifacts${manage ? "" : " — " + esc(c ? c.name : "")}</h2><button class="ovl-close" data-action="close-ovl">✕</button></div>
       <div class="overlay-body">
-        <div class="ovl-center">${filterbar}<div class="ovl-center-scroll"><div class="pick-grid">${tiles}</div></div></div>
+        <div class="ovl-center"><div class="ovl-center-scroll"><div class="pick-grid">${tiles}</div></div></div>
         <div class="ovl-right">${info}</div>
       </div>
-      <div class="overlay-footer"><span class="foot-info"></span>
+      <div class="overlay-footer"><button class="facet ${st.hideEquipped ? "on" : ""}" data-action="artlib-hide-equipped">Hide equipped</button>
         <div>${equippedId != null ? `<button class="btn-ghost" data-action="art-unequip">Unequip</button>` : ""}
         <button class="btn-confirm" data-action="art-new">＋ Build new artifact</button></div></div>
     </div></div>`;
@@ -1469,14 +1468,13 @@
           <button class="slot-mini" data-action="nether-edit" data-id="${sel.id}">Edit</button>
           <button class="slot-mini danger" data-action="nether-del" data-id="${sel.id}">Delete</button></div>`;
     } else info = `<div class="slot-sub" style="padding:12px">Select a stone to see its effects.</div>`;
-    const filterbar = `<div class="ovl-filterbar"><button class="facet ${st.hideEquipped ? "on" : ""}" data-action="nether-hide-equipped">Hide equipped</button></div>`;
     return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel">
       <div class="overlay-header"><h2>Nether Stones</h2><button class="ovl-close" data-action="close-ovl">✕</button></div>
       <div class="overlay-body">
-        <div class="ovl-center">${filterbar}<div class="ovl-center-scroll"><div class="pick-grid">${tiles}</div></div></div>
+        <div class="ovl-center"><div class="ovl-center-scroll"><div class="pick-grid">${tiles}</div></div></div>
         <div class="ovl-right">${info}</div>
       </div>
-      <div class="overlay-footer"><span class="foot-info"></span>
+      <div class="overlay-footer"><button class="facet ${st.hideEquipped ? "on" : ""}" data-action="nether-hide-equipped">Hide equipped</button>
         <button class="btn-confirm" data-action="nether-new">＋ Build new stone</button></div>
     </div></div>`;
   }
@@ -1596,14 +1594,13 @@
           <button class="slot-mini" data-action="sg-edit" data-id="${sel.id}">Edit</button>
           <button class="slot-mini danger" data-action="sg-del" data-id="${sel.id}">Delete</button></div>`;
     } else info = `<div class="slot-sub" style="padding:12px">Select a spell gem.</div>`;
-    const filterbar = `<div class="ovl-filterbar"><button class="facet ${st.hideEquipped ? "on" : ""}" data-action="sg-hide-equipped">Hide equipped</button></div>`;
     return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel">
       <div class="overlay-header"><h2>Spell Gems${ctx ? " — equip" : ""}</h2><button class="ovl-close" data-action="close-ovl">✕</button></div>
       <div class="overlay-body">
-        <div class="ovl-center">${filterbar}<div class="ovl-center-scroll"><div class="pick-grid">${tiles}</div></div></div>
+        <div class="ovl-center"><div class="ovl-center-scroll"><div class="pick-grid">${tiles}</div></div></div>
         <div class="ovl-right">${info}</div>
       </div>
-      <div class="overlay-footer"><span class="foot-info"></span>
+      <div class="overlay-footer"><button class="facet ${st.hideEquipped ? "on" : ""}" data-action="sg-hide-equipped">Hide equipped</button>
         <button class="btn-confirm" data-action="sg-new">＋ Build new spell gem</button></div>
     </div></div>`;
   }
