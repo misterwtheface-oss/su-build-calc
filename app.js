@@ -290,11 +290,21 @@
     return out;
   }
   const artifactPct = (slot) => artifactPctOf(resolveArtifact(slot));
+  // relic: 0.1% of its stat per rank (→ 10% at rank 100)
+  function relicPctOf(slot) {
+    const out = { hp: 0, atk: 0, def: 0, int: 0, spd: 0 };
+    const rel = slot.relic; if (!rel) return out;
+    const r = RELIC.get(rel.id); if (!r || !r.statBonus) return out;
+    const k = PROP_STAT[r.statBonus]; if (k) out[k] += 0.1 * (rel.rank || 0);
+    return out;
+  }
   // Personality = flat ±33% on the base stat: raised ×4/3 (+33%), lowered ×2/3 (−33%), others unchanged.
   const persRatio = (slot, k) => { const p = slot.personality ? PERS.get(slot.personality) : null; return p ? (p.raise === k ? 4 / 3 : p.lower === k ? 2 / 3 : 1) : 1; };
   function finalStats(slot) {
     const b = baseStats(slot); if (!b) return null;
     const pct = artifactPct(slot);
+    const rp = relicPctOf(slot);
+    for (const k of STAT_KEYS) pct[k] = Math.round((pct[k] + rp[k]) * 100) / 100;   // fold relic % into the bonus column
     const adj = {}, final = {};
     for (const k of STAT_KEYS) {
       const a = b[k] * persRatio(slot, k);
@@ -1276,19 +1286,10 @@
       </div>`;
   }
   function renderArtLiveBonus(a, rank, pct) {
-    const chips = [
-      ...(a.primary ? [`<span class="slot-chip filled">◆ ${esc(a.primary)}</span>`] : []),
-      ...a.stat.map(n => { const m = MAT_BY_PROP.get(n); return `<span class="slot-chip filled">${esc(m ? m.name : n)}</span>`; }),
-      ...a.trick.map(n => { const m = MAT_BY_PROP.get(n); return `<span class="slot-chip filled">${esc(m ? m.name : n)}</span>`; }),
-      ...a.traits.map(id => { const t = TRAITITEM.get(id); return `<span class="slot-chip filled">✦ ${esc(t ? t.traitName : id)}</span>`; }),
-      ...a.spells.map(id => { const sp = SPELL.get(id); return `<span class="slot-chip filled">✷ ${esc(sp ? sp.name : id)}</span>`; }),
-      ...a.netherIds.map(id => { const n = nether.find(x => x.id === id); return `<span class="slot-chip filled">◈ ${esc(n ? n.name : id)}</span>`; }),
-    ].join("") || `<span class="slot-sub">Tap a slot to add a material.</span>`;
     return `<div class="section-label">Live bonus · rank ${rank}</div>
-      <div class="stat-grid single" style="margin-bottom:12px">
+      <div class="stat-grid single">
         ${STAT_KEYS.map(k => `<div class="stat-row ${pct[k] ? "hl-med" : ""}"><span class="stat-name">${STAT_LABEL[k]}</span>
-          <span class="stat-val art">${pct[k] ? "+" + pct[k] + "%" : "—"}</span></div>`).join("")}</div>
-      <div class="section-label">Contents</div><div>${chips}</div>`;
+          <span class="stat-val art">${pct[k] ? "+" + pct[k] + "%" : "—"}</span></div>`).join("")}</div>`;
   }
   function renderArtifactBuilder() {
     const st = ovState, a = st.draft, rank = a.rank;
@@ -1440,7 +1441,7 @@
           <div class="slot-sub"><span style="color:${clsColor(b.cls)};font-weight:700">${esc(b.cls || "—")}</span>${c.race ? " · " + esc(c.race) : ""}</div></div>
         <div class="ovl-center"><div class="ovl-center-scroll">
           <div class="stat-grid"><div class="stat-header"><span>Stat</span><span style="text-align:right">Base</span>
-            <span style="text-align:right">Artifact</span><span style="text-align:right">Total</span></div>${rows}
+            <span style="text-align:right">Bonus</span><span style="text-align:right">Total</span></div>${rows}
             <div class="stat-row hl-high"><span class="stat-name">Total</span><span class="stat-val base">${b.total}</span>
               <span class="stat-val art"></span><span class="stat-val total">${fs.total}</span></div></div>
           <div class="section-label" style="margin-top:14px">Traits (innate${f ? " + fusion" : ""}${hasArtifactTrait ? " + artifact" : ""})</div>
