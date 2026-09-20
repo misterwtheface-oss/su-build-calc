@@ -237,6 +237,10 @@
 
   // ── stat computation (fusion + artifact + socketed nether) ─────────────────
   function resolveArtifact(slot) { return slot.artifactId != null ? artifacts.find(a => a.id === slot.artifactId) : null; }
+  // "equipped in the current build" tests, for the saved-list Hide-equipped filter
+  const artifactEquippedInBuild = (id) => build.slots.some(s => s.artifactId === id);
+  const netherEquippedInBuild = (id) => build.slots.some(s => { const a = resolveArtifact(s); return a && (a.netherIds || []).includes(id); });
+  const spellGemEquippedInBuild = (id) => build.slots.some(s => (s.spellGemIds || []).includes(id) || (() => { const a = resolveArtifact(s); return a && (a.spells || []).includes(id); })());
   function baseStats(slot) {
     const c = CREA.get(slot.cid); if (!c) return null;
     const f = slot.fusion != null ? CREA.get(slot.fusion) : null;
@@ -1039,7 +1043,8 @@
 
   // ── artifact library (equip) ───────────────────────────────────────────────
   function openArtifactLibrary(slotIdx) {
-    ovState = { kind: "artlib", slotIdx, render: renderArtifactLibrary };
+    const eq = slotIdx != null ? build.slots[slotIdx].artifactId : null;
+    ovState = { kind: "artlib", slotIdx, hideEquipped: false, sel: eq != null ? eq : (artifacts[0] ? artifacts[0].id : null), render: renderArtifactLibrary };
     openOverlay(ovState.render());
   }
   function artifactSummary(a) {
@@ -1049,24 +1054,55 @@
     if (n) parts.push(`${n}/8 slots`);
     return `R${a.rank} · ` + (parts.join(" · ") || "empty");
   }
+  const libRow = (ico, name, sub) => `<div class="prop-row static"><span class="prop-ico">${ico ? spriteImg(ico, "px") : ""}</span><span class="prop-name">${esc(name)}</span>${sub ? `<span class="prop-stat">${esc(sub)}</span>` : ""}</div>`;
+  // a row that also shows the granted trait's tooltip (for trait-item entries in info panels)
+  const libTraitRow = (ico, name, traitId) => {
+    const tr = traitId != null ? TRAIT[traitId] : null;
+    return `<div class="prop-row static rich"><span class="prop-ico">${ico ? spriteImg(ico, "px") : ""}</span>
+      <div class="prop-body"><span class="prop-name">${esc(name)}</span>
+        ${tr ? `<span class="prop-stat">grants <b>${esc(tr.name)}</b></span><div class="trait-desc">${richText(tr.desc || "")}</div>` : ""}</div></div>`;
+  };
+  function artContentRows(a) {
+    const r = [];
+    if (a.primary) { const p = PRIMARY.find(x => x.property === a.primary); r.push(libRow(p && p.icon, a.primary, "primary")); }
+    for (const n of a.stat || []) { const m = MAT_BY_PROP.get(n); r.push(libRow(m && m.icon, m ? m.name : n, n)); }
+    for (const n of a.trick || []) { const m = MAT_BY_PROP.get(n); r.push(libRow(m && m.icon, m ? m.name : n, n)); }
+    for (const id of a.traits || []) { const t = TRAITITEM.get(id); r.push(libTraitRow(t && t.icon, t ? t.name : id, t ? t.traitId : null)); }
+    for (const id of a.spells || []) { const g = spellGems.find(x => x.id === id); r.push(libRow(gemIcon(g), g ? gemName(g) : id, "spell gem")); }
+    for (const id of a.netherIds || []) { const nn = nether.find(x => x.id === id); r.push(libRow(gemPath(nn && nn.icon), nn ? nn.name : id, "nether")); }
+    return r.join("") || `<div class="slot-sub" style="padding:8px">Empty artifact.</div>`;
+  }
   function renderArtifactLibrary() {
     const st = ovState, manage = st.slotIdx == null;
     const slot = manage ? null : build.slots[st.slotIdx], c = slot ? CREA.get(slot.cid) : null;
     const equippedId = slot ? slot.artifactId : null;
-    const tiles = artifacts.map(a => `
-      <div class="lib-tile ${equippedId === a.id ? "equipped" : ""}">
-        <div class="lib-icon" data-action="${manage ? "art-edit" : "art-equip"}" data-id="${a.id}">${spriteImg(artIcon(a), "px")}</div>
-        <div class="lib-name">${esc(a.name)}</div>
-        <div class="lib-sub">${esc(artifactSummary(a))}</div>
-        <div class="lib-actions">
-          ${manage ? "" : `<button class="slot-mini" data-action="art-equip" data-id="${a.id}">${equippedId === a.id ? "Equipped" : "Equip"}</button>`}
-          <button class="slot-mini" data-action="art-edit" data-id="${a.id}">Edit</button>
-          <button class="slot-mini danger" data-action="art-del" data-id="${a.id}">✕</button>
-        </div></div>`).join("") || `<div class="slot-sub" style="padding:10px">No artifacts yet — build one.</div>`;
+    let list = artifacts;
+    if (st.hideEquipped) list = list.filter(a => !artifactEquippedInBuild(a.id) || a.id === equippedId);
+    const sel = st.sel != null ? artifacts.find(a => a.id === st.sel) : null;
+    const tiles = list.map(a => `
+      <div class="pick-tile ${st.sel === a.id ? "selected" : ""}" data-action="artlib-sel" data-id="${a.id}">
+        <div class="pt-sprite">${spriteImg(artIcon(a), "px")}</div>
+        <div class="pt-name">${esc(a.name)}</div></div>`).join("")
+      || `<div class="slot-sub" style="padding:10px">No artifacts${st.hideEquipped ? " match" : " yet — build one"}.</div>`;
+    let info;
+    if (sel) {
+      const equippedHere = equippedId === sel.id;
+      info = `<div class="ns-info-head"><span class="ns-info-icon">${spriteImg(artIcon(sel), "px")}</span><h3>${esc(sel.name)}</h3></div>
+        <div class="slot-sub">${esc(artifactSummary(sel))}</div>
+        <div class="section-label" style="margin-top:10px">Contents</div>
+        <div class="prop-list">${artContentRows(sel)}</div>
+        <div class="ns-info-actions">
+          ${manage ? "" : `<button class="slot-mini ${equippedHere ? "on" : ""}" data-action="art-equip" data-id="${sel.id}">${equippedHere ? "Equipped" : "Equip"}</button>`}
+          <button class="slot-mini" data-action="art-edit" data-id="${sel.id}">Edit</button>
+          <button class="slot-mini danger" data-action="art-del" data-id="${sel.id}">Delete</button></div>`;
+    } else info = `<div class="slot-sub" style="padding:12px">Select an artifact.</div>`;
+    const filterbar = `<div class="ovl-filterbar"><button class="facet ${st.hideEquipped ? "on" : ""}" data-action="artlib-hide-equipped">Hide equipped</button></div>`;
     return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel">
       <div class="overlay-header"><h2>Artifacts${manage ? "" : " — " + esc(c ? c.name : "")}</h2><button class="ovl-close" data-action="close-ovl">✕</button></div>
-      <div class="overlay-body"><div class="ovl-center"><div class="ovl-center-scroll">
-        <div class="lib-grid">${tiles}</div></div></div></div>
+      <div class="overlay-body">
+        <div class="ovl-center">${filterbar}<div class="ovl-center-scroll"><div class="pick-grid">${tiles}</div></div></div>
+        <div class="ovl-right">${info}</div>
+      </div>
       <div class="overlay-footer"><span class="foot-info"></span>
         <div>${equippedId != null ? `<button class="btn-ghost" data-action="art-unequip">Unequip</button>` : ""}
         <button class="btn-confirm" data-action="art-new">＋ Build new artifact</button></div></div>
@@ -1404,24 +1440,28 @@
     const m = MAT_BY_PROP.get(p.key); return m && m.icon ? m.icon : null;
   };
   function openNether() {   // library
-    ovState = { kind: "nether", sel: nether[0] ? nether[0].id : null, render: renderNether };
+    ovState = { kind: "nether", sel: nether[0] ? nether[0].id : null, hideEquipped: false, render: renderNether };
     openOverlay(ovState.render());
   }
   function renderNether() {
-    const sel = ovState.sel != null ? nether.find(n => n.id === ovState.sel) : null;
+    const st = ovState;
+    const sel = st.sel != null ? nether.find(n => n.id === st.sel) : null;
+    let list = nether;
+    if (st.hideEquipped) list = list.filter(n => !netherEquippedInBuild(n.id));
     // compact tiles: gem + name only; effects live in the info panel on selection
-    const tiles = nether.map(n => `
-      <div class="pick-tile ${ovState.sel === n.id ? "selected" : ""}" data-action="nether-sel" data-id="${n.id}">
+    const tiles = list.map(n => `
+      <div class="pick-tile ${st.sel === n.id ? "selected" : ""}" data-action="nether-sel" data-id="${n.id}">
         <div class="pt-sprite">${spriteImg(gemPath(n.icon), "px")}</div>
         <div class="pt-name">${esc(n.name)}</div></div>`).join("")
-      || `<div class="slot-sub" style="padding:10px">No Nether Stones yet — build one.</div>`;
+      || `<div class="slot-sub" style="padding:10px">No Nether Stones${st.hideEquipped ? " match" : " yet — build one"}.</div>`;
     let info;
     if (sel) {
-      const rows = (sel.props || []).map(p => `
-        <div class="prop-row static">
+      const rows = (sel.props || []).map(p => {
+        if (p.cat === "trait") { const t = TRAITITEM.get(p.key); return libTraitRow(netherPropIcon(p), t ? t.name : p.key, t ? t.traitId : null); }
+        return `<div class="prop-row static">
           <span class="prop-ico">${netherPropIcon(p) ? spriteImg(netherPropIcon(p), "px") : ""}</span>
-          <span class="prop-name">${esc(netherPropLabel(p))}</span></div>`).join("")
-        || `<div class="slot-sub" style="padding:8px">No effects.</div>`;
+          <span class="prop-name">${esc(netherPropLabel(p))}</span></div>`;
+      }).join("") || `<div class="slot-sub" style="padding:8px">No effects.</div>`;
       info = `<div class="ns-info-head"><span class="ns-info-icon">${spriteImg(gemPath(sel.icon), "px")}</span><h3>${esc(sel.name)}</h3></div>
         <div class="section-label">Effects</div>
         <div class="prop-list">${rows}</div>
@@ -1429,10 +1469,11 @@
           <button class="slot-mini" data-action="nether-edit" data-id="${sel.id}">Edit</button>
           <button class="slot-mini danger" data-action="nether-del" data-id="${sel.id}">Delete</button></div>`;
     } else info = `<div class="slot-sub" style="padding:12px">Select a stone to see its effects.</div>`;
+    const filterbar = `<div class="ovl-filterbar"><button class="facet ${st.hideEquipped ? "on" : ""}" data-action="nether-hide-equipped">Hide equipped</button></div>`;
     return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel">
       <div class="overlay-header"><h2>Nether Stones</h2><button class="ovl-close" data-action="close-ovl">✕</button></div>
       <div class="overlay-body">
-        <div class="ovl-center"><div class="ovl-center-scroll"><div class="pick-grid">${tiles}</div></div></div>
+        <div class="ovl-center">${filterbar}<div class="ovl-center-scroll"><div class="pick-grid">${tiles}</div></div></div>
         <div class="ovl-right">${info}</div>
       </div>
       <div class="overlay-footer"><span class="foot-info"></span>
@@ -1524,28 +1565,44 @@
 
   // ── spell gems: library + stepped wizard (1 spell + up to 3 property items) ──
   function openSpellGems() {   // library (manage mode when equipCtx is null)
-    ovState = { kind: "spellgemlib", equipCtx: null, render: renderSpellGemLib };
+    ovState = { kind: "spellgemlib", equipCtx: null, hideEquipped: false, sel: spellGems[0] ? spellGems[0].id : null, render: renderSpellGemLib };
     openOverlay(ovState.render());
+  }
+  function sgContentRows(g) {
+    const sp = gemSpell(g);
+    const r = [libRow(gemIcon(g), sp ? sp.name : "—", "spell")];
+    for (const pid of g.propIds || []) { const p = SPELLPROP.get(pid); r.push(libRow(p && p.icon, p ? p.name : pid, p ? (p.effect || "").split(":")[0].slice(0, 28) : "")); }
+    return r.join("");
   }
   function renderSpellGemLib() {
     const st = ovState, ctx = st.equipCtx;   // {kind:'artifact'|'creature'} when equipping
     const equipped = ctx ? new Set(ctx.equipped()) : null;
-    const tiles = spellGems.map(g => {
-      const on = equipped ? equipped.has(g.id) : false;
-      return `<div class="lib-tile ${on ? "equipped" : ""}">
-        <div class="lib-icon" data-action="${ctx ? "sg-equip" : "sg-edit"}" data-id="${g.id}">${spriteImg(gemIcon(g), "px")}</div>
-        <div class="lib-name">${esc(gemName(g))}</div>
-        <div class="lib-sub">${esc(gemSummary(g))}</div>
-        <div class="lib-actions">
-          ${ctx ? `<button class="slot-mini" data-action="sg-equip" data-id="${g.id}">${on ? "Equipped" : "Equip"}</button>` : ""}
-          <button class="slot-mini" data-action="sg-edit" data-id="${g.id}">Edit</button>
-          <button class="slot-mini danger" data-action="sg-del" data-id="${g.id}">✕</button>
-        </div></div>`;
-    }).join("") || `<div class="slot-sub" style="padding:10px">No spell gems yet — build one.</div>`;
+    let list = spellGems;
+    if (st.hideEquipped) list = list.filter(g => !spellGemEquippedInBuild(g.id) || (equipped && equipped.has(g.id)));
+    const sel = st.sel != null ? spellGems.find(g => g.id === st.sel) : null;
+    const tiles = list.map(g => `
+      <div class="pick-tile ${st.sel === g.id ? "selected" : ""}" data-action="sg-sel" data-id="${g.id}">
+        <div class="pt-sprite">${spriteImg(gemIcon(g), "px")}</div>
+        <div class="pt-name">${esc(gemName(g))}</div></div>`).join("")
+      || `<div class="slot-sub" style="padding:10px">No spell gems${st.hideEquipped ? " match" : " yet — build one"}.</div>`;
+    let info;
+    if (sel) {
+      const on = equipped ? equipped.has(sel.id) : false;
+      info = `<div class="ns-info-head"><span class="ns-info-icon">${spriteImg(gemIcon(sel), "px")}</span><h3>${esc(gemName(sel))}</h3></div>
+        <div class="section-label" style="margin-top:6px">Contents</div>
+        <div class="prop-list">${sgContentRows(sel)}</div>
+        <div class="ns-info-actions">
+          ${ctx ? `<button class="slot-mini ${on ? "on" : ""}" data-action="sg-equip" data-id="${sel.id}">${on ? "Equipped" : "Equip"}</button>` : ""}
+          <button class="slot-mini" data-action="sg-edit" data-id="${sel.id}">Edit</button>
+          <button class="slot-mini danger" data-action="sg-del" data-id="${sel.id}">Delete</button></div>`;
+    } else info = `<div class="slot-sub" style="padding:12px">Select a spell gem.</div>`;
+    const filterbar = `<div class="ovl-filterbar"><button class="facet ${st.hideEquipped ? "on" : ""}" data-action="sg-hide-equipped">Hide equipped</button></div>`;
     return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel">
       <div class="overlay-header"><h2>Spell Gems${ctx ? " — equip" : ""}</h2><button class="ovl-close" data-action="close-ovl">✕</button></div>
-      <div class="overlay-body"><div class="ovl-center"><div class="ovl-center-scroll">
-        <div class="lib-grid">${tiles}</div></div></div></div>
+      <div class="overlay-body">
+        <div class="ovl-center">${filterbar}<div class="ovl-center-scroll"><div class="pick-grid">${tiles}</div></div></div>
+        <div class="ovl-right">${info}</div>
+      </div>
       <div class="overlay-footer"><span class="foot-info"></span>
         <button class="btn-confirm" data-action="sg-new">＋ Build new spell gem</button></div>
     </div></div>`;
@@ -1616,7 +1673,7 @@
 
   // creature spell slots (up to 3 equipped spell gems) — equip from the library
   function openCreatureSpells(slotIdx) {
-    ovState = { kind: "spellgemlib", equipCtx: {
+    ovState = { kind: "spellgemlib", hideEquipped: false, sel: spellGems[0] ? spellGems[0].id : null, equipCtx: {
       kind: "creature", slotIdx,
       equipped: () => build.slots[slotIdx].spellGemIds,
       max: 3,
@@ -1747,11 +1804,13 @@
       case "perk-none": { const sp = SPEC.get(dovState.specId); const m = {}; sp.perks.forEach(p => m[p.key] = 0); build.perkAlloc[dovState.specId] = m; persistBuild(); refreshDetail(); break; }
 
       // artifact library + builder
+      case "artlib-sel": ovState.sel = +t.dataset.id; refreshOverlay(); break;
+      case "artlib-hide-equipped": e.stopPropagation(); ovState.hideEquipped = !ovState.hideEquipped; refreshOverlay(); break;
       case "art-equip": build.slots[ovState.slotIdx].artifactId = +t.dataset.id; persistBuild(); closeOverlay(); render(); break;
       case "art-unequip": build.slots[ovState.slotIdx].artifactId = null; persistBuild(); closeOverlay(); render(); break;
       case "art-new": openArtifactBuilder(null, ovState.slotIdx); break;
       case "art-edit": openArtifactBuilder(+t.dataset.id, ovState.slotIdx); break;
-      case "art-del": armOrDo(t, () => { const id = +t.dataset.id; artifacts = artifacts.filter(a => a.id !== id); build.slots.forEach(s => { if (s.artifactId === id) s.artifactId = null; }); persistArtifacts(); persistBuild(); refreshOverlay(); }); break;
+      case "art-del": armOrDo(t, () => { const id = +t.dataset.id; artifacts = artifacts.filter(a => a.id !== id); build.slots.forEach(s => { if (s.artifactId === id) s.artifactId = null; }); if (ovState.sel === id) ovState.sel = artifacts[0] ? artifacts[0].id : null; persistArtifacts(); persistBuild(); refreshOverlay(); }); break;
       case "artb-next": ovState.step = ovState.step === "type" ? "slots" : "name"; ovState.pickType = null; ovState.preview = null; ovState.search = ""; refreshOverlay(); break;
       case "artb-back": ovState.step = ovState.step === "name" ? "slots" : "type"; ovState.pickType = null; ovState.preview = null; ovState.search = ""; refreshOverlay(); break;
       case "artb-closecat": ovState.pickType = null; ovState.preview = null; ovState.search = ""; refreshOverlay(); break;
@@ -1818,6 +1877,7 @@
       // nether library + wizard
       case "nether-new": openNetherBuilder(null); break;
       case "nether-sel": ovState.sel = +t.dataset.id; refreshOverlay(); break;
+      case "nether-hide-equipped": e.stopPropagation(); ovState.hideEquipped = !ovState.hideEquipped; refreshOverlay(); break;
       case "nether-edit": openNetherBuilder(+t.dataset.id); break;
       case "nether-del": armOrDo(t, () => { const id = +t.dataset.id; nether = nether.filter(n => n.id !== id); artifacts.forEach(a => a.netherIds = (a.netherIds || []).filter(x => x !== id)); if (ovState.sel === id) ovState.sel = nether[0] ? nether[0].id : null; persistNether(); persistArtifacts(); refreshOverlay(); }); break;
       case "nether-cancel": openNether(); break;
@@ -1847,11 +1907,14 @@
       // spell gems: library + wizard + equip
       case "open-spellgems": openSpellGems(); break;
       case "creature-spells": openCreatureSpells(+t.dataset.slot); break;
+      case "sg-sel": ovState.sel = +t.dataset.id; refreshOverlay(); break;
+      case "sg-hide-equipped": e.stopPropagation(); ovState.hideEquipped = !ovState.hideEquipped; refreshOverlay(); break;
       case "sg-new": openSpellGemBuilder(null); break;
       case "sg-edit": openSpellGemBuilder(+t.dataset.id); break;
       case "sg-del": armOrDo(t, () => { const id = +t.dataset.id; spellGems = spellGems.filter(g => g.id !== id);
         artifacts.forEach(a => a.spells = (a.spells || []).filter(x => x !== id));
         build.slots.forEach(s => s.spellGemIds = (s.spellGemIds || []).filter(x => x !== id));
+        if (ovState.sel === id) ovState.sel = spellGems[0] ? spellGems[0].id : null;
         persistSpellGems(); persistArtifacts(); persistBuild(); refreshOverlay(); }); break;
       case "sg-cancel": openSpellGems(); break;
       case "sg-spell": ovState.draft.spellId = ovState.draft.spellId === +t.dataset.id ? null : +t.dataset.id; refreshOverlay(); break;

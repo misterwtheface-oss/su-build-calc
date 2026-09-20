@@ -386,6 +386,8 @@ h1, h2, h3 { margin: 0; }
   }
   .ovl-center-scroll { -webkit-overflow-scrolling: touch; }
   .crea-grid { grid-template-columns: repeat(4, 1fr); gap: 6px; }   /* 4 creatures per row on phones */
+  /* saved lists (artifacts / spell gems / nether stones) — at least 4 per row on phones */
+  .pick-grid { grid-template-columns: repeat(4, 1fr); gap: 6px; }
   /* tighter overlay chrome so the grid isn't squeezed */
   .overlay-header { padding: 8px 12px; }
   .overlay-footer { padding: 7px 12px; }
