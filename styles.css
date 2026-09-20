@@ -543,6 +543,14 @@ h1, h2, h3 { margin: 0; }
 .swatch-lab { font-size: 11px; color: var(--muted); width: 46px; }
 .gem-swatch { width: 24px; height: 24px; border-radius: 6px; border: 1px solid var(--border-dim); cursor: pointer; padding: 0; }
 .gem-swatch:hover { transform: scale(1.12); border-color: var(--accent2); }
+.gem-swatch.on { outline: 2px solid var(--accent2); outline-offset: 1px; }
+.nether-colors.two { display: flex; gap: 18px; align-items: flex-start; }
+.color-col { flex: 1; min-width: 0; }
+.color-col-head { display: flex; align-items: center; gap: 8px; margin-bottom: 7px; }
+.color-col-lab { font-size: 13px; font-weight: 600; color: var(--text); }
+.color-col-head input[type="color"] { width: 44px; height: 30px; padding: 0; border: 1px solid var(--border-dim); border-radius: 8px; background: var(--surface2); cursor: pointer; }
+.swatch-grid { display: flex; flex-wrap: wrap; gap: 5px; }
+.nether-color-actions { margin-top: 10px; }
 .np-list { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 8px; }
 .np-chip { display: inline-flex; gap: 6px; align-items: center; padding: 5px 9px; border-radius: 8px; background: var(--surface2); border: 1px solid var(--border); font-size: 12px; }
 .np-chip b { cursor: pointer; color: var(--bad); }

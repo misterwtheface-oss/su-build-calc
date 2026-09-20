@@ -87,8 +87,13 @@
     }
     try { const c = document.createElement("canvas"); c.width = src.width; c.height = src.height; c.getContext("2d").putImageData(new ImageData(d, src.width, src.height), 0, 0); const url = c.toDataURL(); _gemOut.set(key, url); return url; } catch (_) { return null; }
   }
-  // src STRING for a stone (recolored data URL, else base path) — drop-in for gemPath()
-  const gemSrc = (stone) => { const p = gemPath(stone && stone.icon); if (!p) return p; const url = (_gemsReady && stone && stone.mainColor) ? recolorGem(p, stone.mainColor, stone.outlineColor || DEFAULT_GEM_OUTLINE) : null; return url || p; };
+  // src STRING for a stone: RAW cor_n base until a colour is picked, then recoloured. drop-in for gemPath()
+  const gemSrc = (stone) => {
+    const p = gemPath(stone && stone.icon); if (!p) return p;
+    const tinted = stone && (stone.mainColor || stone.outlineColor);   // no colour yet → placeholder = raw base
+    const url = (_gemsReady && tinted) ? recolorGem(p, stone.mainColor || DEFAULT_GEM_MAIN, stone.outlineColor || DEFAULT_GEM_OUTLINE) : null;
+    return url || p;
+  };
   const gemImg = (stone, cls) => spriteImg(gemSrc(stone), cls);
   preloadGems(() => { try { if (typeof ovState !== "undefined" && ovState && ovState.render) refreshOverlay(); } catch (_) {} });
   const STAT_KEYS = ["hp", "atk", "def", "int", "spd"];
@@ -184,8 +189,7 @@
     // (nether stones socket a raw spell + trigger); drop the stale ones so they don't mis-render
     n.props = n.props.filter(p => !(p.cat === "spell" && !p.trigger));
     for (const p of n.props) if (p.cat === "spell") delete p.chance;   // spells carry only a trigger (no chance)
-    n.mainColor ||= DEFAULT_GEM_MAIN;                                  // user-picked colours (procedural tint TODO)
-    n.outlineColor ||= DEFAULT_GEM_OUTLINE;
+    // colours are user-picked; leave unset so an untinted stone renders the raw cor_n placeholder
     if (!GEM_ICONS.some(g => g.key === n.icon)) n.icon = (GEM_ICONS[0] || {}).key;   // old jewel keys → real cornether shape
   }
   let artifacts = jload(LS.artifacts, null);                // [{id,name,rank,primary,stat[],trick[],traits[],spells[],netherIds[]}]
@@ -1647,8 +1651,8 @@
   // single-page nether builder — order: traits/properties → name → shape → colour (no step wizard)
   function openNetherBuilder(id) {
     const draft = id != null ? JSON.parse(JSON.stringify(nether.find(n => n.id === id)))
-      : { id: null, name: `Nether Stone ${nextNetherId}`, icon: (GEM_ICONS[0] || {}).key, mainColor: DEFAULT_GEM_MAIN, outlineColor: DEFAULT_GEM_OUTLINE, props: [] };
-    draft.mainColor ||= DEFAULT_GEM_MAIN; draft.outlineColor ||= DEFAULT_GEM_OUTLINE;
+      : { id: null, name: `Nether Stone ${nextNetherId}`, icon: (GEM_ICONS[0] || {}).key, props: [] };
+    // no colour defaults — a new stone shows the raw cor_n icon until the player picks Main/Outline
     ovState = { kind: "netherbuild", editId: id, draft, picking: false, search: "", render: renderNetherBuilder };
     openOverlay(ovState.render());
   }
@@ -1700,20 +1704,25 @@
             <input class="ovl-search" placeholder="Search…" value="${esc(st.search)}" data-action="nether-search"></div>
           <div class="art-pick-scroll">${rowsHtml}</div></div>`;
       }
-    // ── 3) SHAPE — cornether_* base, recoloured live with the current main/outline ──
+    // ── 3) SHAPE — raw cor_n base as placeholder; recoloured once a colour is picked ──
+    const tinted = s.mainColor || s.outlineColor;
     const shapeChoices = GEM_ICONS.map(g => {
-      const prev = (_gemsReady && s.mainColor) ? recolorGem(g.path, s.mainColor, s.outlineColor) : null;
+      const prev = (_gemsReady && tinted) ? recolorGem(g.path, s.mainColor || DEFAULT_GEM_MAIN, s.outlineColor || DEFAULT_GEM_OUTLINE) : null;
       return `<button class="gem-choice ${s.icon === g.key ? "on" : ""}" data-action="nether-icon" data-k="${g.key}" title="${g.key}">${spriteImg(prev || g.path, "px")}</button>`;
     }).join("");
-    // ── 4) COLOUR — two rolled colours: main (body) + outline (white ring) ──
-    const swatches = (list, act) => (list || []).map(hx => `<button class="gem-swatch" style="background:${esc(hx)}" data-action="${act}" data-hx="${esc(hx)}" title="${esc(hx)}"></button>`).join("");
-    const presets = (NETHER_COLORS.mains.length || NETHER_COLORS.outlines.length)
-      ? `<div class="swatch-row"><span class="swatch-lab">Main</span>${swatches(NETHER_COLORS.mains, "nether-mainpreset")}</div>
-         <div class="swatch-row"><span class="swatch-lab">Outline</span>${swatches(NETHER_COLORS.outlines, "nether-outlinepreset")}</div>` : "";
-    const colorBox = `<div class="nether-colors">
-      <label class="color-field"><span>Main</span><input type="color" data-action="nether-maincolor" value="${esc(s.mainColor || DEFAULT_GEM_MAIN)}"></label>
-      <label class="color-field"><span>Outline</span><input type="color" data-action="nether-outlinecolor" value="${esc(s.outlineColor || DEFAULT_GEM_OUTLINE)}"></label>
-      <button class="chip" data-action="nether-randcolor" title="Roll colours">🎲</button></div>${presets}`;
+    // ── 4) COLOUR — Main / Outline as header groups, palette beneath each ──
+    const swatches = (list, act, cur) => (list || []).map(hx =>
+      `<button class="gem-swatch ${cur && cur.toLowerCase() === hx.toLowerCase() ? "on" : ""}" style="background:${esc(hx)}" data-action="${act}" data-hx="${esc(hx)}" title="${esc(hx)}"></button>`).join("");
+    const colGroup = (label, inputAct, val, list, presetAct) => `
+      <div class="color-col">
+        <div class="color-col-head"><span class="color-col-lab">${label}</span><input type="color" data-action="${inputAct}" value="${esc(val)}"></div>
+        <div class="swatch-grid">${swatches(list, presetAct, val)}</div>
+      </div>`;
+    const colorBox = `<div class="nether-colors two">
+        ${colGroup("Main", "nether-maincolor", s.mainColor || DEFAULT_GEM_MAIN, NETHER_COLORS.mains, "nether-mainpreset")}
+        ${colGroup("Outline", "nether-outlinecolor", s.outlineColor || DEFAULT_GEM_OUTLINE, NETHER_COLORS.outlines, "nether-outlinepreset")}
+      </div>
+      <div class="nether-color-actions"><button class="chip" data-action="nether-randcolor" title="Roll colours">🎲 Roll colours</button></div>`;
     const body = `<div class="ovl-center"><div class="ovl-center-scroll">
       <div class="build-section"><h3>Traits &amp; properties</h3>${slotsBox}${picker}</div>
       <div class="build-section"><h3>Name</h3><input class="ovl-search name-field" style="max-width:none;width:100%" placeholder="Name" value="${esc(s.name)}" data-action="nether-name"></div>
