@@ -32,6 +32,7 @@
   const CLS_COLOR = Object.fromEntries(D.classes.map(c => [c.key, c.color]));
   const CLASS_BG = D.classBg || {};
   const GEM_ICONS = D.gemIcons || [];
+  const NETHER_COLORS = D.netherColors || { mains: [], outlines: [] };   // picker presets derived from in-game screenshots
   // Nether-stone tint. In-game the base cornether_* shapes are colored procedurally at drop time
   // (backlog: reverse the generator). Until then the user picks a main + outline colour, applied here by
   // gradient-mapping the base sprite's luminance to the main colour and its darkest ring to the outline.
@@ -1705,10 +1706,14 @@
       return `<button class="gem-choice ${s.icon === g.key ? "on" : ""}" data-action="nether-icon" data-k="${g.key}" title="${g.key}">${spriteImg(prev || g.path, "px")}</button>`;
     }).join("");
     // ── 4) COLOUR — two rolled colours: main (body) + outline (white ring) ──
+    const swatches = (list, act) => (list || []).map(hx => `<button class="gem-swatch" style="background:${esc(hx)}" data-action="${act}" data-hx="${esc(hx)}" title="${esc(hx)}"></button>`).join("");
+    const presets = (NETHER_COLORS.mains.length || NETHER_COLORS.outlines.length)
+      ? `<div class="swatch-row"><span class="swatch-lab">Main</span>${swatches(NETHER_COLORS.mains, "nether-mainpreset")}</div>
+         <div class="swatch-row"><span class="swatch-lab">Outline</span>${swatches(NETHER_COLORS.outlines, "nether-outlinepreset")}</div>` : "";
     const colorBox = `<div class="nether-colors">
       <label class="color-field"><span>Main</span><input type="color" data-action="nether-maincolor" value="${esc(s.mainColor || DEFAULT_GEM_MAIN)}"></label>
       <label class="color-field"><span>Outline</span><input type="color" data-action="nether-outlinecolor" value="${esc(s.outlineColor || DEFAULT_GEM_OUTLINE)}"></label>
-      <button class="chip" data-action="nether-randcolor" title="Roll colours">🎲</button></div>`;
+      <button class="chip" data-action="nether-randcolor" title="Roll colours">🎲</button></div>${presets}`;
     const body = `<div class="ovl-center"><div class="ovl-center-scroll">
       <div class="build-section"><h3>Traits &amp; properties</h3>${slotsBox}${picker}</div>
       <div class="build-section"><h3>Name</h3><input class="ovl-search name-field" style="max-width:none;width:100%" placeholder="Name" value="${esc(s.name)}" data-action="nether-name"></div>
@@ -2050,9 +2055,12 @@
       case "nether-cancel": openNether(); break;
       case "nether-icon": ovState.draft.icon = t.dataset.k; refreshOverlay(); break;
       case "nether-randcolor": {
-        const rnd = () => "#" + Array.from({ length: 3 }, () => Math.floor(Math.random() * 256).toString(16).padStart(2, "0")).join("");
-        ovState.draft.mainColor = rnd(); ovState.draft.outlineColor = rnd(); refreshOverlay(); break;
+        const pick = (list) => list && list.length ? list[Math.floor(Math.random() * list.length)]
+          : "#" + Array.from({ length: 3 }, () => Math.floor(Math.random() * 256).toString(16).padStart(2, "0")).join("");
+        ovState.draft.mainColor = pick(NETHER_COLORS.mains); ovState.draft.outlineColor = pick(NETHER_COLORS.outlines); refreshOverlay(); break;
       }
+      case "nether-mainpreset": ovState.draft.mainColor = t.dataset.hx; refreshOverlay(); break;
+      case "nether-outlinepreset": ovState.draft.outlineColor = t.dataset.hx; refreshOverlay(); break;
       case "nether-addprop": ovState.picking = "menu"; ovState.search = ""; refreshOverlay(); break;
       case "nether-pickcat": ovState.picking = t.dataset.c; ovState.search = ""; refreshOverlay(); break;
       case "nether-closepick": ovState.picking = false; refreshOverlay(); break;

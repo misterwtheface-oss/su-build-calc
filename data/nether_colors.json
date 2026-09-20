@@ -1,0 +1,31 @@
+{
+ "mains": [
+  "#5553cc",
+  "#39aecc",
+  "#cc3a00",
+  "#35cc44",
+  "#cc7d2b",
+  "#946acc",
+  "#4c23cc",
+  "#2720cc",
+  "#48cc54",
+  "#38cca4",
+  "#cc0e0e",
+  "#cc5a22",
+  "#cc5d89"
+ ],
+ "outlines": [
+  "#8f8df2",
+  "#78d9f2",
+  "#f27848",
+  "#74f281",
+  "#f2b06c",
+  "#4fcc9b",
+  "#8765f2",
+  "#6963f2",
+  "#77f2d1",
+  "#cc1eba",
+  "#f29364"
+ ],
+ "_note": "Nether-stone Main/Outline colour options, derived by tools/nether_eyedrop.py from in-game screenshots (accumulates). Fed into data.js as netherColors."
+}

@@ -710,6 +710,13 @@ for (let n = 1; n <= 16; n++) {
   const dest = `nether_${n}.png`;
   if (copyNamedSprite(`cornether_${n}`, OUT_GEM, dest)) gemIcons.push({ key: `nether_${n}`, path: `assets/gems/${dest}` });
 }
+// Nether-stone Main/Outline colour OPTIONS — derived from in-game screenshots by the local
+// tools/nether_eyedrop.py (which stays out of git); this JSON accumulates and ships as picker presets.
+const NETHER_COLORS_PATH = path.join(ROOT, 'data', 'nether_colors.json');
+const netherColors = fs.existsSync(NETHER_COLORS_PATH)
+  ? (() => { const j = readJSON(NETHER_COLORS_PATH); return { mains: j.mains || [], outlines: j.outlines || [] }; })()
+  : { mains: [], outlines: [] };
+console.log(`  nether colour options: ${netherColors.mains.length} mains · ${netherColors.outlines.length} outlines (from screenshots)`);
 
 // ── plain-language term map (labels.json) — turns {TOKEN} params into UI words ──
 const labelsMap = readJSON(path.join(SRC, 'labels.json')).labels;
@@ -881,6 +888,7 @@ const SU_DATA = {
   relics,
   cards,
   gemIcons,
+  netherColors,
   terms,
   damageModel,
   wardrobe,
