@@ -535,7 +535,17 @@ h1, h2, h3 { margin: 0; }
 .np-step { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .np-lbl { font-size: 11px; color: var(--text-mute); text-transform: uppercase; letter-spacing: .5px; width: 50px; }
 .np-select { background: var(--bg); color: var(--text); border: 1px solid var(--border-dim); border-radius: 7px; padding: 6px 8px; }
-.np-num { width: 68px; background: var(--bg); color: var(--text); border: 1px solid var(--border-dim); border-radius: 7px; padding: 6px 8px; }
+/* manual %-entry field inside a property slot — fit the box, no clip, clean dark-theme focus */
+.np-wrap { display: flex; align-items: center; justify-content: center; gap: 2px; width: 100%; }
+.np-pct { font-size: 11px; color: var(--text-dim); }
+.np-num {
+  width: 100%; min-width: 0; max-width: 46px; text-align: center;
+  background: var(--bg); color: var(--text); border: 1px solid var(--border-dim);
+  border-radius: 6px; padding: 4px 4px; font-size: 12px;
+  -moz-appearance: textfield; appearance: textfield;
+}
+.np-num::-webkit-outer-spin-button, .np-num::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.np-num:focus { outline: none; border-color: var(--accent2); box-shadow: 0 0 0 2px rgba(154,123,214,.4); }
 .np-actions { display: flex; justify-content: flex-end; gap: 8px; }
 
 /* artifact library + builder icons */

@@ -1444,7 +1444,7 @@
         const it = p.cat === "trait" ? TRAITITEM.get(p.key) : p.cat === "spell" ? SPELLPROP.get(p.key) : null;
         const ico = isItem ? `<div class="as-ico">${it && it.icon ? spriteImg(it.icon, "px") : "◆"}</div>` : `<div class="as-ico glyph">◆</div>`;
         const sub = isItem ? `<div class="as-sub">${esc(p.cat)}</div>`
-          : `<div class="as-sub"><input type="number" class="np-num" data-action="nether-propval" data-i="${i}" value="${p.value}">%</div>`;
+          : `<div class="np-wrap"><input type="number" class="np-num" data-action="nether-propval" data-i="${i}" value="${p.value}"><span class="np-pct">%</span></div>`;
         return `<div class="art-slot"><button class="as-rm" data-action="nether-prop-del" data-i="${i}">✕</button>${ico}
           <div class="as-lab">${esc(isItem ? (it ? it.name : p.key) : p.key)}</div>${sub}</div>`;
       }).join("");
