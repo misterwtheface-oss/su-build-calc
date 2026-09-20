@@ -32,19 +32,35 @@ const OUT_SPELLGEM = path.join(OUT_ASSETS, 'spellgems');
 const OUT_PROPGEM = path.join(OUT_ASSETS, 'propgems');
 const SRC_PROPGEM = path.join(SRC, 'assets', 'spell_gem_property_icons'); // hand-cropped from in-game Enchanter/Materials UI (no named sprite in the dump)
 
+// ── asset provenance registry — permanent preventive guards on everything we ship ──
+// Every sprite copy is recorded as (source sprite base) -> (category = output dir). Two invariants
+// are enforced before data.js is written (see "asset guards" near the end):
+//   • CROSS-USAGE: a source sprite must map to at most ONE category. master_<race> art belongs to
+//     the Sigil trait-materials; it must never also be a race icon, etc. (user rule).
+//   • 404: every copy must find its source sprite, and every asset path emitted in data.js must
+//     resolve to a file on disk. No silent fallbacks — unresolved assets are alerted, not substituted.
+const assetUses = new Map();     // source sprite base -> Map(category -> count)
+const assetCopy404 = [];         // sources requested but not found on disk
+const catOf = (outDir) => path.basename(outDir);
+function recordCopy(base, outDir, ok) {
+  const category = catOf(outDir);
+  if (!assetUses.has(base)) assetUses.set(base, new Map());
+  const m = assetUses.get(base); m.set(category, (m.get(category) || 0) + 1);
+  if (!ok) assetCopy404.push({ base, category });
+}
 // copy a named sprite frame from the extract's assets/sprites (<base>_0.png) into outDir/destName
 function copyNamedSprite(base, outDir, destName) {
   for (const cand of [`${base}_0.png`, `${base}.png`]) {
     const src = path.join(SRC_SPEC_PNG, cand);
-    if (fs.existsSync(src)) { fs.mkdirSync(outDir, { recursive: true }); fs.copyFileSync(src, path.join(outDir, destName)); return true; }
+    if (fs.existsSync(src)) { fs.mkdirSync(outDir, { recursive: true }); fs.copyFileSync(src, path.join(outDir, destName)); recordCopy(base, outDir, true); return true; }
   }
-  return false;
+  recordCopy(base, outDir, false); return false;
 }
 // copy a SPECIFIC frame (<base>_<n>.png) into outDir/destName
 function copySpriteFrame(base, n, outDir, destName) {
   const src = path.join(SRC_SPEC_PNG, `${base}_${n}.png`);
-  if (fs.existsSync(src)) { fs.mkdirSync(outDir, { recursive: true }); fs.copyFileSync(src, path.join(outDir, destName)); return true; }
-  return false;
+  if (fs.existsSync(src)) { fs.mkdirSync(outDir, { recursive: true }); fs.copyFileSync(src, path.join(outDir, destName)); recordCopy(base, outDir, true); return true; }
+  recordCopy(base, outDir, false); return false;
 }
 
 const STRICT = process.argv.includes('--strict');
@@ -648,43 +664,50 @@ for (const cl of raceClassIcons.classes) {
   const dest = `${norm(cl.class)}.png`;
   if (copyNamedSprite(cl.icon, OUT_CLSICON, dest)) classIcons[cl.class] = `assets/clsicons/${dest}`;
 }
-const raceIcons = {};
-let raceIconMisses = 0;
-for (const r of Object.values(raceClassIcons.races)) {
-  if (!r.has_icon || !r.icon) { raceIconMisses++; continue; }
-  const dest = `${norm(r.race)}.png`;
-  if (copyNamedSprite(r.icon, OUT_RACEICON, dest)) raceIcons[r.race] = `assets/raceicons/${dest}`;
-  else raceIconMisses++;
-}
-// races without a bare <race> emblem (confirmed absent in the exe's 12,801-sprite table, not an
-// extraction gap): prefer the race's Master emblem master_<race> when it's a clean 16×16 icon
-// (Cherub, Kraken, Warhog, Beacon, … all have one). repro note: masters that are 32×32 are full NPC
-// bodies (Mimic/Mogwai/Purrghast) — skip those and let the creature fallback handle them.
+// Race icons are a <=16×16 sprite. Resolution families, in order (NO master_ — that is Sigil
+// trait-material art and is caught by the cross-usage guard; NO creature/representative fallback).
+// Every match is a NAME-ASSUMPTION (the game resolves race icons at runtime — there is no static
+// code map) unless it is user-confirmed in-game. Unresolved races get NO icon and a 404 alert —
+// nothing is substituted.
 const pngDims = (p) => { try { const b = fs.readFileSync(p); return [b.readUInt32BE(16), b.readUInt32BE(20)]; } catch { return null; } };
-let raceMasterIcons = 0;
+const CLASS_PREFIX = { Nature: 'nature', Chaos: 'chaos', Death: 'death', Life: 'life', Sorcery: 'sorcery' };
+// verified in-game by user (highest confidence — overrides name resolution)
+const RACE_ICON_CONFIRMED = {
+  Cherub: 'backer_cherub', Mogwai: 'special_mogwai',
+  Guardian: 'race_benthicguardian', 'Sea Shambler': 'shambler', Shadow: 'shadow2', Soulflayer: 'flayer',
+  Arbiter: 'backer_arbiter', Gargantuan: 'garg',
+  Tanukrook: 'moncrown',   // Monster Crown crossover race — its icon is the "moncrown" crown sprite
+};
+const is16 = (base) => { for (const c of [`${base}_0.png`, `${base}.png`]) { const p = path.join(SRC_SPEC_PNG, c); if (fs.existsSync(p)) { const d = pngDims(p); return !!d && d[0] <= 16 && d[1] <= 16; } } return false; };
+const raceIcons = {};
+const raceUnresolved = [];
 for (const r of Object.values(raceClassIcons.races)) {
-  if (raceIcons[r.race]) continue;
-  let src = null;
-  for (const cand of [`master_${norm(r.race)}_0.png`, `master_${norm(r.race)}.png`]) { const p = path.join(SRC_SPEC_PNG, cand); if (fs.existsSync(p)) { src = p; break; } }
-  if (!src) continue;
-  const d = pngDims(src); if (!d || d[0] > 16 || d[1] > 16) continue;   // clean emblem only, not the full Master NPC
-  const dest = `${norm(r.race)}.png`;
-  fs.copyFileSync(src, path.join(OUT_RACEICON, dest)); raceIcons[r.race] = `assets/raceicons/${dest}`; raceMasterIcons++;
+  const nm = norm(r.race), cl = CLASS_PREFIX[r.class] || '';
+  // families: user-confirmed → <race> → backer_ → special_ → race_ → <ownClass>_  (no cross-class guessing)
+  const candidates = [RACE_ICON_CONFIRMED[r.race], nm, `backer_${nm}`, `special_${nm}`, `race_${nm}`, cl && `${cl}_${nm}`].filter(Boolean);
+  const icon = candidates.find(is16);
+  if (icon && copyNamedSprite(icon, OUT_RACEICON, `${nm}.png`)) raceIcons[r.race] = `assets/raceicons/${nm}.png`;
+  else raceUnresolved.push(r.race);
 }
-// last resort: still-missing races (Mimic/Mogwai/Purrghast/Guardian) → a representative creature sprite
-let raceIconFallback = 0;
-for (const c of creatures) {
-  if (c.race && c.sprite && !raceIcons[c.race]) { raceIcons[c.race] = c.sprite; raceIconFallback++; }
-}
-console.log(`  tile icons: ${Object.keys(classIcons).length}/5 class · ${Object.keys(raceIcons).length} race (${raceMasterIcons} master-emblem, ${raceIconFallback} creature-fallback)`);
+const raceTotal = Object.values(raceClassIcons.races).length;
+if (raceUnresolved.length) warn(`404 race icons — no resolved sprite, NO fallback substituted (${raceUnresolved.length}): ${raceUnresolved.join(', ')}`);
+// REVISIT LATER: these race icons resolve to a special_ sprite that also serves as that creature's
+// trait-item icon (Mogwai→"Mogwai's Sanctuary"/trait "No Sanctuary"; Purrghast→"Purrghast's Emblem"/
+// trait "Memoriae"). Confirmed tied to the creature's trait, but whether special_ is the RACE icon or
+// only the trait-item icon needs in-game validation (user obtaining the trait items).
+const RACE_ICON_REVISIT = ['Mogwai', 'Purrghast'];
+warn(`RACE ICONS to revisit — special_ shared with the creature's trait-item; validate race-vs-item in-game: ${RACE_ICON_REVISIT.filter((r) => raceIcons[r]).join(', ')}`);
+console.log(`  tile icons: ${Object.keys(classIcons).length}/5 class · ${Object.keys(raceIcons).length}/${raceTotal} race · ${raceUnresolved.length} unresolved (404, no fallback)`);
 
-// nether-stone gem icons (user randomizes / picks one)
+// Nether-stone icons: the 16 base `cornether_N` shapes (the real nether-stone sprites). In-game these
+// are TINTED at draw time by a procedural rule (deterministic from the stone's properties) that we have
+// not reversed yet — see the "fuse/nether color generation" backlog. For the planner the shape is chosen
+// cosmetically and shown in its base tint. (Previously these wrongly used jewel_* = Carbuncle trait art.)
 fs.rmSync(OUT_GEM, { recursive: true, force: true });
-const GEM_KEYS = ['amethyst', 'bismuth', 'diamond', 'emerald', 'obsidian', 'opal', 'ruby', 'sapphire', 'topaz'];
 const gemIcons = [];
-for (const g of GEM_KEYS) {
-  const dest = `${g}.png`;
-  if (copyNamedSprite(`jewel_${g}`, OUT_GEM, dest)) gemIcons.push({ key: g, path: `assets/gems/${dest}` });
+for (let n = 1; n <= 16; n++) {
+  const dest = `nether_${n}.png`;
+  if (copyNamedSprite(`cornether_${n}`, OUT_GEM, dest)) gemIcons.push({ key: `nether_${n}`, path: `assets/gems/${dest}` });
 }
 
 // ── plain-language term map (labels.json) — turns {TOKEN} params into UI words ──
@@ -769,6 +792,31 @@ console.log(`  spec sprites: ${specSkins} real skins + ${specs.filter(s => s.spr
   console.log(`  wardrobe: ${wardrobeCopied} player costumes copied (code-certain)${wardrobeMissing ? ` · ${wardrobeMissing} missing` : ''} · ${specCostumes}/${specs.length} specs linked (all tiers)`);
   console.log(`  wardrobe names: ${nameSrc.class_vocab} class-vocab + ${nameSrc.L_WD} L_WD + ${nameSrc.derived} derived (of ${wardrobe.length})`);
   console.log(`  trait-item icons: ${matIconCopied} copied (code-certain from material_icons.json)${matIconMissing ? ` · ${matIconMissing} missing` : ''}`);
+
+// ── ASSET GUARDS (permanent preventive alerts on everything we ship) ──────
+// A) CROSS-USAGE: a source sprite must serve at most ONE category. Catches master_<race> art being
+//    used as both a Sigil trait-material AND a race icon (mutually-exclusive rule).
+// Confirmed-legitimate shared sprites (one real object shown in two surfaces). Everything else that
+// appears in >1 category is a real bug (e.g. the jewel_* Carbuncle art wrongly used for nether stones).
+const CROSS_USE_OK = new Set([
+  'TS_SU_Costume_Mermaid_1',                 // Mermaid spec tier-1 sprite = also its wardrobe costume (confirmed valid)
+  'special_mogwai', 'special_purrghast',     // race icon + that creature's trait-item — PROVISIONAL, pending in-game validation
+]);
+let crossUse = 0;
+for (const [base, cats] of assetUses) {
+  if (cats.size > 1 && !CROSS_USE_OK.has(base)) { warn(`CROSS-USAGE: sprite '${base}' shipped in ${cats.size} categories (${[...cats.keys()].join(', ')}) — icons must be mutually exclusive; confirm none is a wrong reuse`); crossUse++; }
+}
+// B) 404 SOURCE: a copy was requested but the source sprite was absent (no silent fallback).
+for (const c of assetCopy404) err(`404 source: sprite '${c.base}' not found for category '${c.category}'`);
+// C) 404 SHIPPED: every 'assets/…' path that will be emitted must resolve to a file on disk.
+let shipped404 = 0;
+try {
+  const paths = new Set();
+  const collect = (v) => { if (typeof v === 'string') { if (/^assets\//.test(v)) paths.add(v); } else if (Array.isArray(v)) v.forEach(collect); else if (v && typeof v === 'object') Object.values(v).forEach(collect); };
+  collect([creatures, specs, raceIcons, classIcons, classBg, traitItems, statMats, trickMats, relics, cards, gemIcons, spellGems, wardrobe, artGroup]);
+  for (const p of paths) if (!fs.existsSync(path.join(ROOT, p))) { if (shipped404 < 40) err(`404 shipped: data.js would reference '${p}' but no file exists`); shipped404++; }
+} catch (e) { warn(`asset 404-shipped guard skipped: ${e.message}`); }
+console.log(`  asset guards: ${assetUses.size} source sprites · ${crossUse} cross-usage alert(s) · ${assetCopy404.length} 404-source · ${shipped404} 404-shipped`);
 if (errors.length) {
   console.log(`✗ ${errors.length} errors:`);
   for (const e of errors.slice(0, 40)) console.log('    ' + e);

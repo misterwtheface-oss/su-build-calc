@@ -6,6 +6,25 @@
   const D = window.SU_DATA;
   if (!D) { document.getElementById("app").textContent = "data.js failed to load."; return; }
 
+  // ── runtime 404 alert — surface any asset the app requests but can't load (no silent hiding) ──
+  // A missing asset is a data bug (a removed fallback or bad mapping), never hidden away. Always logs
+  // to console; shows a subtle banner only on localhost or with ?debug404 so live users aren't alarmed.
+  (function () {
+    const missing = new Set();
+    window.SU_ASSET_404 = missing;
+    const dbg = location.hostname === "localhost" || location.hostname === "127.0.0.1" || /[?&]debug404/.test(location.search);
+    document.addEventListener("error", (e) => {
+      const t = e.target;
+      if (!t || t.tagName !== "IMG" || !t.src || missing.has(t.src)) return;
+      missing.add(t.src);
+      console.warn("[SU asset 404]", t.src.replace(location.origin, ""));
+      if (!dbg) return;
+      let b = document.getElementById("su-asset-404");
+      if (!b) { b = document.createElement("div"); b.id = "su-asset-404"; b.style.cssText = "position:fixed;bottom:0;left:0;right:0;z-index:99999;background:#7a1620;color:#fff;font:12px/1.4 monospace;padding:4px 8px;max-height:28vh;overflow:auto"; document.body && document.body.appendChild(b); }
+      if (b) b.textContent = `⚠ ${missing.size} missing asset(s) [404] — see console`;
+    }, true);   // capture: <img> error events don't bubble
+  })();
+
   // ── indices ──────────────────────────────────────────────────────────────
   const CREA = new Map(D.creatures.map(c => [c.id, c]));
   const SPEC = new Map(D.specs.map(s => [s.id, s]));
