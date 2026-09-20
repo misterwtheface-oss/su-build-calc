@@ -362,7 +362,6 @@
     const slots = build.slots.map((s, i) => renderSlot(s, i)).join("");
     return `
       <div class="home-top">${specTile}${anointTile}</div>
-      <div class="section-label">Party — 6 Creatures</div>
       <div class="party-grid">${slots}</div>
     `;
   }
