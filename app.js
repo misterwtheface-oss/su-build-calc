@@ -1459,7 +1459,8 @@
           return `<div class="art-slot">${rm}<div class="as-ico">${ic ? spriteImg(ic, "px") : "✷"}</div>
             <div class="as-lab">${esc(sp ? sp.name : p.key)}</div>${chance}${trg}</div>`;
         }
-        return `<div class="art-slot">${rm}<div class="as-ico glyph">◆</div>
+        const mat = MAT_BY_PROP.get(p.key);
+        return `<div class="art-slot">${rm}<div class="as-ico">${mat && mat.icon ? spriteImg(mat.icon, "px") : "◆"}</div>
           <div class="as-lab">${esc(p.key)}</div>
           <div class="np-wrap"><input type="number" class="np-num" data-action="nether-propval" data-i="${i}" value="${p.value}"><span class="np-pct">%</span></div></div>`;
       }).join("");
@@ -1470,9 +1471,11 @@
       } else if (st.picking) {
         const q = st.search.trim().toLowerCase(); let rowsHtml = "";
         if (st.picking === "stat" || st.picking === "trick") {
-          rowsHtml = [...propGroups.values()].filter(g => g.group === st.picking && (!q || g.name.toLowerCase().includes(q))).map(g =>
-            `<div class="prop-row" data-action="nether-pickprop" data-k="${esc(g.name)}">
-              <span class="prop-name">${esc(g.name)}</span><span class="prop-stat">${esc(g.entries.map(e => e.stat).join(" / "))}</span></div>`).join("");
+          rowsHtml = [...propGroups.values()].filter(g => g.group === st.picking && (!q || g.name.toLowerCase().includes(q))).map(g => {
+            const mat = MAT_BY_PROP.get(g.name);
+            return `<div class="prop-row" data-action="nether-pickprop" data-k="${esc(g.name)}">
+              <span class="prop-ico">${mat && mat.icon ? spriteImg(mat.icon, "px") : ""}</span><span class="prop-name">${esc(g.name)}</span><span class="prop-stat">${esc(g.entries.map(e => e.stat).join(" / "))}</span></div>`;
+          }).join("");
         } else if (st.picking === "trait") {
           rowsHtml = D.traitItems.filter(t => t.traitName && (!q || t.name.toLowerCase().includes(q) || (t.traitName || "").toLowerCase().includes(q))).slice(0, 300).map(t =>
             `<div class="prop-row" data-action="nether-pickprop" data-k="${t.id}">
