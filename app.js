@@ -35,8 +35,8 @@
   // Nether-stone tint. In-game the base cornether_* shapes are colored procedurally at drop time
   // (backlog: reverse the generator). Until then the user picks a main + outline colour, applied here by
   // gradient-mapping the base sprite's luminance to the main colour and its darkest ring to the outline.
-  const DEFAULT_GEM_MAIN = "#8a5cff";
-  const DEFAULT_GEM_OUTLINE = "#160a24";
+  const DEFAULT_GEM_MAIN = "#7a4fe0";      // main body hue
+  const DEFAULT_GEM_OUTLINE = "#3ad0e0";   // contrasting outline hue (in-game outlines are coloured, not white)
   const _gemBase = new Map();          // base sprite path -> ImageData (preloaded once)
   const _gemOut = new Map();           // "path|main|outline" -> recolored data URL
   let _gemsReady = false;
@@ -57,7 +57,13 @@
   // their built-in gradient.
   const _lum = (r, g, b) => 0.299 * r + 0.587 * g + 0.114 * b;
   const _sat = (r, g, b) => { const mx = Math.max(r, g, b), mn = Math.min(r, g, b); return mx ? (mx - mn) / mx : 0; };
-  const OUTLINE_SAT = 0.30;                      // sat below this = the white/blue-grey outline ramp
+  const _rgb2hsv = (r, g, b) => { r /= 255; g /= 255; b /= 255; const mx = Math.max(r, g, b), mn = Math.min(r, g, b), dl = mx - mn; let h = 0; if (dl) { if (mx === r) h = ((g - b) / dl + 6) % 6; else if (mx === g) h = (b - r) / dl + 2; else h = (r - g) / dl + 4; h /= 6; } return [h, mx ? dl / mx : 0, mx]; };
+  const _hsv2rgb = (h, s, v) => { const i = Math.floor(h * 6), f = h * 6 - i, p = v * (1 - s), q = v * (1 - f * s), u = v * (1 - (1 - f) * s); let r, g, b; switch (i % 6) { case 0: r = v; g = u; b = p; break; case 1: r = q; g = v; b = p; break; case 2: r = p; g = v; b = u; break; case 3: r = p; g = q; b = v; break; case 4: r = u; g = p; b = v; break; default: r = v; g = p; b = q; } return [r * 255, g * 255, b * 255]; };
+  const OUTLINE_SAT = 0.30;                      // sat below this (in the BASE sprite) = the blue-grey outline ramp
+  // Each palette ramp is regenerated from its rolled colour: keep the colour's HUE + SATURATION, ramp the
+  // VALUE with the base pixel's luminance (0.42→0.98), and ease saturation slightly toward the highlight
+  // (×(1-0.35t)) so bright ends are LIGHT SATURATED TINTS — never white. Matched to eyedropped in-game stones.
+  const _shade = (c, t) => { const hsv = _rgb2hsv(c[0], c[1], c[2]); return _hsv2rgb(hsv[0], hsv[1] * (1 - 0.35 * t), 0.42 + 0.56 * t); };
   function recolorGem(path, main, outline) {
     const key = path + "|" + main + "|" + outline;
     if (_gemOut.has(key)) return _gemOut.get(key);
@@ -70,13 +76,12 @@
       if (_sat(d[i], d[i + 1], d[i + 2]) < OUTLINE_SAT) { if (l < oMn) oMn = l; if (l > oMx) oMx = l; }
       else { if (l < bMn) bMn = l; if (l > bMx) bMx = l; }
     }
-    const ramp = (c, t) => { const sh = 0.45 + 0.55 * t; let r = c[0] * sh, g = c[1] * sh, b = c[2] * sh; if (t > 0.8) { const k = (t - 0.8) / 0.2; r += (255 - r) * k; g += (255 - g) * k; b += (255 - b) * k; } return [r, g, b]; };
     for (let i = 0; i < d.length; i += 4) {
       if (d[i + 3] < 8) continue;
       const l = _lum(d[i], d[i + 1], d[i + 2]);
-      let out;
-      if (_sat(d[i], d[i + 1], d[i + 2]) < OUTLINE_SAT) out = ramp(o, (l - oMn) / Math.max(1, oMx - oMn));
-      else out = ramp(m, (l - bMn) / Math.max(1, bMx - bMn));
+      const out = (_sat(d[i], d[i + 1], d[i + 2]) < OUTLINE_SAT)
+        ? _shade(o, (l - oMn) / Math.max(1, oMx - oMn))
+        : _shade(m, (l - bMn) / Math.max(1, bMx - bMn));
       d[i] = out[0]; d[i + 1] = out[1]; d[i + 2] = out[2];
     }
     try { const c = document.createElement("canvas"); c.width = src.width; c.height = src.height; c.getContext("2d").putImageData(new ImageData(d, src.width, src.height), 0, 0); const url = c.toDataURL(); _gemOut.set(key, url); return url; } catch (_) { return null; }
