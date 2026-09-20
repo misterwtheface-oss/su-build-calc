@@ -103,7 +103,7 @@
     // old "spell" props socketed dust items (spell-gem enchants) with no trigger — that model was wrong
     // (nether stones socket a raw spell + trigger); drop the stale ones so they don't mis-render
     n.props = n.props.filter(p => !(p.cat === "spell" && !p.trigger));
-    for (const p of n.props) if (p.cat === "spell" && p.chance == null) p.chance = 25;   // spells are chance-based
+    for (const p of n.props) if (p.cat === "spell") delete p.chance;   // spells carry only a trigger (no chance)
   }
   let artifacts = jload(LS.artifacts, null);                // [{id,name,rank,primary,stat[],trick[],traits[],spells[],netherIds[]}]
   if (!Array.isArray(artifacts)) artifacts = [];
@@ -1393,7 +1393,7 @@
   const NETHER_TRIGGERS = ["On Attack", "On Defend", "On Cast", "On Provoke", "On Turn"];
   function netherPropLabel(p) {
     if (p.cat === "trait") { const t = TRAITITEM.get(p.key); return t ? t.name : p.key; }
-    if (p.cat === "spell") { const s = SPELL.get(p.key); return `${p.chance != null ? p.chance + "% " : ""}${s ? s.name : p.key} (${p.trigger || "?"})`; }
+    if (p.cat === "spell") { const s = SPELL.get(p.key); return `${s ? s.name : p.key} (${p.trigger || "?"})`; }
     return `+${p.value}% ${p.key}`;
   }
   const netherSummary = (n) => (n.props || []).map(netherPropLabel).join(" · ") || "no properties";
@@ -1454,10 +1454,9 @@
         }
         if (p.cat === "spell") {
           const sp = SPELL.get(p.key), ic = spellIcon(sp);
-          const chance = `<div class="np-wrap"><input type="number" class="np-num" data-action="nether-spellchance" data-i="${i}" value="${p.chance != null ? p.chance : 25}" min="0" max="99"><span class="np-pct">%</span></div>`;
           const trg = `<select class="np-trigger" data-action="nether-trigger" data-i="${i}">${NETHER_TRIGGERS.map(x => `<option ${p.trigger === x ? "selected" : ""}>${x}</option>`).join("")}</select>`;
           return `<div class="art-slot">${rm}<div class="as-ico">${ic ? spriteImg(ic, "px") : "✷"}</div>
-            <div class="as-lab">${esc(sp ? sp.name : p.key)}</div>${chance}${trg}</div>`;
+            <div class="as-lab">${esc(sp ? sp.name : p.key)}</div>${trg}</div>`;
         }
         const mat = MAT_BY_PROP.get(p.key);
         return `<div class="art-slot">${rm}<div class="as-ico">${mat && mat.icon ? spriteImg(mat.icon, "px") : "◆"}</div>
@@ -1810,7 +1809,7 @@
       case "nether-closepick": ovState.picking = false; refreshOverlay(); break;
       case "nether-pickprop": {
         const cat = ovState.picking;
-        if (cat === "spell") ovState.draft.props.push({ cat, key: +t.dataset.k, trigger: NETHER_TRIGGERS[0], chance: 25 });
+        if (cat === "spell") ovState.draft.props.push({ cat, key: +t.dataset.k, trigger: NETHER_TRIGGERS[0] });
         else if (cat === "trait") ovState.draft.props.push({ cat, key: +t.dataset.k, value: null });
         else ovState.draft.props.push({ cat, key: t.dataset.k, value: 10 });
         ovState.picking = false; refreshOverlay(); break;
@@ -1876,7 +1875,6 @@
     if (A === "relic-rank") { ovState.rank = +v; refreshOverlay(); return; }
     if (A === "nether-propval") { ovState.draft.props[+t.dataset.i].value = Number(v) || 0; return; }
     if (A === "nether-trigger") { ovState.draft.props[+t.dataset.i].trigger = v; return; }
-    if (A === "nether-spellchance") { ovState.draft.props[+t.dataset.i].chance = Math.max(0, Math.min(99, Math.floor(Number(v) || 0))); return; }
     // name fields (no re-render — keep focus/caret)
     if (A === "artb-name") { ovState.draft.name = v; return; }
     if (A === "nether-name") { ovState.draft.name = v; return; }
