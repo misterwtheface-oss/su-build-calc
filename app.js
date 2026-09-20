@@ -523,7 +523,7 @@
   }
   // creature info panel: trait leads, stat table follows (per house layout)
   function renderCreatureIdentity(c) {
-    return `<div style="text-align:center">${critFace(c)}</div>
+    return `<div class="cd-sprite">${critFace(c)}</div>
       <h3 style="text-align:center;margin:6px 0">${esc(c.name)}</h3>
       <div class="slot-sub" style="margin-bottom:10px"><span style="color:${clsColor(c.cls)};font-weight:700">${esc(c.cls || "—")}</span>${c.race ? " · " + esc(c.race) : ""}</div>
       ${c.traitId != null ? `<div class="section-label">Innate trait</div>
@@ -545,7 +545,7 @@
     const mark = (k) => { if (!pers) return ""; if (pers.raise === k) return ` <span class="growth up" title="Personality +33%">↑</span>`;
       if (pers.lower === k) return ` <span class="growth down" title="Personality −33%">↓</span>`; return ""; };
     const traitIds = [primary.traitId, secondary ? secondary.traitId : null].filter(x => x != null);
-    return `<div style="text-align:center">${critFace(primary)}</div>
+    return `<div class="cd-sprite">${critFace(primary)}</div>
       <h3 style="text-align:center;margin:6px 0">${esc(primary.name)}${secondary ? ` <span style="color:var(--accent2)">⚭</span> ${esc(secondary.name)}` : ""}</h3>
       <div class="slot-sub" style="margin-bottom:10px"><span style="color:${clsColor(b.cls)};font-weight:700">${esc(b.cls || "—")}</span></div>
       ${traitIds.length ? `<div class="section-label">Traits</div><div style="margin-bottom:10px">${traitIds.map(tid => `<div class="primary-traits" style="margin-bottom:6px">${traitBanner(tid)}<div class="trait-desc">${richText((TRAIT[tid] || {}).desc || "")}</div></div>`).join("")}</div>` : ""}

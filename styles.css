@@ -584,7 +584,7 @@ h1, h2, h3 { margin: 0; }
 .syn-owner.k-spell { border-color: #3a6ea5; color: #9fd0ff; }
 /* creature detail left panel — just a centered sprite + class·race */
 .cd-left { width: 180px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; text-align: center; }
-.cd-sprite { width: 130px; height: 130px; display: flex; align-items: center; justify-content: center; }
+.cd-sprite { width: 130px; height: 130px; margin: 0 auto 4px; display: flex; align-items: center; justify-content: center; }
 .cd-sprite img { width: 100%; height: 100%; object-fit: contain; }
 .np-actions { display: flex; justify-content: flex-end; gap: 8px; }
 
