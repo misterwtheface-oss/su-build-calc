@@ -519,12 +519,31 @@ let propGemIcons = 0, propGemGods = 0;
 
 // ── relics ──
 const relicRef = readJSON(path.join(REF, 'relics_ref.json')).records;
-const relics = relicRef.map((r, i) => ({
-  id: i,
-  name: r.relic,
-  statBonus: r.stat_bonus || null,
-  ranks: (r.ranks || []).map(x => ({ rank: pct(x.rank), desc: x.description || '' })),
-}));
+// per-relic icons: sprites are named relicW_<god>_<name>; join relic→god via relic_effects,
+// with a fuzzy name-part fallback for the one whose relic_effects name is null (ROBO/r080).
+const OUT_RELIC = path.join(OUT_ASSETS, 'relics');
+fs.rmSync(OUT_RELIC, { recursive: true, force: true });
+const relicEff = readJSON(path.join(MODEL, 'relic_effects.json')).records || readJSON(path.join(MODEL, 'relic_effects.json'));
+const relicGodByName = new Map((Array.isArray(relicEff) ? relicEff : []).map(e => [norm(e.relic_name), (e.relic_god || '').toLowerCase()]));
+const relicSpriteBases = fs.readdirSync(SRC_SPEC_PNG).filter(f => /^relicW_.+_0\.png$/.test(f)).map(f => f.replace(/_0\.png$/, ''));
+const relicByGod = new Map();
+for (const b of relicSpriteBases) { const m = b.match(/^relicW_([a-z0-9]+)_/); if (m && !relicByGod.has(m[1])) relicByGod.set(m[1], b); }
+let relicIconCopied = 0;
+const relics = relicRef.map((r, i) => {
+  const g = relicGodByName.get(norm(r.relic));
+  let base = g && relicByGod.get(g);
+  if (!base) { const rn = norm(r.relic); base = relicSpriteBases.find(b => b.replace(/^relicW_/, '').split('_').some(p => p.length >= 4 && rn.includes(p))); }
+  let icon = null;
+  if (base && copySpriteFrame(base, 0, OUT_RELIC, `${i}.png`)) { icon = `assets/relics/${i}.png`; relicIconCopied++; }
+  return {
+    id: i,
+    name: r.relic,
+    icon,
+    statBonus: r.stat_bonus || null,
+    ranks: (r.ranks || []).map(x => ({ rank: pct(x.rank), desc: x.description || '' })),
+  };
+});
+console.log(`  relic icons: ${relicIconCopied}/${relics.length} copied`);
 
 // ── cards (realm cards — leveled collection) ──
 // each card family maps to a creature race → borrow that creature's sprite + class for the tile.

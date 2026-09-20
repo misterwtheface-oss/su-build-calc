@@ -1310,8 +1310,9 @@
     const list = D.relics.filter(r => !q || r.name.toLowerCase().includes(q) || (r.statBonus || "").toLowerCase().includes(q));
     const sel = st.sel != null ? RELIC.get(st.sel) : null;
     const rows = list.map(r => `<div class="prop-row ${st.sel === r.id ? "chosen" : ""}" data-action="relic-pick" data-id="${r.id}">
+      <span class="prop-ico">${r.icon ? spriteImg(r.icon, "px") : ""}</span>
       <span class="prop-name">${esc(r.name)}</span><span class="prop-stat">${esc(r.statBonus || "")}</span></div>`).join("");
-    const detail = sel ? `<h3 style="margin-bottom:6px">${esc(sel.name)}</h3>
+    const detail = sel ? `<div class="ns-info-head"><span class="ns-info-icon">${sel.icon ? spriteImg(sel.icon, "px") : ""}</span><h3>${esc(sel.name)}</h3></div>
       <div class="slot-sub" style="margin-bottom:10px">Boosts ${esc(sel.statBonus || "—")}</div>
       ${sel.ranks.map(rk => `<div class="prop-row ${st.rank >= rk.rank ? "chosen" : ""}">
         <span class="prop-name" style="flex:0 0 44px;color:var(--accent)">R${rk.rank}</span>
@@ -1351,23 +1352,18 @@
         <span class="stat-val base">${b[k]}</span><span class="stat-val art">${pct ? "+" + pct + "%" : "—"}</span>
         <span class="stat-val total">${fs.final[k]}</span></div>`;
     }).join("");
-    const scT = scrollTotal(slot.scrolls || {});
     const traitIds = slotTraitIds(slot);
     const innateN = new Set([c.traitId, f ? f.traitId : null].filter(x => x != null)).size;
     const hasArtifactTrait = traitIds.length > innateN;
     const traitHtml = traitIds.map(tid => `<div class="primary-traits" style="margin-bottom:6px">${traitBanner(tid)}
       <div class="trait-desc">${richText((TRAIT[tid] || {}).desc || "")}</div></div>`).join("");
     const relic = slot.relic ? RELIC.get(slot.relic.id) : null;
-    const a = resolveArtifact(slot);
     return `<div class="ovl-backdrop" data-action="detail-backdrop"><div class="overlay-panel detail">
       <div class="overlay-header"><h2>${esc(c.name)}${f ? " ⚭ " + esc(f.name) : ""}</h2><button class="ovl-close" data-action="close-detail">✕</button></div>
       <div class="overlay-body">
-        <div class="ovl-left" style="width:180px;text-align:center">${critFace(c)}
-          <div class="slot-sub" style="margin-top:6px"><span style="color:${clsColor(b.cls)};font-weight:700">${esc(b.cls || "—")}</span>${c.race ? " · " + esc(c.race) : ""}</div>
-          ${f ? `<div class="slot-sub" style="margin-top:8px">Fused with<br><b>${esc(f.name)}</b><br>(class → ${esc(f.cls || "—")})</div>` : ""}
-          ${a ? `<div class="slot-sub" style="margin-top:8px">Artifact<br><b>${esc(a.name)}</b></div>` : ""}
-          ${pers ? `<div class="slot-sub" style="margin-top:8px">Personality<br><b>${esc(pers.name)}</b><br>↑ ${STAT_LABEL[pers.raise]} · ↓ ${STAT_LABEL[pers.lower]}</div>` : ""}
-          ${scT ? `<div class="slot-sub" style="margin-top:8px">Scrolls (${scT}/${SCROLL_MAX})<br>${STAT_KEYS.filter(k => (slot.scrolls || {})[k]).map(k => `+${slot.scrolls[k]} ${STAT_LABEL[k]}`).join("<br>")}</div>` : ""}</div>
+        <div class="ovl-left cd-left">
+          <div class="cd-sprite">${critFace(c)}</div>
+          <div class="slot-sub"><span style="color:${clsColor(b.cls)};font-weight:700">${esc(b.cls || "—")}</span>${c.race ? " · " + esc(c.race) : ""}</div></div>
         <div class="ovl-center"><div class="ovl-center-scroll">
           <div class="section-label">Stats — Base · Artifact · Total</div>
           <div class="stat-grid"><div class="stat-header"><span>Stat</span><span style="text-align:right">Base</span>
@@ -1377,7 +1373,7 @@
           <div class="section-label" style="margin-top:14px">Traits (innate${f ? " + fusion" : ""}${hasArtifactTrait ? " + artifact" : ""})</div>
           ${traitHtml || `<div class="slot-sub">No traits.</div>`}
           ${relic ? `<div class="section-label" style="margin-top:14px">Relic</div>
-            <div class="primary-traits"><b>${esc(relic.name)}</b> — Rank ${slot.relic.rank}
+            <div class="primary-traits"><div class="prop-row static"><span class="prop-ico">${relic.icon ? spriteImg(relic.icon, "px") : ""}</span><span class="prop-name"><b>${esc(relic.name)}</b> — Rank ${slot.relic.rank}</span></div>
             <div class="trait-desc">${richText(relic.ranks.filter(r => r.rank <= slot.relic.rank).map(r => "R" + r.rank + ": " + r.desc).join(" ") || "")}</div></div>` : ""}
         </div></div>
       </div>
