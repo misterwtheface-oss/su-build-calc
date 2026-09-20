@@ -291,8 +291,16 @@
   function slotTraitIds(slot) {
     const b = baseStats(slot); const ids = b ? [...b.traitIds] : [];
     const a = resolveArtifact(slot);
-    if (a) for (const tid of a.traits || []) { const ti = TRAITITEM.get(tid); if (ti && ti.traitId != null) ids.push(ti.traitId); }
-    return ids;
+    if (a) {
+      // trait-item slot → its granted trait
+      for (const tid of a.traits || []) { const ti = TRAITITEM.get(tid); if (ti && ti.traitId != null) ids.push(ti.traitId); }
+      // socketed nether stone(s) → any trait property they carry
+      for (const nid of a.netherIds || []) {
+        const n = nether.find(x => x.id === nid); if (!n) continue;
+        for (const p of n.props || []) { if (p.cat === "trait") { const ti = TRAITITEM.get(p.key); if (ti && ti.traitId != null) ids.push(ti.traitId); } }
+      }
+    }
+    return [...new Set(ids)];
   }
 
   function traitBanner(tid, opts = {}) {
@@ -1310,6 +1318,8 @@
     }).join("");
     const scT = scrollTotal(slot.scrolls || {});
     const traitIds = slotTraitIds(slot);
+    const innateN = new Set([c.traitId, f ? f.traitId : null].filter(x => x != null)).size;
+    const hasArtifactTrait = traitIds.length > innateN;
     const traitHtml = traitIds.map(tid => `<div class="primary-traits" style="margin-bottom:6px">${traitBanner(tid)}
       <div class="trait-desc">${richText((TRAIT[tid] || {}).desc || "")}</div></div>`).join("");
     const relic = slot.relic ? RELIC.get(slot.relic.id) : null;
@@ -1329,7 +1339,7 @@
             <span style="text-align:right">Artifact</span><span style="text-align:right">Total</span></div>${rows}
             <div class="stat-row hl-high"><span class="stat-name">Total</span><span class="stat-val base">${b.total}</span>
               <span class="stat-val art"></span><span class="stat-val total">${fs.total}</span></div></div>
-          <div class="section-label" style="margin-top:14px">Traits (innate${f ? " + fusion" : ""}${a && (a.traits || []).length ? " + artifact" : ""})</div>
+          <div class="section-label" style="margin-top:14px">Traits (innate${f ? " + fusion" : ""}${hasArtifactTrait ? " + artifact" : ""})</div>
           ${traitHtml || `<div class="slot-sub">No traits.</div>`}
           ${relic ? `<div class="section-label" style="margin-top:14px">Relic</div>
             <div class="primary-traits"><b>${esc(relic.name)}</b> — Rank ${slot.relic.rank}
