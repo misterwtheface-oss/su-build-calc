@@ -106,18 +106,29 @@ for (const e of tc.entities) {
 // human-facing 2-level tag taxonomy (Category -> Value) + per-trait assignments
 const taxonomy = readJSON(path.join(MODEL, 'tag_taxonomy.json'));
 const taxoTags = readJSON(path.join(MODEL, 'trait_taxonomy_tags.json')).by_trait;
+// "Animatus" (the golem race) isn't in the Related Types vocab, so the classifier snapped
+// Animatus-referencing effects to the nearest value "Animation" (a different race). Add Animatus
+// so the remap below has a valid target and it's filterable.
+{ const rt = taxonomy.categories.find(c => c.category === 'Related Types');
+  if (rt && !rt.values.includes('Animatus')) { rt.values.push('Animatus'); rt.values.sort(); } }
+// shared per-effect taxonomy corrections (traits / perks / spells all pass through this)
+let animatusRetagged = 0, innateTagStripped = 0;
+function correctTaxo(taxo, desc) {
+  let out = taxo;
+  if (out.includes('Related Types::Animation') && /animatus/i.test(desc) && !/\banimation\b/i.test(desc)) {
+    out = out.map(k => k === 'Related Types::Animation' ? 'Related Types::Animatus' : k); animatusRetagged++;
+  }
+  if (out.includes('Related Trait::Innate Trait') && !/innate/i.test(desc)) {
+    out = out.filter(k => k !== 'Related Trait::Innate Trait'); innateTagStripped++;
+  }
+  return [...new Set(out)];
+}
 const traits = {};
-let innateTagStripped = 0;
 for (const t of consolidated) {
   const tag = tagByTraitId.get(t.id) || {};
   const cls = (t.source_creature && CLASS_SET.has(t.source_creature.class)) ? t.source_creature.class : null;
   const desc = t.desc || t.effect_prose || '';
-  // Correction: "Related Trait::Innate Trait" was mass-applied to ~every trait; it should only mark
-  // traits that actually REFERENCE innate traits (their text mentions "innate"). Strip the rest.
-  let taxo = (taxoTags[String(t.id)] || []).map(a => a.cat + '::' + a.val);
-  if (taxo.includes('Related Trait::Innate Trait') && !/innate/i.test(desc)) {
-    taxo = taxo.filter(k => k !== 'Related Trait::Innate Trait'); innateTagStripped++;
-  }
+  const taxo = correctTaxo((taxoTags[String(t.id)] || []).map(a => a.cat + '::' + a.val), desc);
   traits[t.id] = {
     id: t.id,
     name: t.name || t.key || `Trait ${t.id}`,
@@ -130,7 +141,6 @@ for (const t of consolidated) {
     taxo,
   };
 }
-console.log(`  taxonomy fix: stripped over-applied "Innate Trait" tag from ${innateTagStripped} traits (kept only innate-referencing)`);
 
 // ── creatures ──────────────────────────────────────────────────────────────
 // Spine = creatures_ref: the AUTHORITATIVE playable roster (1362), where EVERY
@@ -313,10 +323,11 @@ for (const s of specRecs) {
     else { perkIconsMissing++; }
     const fl = perkFlags(p.name, s.label);       // Anointment / Ascension from Perk_REF.csv
     if (fl) { if (fl.anoint) anointFlagged++; } else perkRefMisses++;
-    return { key: p.key, name: p.name, desc: perkDescByKey.get(p.key) || '',
+    const pdesc = perkDescByKey.get(p.key) || '';
+    return { key: p.key, name: p.name, desc: pdesc,
              cost: st ? st.cost : null, ranks: st ? st.ranks : 1, icon,
              anointment: fl ? fl.anoint : false, ascension: fl ? fl.asc : false,
-             taxo: taxoStrs(perkTaxo[s.spec_id + ':' + p.key]) };
+             taxo: correctTaxo(taxoStrs(perkTaxo[s.spec_id + ':' + p.key]), pdesc) };
   });
   const falseGod = godBySpec.get(norm(s.label)) || null;
   if (!falseGod) { specGodMisses++; warn(`specialization "${s.label}" has no False God mapping`); }
@@ -407,8 +418,9 @@ let spellNoClass = 0;
 const spells = spellArr.map((s, i) => {
   const cls = spellClass(s.name);
   if (!cls) { spellNoClass++; warn(`spell "${s.name}" has no class match in spells_ref`); }
-  return { id: i, key: s.key, name: s.name, desc: s.desc || '', cls, taxo: taxoStrs(spellTaxo[String(i)]) };
+  return { id: i, key: s.key, name: s.name, desc: s.desc || '', cls, taxo: correctTaxo(taxoStrs(spellTaxo[String(i)]), s.desc || '') };
 }).filter(s => s.name);
+console.log(`  taxonomy fixes: Innate-Trait stripped ${innateTagStripped} · Animatus retagged ${animatusRetagged} (was mis-tagged Animation)`);
 
 // ── trait items (slottable into artifact trait slots) — with material icons ──
 const matStats = readJSON(path.join(MODEL, 'material_stats.json'));
