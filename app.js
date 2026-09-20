@@ -1233,18 +1233,9 @@
       footer = `<button class="btn-ghost" data-action="artb-back">‹ Back</button>
         <button class="btn-confirm" data-action="artb-next">Next: Name ›</button>`;
     } else { // name
-      const chips = [
-        ...(a.primary ? [`<span class="slot-chip filled">◆ ${esc(a.primary)}</span>`] : []),
-        ...a.stat.map(n => { const m = MAT_BY_PROP.get(n); return `<span class="slot-chip filled">${esc(m ? m.name : n)}</span>`; }),
-        ...a.trick.map(n => { const m = MAT_BY_PROP.get(n); return `<span class="slot-chip filled">${esc(m ? m.name : n)}</span>`; }),
-        ...a.traits.map(id => { const t = TRAITITEM.get(id); return `<span class="slot-chip filled">✦ ${esc(t ? t.traitName : id)}</span>`; }),
-        ...a.spells.map(id => { const g = spellGems.find(x => x.id === id); return `<span class="slot-chip filled">✷ ${esc(g ? gemName(g) : id)}</span>`; }),
-        ...a.netherIds.map(id => { const n = nether.find(x => x.id === id); return `<span class="slot-chip filled">◈ ${esc(n ? n.name : id)}</span>`; }),
-      ].join("") || `<span class="slot-chip">No slots filled</span>`;
       body = `<div class="ovl-center"><div class="ovl-center-scroll">
         <div class="build-section"><h3>Name your artifact</h3>
           <input class="ovl-search name-field" placeholder="Artifact name" value="${esc(a.name)}" data-action="artb-name" style="max-width:320px"></div>
-        <div class="build-section"><h3>Contents</h3><div>${chips}</div></div>
         <div class="build-section"><h3>Live bonus (rank ${rank})</h3><div class="stat-grid">
           ${STAT_KEYS.map(k => `<div class="stat-row ${preview[k] ? "hl-med" : ""}"><span class="stat-name">${STAT_LABEL[k]}</span>
             <span class="stat-val art" style="grid-column:2/5">${preview[k] ? "+" + preview[k] + "%" : "—"}</span></div>`).join("")}</div></div>
