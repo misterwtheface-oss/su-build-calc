@@ -330,7 +330,6 @@
       <div class="home-top">${specTile}${anointTile}</div>
       <div class="section-label">Party — 6 Creatures</div>
       <div class="party-grid">${slots}</div>
-      ${renderPartySummary()}
     `;
   }
 
@@ -359,23 +358,6 @@
         <button class="slot-mini ${slot.relic ? "on" : ""}" data-action="build-relic" data-slot="${i}" title="Relic">Relic</button>
         <button class="slot-mini ${(slot.spellGemIds || []).length ? "on" : ""}" data-action="creature-spells" data-slot="${i}" title="Spell gems (up to 3)">Spells${(slot.spellGemIds || []).length ? ` ${slot.spellGemIds.length}` : ""}</button>
       </div></div>`;
-  }
-
-  function renderPartySummary() {
-    const filled = build.slots.filter(s => s.cid != null);
-    if (!filled.length) return "";
-    const rows = build.slots.map((s) => {
-      const c = CREA.get(s.cid); if (!c) return "";
-      const fs = finalStats(s);
-      return `<div class="stat-row"><span class="stat-name">${esc(c.name)}</span>
-        <span class="stat-val base">${fs.final.hp}</span><span class="stat-val">${fs.final.atk}</span>
-        <span class="stat-val">${fs.final.def}</span><span class="stat-val total">${fs.total}</span></div>`;
-    }).join("");
-    return `<div class="party-summary"><div class="section-label">Party</div>
-      <div class="stat-grid">
-        <div class="stat-header"><span>Creature</span><span style="text-align:right">HP</span>
-          <span style="text-align:right">ATK</span><span style="text-align:right">DEF</span><span style="text-align:right">Total</span></div>
-        ${rows}</div></div>`;
   }
 
   // ── overlay plumbing ───────────────────────────────────────────────────────
@@ -1100,10 +1082,10 @@
       const pool = type === "stat" ? STATMAT : TRICKMAT;
       rows = pool.filter(m => !q || m.name.toLowerCase().includes(q) || m.property.toLowerCase().includes(q)).map(m => {
         const g = propGroups.get(m.property);
-        const val = g ? g.entries.map(e => PROP_STAT[e.stat] ? `+${e.perRank[rank]}%` : e.perRank[rank]).join(" / ") : "";
+        const val = g ? g.entries.map(e => `${e.stat} ${PROP_STAT[e.stat] ? `+${e.perRank[rank]}%` : e.perRank[rank]}`).join(" / ") : esc(m.property);
         return `<div class="prop-row ${has(m.property) ? "chosen" : ""}" data-action="art-preview" data-t="${type}" data-v="${esc(m.property)}">
           <span class="prop-ico">${m.icon ? spriteImg(m.icon, "px") : ""}</span>
-          <span class="prop-name">${esc(m.name)}</span><span class="prop-val">${esc(val)}</span></div>`;
+          <span class="prop-name">${esc(m.name)}</span><span class="prop-stat">${esc(val)}</span></div>`;
       }).join("");
     } else if (type === "trait") {
       rows = D.traitItems.filter(t => t.traitName
@@ -1202,7 +1184,7 @@
         if (type === "stat" || type === "trick") { const mat = MAT_BY_PROP.get(v), g = propGroups.get(v);
           ico = `<div class="as-ico">${mat && mat.icon ? spriteImg(mat.icon, "px") : "◆"}</div>`;
           lab = mat ? mat.name : v;
-          sub = g ? g.entries.map(e => PROP_STAT[e.stat] ? `+${e.perRank[rank]}%` : e.perRank[rank]).join(" / ") : ""; }
+          sub = g ? g.entries.map(e => `${e.stat} ${PROP_STAT[e.stat] ? `+${e.perRank[rank]}%` : e.perRank[rank]}`).join(" / ") : esc(v); }
         else if (type === "trait") { const t = TRAITITEM.get(v); ico = `<div class="as-ico">${t && t.icon ? spriteImg(t.icon, "px") : "✦"}</div>`; lab = t ? t.name : v; sub = t ? t.traitName : ""; }
         else if (type === "spell") { const g = spellGems.find(x => x.id === v); const gi = gemIcon(g); ico = `<div class="as-ico">${gi ? spriteImg(gi, "px") : "✷"}</div>`; lab = g ? gemName(g) : v; sub = g ? gemSummary(g) : "spell gem"; }
         else if (type === "nether") { const n = nether.find(x => x.id === v); ico = `<div class="as-ico">${spriteImg(gemPath(n && n.icon), "px")}</div>`; lab = n ? n.name : v; sub = "nether"; }

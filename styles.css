@@ -365,9 +365,11 @@ h1, h2, h3 { margin: 0; }
 }
 @media (max-width: 600px) {
   .overlay-panel, .overlay-panel.detail {
-    width: 100vw; height: 100dvh; max-height: 100dvh; border-radius: 0; border-width: 0 0 2px 0;
+    /* svh = the SMALL viewport height: it does NOT change as the mobile URL bar shows/hides,
+       so the pinned header/search never expands & contracts while scrolling */
+    width: 100vw; height: 100svh; max-height: 100svh; border-radius: 0; border-width: 0 0 2px 0;
   }
-  .ovl-backdrop { padding: 0; }
+  .ovl-backdrop { padding: 0; align-items: flex-start; }   /* pin the panel to the top */
   .overlay-body { flex-direction: column; }
   /* exactly two scroll regions on phones: grid on top (flexes to fill, scrolls),
      one info scroller below (capped so it can't eat the grid) */

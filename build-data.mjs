@@ -144,8 +144,15 @@ for (const t of consolidated) { const k = norm(t.name); if (k && !traitIdByName.
 fs.rmSync(OUT_CRIT, { recursive: true, force: true });
 fs.mkdirSync(OUT_CRIT, { recursive: true });
 
+// battle-sprite frame overrides for creatures whose roster name is spelled differently in the
+// sprite catalog (creature_sprites.json), so the name-join misses (verified frame-by-frame).
+const SPRITE_FRAME_OVERRIDE = {
+  atlasbeacon: 2941, gloopidator: 1133, elfhuntsman: 1299, phenominalpossum: 3504,
+  manticoreconquerer: 1542, maionettecharlatan: 3502, tipsydenizen: 3444,
+};
+
 const creatures = [];
-let spriteCopied = 0, codeStats = 0;
+let spriteCopied = 0, codeStats = 0, spriteOverrides = 0;
 creaturesRef.forEach((r, i) => {
   const id = i;
   const cd = cdByName.get(norm(r.name));                    // capstone twin (best stats + battle_frame)
@@ -166,8 +173,12 @@ creaturesRef.forEach((r, i) => {
   const traitId = (cd && cd.trait_id != null) ? cd.trait_id
     : (traitName ? (traitIdByName.get(norm(traitName)) ?? null) : null);
 
-  // battle sprite — spr_crits_battle frame from the capstone battle_frame, else legacy field0
-  const frame = (cd && cd.battle_frame != null) ? cd.battle_frame : (cs ? cs.field0 : null);
+  // battle sprite — spr_crits_battle frame from the capstone battle_frame, else legacy field0,
+  // else a name-mismatch override (roster spelling ≠ sprite-catalog spelling)
+  let frame = (cd && cd.battle_frame != null) ? cd.battle_frame : (cs ? cs.field0 : null);
+  if ((frame == null || frame === 6969) && SPRITE_FRAME_OVERRIDE[norm(r.name)] != null) {
+    frame = SPRITE_FRAME_OVERRIDE[norm(r.name)]; spriteOverrides++;
+  }
   let sprite = null;
   if (frame != null && frame !== 6969 /* "no battle sprite" sentinel */) {
     const srcPng = path.join(SRC_BATTLE, `spr_crits_battle_${frame}.png`);
@@ -645,7 +656,7 @@ for (const s of specs) {
 // ── data-hygiene report ─────────────────────────────────────────────────
 const checked = creatures.length + specs.length + artRef.length + traitItems.length + relics.length + cards.length;
 console.log('\n── Data hygiene report ──────────────────────────');
-console.log(`✓ ${checked} records checked · ${creatures.length} playable creatures (100% classed) · ${codeStats} w/ code stats · ${spriteCopied} w/ sprites · ${specs.length} spec sprites`);
+console.log(`✓ ${checked} records checked · ${creatures.length} playable creatures (100% classed) · ${codeStats} w/ code stats · ${spriteCopied} w/ sprites (${spriteOverrides} name-override) · ${specs.length} spec sprites`);
 console.log(`  cards w/ art ${cardArt}/${cards.length} · artifact-type icons ${artGroup.primary.filter(p => p.icon).length}/5 · gem icons ${gemIcons.length} · class bgs ${Object.keys(classBg).length}`);
 console.log(`  spec sprites: ${specSkins} real skins + ${specs.filter(s => s.spriteKind === 'icon').length} emblem icons · ${emblemCount}/${specs.length} 16×16 emblems · terms ${Object.keys(terms).length}`);
   console.log(`  perk icons: ${perkIconsCopied} copied (code-certain from perk_icons.json)${perkIconsMissing ? ` · ${perkIconsMissing} missing` : ' · 100%'}`);
