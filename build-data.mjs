@@ -572,7 +572,13 @@ for (const r of Object.values(raceClassIcons.races)) {
   if (copyNamedSprite(r.icon, OUT_RACEICON, dest)) raceIcons[r.race] = `assets/raceicons/${dest}`;
   else raceIconMisses++;
 }
-console.log(`  tile icons: ${Object.keys(classIcons).length}/5 class · ${Object.keys(raceIcons).length}/${Object.keys(raceClassIcons.races).length} race${raceIconMisses ? ` (${raceIconMisses} races w/o 16×16 emblem)` : ''}`);
+// fallback: some races (e.g. Beacon, Kraken, Guardian) have NO 16×16 emblem in the dump — use a
+// representative creature's battle sprite so every race still shows a tile badge
+let raceIconFallback = 0;
+for (const c of creatures) {
+  if (c.race && c.sprite && !raceIcons[c.race]) { raceIcons[c.race] = c.sprite; raceIconFallback++; }
+}
+console.log(`  tile icons: ${Object.keys(classIcons).length}/5 class · ${Object.keys(raceIcons).length} race (${raceIconFallback} via representative creature)`);
 
 // nether-stone gem icons (user randomizes / picks one)
 fs.rmSync(OUT_GEM, { recursive: true, force: true });

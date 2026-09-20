@@ -34,12 +34,15 @@
 }
 
 *, *::before, *::after { box-sizing: border-box; }
-html, body { margin: 0; padding: 0; overscroll-behavior: none; }   /* no rubber-band bounce / pull-to-refresh */
+html, body { margin: 0; padding: 0; overscroll-behavior: none; height: 100%; }   /* no rubber-band bounce / pull-to-refresh */
 body {
   background: radial-gradient(1200px 700px at 50% -10%, var(--bg2), var(--bg)) fixed;
   color: var(--text);
   font-family: system-ui, "Segoe UI", Roboto, sans-serif;
-  overflow-x: hidden;                 /* full-width overlays never jiggle */
+  /* fixed-height shell: the app scrolls INSIDE #app, the page itself never scrolls, so the
+     mobile URL bar has no page-scroll to react to and stays put (no expand/contract jitter) */
+  height: 100svh; overflow: hidden;
+  display: flex; flex-direction: column;
   -webkit-text-size-adjust: 100%;
 }
 img { image-rendering: pixelated; }    /* crisp pixel-art sprites */
@@ -53,7 +56,7 @@ h1, h2, h3 { margin: 0; }
 
 /* ── top bar ────────────────────────────────────────────────────────────── */
 .topbar {
-  position: sticky; top: 0; z-index: 40;
+  position: sticky; top: 0; z-index: 40; flex-shrink: 0;
   display: flex; flex-direction: column; align-items: flex-start; gap: 8px;
   padding: 10px 14px;
   background: linear-gradient(#241a48, #1c1338);
@@ -74,7 +77,9 @@ h1, h2, h3 { margin: 0; }
 .menu-wrap { position: relative; }
 .menu-btn .chev { font-size: 10px; opacity: .8; margin-left: 2px; }
 .menu-dropdown {
-  position: absolute; top: calc(100% + 6px); right: 0; z-index: 50; min-width: 168px;
+  /* header actions are left-aligned, so open rightward (anchoring right:0 clipped off-screen left) */
+  position: absolute; top: calc(100% + 6px); left: 0; z-index: 50; min-width: 168px;
+  max-width: calc(100vw - 24px);
   display: flex; flex-direction: column; padding: 5px;
   background: var(--surface2); border: 1px solid var(--border); border-radius: 10px;
   box-shadow: var(--shadow);
@@ -90,7 +95,8 @@ h1, h2, h3 { margin: 0; }
 .menu-sep { height: 1px; background: var(--border-dim); margin: 4px 6px; }
 
 /* ── party (build-first home) ───────────────────────────────────────────── */
-.planning-main { padding: 14px; max-width: 1500px; margin: 0 auto; }
+.planning-main { padding: 14px; max-width: 1500px; margin: 0 auto; width: 100%;
+  flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: none; -webkit-overflow-scrolling: touch; }
 .section-label {
   font-size: 12px; letter-spacing: 1.4px; text-transform: uppercase;
   color: var(--text-mute); margin: 4px 2px 8px;
