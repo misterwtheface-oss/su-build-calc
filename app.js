@@ -32,6 +32,59 @@
   const CLS_COLOR = Object.fromEntries(D.classes.map(c => [c.key, c.color]));
   const CLASS_BG = D.classBg || {};
   const GEM_ICONS = D.gemIcons || [];
+  // Nether-stone tint. In-game the base cornether_* shapes are colored procedurally at drop time
+  // (backlog: reverse the generator). Until then the user picks a main + outline colour, applied here by
+  // gradient-mapping the base sprite's luminance to the main colour and its darkest ring to the outline.
+  const DEFAULT_GEM_MAIN = "#8a5cff";
+  const DEFAULT_GEM_OUTLINE = "#160a24";
+  const _gemBase = new Map();          // base sprite path -> ImageData (preloaded once)
+  const _gemOut = new Map();           // "path|main|outline" -> recolored data URL
+  let _gemsReady = false;
+  function preloadGems(done) {
+    let left = GEM_ICONS.length;
+    if (!left) { _gemsReady = true; return done && done(); }
+    for (const g of GEM_ICONS) {
+      const im = new Image();
+      im.onload = () => { try { const c = document.createElement("canvas"); c.width = im.width; c.height = im.height; const cx = c.getContext("2d"); cx.drawImage(im, 0, 0); _gemBase.set(g.path, cx.getImageData(0, 0, im.width, im.height)); } catch (_) {} if (--left === 0) { _gemsReady = true; done && done(); } };
+      im.onerror = () => { if (--left === 0) { _gemsReady = true; done && done(); } };
+      im.src = g.path;
+    }
+  }
+  const _hex = (h) => { h = String(h || "").replace("#", ""); return [parseInt(h.slice(0, 2), 16) || 0, parseInt(h.slice(2, 4), 16) || 0, parseInt(h.slice(4, 6), 16) || 0]; };
+  // The base gem has TWO palette ramps (like the game's 2-colour roll): a saturated BODY ramp and a
+  // desaturated bright OUTLINE ramp (the white ring). Segment by saturation, then gradient-map each ramp
+  // onto its rolled colour (colour = midtone; shadows darker; highlights blend to white) so both keep
+  // their built-in gradient.
+  const _lum = (r, g, b) => 0.299 * r + 0.587 * g + 0.114 * b;
+  const _sat = (r, g, b) => { const mx = Math.max(r, g, b), mn = Math.min(r, g, b); return mx ? (mx - mn) / mx : 0; };
+  const OUTLINE_SAT = 0.30;                      // sat below this = the white/blue-grey outline ramp
+  function recolorGem(path, main, outline) {
+    const key = path + "|" + main + "|" + outline;
+    if (_gemOut.has(key)) return _gemOut.get(key);
+    const src = _gemBase.get(path); if (!src) return null;
+    const m = _hex(main), o = _hex(outline), d = new Uint8ClampedArray(src.data);
+    let bMn = 255, bMx = 0, oMn = 255, oMx = 0;
+    for (let i = 0; i < d.length; i += 4) {
+      if (d[i + 3] < 8) continue;
+      const l = _lum(d[i], d[i + 1], d[i + 2]);
+      if (_sat(d[i], d[i + 1], d[i + 2]) < OUTLINE_SAT) { if (l < oMn) oMn = l; if (l > oMx) oMx = l; }
+      else { if (l < bMn) bMn = l; if (l > bMx) bMx = l; }
+    }
+    const ramp = (c, t) => { const sh = 0.45 + 0.55 * t; let r = c[0] * sh, g = c[1] * sh, b = c[2] * sh; if (t > 0.8) { const k = (t - 0.8) / 0.2; r += (255 - r) * k; g += (255 - g) * k; b += (255 - b) * k; } return [r, g, b]; };
+    for (let i = 0; i < d.length; i += 4) {
+      if (d[i + 3] < 8) continue;
+      const l = _lum(d[i], d[i + 1], d[i + 2]);
+      let out;
+      if (_sat(d[i], d[i + 1], d[i + 2]) < OUTLINE_SAT) out = ramp(o, (l - oMn) / Math.max(1, oMx - oMn));
+      else out = ramp(m, (l - bMn) / Math.max(1, bMx - bMn));
+      d[i] = out[0]; d[i + 1] = out[1]; d[i + 2] = out[2];
+    }
+    try { const c = document.createElement("canvas"); c.width = src.width; c.height = src.height; c.getContext("2d").putImageData(new ImageData(d, src.width, src.height), 0, 0); const url = c.toDataURL(); _gemOut.set(key, url); return url; } catch (_) { return null; }
+  }
+  // src STRING for a stone (recolored data URL, else base path) — drop-in for gemPath()
+  const gemSrc = (stone) => { const p = gemPath(stone && stone.icon); if (!p) return p; const url = (_gemsReady && stone && stone.mainColor) ? recolorGem(p, stone.mainColor, stone.outlineColor || DEFAULT_GEM_OUTLINE) : null; return url || p; };
+  const gemImg = (stone, cls) => spriteImg(gemSrc(stone), cls);
+  preloadGems(() => { try { if (typeof ovState !== "undefined" && ovState && ovState.render) refreshOverlay(); } catch (_) {} });
   const STAT_KEYS = ["hp", "atk", "def", "int", "spd"];
   const STAT_LABEL = { hp: "Health", atk: "Attack", def: "Defense", int: "Intelligence", spd: "Speed" };
   const CORE_STATS = ["Health", "Attack", "Defense", "Intelligence", "Speed"];
@@ -125,6 +178,9 @@
     // (nether stones socket a raw spell + trigger); drop the stale ones so they don't mis-render
     n.props = n.props.filter(p => !(p.cat === "spell" && !p.trigger));
     for (const p of n.props) if (p.cat === "spell") delete p.chance;   // spells carry only a trigger (no chance)
+    n.mainColor ||= DEFAULT_GEM_MAIN;                                  // user-picked colours (procedural tint TODO)
+    n.outlineColor ||= DEFAULT_GEM_OUTLINE;
+    if (!GEM_ICONS.some(g => g.key === n.icon)) n.icon = (GEM_ICONS[0] || {}).key;   // old jewel keys → real cornether shape
   }
   let artifacts = jload(LS.artifacts, null);                // [{id,name,rank,primary,stat[],trick[],traits[],spells[],netherIds[]}]
   if (!Array.isArray(artifacts)) artifacts = [];
@@ -1177,7 +1233,7 @@
     for (const n of a.trick || []) { const m = MAT_BY_PROP.get(n); r.push(libRow(m && m.icon, m ? m.name : n, n)); }
     for (const id of a.traits || []) { const t = TRAITITEM.get(id); r.push(libTraitRow(t && t.icon, t ? t.name : id, t ? t.traitId : null)); }
     for (const id of a.spells || []) { const sp = SPELL.get(id); r.push(libRow(spellIcon(sp), sp ? sp.name : id, sp ? (sp.cls || "spell") : "spell")); }
-    for (const id of a.netherIds || []) { const nn = nether.find(x => x.id === id); r.push(libRow(gemPath(nn && nn.icon), nn ? nn.name : id, "nether")); }
+    for (const id of a.netherIds || []) { const nn = nether.find(x => x.id === id); r.push(libRow(gemSrc(nn), nn ? nn.name : id, "nether")); }
     return r.join("") || `<div class="slot-sub" style="padding:8px">Empty artifact.</div>`;
   }
   function renderArtifactLibrary() {
@@ -1264,7 +1320,7 @@
           <span class="prop-name">${esc(sp.name)}</span><span class="prop-stat">${esc(sp.cls || "")}</span></div>`).join("");
     } else {
       rows = nether.filter(n => !q || n.name.toLowerCase().includes(q)).map(n => `<div class="prop-row ${has(n.id) ? "chosen" : ""}" data-action="art-preview" data-t="nether" data-v="${n.id}">
-          <span class="prop-ico">${spriteImg(gemPath(n.icon), "px")}</span>
+          <span class="prop-ico">${spriteImg(gemSrc(n), "px")}</span>
           <span class="prop-name">${esc(n.name)}</span></div>`).join("")
         || `<div class="slot-sub" style="padding:8px">No Nether Stones yet — add them from the top-bar “Nether Stones” button.</div>`;
     }
@@ -1297,7 +1353,7 @@
       lines = sp ? `<div class="trait-desc">${richText(sp.desc || "")}</div>` : "";
     } else {
       const n = nether.find(x => x.id === v);
-      icon = gemPath(n && n.icon); name = n ? n.name : v; sub = "nether stone";
+      icon = gemSrc(n); name = n ? n.name : v; sub = "nether stone";
       lines = n ? `<div class="trait-desc">${esc(netherSummary(n))}</div>` : "";
     }
     return `<div class="art-side-head"><button class="chip" data-action="art-preview-back">‹ Back</button></div>
@@ -1343,7 +1399,7 @@
           sub = g ? g.entries.map(e => `${e.stat} ${PROP_STAT[e.stat] ? `+${e.perRank[rank]}%` : e.perRank[rank]}`).join(" / ") : esc(v); }
         else if (type === "trait") { const t = TRAITITEM.get(v); ico = `<div class="as-ico">${t && t.icon ? spriteImg(t.icon, "px") : "✦"}</div>`; lab = t ? t.name : v; sub = t ? t.traitName : ""; }
         else if (type === "spell") { const sp = SPELL.get(v); const gi = spellIcon(sp); ico = `<div class="as-ico">${gi ? spriteImg(gi, "px") : "✷"}</div>`; lab = sp ? sp.name : v; sub = sp ? (sp.cls || "spell") : "spell"; }
-        else if (type === "nether") { const n = nether.find(x => x.id === v); ico = `<div class="as-ico">${spriteImg(gemPath(n && n.icon), "px")}</div>`; lab = n ? n.name : v; sub = "nether"; }
+        else if (type === "nether") { const n = nether.find(x => x.id === v); ico = `<div class="as-ico">${spriteImg(gemSrc(n), "px")}</div>`; lab = n ? n.name : v; sub = "nether"; }
         return `<div class="art-slot"><button class="as-rm" data-action="art-rm" data-t="${type}" data-i="${idx}">✕</button>${ico}<div class="as-lab">${esc(lab)}</div><div class="as-sub">${esc(sub)}</div></div>`;
       };
       const primaryBox = a.primary
@@ -1553,7 +1609,7 @@
     // compact tiles: gem + name only; effects live in the info panel on selection
     const tiles = list.map(n => `
       <div class="pick-tile ${st.sel === n.id ? "selected" : ""}" data-action="nether-sel" data-id="${n.id}">
-        <div class="pt-sprite">${spriteImg(gemPath(n.icon), "px")}</div>
+        <div class="pt-sprite">${spriteImg(gemSrc(n), "px")}</div>
         <div class="pt-name">${esc(n.name)}</div></div>`).join("")
       || `<div class="slot-sub" style="padding:10px">No Nether Stones${st.hideEquipped ? " match" : " yet — build one"}.</div>`;
     let info;
@@ -1564,7 +1620,7 @@
           <span class="prop-ico">${netherPropIcon(p) ? spriteImg(netherPropIcon(p), "px") : ""}</span>
           <span class="prop-name">${esc(netherPropLabel(p))}</span></div>`;
       }).join("") || `<div class="slot-sub" style="padding:8px">No effects.</div>`;
-      info = `<div class="ns-info-head"><span class="ns-info-icon">${spriteImg(gemPath(sel.icon), "px")}</span><h3>${esc(sel.name)}</h3></div>
+      info = `<div class="ns-info-head"><span class="ns-info-icon">${spriteImg(gemSrc(sel), "px")}</span><h3>${esc(sel.name)}</h3></div>
         <div class="section-label">Effects</div>
         <div class="prop-list">${rows}</div>
         <div class="ns-info-actions">
@@ -1582,32 +1638,19 @@
     </div></div>`;
   }
 
-  // stepped nether wizard: 1) gem + name  2) properties (any number, from the full stat+trick pool)
+  // single-page nether builder — order: traits/properties → name → shape → colour (no step wizard)
   function openNetherBuilder(id) {
     const draft = id != null ? JSON.parse(JSON.stringify(nether.find(n => n.id === id)))
-      : { id: null, name: `Nether Stone ${nextNetherId}`, icon: (GEM_ICONS[0] || {}).key, props: [] };
-    ovState = { kind: "netherbuild", editId: id, draft, step: id != null ? "props" : "basics", picking: false, search: "", render: renderNetherBuilder };
+      : { id: null, name: `Nether Stone ${nextNetherId}`, icon: (GEM_ICONS[0] || {}).key, mainColor: DEFAULT_GEM_MAIN, outlineColor: DEFAULT_GEM_OUTLINE, props: [] };
+    draft.mainColor ||= DEFAULT_GEM_MAIN; draft.outlineColor ||= DEFAULT_GEM_OUTLINE;
+    ovState = { kind: "netherbuild", editId: id, draft, picking: false, search: "", render: renderNetherBuilder };
     openOverlay(ovState.render());
   }
-  const netherStepLabels = { basics: "1 · Gem & name", props: "2 · Properties" };
-  const renderNetherStepbar = (step) => `<div class="art-steps">${["basics", "props"].map(s =>
-    `<span class="art-step ${s === step ? "on" : ""} ${["basics", "props"].indexOf(s) < ["basics", "props"].indexOf(step) ? "done" : ""}">${netherStepLabels[s]}</span>`).join("<span class='art-step-sep'>›</span>")}</div>`;
   function renderNetherBuilder() {
     const st = ovState, s = st.draft;
-    let body = "", footer = "";
-    if (st.step === "basics") {
-      const gemChoices = GEM_ICONS.map(g => `<button class="gem-choice ${s.icon === g.key ? "on" : ""}" data-action="nether-icon" data-k="${g.key}" title="${g.key}">${spriteImg(g.path, "px")}</button>`).join("");
-      body = `<div class="ovl-center"><div class="ovl-center-scroll">
-        <div class="build-section"><h3>Name</h3>
-          <div class="nf-row"><input class="ovl-search name-field" style="max-width:none;flex:1" placeholder="Name" value="${esc(s.name)}" data-action="nether-name">
-            <button class="chip" data-action="nether-rand" title="Random gem">🎲</button></div></div>
-        <div class="build-section"><h3>Gem icon</h3><div class="gem-picker">${gemChoices}</div></div>
-      </div></div>`;
-      footer = `<button class="btn-ghost" data-action="nether-cancel">Cancel</button>
-        <button class="btn-confirm" data-action="netherb-next">Next: Properties ›</button>`;
-    } else {
-      // each prop = {cat,key,value}; stat/trick carry a % value, trait/spell are item refs (icon)
-      const rows = s.props.map((p, i) => {
+    // ── 1) TRAITS & properties (any number, from the full stat+trick+trait+spell pool) ──
+    // each prop = {cat,key,value}; stat/trick carry a % value, trait/spell are item refs (icon)
+    const rows = s.props.map((p, i) => {
         const rm = `<button class="as-rm" data-action="nether-prop-del" data-i="${i}">✕</button>`;
         if (p.cat === "trait") {
           const t = TRAITITEM.get(p.key);
@@ -1651,13 +1694,27 @@
             <input class="ovl-search" placeholder="Search…" value="${esc(st.search)}" data-action="nether-search"></div>
           <div class="art-pick-scroll">${rowsHtml}</div></div>`;
       }
-      body = `<div class="ovl-center"><div class="ovl-center-scroll">${slotsBox}${picker}</div></div>`;
-      footer = `<button class="btn-ghost" data-action="netherb-back">‹ Back</button>
-        <button class="btn-confirm" data-action="nether-save">Save Stone</button>`;
-    }
+    // ── 3) SHAPE — cornether_* base, recoloured live with the current main/outline ──
+    const shapeChoices = GEM_ICONS.map(g => {
+      const prev = (_gemsReady && s.mainColor) ? recolorGem(g.path, s.mainColor, s.outlineColor) : null;
+      return `<button class="gem-choice ${s.icon === g.key ? "on" : ""}" data-action="nether-icon" data-k="${g.key}" title="${g.key}">${spriteImg(prev || g.path, "px")}</button>`;
+    }).join("");
+    // ── 4) COLOUR — two rolled colours: main (body) + outline (white ring) ──
+    const colorBox = `<div class="nether-colors">
+      <label class="color-field"><span>Main</span><input type="color" data-action="nether-maincolor" value="${esc(s.mainColor || DEFAULT_GEM_MAIN)}"></label>
+      <label class="color-field"><span>Outline</span><input type="color" data-action="nether-outlinecolor" value="${esc(s.outlineColor || DEFAULT_GEM_OUTLINE)}"></label>
+      <button class="chip" data-action="nether-randcolor" title="Roll colours">🎲</button></div>`;
+    const body = `<div class="ovl-center"><div class="ovl-center-scroll">
+      <div class="build-section"><h3>Traits &amp; properties</h3>${slotsBox}${picker}</div>
+      <div class="build-section"><h3>Name</h3><input class="ovl-search name-field" style="max-width:none;width:100%" placeholder="Name" value="${esc(s.name)}" data-action="nether-name"></div>
+      <div class="build-section"><h3>Shape</h3><div class="gem-picker">${shapeChoices}</div></div>
+      <div class="build-section"><h3>Colour</h3>${colorBox}</div>
+    </div></div>`;
+    const footer = `<button class="btn-ghost" data-action="nether-cancel">Cancel</button>
+      <button class="btn-confirm" data-action="nether-save">Save Stone</button>`;
     return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel detail">
-      <div class="overlay-header"><span class="hdr-ico">${spriteImg(gemPath(s.icon), "px")}</span>
-        <h2>${esc(s.name)}</h2>${renderNetherStepbar(st.step)}
+      <div class="overlay-header"><span class="hdr-ico">${gemImg(s, "px")}</span>
+        <h2>${esc(s.name)}</h2>
         <button class="ovl-close" data-action="close-ovl">✕</button></div>
       <div class="overlay-body">${body}</div>
       <div class="overlay-footer"><span class="foot-info"></span><div>${footer}</div></div>
@@ -1986,10 +2043,11 @@
       case "nether-edit": openNetherBuilder(+t.dataset.id); break;
       case "nether-del": armOrDo(t, () => { const id = +t.dataset.id; nether = nether.filter(n => n.id !== id); artifacts.forEach(a => a.netherIds = (a.netherIds || []).filter(x => x !== id)); if (ovState.sel === id) ovState.sel = nether[0] ? nether[0].id : null; persistNether(); persistArtifacts(); refreshOverlay(); }); break;
       case "nether-cancel": openNether(); break;
-      case "netherb-next": ovState.step = "props"; ovState.picking = false; ovState.search = ""; refreshOverlay(); break;
-      case "netherb-back": ovState.step = "basics"; ovState.picking = false; refreshOverlay(); break;
       case "nether-icon": ovState.draft.icon = t.dataset.k; refreshOverlay(); break;
-      case "nether-rand": { const g = GEM_ICONS[Math.floor((Date.now() >> 4) % GEM_ICONS.length)] || GEM_ICONS[0]; ovState.draft.icon = g && g.key; refreshOverlay(); break; }
+      case "nether-randcolor": {
+        const rnd = () => "#" + Array.from({ length: 3 }, () => Math.floor(Math.random() * 256).toString(16).padStart(2, "0")).join("");
+        ovState.draft.mainColor = rnd(); ovState.draft.outlineColor = rnd(); refreshOverlay(); break;
+      }
       case "nether-addprop": ovState.picking = "menu"; ovState.search = ""; refreshOverlay(); break;
       case "nether-pickcat": ovState.picking = t.dataset.c; ovState.search = ""; refreshOverlay(); break;
       case "nether-closepick": ovState.picking = false; refreshOverlay(); break;
@@ -2067,6 +2125,8 @@
     // name fields (no re-render — keep focus/caret)
     if (A === "artb-name") { ovState.draft.name = v; return; }
     if (A === "nether-name") { ovState.draft.name = v; return; }
+    if (A === "nether-maincolor") { ovState.draft.mainColor = v; refreshOverlay(); return; }
+    if (A === "nether-outlinecolor") { ovState.draft.outlineColor = v; refreshOverlay(); return; }
     if (A === "sg-name") { ovState.draft.name = v; return; }
     if (A === "builds-name") { ovState.draft.name = v; return; }
     // search fields — live filter without losing caret
