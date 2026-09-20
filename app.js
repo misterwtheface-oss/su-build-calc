@@ -125,9 +125,17 @@
     if (!a._gemMigrated) { a.spells = []; a._gemMigrated = true; }   // artifact.spells now holds spell-GEM ids, not raw spells
   }
 
-  // spell gems (built entities: 1 spell + up to 3 property items) — slottable into artifacts or creatures
+  // spell gems (built entities: 1 spell + up to 3 property items) — slottable into CREATURES only
   let spellGems = jload(LS.spellgems, null);                // [{id,name,spellId,propIds:[]}]
   if (!Array.isArray(spellGems)) spellGems = [];
+
+  // artifact spell slot now holds a RAW spell id (like nether stones), not a saved spell-gem id.
+  // Migrate any old gem-id entries to that gem's spell id.
+  for (const a of artifacts) {
+    if (a._rawSpell) continue;
+    a.spells = (a.spells || []).map(x => { const g = spellGems.find(gg => gg.id === x); return g ? g.spellId : (SPELL.has(x) ? x : null); }).filter(x => x != null).slice(0, 1);
+    a._rawSpell = true;
+  }
 
   // saved builds — full party snapshots with a chosen wardrobe sprite as the icon
   let builds = jload(LS.builds, null);                      // [{id,name,icon,ts,build}]
@@ -245,7 +253,7 @@
   // "equipped in the current build" tests, for the saved-list Hide-equipped filter
   const artifactEquippedInBuild = (id) => build.slots.some(s => s.artifactId === id);
   const netherEquippedInBuild = (id) => build.slots.some(s => { const a = resolveArtifact(s); return a && (a.netherIds || []).includes(id); });
-  const spellGemEquippedInBuild = (id) => build.slots.some(s => (s.spellGemIds || []).includes(id) || (() => { const a = resolveArtifact(s); return a && (a.spells || []).includes(id); })());
+  const spellGemEquippedInBuild = (id) => build.slots.some(s => (s.spellGemIds || []).includes(id));   // gems only slot into creatures now
   function baseStats(slot) {
     const c = CREA.get(slot.cid); if (!c) return null;
     const f = slot.fusion != null ? CREA.get(slot.fusion) : null;
@@ -796,6 +804,7 @@
         <div class="lib-sub">${buildSummary(b.build || {})}</div>
         <div class="lib-actions">
           <button class="slot-mini" data-action="builds-load" data-id="${b.id}">Load</button>
+          <button class="slot-mini" data-action="builds-overwrite" data-id="${b.id}" title="Save the current party over this build">Save over</button>
           <button class="slot-mini danger" data-action="builds-del" data-id="${b.id}">✕</button>
         </div></div>`).join("") || `<div class="slot-sub" style="padding:10px">No saved builds yet — save your current party.</div>`;
     return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel">
@@ -1117,7 +1126,7 @@
     for (const n of a.stat || []) { const m = MAT_BY_PROP.get(n); r.push(libRow(m && m.icon, m ? m.name : n, n)); }
     for (const n of a.trick || []) { const m = MAT_BY_PROP.get(n); r.push(libRow(m && m.icon, m ? m.name : n, n)); }
     for (const id of a.traits || []) { const t = TRAITITEM.get(id); r.push(libTraitRow(t && t.icon, t ? t.name : id, t ? t.traitId : null)); }
-    for (const id of a.spells || []) { const g = spellGems.find(x => x.id === id); r.push(libRow(gemIcon(g), g ? gemName(g) : id, "spell gem")); }
+    for (const id of a.spells || []) { const sp = SPELL.get(id); r.push(libRow(spellIcon(sp), sp ? sp.name : id, sp ? (sp.cls || "spell") : "spell")); }
     for (const id of a.netherIds || []) { const nn = nether.find(x => x.id === id); r.push(libRow(gemPath(nn && nn.icon), nn ? nn.name : id, "nether")); }
     return r.join("") || `<div class="slot-sub" style="padding:8px">Empty artifact.</div>`;
   }
@@ -1198,12 +1207,11 @@
         .map(t => `<div class="prop-row ${has(t.id) ? "chosen" : ""}" data-action="art-preview" data-t="trait" data-v="${t.id}">
           <span class="prop-ico">${t.icon ? spriteImg(t.icon, "px") : ""}</span>
           <span class="prop-name">${esc(t.name)}</span><span class="prop-stat">${esc(t.traitName)}</span></div>`).join("");
-    } else if (type === "spell") {
-      rows = spellGems.filter(g => { const sp = gemSpell(g); return !q || gemName(g).toLowerCase().includes(q) || (sp && matchTaxo(sp.taxo)); }).map(g =>
-        `<div class="prop-row ${has(g.id) ? "chosen" : ""}" data-action="art-preview" data-t="spell" data-v="${g.id}">
-          <span class="prop-ico">${gemIcon(g) ? spriteImg(gemIcon(g), "px") : ""}</span>
-          <span class="prop-name">${esc(gemName(g))}</span></div>`).join("")
-        || `<div class="slot-sub" style="padding:8px">No spell gems yet — build them from the top-bar “Spell Gems” button.</div>`;
+    } else if (type === "spell") {   // raw spells (no sockets), like nether stones
+      rows = (D.spells || []).filter(sp => !q || sp.name.toLowerCase().includes(q) || (sp.desc || "").toLowerCase().includes(q) || matchTaxo(sp.taxo)).slice(0, 300).map(sp =>
+        `<div class="prop-row ${has(sp.id) ? "chosen" : ""}" data-action="art-preview" data-t="spell" data-v="${sp.id}">
+          <span class="prop-ico">${spellIcon(sp) ? spriteImg(spellIcon(sp), "px") : ""}</span>
+          <span class="prop-name">${esc(sp.name)}</span><span class="prop-stat">${esc(sp.cls || "")}</span></div>`).join("");
     } else {
       rows = nether.filter(n => !q || n.name.toLowerCase().includes(q)).map(n => `<div class="prop-row ${has(n.id) ? "chosen" : ""}" data-action="art-preview" data-t="nether" data-v="${n.id}">
           <span class="prop-ico">${spriteImg(gemPath(n.icon), "px")}</span>
@@ -1234,9 +1242,9 @@
       icon = t && t.icon; name = t ? t.name : v; sub = t ? `grants ${t.traitName}` : "";
       lines = tr ? `<div class="trait-desc">${perkText(tr.desc || "")}</div>` : `<div class="slot-sub">${esc(t ? t.traitName : "")}</div>`;
     } else if (type === "spell") {
-      const g = spellGems.find(x => x.id === v), sp = gemSpell(g);
-      icon = gemIcon(g); name = g ? gemName(g) : v; sub = g ? gemSummary(g) : "spell gem";
-      lines = sp ? `<div class="trait-desc">${perkText(sp.desc || "")}</div>` : "";
+      const sp = SPELL.get(v);
+      icon = spellIcon(sp); name = sp ? sp.name : v; sub = sp ? (sp.cls || "spell") : "spell";
+      lines = sp ? `<div class="trait-desc">${richText(sp.desc || "")}</div>` : "";
     } else {
       const n = nether.find(x => x.id === v);
       icon = gemPath(n && n.icon); name = n ? n.name : v; sub = "nether stone";
@@ -1256,7 +1264,7 @@
       ...a.stat.map(n => { const m = MAT_BY_PROP.get(n); return `<span class="slot-chip filled">${esc(m ? m.name : n)}</span>`; }),
       ...a.trick.map(n => { const m = MAT_BY_PROP.get(n); return `<span class="slot-chip filled">${esc(m ? m.name : n)}</span>`; }),
       ...a.traits.map(id => { const t = TRAITITEM.get(id); return `<span class="slot-chip filled">✦ ${esc(t ? t.traitName : id)}</span>`; }),
-      ...a.spells.map(id => { const g = spellGems.find(x => x.id === id); return `<span class="slot-chip filled">✷ ${esc(g ? gemName(g) : id)}</span>`; }),
+      ...a.spells.map(id => { const sp = SPELL.get(id); return `<span class="slot-chip filled">✷ ${esc(sp ? sp.name : id)}</span>`; }),
       ...a.netherIds.map(id => { const n = nether.find(x => x.id === id); return `<span class="slot-chip filled">◈ ${esc(n ? n.name : id)}</span>`; }),
     ].join("") || `<span class="slot-sub">Tap a slot to add a material.</span>`;
     return `<div class="section-label">Live bonus · rank ${rank}</div>
@@ -1293,7 +1301,7 @@
           lab = mat ? mat.name : v;
           sub = g ? g.entries.map(e => `${e.stat} ${PROP_STAT[e.stat] ? `+${e.perRank[rank]}%` : e.perRank[rank]}`).join(" / ") : esc(v); }
         else if (type === "trait") { const t = TRAITITEM.get(v); ico = `<div class="as-ico">${t && t.icon ? spriteImg(t.icon, "px") : "✦"}</div>`; lab = t ? t.name : v; sub = t ? t.traitName : ""; }
-        else if (type === "spell") { const g = spellGems.find(x => x.id === v); const gi = gemIcon(g); ico = `<div class="as-ico">${gi ? spriteImg(gi, "px") : "✷"}</div>`; lab = g ? gemName(g) : v; sub = g ? gemSummary(g) : "spell gem"; }
+        else if (type === "spell") { const sp = SPELL.get(v); const gi = spellIcon(sp); ico = `<div class="as-ico">${gi ? spriteImg(gi, "px") : "✷"}</div>`; lab = sp ? sp.name : v; sub = sp ? (sp.cls || "spell") : "spell"; }
         else if (type === "nether") { const n = nether.find(x => x.id === v); ico = `<div class="as-ico">${spriteImg(gemPath(n && n.icon), "px")}</div>`; lab = n ? n.name : v; sub = "nether"; }
         return `<div class="art-slot"><button class="as-rm" data-action="art-rm" data-t="${type}" data-i="${idx}">✕</button>${ico}<div class="as-lab">${esc(lab)}</div><div class="as-sub">${esc(sub)}</div></div>`;
       };
@@ -1414,7 +1422,6 @@
           <div class="cd-sprite">${critFace(c)}</div>
           <div class="slot-sub"><span style="color:${clsColor(b.cls)};font-weight:700">${esc(b.cls || "—")}</span>${c.race ? " · " + esc(c.race) : ""}</div></div>
         <div class="ovl-center"><div class="ovl-center-scroll">
-          <div class="section-label">Stats — Base · Artifact · Total</div>
           <div class="stat-grid"><div class="stat-header"><span>Stat</span><span style="text-align:right">Base</span>
             <span style="text-align:right">Artifact</span><span style="text-align:right">Total</span></div>${rows}
             <div class="stat-row hl-high"><span class="stat-name">Total</span><span class="stat-val base">${b.total}</span>
@@ -1767,6 +1774,7 @@
         if (b) { build = normalizeBuild(JSON.parse(JSON.stringify(b.build))); persistBuild(); closeOverlay(); render(); }
         break;
       }
+      case "builds-overwrite": armOrDo(t, () => { const b = builds.find(x => x.id === +t.dataset.id); if (b) { b.build = JSON.parse(JSON.stringify(build)); b.ts = Date.now(); persistBuilds(); refreshOverlay(); } }); break;
       case "builds-del": armOrDo(t, () => { const id = +t.dataset.id; builds = builds.filter(b => b.id !== id); persistBuilds(); refreshOverlay(); }); break;
       case "iconpick-cat": dovState.cat = t.dataset.c; refreshDetail(); break;
       case "iconpick-cat-clear": e.stopPropagation(); dovState.cat = null; refreshDetail(); break;

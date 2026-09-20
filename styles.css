@@ -169,6 +169,8 @@ h1, h2, h3 { margin: 0; }
 }
 .slot-mini.on { color: var(--text); border-color: var(--border); }
 .slot-mini:hover { border-color: var(--border); color: var(--text); }
+.slot-mini.armed { border-color: var(--cap); color: var(--cap); box-shadow: inset 0 0 0 1px var(--cap); }        /* tap again to confirm */
+.slot-mini.danger.armed { background: var(--bad); color: #1a1230; border-color: var(--bad); box-shadow: none; }
 .slot-remove {
   position: absolute; top: 4px; right: 5px; z-index: 3;
   width: 18px; height: 18px; border-radius: 50%; line-height: 1; padding: 0;
