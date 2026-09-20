@@ -75,18 +75,24 @@
     const key = path + "|" + main + "|" + outline;
     if (_gemOut.has(key)) return _gemOut.get(key);
     const src = _gemBase.get(path); if (!src) return null;
-    const m = _hex(main), o = _hex(outline), d = new Uint8ClampedArray(src.data);
+    const W = src.width, H = src.height, m = _hex(main), o = _hex(outline), d = new Uint8ClampedArray(src.data);
+    // Outline = the shape's RIM plus the blue-grey highlight ramp. The rim's shadowed (top) side is painted
+    // with body-palette colours in the base, so colour alone misses it — add a border test: any pixel
+    // touching transparency is rim ⇒ outline. Interior blue-grey highlights stay outline by colour.
+    const opaque = (x, y) => x >= 0 && x < W && y >= 0 && y < H && d[(y * W + x) * 4 + 3] >= 8;
+    const isBorder = (x, y) => { for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) if (!opaque(x + dx, y + dy)) return true; return false; };
+    const isOut = (x, y, i) => isBorder(x, y) || _isOutlinePx(d[i], d[i + 1], d[i + 2]);
     let bMn = 255, bMx = 0, oMn = 255, oMx = 0;
-    for (let i = 0; i < d.length; i += 4) {
-      if (d[i + 3] < 8) continue;
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+      const i = (y * W + x) * 4; if (d[i + 3] < 8) continue;
       const l = _lum(d[i], d[i + 1], d[i + 2]);
-      if (_isOutlinePx(d[i], d[i + 1], d[i + 2])) { if (l < oMn) oMn = l; if (l > oMx) oMx = l; }
+      if (isOut(x, y, i)) { if (l < oMn) oMn = l; if (l > oMx) oMx = l; }
       else { if (l < bMn) bMn = l; if (l > bMx) bMx = l; }
     }
-    for (let i = 0; i < d.length; i += 4) {
-      if (d[i + 3] < 8) continue;
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+      const i = (y * W + x) * 4; if (d[i + 3] < 8) continue;
       const l = _lum(d[i], d[i + 1], d[i + 2]);
-      const out = _isOutlinePx(d[i], d[i + 1], d[i + 2])
+      const out = isOut(x, y, i)
         ? _shade(o, (l - oMn) / Math.max(1, oMx - oMn))
         : _shade(m, (l - bMn) / Math.max(1, bMx - bMn));
       d[i] = out[0]; d[i + 1] = out[1]; d[i + 2] = out[2];
