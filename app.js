@@ -845,7 +845,7 @@
       <div class="overlay-header"><h2>Builds</h2><button class="ovl-close" data-action="close-ovl">✕</button></div>
       <div class="overlay-body"><div class="ovl-center"><div class="ovl-center-scroll">
         <div class="lib-grid">${tiles}</div></div></div></div>
-      <div class="overlay-footer"><span class="foot-info">${st.flash ? "Saved ✓" : (sel ? "Select ✕/Load, or Update below" : "")}</span>
+      <div class="overlay-footer"><span class="foot-info">${st.flash ? "Saved ✓" : ""}</span>
         ${footBtn}</div>
     </div></div>`;
   }
