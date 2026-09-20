@@ -804,7 +804,7 @@
         <div class="lib-sub">${buildSummary(b.build || {})}</div>
         <div class="lib-actions">
           <button class="slot-mini" data-action="builds-load" data-id="${b.id}">Load</button>
-          <button class="slot-mini" data-action="builds-overwrite" data-id="${b.id}" title="Save the current party over this build">Save over</button>
+          <button class="slot-mini" data-action="builds-overwrite" data-id="${b.id}" title="Save the current party over this build">Save</button>
           <button class="slot-mini danger" data-action="builds-del" data-id="${b.id}">✕</button>
         </div></div>`).join("") || `<div class="slot-sub" style="padding:10px">No saved builds yet — save your current party.</div>`;
     return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel">
