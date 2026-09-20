@@ -1080,7 +1080,10 @@
   const artHas = (a, type, v) => (a[artSlotKey(type)] || []).includes(v);
   function renderArtPicker(st, a, rank) {
     const type = st.pickType, q = st.search.trim().toLowerCase();
-    const has = (v) => artHas(a, type, v);
+    // only single-slot types (trait/spell/nether) mark a row "chosen"; multi-slot types
+    // (stat/trick) allow the same item in several slots, so never grey it out
+    const single = ((ART_SLOTS.find(s => s.pick === type) || {}).max || 1) === 1;
+    const has = (v) => single && artHas(a, type, v);
     const matchTaxo = (taxo) => q && (taxo || []).some(k => taxoValName(k).toLowerCase().includes(q));
     let rows = "";
     if (type === "stat" || type === "trick") {
@@ -1123,7 +1126,8 @@
       <div class="art-side-list">${rows}</div>`;
   }
   // item preview with an explicit confirm — socketing never applies silently (shows the effect first)
-  function renderArtPreview(type, v, rank, has) {
+  function renderArtPreview(type, v, rank, opts) {
+    const equipped = opts && opts.equipped, full = opts && opts.full;
     let icon = null, name = String(v), sub = "", lines = "";
     if (type === "stat" || type === "trick") {
       const mat = MAT_BY_PROP.get(v), g = propGroups.get(v);
@@ -1147,7 +1151,7 @@
         <div class="art-pv-top"><div class="as-ico">${icon ? spriteImg(icon, "px") : "◆"}</div>
           <div><div class="art-pv-name">${esc(name)}</div><div class="slot-sub">${esc(sub)}</div></div></div>
         <div class="art-pv-body">${lines || `<div class="slot-sub">No numeric effect.</div>`}</div>
-        <button class="btn-confirm ${has ? "danger-confirm" : ""}" data-action="art-confirm-add" data-t="${type}" data-v="${esc(String(v))}">${has ? "Remove from artifact" : "Add to artifact"}</button>
+        <button class="btn-confirm ${equipped ? "danger-confirm" : ""}" data-action="art-confirm-add" data-t="${type}" data-v="${esc(String(v))}" ${full ? "disabled" : ""}>${equipped ? "Remove from artifact" : full ? "Slots full" : "Add to artifact"}</button>
       </div>`;
   }
   function renderArtLiveBonus(a, rank, pct) {
@@ -1184,7 +1188,9 @@
         <button class="btn-confirm" data-action="artb-next" ${a.primary ? "" : "disabled"}>Next: Fill slots ›</button>`;
     } else if (st.step === "slots") {
       // fixed slot template: 1 primary (from step 1) + stat×3 + trick×2 + trait×1 + spell×1 + nether×1
-      const filledBox = (type, v) => {
+      // idx = position within the slot group, so removal targets THAT box (slots are independent;
+      // the same item — e.g. 3 Attack Ambers — can occupy multiple slots)
+      const filledBox = (type, v, idx) => {
         let ico = `<div class="as-ico glyph">◆</div>`, lab = v, sub = "";
         if (type === "stat" || type === "trick") { const mat = MAT_BY_PROP.get(v), g = propGroups.get(v);
           ico = `<div class="as-ico">${mat && mat.icon ? spriteImg(mat.icon, "px") : "◆"}</div>`;
@@ -1193,7 +1199,7 @@
         else if (type === "trait") { const t = TRAITITEM.get(v); ico = `<div class="as-ico">${t && t.icon ? spriteImg(t.icon, "px") : "✦"}</div>`; lab = t ? t.name : v; sub = t ? t.traitName : ""; }
         else if (type === "spell") { const g = spellGems.find(x => x.id === v); const gi = gemIcon(g); ico = `<div class="as-ico">${gi ? spriteImg(gi, "px") : "✷"}</div>`; lab = g ? gemName(g) : v; sub = g ? gemSummary(g) : "spell gem"; }
         else if (type === "nether") { const n = nether.find(x => x.id === v); ico = `<div class="as-ico">${spriteImg(gemPath(n && n.icon), "px")}</div>`; lab = n ? n.name : v; sub = "nether"; }
-        return `<div class="art-slot"><button class="as-rm" data-action="art-rm" data-t="${type}" data-v="${esc(v)}">✕</button>${ico}<div class="as-lab">${esc(lab)}</div><div class="as-sub">${esc(sub)}</div></div>`;
+        return `<div class="art-slot"><button class="as-rm" data-action="art-rm" data-t="${type}" data-i="${idx}">✕</button>${ico}<div class="as-lab">${esc(lab)}</div><div class="as-sub">${esc(sub)}</div></div>`;
       };
       const primaryBox = a.primary
         ? (() => { const p = PRIMARY.find(x => x.property === a.primary); return `<div class="art-slot primary"><div class="as-ico">${spriteImg(p && p.icon, "px")}</div><div class="as-lab">${esc(a.primary)}</div><div class="as-sub">primary</div></div>`; })()
@@ -1202,14 +1208,20 @@
         .concat(ART_SLOTS.map(sl => {
           const arr = a[sl.key] || [];
           const boxes = [];
-          for (let i = 0; i < sl.max; i++) boxes.push(arr[i] !== undefined ? filledBox(sl.pick, arr[i])
+          for (let i = 0; i < sl.max; i++) boxes.push(arr[i] !== undefined ? filledBox(sl.pick, arr[i], i)
             : `<div class="art-slot add ${st.pickType === sl.pick ? "picking" : ""}" data-action="art-slot" data-t="${sl.pick}"><div class="as-ico glyph">＋</div><div class="as-lab">${sl.label}</div></div>`);
           return `<div class="art-slot-group"><div class="section-label">${sl.label}</div><div class="art-slot-grid">${boxes.join("")}</div></div>`;
         })).join("");
 
       // info panel (right): item preview (confirm) › picker list › live bonus — never appended below the slots
       let side;
-      if (st.preview) side = renderArtPreview(st.preview.type, st.preview.value, rank, artHas(a, st.preview.type, st.preview.value));
+      if (st.preview) {
+        const psl = ART_SLOTS.find(s => s.pick === st.preview.type) || {};
+        const parr = a[psl.key] || [];
+        const equipped = psl.max === 1 && parr[0] === st.preview.value;   // single-slot toggle-off
+        const full = parr.length >= psl.max && !equipped;
+        side = renderArtPreview(st.preview.type, st.preview.value, rank, { equipped, full });
+      }
       else if (st.pickType) side = renderArtPicker(st, a, rank);
       else side = renderArtLiveBonus(a, rank, preview);
       body = `<div class="ovl-center"><div class="ovl-center-scroll">${groupsHtml}</div></div>
@@ -1733,18 +1745,17 @@
       case "art-confirm-add": {
         const type = t.dataset.t, sl = ART_SLOTS.find(s => s.pick === type), arr = ovState.draft[sl.key];
         const v = (type === "stat" || type === "trick") ? t.dataset.v : +t.dataset.v;
-        const i = arr.indexOf(v);
-        if (i >= 0) arr.splice(i, 1);                        // already socketed → remove
-        else if (arr.length < sl.max) arr.push(v);           // room → add
-        else if (sl.max === 1) arr[0] = v;                   // single-slot → replace
+        if (sl.max === 1) { arr[0] === v ? (arr.length = 0) : (arr[0] = v); }   // single slot toggles/replaces
+        else if (arr.length < sl.max) arr.push(v);                              // multi slot: independent, duplicates OK
         ovState.preview = null;
-        if (arr.length >= sl.max) ovState.pickType = null;   // slot type full → back to the grid
+        if (arr.length >= sl.max) ovState.pickType = null;   // group full → back to the grid
         refreshOverlay(); break;
       }
       case "art-rm": {
         const type = t.dataset.t, sl = ART_SLOTS.find(s => s.pick === type), arr = ovState.draft[sl.key];
-        const v = (type === "stat" || type === "trick") ? t.dataset.v : +t.dataset.v;
-        const i = arr.indexOf(v); if (i >= 0) arr.splice(i, 1); refreshOverlay(); break;
+        const i = +t.dataset.i;                              // remove THIS specific slot box
+        if (i >= 0 && i < arr.length) arr.splice(i, 1);
+        refreshOverlay(); break;
       }
       case "artb-cancel": openArtifactLibrary(ovState.slotIdx); break;
       case "artb-save": {
