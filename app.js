@@ -1397,24 +1397,43 @@
     return `+${p.value}% ${p.key}`;
   }
   const netherSummary = (n) => (n.props || []).map(netherPropLabel).join(" · ") || "no properties";
+  const netherPropIcon = (p) => {
+    if (p.cat === "trait") { const t = TRAITITEM.get(p.key); return t && t.icon ? t.icon : null; }
+    if (p.cat === "spell") return spellIcon(SPELL.get(p.key));
+    const m = MAT_BY_PROP.get(p.key); return m && m.icon ? m.icon : null;
+  };
   function openNether() {   // library
-    ovState = { kind: "nether", render: renderNether };
+    ovState = { kind: "nether", sel: nether[0] ? nether[0].id : null, render: renderNether };
     openOverlay(ovState.render());
   }
   function renderNether() {
+    const sel = ovState.sel != null ? nether.find(n => n.id === ovState.sel) : null;
+    // compact tiles: gem + name only; effects live in the info panel on selection
     const tiles = nether.map(n => `
-      <div class="lib-tile">
-        <div class="lib-icon" data-action="nether-edit" data-id="${n.id}">${spriteImg(gemPath(n.icon), "px")}</div>
-        <div class="lib-name">${esc(n.name)}</div>
-        <div class="lib-sub">${esc(netherSummary(n))}</div>
-        <div class="lib-actions">
-          <button class="slot-mini" data-action="nether-edit" data-id="${n.id}">Edit</button>
-          <button class="slot-mini danger" data-action="nether-del" data-id="${n.id}">✕</button>
-        </div></div>`).join("") || `<div class="slot-sub" style="padding:10px">No Nether Stones yet — build one.</div>`;
+      <div class="pick-tile ${ovState.sel === n.id ? "selected" : ""}" data-action="nether-sel" data-id="${n.id}">
+        <div class="pt-sprite">${spriteImg(gemPath(n.icon), "px")}</div>
+        <div class="pt-name">${esc(n.name)}</div></div>`).join("")
+      || `<div class="slot-sub" style="padding:10px">No Nether Stones yet — build one.</div>`;
+    let info;
+    if (sel) {
+      const rows = (sel.props || []).map(p => `
+        <div class="prop-row static">
+          <span class="prop-ico">${netherPropIcon(p) ? spriteImg(netherPropIcon(p), "px") : ""}</span>
+          <span class="prop-name">${esc(netherPropLabel(p))}</span></div>`).join("")
+        || `<div class="slot-sub" style="padding:8px">No effects.</div>`;
+      info = `<div class="ns-info-head"><span class="ns-info-icon">${spriteImg(gemPath(sel.icon), "px")}</span><h3>${esc(sel.name)}</h3></div>
+        <div class="section-label">Effects</div>
+        <div class="prop-list">${rows}</div>
+        <div class="ns-info-actions">
+          <button class="slot-mini" data-action="nether-edit" data-id="${sel.id}">Edit</button>
+          <button class="slot-mini danger" data-action="nether-del" data-id="${sel.id}">Delete</button></div>`;
+    } else info = `<div class="slot-sub" style="padding:12px">Select a stone to see its effects.</div>`;
     return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel">
       <div class="overlay-header"><h2>Nether Stones</h2><button class="ovl-close" data-action="close-ovl">✕</button></div>
-      <div class="overlay-body"><div class="ovl-center"><div class="ovl-center-scroll">
-        <div class="lib-grid">${tiles}</div></div></div></div>
+      <div class="overlay-body">
+        <div class="ovl-center"><div class="ovl-center-scroll"><div class="pick-grid">${tiles}</div></div></div>
+        <div class="ovl-right">${info}</div>
+      </div>
       <div class="overlay-footer"><span class="foot-info"></span>
         <button class="btn-confirm" data-action="nether-new">＋ Build new stone</button></div>
     </div></div>`;
@@ -1797,8 +1816,9 @@
 
       // nether library + wizard
       case "nether-new": openNetherBuilder(null); break;
+      case "nether-sel": ovState.sel = +t.dataset.id; refreshOverlay(); break;
       case "nether-edit": openNetherBuilder(+t.dataset.id); break;
-      case "nether-del": armOrDo(t, () => { const id = +t.dataset.id; nether = nether.filter(n => n.id !== id); artifacts.forEach(a => a.netherIds = (a.netherIds || []).filter(x => x !== id)); persistNether(); persistArtifacts(); refreshOverlay(); }); break;
+      case "nether-del": armOrDo(t, () => { const id = +t.dataset.id; nether = nether.filter(n => n.id !== id); artifacts.forEach(a => a.netherIds = (a.netherIds || []).filter(x => x !== id)); if (ovState.sel === id) ovState.sel = nether[0] ? nether[0].id : null; persistNether(); persistArtifacts(); refreshOverlay(); }); break;
       case "nether-cancel": openNether(); break;
       case "netherb-next": ovState.step = "props"; ovState.picking = false; ovState.search = ""; refreshOverlay(); break;
       case "netherb-back": ovState.step = "basics"; ovState.picking = false; refreshOverlay(); break;
