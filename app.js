@@ -319,6 +319,24 @@
     }
     return [...new Set(ids)];
   }
+  // creature spell-gem slot count: base + perk/trait grants (e.g. Animator's Gray Matter → Animatus +N)
+  const SPELL_SLOT_BASE = 3;
+  function creatureSlotMax(slot) {
+    const c = CREA.get(slot.cid); if (!c) return SPELL_SLOT_BASE;
+    let max = SPELL_SLOT_BASE;
+    for (const g of (D.spellSlotGrants || [])) {
+      if (g.kind === "perk") {
+        if (build.specId !== g.specId) continue;
+        const spec = SPEC.get(g.specId); if (!spec) continue;
+        const perk = spec.perks.find(p => p.key === g.key); if (!perk) continue;
+        const r = perkRank(spec, perk);
+        if (r > 0 && (!g.targetRace || c.race === g.targetRace)) max += g.perRank * r;
+      } else if (g.kind === "trait") {
+        if (slotTraitIds(slot).includes(g.traitId) && (g.self || !g.targetRace || c.race === g.targetRace)) max += g.perRank;
+      }
+    }
+    return max;
+  }
 
   function traitBanner(tid, opts = {}) {
     const t = TRAIT[tid]; if (!t) return "";
@@ -389,7 +407,7 @@
       <div class="slot-actions">
         <button class="slot-mini ${a ? "on" : ""}" data-action="equip-artifact" data-slot="${i}" title="Artifact">Artifact</button>
         <button class="slot-mini ${slot.relic ? "on" : ""}" data-action="build-relic" data-slot="${i}" title="Relic">Relic</button>
-        <button class="slot-mini ${(slot.spellGemIds || []).length ? "on" : ""}" data-action="creature-spells" data-slot="${i}" title="Spell gems (up to 3)">Spells${(slot.spellGemIds || []).length ? ` ${slot.spellGemIds.length}` : ""}</button>
+        <button class="slot-mini ${(slot.spellGemIds || []).length ? "on" : ""}" data-action="creature-spells" data-slot="${i}" title="Spell gems">Spells${(slot.spellGemIds || []).length ? ` ${slot.spellGemIds.length}/${creatureSlotMax(slot)}` : ""}</button>
       </div></div>`;
   }
 
@@ -1734,7 +1752,7 @@
     ovState = { kind: "spellgemlib", hideEquipped: false, sel: spellGems[0] ? spellGems[0].id : null, equipCtx: {
       kind: "creature", slotIdx,
       equipped: () => build.slots[slotIdx].spellGemIds,
-      max: 3,
+      max: creatureSlotMax(build.slots[slotIdx]),
     }, render: renderSpellGemLib };
     openOverlay(ovState.render());
   }

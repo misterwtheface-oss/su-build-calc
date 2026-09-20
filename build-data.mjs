@@ -351,6 +351,29 @@ for (const g of FALSE_GODS) {
   falseGods.push({ key: g.key, name: g.name, img: rel });
 }
 
+// ── spell-slot grants — perks/traits that grant a creature EXTRA spell-gem slots ──
+// (the artifact's own 1 spell slot is separate; those "Spell Slot" texts are excluded by requiring
+//  "gains N Spell Slot"). Code path bc_CritGetEmptySpellSlots is opaque GML VM, so ground on the text.
+// In practice only Animator's "Gray Matter" grants creature slots (Your Animatus gains <N> Spell Slot(s)).
+const SLOT_GRANT_RE = /gains?\s+(?:<(\d+)>|(\d+))\s+spell\s+slot/i;
+const raceSet = new Set(creatures.map(c => c.race).filter(Boolean));
+const grantTarget = (desc) => {
+  const m = desc.match(/\bYour\s+([A-Z][A-Za-z]+)\b/);   // "Your Animatus …" → race/type
+  if (!m) return null;
+  const w = m[1];
+  return raceSet.has(w) ? w : (raceSet.has(w.replace(/s$/, '')) ? w.replace(/s$/, '') : w);
+};
+const spellSlotGrants = [];
+for (const s of specs) for (const p of s.perks) {
+  const m = (p.desc || '').match(SLOT_GRANT_RE); if (!m) continue;
+  spellSlotGrants.push({ kind: 'perk', specId: s.id, specLabel: s.label, key: p.key, name: p.name, targetRace: grantTarget(p.desc || ''), perRank: +(m[1] || m[2]) });
+}
+for (const id in traits) {
+  const t = traits[id]; const m = (t.desc || '').match(SLOT_GRANT_RE); if (!m) continue;
+  spellSlotGrants.push({ kind: 'trait', traitId: t.id, name: t.name, targetRace: grantTarget(t.desc || ''), self: /this creature/i.test(t.desc), perRank: +(m[1] || m[2]) });
+}
+console.log(`  spell-slot grants: ${spellSlotGrants.length} (${spellSlotGrants.map(g => g.name).join(', ') || 'none'})`);
+
 // ── artifacts (container properties) ──
 const artRef = readJSON(path.join(REF, 'artifacts_ref.json')).records;
 const artGroup = { primary: [], stat: [], trick: [] };
@@ -763,6 +786,7 @@ const SU_DATA = {
   creatures,
   specs,
   falseGods,
+  spellSlotGrants,
   traits,
   tagLabels,
   taxonomy: { categories: taxonomy.categories, status: taxonomy.status },
