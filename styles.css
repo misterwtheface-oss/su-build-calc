@@ -561,6 +561,22 @@ h1, h2, h3 { margin: 0; }
 .ns-info-icon img { width: 100%; height: 100%; object-fit: contain; }
 .ns-info-actions { display: flex; gap: 6px; margin-top: 12px; }
 .ns-info-actions .slot-mini { flex: 1; }
+/* info panels (right side) — centered header + actions across all overlays */
+.ns-info-head { justify-content: center; }
+.ns-info-actions { justify-content: center; }
+.ovl-right .section-label { text-align: center; }
+/* Tag Synergy — shared-tag rows */
+.syn-list { display: flex; flex-direction: column; gap: 6px; }
+.syn-row { display: flex; align-items: flex-start; gap: 10px; padding: 8px 10px; background: var(--surface); border: 1px solid var(--border-dim); border-radius: 8px; }
+.syn-count { flex: 0 0 auto; font-weight: 800; color: var(--cap); font-size: 15px; min-width: 30px; text-align: center; }
+.syn-main { flex: 1; min-width: 0; }
+.syn-head { display: flex; align-items: baseline; gap: 8px; margin-bottom: 5px; }
+.syn-head .opt-chev { margin-left: auto; opacity: .55; font-size: 12px; }
+.syn-carriers { display: flex; flex-wrap: wrap; gap: 4px; }
+.syn-chip { font-size: 11px; padding: 2px 7px; border-radius: 999px; background: var(--surface2); border: 1px solid var(--border-dim); color: var(--text-dim); }
+.syn-chip.k-spec { border-color: var(--accent); color: var(--cap); }
+.syn-chip.k-anoint { border-color: var(--accent2); color: var(--text); }
+.syn-chip.k-crea { border-color: var(--border-dim); color: var(--text-dim); }
 /* creature detail left panel — just a centered sprite + class·race */
 .cd-left { width: 180px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; text-align: center; }
 .cd-sprite { width: 130px; height: 130px; display: flex; align-items: center; justify-content: center; }

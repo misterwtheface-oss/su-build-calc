@@ -966,6 +966,53 @@
     </div></div>`;
   }
 
+  // ── Tag Synergy — visualize taxonomy tags shared across the whole build ──
+  // Each "carrier" is a build element (the spec, each equipped anointment, each creature with
+  // its innate/fusion/artifact/nether traits + equipped spell gems). Tags on ≥2 carriers overlap.
+  function buildTagCarriers() {
+    const carriers = [];
+    const addAll = (set, arr) => { for (const k of (arr || [])) set.add(k); };
+    if (build.specId != null) {
+      const s = SPEC.get(build.specId);
+      if (s) { const set = new Set(); for (const p of allocatedPerks(s)) addAll(set, p.taxo); if (set.size) carriers.push({ label: s.label, kind: "Spec", tags: set }); }
+    }
+    for (const a of equippedAnointObjs()) { const set = new Set(a.taxo || []); if (set.size) carriers.push({ label: a.name, kind: "Anoint", tags: set }); }
+    for (const slot of build.slots) {
+      const c = CREA.get(slot.cid); if (!c) continue;
+      const set = new Set();
+      for (const tid of slotTraitIds(slot)) addAll(set, (TRAIT[tid] || {}).taxo);       // innate + fusion + artifact + nether traits
+      for (const gid of slot.spellGemIds || []) { const g = spellGems.find(x => x.id === gid); const sp = g ? gemSpell(g) : null; if (sp) addAll(set, sp.taxo); }
+      if (set.size) carriers.push({ label: c.name, kind: "Creature", tags: set });
+    }
+    return carriers;
+  }
+  function openSynergy() { ovState = { kind: "synergy", render: renderSynergy }; openOverlay(ovState.render()); }
+  function renderSynergy() {
+    const carriers = buildTagCarriers();
+    const tagMap = new Map();
+    for (const car of carriers) for (const k of car.tags) (tagMap.get(k) || tagMap.set(k, []).get(k)).push(car);
+    const shared = [...tagMap.entries()].filter(([, cs]) => cs.length >= 2)
+      .sort((a, b) => b[1].length - a[1].length || taxoValName(a[0]).localeCompare(taxoValName(b[0])));
+    const kindCls = { Spec: "k-spec", Anoint: "k-anoint", Creature: "k-crea" };
+    const rows = shared.map(([k, cs]) => `
+      <div class="syn-row">
+        <span class="syn-count" title="${cs.length} sources share this tag">×${cs.length}</span>
+        <div class="syn-main">
+          <div class="syn-head"><b>${esc(taxoValName(k))}</b><span class="opt-chev">${esc(taxoCatName(k))}</span></div>
+          <div class="syn-carriers">${cs.map(c => `<span class="syn-chip ${kindCls[c.kind] || ""}" title="${esc(c.kind)}">${esc(c.label)}</span>`).join("")}</div>
+        </div></div>`).join("")
+      || `<div class="slot-sub" style="padding:12px">${carriers.length ? "No tags are shared across your build yet — add more matching pieces." : "Add a specialization, anointments and creatures to see shared tags."}</div>`;
+    return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel">
+      <div class="overlay-header"><h2>Tag Synergy</h2><button class="ovl-close" data-action="close-ovl">✕</button></div>
+      <div class="overlay-body"><div class="ovl-center"><div class="ovl-center-scroll">
+        ${shared.length ? `<div class="section-label">Shared tags — ${shared.length}</div>` : ""}
+        <div class="syn-list">${rows}</div>
+      </div></div></div>
+      <div class="overlay-footer"><span class="foot-info">${carriers.length} build source${carriers.length === 1 ? "" : "s"}</span>
+        <button class="btn-confirm" data-action="close-ovl">Done</button></div>
+    </div></div>`;
+  }
+
   // ── anointments — equip up to 5 anointment-eligible perks from any spec (flags from Perk_REF.csv) ──
   // In-game, anointments let you slot perks from OTHER specializations; the cap is 5 equipped.
   // A single Anointment point grants the perk's FULL bonus (as if maxed), so descriptions here
@@ -1372,9 +1419,13 @@
               <span class="stat-val art"></span><span class="stat-val total">${fs.total}</span></div></div>
           <div class="section-label" style="margin-top:14px">Traits (innate${f ? " + fusion" : ""}${hasArtifactTrait ? " + artifact" : ""})</div>
           ${traitHtml || `<div class="slot-sub">No traits.</div>`}
-          ${relic ? `<div class="section-label" style="margin-top:14px">Relic</div>
-            <div class="primary-traits"><div class="prop-row static"><span class="prop-ico">${relic.icon ? spriteImg(relic.icon, "px") : ""}</span><span class="prop-name"><b>${esc(relic.name)}</b> — Rank ${slot.relic.rank}</span></div>
-            <div class="trait-desc">${richText(relic.ranks.filter(r => r.rank <= slot.relic.rank).map(r => "R" + r.rank + ": " + r.desc).join(" ") || "")}</div></div>` : ""}
+          ${relic ? `<div class="section-label" style="margin-top:14px">Relic — Rank ${slot.relic.rank}</div>
+            <div class="prop-list">
+              <div class="prop-row static"><span class="prop-ico">${relic.icon ? spriteImg(relic.icon, "px") : ""}</span><span class="prop-name"><b>${esc(relic.name)}</b></span></div>
+              ${relic.ranks.filter(r => r.rank <= slot.relic.rank).map(r => `<div class="prop-row static">
+                <span class="prop-name" style="flex:0 0 40px;color:var(--accent)">R${r.rank}</span>
+                <span class="prop-stat" style="flex:1;text-align:left">${richText(r.desc)}</span></div>`).join("")}
+            </div>` : ""}
         </div></div>
       </div>
       <div class="overlay-footer"><span class="foot-info"></span>
@@ -1713,6 +1764,7 @@
       case "iconpick-cat-clear": e.stopPropagation(); dovState.cat = null; refreshDetail(); break;
       case "iconpick-pick": { const w = (D.wardrobe || []).find(x => x.sprite === t.dataset.k); if (w && dovState.onPick) dovState.onPick(w); closeDetail(); refreshOverlay(); break; }
       case "open-appendix": openAppendix(); break;
+      case "open-synergy": openSynergy(); break;
       case "appendix-cat": ovState.cat = t.dataset.c; ovState.search = ""; refreshOverlay(); break;
       case "appendix-cat-back": ovState.cat = null; ovState.tag = null; ovState.search = ""; refreshOverlay(); break;
       case "appendix-tag": ovState.tag = t.dataset.k; ovState.search = ""; refreshOverlay(); break;
