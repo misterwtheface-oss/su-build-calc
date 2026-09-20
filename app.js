@@ -56,6 +56,7 @@
     { key: "netherIds", label: "Nether", max: 1, pick: "nether" },
   ];
   const RELIC = new Map(D.relics.map(r => [r.id, r]));
+  const CARD = new Map(D.cards.map(c => [c.id, c]));
   const PERS = new Map((D.personalities || []).map(p => [p.key, p]));   // personality key -> {name,raise,lower}
   const SCROLL_MAX = D.scrollMax || 15;                                  // total stat scrolls per creature (each +1 base)
 
@@ -85,6 +86,7 @@
 
   let cards = jload(LS.cards, null);                        // { levels: {cardId: 0..3} } — absent == 3 (max)
   if (!cards || !cards.levels) cards = { levels: {} };
+  cards.applyAll = !!cards.applyAll;   // ignore saved per-card levels and treat every card as maxed
   let nether = jload(LS.nether, null);                      // [{id,name,icon,props:[{cat,key,value}]}]
   if (!Array.isArray(nether)) nether = [];
   // migrate nether props to the category model {cat,key,value}: old {type,stats[]} and {prop,value} → {cat,key,value}
@@ -150,7 +152,10 @@
   let nextArtId = artifacts.reduce((m, a) => Math.max(m, a.id || 0), 0) + 1;
   let nextSpellGemId = spellGems.reduce((m, g) => Math.max(m, g.id || 0), 0) + 1;
 
-  const cardLevel = (id) => cards.levels[id] == null ? 3 : cards.levels[id];
+  const cardLevel = (id) => {
+    if (cards.applyAll) { const c = CARD.get(id); return c ? c.effects.length : 3; }
+    return cards.levels[id] == null ? 3 : cards.levels[id];
+  };
 
   // ── util ─────────────────────────────────────────────────────────────────
   const el = (id) => document.getElementById(id);
@@ -1437,32 +1442,38 @@
   function openCards() { ovState = { kind: "cards", search: "", clsFilter: null, render: renderCards }; openOverlay(ovState.render()); maybeFocusSearch(OV); }
   function renderCards() {
     const st = ovState, q = st.search.trim().toLowerCase();
+    const applyAll = cards.applyAll;
     const list = D.cards.filter(c => (!q || c.family.toLowerCase().includes(q)) && (!st.clsFilter || c.cls === st.clsFilter));
-    const clsChips = D.classes.map(cl => `<button class="chip ${st.clsFilter === cl.key ? "on" : ""}" data-cls="${cl.key}" data-action="cards-cls" data-c="${cl.key}" style="--c:${cl.color}">${cl.key}</button>`).join("")
-      + `<button class="chip ${st.clsFilter ? "" : "on"}" data-action="cards-cls" data-c="">All</button>`;
+    const clsChip = st.clsFilter
+      ? `<button class="facet on" data-action="facet-class">Class: <b>${esc(st.clsFilter)}</b> <span class="facet-x" data-action="facet-class-clear">✕</span></button>`
+      : `<button class="facet" data-action="facet-class">Class ▾</button>`;
     const tiles = list.map(c => {
       const lv = cardLevel(c.id);
       const bg = c.cls && CLASS_BG[c.cls] ? CLASS_BG[c.cls] : null;
       const effects = c.effects.map((e, i) => `<div class="card-effect ${i < lv ? "on" : "off"}"><span class="ce-tier">${i + 1}</span>${richText(e)}</div>`).join("");
-      return `<div class="card-tile lv${lv}" style="--cardcls:${clsColor(c.cls)}">
+      return `<div class="card-tile lv${lv} ${applyAll ? "locked" : ""}" style="--cardcls:${clsColor(c.cls)}">
         <div class="card-head">
           <div class="card-art">${bg ? `<img class="card-bg" src="${esc(bg)}" alt="">` : ""}${c.sprite ? spriteImg(c.sprite, "card-crit") : ""}</div>
           <div class="card-title"><b>${esc(c.family)}</b><span class="cls-chip" style="color:${clsColor(c.cls)}">${esc(c.cls || "—")}</span></div>
         </div>
         <div class="card-effects">${effects}</div>
         <div class="card-level">
-          <button class="lvl-btn" data-action="card-dec" data-id="${c.id}" ${lv === 0 ? "disabled" : ""}>−</button>
+          <button class="lvl-btn" data-action="card-dec" data-id="${c.id}" ${lv === 0 || applyAll ? "disabled" : ""}>−</button>
           <span class="lvl-badge">${lv === 0 ? "Off" : "Lv " + lv}</span>
-          <button class="lvl-btn" data-action="card-inc" data-id="${c.id}" ${lv >= c.effects.length ? "disabled" : ""}>＋</button>
+          <button class="lvl-btn" data-action="card-inc" data-id="${c.id}" ${lv >= c.effects.length || applyAll ? "disabled" : ""}>＋</button>
         </div></div>`;
     }).join("");
     return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel detail">
       <div class="overlay-header"><h2>Realm Cards</h2>
         <input class="ovl-search" placeholder="Search family…" value="${esc(st.search)}" data-action="cards-search">
         <button class="ovl-close" data-action="close-ovl">✕</button></div>
-      <div class="overlay-body"><div class="ovl-center"><div class="ovl-filterbar">${clsChips}</div>
+      <div class="overlay-body"><div class="ovl-center"><div class="ovl-filterbar">
+        ${clsChip}
+        <button class="facet" data-action="cards-all-on" ${applyAll ? "disabled" : ""}>All on</button>
+        <button class="facet" data-action="cards-all-off" ${applyAll ? "disabled" : ""}>All off</button>
+        <button class="facet ${applyAll ? "on" : ""}" data-action="cards-applyall" title="Ignore saved selections and treat every card as maxed">Apply all</button></div>
         <div class="ovl-center-scroll"><div class="card-grid">${tiles}</div></div></div></div>
-      <div class="overlay-footer"><span class="foot-info"></span>
+      <div class="overlay-footer"><span class="foot-info">${applyAll ? "Ignoring saved — all cards applied" : "Using saved selections"}</span>
         <button class="btn-confirm" data-action="close-ovl">Done</button></div>
     </div></div>`;
   }
@@ -1915,9 +1926,11 @@
       case "relic-confirm": build.slots[ovState.slotIdx].relic = { id: ovState.sel, rank: ovState.rank }; persistBuild(); closeOverlay(); render(); break;
 
       // cards
-      case "cards-cls": ovState.clsFilter = t.dataset.c || null; refreshOverlay(); break;
-      case "card-inc": { const id = +t.dataset.id, c = D.cards.find(x => x.id === id); cards.levels[id] = Math.min(cardLevel(id) + 1, c.effects.length); persistCards(); refreshOverlay(); break; }
-      case "card-dec": { const id = +t.dataset.id; cards.levels[id] = Math.max(cardLevel(id) - 1, 0); persistCards(); refreshOverlay(); break; }
+      case "cards-all-on": if (!cards.applyAll) { for (const c of D.cards) cards.levels[c.id] = c.effects.length; persistCards(); refreshOverlay(); } break;
+      case "cards-all-off": if (!cards.applyAll) { for (const c of D.cards) cards.levels[c.id] = 0; persistCards(); refreshOverlay(); } break;
+      case "cards-applyall": cards.applyAll = !cards.applyAll; persistCards(); refreshOverlay(); break;
+      case "card-inc": { if (cards.applyAll) break; const id = +t.dataset.id, c = CARD.get(id); cards.levels[id] = Math.min(cardLevel(id) + 1, c.effects.length); persistCards(); refreshOverlay(); break; }
+      case "card-dec": { if (cards.applyAll) break; const id = +t.dataset.id; cards.levels[id] = Math.max(cardLevel(id) - 1, 0); persistCards(); refreshOverlay(); break; }
 
       // nether library + wizard
       case "nether-new": openNetherBuilder(null); break;

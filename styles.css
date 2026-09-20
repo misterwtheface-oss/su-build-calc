@@ -565,6 +565,7 @@ h1, h2, h3 { margin: 0; }
 .ns-info-head { justify-content: center; }
 .ns-info-actions { justify-content: center; }
 .ovl-right .section-label { text-align: center; }
+.card-tile.locked .card-level { opacity: .5; }   /* apply-all mode: per-card steppers are inert */
 /* Tag Synergy — shared-tag rows */
 .syn-list { display: flex; flex-direction: column; gap: 6px; }
 .syn-row { display: flex; align-items: flex-start; gap: 10px; padding: 8px 10px; background: var(--surface); border: 1px solid var(--border-dim); border-radius: 8px; }
