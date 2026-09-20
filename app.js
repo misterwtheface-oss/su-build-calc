@@ -1149,7 +1149,7 @@
       <div class="overlay-header"><h2>Artifacts${manage ? "" : " — " + esc(c ? c.name : "")}</h2><button class="ovl-close" data-action="close-ovl">✕</button></div>
       <div class="overlay-body">
         <div class="ovl-center"><div class="ovl-center-scroll"><div class="pick-grid">${tiles}</div></div></div>
-        <div class="ovl-right">${info}</div>
+        <div class="ovl-right lib-info">${info}</div>
       </div>
       <div class="overlay-footer"><button class="facet ${st.hideEquipped ? "on" : ""}" data-action="artlib-hide-equipped">Hide equipped</button>
         <div>${equippedId != null ? `<button class="btn-ghost" data-action="art-unequip">Unequip</button>` : ""}
@@ -1527,7 +1527,7 @@
       <div class="overlay-header"><h2>Nether Stones</h2><button class="ovl-close" data-action="close-ovl">✕</button></div>
       <div class="overlay-body">
         <div class="ovl-center"><div class="ovl-center-scroll"><div class="pick-grid">${tiles}</div></div></div>
-        <div class="ovl-right">${info}</div>
+        <div class="ovl-right lib-info">${info}</div>
       </div>
       <div class="overlay-footer"><button class="facet ${st.hideEquipped ? "on" : ""}" data-action="nether-hide-equipped">Hide equipped</button>
         <button class="btn-confirm" data-action="nether-new">＋ Build new stone</button></div>
@@ -1653,7 +1653,7 @@
       <div class="overlay-header"><h2>Spell Gems${ctx ? " — equip" : ""}</h2><button class="ovl-close" data-action="close-ovl">✕</button></div>
       <div class="overlay-body">
         <div class="ovl-center"><div class="ovl-center-scroll"><div class="pick-grid">${tiles}</div></div></div>
-        <div class="ovl-right">${info}</div>
+        <div class="ovl-right lib-info">${info}</div>
       </div>
       <div class="overlay-footer"><button class="facet ${st.hideEquipped ? "on" : ""}" data-action="sg-hide-equipped">Hide equipped</button>
         <button class="btn-confirm" data-action="sg-new">＋ Build new spell gem</button></div>
