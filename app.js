@@ -329,7 +329,7 @@
     const spec = build.specId != null ? SPEC.get(build.specId) : null;
     const specTile = `
       <div class="spec-tile ${spec ? "filled" : ""}" data-action="pick-spec" title="Specialization">
-        <div class="spec-tile-icon">${spec && spec.sprite ? spriteImg(spec.sprite) : `<span class="spec-tile-plus">✦</span>`}</div>
+        <div class="spec-tile-icon">${spec ? spriteImg(spec.emblem || spec.sprite, "px") : `<span class="spec-tile-plus">✦</span>`}</div>
         <div class="spec-tile-label">${spec ? esc(spec.label) : "Specialization"}</div>
         ${spec ? `<div class="spec-tile-sub">${allocatedPerks(spec).length}/${spec.perks.length} perks · ${specPoints(spec)} pts</div>` : ""}
         ${spec ? `<button class="slot-remove" data-action="clear-spec" title="Remove">✕</button>` : ""}
