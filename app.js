@@ -833,20 +833,17 @@
         <div class="lib-icon">${b.icon ? spriteImg(b.icon, "px") : `<span class="slot-empty-icon">✦</span>`}</div>
         <div class="lib-name">${esc(b.name)}</div>
         <div class="lib-sub">${buildSummary(b.build || {})}</div>
-        <div class="lib-actions">
-          <button class="slot-mini" data-action="builds-load" data-id="${b.id}">Load</button>
-          <button class="slot-mini danger" data-action="builds-del" data-id="${b.id}">✕</button>
-        </div></div>`).join("") || `<div class="slot-sub" style="padding:10px">No saved builds yet — save your current party.</div>`;
-    const footBtn = sel
-      ? `<div><button class="btn-ghost" data-action="builds-save-new">Save as new</button>
-          <button class="btn-confirm" data-action="builds-overwrite" data-id="${sel.id}" title="Overwrite «${esc(sel.name)}» with the current party">Update «${esc(sel.name)}»</button></div>`
-      : `<button class="btn-confirm" data-action="builds-save-new">＋ Save current build</button>`;
+      </div>`).join("") || `<div class="slot-sub" style="padding:10px">No saved builds yet — save your current party.</div>`;
     return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel">
       <div class="overlay-header"><h2>Builds</h2><button class="ovl-close" data-action="close-ovl">✕</button></div>
       <div class="overlay-body"><div class="ovl-center"><div class="ovl-center-scroll">
         <div class="lib-grid">${tiles}</div></div></div></div>
       <div class="overlay-footer"><span class="foot-info">${st.flash ? "Saved ✓" : ""}</span>
-        ${footBtn}</div>
+        <div>
+          <button class="btn-ghost" data-action="builds-load" data-id="${sel ? sel.id : ""}" ${sel ? "" : "disabled"}>Load</button>
+          <button class="btn-ghost danger" data-action="builds-del" data-id="${sel ? sel.id : ""}" ${sel ? "" : "disabled"}>Delete</button>
+          <button class="btn-confirm" data-action="${sel ? "builds-overwrite" : "builds-save-new"}" ${sel ? `data-id="${sel.id}"` : ""}>${sel ? `Update «${esc(sel.name)}»` : "＋ Save current build"}</button>
+        </div></div>
     </div></div>`;
   }
 
