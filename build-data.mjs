@@ -123,6 +123,16 @@ function correctTaxo(taxo, desc) {
   }
   return [...new Set(out)];
 }
+// material NAME -> granted trait id, inverted from traits_consolidated.source_item (the trait's own
+// record names the item that grants it). This is the game's actual link. NOTE: material_stats.trait_id
+// is UNRELIABLE — the granted trait is runtime-computed in the game (proven: not a static field in
+// scr_DatabaseMaterials), and the positional static extraction drifts by ~1 block. Verified against
+// the trait side: "Sigil of the Amaranth" → "Master of Amaranths" (not "…Abominations").
+const traitIdByItemName = new Map();
+for (const t of consolidated) {
+  const si = t.source_item && t.source_item.name;
+  if (si && si !== 'N/A' && !traitIdByItemName.has(si)) traitIdByItemName.set(si, t.id);
+}
 const traits = {};
 for (const t of consolidated) {
   const tag = tagByTraitId.get(t.id) || {};
@@ -463,27 +473,38 @@ const matIcon = (m) => {                                    // copy a material's
 //   null + no trait_id → Amber                            → Stat slot
 const traitItems = [];
 for (const m of matRecs) {
-  if (m.trait_id == null) continue;
-  if (m.item_class === 1) continue;                        // trick materials belong to the Trick slot, not Trait
-  if (!traits[m.trait_id]) warn(`trait item "${m.name}" grants trait_id ${m.trait_id} not in traits table`);
-  traitItems.push({ id: m.index, name: m.name, traitId: m.trait_id,
-    traitName: m.trait_name || (traits[m.trait_id] && traits[m.trait_id].name) || null, icon: matIcon(m),
-    taxo: (traits[m.trait_id] && traits[m.trait_id].taxo) || [] });   // inherits its granted trait's taxonomy tags
+  const tid = traitIdByItemName.get(m.name);               // the trait this material grants (game's own link)
+  if (tid == null) continue;                               // not a trait-granting material (amber/trick/other)
+  if (!traits[tid]) { warn(`trait item "${m.name}" grants trait ${tid} not in traits table`); continue; }
+  traitItems.push({ id: m.index, name: m.name, traitId: tid,
+    traitName: traits[tid].name, icon: matIcon(m),
+    taxo: traits[tid].taxo || [] });                       // inherits its granted trait's taxonomy tags
 }
 
-// ── Stat materials (Ambers) → Stat-slot properties (1:1, by record order) ──
-// The 15 Ambers map, in database order, onto the 15 unique Stat properties (verified: exact count match,
-// Amber field1 runs 1-4/None then 54-63 = singles then double-combos, same order as artifacts_ref Stat slot).
-const statProps = [...new Set(artGroup.stat.map(p => p.property))];        // 15, ordered
+// ── Stat materials (Ambers) → Stat-slot properties ──
+// The Amber's boosted stat(s) are encoded in the sprite the game assigns it (dev-authored code):
+// dual ambers = amber2_<X>_<Y>_<name> where X,Y ∈ {H,A,D,I,S} (e.g. amber2_H_A_bold → Health/Attack);
+// single ambers = amber2_<color> (Red/Purple/Blue/Green/Yellow → the 5 single stats, in the same
+// H,A,I,D,S order the dual codes use). This replaces the old by-record-order mapping, which was wrong
+// (all 10 dual ambers were shifted — the runtime stat isn't a static DB field to read by position).
+const statProps = [...new Set(artGroup.stat.map(p => p.property))];
+const STAT_LETTER = { H: 'Health', A: 'Attack', D: 'Defense', I: 'Intelligence', S: 'Speed' };
+const SINGLE_AMBER_STAT = { REDAMBER: 'Health', PURPLEAMBER: 'Attack', BLUEAMBER: 'Intelligence',
+  GREENAMBER: 'Defense', YELLOWAMBER: 'Speed' };
+const amberProperty = (m) => {
+  const icon = matIconByKey.get(m.key) || '';
+  const d = /^amber2_([HADIS])_([HADIS])_/.exec(icon);                    // dual-stat amber
+  if (d) return `${STAT_LETTER[d[1]]} / ${STAT_LETTER[d[2]]}`;
+  return SINGLE_AMBER_STAT[m.key] || null;                               // single-stat amber (by colour)
+};
 const statMats = [];
 {
-  const ambers = matRecs.filter(m => m.item_class == null && m.trait_id == null);   // 15, in db order
-  if (ambers.length !== statProps.length)
-    warn(`stat-material map: ${ambers.length} Ambers vs ${statProps.length} Stat properties (expected equal)`);
-  ambers.forEach((m, i) => {
-    const property = statProps[i];
-    if (property) statMats.push({ id: m.index, name: m.name, key: m.key, property, icon: matIcon(m) });
-  });
+  const ambers = matRecs.filter(m => /^amber2_/.test(matIconByKey.get(m.key) || ''));   // by dev icon family
+  for (const m of ambers) {
+    const property = amberProperty(m);
+    if (property && statProps.includes(property)) statMats.push({ id: m.index, name: m.name, key: m.key, property, icon: matIcon(m) });
+    else warn(`amber "${m.name}" (${matIconByKey.get(m.key)}) → property "${property}" not a Stat-slot property`);
+  }
 }
 
 // ── Trick materials (Slates/Curios/Cripplers/generics) → Trick-slot properties (1:1, by name) ──
