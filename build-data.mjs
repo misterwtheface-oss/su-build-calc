@@ -635,13 +635,27 @@ for (const r of Object.values(raceClassIcons.races)) {
   if (copyNamedSprite(r.icon, OUT_RACEICON, dest)) raceIcons[r.race] = `assets/raceicons/${dest}`;
   else raceIconMisses++;
 }
-// fallback: some races (e.g. Beacon, Kraken, Guardian) have NO 16×16 emblem in the dump — use a
-// representative creature's battle sprite so every race still shows a tile badge
+// races without a bare <race> emblem (confirmed absent in the exe's 12,801-sprite table, not an
+// extraction gap): prefer the race's Master emblem master_<race> when it's a clean 16×16 icon
+// (Cherub, Kraken, Warhog, Beacon, … all have one). repro note: masters that are 32×32 are full NPC
+// bodies (Mimic/Mogwai/Purrghast) — skip those and let the creature fallback handle them.
+const pngDims = (p) => { try { const b = fs.readFileSync(p); return [b.readUInt32BE(16), b.readUInt32BE(20)]; } catch { return null; } };
+let raceMasterIcons = 0;
+for (const r of Object.values(raceClassIcons.races)) {
+  if (raceIcons[r.race]) continue;
+  let src = null;
+  for (const cand of [`master_${norm(r.race)}_0.png`, `master_${norm(r.race)}.png`]) { const p = path.join(SRC_SPEC_PNG, cand); if (fs.existsSync(p)) { src = p; break; } }
+  if (!src) continue;
+  const d = pngDims(src); if (!d || d[0] > 16 || d[1] > 16) continue;   // clean emblem only, not the full Master NPC
+  const dest = `${norm(r.race)}.png`;
+  fs.copyFileSync(src, path.join(OUT_RACEICON, dest)); raceIcons[r.race] = `assets/raceicons/${dest}`; raceMasterIcons++;
+}
+// last resort: still-missing races (Mimic/Mogwai/Purrghast/Guardian) → a representative creature sprite
 let raceIconFallback = 0;
 for (const c of creatures) {
   if (c.race && c.sprite && !raceIcons[c.race]) { raceIcons[c.race] = c.sprite; raceIconFallback++; }
 }
-console.log(`  tile icons: ${Object.keys(classIcons).length}/5 class · ${Object.keys(raceIcons).length} race (${raceIconFallback} via representative creature)`);
+console.log(`  tile icons: ${Object.keys(classIcons).length}/5 class · ${Object.keys(raceIcons).length} race (${raceMasterIcons} master-emblem, ${raceIconFallback} creature-fallback)`);
 
 // nether-stone gem icons (user randomizes / picks one)
 fs.rmSync(OUT_GEM, { recursive: true, force: true });
