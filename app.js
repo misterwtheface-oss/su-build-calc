@@ -1339,9 +1339,10 @@
 
   function openSynergy() { ovState = { kind: "synergy", view: "matrix", sharedOnly: false, expanded: new Set(), listCollapsed: new Set(), render: renderSynergy }; openOverlay(ovState.render()); }
 
-  // Matrix view — rows = members (Spec/Anointments expandable to per-perk/per-anoint sub-rows),
-  // columns = tags; each cell shows that member's CONTRIBUTION COUNT (dot for 1, number for a stack),
-  // and the sticky bottom row totals the individual contributions per tag (11 Attack perks → 11).
+  // Matrix view — rows = members (Spec/Anointments/creatures expandable to their effect sub-rows),
+  // columns = tags. A member cell shows its CONTRIBUTION COUNT as a number (1 if a single contributor,
+  // higher for a stack); the collapsible sub-rows use a dot (each is a single effect). The sticky bottom
+  // row totals the individual contributions per tag (11 Attack perks → 11).
   function synergyMatrixBody(st) {
     const members = buildTagCarriers();
     const weight = new Map();   // tag → total individual contributions across the build (each effect counts)
@@ -1356,7 +1357,6 @@
     if (!members.length) return { meta, body: `<div class="slot-sub" style="padding:14px">Add a specialization, anointments and creatures to see the tag matrix.</div>` };
     if (!tags.length) return { meta, body: `<div class="slot-sub" style="padding:14px">No ${st.sharedOnly ? "reinforced " : ""}tags in the current build yet.</div>` };
     const kindCls = { spec: "k-spec", anoint: "k-anoint", crea: "k-crea" };
-    const mark = (n) => n === 1 ? "●" : String(n);
     const head = `<thead><tr><th class="xref-corner">Member \\ Tag</th>${tags.map(k => {
       const rein = weight.get(k) >= 2;
       return `<th><div class="xref-colhead"><span class="xc-dot ${rein ? "sh" : ""}"></span><span class="xc-name" title="${esc(taxoCatName(k))} → ${esc(taxoValName(k))}">${esc(taxoValName(k))}</span></div></th>`;
@@ -1369,7 +1369,7 @@
         ? `<span class="xr-exp" data-action="matrix-expand-row" data-id="${m.id}" title="${isExp ? "Collapse" : "Expand"} ${unit}">${isExp ? "▾" : "▸"}</span>`
         : `<span class="xr-exp-sp"></span>`;
       const cells = tags.map(k => { const n = m.counts.get(k) || 0; return n
-        ? `<td class="${weight.get(k) >= 2 ? "xc-active" : "xc-on"}" title="${esc(m.label)} — ${esc(taxoValName(k))} ×${n}">${mark(n)}</td>`
+        ? `<td class="${weight.get(k) >= 2 ? "xc-active" : "xc-on"}" title="${esc(m.label)} — ${esc(taxoValName(k))} ×${n}">${n}</td>`
         : `<td></td>`; }).join("");
       let out = `<tr><th class="xref-rowhead" title="${esc(m.label)}${m.sub ? " · " + esc(m.sub) : ""}">${caret}<span class="xr-dot ${kindCls[m.kind] || ""}"></span><b>${esc(m.label)}</b>${m.sub ? `<span class="xr-cat">${esc(m.sub)}</span>` : ""}</th>${cells}</tr>`;
       if (isExp) for (const ch of m.children) {

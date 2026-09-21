@@ -30,6 +30,13 @@ No verify-before-push ceremony (no real users yet) — but every change is check
 - Fed by `_su_extract` via `build-data.mjs` (gitignored extract; only used assets copied). Data model in
   `SPEC_PLAN.md`, pipeline in `WIKI_CONTEXT.md`.
 
+## 2026-09-21 — session 4f (Synergy Matrix: member cells always numeric)
+Small polish: member/container cells (Spec / Anointments / Creature) now always show the numeric
+contribution count — **"1" for a single contributor**, higher for a stack — instead of a "●" for 1. The dot
+felt out of place next to the numeric stacks. **Dots stay on the collapsible sub-rows** (each is a single
+effect → a dim "•"). Dropped the `mark()` helper; member cell renders `${n}`. jsdom smoke asserts member cells
+are numeric (incl. "1") and sub-rows keep the dot (33 assertions).
+
 ## 2026-09-21 — session 4e (Synergy Matrix: creatures are containers of traits too)
 Carried the container model through to creatures. A creature is now treated exactly like a spec/anoint row: a
 **container whose counted units are its TRAITS** (+ equipped spell-gem spells), never the creature name.
