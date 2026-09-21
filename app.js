@@ -585,8 +585,13 @@
     if (input && !isTouch) input.focus();
   }
 
-  // ── creature selector — guided wizard: 1) creature  2) fusion (or skip) → commit ──
+  // ── creature selector — guided wizard: 1) creature  2) fusion (or skip)  3) customize → commit ──
   // editing a filled slot re-opens the same wizard pre-filled so either half can change.
+  // step 3 gives Personality / Scrolls / Skin their own screen so they're never buried on mobile.
+  const CREA_STEPS = ["primary", "fusion", "customize"];
+  const CREA_STEP_LABELS = { primary: "Creature", fusion: "Fusion", customize: "Customize" };
+  const renderCreaStepbar = (step) => `<div class="art-steps">${CREA_STEPS.map(s =>
+    `<span class="art-step ${s === step ? "on" : ""} ${CREA_STEPS.indexOf(s) < CREA_STEPS.indexOf(step) ? "done" : ""}">${CREA_STEP_LABELS[s]}</span>`).join("<span class='art-step-sep'>›</span>")}</div>`;
   function openCreaturePicker(slotIdx) {
     const slot = build.slots[slotIdx];
     ovState = {
@@ -612,7 +617,23 @@
     return true;
   }
   function renderCreaturePicker() {
-    const st = ovState, fusion = st.step === "fusion";
+    const st = ovState;
+    // step 3 — customization on its own screen: controls lead (center), live preview follows (right).
+    // On phones the center panel sits on top, so Personality / Scrolls / Skin are the first thing seen.
+    if (st.step === "customize") {
+      const footer = `<button class="btn-ghost" data-action="crea-back">‹ Back</button>
+        <button class="btn-confirm" data-action="crea-confirm" ${st.primaryId == null ? "disabled" : ""}>${st.fusionId == null ? "Commit (no fusion)" : "Commit fusion"}</button>`;
+      return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel">
+        <div class="overlay-header"><h2>Customize</h2>${renderCreaStepbar(st.step)}
+          <button class="ovl-close" data-action="close-ovl">✕</button></div>
+        <div class="overlay-body">
+          <div class="ovl-center"><div class="ovl-center-scroll">${renderCreatureCustomize(st, true)}</div></div>
+          <div class="ovl-right">${renderWizardPreview(st)}</div>
+        </div>
+        <div class="overlay-footer"><span class="foot-info"></span><div>${footer}</div></div>
+      </div></div>`;
+    }
+    const fusion = st.step === "fusion";
     const sel = creaStepSel(st);
     const list = D.creatures.filter(c => creatureMatches(c, st));
     const shown = list.slice(0, 400);
@@ -646,19 +667,19 @@
     const title = fusion ? "Fusion partner" : "Choose creature";
     const footer = fusion
       ? `<button class="btn-ghost" data-action="crea-back">‹ Back</button>
-         <button class="btn-confirm" data-action="crea-confirm" ${st.primaryId == null ? "disabled" : ""}>${st.fusionId == null ? "Commit (no fusion)" : "Commit fusion"}</button>`
+         <button class="btn-confirm" data-action="crea-next" ${st.primaryId == null ? "disabled" : ""}>Next: Customize ›</button>`
       : `<button class="btn-ghost" data-action="close-ovl">Cancel</button>
          <button class="btn-confirm" data-action="crea-next" ${st.primaryId == null ? "disabled" : ""}>Next: Fusion ›</button>`;
-    // right panel: the currently-highlighted pick, plus the fusion preview once both are chosen
-    // step 2 (fusion) also carries the per-creature customization (personality + scrolls) before commit
+    // right panel: the currently-highlighted pick, plus the fusion preview once both are chosen.
+    // customization (personality / scrolls / skin) now lives on its own step 3, not buried here.
     let side = "";
-    if (fusion) {
-      side = renderWizardPreview(st) + renderCreatureCustomize(st);
-    } else if (selC) side = renderCreatureIdentity(selC);
+    if (fusion) side = renderWizardPreview(st);
+    else if (selC) side = renderCreatureIdentity(selC);
 
     return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel">
       <div class="overlay-header"><h2>${title}</h2>
         <input class="ovl-search" placeholder="Search name / trait / race…" value="${esc(st.search)}" data-action="crea-search">
+        ${renderCreaStepbar(st.step)}
         <button class="ovl-close" data-action="close-ovl">✕</button></div>
       <div class="overlay-body">
         <div class="ovl-center">${filterbar}
@@ -707,7 +728,7 @@
 
   // per-creature customization in the wizard: Personality (base-stat ↑/↓) + Scrolls (+1 base each, cap 15 total)
   const scrollTotal = (sc) => STAT_KEYS.reduce((n, k) => n + (sc[k] || 0), 0);
-  function renderCreatureCustomize(st) {
+  function renderCreatureCustomize(st, standalone) {
     const p = st.personality ? PERS.get(st.personality) : null;
     const sc = st.scrolls || {}, tot = scrollTotal(sc);
     const persBtn = p
@@ -726,7 +747,7 @@
         <button class="perk-step" data-action="crea-scroll-dec" data-k="${k}" ${(sc[k] || 0) <= 0 ? "disabled" : ""}>−</button>
         <span class="scroll-val">+${sc[k] || 0}</span>
         <button class="perk-step" data-action="crea-scroll-inc" data-k="${k}" ${tot >= SCROLL_MAX ? "disabled" : ""}>+</button></div>`).join("");
-    return `<div class="crea-customize">
+    return `<div class="crea-customize${standalone ? " standalone" : ""}">
       <div class="section-label">Personality</div>
       <div class="cc-persbar">${persBtn}</div>
       <div class="section-label" style="margin-top:10px">Scrolls · ${tot}/${SCROLL_MAX}</div>
@@ -2009,8 +2030,13 @@
         refreshOverlay(); break;
       }
       case "crea-nofuse": ovState.fusionId = null; refreshOverlay(); break;
-      case "crea-next": if (ovState.primaryId != null) { ovState.step = "fusion"; ovState.search = ""; refreshOverlay(); } break;
-      case "crea-back": ovState.step = "primary"; ovState.search = ""; refreshOverlay(); break;
+      case "crea-next":
+        if (ovState.primaryId == null) break;
+        ovState.step = ovState.step === "primary" ? "fusion" : "customize";
+        ovState.search = ""; refreshOverlay(); break;
+      case "crea-back":
+        ovState.step = ovState.step === "customize" ? "fusion" : "primary";
+        ovState.search = ""; refreshOverlay(); break;
       case "crea-confirm": {
         if (ovState.primaryId == null) break;
         const s = build.slots[ovState.slotIdx];

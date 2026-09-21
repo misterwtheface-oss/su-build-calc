@@ -698,6 +698,8 @@ h1, h2, h3 { margin: 0; }
 
 /* creature wizard: personality + scroll customization (right panel) */
 .crea-customize { margin-top: 14px; border-top: 1px solid var(--border-dim); padding-top: 10px; text-align: left; }
+/* standalone (step 3 center panel): no divider — it's the primary content, not an appendage */
+.crea-customize.standalone { margin-top: 0; border-top: none; padding-top: 0; max-width: 420px; }
 .cc-persbar { display: flex; flex-wrap: wrap; gap: 6px; }
 .scroll-grid { display: flex; flex-direction: column; gap: 4px; }
 .scroll-row { display: grid; grid-template-columns: 1fr 26px 44px 26px; align-items: center; gap: 6px; }
