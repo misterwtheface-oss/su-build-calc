@@ -260,8 +260,9 @@ h1, h2, h3 { margin: 0; }
   cursor: pointer; transition: border-color .1s;
 }
 .pick-tile:hover { border-color: var(--border); }
-.pick-tile .pt-sprite { width: 100%; aspect-ratio: 1; display: flex; align-items: center; justify-content: center; }
-.pick-tile .pt-sprite img { width: 80%; height: 80%; object-fit: contain; }
+.pick-tile .pt-sprite { position: relative; width: 100%; aspect-ratio: 1; display: flex; align-items: center; justify-content: center; }
+/* absolute + object-fit so a portrait sprite (e.g. Torun 40×60) can never stretch the grid row */
+.pick-tile .pt-sprite img { position: absolute; inset: 0; width: 100%; height: 100%; padding: 10%; object-fit: contain; }
 /* fixed 2-line name box so every tile is the same height regardless of name length */
 .pick-tile .pt-name {
   font-size: 11px; text-align: center; line-height: 1.1; height: 2.2em; width: 100%; overflow: hidden;
@@ -274,7 +275,10 @@ h1, h2, h3 { margin: 0; }
 .pick-tile .pt-cls { position: absolute; top: 4px; left: 4px; width: 8px; height: 8px; border-radius: 50%; background: var(--pt-cls, transparent); }
 /* class emblem icon in place of the color dot — readable regardless of accent luminance */
 .pick-tile .pt-clsico { position: absolute; top: 3px; left: 3px; width: 16px; height: 16px; z-index: 2; pointer-events: none; }
-.pick-tile .pt-clsico img { width: 100%; height: 100%; object-fit: contain; }
+.pick-tile .pt-raceico { position: absolute; top: 3px; right: 3px; width: 16px; height: 16px; z-index: 2; pointer-events: none; }
+.pick-tile .pt-clsico img, .pick-tile .pt-raceico img { width: 100%; height: 100%; object-fit: contain; }
+.crea-loadmore { display: flex; justify-content: center; margin: 12px 0 4px; }
+.crea-loadmore .btn-ghost { padding: 8px 18px; }
 
 /* filter chips */
 .chip {

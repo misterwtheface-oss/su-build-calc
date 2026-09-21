@@ -588,6 +588,7 @@
   // ── creature selector — guided wizard: 1) creature  2) fusion (or skip)  3) customize → commit ──
   // editing a filled slot re-opens the same wizard pre-filled so either half can change.
   // step 3 gives Personality / Scrolls / Skin their own screen so they're never buried on mobile.
+  const CREA_PAGE = 400;   // creatures rendered per page; "Load more" adds another page (no filter required)
   const CREA_STEPS = ["primary", "fusion", "customize"];
   const CREA_STEP_LABELS = { primary: "Creature", fusion: "Fusion", customize: "Customize" };
   const renderCreaStepbar = (step) => `<div class="art-steps">${CREA_STEPS.map(s =>
@@ -598,12 +599,14 @@
       kind: "creature", slotIdx, step: "primary",
       primaryId: slot.cid, fusionId: slot.fusion, skinId: slot.skinId != null ? slot.skinId : null,
       personality: slot.personality || null, scrolls: { ...(slot.scrolls || {}) },
-      search: "", clsFilter: null, raceFilter: null, taxoFilters: [],
+      search: "", clsFilter: null, raceFilter: null, taxoFilters: [], limit: CREA_PAGE,
       render: renderCreaturePicker,
     };
     openOverlay(ovState.render()); maybeFocusSearch(OV);
   }
   const creaStepSel = (st) => st.step === "fusion" ? st.fusionId : st.primaryId;
+  // reset creature-picker pagination back to the first page when the result set changes (filter/search)
+  const resetCreaPage = () => { if (ovState && ovState.kind === "creature") ovState.limit = CREA_PAGE; };
   function creatureMatches(c, st) {
     if (st.step === "fusion" && st.primaryId != null && c.id === st.primaryId) return false;  // can't fuse a creature with itself
     if (st.clsFilter && c.cls !== st.clsFilter) return false;
@@ -636,7 +639,8 @@
     const fusion = st.step === "fusion";
     const sel = creaStepSel(st);
     const list = D.creatures.filter(c => creatureMatches(c, st));
-    const shown = list.slice(0, 400);
+    const limit = st.limit || CREA_PAGE;
+    const shown = list.slice(0, limit);
     const selC = sel != null ? CREA.get(sel) : null;
     const primaryC = st.primaryId != null ? CREA.get(st.primaryId) : null;
 
@@ -662,6 +666,8 @@
         ${c.cls && D.classIcons && D.classIcons[c.cls]
           ? `<span class="pt-clsico" title="${esc(c.cls)}">${spriteImg(D.classIcons[c.cls], "px")}</span>`
           : `<span class="pt-cls" style="--pt-cls:${clsColor(c.cls)}"></span>`}
+        ${c.race && D.raceIcons && D.raceIcons[c.race]
+          ? `<span class="pt-raceico" title="${esc(c.race)}">${spriteImg(D.raceIcons[c.race], "px")}</span>` : ""}
         <div class="pt-sprite">${critFace(c)}</div>
         <div class="pt-name">${esc(c.name)}</div>
       </div>`).join("");
@@ -686,7 +692,9 @@
       <div class="overlay-body">
         <div class="ovl-center">${filterbar}
           <div class="ovl-center-scroll"><div class="pick-grid crea-grid">${tiles}</div>
-            ${list.length > 400 ? `<div class="slot-sub" style="margin-top:10px">Showing 400 of ${list.length} — refine your filters.</div>` : ""}</div>
+            ${list.length > shown.length
+              ? `<div class="crea-loadmore"><button class="btn-ghost" data-action="crea-more">Load more (${shown.length} of ${list.length})</button></div>`
+              : list.length > CREA_PAGE ? `<div class="slot-sub" style="margin-top:10px;text-align:center">All ${list.length} shown</div>` : ""}</div>
         </div>
         <div class="ovl-right">${side}</div>
       </div>
@@ -2035,10 +2043,11 @@
       case "crea-next":
         if (ovState.primaryId == null) break;
         ovState.step = ovState.step === "primary" ? "fusion" : "customize";
-        ovState.search = ""; refreshOverlay(); break;
+        ovState.search = ""; ovState.limit = CREA_PAGE; refreshOverlay(); break;
       case "crea-back":
         ovState.step = ovState.step === "customize" ? "fusion" : "primary";
-        ovState.search = ""; refreshOverlay(); break;
+        ovState.search = ""; ovState.limit = CREA_PAGE; refreshOverlay(); break;
+      case "crea-more": ovState.limit = (ovState.limit || CREA_PAGE) + CREA_PAGE; refreshOverlay(); break;
       case "crea-confirm": {
         if (ovState.primaryId == null) break;
         const s = build.slots[ovState.slotIdx];
@@ -2068,18 +2077,18 @@
       case "anoint-fgod": openFacetPicker("anoint-fgod"); break;
       case "anoint-fgod-clear": e.stopPropagation(); ovState.godFilter = null; refreshOverlay(); break;
       case "taxo-back": dovState.facet = "taxo-cat"; dovState.taxoCat = null; dovState.search = ""; refreshDetail(); break;
-      case "facet-class-clear": e.stopPropagation(); ovState.clsFilter = null; refreshOverlay(); break;
-      case "facet-race-clear": e.stopPropagation(); ovState.raceFilter = null; refreshOverlay(); break;
-      case "rm-taxo": ovState.taxoFilters.splice(+t.dataset.i, 1); refreshOverlay(); break;
+      case "facet-class-clear": e.stopPropagation(); ovState.clsFilter = null; resetCreaPage(); refreshOverlay(); break;
+      case "facet-race-clear": e.stopPropagation(); ovState.raceFilter = null; resetCreaPage(); refreshOverlay(); break;
+      case "rm-taxo": ovState.taxoFilters.splice(+t.dataset.i, 1); resetCreaPage(); refreshOverlay(); break;
       case "facet-pick": {
         const v = t.dataset.v;
-        if (dovState.facet === "class") { ovState.clsFilter = v; closeDetail(); refreshOverlay(); }
+        if (dovState.facet === "class") { ovState.clsFilter = v; resetCreaPage(); closeDetail(); refreshOverlay(); }
         else if (dovState.facet === "anoint-spec") { ovState.specFilter = v; closeDetail(); refreshOverlay(); }
         else if (dovState.facet === "anoint-fgod") { ovState.godFilter = v; closeDetail(); refreshOverlay(); }
-        else if (dovState.facet === "race") { ovState.raceFilter = v; closeDetail(); refreshOverlay(); }
+        else if (dovState.facet === "race") { ovState.raceFilter = v; resetCreaPage(); closeDetail(); refreshOverlay(); }
         else if (dovState.facet === "taxo-cat") { dovState.facet = "taxo-val"; dovState.taxoCat = v; dovState.search = ""; refreshDetail(); }
         else if (dovState.onPick) { dovState.onPick(v); closeDetail(); refreshOverlay(); }  // context-specific target (e.g. trait-item picker)
-        else { if (!ovState.taxoFilters.includes(v)) ovState.taxoFilters.push(v); closeDetail(); refreshOverlay(); }
+        else { if (!ovState.taxoFilters.includes(v)) ovState.taxoFilters.push(v); resetCreaPage(); closeDetail(); refreshOverlay(); }
         break;
       }
 
@@ -2270,6 +2279,7 @@
       "relic-search": [OV, ovState], "cards-search": [OV, ovState], "anoint-search": [OV, ovState], "nether-search": [OV, ovState], "sg-search": [OV, ovState], "appendix-search": [OV, ovState], "facet-search": [DOV, dovState], "perk-search": [DOV, dovState], "pers-search": [DOV, dovState], "iconpick-search": [DOV, dovState], "skin-search": [DOV, dovState] };
     if (searchMap[A]) {
       const [root, state] = searchMap[A]; state.search = v;
+      if (A === "crea-search") resetCreaPage();   // new query → back to page 1
       const panel = root.querySelector(".overlay-panel");
       const saved = SCROLLERS.map(sel => { const e = panel && panel.querySelector(sel); return e ? e.scrollTop : 0; });
       const caret = t.selectionStart;
