@@ -1170,8 +1170,9 @@
     for (const ti of (D.traitItems || [])) items.push(ti.taxo || []);
     return taxoIndexFor("appendix", items, (x) => x);
   }
-  function appendixResults(tag) {
-    const has = (x) => (x || []).includes(tag);
+  // AND across every selected tag (multi-tag search, like the creature selector)
+  function appendixResults(tags) {
+    const has = (x) => { const s = x || []; return tags.every(t => s.includes(t)); };
     // A trait is the canonical entity: the creature that has it as its innate trait and the
     // trait-items that grant it both carry the same inherited taxo, so they fold into one row.
     return {
@@ -1195,13 +1196,21 @@
     return TRAIT_SOURCES;
   }
   function openAppendix() {
-    ovState = { kind: "appendix", search: "", cat: null, tag: null, render: renderAppendix };
+    ovState = { kind: "appendix", search: "", cat: null, tags: [], browsing: false, render: renderAppendix };
     openOverlay(ovState.render()); maybeFocusSearch(OV);
   }
   function renderAppendix() {
     const st = ovState, q = st.search.trim().toLowerCase();
+    const tags = st.tags;
+    // drill-down (category → value) is shown when picking a filter: on first entry (no tags yet) or
+    // when the user taps ＋ Filter. Otherwise we show the AND-combined results for the chosen tags.
+    const browsing = st.browsing || tags.length === 0;
+    // active-tag chips (removable) — mirror the creature selector's multi-AND facet chips
+    const tagChips = tags.map(k =>
+      `<button class="facet on tag" data-action="appendix-rm-tag" data-k="${esc(k)}">${esc(taxoCatName(k))}: <b>${esc(taxoValName(k))}</b> <span class="facet-x">✕</span></button>`).join("");
+    const backToResults = tags.length ? `<button class="facet" data-action="appendix-done-adding">‹ Results</button>` : "";
     let body, sub, placeholder;
-    if (!st.tag && !st.cat) {
+    if (browsing && !st.cat) {
       // level 1 — categories (Tag); with a query we also surface matching sub-tags directly,
       // so a search can jump straight to a tag without first drilling into its category.
       const idx = appendixTaxoIndex();
@@ -1211,7 +1220,7 @@
         const catMatches = cats.filter(c => c.toLowerCase().includes(q)).sort();
         const tagMatches = [];
         for (const c of cats) for (const v of (idx.get(c) || []))
-          if (v.val.toLowerCase().includes(q)) tagMatches.push({ cat: c, key: v.key, val: v.val });
+          if (v.val.toLowerCase().includes(q) && !tags.includes(v.key)) tagMatches.push({ cat: c, key: v.key, val: v.val });
         tagMatches.sort((a, b) => a.val.localeCompare(b.val) || a.cat.localeCompare(b.cat));
         const catRows = catMatches.map(c =>
           `<button class="opt-row" data-action="appendix-cat" data-c="${esc(c)}"><span>${esc(c)}</span><span class="opt-chev">›</span></button>`).join("");
@@ -1226,22 +1235,23 @@
           || `<div class="slot-sub" style="padding:10px">No categories match.</div>`;
       }
       placeholder = "Search categories & tags…";
-      sub = `<div class="ovl-filterbar"><span class="foot-info">Pick a category, then a tag — or search to jump straight to a tag.</span></div>`;
+      sub = `<div class="ovl-filterbar">${backToResults}${tagChips}
+        <span class="foot-info">${tags.length ? "Add another tag to narrow results." : "Pick a category, then a tag — or search to jump straight to a tag."}</span></div>`;
       body = `<div class="opt-list">${rows}</div>`;
-    } else if (!st.tag) {
-      // level 2 — values within a category (SubTag)
+    } else if (browsing) {
+      // level 2 — values within a category (SubTag); hide already-selected tags
       const idx = appendixTaxoIndex();
-      let vals = idx.get(st.cat) || [];
+      let vals = (idx.get(st.cat) || []).filter(v => !tags.includes(v.key));
       if (q) vals = vals.filter(v => v.val.toLowerCase().includes(q));
       const rows = vals.slice().sort((a, b) => a.val.localeCompare(b.val)).map(v =>
         `<button class="opt-row" data-action="appendix-tag" data-k="${esc(v.key)}"><span>${esc(v.val)}</span></button>`).join("")
         || `<div class="slot-sub" style="padding:10px">No tags match.</div>`;
       placeholder = "Search tags…";
       sub = `<div class="ovl-filterbar"><button class="facet" data-action="appendix-cat-back">‹ Categories</button>
-        <span class="facet on">${esc(st.cat)}</span></div>`;
+        <span class="facet on">${esc(st.cat)}</span>${tagChips}</div>`;
       body = `<div class="opt-list">${rows}</div>`;
     } else {
-      const res = appendixResults(st.tag);
+      const res = appendixResults(tags);
       const CAP = 60;
       const section = (title, items, renderRow) => {
         let list = items;
@@ -1292,8 +1302,8 @@
       ].join("");
       const total = traitRows.length + res.perks.length + res.spells.length;
       placeholder = "Filter results…";
-      sub = `<div class="ovl-filterbar"><button class="facet" data-action="appendix-clear-tag">‹ ${esc(taxoCatName(st.tag))}</button>
-        <span class="facet on">${esc(taxoValName(st.tag))} <span class="facet-x" data-action="appendix-clear-tag">✕</span></span>
+      sub = `<div class="ovl-filterbar">${tagChips}
+        <button class="facet add" data-action="appendix-add">＋ Filter</button>
         <span class="foot-info">${total} result${total === 1 ? "" : "s"}</span></div>`;
       body = body_sections || `<div class="slot-sub" style="padding:10px">Nothing matches this tag.</div>`;
     }
@@ -2416,9 +2426,15 @@
       case "syn-jump": { const k = t.dataset.key; ovState.listCollapsed.delete(k); refreshOverlay();
         for (const g of OV.querySelectorAll(".syn-group")) if (g.dataset.key === k) { g.scrollIntoView({ block: "start" }); break; } break; }
       case "appendix-cat": ovState.cat = t.dataset.c; ovState.search = ""; refreshOverlay(); break;
-      case "appendix-cat-back": ovState.cat = null; ovState.tag = null; ovState.search = ""; refreshOverlay(); break;
-      case "appendix-tag": ovState.tag = t.dataset.k; ovState.search = ""; refreshOverlay(); break;
-      case "appendix-clear-tag": e.stopPropagation(); ovState.tag = null; ovState.search = ""; refreshOverlay(); break;
+      case "appendix-cat-back": ovState.cat = null; ovState.search = ""; refreshOverlay(); break;
+      case "appendix-tag": {           // add a tag to the AND set, then show results
+        const k = t.dataset.k;
+        if (!ovState.tags.includes(k)) ovState.tags.push(k);
+        ovState.cat = null; ovState.browsing = false; ovState.search = ""; refreshOverlay(); break;
+      }
+      case "appendix-rm-tag": e.stopPropagation(); ovState.tags = ovState.tags.filter(x => x !== t.dataset.k); ovState.search = ""; refreshOverlay(); break;
+      case "appendix-add": ovState.browsing = true; ovState.cat = null; ovState.search = ""; refreshOverlay(); break;
+      case "appendix-done-adding": ovState.browsing = false; ovState.cat = null; ovState.search = ""; refreshOverlay(); break;
       case "open-anoint": openAnoint(); break;
       case "anoint-detail": openAnointDetail(); break;
       case "anoint-edit": closeDetail(); openAnoint(); break;

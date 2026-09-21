@@ -63,7 +63,14 @@ Batch of user requests.
   right`; sub-row indent flipped from `padding-left:26px` to `padding-right:14px`) so member labels sit
   against the numeric grid.
 jsdom smoke: `creasort_smoke.mjs` 14/14 (null-fill + sort + bars); threats/matrix/builds/asc all green.
-Shipped to `master`. (#2 appendix multi-tag search follows.)
+Shipped to `master`.
+- **#2 Appendix multi-tag AND search** (like the creature selector). The single Category→Value→results
+  drill-down became a **multi-tag filter**: `st.tags[]` (was `st.tag`), each picked tag becomes a
+  removable `.facet.tag` chip, results match **ALL** tags (`appendixResults(tags)` AND). A **＋ Filter**
+  button re-opens the drill-down (with a ‹ Results back button + the existing chips shown for context);
+  already-selected tags are hidden from the pick list. Removing the last chip returns to the drill-down.
+  Handlers: `appendix-tag` (push), `appendix-rm-tag`, `appendix-add`, `appendix-done-adding`. jsdom
+  `appendix_smoke.mjs` 14/14 (first tag, ＋Filter re-drill, AND narrows, chip removal, empty→browse).
 
 ## 2026-09-21 — session 4k (Threats advisor — realm properties + FG runes to avoid)
 New **Menu → Threats** overlay (`openThreats`/`renderThreats`). Reads the build's THEME off its
