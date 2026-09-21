@@ -294,17 +294,36 @@ const perkDescByKey = new Map(catalogPerkArr.map(p => [p.key, p.desc || '']));
 const perkStatByKey = new Map(readJSON(path.join(MODEL, 'perk_stats.json')).records.map(p => [p.key, p]));
 // perk KEY -> icon sprite name, code-certain from scr_DatabasePerks (see _su_extract/code/extract_perk_icons.py)
 const perkIconByKey = new Map(readJSON(path.join(MODEL, 'perk_icons.json')).records.map(p => [p.key, p.icon]));
+// full perk catalog (661) gives a clean, globally-unique name↔key map — the authority for resolving the
+// user's Perk_REF.csv membership (which is by NAME) back to code keys (needed for icon/desc/stats/taxo).
+const perkKeyByName = new Map(), perkNameByKey = new Map();
+for (const p of catalogPerkArr) { if (!p.key) continue; perkNameByKey.set(p.key, p.name || p.key);
+  if (p.name) { const n = norm(p.name); if (!perkKeyByName.has(n)) perkKeyByName.set(n, p.key); } }
+// a few Perk_REF.csv names are misspelled vs the catalog — map them explicitly (verified against catalog)
+const PERK_NAME_ALIAS = { sovreignty: 'SOVEREIGNTY', wrath: 'DIVINEWRATH', redeyeflight: 'REDEYEFIGHT' };
+const perkKeyForName = (name) => PERK_NAME_ALIAS[norm(name)] || perkKeyByName.get(norm(name)) || null;
 
-// user-provided Perk_REF.csv → per-perk Anointment / Ascension flags (user-confident source of truth)
+// user-provided Perk_REF.csv → (1) per-perk Anointment/Ascension flags AND (2) the authoritative spec→perk
+// MEMBERSHIP. The code-derived membership (scr_PerkGetPerkList in specializations.json) leaks perks between
+// specs (e.g. Animator wrongly got Defiler's Lingering Sickness / Hopelessness / Impiety), so we drive
+// membership from the CSV and only fall back to code membership for specs the CSV doesn't list (Antiquarian).
 const perkRef = new Map();          // norm(name)|norm(spec) -> {anoint, asc}
 const perkRefByName = new Map();    // norm(name) -> {anoint, asc}  (fuzzy/spec-agnostic fallback)
+const csvPerksBySpec = new Map();   // norm(spec) -> [{name, key, anoint, asc, ranks, cost, desc}]
+let csvPerkKeyMisses = 0;
 {
   const rows = parseCSV(fs.readFileSync(path.join(SRC, 'data', 'reference', '_raw_csv', 'Perk_REF.csv'), 'utf8'));
   for (const r of rows) {
     if (!r.Name) continue;
-    const rec = { anoint: /yes/i.test(r.Annointment || ''), asc: /yes/i.test(r.Ascension || '') };
-    perkRef.set(norm(r.Name) + '|' + norm(r.Specialization), rec);
-    perkRefByName.set(norm(r.Name), rec);
+    const anoint = /yes/i.test(r.Annointment || ''), asc = /yes/i.test(r.Ascension || '');
+    perkRef.set(norm(r.Name) + '|' + norm(r.Specialization), { anoint, asc });
+    perkRefByName.set(norm(r.Name), { anoint, asc });
+    const key = perkKeyForName(r.Name);
+    if (!key) { csvPerkKeyMisses++; warn(`Perk_REF perk "${r.Name}" [${r.Specialization}] has no catalog key — icon/taxo will be absent`); }
+    const rec = { name: key ? (perkNameByKey.get(key) || r.Name) : r.Name, key: key || ('CSV_' + norm(r.Name).toUpperCase()),
+      anoint, asc, ranks: parseInt(r.Ranks, 10) || null, cost: parseInt(r.Cost, 10) || null, desc: r.Description || '' };
+    const sk = norm(r.Specialization);
+    (csvPerksBySpec.get(sk) || csvPerksBySpec.set(sk, []).get(sk)).push(rec);
   }
 }
 const SPEC_REF_ALIAS = { grovetender: 'herbalist' };  // display label -> CSV Specialization
@@ -328,6 +347,10 @@ const loadTaxoBy = (fname) => { const p = path.join(MODEL, fname); return fs.exi
 const spellTaxo = loadTaxoBy('spell_taxonomy_tags.json');
 const perkTaxo = loadTaxoBy('perk_taxonomy_tags.json');
 const taxoStrs = (arr) => (arr || []).map(a => a.cat + '::' + a.val);
+// perk taxo is keyed "spec_id:perk_key" but a perk's tags are intrinsic to the perk — re-key by perk_key
+// so membership reassignment (CSV-driven) still finds each perk's tags regardless of which spec now owns it.
+const perkTaxoByKey = {};
+for (const k in perkTaxo) { const pk = k.slice(k.indexOf(':') + 1); if (!(pk in perkTaxoByKey)) perkTaxoByKey[pk] = perkTaxo[k]; }
 
 // ── False Gods — each specialization is affiliated with one of the 10 False Gods
 // (siralimultimate.wiki.gg/wiki/Guilds). A False God is fought as 6 independent
@@ -365,19 +388,27 @@ for (const s of specRecs) {
   let emblem = sprite;
   const emName = findEmblem(s.label);
   if (emName && copyNamedSprite(emName, OUT_SPEC, `${slug}_emblem.png`)) { emblem = `assets/specs/${slug}_emblem.png`; emblemCount++; }
-  const perks = (s.perks || []).filter(p => p.key && p.name).map(p => {   // drop null placeholder perks (e.g. Antiquarian ids 661/663)
+  // membership: CSV is authoritative; fall back to code-derived membership only for specs the CSV omits
+  // (Antiquarian). CSV rows already carry name/key/anoint/asc/ranks/cost; code rows carry key/name only.
+  const slugN = norm(s.label);
+  const csvMembers = csvPerksBySpec.get(slugN) || csvPerksBySpec.get(SPEC_REF_ALIAS[slugN]);
+  const membership = csvMembers
+    || (s.perks || []).filter(p => p.key && p.name).map(p => ({ name: p.name, key: p.key, fromCode: true }));
+  const perks = membership.filter(p => p.key && p.name).map(p => {   // drop null placeholder perks (e.g. Antiquarian ids 661/663)
     const st = perkStatByKey.get(p.key);
     let icon = null;
     const iconName = perkIconByKey.get(p.key);
     if (iconName && copyNamedSprite(iconName, OUT_PERK, `${p.key}.png`)) { icon = `assets/perks/${p.key}.png`; perkIconsCopied++; }
     else { perkIconsMissing++; }
-    const fl = perkFlags(p.name, s.label);       // Anointment / Ascension from Perk_REF.csv
-    if (fl) { if (fl.anoint) anointFlagged++; } else perkRefMisses++;
-    const pdesc = perkDescByKey.get(p.key) || '';
-    return { key: p.key, name: p.name, desc: pdesc,
-             cost: st ? st.cost : null, ranks: st ? st.ranks : 1, icon,
-             anointment: fl ? fl.anoint : false, ascension: fl ? fl.asc : false,
-             taxo: correctTaxo(taxoStrs(perkTaxo[s.spec_id + ':' + p.key]), pdesc) };
+    // flags: CSV membership carries them directly; code-fallback rows resolve via perkFlags()
+    const fl = p.fromCode ? perkFlags(p.name, s.label) : { anoint: p.anoint, asc: p.asc };
+    if (fl && (fl.anoint || fl.asc != null)) { if (fl.anoint) anointFlagged++; } else if (p.fromCode) perkRefMisses++;
+    const pdesc = perkDescByKey.get(p.key) || p.desc || '';
+    const name = perkNameByKey.get(p.key) || p.name;
+    return { key: p.key, name, desc: pdesc,
+             cost: st ? st.cost : (p.cost ?? null), ranks: st ? st.ranks : (p.ranks || 1), icon,
+             anointment: fl ? !!fl.anoint : false, ascension: fl ? !!fl.asc : false,
+             taxo: correctTaxo(taxoStrs(perkTaxoByKey[p.key]), pdesc) };
   });
   const falseGod = godBySpec.get(norm(s.label)) || null;
   if (!falseGod) { specGodMisses++; warn(`specialization "${s.label}" has no False God mapping`); }

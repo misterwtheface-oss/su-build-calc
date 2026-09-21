@@ -30,6 +30,26 @@ No verify-before-push ceremony (no real users yet) — but every change is check
 - Fed by `_su_extract` via `build-data.mjs` (gitignored extract; only used assets copied). Data model in
   `SPEC_PLAN.md`, pipeline in `WIKI_CONTEXT.md`.
 
+## 2026-09-21 — session 4i (BUG FIX: perk→spec misattribution)
+**User-reported: Animator showed several Defiler perks (Lingering Sickness / Hopelessness / Impiety) and was
+missing its own (Dark Anima / Forbidden Magic / Masterpiece / Live to Serve).** Root cause: the code-derived
+membership from `scr_PerkGetPerkList` (in `specializations.json`) leaks perks between specs — it was never
+reliable (the extract's own notes flag code≠CSV diffs). **Fix: drive spec→perk MEMBERSHIP from the user's
+authoritative `Perk_REF.csv`** instead. `build-data.mjs` now:
+- builds a clean **name→key map from the full 661-perk catalog** (`perkKeyByName`, 0 collisions) to resolve
+  each CSV perk (by name) back to its code key — needed for icon/desc/stats/taxo. 4 CSV typos aliased
+  (Sovreignty→Sovereignty, Wrath→Divine Wrath, Red-eye Flight→Red-eye Fight); only "Purge" [Siegemaster] has
+  no catalog entry (synthesised key, no icon — 1 perk).
+- groups the CSV into `csvPerksBySpec` and, in the spec loop, uses CSV membership when the spec is listed
+  (641/645 perks resolve to catalog keys), **falling back to code membership only for Antiquarian** (the one
+  spec absent from the CSV). Anoint/Ascension flags come straight from the CSV row for CSV-driven perks.
+- re-keys perk taxonomy by perk_key (`perkTaxoByKey`) so tags follow a perk to its corrected spec (the taxo
+  file was keyed `spec_id:perk_key` under the *wrong* spec ids).
+Verified: Animator 16 perks ✓, Defiler 19 ✓ (curses restored), Pariah/Siegemaster ✓ — all match the CSV;
+two perks now display under the catalog's canonical spelling (Divine Wrath, Red-eye Fight). Regenerated
+data.js; matrix (37) + builds (8) smoke suites still green. NOTE for future: perk membership is now
+CSV-sourced — a game update needs a refreshed `Perk_REF.csv`, not a re-mine of `scr_PerkGetPerkList`.
+
 ## 2026-09-21 — session 4h (Builds sort + button cleanup + backlog)
 - **Dropped the build name from the Builds footer button** — the "Update «name»" button now just reads
   **"Update"** (the selected tile already shows which build it targets; no more `«»` chevrons anywhere).
