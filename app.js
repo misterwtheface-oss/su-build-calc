@@ -1204,8 +1204,10 @@
         // the trait's icon is its material (trait-item) icon; if the trait has no item, show NO icon
         // (not even an empty box) — never derive it from the creature. Creature gets its own square.
         const itemIco = g.items.find(i => i.icon);
+        // no item → invisible placeholder (transparent, no box) so text stays aligned across rows
         const icoSpan = itemIco
-          ? `<span class="perk-ico sm" title="${esc(g.items.map(i => i.name).join(", "))}">${spriteImg(itemIco.icon, "px")}</span>` : "";
+          ? `<span class="perk-ico sm" title="${esc(g.items.map(i => i.name).join(", "))}">${spriteImg(itemIco.icon, "px")}</span>`
+          : `<span class="perk-ico sm empty"></span>`;
         const meta = g.items.length ? `<span class="anoint-spec-tag">${g.items.length} item${g.items.length === 1 ? "" : "s"}</span>` : "";
         const creaSquare = g.creature ? `<div class="apx-crea" title="${esc(g.creature.name)}">${critFace(g.creature)}</div>` : "";
         return `<div class="perk-line apx-trait">
