@@ -1020,15 +1020,31 @@
     const st = ovState, q = st.search.trim().toLowerCase();
     let body, sub, placeholder;
     if (!st.tag && !st.cat) {
-      // level 1 — categories (Tag)
+      // level 1 — categories (Tag); with a query we also surface matching sub-tags directly,
+      // so a search can jump straight to a tag without first drilling into its category.
       const idx = appendixTaxoIndex();
-      let cats = [...idx.keys()];
-      if (q) cats = cats.filter(c => c.toLowerCase().includes(q));
-      const rows = cats.sort().map(c =>
-        `<button class="opt-row" data-action="appendix-cat" data-c="${esc(c)}"><span>${esc(c)}</span><span class="opt-chev">›</span></button>`).join("")
-        || `<div class="slot-sub" style="padding:10px">No categories match.</div>`;
-      placeholder = "Search categories…";
-      sub = `<div class="ovl-filterbar"><span class="foot-info">Pick a category, then a tag to surface everything that carries it.</span></div>`;
+      const cats = [...idx.keys()];
+      let rows;
+      if (q) {
+        const catMatches = cats.filter(c => c.toLowerCase().includes(q)).sort();
+        const tagMatches = [];
+        for (const c of cats) for (const v of (idx.get(c) || []))
+          if (v.val.toLowerCase().includes(q)) tagMatches.push({ cat: c, key: v.key, val: v.val });
+        tagMatches.sort((a, b) => a.val.localeCompare(b.val) || a.cat.localeCompare(b.cat));
+        const catRows = catMatches.map(c =>
+          `<button class="opt-row" data-action="appendix-cat" data-c="${esc(c)}"><span>${esc(c)}</span><span class="opt-chev">›</span></button>`).join("");
+        const tagRows = tagMatches.map(v =>
+          `<button class="opt-row" data-action="appendix-tag" data-k="${esc(v.key)}"><span>${esc(v.val)}</span><span class="anoint-spec-tag">${esc(v.cat)}</span></button>`).join("");
+        rows = (catMatches.length ? `<div class="section-label">Categories — ${catMatches.length}</div>${catRows}` : "")
+          + (tagMatches.length ? `<div class="section-label">Tags — ${tagMatches.length}</div>${tagRows}` : "")
+          || `<div class="slot-sub" style="padding:10px">No categories or tags match.</div>`;
+      } else {
+        rows = cats.sort().map(c =>
+          `<button class="opt-row" data-action="appendix-cat" data-c="${esc(c)}"><span>${esc(c)}</span><span class="opt-chev">›</span></button>`).join("")
+          || `<div class="slot-sub" style="padding:10px">No categories match.</div>`;
+      }
+      placeholder = "Search categories & tags…";
+      sub = `<div class="ovl-filterbar"><span class="foot-info">Pick a category, then a tag — or search to jump straight to a tag.</span></div>`;
       body = `<div class="opt-list">${rows}</div>`;
     } else if (!st.tag) {
       // level 2 — values within a category (SubTag)
