@@ -544,6 +544,9 @@ h1, h2, h3 { margin: 0; }
 .perk-rankbadge { flex: 0 0 auto; box-sizing: border-box; text-align: center; font-size: 10px; font-weight: 800; color: var(--accent2); background: rgba(201,162,75,.14); border: 1px solid var(--border-dim); border-radius: 5px; padding: 1px 6px; font-variant-numeric: tabular-nums; }
 .perk-line.off .perk-rankbadge { color: var(--text-mute); background: none; }
 .perk-desc { color: var(--text-dim); }
+/* Ascension perks (perk.ascension) get a subtle gold left edge in both the spec list and the picker */
+.perk-line.asc { box-shadow: inset 3px 0 0 var(--accent); }
+.perk-row.asc { box-shadow: inset 3px 0 0 var(--accent); }
 
 /* perk picker overlay — same fixed-icon + head-line structure */
 .perk-picker { display: flex; flex-direction: column; gap: 6px; }

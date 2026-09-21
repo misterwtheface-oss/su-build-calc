@@ -42,6 +42,17 @@ No verify-before-push ceremony (no real users yet) — but every change is check
 - Fed by `_su_extract` via `build-data.mjs` (gitignored extract; only used assets copied). Data model in
   `SPEC_PLAN.md`, pipeline in `WIKI_CONTEXT.md`.
 
+## 2026-09-21 — session 4j (Ascension perks visually distinguished)
+Surfaced the `perk.ascension` flag (from `Perk_REF.csv`, 41 perks, ~1 per spec) in the two perk surfaces that
+weren't badging it — the **spec perk list** (`specPerkListHtml`, used by the spec detail page AND the spec
+picker's info panel) and the **Customize perk picker** (`renderPerkPicker`). Each Ascension perk now shows the
+same gold **"Ascension" badge** already used in the Anointments overlay (reused `.anoint-badge.asc`, wrapped
+with the rank/cost meta in a `.perk-line-meta` span) plus a **subtle gold left edge** on the row
+(`.perk-line.asc` / `.perk-row.asc` → `box-shadow: inset 3px 0 0 var(--accent)`). Non-Ascension perks are
+untouched. Minimal-chrome honored (a small badge + accent, no sub-labels/counts). jsdom smoke
+(`asc_smoke.mjs`, 7 assertions): exact badge count == data on both surfaces, `.asc` accent class present, plain
+perks not badged. Shipped to `master`.
+
 ## 2026-09-21 — session 4i (BUG FIX: perk→spec misattribution)
 **User-reported: Animator showed several Defiler perks (Lingering Sickness / Hopelessness / Impiety) and was
 missing its own (Dark Anima / Forbidden Magic / Masterpiece / Live to Serve).** Root cause: the code-derived
@@ -676,9 +687,9 @@ What works end-to-end:
 - [ ] **Godforge helper** — Godforge (spell-gem enchant / artifact forging) planner.
 - [ ] **Add spell-gem icons to the Appendix** — surface the class-coloured spell-gem icons in Appendix spell rows.
 - [ ] **Macro helper** — build/plan combat macros (action sequences / auto-cast ordering).
-- [ ] **Differentiate Ascension perks from normal perks** — the `perk.ascension` flag is already in the data
-      (from Perk_REF.csv); surface it visually in the perk rows / Customize picker (badge/section) so Ascension
-      perks are distinguishable from regular perks.
+- [x] **Differentiate Ascension perks from normal perks** — DONE (session 4j). Gold "Ascension" badge +
+      subtle gold left edge on the row, in the spec perk list (detail + picker info panel) and the Customize
+      perk picker. Anointments overlay already badged them.
 
 ## Known issues / warnings (from build-data hygiene report — non-fatal)
 - **Roster spine = `creatures_ref` (1362 playable creatures, 100% classed).** `creature_data` was the

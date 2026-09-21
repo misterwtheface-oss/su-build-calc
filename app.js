@@ -952,10 +952,11 @@
     return spec.perks.map(p => {
       const r = perkRank(spec, p), mx = perkMax(p), on = r > 0;
       const badge = mx > 1 ? `<span class="perk-rankbadge">${r}/${mx}</span>` : (on ? `<span class="perk-rankbadge">✓</span>` : "");
+      const asc = p.ascension ? `<span class="anoint-badge asc">Ascension</span>` : "";
       const ico = p.icon ? `<span class="perk-ico sm">${spriteImg(p.icon, "px")}</span>` : `<span class="perk-ico sm empty"></span>`;
-      return `<div class="perk-line ${on ? "on" : "off"}">${ico}
+      return `<div class="perk-line ${on ? "on" : "off"} ${p.ascension ? "asc" : ""}">${ico}
         <div class="perk-line-body">
-          <div class="perk-line-head"><b>${esc(p.name)}</b>${badge}</div>
+          <div class="perk-line-head"><b>${esc(p.name)}</b><span class="perk-line-meta">${asc}${badge}</span></div>
           ${p.desc ? `<div class="perk-desc">${perkText(p.desc, r)}</div>` : ""}
         </div></div>`;
     }).join("");
@@ -1015,10 +1016,11 @@
         ${mx > 1 ? `<button class="perk-step wide" data-action="perk-max" data-k="${k}" ${r >= mx ? "disabled" : ""}>Max</button>` : ""}
         <button class="perk-step wide" data-action="perk-zero" data-k="${k}" ${r <= 0 ? "disabled" : ""}>0</button></div>`;
       const costLine = p.cost != null ? `<span class="perk-meta">${p.cost} pt${p.cost === 1 ? "" : "s"}/rank${on ? ` · ${p.cost * r} spent` : ""}</span>` : "";
+      const asc = p.ascension ? `<span class="anoint-badge asc">Ascension</span>` : "";
       const ico = p.icon ? `<div class="perk-ico">${spriteImg(p.icon, "px")}</div>` : `<div class="perk-ico empty"></div>`;
-      return `<div class="perk-row ${on ? "on" : "off"}">
+      return `<div class="perk-row ${on ? "on" : "off"} ${p.ascension ? "asc" : ""}">
         ${ico}<div class="perk-row-main">
-          <div class="perk-row-head"><b>${esc(p.name)}</b>${costLine}</div>
+          <div class="perk-row-head"><b>${esc(p.name)}</b><span class="perk-line-meta">${asc}${costLine}</span></div>
           ${p.desc ? `<div class="perk-desc">${perkText(p.desc, r)}</div>` : ""}
           ${stepper}</div></div>`;
     }).join("");
