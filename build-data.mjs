@@ -871,6 +871,36 @@ const PERSONALITIES = [
   { key: 'shy', name: 'Shy', raise: 'spd', lower: 'int' }, { key: 'timid', name: 'Timid', raise: 'spd', lower: 'def' },
 ];
 
+// ── Alternate skins — code-grounded restriction from scr_DatabaseSkins (race- or creature-locked).
+// Emit only skins whose restriction TARGET exists in our roster AND whose battle frame is present on disk.
+// Unresolved-race skins and broken creature links are dropped (no fallback); missing frames 404-alert.
+const OUT_SKIN = path.join(OUT_ASSETS, 'skins');
+fs.rmSync(OUT_SKIN, { recursive: true, force: true });
+fs.mkdirSync(OUT_SKIN, { recursive: true });
+const skinRecs = readJSON(path.join(MODEL, 'skins.json')).records;
+const creNameSet = new Set(creatures.map(c => c.name));
+const creRaceSet = new Set(creatures.map(c => c.race).filter(Boolean));
+const skins = [];
+let skinUnresolved = 0, skinFrameMissing = 0;
+const skinFrames = new Set();
+for (const s of skinRecs) {
+  let race = null, creatureName = null;
+  if (s.restriction === 'race') {
+    if (!s.race || !creRaceSet.has(s.race)) { skinUnresolved++; continue; }         // unresolved / race not in roster
+    race = s.race;
+  } else if (s.restriction === 'creature') {
+    if (!s.locked_creature || !creNameSet.has(s.locked_creature)) { skinUnresolved++; continue; }
+    creatureName = s.locked_creature;
+  } else { skinUnresolved++; continue; }
+  const frame = s.sprite_frame;
+  if (frame == null) { skinUnresolved++; continue; }
+  const srcPng = path.join(SRC_BATTLE, `spr_crits_battle_${frame}.png`);
+  if (!fs.existsSync(srcPng)) { warn(`skin "${s.name}" battle frame ${frame} missing (404-source)`); skinFrameMissing++; continue; }
+  if (!skinFrames.has(frame)) { fs.copyFileSync(srcPng, path.join(OUT_SKIN, `${frame}.png`)); skinFrames.add(frame); }
+  skins.push({ id: s.skin_id, name: s.name, restriction: s.restriction, race, creature: creatureName, img: `assets/skins/${frame}.png` });
+}
+console.log(`  skins: ${skins.length} applicable (${skinFrames.size} frames) · ${skinUnresolved} unresolved-skip${skinFrameMissing ? ` · ${skinFrameMissing} frame-missing(404)` : ''}`);
+
 const SU_DATA = {
   meta: {
     generated: new Date().toISOString(),
@@ -905,6 +935,7 @@ const SU_DATA = {
   spellGems,
   spellProps,
   personalities: PERSONALITIES,
+  skins,                    // alternate creature skins, gated by code-grounded race/creature restriction
   scrollMax: 15,            // creatures consume up to 15 stat scrolls total, each +1 base stat (L_ID_SCROLL_*)
 };
 

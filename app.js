@@ -110,69 +110,20 @@
   const gemImg = (stone, cls) => spriteImg(gemSrc(stone), cls);
   preloadGems(() => { try { if (typeof ovState !== "undefined" && ovState && ovState.render) refreshOverlay(); } catch (_) {} });
 
-  // ── Fusion sprite recolour — client-side replication of the game's palette swap ──
-  // Confirmed deterministic (see _su_extract/FUSION_MODEL.md): the PRIMARY provides the sprite; it is
-  // recoloured so each of its shades maps to the SECONDARY's corresponding shade (secondary-prioritised).
-  // Mirrors the decompiled apply_palette: per opaque pixel, find the nearest colour in the SOURCE (primary)
-  // palette and emit the colour at the SAME index in the TARGET palette; source alpha preserved. Palettes
-  // are the sprite's distinct colours (extract_palette = deduped list); we align them dark→light so a shade
-  // maps to the secondary's shade of matching brightness. Every sprite pixel's colour is in its own palette,
-  // so the "nearest" match is exact — the remap is a clean per-colour substitution.
-  const _fuseData = new Map();     // sprite path -> ImageData (lazy)
-  const _fuseOut = new Map();      // "primPath|secPath" -> recoloured data URL
-  const _fuseLoading = new Set();
-  function _loadImgData(path) {
-    return new Promise((res) => {
-      if (_fuseData.has(path)) return res(_fuseData.get(path));
-      const im = new Image();
-      im.onload = () => { try { const c = document.createElement("canvas"); c.width = im.width; c.height = im.height; const cx = c.getContext("2d"); cx.drawImage(im, 0, 0); const d = cx.getImageData(0, 0, im.width, im.height); _fuseData.set(path, d); res(d); } catch (_) { res(null); } };
-      im.onerror = () => res(null);
-      im.src = path;
-    });
-  }
-  const _spritePalette = (imgData) => {   // distinct opaque colours, sorted dark→light
-    const seen = new Set(), pal = [], d = imgData.data;
-    for (let i = 0; i < d.length; i += 4) { if (d[i + 3] < 8) continue; const k = (d[i] << 16) | (d[i + 1] << 8) | d[i + 2]; if (!seen.has(k)) { seen.add(k); pal.push([d[i], d[i + 1], d[i + 2]]); } }
-    pal.sort((a, b) => _lum(a[0], a[1], a[2]) - _lum(b[0], b[1], b[2]));
-    return pal;
+  // ── Alternate skins — a creature can wear a cosmetic skin whose RESTRICTION permits it (code-grounded from
+  // scr_DatabaseSkins: race-restricted skins fit any creature of that race; creature-restricted skins fit one
+  // specific creature). Fusion recolour is intentionally NOT implemented — the in-game recolour is a runtime
+  // palette-swap not reproducible from static data (see _su_extract/FUSION_MODEL.md); a fused slot shows the
+  // primary's sprite (its equipped skin still applies).
+  const SKINS = D.skins || [];                                   // {id,name,race,restriction,creature,img}
+  const SKIN_BY_ID = new Map(SKINS.map(s => [s.id, s]));
+  const skinsForCreature = (c) => !c ? [] : SKINS.filter(s =>
+    s.restriction === "race" ? s.race === c.race : s.creature === c.name);
+  // sprite for a creature honouring an equipped skin id (falls back to the base sprite)
+  const critFaceSkinned = (c, skinId) => {
+    const s = skinId != null ? SKIN_BY_ID.get(skinId) : null;
+    return s && s.img ? spriteImg(s.img) : critFace(c);
   };
-  function _fuseRecolor(primData, secData) {
-    const src = _spritePalette(primData), sec = _spritePalette(secData);
-    const n = src.length, m = sec.length;
-    const tgt = new Array(n);                                  // primary shade i -> secondary shade of matching rank
-    for (let i = 0; i < n; i++) { const j = m <= 1 ? 0 : Math.round(i / (n - 1) * (m - 1)); tgt[i] = sec[j] || src[i]; }
-    const idxByKey = new Map();
-    for (let i = 0; i < n; i++) idxByKey.set((src[i][0] << 16) | (src[i][1] << 8) | src[i][2], i);
-    const d = new Uint8ClampedArray(primData.data);
-    for (let i = 0; i < d.length; i += 4) {
-      if (d[i + 3] < 8) continue;
-      const t = tgt[idxByKey.get((d[i] << 16) | (d[i + 1] << 8) | d[i + 2])];
-      if (t) { d[i] = t[0]; d[i + 1] = t[1]; d[i + 2] = t[2]; }   // alpha untouched
-    }
-    try { const c = document.createElement("canvas"); c.width = primData.width; c.height = primData.height; c.getContext("2d").putImageData(new ImageData(d, primData.width, primData.height), 0, 0); return c.toDataURL(); } catch (_) { return null; }
-  }
-  // recoloured dataURL for primary⊕secondary, or null until the sprites load (kicks off load + re-render)
-  function fusedSpriteSrc(primary, secondary) {
-    if (!primary || !primary.sprite || !secondary || !secondary.sprite) return primary && primary.sprite;
-    const key = primary.sprite + "|" + secondary.sprite;
-    if (_fuseOut.has(key)) return _fuseOut.get(key);
-    if (!_fuseLoading.has(key)) {
-      _fuseLoading.add(key);
-      Promise.all([_loadImgData(primary.sprite), _loadImgData(secondary.sprite)]).then(([a, b]) => {
-        _fuseLoading.delete(key);
-        if (a && b) { const url = _fuseRecolor(a, b); if (url) { _fuseOut.set(key, url); try { render(); } catch (_) {} try { if (typeof ovState !== "undefined" && ovState && ovState.render) refreshOverlay(); } catch (_) {} } }
-      });
-    }
-    return null;   // placeholder: caller falls back to the raw primary sprite until ready
-  }
-  // NOTE: fusion recolour is a player-picked choice among 4 game-generated palettes. Until we capture the
-  // exact option palettes (live memory read of the fuse palette globals), show the UNTINTED primary sprite —
-  // always a real in-game option — rather than a guessed recolour. Machinery above stays for wiring the
-  // real palettes into a picker. Set _FUSE_PREVIEW to re-enable the approximate auto-recolour.
-  const _FUSE_PREVIEW = false;
-  const critFaceFused = (primary, secondary) => (secondary && _FUSE_PREVIEW)
-    ? spriteImg(fusedSpriteSrc(primary, secondary) || primary.sprite)
-    : critFace(primary);
 
   const STAT_KEYS = ["hp", "atk", "def", "int", "spd"];
   const STAT_LABEL = { hp: "Health", atk: "Attack", def: "Defense", int: "Intelligence", spd: "Speed" };
@@ -226,7 +177,7 @@
   const jload = (k, dflt) => { try { const v = JSON.parse(localStorage.getItem(k)); return v == null ? dflt : v; } catch { return dflt; } };
   const jsave = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} };
 
-  const emptySlot = () => ({ cid: null, fusion: null, artifactId: null, relic: null, spellGemIds: [], personality: null, scrolls: {} });
+  const emptySlot = () => ({ cid: null, fusion: null, artifactId: null, relic: null, spellGemIds: [], personality: null, scrolls: {}, skinId: null });
   const freshBuild = () => ({ schema: 3, specId: null, perkAlloc: {}, anoints: [], slots: Array.from({ length: 6 }, emptySlot) });
   let build = jload(LS.build, null);
   // schema 2 stored perkAlloc as a binary de-allocation map ({key:1} = deallocated).
@@ -575,7 +526,7 @@
     return `<div class="slot filled" data-slot="${i}" title="Right-click to change creature / fusion">
       <div class="tile-badges">${clsIco}${raceIco}</div>
       <button class="slot-remove" data-action="remove-creature" data-slot="${i}" title="Remove">✕</button>
-      <div class="slot-sprite-wrap" data-action="creature-detail" data-slot="${i}">${critFaceFused(c, f)}</div>
+      <div class="slot-sprite-wrap" data-action="creature-detail" data-slot="${i}">${critFaceSkinned(c, slot.skinId)}</div>
       <div class="slot-name">${esc(c.name)}${f ? ` <span style="color:var(--accent2)">⚭</span>` : ""}</div>
       <div class="slot-actions">
         <button class="slot-mini ${a ? "on" : ""}" data-action="equip-artifact" data-slot="${i}" title="Artifact">Artifact</button>
@@ -640,7 +591,7 @@
     const slot = build.slots[slotIdx];
     ovState = {
       kind: "creature", slotIdx, step: "primary",
-      primaryId: slot.cid, fusionId: slot.fusion,
+      primaryId: slot.cid, fusionId: slot.fusion, skinId: slot.skinId != null ? slot.skinId : null,
       personality: slot.personality || null, scrolls: { ...(slot.scrolls || {}) },
       search: "", clsFilter: null, raceFilter: null, taxoFilters: [],
       render: renderCreaturePicker,
@@ -743,7 +694,7 @@
     const mark = (k) => { if (!pers) return ""; if (pers.raise === k) return ` <span class="growth up" title="Personality +33%">↑</span>`;
       if (pers.lower === k) return ` <span class="growth down" title="Personality −33%">↓</span>`; return ""; };
     const traitIds = [primary.traitId, secondary ? secondary.traitId : null].filter(x => x != null);
-    return `<div class="cd-sprite">${critFaceFused(primary, secondary)}</div>
+    return `<div class="cd-sprite">${critFaceSkinned(primary, st.skinId)}</div>
       <h3 style="text-align:center;margin:6px 0">${esc(primary.name)}${secondary ? ` <span style="color:var(--accent2)">⚭</span> ${esc(secondary.name)}` : ""}</h3>
       <div class="slot-sub" style="margin-bottom:10px"><span style="color:${clsColor(b.cls)};font-weight:700">${esc(b.cls || "—")}</span></div>
       ${traitIds.length ? `<div class="section-label">Traits</div><div style="margin-bottom:10px">${traitIds.map(tid => `<div class="primary-traits" style="margin-bottom:6px">${traitBanner(tid)}<div class="trait-desc">${richText((TRAIT[tid] || {}).desc || "")}</div></div>`).join("")}</div>` : ""}
@@ -762,6 +713,14 @@
     const persBtn = p
       ? `<button class="facet on tag" data-action="crea-pers-clear">${esc(p.name)}: <b>↑${STAT_LABEL[p.raise]} ↓${STAT_LABEL[p.lower]}</b> <span class="facet-x">✕</span></button>`
       : `<button class="facet add" data-action="crea-pers">＋ Personality</button>`;
+    // Skin — only the skins whose restriction allows this creature (race- or creature-locked)
+    const skinList = skinsForCreature(CREA.get(st.primaryId));
+    const curSkin = st.skinId != null ? SKIN_BY_ID.get(st.skinId) : null;
+    const skinBar = skinList.length ? `
+      <div class="section-label" style="margin-top:10px">Skin</div>
+      <div class="cc-persbar">${curSkin
+        ? `<button class="facet on tag" data-action="crea-skin">${esc(curSkin.name)}</button><button class="facet tag" data-action="crea-skin-clear">✕</button>`
+        : `<button class="facet add" data-action="crea-skin">＋ Skin</button>`}</div>` : "";
     const rows = STAT_KEYS.map(k => `<div class="scroll-row">
         <span class="scroll-lbl">${STAT_LABEL[k]}</span>
         <button class="perk-step" data-action="crea-scroll-dec" data-k="${k}" ${(sc[k] || 0) <= 0 ? "disabled" : ""}>−</button>
@@ -771,7 +730,31 @@
       <div class="section-label">Personality</div>
       <div class="cc-persbar">${persBtn}</div>
       <div class="section-label" style="margin-top:10px">Scrolls · ${tot}/${SCROLL_MAX}</div>
-      <div class="scroll-grid">${rows}</div></div>`;
+      <div class="scroll-grid">${rows}</div>
+      ${skinBar}</div>`;
+  }
+  // skin picker (detail layer) — lists only restriction-allowed skins for the creature + a Default tile
+  function openSkinPicker(creature, onPick) {
+    dovState = { kind: "skin", cid: creature ? creature.id : null, search: "", onPick, render: renderSkinPicker };
+    openDetail(dovState.render()); maybeFocusSearch(DOV);
+  }
+  function renderSkinPicker() {
+    const st = dovState, q = st.search.trim().toLowerCase();
+    const c = CREA.get(st.cid);
+    let list = skinsForCreature(c);
+    if (q) list = list.filter(s => (s.name || "").toLowerCase().includes(q));
+    list = list.slice().sort((a, b) => (a.name || "").localeCompare(b.name || ""));
+    const def = `<div class="pick-tile" data-action="skin-pick" data-id="">
+      <div class="pt-sprite">${c ? critFace(c) : ""}</div><div class="pt-name">Default</div></div>`;
+    const tiles = list.map(s => `
+      <div class="pick-tile" data-action="skin-pick" data-id="${s.id}">
+        <div class="pt-sprite">${spriteImg(s.img, "px")}</div><div class="pt-name">${esc(s.name)}</div></div>`).join("");
+    return `<div class="ovl-backdrop" data-action="facet-backdrop"><div class="overlay-panel detail">
+      <div class="overlay-header"><h2>Choose Skin${c ? " — " + esc(c.name) : ""}</h2>
+        <input class="ovl-search" placeholder="Search skins…" value="${esc(st.search)}" data-action="skin-search">
+        <button class="ovl-close" data-action="close-detail">✕</button></div>
+      <div class="overlay-body"><div class="ovl-center"><div class="ovl-center-scroll"><div class="pick-grid">${def}${tiles}</div></div></div></div>
+    </div></div>`;
   }
   function openPersonalityPicker() {
     dovState = { kind: "pers", search: "", render: renderPersonalityPicker };
@@ -1623,7 +1606,7 @@
       <div class="overlay-header"><h2>${esc(c.name)}${f ? " ⚭ " + esc(f.name) : ""}</h2><button class="ovl-close" data-action="close-detail">✕</button></div>
       <div class="overlay-body">
         <div class="ovl-left cd-left">
-          <div class="cd-sprite">${critFaceFused(c, f)}</div>
+          <div class="cd-sprite">${critFaceSkinned(c, slot.skinId)}</div>
           <div class="slot-sub"><span style="color:${clsColor(b.cls)};font-weight:700">${esc(b.cls || "—")}</span>${c.race ? " · " + esc(c.race) : ""}</div></div>
         <div class="ovl-center"><div class="ovl-center-scroll">
           <div class="stat-grid"><div class="stat-header"><span>Stat</span><span style="text-align:right">Base</span>
@@ -2033,11 +2016,17 @@
         const s = build.slots[ovState.slotIdx];
         s.cid = ovState.primaryId; s.fusion = ovState.fusionId;
         s.personality = ovState.personality; s.scrolls = ovState.scrolls || {};
+        // keep the skin only if it's still allowed on the (possibly changed) primary creature
+        const prim = CREA.get(s.cid);
+        s.skinId = (ovState.skinId != null && skinsForCreature(prim).some(sk => sk.id === ovState.skinId)) ? ovState.skinId : null;
         persistBuild(); closeOverlay(); render(); break;
       }
       case "crea-pers": openPersonalityPicker(); break;
       case "crea-pers-pick": ovState.personality = t.dataset.k; closeDetail(); refreshOverlay(); break;
       case "crea-pers-clear": ovState.personality = null; refreshOverlay(); break;
+      case "crea-skin": openSkinPicker(CREA.get(ovState.primaryId), (id) => { ovState.skinId = id; refreshOverlay(); }); break;
+      case "crea-skin-clear": ovState.skinId = null; refreshOverlay(); break;
+      case "skin-pick": { const raw = t.dataset.id; const cb = dovState.onPick; closeDetail(); if (cb) cb(raw === "" ? null : +raw); break; }
       case "crea-scroll-inc": { const k = t.dataset.k; const sc = ovState.scrolls;
         if (scrollTotal(sc) < SCROLL_MAX) { sc[k] = (sc[k] || 0) + 1; refreshOverlay(); } break; }
       case "crea-scroll-dec": { const k = t.dataset.k; const sc = ovState.scrolls;
@@ -2250,7 +2239,7 @@
     if (A === "builds-name") { ovState.draft.name = v; return; }
     // search fields — live filter without losing caret
     const searchMap = { "crea-search": [OV, ovState], "spec-search": [OV, ovState], "artb-search": [OV, ovState],
-      "relic-search": [OV, ovState], "cards-search": [OV, ovState], "anoint-search": [OV, ovState], "nether-search": [OV, ovState], "sg-search": [OV, ovState], "appendix-search": [OV, ovState], "facet-search": [DOV, dovState], "perk-search": [DOV, dovState], "pers-search": [DOV, dovState], "iconpick-search": [DOV, dovState] };
+      "relic-search": [OV, ovState], "cards-search": [OV, ovState], "anoint-search": [OV, ovState], "nether-search": [OV, ovState], "sg-search": [OV, ovState], "appendix-search": [OV, ovState], "facet-search": [DOV, dovState], "perk-search": [DOV, dovState], "pers-search": [DOV, dovState], "iconpick-search": [DOV, dovState], "skin-search": [DOV, dovState] };
     if (searchMap[A]) {
       const [root, state] = searchMap[A]; state.search = v;
       const panel = root.querySelector(".overlay-panel");

@@ -26,6 +26,27 @@ No verify-before-push ceremony (no real users yet) — but every change is check
 - Fed by `_su_extract` via `build-data.mjs` (gitignored extract; only used assets copied). Data model in
   `SPEC_PLAN.md`, pipeline in `WIKI_CONTEXT.md`.
 
+## Alternate skins + fusion-palette research outcome (2026-09-20)
+**Alternate skins SHIPPED.** Creatures can wear a cosmetic skin, offered strictly by its **code-grounded
+restriction** (`scr_DatabaseSkins`: race-restricted skins fit any creature of that race; creature-restricted
+skins fit one specific creature via `locked_creature`). `build-data.mjs` emits `SU_DATA.skins` (743 applicable
+= 586 race + 157 creature; 91 unresolved dropped, no fallback) and exports the battle frames to
+`assets/skins/<frame>.png` (from `spr_crits_battle_<frame>`, all present; 404-guarded). App: skin picker in the
+creature wizard's Customize panel (only restriction-allowed skins + a Default tile), stored as `slot.skinId`,
+rendered in slot / wizard preview / detail; kept across creature changes only if still allowed. 1268/1362
+creatures have ≥1 applicable skin.
+
+**Fusion palette — researched, NOT shipped (deliberate).** Deep dive (3 Ghidra decompile passes + 5-pair
+pixel-exact ground truth) concluded the in-game fuse recolour is **not reproducible from static data**: it is a
+runtime GPU palette-swap (`FX_PaletteSwap`) whose grey/body/accent ramp clustering is computed by VM-dispatched
+setters + a shader sample (not in static code). The 6 "Appearance options" = `scr_SetFusion(MODE 0..5)`, MODE 0
+untinted; `field_0738`/`field_1df8` are the creature's **race id / skin index** (NOT stored base/accent colours
+— that premise was falsified). Best static-grounded reconstruction ~82% (one hand-tuned pair); best empirical
+clustering ~44% across 5 pairs. Only remaining path to pixel-exact = live GM-var-manager read of the 4
+working-palette globals per fuse (fragile, rejected as disproportionate for cosmetics). Full write-up +
+5-pair dataset: `_su_extract/code/FUSION_MODEL.md`, `data/model/fusion_ground_truth*.json`. The app shows the
+untinted primary sprite for fused creatures (a real in-game option); no guessed recolour is shipped.
+
 ## v2.20c personality = flat ±33% on base (final, per user) (2026-09-18)
 Simplified per user: drop the whole level lens (slider/number field/`previewLevel`/`renderLevelBar`/all
 handlers + CSS) and just apply a **flat modifier to the base stat** — raised **×4/3 (+33%)**, lowered
