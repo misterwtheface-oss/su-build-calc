@@ -21,11 +21,11 @@
   --cap:       #ffd24a;
 
   /* class accents (also used as trait-association colours) */
-  --cls-Nature:  #4fae5a;
-  --cls-Chaos:   #c0392b;
-  --cls-Sorcery: #b95ce6;
-  --cls-Death:   #3a5fe0;
-  --cls-Life:    #d4af37;
+  --cls-Nature:  #588F17;
+  --cls-Chaos:   #8F0202;
+  --cls-Sorcery: #8747CD;
+  --cls-Death:   #3E3E69;
+  --cls-Life:    #F2A908;
 
   --radius: 10px;
   --gap: 10px;

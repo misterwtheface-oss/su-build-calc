@@ -102,11 +102,12 @@ function parseCSV(text) {
 }
 
 const CLASSES = [
-  { key: 'Nature',  color: '#4fae5a' },
-  { key: 'Chaos',   color: '#c0392b' },
-  { key: 'Sorcery', color: '#b95ce6' },   // bright purple/magenta — matches card_bg_sorcery
-  { key: 'Death',   color: '#3a5fe0' },   // royal blue — matches card_bg_death + class_death emblem
-  { key: 'Life',    color: '#d4af37' },
+  // colors eyedropped directly off the class emblem icons (user-picked for UI legibility)
+  { key: 'Nature',  color: '#588F17' },
+  { key: 'Chaos',   color: '#8F0202' },
+  { key: 'Sorcery', color: '#8747CD' },
+  { key: 'Death',   color: '#3E3E69' },
+  { key: 'Life',    color: '#F2A908' },
 ];
 const CLASS_SET = new Set(CLASSES.map(c => c.key));
 
