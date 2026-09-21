@@ -417,14 +417,17 @@
   const persRatio = (slot, k) => { const p = slot.personality ? PERS.get(slot.personality) : null; return p ? (p.raise === k ? 4 / 3 : p.lower === k ? 2 / 3 : 1) : 1; };
   function finalStats(slot) {
     const b = baseStats(slot); if (!b) return null;
+    const sc = slot.scrolls || {};
     const pct = artifactPct(slot);
     const rp = relicPctOf(slot);
     for (const k of STAT_KEYS) pct[k] = Math.round((pct[k] + rp[k]) * 100) / 100;   // fold relic % into the bonus column
     const adj = {}, final = {};
     for (const k of STAT_KEYS) {
-      const a = b[k] * persRatio(slot, k);
-      adj[k] = Math.round(a);
-      final[k] = Math.round(a * (1 + pct[k] / 100));
+      // Personality ±33% applies to the PURE base (b minus scrolls); scrolls (+1 each) are added flat after.
+      const scroll = sc[k] || 0, rawBase = b[k] - scroll;
+      const eff = Math.round(rawBase * persRatio(slot, k)) + scroll;   // effective base before bonus %
+      adj[k] = eff;
+      final[k] = Math.round(eff * (1 + pct[k] / 100));
     }
     return { base: b, pct, adj, final,
              baseTotal: STAT_KEYS.reduce((s, k) => s + b[k], 0),

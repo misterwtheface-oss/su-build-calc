@@ -322,7 +322,9 @@ h1, h2, h3 { margin: 0; }
 .stat-grid.with-relic .stat-row { grid-template-columns: 1fr 56px 56px 56px 68px; }
 /* creature-detail breakdown: Stat | Base | Pers | Scroll | Bonus | Total */
 .stat-grid.detailed .stat-header,
-.stat-grid.detailed .stat-row { grid-template-columns: 1fr 46px 46px 48px 52px 56px; }
+.stat-grid.detailed .stat-row { grid-template-columns: 1fr 44px 48px 54px 54px 58px; }
+.stat-grid.detailed .stat-header { letter-spacing: 0; font-size: 10px; }   /* fit "Scroll"/"Bonus" without overlap */
+.stat-grid.detailed .stat-header > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .stat-val.scroll { color: #9be6a0; }        /* scroll channel tint (green) */
 .stat-val.muted  { color: var(--text-mute); }
 /* single-value stat panel (creature selector info): name flexes, one right-aligned value column */
@@ -411,7 +413,8 @@ h1, h2, h3 { margin: 0; }
   .overlay-footer { padding: 7px 12px; }
   .party-summary .stat-header, .party-summary .stat-row { grid-template-columns: 1fr 52px 52px 60px; }
   /* compact the 6-column breakdown on phones so it doesn't overflow */
-  .stat-grid.detailed .stat-header, .stat-grid.detailed .stat-row { grid-template-columns: 1fr 34px 36px 38px 42px 44px; padding: 4px 6px; }
+  .stat-grid.detailed .stat-header, .stat-grid.detailed .stat-row { grid-template-columns: 1fr 32px 36px 42px 42px 46px; padding: 4px 5px; gap: 2px; }
+  .stat-grid.detailed .stat-header { font-size: 9px; }
   .stat-grid.detailed .stat-name { font-size: 11.5px; }
   .stat-grid.detailed .stat-val { font-size: 11.5px; }
 }
