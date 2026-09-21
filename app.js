@@ -483,7 +483,7 @@
   function renderHome() {
     const spec = build.specId != null ? SPEC.get(build.specId) : null;
     const specTile = `
-      <div class="spec-tile ${spec ? "filled" : ""}" data-action="pick-spec" title="Specialization">
+      <div class="spec-tile ${spec ? "filled" : ""}" data-action="${spec ? "spec-detail" : "pick-spec"}" title="Specialization">
         <div class="spec-tile-icon">${spec ? spriteImg(spec.emblem || spec.sprite, "px") : `<span class="spec-tile-plus">✦</span>`}</div>
         <div class="spec-tile-label">${spec ? esc(spec.label) : "Specialization"}</div>
         ${spec ? `<div class="spec-tile-sub">${allocatedPerks(spec).length}/${spec.perks.length} perks · ${specPoints(spec)} pts</div>` : ""}
@@ -495,7 +495,7 @@
       ? `<div class="anoint-tile-icons">${eqAnoints.map(a => `<span class="anoint-mini" title="${esc(a.name)}">${a.icon ? spriteImg(a.icon, "px") : "✦"}</span>`).join("")}</div>`
       : `<span class="spec-tile-plus">✦</span>`;
     const anointTile = `
-      <div class="spec-tile anoint-tile ${build.anoints.length ? "filled" : ""}" data-action="open-anoint" title="Anointments">
+      <div class="spec-tile anoint-tile ${build.anoints.length ? "filled" : ""}" data-action="${build.anoints.length ? "anoint-detail" : "open-anoint"}" title="Anointments">
         <div class="spec-tile-icon">${anointIcons}</div>
         <div class="spec-tile-label">Anointments</div>
         ${build.anoints.length ? `<div class="spec-tile-sub">${build.anoints.length}/${ANOINT_MAX} equipped</div>` : ""}
@@ -540,12 +540,11 @@
   let ovState = null, dovState = null, specAnimTimer = null;
 
   // Animate the spec info-panel costume: front-facing 2-frame walk, alternate 8× then advance a tier (cycles).
-  function syncSpecAnim() {
+  // animate the #specCostume in a given overlay root: front-facing 2-frame walk, 8× then advance a tier
+  function animateCostume(root, spec) {
     if (specAnimTimer) { clearInterval(specAnimTimer); specAnimTimer = null; }
-    if (!ovState || ovState.kind !== "spec" || ovState.sel == null) return;
-    const spec = SPEC.get(ovState.sel);
     const tiers = (spec && spec.costumes ? spec.costumes : []).filter(c => c.frames && c.frames.length >= 2);
-    const img = OV.querySelector("#specCostume img");
+    const img = root && root.querySelector("#specCostume img");
     if (!img || !tiers.length) return;
     let ti = 0, fr = 0, swaps = 0;
     specAnimTimer = setInterval(() => {
@@ -554,12 +553,17 @@
       if (swaps >= 8) { swaps = 0; fr = 0; ti = (ti + 1) % tiers.length; }
     }, 280);
   }
+  function syncSpecAnim() {
+    if (specAnimTimer) { clearInterval(specAnimTimer); specAnimTimer = null; }
+    if (ovState && ovState.kind === "spec" && ovState.sel != null) animateCostume(OV, SPEC.get(ovState.sel));
+    else if (dovState && dovState.kind === "spec-detail" && dovState.specId != null) animateCostume(DOV, SPEC.get(dovState.specId));
+  }
   const SCROLLERS = [".ovl-center-scroll", ".ovl-left", ".ovl-right", ".art-side-list"];
 
   function openOverlay(html) { OV.innerHTML = html; OV.classList.remove("hidden"); }
   function closeOverlay() { if (specAnimTimer) { clearInterval(specAnimTimer); specAnimTimer = null; } OV.classList.add("hidden"); OV.innerHTML = ""; ovState = null; }
-  function openDetail(html) { DOV.innerHTML = html; DOV.classList.remove("hidden"); }
-  function closeDetail() { DOV.classList.add("hidden"); DOV.innerHTML = ""; dovState = null; }
+  function openDetail(html) { if (specAnimTimer) { clearInterval(specAnimTimer); specAnimTimer = null; } DOV.innerHTML = html; DOV.classList.remove("hidden"); }
+  function closeDetail() { if (specAnimTimer) { clearInterval(specAnimTimer); specAnimTimer = null; } DOV.classList.add("hidden"); DOV.innerHTML = ""; dovState = null; }
 
   function refreshOverlay() {
     if (!ovState) return;
@@ -578,6 +582,7 @@
     panel.outerHTML = dovState.render();
     const p2 = DOV.querySelector(".overlay-panel");
     SCROLLERS.forEach((sel, k) => { const e = p2 && p2.querySelector(sel); if (e) e.scrollTop = saved[k]; });
+    syncSpecAnim();
   }
   function maybeFocusSearch(root) {
     const input = root.querySelector(".ovl-search");
@@ -875,16 +880,7 @@
     let info = "";
     if (sel) {
       const allocCount = allocatedPerks(sel).length, pts = specPoints(sel);
-      const perkList = sel.perks.map(p => {
-        const r = perkRank(sel, p), mx = perkMax(p), on = r > 0;
-        const badge = mx > 1 ? `<span class="perk-rankbadge">${r}/${mx}</span>` : (on ? `<span class="perk-rankbadge">✓</span>` : "");
-        const ico = p.icon ? `<span class="perk-ico sm">${spriteImg(p.icon, "px")}</span>` : `<span class="perk-ico sm empty"></span>`;
-        return `<div class="perk-line ${on ? "on" : "off"}">${ico}
-          <div class="perk-line-body">
-            <div class="perk-line-head"><b>${esc(p.name)}</b>${badge}</div>
-            ${p.desc ? `<div class="perk-desc">${perkText(p.desc, r)}</div>` : ""}
-          </div></div>`;
-      }).join("");
+      const perkList = specPerkListHtml(sel);
       const cos0 = sel.costumes && sel.costumes.length ? sel.costumes[0] : null;
       const costumeImg = cos0 ? (cos0.frames && cos0.frames[0]) || cos0.img : sel.sprite;
       info = `<div class="spec-info">
@@ -909,6 +905,47 @@
           <button class="btn-ghost" data-action="customize-perks" ${sel ? "" : "disabled"}>Customize</button>
           <button class="btn-confirm" data-action="spec-confirm" ${st.sel == null ? "disabled" : ""}>Confirm</button>
         </div></div>
+    </div></div>`;
+  }
+
+  // spec detail (view) — mirrors the selector's info panel; Edit routes back to the picker
+  function openSpecDetail() {
+    if (build.specId == null) { openSpecPicker(); return; }
+    dovState = { kind: "spec-detail", specId: build.specId, render: renderSpecDetail };
+    openDetail(dovState.render()); syncSpecAnim();
+  }
+  // shared perk-list markup used by both the selector info panel and the detail page
+  function specPerkListHtml(spec) {
+    return spec.perks.map(p => {
+      const r = perkRank(spec, p), mx = perkMax(p), on = r > 0;
+      const badge = mx > 1 ? `<span class="perk-rankbadge">${r}/${mx}</span>` : (on ? `<span class="perk-rankbadge">✓</span>` : "");
+      const ico = p.icon ? `<span class="perk-ico sm">${spriteImg(p.icon, "px")}</span>` : `<span class="perk-ico sm empty"></span>`;
+      return `<div class="perk-line ${on ? "on" : "off"}">${ico}
+        <div class="perk-line-body">
+          <div class="perk-line-head"><b>${esc(p.name)}</b>${badge}</div>
+          ${p.desc ? `<div class="perk-desc">${perkText(p.desc, r)}</div>` : ""}
+        </div></div>`;
+    }).join("");
+  }
+  function renderSpecDetail() {
+    const spec = SPEC.get(dovState.specId); if (!spec) return "";
+    const allocCount = allocatedPerks(spec).length, pts = specPoints(spec);
+    const cos0 = spec.costumes && spec.costumes.length ? spec.costumes[0] : null;
+    const costumeImg = cos0 ? (cos0.frames && cos0.frames[0]) || cos0.img : spec.sprite;
+    return `<div class="ovl-backdrop" data-action="detail-backdrop"><div class="overlay-panel detail">
+      <div class="overlay-header"><h2>${esc(spec.label)}</h2><button class="ovl-close" data-action="close-detail">✕</button></div>
+      <div class="overlay-body"><div class="ovl-center"><div class="ovl-center-scroll">
+        <div class="spec-info">
+          <div class="spec-info-sprite costume" id="specCostume">${spriteImg(costumeImg, "px")}</div>
+          <h2 class="spec-info-name">${esc(spec.label)}</h2>
+          <div class="trait-desc spec-play">${richText(spec.playstyle || spec.description || "")}</div>
+          <div class="section-label" style="margin-top:12px">Perks — ${allocCount}/${spec.perks.length} allocated · ${pts} pts</div>
+          <div class="perk-list">${specPerkListHtml(spec)}</div>
+        </div>
+      </div></div></div>
+      <div class="overlay-footer"><span class="foot-info"></span>
+        <div><button class="btn-ghost" data-action="spec-edit">Edit</button>
+        <button class="btn-confirm" data-action="close-detail">Done</button></div></div>
     </div></div>`;
   }
 
@@ -1163,19 +1200,17 @@
           _search: t.name + " " + (creature ? creature.name : "") + " " + items.map(i => i.name).join(" ") };
       }).sort((a, b) => a.name.localeCompare(b.name));
       const traitRow = (g) => {
-        const cIco = g.creature ? `<span class="apx-ico" title="${esc(g.creature.name)}">${critFace(g.creature)}</span>` : "";
-        const iIco = (g.items[0] && g.items[0].icon)
-          ? `<span class="apx-ico" title="${esc(g.items.map(i => i.name).join(", "))}">${spriteImg(g.items[0].icon, "px")}</span>` : "";
-        const meta = [
-          g.creature ? `<span class="anoint-spec-tag">${esc(g.creature.name)}</span>` : "",
-          g.items.length ? `<span class="anoint-spec-tag">${g.items.length} item${g.items.length === 1 ? "" : "s"}</span>` : "",
-        ].join("");
-        return `<div class="perk-line">
-          <span class="apx-icons">${cIco}${iIco}</span>
+        // mirror the perk layout: material icon beside the title; the creature gets its own square on the row
+        const iIco = (g.items[0] && g.items[0].icon) ? spriteImg(g.items[0].icon, "px") : "";
+        const meta = g.items.length ? `<span class="anoint-spec-tag">${g.items.length} item${g.items.length === 1 ? "" : "s"}</span>` : "";
+        const creaSquare = g.creature ? `<div class="apx-crea" title="${esc(g.creature.name)}">${critFace(g.creature)}</div>` : "";
+        return `<div class="perk-line apx-trait">
+          <span class="perk-ico sm"${g.items.length ? ` title="${esc(g.items.map(i => i.name).join(", "))}"` : ""}>${iIco}</span>
           <div class="perk-line-body">
             <div class="perk-line-head"><b>${esc(g.name)}</b>${meta ? `<span class="perk-line-meta">${meta}</span>` : ""}</div>
             ${g.desc ? `<div class="perk-desc">${richText(g.desc)}</div>` : ""}
-          </div></div>`;
+          </div>
+          ${creaSquare}</div>`;
       };
       const body_sections = [
         section("Traits", traitRows, traitRow),
@@ -1287,14 +1322,19 @@
       `<button class="facet on tag" data-action="rm-taxo" data-i="${i}">${esc(taxoCatName(k))}: <b>${esc(taxoValName(k))}</b> <span class="facet-x">✕</span></button>`).join("");
     const filterbar = `<div class="ovl-filterbar">${godChip}${specChip}${taxoChips}<button class="facet add" data-action="anoint-taxo">＋ Filter</button></div>`;
     const full = build.anoints.length >= ANOINT_MAX;
-    const anointRow = (a) => { const on = anointEquipped(a); return `<div class="perk-line ${on ? "equipped" : ""}">
+    const anointRow = (a) => { const on = anointEquipped(a); const inCur = a.specId === build.specId;
+      // a perk from your current spec is already in your tree — block anointing it (removal still allowed)
+      const btn = (inCur && !on)
+        ? `<button class="slot-mini anoint-eq" disabled title="Already available in your current specialization">In your spec</button>`
+        : `<button class="slot-mini anoint-eq ${on ? "on" : ""}" data-action="anoint-toggle" data-sid="${a.specId}" data-k="${esc(a.key)}" ${(!on && full) ? "disabled" : ""}>${on ? "Equipped ✓" : "Equip"}</button>`;
+      return `<div class="perk-line ${on ? "equipped" : ""} ${inCur ? "anoint-incur" : ""}">
         <span class="perk-ico sm">${a.icon ? spriteImg(a.icon, "px") : ""}</span>
         <div class="perk-line-body">
           <div class="perk-line-head"><b>${esc(a.name)}</b>
-            <span class="perk-line-meta"><span class="anoint-spec-tag">${esc(a.spec)}</span>${a.ascension ? `<span class="anoint-badge asc">Ascension</span>` : ""}</span></div>
+            <span class="perk-line-meta"><span class="anoint-spec-tag">${esc(a.spec)}</span>${inCur ? `<span class="anoint-badge">Current spec</span>` : ""}${a.ascension ? `<span class="anoint-badge asc">Ascension</span>` : ""}</span></div>
           ${a.desc ? `<div class="perk-desc">${perkText(a.desc, a.ranks)}</div>` : ""}
         </div>
-        <button class="slot-mini anoint-eq ${on ? "on" : ""}" data-action="anoint-toggle" data-sid="${a.specId}" data-k="${esc(a.key)}" ${(!on && full) ? "disabled" : ""}>${on ? "Equipped ✓" : "Equip"}</button>
+        ${btn}
         </div>`; };
     const byName = (a, b) => a.spec.localeCompare(b.spec) || a.name.localeCompare(b.name);
     // group by the affiliated False God (pipeline order), sub-sorted by spec → name
@@ -1320,6 +1360,34 @@
       </div></div>
       <div class="overlay-footer"><span class="foot-info">${build.anoints.length}/${ANOINT_MAX} equipped${full ? " · full" : ""}</span>
         <button class="btn-confirm" data-action="close-ovl">Done</button></div>
+    </div></div>`;
+  }
+
+  // anoint detail (view) — lists the equipped anointment perks; Edit routes back to the picker
+  function openAnointDetail() {
+    if (!build.anoints.length) { openAnoint(); return; }
+    dovState = { kind: "anoint-detail", render: renderAnointDetail };
+    openDetail(dovState.render());
+  }
+  function renderAnointDetail() {
+    const eq = equippedAnointObjs();
+    const rows = eq.map(a => `<div class="perk-line">
+        <span class="perk-ico sm">${a.icon ? spriteImg(a.icon, "px") : ""}</span>
+        <div class="perk-line-body">
+          <div class="perk-line-head"><b>${esc(a.name)}</b>
+            <span class="perk-line-meta"><span class="anoint-spec-tag">${esc(a.spec)}</span>${a.ascension ? `<span class="anoint-badge asc">Ascension</span>` : ""}</span></div>
+          ${a.desc ? `<div class="perk-desc">${perkText(a.desc, a.ranks)}</div>` : ""}
+        </div></div>`).join("")
+      || `<div class="slot-sub" style="padding:10px">No anointments equipped.</div>`;
+    return `<div class="ovl-backdrop" data-action="detail-backdrop"><div class="overlay-panel detail">
+      <div class="overlay-header"><h2>Anointments</h2><button class="ovl-close" data-action="close-detail">✕</button></div>
+      <div class="overlay-body"><div class="ovl-center">
+        <div class="ovl-filterbar"><span class="foot-info">${eq.length}/${ANOINT_MAX} equipped — each grants its full bonus.</span></div>
+        <div class="ovl-center-scroll"><div class="perk-list">${rows}</div></div>
+      </div></div>
+      <div class="overlay-footer"><span class="foot-info"></span>
+        <div><button class="btn-ghost" data-action="anoint-edit">Edit</button>
+        <button class="btn-confirm" data-action="close-detail">Done</button></div></div>
     </div></div>`;
   }
 
@@ -1656,7 +1724,8 @@
         </div></div>
       </div>
       <div class="overlay-footer"><span class="foot-info"></span>
-        <button class="btn-confirm" data-action="close-detail">Done</button></div>
+        <div><button class="btn-ghost" data-action="crea-edit" data-slot="${slotIdx}">Edit</button>
+        <button class="btn-confirm" data-action="close-detail">Done</button></div></div>
     </div></div>`;
   }
 
@@ -1672,12 +1741,20 @@
     const tiles = list.map(c => {
       const lv = cardLevel(c.id);
       const bg = c.cls && CLASS_BG[c.cls] ? CLASS_BG[c.cls] : null;
-      const effects = c.effects.map((e, i) => `<div class="card-effect ${i < lv ? "on" : "off"}"><span class="ce-tier">${i + 1}</span>${richText(e)}</div>`).join("");
+      const tiers = c.tiers || [];
+      // per-effect the badge shows how many cards that tier needs to activate
+      const effects = c.effects.map((e, i) => {
+        const cnt = tiers[i] != null ? tiers[i] : null;
+        return `<div class="card-effect ${i < lv ? "on" : "off"}"><span class="ce-tier" title="${cnt != null ? `Needs ${cnt} cards` : `Tier ${i + 1}`}">${cnt != null ? cnt : i + 1}</span>${richText(e)}</div>`;
+      }).join("");
+      // "n / n / n" summary — how many cards are needed for each tier, active tiers highlighted by level
+      const tierSummary = tiers.map((n, i) => `<span class="ct-seg ${i < lv ? "on" : "off"}">${n}</span>`).join(`<span class="ct-sep">/</span>`);
       return `<div class="card-tile lv${lv} ${applyAll ? "locked" : ""}" style="--cardcls:${clsColor(c.cls)}">
         <div class="card-head">
           <div class="card-art">${bg ? `<img class="card-bg" src="${esc(bg)}" alt="">` : ""}${c.sprite ? spriteImg(c.sprite, "card-crit") : ""}</div>
           <div class="card-title"><b>${esc(c.family)}</b><span class="cls-chip" style="color:${clsColor(c.cls)}">${esc(c.cls || "—")}</span></div>
         </div>
+        ${tiers.length ? `<div class="card-tiers" title="Cards needed per tier">${tierSummary}</div>` : ""}
         <div class="card-effects">${effects}</div>
         <div class="card-level">
           <button class="lvl-btn" data-action="card-dec" data-id="${c.id}" ${lv === 0 || applyAll ? "disabled" : ""}>−</button>
@@ -1982,7 +2059,10 @@
       case "equip-artifact": openArtifactLibrary(+t.dataset.slot); break;
       case "build-relic": openRelicBuilder(+t.dataset.slot); break;
       case "creature-detail": openCreatureDetail(+t.dataset.slot); break;
+      case "crea-edit": { const si = +t.dataset.slot; closeDetail(); openCreaturePicker(si); break; }
       case "pick-spec": openSpecPicker(); break;
+      case "spec-detail": openSpecDetail(); break;
+      case "spec-edit": closeDetail(); openSpecPicker(); break;
       case "remove-creature": armOrDo(t, () => { build.slots[+t.dataset.slot] = emptySlot(); persistBuild(); render(); }); break;
       case "clear-spec": e.stopPropagation(); build.specId = null; persistBuild(); render(); break;
       case "clear-party": armOrDo(t, () => { build = freshBuild(); persistBuild(); render(); }); break;
@@ -2015,10 +2095,13 @@
       case "appendix-tag": ovState.tag = t.dataset.k; ovState.search = ""; refreshOverlay(); break;
       case "appendix-clear-tag": e.stopPropagation(); ovState.tag = null; ovState.search = ""; refreshOverlay(); break;
       case "open-anoint": openAnoint(); break;
+      case "anoint-detail": openAnointDetail(); break;
+      case "anoint-edit": closeDetail(); openAnoint(); break;
       case "anoint-toggle": {
         const sid = +t.dataset.sid, k = t.dataset.k;
         const i = build.anoints.findIndex(x => x.specId === sid && x.key === k);
-        if (i >= 0) build.anoints.splice(i, 1);
+        if (i >= 0) build.anoints.splice(i, 1);                 // removing is always allowed
+        else if (sid === build.specId) break;                  // guard: can't anoint a perk from your current spec
         else if (build.anoints.length < ANOINT_MAX) build.anoints.push({ specId: sid, key: k });
         persistBuild(); refreshOverlay(); render(); break;   // refresh overlay + home tile count
       }
@@ -2094,7 +2177,11 @@
 
       // spec picker + perks
       case "spec-pick": ovState.sel = ovState.sel === +t.dataset.id ? null : +t.dataset.id; refreshOverlay(); break;
-      case "spec-confirm": build.specId = ovState.sel; persistBuild(); closeOverlay(); render(); break;
+      case "spec-confirm":
+        build.specId = ovState.sel;
+        // drop any equipped anointments that now belong to the current spec (can't double-dip)
+        build.anoints = build.anoints.filter(x => x.specId !== build.specId);
+        persistBuild(); closeOverlay(); render(); break;
       case "customize-perks": if (ovState.sel != null) openPerkPicker(ovState.sel); break;
       case "perk-inc": case "perk-dec": case "perk-max": case "perk-zero": {
         const sp = SPEC.get(dovState.specId), p = sp.perks.find(x => x.key === t.dataset.k); if (!p) break;

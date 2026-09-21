@@ -416,8 +416,10 @@ h1, h2, h3 { margin: 0; }
 @media (min-width: 980px) { .home-top { grid-template-columns: repeat(6, 1fr); } }
 .anoint-grp { margin-top: 12px; display: flex; gap: 8px; align-items: baseline; }
 .anoint-grp:first-child { margin-top: 0; }
-.anoint-badge.asc { flex: 0 0 auto; align-self: center; font-size: 9px; font-weight: 800; text-transform: uppercase;
-  color: var(--accent); background: rgba(201,162,75,.16); border: 1px solid var(--border-dim); border-radius: 4px; padding: 1px 4px; }
+.anoint-badge { flex: 0 0 auto; align-self: center; font-size: 9px; font-weight: 800; text-transform: uppercase;
+  color: var(--text-mute); background: rgba(255,255,255,.06); border: 1px solid var(--border-dim); border-radius: 4px; padding: 1px 4px; }
+.anoint-badge.asc { color: var(--accent); background: rgba(201,162,75,.16); }
+.perk-line.anoint-incur { opacity: .62; }
 /* spec/anoint tiles are vertical cards mirroring the creature slot card */
 .spec-tile {
   position: relative; display: flex; flex-direction: column; align-items: center; gap: 4px;
@@ -462,6 +464,11 @@ h1, h2, h3 { margin: 0; }
 .apx-icons { flex: 0 0 55px; display: flex; gap: 3px; align-items: center; }
 .apx-ico { width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; }
 .apx-ico img { width: 100%; height: 100%; object-fit: contain; }
+/* appendix trait row: creature in its own square container (creature-container ratio), on the right */
+.apx-crea { flex: 0 0 auto; align-self: center; width: 48px; height: 48px; display: flex; align-items: center; justify-content: center;
+  background: var(--surface); border: 1px solid var(--border-dim); border-radius: 8px; overflow: hidden; }
+.apx-crea img { width: 100%; height: 100%; object-fit: contain; padding: 4px; }
+.apx-crea .crit-face { width: 100%; height: 100%; }
 /* source-spec tag on each anointment row (rows are grouped by False God, not spec) */
 .anoint-spec-tag {
   font-size: 10px; color: var(--text-dim); background: var(--surface2);
@@ -527,6 +534,11 @@ h1, h2, h3 { margin: 0; }
 .card-art .card-crit { position: relative; width: 84%; height: 84%; object-fit: contain; }
 .card-title { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
 .card-title b { font-size: 15px; }
+/* "n / n / n" — cards needed per tier; active tiers highlighted by the current level */
+.card-tiers { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 800; margin-top: -2px; }
+.card-tiers .ct-seg { min-width: 20px; text-align: center; padding: 1px 6px; border-radius: 5px; color: var(--text-mute); background: var(--bg2); border: 1px solid var(--border-dim); }
+.card-tiers .ct-seg.on { color: #150e26; background: var(--cardcls); border-color: var(--cardcls); }
+.card-tiers .ct-sep { color: var(--text-mute); font-weight: 400; }
 .card-effects { display: flex; flex-direction: column; gap: 4px; }
 .card-effect { font-size: 11.5px; line-height: 1.35; padding: 5px 8px; border-radius: 6px; background: var(--bg2); display: flex; gap: 7px; align-items: flex-start; }
 .card-effect .ce-tier { flex: 0 0 auto; width: 16px; height: 16px; border-radius: 50%; background: var(--cardcls); color: #150e26; font-weight: 800; font-size: 10px; display: flex; align-items: center; justify-content: center; }
