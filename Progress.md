@@ -30,6 +30,17 @@ No verify-before-push ceremony (no real users yet) — but every change is check
 - Fed by `_su_extract` via `build-data.mjs` (gitignored extract; only used assets copied). Data model in
   `SPEC_PLAN.md`, pipeline in `WIKI_CONTEXT.md`.
 
+## 2026-09-21 — session 4e (Synergy Matrix: creatures are containers of traits too)
+Carried the container model through to creatures. A creature is now treated exactly like a spec/anoint row: a
+**container whose counted units are its TRAITS** (+ equipped spell-gem spells), never the creature name.
+Creature rows are **expandable to per-trait sub-rows** (caret "Expand traits"), and each trait contributes +1
+to its tags — so "Brilliant Creation" is what's counted, not "Animatus". A fused creature's two-parent traits
+each count separately. Refactor: `buildTagCarriers` gained an `addEffect(m, label, taxo, sub)` helper used
+uniformly for perks / anoints / traits / spell-gem spells; the creature branch now pushes trait/spell children
+(labels = trait/spell names, sub = "trait"/"spell gem") instead of just bumping counts. Functionally the
+weights were already trait-level; this makes the attribution visible and consistent. jsdom smoke +creature
+checks (30 assertions: creature caret, per-trait sub-rows, sub-row labeled by trait name not creature name).
+
 ## 2026-09-21 — session 4d (Synergy Matrix: weight by individual perk contributions)
 The matrix summed at MEMBER grain, so a spec stacking 11 "Attack" perks counted the same (1) as a spec with a
 single Attack perk. Fixed to **count each individual effect**: `buildTagCarriers` now stores a per-member

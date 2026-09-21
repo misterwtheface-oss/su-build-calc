@@ -1290,31 +1290,35 @@
   const SYN_EXCLUDE = new Set(["Effect Limitation::Does not stack"]);
   const synTags = (taxo) => (taxo || []).filter(k => !SYN_EXCLUDE.has(k));
 
-  // matrix data: one entry per build MEMBER. Spec = 1 row (all allocated perks), expandable to per-perk
-  // sub-rows; ALL anointments collapse into 1 row, expandable to per-anoint sub-rows; each creature = 1 row.
-  // Each member carries a per-tag COUNT of its individual contributing effects (a spec stacking 11 "Attack"
-  // perks counts 11 for Attack, not 1) — that count is what the matrix sums, weights and sorts by.
+  // matrix data: one entry per build MEMBER, each a CONTAINER of individual effects. Spec = 1 row of its
+  // allocated perks; ALL anointments collapse into 1 row of the equipped anoints; each creature = 1 row of
+  // its traits + equipped spell-gem spells. Every row is expandable to those effect sub-rows. The counted
+  // unit is always the EFFECT, never the container: a creature's tags come from its TRAITS ("Brilliant
+  // Creation"), not the creature name ("Animatus") — so a fused creature's two-parent traits each count 1,
+  // and a spec stacking 11 "Attack" perks counts 11. That per-tag count is what the matrix sums/weights/sorts.
   function buildTagCarriers() {
-    const members = [];   // {id, label, kind, sub, tags:Set, counts:Map<tag,n>, children:[{label,sub,tags:Set}]|null}
-    const mk = (id, label, kind) => ({ id, label, kind, sub: null, tags: new Set(), counts: new Map(), children: kind === "crea" ? null : [] });
+    const members = [];   // {id, label, kind, sub, tags:Set, counts:Map<tag,n>, children:[{label,sub,tags:Set}]}
+    const mk = (id, label, kind) => ({ id, label, kind, sub: null, tags: new Set(), counts: new Map(), children: [] });
     const bump = (m, k) => { m.tags.add(k); m.counts.set(k, (m.counts.get(k) || 0) + 1); };
+    // add one effect (perk/anoint/trait/spell) to a member: it contributes +1 to each of its tags
+    const addEffect = (m, label, taxo, sub) => { const t = synTags(taxo); if (!t.length) return; m.children.push({ label, sub, tags: new Set(t) }); for (const k of t) bump(m, k); };
     if (build.specId != null) {
       const s = SPEC.get(build.specId);
       if (s) { const m = mk("spec", s.label, "spec");
-        for (const p of allocatedPerks(s)) { const pt = synTags(p.taxo); if (!pt.length) continue;
-          m.children.push({ label: p.name, tags: new Set(pt) }); for (const k of pt) bump(m, k); }
+        for (const p of allocatedPerks(s)) addEffect(m, p.name, p.taxo);
         if (m.tags.size) members.push(m); }
     }
     const anoints = equippedAnointObjs();
     if (anoints.length) { const m = mk("anoints", "Anointments", "anoint");
-      for (const a of anoints) { const at = synTags(a.taxo); if (!at.length) continue;
-        m.children.push({ label: a.name, sub: a.spec, tags: new Set(at) }); for (const k of at) bump(m, k); }
+      for (const a of anoints) addEffect(m, a.name, a.taxo, a.spec);
       if (m.tags.size) { m.sub = `${m.children.length} equipped`; members.push(m); } }
     build.slots.forEach((slot, i) => {
       const c = CREA.get(slot.cid); if (!c) return;
       const m = mk("crea" + i, c.name, "crea");
-      for (const tid of slotTraitIds(slot)) { const tr = TRAIT[tid]; if (tr) for (const k of synTags(tr.taxo)) bump(m, k); }
-      for (const gid of slot.spellGemIds || []) { const g = spellGems.find(x => x.id === gid); const sp = g ? gemSpell(g) : null; if (sp) for (const k of synTags(sp.taxo)) bump(m, k); }
+      // the creature is just the container; each TRAIT (innate/fusion/artifact/nether) and spell-gem spell
+      // it carries is the counted effect — the creature's own name never contributes.
+      for (const tid of slotTraitIds(slot)) { const tr = TRAIT[tid]; if (tr) addEffect(m, tr.name, tr.taxo, "trait"); }
+      for (const gid of slot.spellGemIds || []) { const g = spellGems.find(x => x.id === gid); const sp = g ? gemSpell(g) : null; if (sp) addEffect(m, sp.name, sp.taxo, "spell gem"); }
       if (m.tags.size) members.push(m);
     });
     return members;
@@ -1360,8 +1364,9 @@
     const rowFor = (m) => {
       const expandable = m.children && m.children.length;
       const isExp = expandable && st.expanded.has(m.id);
+      const unit = m.kind === "crea" ? "traits" : m.kind === "anoint" ? "anointments" : "perks";
       const caret = expandable
-        ? `<span class="xr-exp" data-action="matrix-expand-row" data-id="${m.id}" title="${isExp ? "Collapse" : "Expand"} per-perk tags">${isExp ? "▾" : "▸"}</span>`
+        ? `<span class="xr-exp" data-action="matrix-expand-row" data-id="${m.id}" title="${isExp ? "Collapse" : "Expand"} ${unit}">${isExp ? "▾" : "▸"}</span>`
         : `<span class="xr-exp-sp"></span>`;
       const cells = tags.map(k => { const n = m.counts.get(k) || 0; return n
         ? `<td class="${weight.get(k) >= 2 ? "xc-active" : "xc-on"}" title="${esc(m.label)} — ${esc(taxoValName(k))} ×${n}">${mark(n)}</td>`
