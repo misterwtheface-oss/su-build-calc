@@ -1046,8 +1046,14 @@
     const spec = b.specId != null ? SPEC.get(b.specId) : null;
     return spec ? esc(spec.label) : "No specialization";
   };
+  const buildSpecLabel = (b) => { const s = (b.build && b.build.specId != null) ? SPEC.get(b.build.specId) : null; return s ? s.label : ""; };
+  function sortBuilds(list, mode) {
+    if (mode === "name") return list.sort((a, b) => (a.name || "").localeCompare(b.name || ""));
+    if (mode === "spec") return list.sort((a, b) => (buildSpecLabel(a) || "￿").localeCompare(buildSpecLabel(b) || "￿") || (a.name || "").localeCompare(b.name || ""));
+    return list.sort((a, b) => (b.ts || 0) - (a.ts || 0));   // "edited" (default)
+  }
   function openBuilds() {
-    ovState = { kind: "builds", draft: null, sel: null, flash: null, render: renderBuilds };
+    ovState = { kind: "builds", draft: null, sel: null, flash: null, sort: "edited", render: renderBuilds };
     openOverlay(ovState.render());
   }
   function flashBuild(id) {   // brief "Saved ✓" confirmation on the tile + footer
@@ -1075,21 +1081,26 @@
       </div></div>`;
     }
     const sel = st.sel != null ? builds.find(b => b.id === st.sel) : null;
-    const tiles = builds.slice().sort((a, b) => (b.ts || 0) - (a.ts || 0)).map(b => `
+    const tiles = sortBuilds(builds.slice(), st.sort).map(b => `
       <div class="lib-tile ${st.sel === b.id ? "selected" : ""} ${st.flash === b.id ? "flash" : ""}" data-action="builds-sel" data-id="${b.id}">
         <div class="lib-icon">${b.icon ? spriteImg(b.icon, "px") : `<span class="slot-empty-icon">✦</span>`}</div>
         <div class="lib-name">${esc(b.name)}</div>
         <div class="lib-sub">${buildSummary(b.build || {})}</div>
       </div>`).join("") || `<div class="slot-sub" style="padding:10px">No saved builds yet — save your current party.</div>`;
+    const sortBar = builds.length ? `<div class="ovl-filterbar"><span class="foot-info">Sort</span><div class="seg">
+      <button class="seg-btn ${st.sort === "edited" ? "on" : ""}" data-action="builds-sort" data-sort="edited">Last edited</button>
+      <button class="seg-btn ${st.sort === "name" ? "on" : ""}" data-action="builds-sort" data-sort="name">Name</button>
+      <button class="seg-btn ${st.sort === "spec" ? "on" : ""}" data-action="builds-sort" data-sort="spec">Spec</button>
+    </div></div>` : "";
     return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel">
       <div class="overlay-header"><h2>Builds</h2><button class="ovl-close" data-action="close-ovl">✕</button></div>
-      <div class="overlay-body"><div class="ovl-center"><div class="ovl-center-scroll">
+      <div class="overlay-body"><div class="ovl-center">${sortBar}<div class="ovl-center-scroll">
         <div class="lib-grid">${tiles}</div></div></div></div>
       <div class="overlay-footer">
         <button class="btn-ghost danger" data-action="builds-del" data-id="${sel ? sel.id : ""}" ${sel ? "" : "disabled"}>Delete</button>
         <span class="foot-info">${st.flash ? "Saved ✓" : ""}</span>
         <div>
-          <button class="btn-ghost" data-action="builds-overwrite" ${sel ? `data-id="${sel.id}"` : "disabled"}>${sel ? `Update «${esc(sel.name)}»` : "Update"}</button>
+          <button class="btn-ghost" data-action="builds-overwrite" ${sel ? `data-id="${sel.id}"` : "disabled"}>Update</button>
           ${sel
             ? `<button class="btn-confirm" data-action="builds-load" data-id="${sel.id}">Load</button>`
             : `<button class="btn-confirm" data-action="builds-save-new">Save</button>`}
@@ -2261,6 +2272,7 @@
       case "builds-cancel": ovState.draft = null; refreshOverlay(); break;
       case "builds-pick-icon": openIconPicker((w) => { ovState.draft.icon = w.img; }); break;
       case "builds-sel": ovState.sel = ovState.sel === +t.dataset.id ? null : +t.dataset.id; refreshOverlay(); break;
+      case "builds-sort": if (ovState.sort !== t.dataset.sort) { ovState.sort = t.dataset.sort; refreshOverlay(); } break;
       case "builds-save": {
         const d = ovState.draft;
         const nb = { id: nextBuildId++, name: (d.name || "").trim() || `Build ${builds.length + 1}`, icon: d.icon, ts: Date.now(), build: JSON.parse(JSON.stringify(build)) };

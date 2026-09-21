@@ -30,6 +30,18 @@ No verify-before-push ceremony (no real users yet) — but every change is check
 - Fed by `_su_extract` via `build-data.mjs` (gitignored extract; only used assets copied). Data model in
   `SPEC_PLAN.md`, pipeline in `WIKI_CONTEXT.md`.
 
+## 2026-09-21 — session 4h (Builds sort + button cleanup + backlog)
+- **Dropped the build name from the Builds footer button** — the "Update «name»" button now just reads
+  **"Update"** (the selected tile already shows which build it targets; no more `«»` chevrons anywhere).
+- **Builds sort control** — a segmented **Sort** bar (`.ovl-filterbar` + `.seg`) in the Builds overlay:
+  **Last edited** (ts desc, default), **Name** (A–Z), **Spec** (spec label A–Z, then name). `sortBuilds(list,
+  mode)` + `buildSpecLabel(b)`; state `ovState.sort`; `builds-sort` handler. Tiles now render via
+  `sortBuilds(builds.slice(), st.sort)` instead of the hardcoded ts-desc.
+- **Backlog** grew a "New helper / reference ideas" group: Realm Property helper, False God rune helper, Realm
+  reference, God shop reference, Godforge helper, spell-gem icons in the Appendix, Macro helper.
+- jsdom smoke (`builds_smoke.mjs`, 8 assertions): three sort buttons, default edited order, Name order, Spec
+  order, and the Update button carries no name / no chevrons.
+
 ## 2026-09-21 — session 4g (Synergy Matrix: share-status colouring vs the Spec)
 Recoloured cells/columns/totals by how each tag is SHARED across DISTINCT members (not by contribution
 weight): **green = shared with the Spec** (spec + ≥1 other carry it), **yellow = shared among members but NOT
@@ -623,6 +635,15 @@ What works end-to-end:
 - [ ] Fusion palette / colour-combination picker (cosmetic).
 - [ ] Save / load / share builds; multiple saved parties.
 - [ ] Turn on the Cloudflare analytics beacon at public release (shared github.io token).
+
+### New helper / reference ideas (2026-09-21 — user backlog)
+- [ ] **Realm Property helper** — the realm-instability / realm-property effects and how to use/counter them.
+- [ ] **False God rune helper** — the 18 False God difficulty runes (`runes.json`) and their modifiers.
+- [ ] **Realm reference** — the realms (`Realm_REF.csv`) + their properties/denizens/resources.
+- [ ] **God shop reference** — per-god favor shops (`god_shop_ref.json` / `shops.json`), items + prices.
+- [ ] **Godforge helper** — Godforge (spell-gem enchant / artifact forging) planner.
+- [ ] **Add spell-gem icons to the Appendix** — surface the class-coloured spell-gem icons in Appendix spell rows.
+- [ ] **Macro helper** — build/plan combat macros (action sequences / auto-cast ordering).
 
 ## Known issues / warnings (from build-data hygiene report — non-fatal)
 - **Roster spine = `creatures_ref` (1362 playable creatures, 100% classed).** `creature_data` was the
