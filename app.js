@@ -1271,18 +1271,17 @@
         <div class="pt-sprite">${spriteImg(artIcon(a), "px")}</div>
         <div class="pt-name">${esc(a.name)}</div></div>`).join("")
       || `<div class="slot-sub" style="padding:10px">No artifacts${st.hideEquipped ? " match" : " yet — build one"}.</div>`;
+    const equippedHere = sel && equippedId === sel.id;
     let info;
     if (sel) {
-      const equippedHere = equippedId === sel.id;
       info = `<div class="ns-info-head"><span class="ns-info-icon">${spriteImg(artIcon(sel), "px")}</span><h3>${esc(sel.name)}</h3></div>
         <div class="slot-sub">${esc(artifactSummary(sel))}</div>
         <div class="section-label" style="margin-top:10px">Contents</div>
-        <div class="prop-list">${artContentRows(sel)}</div>
-        <div class="ns-info-actions">
-          ${manage ? "" : `<button class="slot-mini ${equippedHere ? "on" : ""}" data-action="art-equip" data-id="${sel.id}">${equippedHere ? "Equipped" : "Equip"}</button>`}
-          <button class="slot-mini" data-action="art-edit" data-id="${sel.id}">Edit</button>
-          <button class="slot-mini danger" data-action="art-del" data-id="${sel.id}">Delete</button></div>`;
+        <div class="prop-list">${artContentRows(sel)}</div>`;
     } else info = `<div class="slot-sub" style="padding:12px">Select an artifact.</div>`;
+    // footer selector bar (mirrors Builds): Edit/Delete act on the selection; the confirm button
+    // switches between Equip (artifact selected, equip mode) and ＋ Build new artifact (none selected).
+    const canEquip = !manage && sel;
     return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel">
       <div class="overlay-header"><h2>Artifacts${manage ? "" : " — " + esc(c ? c.name : "")}</h2><button class="ovl-close" data-action="close-ovl">✕</button></div>
       <div class="overlay-body">
@@ -1290,8 +1289,12 @@
         <div class="ovl-right lib-info">${info}</div>
       </div>
       <div class="overlay-footer"><button class="facet ${st.hideEquipped ? "on" : ""}" data-action="artlib-hide-equipped">Hide equipped</button>
-        <div>${equippedId != null ? `<button class="btn-ghost" data-action="art-unequip">Unequip</button>` : ""}
-        <button class="btn-confirm" data-action="art-new">＋ Build new artifact</button></div></div>
+        <div>
+          ${!manage && equippedId != null ? `<button class="btn-ghost" data-action="art-unequip">Unequip</button>` : ""}
+          <button class="btn-ghost" data-action="art-edit" data-id="${sel ? sel.id : ""}" ${sel ? "" : "disabled"}>Edit</button>
+          <button class="btn-ghost danger" data-action="art-del" data-id="${sel ? sel.id : ""}" ${sel ? "" : "disabled"}>Delete</button>
+          <button class="btn-confirm" data-action="${canEquip ? "art-equip" : "art-new"}" ${canEquip ? `data-id="${sel.id}"` : ""}>${canEquip ? (equippedHere ? "Equipped ✓" : "Equip") : "＋ Build new artifact"}</button>
+        </div></div>
     </div></div>`;
   }
 
@@ -1996,7 +1999,7 @@
       case "perk-none": { const sp = SPEC.get(dovState.specId); const m = {}; sp.perks.forEach(p => m[p.key] = 0); build.perkAlloc[dovState.specId] = m; persistBuild(); refreshDetail(); break; }
 
       // artifact library + builder
-      case "artlib-sel": ovState.sel = +t.dataset.id; refreshOverlay(); break;
+      case "artlib-sel": { const id = +t.dataset.id; ovState.sel = ovState.sel === id ? null : id; refreshOverlay(); break; }
       case "artlib-hide-equipped": e.stopPropagation(); ovState.hideEquipped = !ovState.hideEquipped; refreshOverlay(); break;
       case "art-equip": build.slots[ovState.slotIdx].artifactId = +t.dataset.id; persistBuild(); closeOverlay(); render(); break;
       case "art-unequip": build.slots[ovState.slotIdx].artifactId = null; persistBuild(); closeOverlay(); render(); break;
