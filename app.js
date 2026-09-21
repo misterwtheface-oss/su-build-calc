@@ -1695,15 +1695,21 @@
     const slot = build.slots[slotIdx], c = CREA.get(slot.cid); if (!c) return "";
     const fs = finalStats(slot), b = fs.base;
     const f = slot.fusion != null ? CREA.get(slot.fusion) : null;
-    const pers = slot.personality ? PERS.get(slot.personality) : null;
-    const growth = (k) => { if (!pers) return ""; if (pers.raise === k) return ` <span class="growth up" title="Personality +33%">↑</span>`;
-      if (pers.lower === k) return ` <span class="growth down" title="Personality −33%">↓</span>`; return ""; };
+    const sc = slot.scrolls || {};
+    // decompose the base: raw creature/fusion base, personality flat ±33%, and scroll bonus (each +1 base)
+    const persCell = (d) => d ? `<span class="stat-val ${d > 0 ? "pos" : "neg"}">${d > 0 ? "+" : ""}${d}</span>` : `<span class="stat-val muted">—</span>`;
+    const scrollCell = (n) => n ? `<span class="stat-val scroll">+${n}</span>` : `<span class="stat-val muted">—</span>`;
     const rows = STAT_KEYS.map(k => {
-      const pct = fs.pct[k], touched = pct !== 0 || (pers && (pers.raise === k || pers.lower === k));
-      return `<div class="stat-row ${touched ? "hl-med" : ""}"><span class="stat-name">${STAT_LABEL[k]}${growth(k)}</span>
-        <span class="stat-val base">${b[k]}</span><span class="stat-val art">${pct ? "+" + pct + "%" : "—"}</span>
+      const scroll = sc[k] || 0, rawBase = b[k] - scroll, persDelta = fs.adj[k] - b[k], pct = fs.pct[k];
+      const touched = pct !== 0 || persDelta !== 0 || scroll !== 0;
+      return `<div class="stat-row ${touched ? "hl-med" : ""}"><span class="stat-name">${STAT_LABEL[k]}</span>
+        <span class="stat-val base">${rawBase}</span>${persCell(persDelta)}${scrollCell(scroll)}
+        <span class="stat-val art">${pct ? "+" + pct + "%" : "—"}</span>
         <span class="stat-val total">${fs.final[k]}</span></div>`;
     }).join("");
+    const scrollTot = STAT_KEYS.reduce((s, k) => s + (sc[k] || 0), 0);
+    const rawBaseTot = b.total - scrollTot;
+    const persTot = STAT_KEYS.reduce((s, k) => s + (fs.adj[k] - b[k]), 0);
     const traitIds = slotTraitIds(slot);
     const innateN = new Set([c.traitId, f ? f.traitId : null].filter(x => x != null)).size;
     const hasArtifactTrait = traitIds.length > innateN;
@@ -1717,9 +1723,14 @@
           <div class="cd-sprite">${critFaceSkinned(c, slot.skinId)}</div>
           <div class="slot-sub"><span style="color:${clsColor(b.cls)};font-weight:700">${esc(b.cls || "—")}</span>${c.race ? " · " + esc(c.race) : ""}</div></div>
         <div class="ovl-center"><div class="ovl-center-scroll">
-          <div class="stat-grid"><div class="stat-header"><span>Stat</span><span style="text-align:right">Base</span>
-            <span style="text-align:right">Bonus</span><span style="text-align:right">Total</span></div>${rows}
-            <div class="stat-row hl-high"><span class="stat-name">Total</span><span class="stat-val base">${b.total}</span>
+          <div class="stat-grid detailed"><div class="stat-header"><span>Stat</span>
+            <span style="text-align:right">Base</span><span style="text-align:right">Pers</span>
+            <span style="text-align:right">Scroll</span><span style="text-align:right">Bonus</span>
+            <span style="text-align:right">Total</span></div>${rows}
+            <div class="stat-row hl-high"><span class="stat-name">Total</span>
+              <span class="stat-val base">${rawBaseTot}</span>
+              <span class="stat-val ${persTot > 0 ? "pos" : persTot < 0 ? "neg" : "muted"}">${persTot ? (persTot > 0 ? "+" : "") + persTot : "—"}</span>
+              <span class="stat-val scroll">${scrollTot ? "+" + scrollTot : "—"}</span>
               <span class="stat-val art"></span><span class="stat-val total">${fs.total}</span></div></div>
           <div class="section-label" style="margin-top:14px">Traits (innate${f ? " + fusion" : ""}${hasArtifactTrait ? " + artifact" : ""})</div>
           ${traitHtml || `<div class="slot-sub">No traits.</div>`}

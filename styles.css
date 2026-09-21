@@ -320,6 +320,11 @@ h1, h2, h3 { margin: 0; }
 }
 .stat-grid.with-relic .stat-header,
 .stat-grid.with-relic .stat-row { grid-template-columns: 1fr 56px 56px 56px 68px; }
+/* creature-detail breakdown: Stat | Base | Pers | Scroll | Bonus | Total */
+.stat-grid.detailed .stat-header,
+.stat-grid.detailed .stat-row { grid-template-columns: 1fr 46px 46px 48px 52px 56px; }
+.stat-val.scroll { color: #9be6a0; }        /* scroll channel tint (green) */
+.stat-val.muted  { color: var(--text-mute); }
 /* single-value stat panel (creature selector info): name flexes, one right-aligned value column */
 .stat-grid.single .stat-row { grid-template-columns: 1fr auto; }
 .stat-header { font-size: 11px; letter-spacing: .6px; text-transform: uppercase; color: var(--text-mute); }
@@ -405,6 +410,10 @@ h1, h2, h3 { margin: 0; }
   .overlay-header { padding: 8px 12px; }
   .overlay-footer { padding: 7px 12px; }
   .party-summary .stat-header, .party-summary .stat-row { grid-template-columns: 1fr 52px 52px 60px; }
+  /* compact the 6-column breakdown on phones so it doesn't overflow */
+  .stat-grid.detailed .stat-header, .stat-grid.detailed .stat-row { grid-template-columns: 1fr 34px 36px 38px 42px 44px; padding: 4px 6px; }
+  .stat-grid.detailed .stat-name { font-size: 11.5px; }
+  .stat-grid.detailed .stat-val { font-size: 11.5px; }
 }
 
 /* ══ v2 components (spec/perks/facets/cards/nether/artifact-library) ══════════ */
