@@ -664,6 +664,9 @@ What works end-to-end:
 - [ ] **Godforge helper** — Godforge (spell-gem enchant / artifact forging) planner.
 - [ ] **Add spell-gem icons to the Appendix** — surface the class-coloured spell-gem icons in Appendix spell rows.
 - [ ] **Macro helper** — build/plan combat macros (action sequences / auto-cast ordering).
+- [ ] **Differentiate Ascension perks from normal perks** — the `perk.ascension` flag is already in the data
+      (from Perk_REF.csv); surface it visually in the perk rows / Customize picker (badge/section) so Ascension
+      perks are distinguishable from regular perks.
 
 ## Known issues / warnings (from build-data hygiene report — non-fatal)
 - **Roster spine = `creatures_ref` (1362 playable creatures, 100% classed).** `creature_data` was the
