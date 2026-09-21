@@ -1062,8 +1062,8 @@
         <div>
           <button class="btn-ghost" data-action="builds-overwrite" ${sel ? `data-id="${sel.id}"` : "disabled"}>${sel ? `Update «${esc(sel.name)}»` : "Update"}</button>
           ${sel
-            ? `<button class="btn-confirm" data-action="builds-load" data-id="${sel.id}">Load selected build</button>`
-            : `<button class="btn-confirm" data-action="builds-save-new">＋ Save current build</button>`}
+            ? `<button class="btn-confirm" data-action="builds-load" data-id="${sel.id}">Load</button>`
+            : `<button class="btn-confirm" data-action="builds-save-new">Save</button>`}
         </div></div>
     </div></div>`;
   }
