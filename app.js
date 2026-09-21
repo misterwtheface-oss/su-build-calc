@@ -1053,11 +1053,14 @@
       <div class="overlay-header"><h2>Builds</h2><button class="ovl-close" data-action="close-ovl">✕</button></div>
       <div class="overlay-body"><div class="ovl-center"><div class="ovl-center-scroll">
         <div class="lib-grid">${tiles}</div></div></div></div>
-      <div class="overlay-footer"><span class="foot-info">${st.flash ? "Saved ✓" : ""}</span>
+      <div class="overlay-footer">
+        <button class="btn-ghost danger" data-action="builds-del" data-id="${sel ? sel.id : ""}" ${sel ? "" : "disabled"}>Delete</button>
+        <span class="foot-info">${st.flash ? "Saved ✓" : ""}</span>
         <div>
-          <button class="btn-ghost" data-action="builds-load" data-id="${sel ? sel.id : ""}" ${sel ? "" : "disabled"}>Load</button>
-          <button class="btn-ghost danger" data-action="builds-del" data-id="${sel ? sel.id : ""}" ${sel ? "" : "disabled"}>Delete</button>
-          <button class="btn-confirm" data-action="${sel ? "builds-overwrite" : "builds-save-new"}" ${sel ? `data-id="${sel.id}"` : ""}>${sel ? `Update «${esc(sel.name)}»` : "＋ Save current build"}</button>
+          <button class="btn-ghost" data-action="builds-overwrite" ${sel ? `data-id="${sel.id}"` : "disabled"}>${sel ? `Update «${esc(sel.name)}»` : "Update"}</button>
+          ${sel
+            ? `<button class="btn-confirm" data-action="builds-load" data-id="${sel.id}">Load selected build</button>`
+            : `<button class="btn-confirm" data-action="builds-save-new">＋ Save current build</button>`}
         </div></div>
     </div></div>`;
   }
