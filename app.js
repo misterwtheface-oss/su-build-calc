@@ -1309,7 +1309,7 @@
           ${!manage && equippedId != null ? `<button class="btn-ghost" data-action="art-unequip">Unequip</button>` : ""}
           <button class="btn-ghost" data-action="art-edit" data-id="${sel ? sel.id : ""}" ${sel ? "" : "disabled"}>Edit</button>
           <button class="btn-ghost danger" data-action="art-del" data-id="${sel ? sel.id : ""}" ${sel ? "" : "disabled"}>Delete</button>
-          <button class="btn-confirm" data-action="${canEquip ? "art-equip" : "art-new"}" ${canEquip ? `data-id="${sel.id}"` : ""}>${canEquip ? (equippedHere ? "Equipped ✓" : "Equip") : "＋ Build new artifact"}</button>
+          <button class="btn-confirm" style="min-width:96px" data-action="${canEquip ? "art-equip" : "art-new"}" ${canEquip ? `data-id="${sel.id}"` : ""}>${canEquip ? (equippedHere ? "Equipped ✓" : "Equip") : "Build"}</button>
         </div></div>
     </div></div>`;
   }
