@@ -250,7 +250,12 @@ creaturesRef.forEach((r, i) => {
 // ── specializations (player slot) — prefer the 32×32 character SKIN, else the 16×16 emblem icon ──
 // The `spec_<key>` sprites are tiny 16×16 emblems. The real skins are the 32×32 player-costume sprites
 // (`spec_<class>_<spec>_<theme>` / `spec_<spec>_<theme>`) + the animated `TS_SU_Costume_<Spec>` set.
-const specRecs = readJSON(path.join(MODEL, 'specializations.json')).records.filter(s => s.label);
+// The extractor left a few specs unlabeled; user-confirmed identities are applied here so they ship.
+// (id 43 = Antiquarian, a full 15-perk spec. ids 27/37/38 stay dropped — only 1 perk each, need re-mining.)
+const SPEC_LABEL_OVERRIDE = { 43: 'Antiquarian' };
+const specRecs = readJSON(path.join(MODEL, 'specializations.json')).records
+  .map(s => (s.label ? s : { ...s, label: SPEC_LABEL_OVERRIDE[s.spec_id] || s.label }))
+  .filter(s => s.label);
 const spriteMeta = readJSON(path.join(SRC, 'assets', 'sprite_metadata.json'));
 const metaByName = new Map(spriteMeta.map(r => [r.name, r]));
 const skin32 = spriteMeta.filter(r => r.name.startsWith('spec_') && r.w === 32).map(r => r.name);
@@ -293,8 +298,10 @@ function perkFlags(perkName, specLabel) {
   return perkRef.get(n + '|' + spCsv) || perkRef.get(n + '|' + sp) || perkRefByName.get(n) || null;
 }
 
-// 16×16 spec emblem lookup (spec_<slug>) — aliases for internally-renamed/misspelled classes
-const EMBLEM_ALIAS = { sorcerer: 'sorceror', runeknight: 'deathknight' };
+// 16×16 spec emblem lookup (spec_<slug>) — aliases for internally-renamed/misspelled classes.
+// defiler→occultist: the sprite named `spec_occultist` is actually the Defiler crest (user-verified);
+// Defiler has no `spec_defiler` sprite, so it previously fell back to its 32×32 skin.
+const EMBLEM_ALIAS = { sorcerer: 'sorceror', runeknight: 'deathknight', defiler: 'occultist' };
 function findEmblem(label) {
   const slug = norm(label), a = EMBLEM_ALIAS[slug];
   for (const cand of [a, slug].filter(Boolean)) if (metaByName.has(`spec_${cand}`)) return `spec_${cand}`;
@@ -343,7 +350,7 @@ for (const s of specRecs) {
   let emblem = sprite;
   const emName = findEmblem(s.label);
   if (emName && copyNamedSprite(emName, OUT_SPEC, `${slug}_emblem.png`)) { emblem = `assets/specs/${slug}_emblem.png`; emblemCount++; }
-  const perks = (s.perks || []).map(p => {
+  const perks = (s.perks || []).filter(p => p.key && p.name).map(p => {   // drop null placeholder perks (e.g. Antiquarian ids 661/663)
     const st = perkStatByKey.get(p.key);
     let icon = null;
     const iconName = perkIconByKey.get(p.key);
