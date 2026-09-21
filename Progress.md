@@ -30,6 +30,19 @@ No verify-before-push ceremony (no real users yet) — but every change is check
 - Fed by `_su_extract` via `build-data.mjs` (gitignored extract; only used assets copied). Data model in
   `SPEC_PLAN.md`, pipeline in `WIKI_CONTEXT.md`.
 
+## 2026-09-21 — session 4d (Synergy Matrix: weight by individual perk contributions)
+The matrix summed at MEMBER grain, so a spec stacking 11 "Attack" perks counted the same (1) as a spec with a
+single Attack perk. Fixed to **count each individual effect**: `buildTagCarriers` now stores a per-member
+`counts` Map (tag → # of that member's perks/traits/spells carrying it). `synergyMatrixBody` sums those into a
+per-tag **weight**; **each cell shows the contribution count** (a dot for 1, the number for a stack — e.g.
+Evoker's "Spell Gems" cell reads 17), the sticky bottom **"Contributions"** row totals the individual
+contributions per tag, and columns **sort by weight** so the heaviest themes float left. Cells/columns are
+gold when a tag has ≥2 total contributions (reinforced), green when singular; the filter chip is now
+**"Reinforced only"** (≥2 contributions) and the meta reads "N reinforced tags". Per-perk/anoint sub-rows are
+unchanged (each is one effect → a dim "•"). The List view already counted individual effects, so it's
+untouched and now consistent with the matrix. jsdom smoke +weighting checks (25 assertions, incl. spec-cell
+stack count == data and Contributions ≥ that).
+
 ## 2026-09-21 — session 4c (Synergy: collapse/expand + jump links + drop noise tag)
 - **Dropped `Effect Limitation::Does not stack`** from BOTH synergy views (`SYN_EXCLUDE`/`synTags` helper) —
   it's on hundreds of traits and never indicates a synergy. Scoped to Synergy only (still present in Appendix /

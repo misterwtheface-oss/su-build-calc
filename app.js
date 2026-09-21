@@ -1290,33 +1290,32 @@
   const SYN_EXCLUDE = new Set(["Effect Limitation::Does not stack"]);
   const synTags = (taxo) => (taxo || []).filter(k => !SYN_EXCLUDE.has(k));
 
-  // matrix data: one entry per build MEMBER. Spec = 1 row (union of allocated perks), expandable to
-  // per-perk sub-rows; ALL anointments collapse into 1 row, expandable to per-anoint sub-rows; each
-  // creature = 1 row. (Collapsing anoints means a tag on 3 anoints counts as 1 build source, not 3.)
+  // matrix data: one entry per build MEMBER. Spec = 1 row (all allocated perks), expandable to per-perk
+  // sub-rows; ALL anointments collapse into 1 row, expandable to per-anoint sub-rows; each creature = 1 row.
+  // Each member carries a per-tag COUNT of its individual contributing effects (a spec stacking 11 "Attack"
+  // perks counts 11 for Attack, not 1) — that count is what the matrix sums, weights and sorts by.
   function buildTagCarriers() {
-    const members = [];   // {id, label, kind, sub, tags:Set, children:[{label,sub,tags:Set}]|null}
+    const members = [];   // {id, label, kind, sub, tags:Set, counts:Map<tag,n>, children:[{label,sub,tags:Set}]|null}
+    const mk = (id, label, kind) => ({ id, label, kind, sub: null, tags: new Set(), counts: new Map(), children: kind === "crea" ? null : [] });
+    const bump = (m, k) => { m.tags.add(k); m.counts.set(k, (m.counts.get(k) || 0) + 1); };
     if (build.specId != null) {
       const s = SPEC.get(build.specId);
-      if (s) {
-        const tags = new Set(), children = [];
+      if (s) { const m = mk("spec", s.label, "spec");
         for (const p of allocatedPerks(s)) { const pt = synTags(p.taxo); if (!pt.length) continue;
-          children.push({ label: p.name, tags: new Set(pt) }); for (const k of pt) tags.add(k); }
-        if (tags.size) members.push({ id: "spec", label: s.label, kind: "spec", tags, children });
-      }
+          m.children.push({ label: p.name, tags: new Set(pt) }); for (const k of pt) bump(m, k); }
+        if (m.tags.size) members.push(m); }
     }
     const anoints = equippedAnointObjs();
-    if (anoints.length) {
-      const tags = new Set(), children = [];
+    if (anoints.length) { const m = mk("anoints", "Anointments", "anoint");
       for (const a of anoints) { const at = synTags(a.taxo); if (!at.length) continue;
-        children.push({ label: a.name, sub: a.spec, tags: new Set(at) }); for (const k of at) tags.add(k); }
-      if (tags.size) members.push({ id: "anoints", label: "Anointments", kind: "anoint", sub: `${children.length} equipped`, tags, children });
-    }
+        m.children.push({ label: a.name, sub: a.spec, tags: new Set(at) }); for (const k of at) bump(m, k); }
+      if (m.tags.size) { m.sub = `${m.children.length} equipped`; members.push(m); } }
     build.slots.forEach((slot, i) => {
       const c = CREA.get(slot.cid); if (!c) return;
-      const tags = new Set();
-      for (const tid of slotTraitIds(slot)) { const tr = TRAIT[tid]; if (tr) for (const k of synTags(tr.taxo)) tags.add(k); }
-      for (const gid of slot.spellGemIds || []) { const g = spellGems.find(x => x.id === gid); const sp = g ? gemSpell(g) : null; if (sp) for (const k of synTags(sp.taxo)) tags.add(k); }
-      if (tags.size) members.push({ id: "crea" + i, label: c.name, kind: "crea", tags, children: null });
+      const m = mk("crea" + i, c.name, "crea");
+      for (const tid of slotTraitIds(slot)) { const tr = TRAIT[tid]; if (tr) for (const k of synTags(tr.taxo)) bump(m, k); }
+      for (const gid of slot.spellGemIds || []) { const g = spellGems.find(x => x.id === gid); const sp = g ? gemSpell(g) : null; if (sp) for (const k of synTags(sp.taxo)) bump(m, k); }
+      if (m.tags.size) members.push(m);
     });
     return members;
   }
@@ -1337,24 +1336,26 @@
   function openSynergy() { ovState = { kind: "synergy", view: "matrix", sharedOnly: false, expanded: new Set(), listCollapsed: new Set(), render: renderSynergy }; openOverlay(ovState.render()); }
 
   // Matrix view — rows = members (Spec/Anointments expandable to per-perk/per-anoint sub-rows),
-  // columns = tags; the sticky bottom row totals each tag.
+  // columns = tags; each cell shows that member's CONTRIBUTION COUNT (dot for 1, number for a stack),
+  // and the sticky bottom row totals the individual contributions per tag (11 Attack perks → 11).
   function synergyMatrixBody(st) {
     const members = buildTagCarriers();
-    const deg = new Map();   // tag → how many members carry it (the number we sum)
-    for (const m of members) for (const k of m.tags) deg.set(k, (deg.get(k) || 0) + 1);
-    let tags = [...deg.keys()];
-    if (st.sharedOnly) tags = tags.filter(k => deg.get(k) >= 2);
-    tags.sort((a, b) => deg.get(b) - deg.get(a)
+    const weight = new Map();   // tag → total individual contributions across the build (each effect counts)
+    for (const m of members) for (const [k, n] of m.counts) weight.set(k, (weight.get(k) || 0) + n);
+    let tags = [...weight.keys()];
+    if (st.sharedOnly) tags = tags.filter(k => weight.get(k) >= 2);
+    tags.sort((a, b) => weight.get(b) - weight.get(a)
       || taxoCatName(a).localeCompare(taxoCatName(b))
       || taxoValName(a).localeCompare(taxoValName(b)));
-    const sharedCount = [...deg.values()].filter(n => n >= 2).length;
-    const meta = `${members.length} member${members.length === 1 ? "" : "s"} · ${sharedCount} shared tag${sharedCount === 1 ? "" : "s"}`;
+    const reinforced = [...weight.values()].filter(n => n >= 2).length;
+    const meta = `${members.length} member${members.length === 1 ? "" : "s"} · ${reinforced} reinforced tag${reinforced === 1 ? "" : "s"}`;
     if (!members.length) return { meta, body: `<div class="slot-sub" style="padding:14px">Add a specialization, anointments and creatures to see the tag matrix.</div>` };
-    if (!tags.length) return { meta, body: `<div class="slot-sub" style="padding:14px">No ${st.sharedOnly ? "shared " : ""}tags in the current build yet.</div>` };
+    if (!tags.length) return { meta, body: `<div class="slot-sub" style="padding:14px">No ${st.sharedOnly ? "reinforced " : ""}tags in the current build yet.</div>` };
     const kindCls = { spec: "k-spec", anoint: "k-anoint", crea: "k-crea" };
+    const mark = (n) => n === 1 ? "●" : String(n);
     const head = `<thead><tr><th class="xref-corner">Member \\ Tag</th>${tags.map(k => {
-      const shared = deg.get(k) >= 2;
-      return `<th><div class="xref-colhead"><span class="xc-dot ${shared ? "sh" : ""}"></span><span class="xc-name" title="${esc(taxoCatName(k))} → ${esc(taxoValName(k))}">${esc(taxoValName(k))}</span></div></th>`;
+      const rein = weight.get(k) >= 2;
+      return `<th><div class="xref-colhead"><span class="xc-dot ${rein ? "sh" : ""}"></span><span class="xc-name" title="${esc(taxoCatName(k))} → ${esc(taxoValName(k))}">${esc(taxoValName(k))}</span></div></th>`;
     }).join("")}</tr></thead>`;
     const rowFor = (m) => {
       const expandable = m.children && m.children.length;
@@ -1362,9 +1363,9 @@
       const caret = expandable
         ? `<span class="xr-exp" data-action="matrix-expand-row" data-id="${m.id}" title="${isExp ? "Collapse" : "Expand"} per-perk tags">${isExp ? "▾" : "▸"}</span>`
         : `<span class="xr-exp-sp"></span>`;
-      const cells = tags.map(k => m.tags.has(k)
-        ? `<td class="${deg.get(k) >= 2 ? "xc-active" : "xc-on"}" title="${esc(m.label)} — ${esc(taxoValName(k))}">●</td>`
-        : `<td></td>`).join("");
+      const cells = tags.map(k => { const n = m.counts.get(k) || 0; return n
+        ? `<td class="${weight.get(k) >= 2 ? "xc-active" : "xc-on"}" title="${esc(m.label)} — ${esc(taxoValName(k))} ×${n}">${mark(n)}</td>`
+        : `<td></td>`; }).join("");
       let out = `<tr><th class="xref-rowhead" title="${esc(m.label)}${m.sub ? " · " + esc(m.sub) : ""}">${caret}<span class="xr-dot ${kindCls[m.kind] || ""}"></span><b>${esc(m.label)}</b>${m.sub ? `<span class="xr-cat">${esc(m.sub)}</span>` : ""}</th>${cells}</tr>`;
       if (isExp) for (const ch of m.children) {
         const ccells = tags.map(k => ch.tags.has(k)
@@ -1375,9 +1376,9 @@
       return out;
     };
     const rows = members.map(rowFor).join("");
-    // sum EACH TAG: how many members carry it (shared tags highlighted)
-    const sumRow = `<tr class="xref-shared"><th class="xref-rowhead">Members</th>${tags.map(k => {
-      const n = deg.get(k); return `<td class="${n >= 2 ? "xc-active" : ""}">${n}</td>`;
+    // sum EACH TAG: total individual contributions (each perk/effect counts; reinforced tags highlighted)
+    const sumRow = `<tr class="xref-shared"><th class="xref-rowhead">Contributions</th>${tags.map(k => {
+      const n = weight.get(k); return `<td class="${n >= 2 ? "xc-active" : ""}">${n}</td>`;
     }).join("")}</tr>`;
     return { meta, body: `<div class="xref-wrap"><table class="xref-table">${head}<tbody>${rows}${sumRow}</tbody></table></div>` };
   }
@@ -1421,7 +1422,7 @@
     const seg = `<div class="seg">
       <button class="seg-btn ${st.view !== "list" ? "on" : ""}" data-action="synergy-view" data-view="matrix">Matrix</button>
       <button class="seg-btn ${st.view === "list" ? "on" : ""}" data-action="synergy-view" data-view="list">List</button></div>`;
-    const sharedBtn = st.view === "list" ? "" : `<button class="facet ${st.sharedOnly ? "on" : ""}" data-action="toggle-matrix-shared">Shared only</button>`;
+    const sharedBtn = st.view === "list" ? "" : `<button class="facet ${st.sharedOnly ? "on" : ""}" data-action="toggle-matrix-shared" title="Only tags with ≥2 contributions">Reinforced only</button>`;
     return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel">
       <div class="overlay-header"><h2>Synergy</h2><button class="ovl-close" data-action="close-ovl">✕</button></div>
       <div class="overlay-body"><div class="ovl-center">
