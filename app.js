@@ -1342,25 +1342,32 @@
   // Matrix view — rows = members (Spec/Anointments/creatures expandable to their effect sub-rows),
   // columns = tags. A member cell shows its CONTRIBUTION COUNT as a number (1 if a single contributor,
   // higher for a stack); the collapsible sub-rows use a dot (each is a single effect). The sticky bottom
-  // row totals the individual contributions per tag (11 Attack perks → 11).
+  // row totals the individual contributions per tag (11 Attack perks → 11). Cells/columns are coloured by
+  // how the tag is SHARED across members: green = shared with the Spec, yellow = shared among others but
+  // not the Spec, red = only one member has it.
   function synergyMatrixBody(st) {
     const members = buildTagCarriers();
     const weight = new Map();   // tag → total individual contributions across the build (each effect counts)
-    for (const m of members) for (const [k, n] of m.counts) weight.set(k, (weight.get(k) || 0) + n);
+    const deg = new Map();      // tag → number of DISTINCT members carrying it
+    const specHas = new Set();  // tags the Spec carries
+    for (const m of members) {
+      for (const [k, n] of m.counts) weight.set(k, (weight.get(k) || 0) + n);
+      for (const k of m.counts.keys()) deg.set(k, (deg.get(k) || 0) + 1);
+      if (m.kind === "spec") for (const k of m.counts.keys()) specHas.add(k);
+    }
+    const shareClass = (k) => (deg.get(k) || 0) < 2 ? "xc-none" : specHas.has(k) ? "xc-spec" : "xc-other";
     let tags = [...weight.keys()];
-    if (st.sharedOnly) tags = tags.filter(k => weight.get(k) >= 2);
+    if (st.sharedOnly) tags = tags.filter(k => (deg.get(k) || 0) >= 2);
     tags.sort((a, b) => weight.get(b) - weight.get(a)
       || taxoCatName(a).localeCompare(taxoCatName(b))
       || taxoValName(a).localeCompare(taxoValName(b)));
-    const reinforced = [...weight.values()].filter(n => n >= 2).length;
-    const meta = `${members.length} member${members.length === 1 ? "" : "s"} · ${reinforced} reinforced tag${reinforced === 1 ? "" : "s"}`;
+    const sharedCount = [...deg.values()].filter(n => n >= 2).length;
+    const meta = `${members.length} member${members.length === 1 ? "" : "s"} · ${sharedCount} shared tag${sharedCount === 1 ? "" : "s"}`;
     if (!members.length) return { meta, body: `<div class="slot-sub" style="padding:14px">Add a specialization, anointments and creatures to see the tag matrix.</div>` };
-    if (!tags.length) return { meta, body: `<div class="slot-sub" style="padding:14px">No ${st.sharedOnly ? "reinforced " : ""}tags in the current build yet.</div>` };
+    if (!tags.length) return { meta, body: `<div class="slot-sub" style="padding:14px">No ${st.sharedOnly ? "shared " : ""}tags in the current build yet.</div>` };
     const kindCls = { spec: "k-spec", anoint: "k-anoint", crea: "k-crea" };
-    const head = `<thead><tr><th class="xref-corner">Member \\ Tag</th>${tags.map(k => {
-      const rein = weight.get(k) >= 2;
-      return `<th><div class="xref-colhead"><span class="xc-dot ${rein ? "sh" : ""}"></span><span class="xc-name" title="${esc(taxoCatName(k))} → ${esc(taxoValName(k))}">${esc(taxoValName(k))}</span></div></th>`;
-    }).join("")}</tr></thead>`;
+    const head = `<thead><tr><th class="xref-corner">Member \\ Tag</th>${tags.map(k =>
+      `<th><div class="xref-colhead"><span class="xc-dot ${shareClass(k)}"></span><span class="xc-name" title="${esc(taxoCatName(k))} → ${esc(taxoValName(k))}">${esc(taxoValName(k))}</span></div></th>`).join("")}</tr></thead>`;
     const rowFor = (m) => {
       const expandable = m.children && m.children.length;
       const isExp = expandable && st.expanded.has(m.id);
@@ -1369,7 +1376,7 @@
         ? `<span class="xr-exp" data-action="matrix-expand-row" data-id="${m.id}" title="${isExp ? "Collapse" : "Expand"} ${unit}">${isExp ? "▾" : "▸"}</span>`
         : `<span class="xr-exp-sp"></span>`;
       const cells = tags.map(k => { const n = m.counts.get(k) || 0; return n
-        ? `<td class="${weight.get(k) >= 2 ? "xc-active" : "xc-on"}" title="${esc(m.label)} — ${esc(taxoValName(k))} ×${n}">${n}</td>`
+        ? `<td class="${shareClass(k)}" title="${esc(m.label)} — ${esc(taxoValName(k))} ×${n}">${n}</td>`
         : `<td></td>`; }).join("");
       let out = `<tr><th class="xref-rowhead" title="${esc(m.label)}${m.sub ? " · " + esc(m.sub) : ""}">${caret}<span class="xr-dot ${kindCls[m.kind] || ""}"></span><b>${esc(m.label)}</b>${m.sub ? `<span class="xr-cat">${esc(m.sub)}</span>` : ""}</th>${cells}</tr>`;
       if (isExp) for (const ch of m.children) {
@@ -1381,10 +1388,9 @@
       return out;
     };
     const rows = members.map(rowFor).join("");
-    // sum EACH TAG: total individual contributions (each perk/effect counts; reinforced tags highlighted)
-    const sumRow = `<tr class="xref-shared"><th class="xref-rowhead">Contributions</th>${tags.map(k => {
-      const n = weight.get(k); return `<td class="${n >= 2 ? "xc-active" : ""}">${n}</td>`;
-    }).join("")}</tr>`;
+    // sum EACH TAG: total individual contributions (coloured by share status like the cells above)
+    const sumRow = `<tr class="xref-shared"><th class="xref-rowhead">Contributions</th>${tags.map(k =>
+      `<td class="${shareClass(k)}">${weight.get(k)}</td>`).join("")}</tr>`;
     return { meta, body: `<div class="xref-wrap"><table class="xref-table">${head}<tbody>${rows}${sumRow}</tbody></table></div>` };
   }
 
@@ -1427,11 +1433,12 @@
     const seg = `<div class="seg">
       <button class="seg-btn ${st.view !== "list" ? "on" : ""}" data-action="synergy-view" data-view="matrix">Matrix</button>
       <button class="seg-btn ${st.view === "list" ? "on" : ""}" data-action="synergy-view" data-view="list">List</button></div>`;
-    const sharedBtn = st.view === "list" ? "" : `<button class="facet ${st.sharedOnly ? "on" : ""}" data-action="toggle-matrix-shared" title="Only tags with ≥2 contributions">Reinforced only</button>`;
+    const sharedBtn = st.view === "list" ? "" : `<button class="facet ${st.sharedOnly ? "on" : ""}" data-action="toggle-matrix-shared" title="Only tags shared by ≥2 members">Shared only</button>`;
+    const legend = st.view === "list" ? "" : `<span class="xref-legend"><span class="lg xc-spec" title="Shared with your Spec">●</span>Spec<span class="lg xc-other" title="Shared among members, not the Spec">●</span>Shared<span class="lg xc-none" title="Only one member has it">●</span>Solo</span>`;
     return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel">
       <div class="overlay-header"><h2>Synergy</h2><button class="ovl-close" data-action="close-ovl">✕</button></div>
       <div class="overlay-body"><div class="ovl-center">
-        <div class="ovl-filterbar">${seg}${sharedBtn}<span class="foot-info">${meta}</span></div>
+        <div class="ovl-filterbar">${seg}${sharedBtn}${legend}<span class="foot-info">${meta}</span></div>
         ${body}
       </div></div>
       <div class="overlay-footer"><span class="foot-info"></span>

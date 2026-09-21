@@ -30,6 +30,18 @@ No verify-before-push ceremony (no real users yet) — but every change is check
 - Fed by `_su_extract` via `build-data.mjs` (gitignored extract; only used assets copied). Data model in
   `SPEC_PLAN.md`, pipeline in `WIKI_CONTEXT.md`.
 
+## 2026-09-21 — session 4g (Synergy Matrix: share-status colouring vs the Spec)
+Recoloured cells/columns/totals by how each tag is SHARED across DISTINCT members (not by contribution
+weight): **green = shared with the Spec** (spec + ≥1 other carry it), **yellow = shared among members but NOT
+the Spec**, **red = only one member has it** (solo). Added `deg` (distinct-member count) + `specHas` set in
+`synergyMatrixBody`; `shareClass(k)` = red if deg<2 else green if spec-has else yellow, applied to column
+dots, member cells, and the Contributions total row. Numbers still show the contribution weight; colour is now
+an independent signal. Filter reverted to **"Shared only"** (deg≥2, hides red) and meta counts "shared tags".
+Added a compact **colour legend** in the matrix filter bar (Spec / Shared / Solo swatches, tooltipped). CSS:
+new `.xc-spec/.xc-other/.xc-none` (green/brass/red) for cells + `.xref-colhead .xc-dot.*` backgrounds +
+`.xref-legend`; retired `.xc-dot.sh` and the old `.xc-on/.xc-active`. Sub-rows stay dim (`xc-latent`). jsdom
+smoke +colour checks (37 assertions: every filled cell & column dot & total matches its column's share status).
+
 ## 2026-09-21 — session 4f (Synergy Matrix: member cells always numeric)
 Small polish: member/container cells (Spec / Anointments / Creature) now always show the numeric
 contribution count — **"1" for a single contributor**, higher for a stack — instead of a "●" for 1. The dot
