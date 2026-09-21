@@ -419,7 +419,7 @@
     const b = baseStats(slot); if (!b) return null;
     const sc = slot.scrolls || {};
     const pct = artifactPct(slot);
-    const rp = relicPctOf(slot);
+    const rp = deprivedActive() ? { hp: 0, atk: 0, def: 0, int: 0, spd: 0 } : relicPctOf(slot);   // Deprived ignores Relic effects
     for (const k of STAT_KEYS) pct[k] = Math.round((pct[k] + rp[k]) * 100) / 100;   // fold relic % into the bonus column
     const adj = {}, final = {};
     for (const k of STAT_KEYS) {
@@ -434,7 +434,10 @@
              total: STAT_KEYS.reduce((s, k) => s + final[k], 0) };
   }
   function slotTraitIds(slot) {
-    const b = baseStats(slot); const ids = b ? [...b.traitIds] : [];
+    const b = baseStats(slot); if (!b) return [];
+    // Deprived ignores Fused traits → keep only the primary creature's innate trait (+ artifact-granted traits below)
+    const c = CREA.get(slot.cid);
+    const ids = deprivedActive() ? [c ? c.traitId : null].filter(x => x != null) : [...b.traitIds];
     const a = resolveArtifact(slot);
     if (a) {
       // trait-item slot → its granted trait
@@ -502,7 +505,7 @@
       <div class="spec-tile anoint-tile ${build.anoints.length ? "filled" : ""}" data-action="${build.anoints.length ? "anoint-detail" : "open-anoint"}" title="Anointments">
         <div class="spec-tile-icon">${anointIcons}</div>
         <div class="spec-tile-label">Anointments</div>
-        ${build.anoints.length ? `<div class="spec-tile-sub">${build.anoints.length}/${ANOINT_MAX} equipped</div>` : ""}
+        ${build.anoints.length ? `<div class="spec-tile-sub">${build.anoints.length}/${anointMax()} equipped</div>` : ""}
       </div>`;
 
     const slots = build.slots.map((s, i) => renderSlot(s, i)).join("");
@@ -514,7 +517,11 @@
 
   function renderSlot(slot, i) {
     const c = CREA.get(slot.cid);
+    const locked = i >= creatureCap();   // Pariah caps the party at 3 creatures
     if (!c) {
+      if (locked) return `<div class="slot locked" data-slot="${i}">
+        <div class="slot-sprite-wrap"><div class="slot-empty-icon">🔒</div></div>
+        <div class="slot-name">Locked</div><div class="slot-sub">Pariah — 3 creatures max</div></div>`;
       return `<div class="slot" data-slot="${i}">
         <div class="slot-sprite-wrap" data-action="pick-creature" data-slot="${i}"><div class="slot-empty-icon">＋</div></div>
         <div class="slot-name">Empty</div><div class="slot-sub">Tap to add a creature</div></div>`;
@@ -527,7 +534,8 @@
       ? `<span class="tile-badge" title="${esc(cls)}">${spriteImg(D.classIcons[cls], "px")}</span>` : "";
     const raceIco = c.race && D.raceIcons && D.raceIcons[c.race]
       ? `<span class="tile-badge" title="${esc(c.race)}">${spriteImg(D.raceIcons[c.race], "px")}</span>` : "";
-    return `<div class="slot filled" data-slot="${i}" title="Right-click to change creature / fusion">
+    return `<div class="slot filled ${locked ? "locked" : ""}" data-slot="${i}" title="Right-click to change creature / fusion">
+      ${locked ? `<div class="slot-ignored" title="Pariah allows only 3 creatures — this slot is ignored">Ignored</div>` : ""}
       <div class="tile-badges">${clsIco}${raceIco}</div>
       <button class="slot-remove" data-action="remove-creature" data-slot="${i}" title="Remove">✕</button>
       <div class="slot-sprite-wrap" data-action="creature-detail" data-slot="${i}">${critFaceSkinned(c, slot.skinId)}</div>
@@ -670,8 +678,12 @@
         <div class="pt-sprite"><span class="nofuse-glyph">∅</span></div>
         <div class="pt-name">No fusion</div>
       </div>` : "";
-    const tiles = noFuseTile + shown.map(c => `
-      <div class="pick-tile ${sel === c.id ? "selected" : ""}" data-action="crea-pick" data-id="${c.id}">
+    // Avatar cap: on the primary step, block Avatar creatures once the party is at its Avatar limit
+    // (1 default / +Army of Gods / 0 under Deprived). The slot being edited is excluded from the count.
+    const avBudget = avatarCap() - avatarCount(st.slotIdx);
+    const avBlocked = (c) => !fusion && isAvatar(c) && avBudget < 1;
+    const tiles = noFuseTile + shown.map(c => { const blk = avBlocked(c); return `
+      <div class="pick-tile ${sel === c.id ? "selected" : ""} ${blk ? "disabled" : ""}" ${blk ? `title="Avatar limit reached${avatarCap() === 0 ? " — Deprived can't use Avatars" : ""}"` : `data-action="crea-pick" data-id="${c.id}"`}>
         ${c.cls && D.classIcons && D.classIcons[c.cls]
           ? `<span class="pt-clsico" title="${esc(c.cls)}">${spriteImg(D.classIcons[c.cls], "px")}</span>`
           : `<span class="pt-cls" style="--pt-cls:${clsColor(c.cls)}"></span>`}
@@ -679,7 +691,7 @@
           ? `<span class="pt-raceico" title="${esc(c.race)}">${spriteImg(D.raceIcons[c.race], "px")}</span>` : ""}
         <div class="pt-sprite">${critFace(c)}</div>
         <div class="pt-name">${esc(c.name)}</div>
-      </div>`).join("");
+      </div>`; }).join("");
 
     const title = fusion ? "Fusion partner" : "Choose creature";
     const footer = fusion
@@ -873,6 +885,23 @@
   }
   const allocatedPerks = (spec) => spec.perks.filter(p => perkRank(spec, p) > 0);
   const specPoints = (spec) => spec.perks.reduce((s, p) => s + (p.cost || 0) * perkRank(spec, p), 0);
+
+  // ── build-legality constraints (driven by the selected spec's allocated perks) ──────
+  const curSpec = () => build.specId != null ? SPEC.get(build.specId) : null;
+  const specPerkRank = (spec, key) => { if (!spec) return 0; const p = spec.perks.find(x => x.key === key); return p ? perkRank(spec, p) : 0; };
+  const specPerkOn = (spec, key) => specPerkRank(spec, key) > 0;
+  // Royal: Master of All (+10) & Highborn (+5) push the anointment cap up to 20
+  function anointMax() { const s = curSpec(); let m = 5; if (s) { if (specPerkOn(s, "ROYALTY")) m += 10; if (specPerkOn(s, "HIGHBORN")) m += 5; } return m; }
+  // Pariah: Introversion limits the party to 3 creatures
+  const creatureCap = () => (specPerkOn(curSpec(), "INTROVERSION") ? 3 : 6);
+  // Avatars: 1 by default, +1 per Army of Gods rank (Fanatic → 3), 0 under Deprived's Total Deprivation
+  function avatarCap() { const s = curSpec(); if (!s) return 1; if (specPerkOn(s, "TOTALDEPRIVATION")) return 0; return 1 + specPerkRank(s, "ARMYOFGODS"); }
+  const deprivedActive = () => specPerkOn(curSpec(), "TOTALDEPRIVATION");
+  const isAvatar = (c) => !!c && c.race === "Avatar";
+  // count party creatures (by their primary) that are Avatars, optionally excluding one slot
+  const avatarCount = (exceptSlot) => build.slots.reduce((n, s, i) => n + (i !== exceptSlot && isAvatar(CREA.get(s.cid)) ? 1 : 0), 0);
+  // trim equipped anointments down to the current cap (after a spec/perk change lowers it)
+  function enforceAnointCap() { const cap = anointMax(); if (build.anoints.length > cap) build.anoints = build.anoints.slice(0, cap); }
   function renderSpecPicker() {
     const st = ovState;
     const q = st.search.trim().toLowerCase();
@@ -1296,10 +1325,10 @@
   }
 
   // ── anointments — equip up to 5 anointment-eligible perks from any spec (flags from Perk_REF.csv) ──
-  // In-game, anointments let you slot perks from OTHER specializations; the cap is 5 equipped.
+  // In-game, anointments let you slot perks from OTHER specializations; the cap is 5 equipped
+  // (raised up to 20 by Royal's Master of All / Highborn perks — see anointMax()).
   // A single Anointment point grants the perk's FULL bonus (as if maxed), so descriptions here
   // resolve their <N> value at the perk's max rank — not rank 1.
-  const ANOINT_MAX = 5;
   let ANOINTS = null;
   function anointList() {
     if (ANOINTS) return ANOINTS;
@@ -1333,7 +1362,7 @@
     const taxoChips = st.taxoFilters.map((k, i) =>
       `<button class="facet on tag" data-action="rm-taxo" data-i="${i}">${esc(taxoCatName(k))}: <b>${esc(taxoValName(k))}</b> <span class="facet-x">✕</span></button>`).join("");
     const filterbar = `<div class="ovl-filterbar">${godChip}${specChip}${taxoChips}<button class="facet add" data-action="anoint-taxo">＋ Filter</button></div>`;
-    const full = build.anoints.length >= ANOINT_MAX;
+    const full = build.anoints.length >= anointMax();
     const anointRow = (a) => { const on = anointEquipped(a); const inCur = a.specId === build.specId;
       // a perk from your current spec is already in your tree — block anointing it (removal still allowed)
       const btn = (inCur && !on)
@@ -1370,7 +1399,7 @@
         ${filterbar}
         <div class="ovl-center-scroll"><div class="perk-list">${body}</div></div>
       </div></div>
-      <div class="overlay-footer"><span class="foot-info">${build.anoints.length}/${ANOINT_MAX} equipped${full ? " · full" : ""}</span>
+      <div class="overlay-footer"><span class="foot-info">${build.anoints.length}/${anointMax()} equipped${full ? " · full" : ""}</span>
         <button class="btn-confirm" data-action="close-ovl">Done</button></div>
     </div></div>`;
   }
@@ -1394,7 +1423,7 @@
     return `<div class="ovl-backdrop" data-action="detail-backdrop"><div class="overlay-panel detail">
       <div class="overlay-header"><h2>Anointments</h2><button class="ovl-close" data-action="close-detail">✕</button></div>
       <div class="overlay-body"><div class="ovl-center">
-        <div class="ovl-filterbar"><span class="foot-info">${eq.length}/${ANOINT_MAX} equipped — each grants its full bonus.</span></div>
+        <div class="ovl-filterbar"><span class="foot-info">${eq.length}/${anointMax()} equipped — each grants its full bonus.</span></div>
         <div class="ovl-center-scroll"><div class="perk-list">${rows}</div></div>
       </div></div>
       <div class="overlay-footer"><span class="foot-info"></span>
@@ -1744,7 +1773,7 @@
               <span class="stat-val art"></span><span class="stat-val total">${fs.total}</span></div></div>
           <div class="section-label" style="margin-top:14px">Traits (innate${f ? " + fusion" : ""}${hasArtifactTrait ? " + artifact" : ""})</div>
           ${traitHtml || `<div class="slot-sub">No traits.</div>`}
-          ${relic ? `<div class="section-label" style="margin-top:14px">Relic — Rank ${slot.relic.rank}</div>
+          ${relic ? `<div class="section-label" style="margin-top:14px">Relic — Rank ${slot.relic.rank}${deprivedActive() ? ` <span style="color:var(--bad);font-weight:700">· ignored (Deprived)</span>` : ""}</div>
             <div class="prop-list">
               <div class="prop-row static"><span class="prop-ico">${relic.icon ? spriteImg(relic.icon, "px") : ""}</span><span class="prop-name"><b>${esc(relic.name)}</b></span></div>
               ${relic.ranks.filter(r => r.rank <= slot.relic.rank).map(r => `<div class="prop-row static">
@@ -2085,7 +2114,7 @@
     if (!t) return;
     switch (A) {
       // home
-      case "pick-creature": openCreaturePicker(+t.dataset.slot); break;
+      case "pick-creature": { const si = +t.dataset.slot; if (si >= creatureCap()) break; openCreaturePicker(si); break; }
       case "equip-artifact": openArtifactLibrary(+t.dataset.slot); break;
       case "build-relic": openRelicBuilder(+t.dataset.slot); break;
       case "creature-detail": openCreatureDetail(+t.dataset.slot); break;
@@ -2139,7 +2168,7 @@
         const i = build.anoints.findIndex(x => x.specId === sid && x.key === k);
         if (i >= 0) build.anoints.splice(i, 1);                 // removing is always allowed
         else if (sid === build.specId) break;                  // guard: can't anoint a perk from your current spec
-        else if (build.anoints.length < ANOINT_MAX) build.anoints.push({ specId: sid, key: k });
+        else if (build.anoints.length < anointMax()) build.anoints.push({ specId: sid, key: k });
         persistBuild(); refreshOverlay(); render(); break;   // refresh overlay + home tile count
       }
       case "open-cards": openCards(); break;
@@ -2156,7 +2185,11 @@
       case "crea-pick": {
         const id = +t.dataset.id;
         if (ovState.step === "fusion") ovState.fusionId = ovState.fusionId === id ? null : id;
-        else ovState.primaryId = ovState.primaryId === id ? null : id;
+        else {
+          // guard the Avatar cap even if a disabled tile is somehow clicked
+          if (ovState.primaryId !== id && isAvatar(CREA.get(id)) && (avatarCap() - avatarCount(ovState.slotIdx)) < 1) break;
+          ovState.primaryId = ovState.primaryId === id ? null : id;
+        }
         refreshOverlay(); break;
       }
       case "crea-nofuse": ovState.fusionId = null; refreshOverlay(); break;
@@ -2218,16 +2251,17 @@
         build.specId = ovState.sel;
         // drop any equipped anointments that now belong to the current spec (can't double-dip)
         build.anoints = build.anoints.filter(x => x.specId !== build.specId);
+        enforceAnointCap();   // new spec may lower the anoint cap (e.g. leaving Royal)
         persistBuild(); closeOverlay(); render(); break;
       case "customize-perks": if (ovState.sel != null) openPerkPicker(ovState.sel); break;
       case "perk-inc": case "perk-dec": case "perk-max": case "perk-zero": {
         const sp = SPEC.get(dovState.specId), p = sp.perks.find(x => x.key === t.dataset.k); if (!p) break;
         const cur = perkRank(sp, p);
         const next = A === "perk-inc" ? cur + 1 : A === "perk-dec" ? cur - 1 : A === "perk-max" ? perkMax(p) : 0;
-        setPerkRank(sp, p, next); persistBuild(); refreshDetail(); break;
+        setPerkRank(sp, p, next); enforceAnointCap(); persistBuild(); refreshDetail(); break;
       }
-      case "perk-all": { build.perkAlloc[dovState.specId] = {}; persistBuild(); refreshDetail(); break; } // absence = max
-      case "perk-none": { const sp = SPEC.get(dovState.specId); const m = {}; sp.perks.forEach(p => m[p.key] = 0); build.perkAlloc[dovState.specId] = m; persistBuild(); refreshDetail(); break; }
+      case "perk-all": { build.perkAlloc[dovState.specId] = {}; enforceAnointCap(); persistBuild(); refreshDetail(); break; } // absence = max
+      case "perk-none": { const sp = SPEC.get(dovState.specId); const m = {}; sp.perks.forEach(p => m[p.key] = 0); build.perkAlloc[dovState.specId] = m; enforceAnointCap(); persistBuild(); refreshDetail(); break; }
 
       // artifact library + builder
       case "artlib-sel": { const id = +t.dataset.id; ovState.sel = ovState.sel === id ? null : id; refreshOverlay(); break; }
