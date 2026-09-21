@@ -1350,6 +1350,95 @@
     return effects;
   }
 
+  // ── Threats advisor — realm properties + False God runes to avoid for the detected build theme ──
+  const THEMES = D.buildThemes || [];
+  const themeLabel = (k) => { const t = THEMES.find(x => x.key === k); return t ? t.label : k; };
+  // tally how many build effects touch each theme's tags (reuses the synergy effect gathering)
+  function detectBuildThemes() {
+    const w = {};
+    for (const e of buildTagEffects()) {
+      const set = new Set(e.tags);
+      for (const t of THEMES) if (t.tags.some(tag => set.has(tag))) w[t.key] = (w[t.key] || 0) + 1;
+    }
+    return w;   // { attack: n, cast: n, ... }
+  }
+  // classes the party leans on (≥2 creatures) — used for the STRONGCLASS_* realm properties
+  function heavyPartyClasses() {
+    const cnt = {};
+    for (const slot of build.slots) {
+      const c = CREA.get(slot.cid); if (!c) continue;
+      const f = slot.fusion != null ? CREA.get(slot.fusion) : null;
+      const cls = f ? (f.cls || c.cls) : c.cls;               // fusion adopts the secondary's class
+      if (cls) cnt[cls] = (cnt[cls] || 0) + 1;
+    }
+    return Object.keys(cnt).filter(k => cnt[k] >= 2);
+  }
+  function activeThemes() {
+    if (ovState.themeMode === "manual") return [...ovState.manual];
+    const w = ovState.weights;
+    let det = Object.keys(w).filter(k => w[k] >= 2);           // ≥2 effects = a real theme, not incidental
+    if (!det.length) { const top = Object.entries(w).sort((a, b) => b[1] - a[1])[0]; if (top) det = [top[0]]; }
+    return det;
+  }
+  // modifiers (realm props + runes) that counter the active themes / leaned-on classes
+  function threatCounters(active, heavy) {
+    const out = [];
+    for (const [source, list] of [["Realm", D.realmProps || []], ["Rune", D.runes || []]]) {
+      for (const m of list) {
+        const hitThemes = (m.counters || []).filter(c => active.includes(c));
+        const hitClass = m.counterClass && heavy.includes(m.counterClass) ? m.counterClass : null;
+        if (hitThemes.length || hitClass) out.push({ ...m, source, hitThemes, hitClass });
+      }
+    }
+    return out.sort((a, b) => (b.hitThemes.length + (b.hitClass ? 1 : 0)) - (a.hitThemes.length + (a.hitClass ? 1 : 0)) || a.name.localeCompare(b.name));
+  }
+  function openThreats() {
+    ovState = { kind: "threats", themeMode: "auto", manual: new Set(), showGeneral: false,
+      weights: detectBuildThemes(), render: renderThreats };
+    openOverlay(ovState.render());
+  }
+  function threatRow(m) {
+    const chips = [
+      ...m.hitThemes.map(t => `<span class="thr-chip">${esc(themeLabel(t))}</span>`),
+      ...(m.hitClass ? [`<span class="thr-chip cls">${esc(m.hitClass[0].toUpperCase() + m.hitClass.slice(1))}</span>`] : []),
+    ].join("");
+    return `<div class="thr-row">
+      <span class="thr-src ${m.source === "Rune" ? "rune" : "realm"}">${m.source}</span>
+      <div class="thr-body"><div class="thr-head"><b>${esc(m.name)}</b>${chips}</div>
+        <div class="thr-eff">${esc(m.effect)}</div></div></div>`;
+  }
+  function renderThreats() {
+    const st = ovState, w = st.weights, heavy = heavyPartyClasses(), active = activeThemes();
+    // theme chip bar — every theme is a toggle; detected ones carry a weight
+    const chipbar = THEMES.map(t => {
+      const on = active.includes(t.key), det = (w[t.key] || 0) > 0;
+      return `<button class="thr-theme ${on ? "on" : ""} ${det ? "det" : ""}" data-action="threat-theme" data-k="${t.key}">${esc(t.label)}${det ? `<span class="thr-w">${w[t.key]}</span>` : ""}</button>`;
+    }).join("");
+    const modeReset = st.themeMode === "manual"
+      ? `<button class="chip" data-action="threat-auto">↺ Detected</button>` : "";
+    const counters = active.length || heavy.length ? threatCounters(active, heavy) : [];
+    const general = [...(D.realmProps || []).map(m => ({ ...m, source: "Realm" })),
+                     ...(D.runes || []).map(m => ({ ...m, source: "Rune" }))]
+                    .filter(m => m.general).sort((a, b) => a.name.localeCompare(b.name));
+    const countersBody = active.length
+      ? (counters.length ? counters.map(threatRow).join("")
+          : `<div class="slot-sub" style="padding:10px">Nothing in either system directly counters ${active.map(themeLabel).join(", ")}. Watch the general list below.</div>`)
+      : `<div class="slot-sub" style="padding:10px">Build a party (creatures + perks) to detect a theme, or pick one above to explore what would counter it.</div>`;
+    const genRows = general.map(m => threatRow({ ...m, hitThemes: [], hitClass: null })).join("");
+    return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel">
+      <div class="overlay-header"><h2>Threats</h2><button class="ovl-close" data-action="close-ovl">✕</button></div>
+      <div class="overlay-body"><div class="ovl-center"><div class="ovl-center-scroll">
+        <div class="thr-intro">${st.themeMode === "manual" ? "Themes you picked" : "Detected build theme"}${active.length ? " — reroll realm properties and skip runes that counter it." : "."}</div>
+        <div class="thr-themebar">${chipbar}${modeReset}</div>
+        <div class="section-label">Counters your build</div>
+        <div class="thr-list">${countersBody}</div>
+        <button class="thr-genhead ${st.showGeneral ? "open" : ""}" data-action="threat-general">${st.showGeneral ? "▾" : "▸"} Generally punishing <span class="thr-w">${general.length}</span></button>
+        ${st.showGeneral ? `<div class="thr-list">${genRows}</div>` : ""}
+      </div></div></div>
+      <div class="overlay-footer"><span class="foot-info"></span><button class="btn-confirm" data-action="close-ovl">Done</button></div>
+    </div></div>`;
+  }
+
   function openSynergy() { ovState = { kind: "synergy", view: "matrix", sharedOnly: false, expanded: new Set(), listCollapsed: new Set(), render: renderSynergy }; openOverlay(ovState.render()); }
 
   // Matrix view — rows = members (Spec/Anointments/creatures expandable to their effect sub-rows),
@@ -2291,6 +2380,15 @@
       case "iconpick-cat-clear": e.stopPropagation(); dovState.cat = null; refreshDetail(); break;
       case "iconpick-pick": { const w = (D.wardrobe || []).find(x => x.sprite === t.dataset.k); if (w && dovState.onPick) dovState.onPick(w); closeDetail(); refreshOverlay(); break; }
       case "open-appendix": openAppendix(); break;
+      case "open-threats": openThreats(); break;
+      case "threat-theme": {
+        const k = t.dataset.k;
+        if (ovState.themeMode !== "manual") { ovState.manual = new Set(activeThemes()); ovState.themeMode = "manual"; }
+        ovState.manual.has(k) ? ovState.manual.delete(k) : ovState.manual.add(k);
+        refreshOverlay(); break;
+      }
+      case "threat-auto": ovState.themeMode = "auto"; ovState.manual = new Set(); refreshOverlay(); break;
+      case "threat-general": ovState.showGeneral = !ovState.showGeneral; refreshOverlay(); break;
       case "open-synergy": openSynergy(); break;
       case "synergy-view": if (ovState && ovState.view !== t.dataset.view) { ovState.view = t.dataset.view; refreshOverlay(); } break;
       case "toggle-matrix-shared": ovState.sharedOnly = !ovState.sharedOnly; refreshOverlay(); break;

@@ -548,6 +548,33 @@ h1, h2, h3 { margin: 0; }
 .perk-line.asc { box-shadow: inset 3px 0 0 var(--accent); }
 .perk-row.asc { box-shadow: inset 3px 0 0 var(--accent); }
 
+/* ── Threats advisor (realm properties + runes to avoid) ── */
+.thr-intro { color: var(--text-dim); font-size: 12px; margin: 2px 2px 10px; }
+.thr-themebar { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
+.thr-theme { font-size: 12px; padding: 5px 10px; border-radius: 8px; background: var(--surface2);
+  border: 1px solid var(--border-dim); color: var(--text-dim); display: inline-flex; align-items: center; gap: 6px; }
+.thr-theme.det { color: var(--text); }
+.thr-theme.on { color: #1a1230; background: var(--accent); border-color: var(--accent); font-weight: 700; }
+.thr-w { font-size: 10px; font-weight: 800; padding: 0 5px; border-radius: 999px; background: rgba(0,0,0,.28);
+  color: var(--text-dim); font-variant-numeric: tabular-nums; }
+.thr-theme.on .thr-w { background: rgba(0,0,0,.22); color: #1a1230; }
+.thr-list { display: flex; flex-direction: column; gap: 5px; margin: 6px 0 4px; }
+.thr-row { display: flex; gap: 9px; align-items: flex-start; padding: 8px 10px; background: var(--surface);
+  border: 1px solid var(--border-dim); border-radius: 8px; }
+.thr-src { flex: 0 0 auto; font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: .3px;
+  padding: 2px 6px; border-radius: 5px; margin-top: 1px; min-width: 42px; text-align: center; }
+.thr-src.realm { color: var(--accent2); background: rgba(154,123,214,.16); }
+.thr-src.rune { color: var(--accent); background: rgba(201,162,75,.16); }
+.thr-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.thr-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 7px; }
+.thr-eff { color: var(--text-dim); font-size: 12px; line-height: 1.35; }
+.thr-chip { flex: 0 0 auto; font-size: 10px; font-weight: 700; padding: 1px 7px; border-radius: 999px;
+  color: var(--bad); background: rgba(224,107,107,.15); border: 1px solid rgba(224,107,107,.35); }
+.thr-chip.cls { color: var(--accent); background: rgba(201,162,75,.15); border-color: rgba(201,162,75,.35); }
+.thr-genhead { margin: 14px 0 2px; width: 100%; text-align: left; font-size: 13px; font-weight: 700;
+  color: var(--text-dim); background: none; border: none; display: flex; align-items: center; gap: 8px; padding: 4px 2px; }
+.thr-genhead.open { color: var(--text); }
+
 /* perk picker overlay — same fixed-icon + head-line structure */
 .perk-picker { display: flex; flex-direction: column; gap: 6px; }
 .perk-row { display: flex; gap: 9px; align-items: flex-start; padding: 8px 10px; background: var(--surface); border: 1px solid var(--border-dim); border-radius: 8px; }

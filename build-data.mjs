@@ -985,6 +985,80 @@ for (const s of skinRecs) {
 }
 console.log(`  skins: ${skins.length} applicable (${skinFrames.size} frames) · ${skinUnresolved} unresolved-skip${skinFrameMissing ? ` · ${skinFrameMissing} frame-missing(404)` : ''}`);
 
+// ── Threats advisor: Realm Properties (instability) + False God Runes ───────────────────────
+// Both systems are "enemy modifiers that make a fight harder". A build tool reads the build's
+// THEME off its taxonomy tags (Action/Mechanic values), then flags which modifiers directly
+// COUNTER that theme so the player can reroll realm properties / skip runes accordingly. Effect
+// text is authoritative from the durable extracts (runes.json / realm_properties.json); the
+// theme→counter mapping below is authored logic grounded on each modifier's effect wording.
+const runesRaw = readJSON(path.join(MODEL, 'runes.json'));
+const realmPropsRaw = readJSON(path.join(MODEL, 'realm_properties.json'));
+
+// The build intents we can detect from the Action/Mechanic taxonomy category.
+const BUILD_THEMES = [
+  { key: 'attack',   label: 'Attack',           tags: ['Action/Mechanic::Attack'] },
+  { key: 'cast',     label: 'Cast / Spells',    tags: ['Action/Mechanic::Cast', 'Action/Mechanic::Spell Gems'] },
+  { key: 'indirect', label: 'Indirect Damage',  tags: ['Action/Mechanic::Indirect Damage'] },
+  { key: 'crit',     label: 'Critical',         tags: ['Action/Mechanic::Critical'] },
+  { key: 'buff',     label: 'Buffs',            tags: ['Action/Mechanic::Buff'] },
+  { key: 'debuff',   label: 'Debuffs',          tags: ['Action/Mechanic::Debuff'] },
+  { key: 'dodge',    label: 'Dodge',            tags: ['Action/Mechanic::Dodge'] },
+  { key: 'heal',     label: 'Healing',          tags: ['Action/Mechanic::Healing'] },
+  { key: 'minion',   label: 'Minions',          tags: ['Action/Mechanic::Minion'] },
+  { key: 'provoke',  label: 'Provoke / Defend', tags: ['Action/Mechanic::Provoke', 'Action/Mechanic::Defend'] },
+  { key: 'stats',    label: 'Stat Stacking',    tags: ['Action/Mechanic::Stats'] },
+];
+
+// modifier key -> [theme keys it directly counters]. Empty + no counterClass => "generally punishing".
+const RUNE_COUNTERS = {
+  IMMUNEATTACKS: ['attack'], IMMUNESPELLS: ['cast'], IMMUNEINDIRECT: ['indirect'],
+  AVOIDDAMAGE: ['attack', 'cast'], DAMAGECAP: ['attack', 'cast', 'indirect'],
+  TAKELESSDAMAGE: ['attack', 'cast', 'indirect'], LOSELESSSTATS: ['debuff'],
+};
+const REALM_COUNTERS = {
+  IMMUNEATTACKS: ['attack'], IMMUNESPELLS: ['cast'], IMMUNEINDIRECTDAMAGE: ['indirect'],
+  NOCRIT: ['crit'], NODODGE: ['dodge'], ALWAYSDODGE: ['attack'], NOHEAL: ['heal'],
+  NOBUFFS: ['buff'], REDUCEDCHARGES: ['cast'], SEALAFTERCAST: ['cast'], NOSTATGAIN: ['stats'],
+  NOSTATLOSS: ['debuff'], NODEFENDPROVOKE: ['provoke'], RESISTDAMAGE: ['attack', 'cast', 'indirect'],
+  RESISTDEBUFFS: ['debuff'], REFLECT: ['attack'], DEALLESSDAMAGE: ['attack', 'cast', 'indirect'],
+  TAKELESSDAMAGE: ['attack', 'cast', 'indirect'], COPYGEMS: ['cast'],
+  LESSATTACK: ['attack'], LESSINTELLIGENCE: ['cast'],
+};
+const REALM_COUNTER_CLASS = {
+  STRONGCLASS_CHAOS: 'chaos', STRONGCLASS_DEATH: 'death', STRONGCLASS_LIFE: 'life',
+  STRONGCLASS_NATURE: 'nature', STRONGCLASS_SORCERY: 'sorcery',
+};
+// pure enemy-composition flavour — not a difficulty spike for/against any build; hidden from the advisor.
+const REALM_NEUTRAL = new Set(['FAMILIES', 'RACE']);
+// runes.json carries no display name; humanize each key.
+const RUNE_NAME = {
+  ALWAYSCRIT: 'Always Crit', AVOIDDAMAGE: 'Avoids Damage', DAMAGECAP: 'Damage Cap',
+  DAMAGEOVERTIME: 'Damage Over Time', DEBUFFS: 'Mass Debuffs', DOMOREDAMAGE: 'Deals More Damage',
+  IMMUNEATTACKS: 'Immune to Attacks', IMMUNEINDIRECT: 'Immune to Indirect', IMMUNESPELLS: 'Immune to Spells',
+  LOSELESSSTATS: 'Keeps Its Stats', MOREATTACK: 'More Attack', MOREDEFENSE: 'More Defense',
+  MOREHEALTH: 'More Health', MOREINTELLIGENCE: 'More Intelligence', MORESPEED: 'More Speed',
+  RANDOMBUFF: 'Mass Buffs', TAKELESSDAMAGE: 'Takes Less Damage', TOPOFTIMELINE: 'Top of Timeline',
+};
+const runes = runesRaw.runes.map(r => ({
+  key: r.key, name: RUNE_NAME[r.key] || r.key, effect: r.effect,
+  counters: RUNE_COUNTERS[r.key] || [], counterClass: null,
+  general: !RUNE_COUNTERS[r.key],
+}));
+const realmProps = realmPropsRaw.properties
+  .filter(p => !REALM_NEUTRAL.has(p.key))
+  .map(p => ({
+    key: p.key, name: p.name, effect: p.effect,
+    counters: REALM_COUNTERS[p.key] || [], counterClass: REALM_COUNTER_CLASS[p.key] || null,
+    general: !(REALM_COUNTERS[p.key] || REALM_COUNTER_CLASS[p.key]),
+  }));
+// sanity: every authored counter/theme references a real theme key
+{
+  const themeKeys = new Set(BUILD_THEMES.map(t => t.key));
+  for (const m of [...runes, ...realmProps])
+    for (const c of m.counters) if (!themeKeys.has(c)) throw new Error(`threats: unknown theme key "${c}" on ${m.key}`);
+  console.log(`  threats: ${realmProps.length} realm properties · ${runes.length} runes · ${BUILD_THEMES.length} themes`);
+}
+
 const SU_DATA = {
   meta: {
     generated: new Date().toISOString(),
@@ -1019,6 +1093,9 @@ const SU_DATA = {
   spellGems,
   spellProps,
   personalities: PERSONALITIES,
+  runes,                    // False God difficulty runes (18) + authored theme counters
+  realmProps,               // Realm-Instability realm properties (56) + authored theme/class counters
+  buildThemes: BUILD_THEMES,// detectable build intents (Action/Mechanic taxonomy) for the Threats advisor
   skins,                    // alternate creature skins, gated by code-grounded race/creature restriction
   scrollMax: 15,            // creatures consume up to 15 stat scrolls total, each +1 base stat (L_ID_SCROLL_*)
 };

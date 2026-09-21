@@ -42,6 +42,33 @@ No verify-before-push ceremony (no real users yet) — but every change is check
 - Fed by `_su_extract` via `build-data.mjs` (gitignored extract; only used assets copied). Data model in
   `SPEC_PLAN.md`, pipeline in `WIKI_CONTEXT.md`.
 
+## 2026-09-21 — session 4k (Threats advisor — realm properties + FG runes to avoid)
+New **Menu → Threats** overlay (`openThreats`/`renderThreats`). Reads the build's THEME off its
+taxonomy tags and surfaces the enemy modifiers that counter it, across BOTH systems that share the
+"make the fight harder" shape — **Realm Properties** (Realm-Instability modifiers, rerollable to suit
+your party) and **False God Runes**.
+- **New durable extract** `_su_extract/data/model/realm_properties.json` (56 shipped / 58 total,
+  `code/build_realm_properties.py`, reads the extracted `codex.csv` `L_RP_*` — authoritative effect
+  text; display names curated/derived since no title key exists; 2 pure-comp neutrals RACE/FAMILIES
+  dropped). Runes come from the existing `runes.json` (18).
+- **Theme + counter model authored in `build-data.mjs`** and emitted as `SU_DATA.buildThemes` (11
+  intents = Action/Mechanic taxonomy values: Attack / Cast / Indirect / Critical / Buff / Debuff /
+  Dodge / Healing / Minions / Provoke-Defend / Stat-Stacking), `SU_DATA.runes` + `SU_DATA.realmProps`
+  each carrying `counters:[themeKey]` (e.g. IMMUNEATTACKS→attack, IMMUNESPELLS→cast, NOCRIT→crit,
+  REDUCEDCHARGES/SEALAFTERCAST→cast, RESISTDEBUFFS→debuff) and `counterClass` for the 5
+  STRONGCLASS_* props. A build-time sanity check throws on any unknown theme key. Non-counter
+  difficulty modifiers are flagged `general:true`.
+- **App**: `detectBuildThemes()` tallies theme weight across all build effects (reuses
+  `buildTagEffects`); auto-active = themes with ≥2 effects (fallback: the single top). Theme chip bar
+  shows every theme with its detected weight; clicking one switches to **manual override** (explore
+  "what counters a cast build") with a ↺ Detected reset. `heavyPartyClasses()` (≥2 creatures, fusion
+  adopts secondary's class) drives the STRONGCLASS counters. Two sections: **Counters your build**
+  (theme/class-specific, sorted by # hits, each row = source badge + name + effect + red theme chips)
+  and a collapsible **Generally punishing** (theme-agnostic). jsdom smoke (`threats_smoke.mjs`, 24
+  assertions): model shape, attack auto-detect, correct counter lists (attack shows Immune/Resist
+  Attacks, not spells), general toggle, manual override + reset — all green; matrix/builds/asc suites
+  still green. Shipped to `master`.
+
 ## 2026-09-21 — session 4j (Ascension perks visually distinguished)
 Surfaced the `perk.ascension` flag (from `Perk_REF.csv`, 41 perks, ~1 per spec) in the two perk surfaces that
 weren't badging it — the **spec perk list** (`specPerkListHtml`, used by the spec detail page AND the spec
@@ -680,8 +707,8 @@ What works end-to-end:
 - [ ] Turn on the Cloudflare analytics beacon at public release (shared github.io token).
 
 ### New helper / reference ideas (2026-09-21 — user backlog)
-- [ ] **Realm Property helper** — the realm-instability / realm-property effects and how to use/counter them.
-- [ ] **False God rune helper** — the 18 False God difficulty runes (`runes.json`) and their modifiers.
+- [x] **Realm Property + False God rune helper** — DONE (session 4k) as the combined **Threats**
+      advisor: detects build theme from tags, surfaces realm properties + runes that counter it.
 - [ ] **Realm reference** — the realms (`Realm_REF.csv`) + their properties/denizens/resources.
 - [ ] **God shop reference** — per-god favor shops (`god_shop_ref.json` / `shops.json`), items + prices.
 - [ ] **Godforge helper** — Godforge (spell-gem enchant / artifact forging) planner.
