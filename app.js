@@ -606,6 +606,15 @@
   // editing a filled slot re-opens the same wizard pre-filled so either half can change.
   // step 3 gives Personality / Scrolls / Skin their own screen so they're never buried on mobile.
   const CREA_PAGE = 400;   // creatures rendered per page; "Load more" adds another page (no filter required)
+  // sortable base-stat columns for the creature picker + per-stat maxima across the whole roster
+  // (so a tile can draw a bar of value/max — magnitude relative to every other creature).
+  const CREA_STAT_COLS = [{ k: "hp", lbl: "HP" }, { k: "atk", lbl: "Atk" }, { k: "int", lbl: "Int" },
+    { k: "def", lbl: "Def" }, { k: "spd", lbl: "Spd" }, { k: "total", lbl: "Total" }];
+  const STAT_MAX = Object.fromEntries(CREA_STAT_COLS.map(c =>
+    [c.k, Math.max(1, ...D.creatures.map(x => x[c.k] || 0))]));
+  const sortCreatures = (list, key) => key
+    ? list.slice().sort((a, b) => (b[key] || 0) - (a[key] || 0) || (a.name || "").localeCompare(b.name || ""))
+    : list;
   const CREA_STEPS = ["primary", "fusion", "customize"];
   const CREA_STEP_LABELS = { primary: "Creature", fusion: "Fusion", customize: "Customize" };
   const renderCreaStepbar = (step) => `<div class="art-steps">${CREA_STEPS.map(s =>
@@ -616,7 +625,7 @@
       kind: "creature", slotIdx, step: "primary",
       primaryId: slot.cid, fusionId: slot.fusion, skinId: slot.skinId != null ? slot.skinId : null,
       personality: slot.personality || null, scrolls: { ...(slot.scrolls || {}) },
-      search: "", clsFilter: null, raceFilter: null, taxoFilters: [], limit: CREA_PAGE,
+      search: "", clsFilter: null, raceFilter: null, taxoFilters: [], limit: CREA_PAGE, sort: null,
       render: renderCreaturePicker,
     };
     openOverlay(ovState.render()); maybeFocusSearch(OV);
@@ -655,7 +664,7 @@
     }
     const fusion = st.step === "fusion";
     const sel = creaStepSel(st);
-    const list = D.creatures.filter(c => creatureMatches(c, st));
+    const list = sortCreatures(D.creatures.filter(c => creatureMatches(c, st)), st.sort);
     const limit = st.limit || CREA_PAGE;
     const shown = list.slice(0, limit);
     const selC = sel != null ? CREA.get(sel) : null;
@@ -671,6 +680,13 @@
       ${taxoChips}
       <button class="facet add" data-action="facet-taxo">＋ Filter</button>
     </div>`;
+    // stat sort — highest first; picking a stat draws a magnitude bar (value / roster max) on each tile
+    const sortbar = `<div class="ovl-filterbar crea-sortbar"><span class="foot-info">Sort</span><div class="seg">
+      <button class="seg-btn ${!st.sort ? "on" : ""}" data-action="crea-sort" data-k="">—</button>
+      ${CREA_STAT_COLS.map(c => `<button class="seg-btn ${st.sort === c.k ? "on" : ""}" data-action="crea-sort" data-k="${c.k}">${c.lbl}</button>`).join("")}
+    </div></div>`;
+    const statBar = (c) => st.sort && STAT_MAX[st.sort]
+      ? `<div class="pt-statbar"><span class="pt-statval">${c[st.sort] || 0}</span><span class="pt-bar"><i style="width:${Math.round((c[st.sort] || 0) / STAT_MAX[st.sort] * 100)}%"></i></span></div>` : "";
 
     // fusion step leads with a "No fusion" tile so skipping is a first-class choice
     const noFuseTile = fusion ? `
@@ -691,6 +707,7 @@
           ? `<span class="pt-raceico" title="${esc(c.race)}">${spriteImg(D.raceIcons[c.race], "px")}</span>` : ""}
         <div class="pt-sprite">${critFace(c)}</div>
         <div class="pt-name">${esc(c.name)}</div>
+        ${statBar(c)}
       </div>`; }).join("");
 
     const title = fusion ? "Fusion partner" : "Choose creature";
@@ -711,7 +728,7 @@
         ${renderCreaStepbar(st.step)}
         <button class="ovl-close" data-action="close-ovl">✕</button></div>
       <div class="overlay-body">
-        <div class="ovl-center">${filterbar}
+        <div class="ovl-center">${filterbar}${sortbar}
           <div class="ovl-center-scroll"><div class="pick-grid crea-grid">${tiles}</div>
             ${list.length > shown.length
               ? `<div class="crea-loadmore"><button class="btn-ghost" data-action="crea-more">Load more (${shown.length} of ${list.length})</button></div>`
@@ -2443,6 +2460,7 @@
         ovState.step = ovState.step === "customize" ? "fusion" : "primary";
         ovState.search = ""; ovState.limit = CREA_PAGE; refreshOverlay(); break;
       case "crea-more": ovState.limit = (ovState.limit || CREA_PAGE) + CREA_PAGE; refreshOverlay(); break;
+      case "crea-sort": ovState.sort = t.dataset.k || null; resetCreaPage(); refreshOverlay(); break;
       case "crea-confirm": {
         if (ovState.primaryId == null) break;
         const s = build.slots[ovState.slotIdx];

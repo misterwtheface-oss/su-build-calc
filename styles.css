@@ -276,6 +276,13 @@ h1, h2, h3 { margin: 0; }
   display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
 }
 .pick-tile .pt-total { font-size: 10px; color: var(--text-dim); }
+/* creature-picker stat sort: value + magnitude bar (value / roster max) under the name */
+.pick-tile .pt-statbar { width: 100%; display: flex; align-items: center; gap: 5px; }
+.pick-tile .pt-statval { flex: 0 0 auto; font-size: 10px; font-weight: 800; color: var(--accent);
+  font-variant-numeric: tabular-nums; min-width: 22px; text-align: right; }
+.pick-tile .pt-bar { flex: 1; height: 5px; border-radius: 3px; background: rgba(0,0,0,.3); overflow: hidden; }
+.pick-tile .pt-bar > i { display: block; height: 100%; background: var(--accent); border-radius: 3px; }
+.crea-sortbar { margin-top: -4px; }
 /* selection reads through busy icons: inset ring + tint, not just a border */
 .pick-tile.disabled { opacity: .32; cursor: not-allowed; filter: grayscale(.6); }
 .pick-tile.selected { border-color: var(--accent2); box-shadow: inset 0 0 0 2px var(--accent2); }
@@ -385,9 +392,9 @@ h1, h2, h3 { margin: 0; }
 .xref-wrap { flex: 1; min-height: 0; overflow: auto; padding: 12px; }
 .xref-table { border-collapse: separate; border-spacing: 0; font-size: 11px; }
 .xref-table th, .xref-table td { border: 1px solid var(--border-dim); padding: 3px 5px; text-align: center; }
-.xref-corner  { position: sticky; left: 0; top: 0; z-index: 4; background: var(--surface3); text-align: left; font-size: 10px; color: var(--text-mute); }
+.xref-corner  { position: sticky; left: 0; top: 0; z-index: 4; background: var(--surface3); text-align: right; font-size: 10px; color: var(--text-mute); }
 .xref-table thead th { position: sticky; top: 0; z-index: 2; background: var(--surface2); vertical-align: bottom; }
-.xref-rowhead { position: sticky; left: 0; z-index: 1; background: var(--surface2); text-align: left; white-space: nowrap; }
+.xref-rowhead { position: sticky; left: 0; z-index: 1; background: var(--surface2); text-align: right; white-space: nowrap; }
 .xref-rowhead b { font-weight: 600; }
 .xref-rowhead .xr-cat { display: block; font-size: 9px; color: var(--text-mute); font-weight: 400; }
 .xref-colhead { display: flex; flex-direction: column-reverse; align-items: center; gap: 4px; }
@@ -407,7 +414,7 @@ h1, h2, h3 { margin: 0; }
 .xref-rowhead .xr-exp { display: inline-block; width: 12px; margin-right: 2px; color: var(--text-mute); cursor: pointer; user-select: none; }
 .xref-rowhead .xr-exp:hover { color: var(--text); }
 .xref-rowhead .xr-exp-sp { display: inline-block; width: 12px; margin-right: 2px; }
-.xref-subrow .xref-subhead { font-weight: 400; color: var(--text-dim); font-size: 10px; padding-left: 26px; }
+.xref-subrow .xref-subhead { font-weight: 400; color: var(--text-dim); font-size: 10px; padding-right: 14px; }
 .xref-subrow td { background: rgba(255,255,255,.02); color: var(--text-mute); }
 .xref-shared td, .xref-shared th { position: sticky; bottom: 0; z-index: 1; background: var(--surface3); font-weight: 700; }
 .xref-shared th { z-index: 3; }

@@ -81,7 +81,8 @@ const pct = (s) => {
 };
 
 // Minimal CSV parser (quote-aware) for creatures_export/index.csv.
-function parseCSV(text) {
+// raw quote-aware CSV → string[][] (positional; use when headers are blank/duplicated)
+function parseCSVRaw(text) {
   const rows = [];
   let row = [], cur = '', q = false;
   for (let i = 0; i < text.length; i++) {
@@ -97,6 +98,10 @@ function parseCSV(text) {
     else cur += c;
   }
   if (cur.length || row.length) { row.push(cur); rows.push(row); }
+  return rows;
+}
+function parseCSV(text) {
+  const rows = parseCSVRaw(text);
   const header = rows.shift();
   return rows.filter(r => r.length > 1).map(r => Object.fromEntries(header.map((h, i) => [h, r[i]])));
 }
@@ -184,6 +189,20 @@ const creaturesRef = readJSON(path.join(REF, 'creatures_ref.json')).records;
 const cdByName = new Map(creatureData.map(c => [norm(c.name), c]));
 const csByName = new Map(creatureStats.map(c => [norm(c.name), c]));   // field0 = battle_frame
 const SRC_BATTLE = SRC_SPEC_PNG;                                       // assets/sprites/spr_crits_battle_<frame>.png
+// user's Creature_REF.csv compendium base stats (name -> {hp,atk,int,def,spd}) — the grounded fill
+// for the handful of god/boss creatures whose one stat the static int-setter scan can't recover
+// (its value isn't a plain small immediate; see the extractor note). CSV cols: Name,Race,Class then
+// the 5 Base Stats in HP,Atk,Int,Def,Spd order (blank headers -> positional parse).
+const creatureRefStats = new Map();
+{
+  const rows = parseCSVRaw(fs.readFileSync(path.join(REF, '_raw_csv', 'Creature_REF.csv'), 'utf8'));
+  for (const r of rows.slice(1)) {
+    const name = (r[0] || '').trim(); if (!name) continue;
+    const num = (x) => { const n = parseInt(x, 10); return Number.isFinite(n) ? n : null; };
+    const s = { hp: num(r[3]), atk: num(r[4]), int: num(r[5]), def: num(r[6]), spd: num(r[7]) };
+    if (Object.values(s).some(v => v != null)) creatureRefStats.set(norm(name), s);
+  }
+}
 // trait NAME -> id (traits_consolidated) so a ref creature resolves its innate trait id
 const traitIdByName = new Map();
 for (const t of consolidated) { const k = norm(t.name); if (k && !traitIdByName.has(k)) traitIdByName.set(k, t.id); }
@@ -200,6 +219,7 @@ const SPRITE_FRAME_OVERRIDE = {
 
 const creatures = [];
 let spriteCopied = 0, codeStats = 0, spriteOverrides = 0;
+const statFilled = [];   // creatures whose null base stat was filled from Creature_REF.csv
 creaturesRef.forEach((r, i) => {
   const id = i;
   const cd = cdByName.get(norm(r.name));                    // capstone twin (best stats + battle_frame)
@@ -213,6 +233,17 @@ creaturesRef.forEach((r, i) => {
     : cs ? { hp: cs.hp, atk: cs.atk, def: cs.def, int: cs.int, spd: cs.spd, total: null }
     : { hp: bs.hp, atk: bs.atk, def: bs.def, int: bs.int, spd: bs.spd, total: bs.total };
   if (cd || cs) codeStats++;
+  // grounded null-fill: a few god/boss creatures have exactly one base stat the int-setter scan
+  // can't recover (not a plain immediate). Fill it from the user's Creature_REF.csv compendium so
+  // sorting/visualisation never sees a null. Recompute total to include the filled value.
+  const refStat = creatureRefStats.get(norm(r.name));
+  const statPatched = [];
+  for (const k of ['hp', 'atk', 'def', 'int', 'spd']) {
+    if (stats[k] == null && refStat && refStat[k] != null) { stats[k] = refStat[k]; stats.total = null; statPatched.push(k); }
+  }
+  if (statPatched.length) statFilled.push(`${r.name} (${statPatched.join(',')})`);
+  const nullStats = ['hp', 'atk', 'def', 'int', 'spd'].filter(k => stats[k] == null);
+  if (nullStats.length) warn(`creature "${r.name}" still has null base stat(s): ${nullStats.join(',')} (not in Creature_REF.csv)`);
   const total = stats.total != null ? stats.total
     : (stats.hp || 0) + (stats.atk || 0) + (stats.def || 0) + (stats.int || 0) + (stats.spd || 0);
 
@@ -241,7 +272,7 @@ creaturesRef.forEach((r, i) => {
   creatures.push({
     id, name: r.name, race: r.race || null, cls,
     hp: stats.hp, atk: stats.atk, def: stats.def, int: stats.int, spd: stats.spd, total,
-    statSource: cd ? 'code' : cs ? 'code-legacy' : 'community',
+    statSource: (cd ? 'code' : cs ? 'code-legacy' : 'community') + (statPatched.length ? '+ref' : ''),
     traitId, traitName,
     sprite,
   });
@@ -885,6 +916,7 @@ for (const s of specs) {
 const checked = creatures.length + specs.length + artRef.length + traitItems.length + relics.length + cards.length;
 console.log('\n── Data hygiene report ──────────────────────────');
 console.log(`✓ ${checked} records checked · ${creatures.length} playable creatures (100% classed) · ${codeStats} w/ code stats · ${spriteCopied} w/ sprites (${spriteOverrides} name-override) · ${specs.length} spec sprites`);
+if (statFilled.length) console.log(`  base-stat null-fill from Creature_REF.csv: ${statFilled.length} — ${statFilled.join('; ')}`);
 console.log(`  cards w/ art ${cardArt}/${cards.length} · artifact-type icons ${artGroup.primary.filter(p => p.icon).length}/5 · gem icons ${gemIcons.length} · class bgs ${Object.keys(classBg).length}`);
 console.log(`  spec sprites: ${specSkins} real skins + ${specs.filter(s => s.spriteKind === 'icon').length} emblem icons · ${emblemCount}/${specs.length} 16×16 emblems · terms ${Object.keys(terms).length}`);
   console.log(`  perk icons: ${perkIconsCopied} copied (code-certain from perk_icons.json)${perkIconsMissing ? ` · ${perkIconsMissing} missing` : ' · 100%'}`);

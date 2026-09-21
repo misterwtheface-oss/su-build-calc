@@ -42,6 +42,29 @@ No verify-before-push ceremony (no real users yet) — but every change is check
 - Fed by `_su_extract` via `build-data.mjs` (gitignored extract; only used assets copied). Data model in
   `SPEC_PLAN.md`, pipeline in `WIKI_CONTEXT.md`.
 
+## 2026-09-21 — session 4l (stat anomaly fix + creature stat sort + matrix align)
+Batch of user requests.
+- **#3 Base-stat null anomaly fixed.** 14 god/boss creatures (Final Arbiter, Gonfurian, Alexandria,
+  Genaros, Pandemonium Queen, Gravewood Ghost, Grubette, Polygala Fae, Hunter Scout, Nihilist Seeker,
+  Amethyst Paragon, Shambler Rescuer, Venomskin Spellmane, Docile Wolpertinger) each had exactly ONE
+  null base stat. Root cause (RE'd): they exist only in the legacy `creature_stats.json`, and one stat
+  isn't a plain small immediate the int-setter scan reads — the byte at that slot decodes to garbage
+  (e.g. `0xBA000007`), so the extractor correctly records `null`. **Fix: grounded null-fill from the
+  user's `Creature_REF.csv` compendium** (base-stat cols HP,Atk,Int,Def,Spd, positional parse via new
+  `parseCSVRaw`); verified the filled values align with each creature's non-null code stats (Final
+  Arbiter HP=30). `statSource` gains a `+ref` suffix, build logs the 14, and a guard warns on any
+  residual null. 0 nulls remain.
+- **#4 Creature-picker stat sort + magnitude bars.** New **Sort** segmented bar (— / HP / Atk / Int /
+  Def / Spd / Total) in the picker; `sortCreatures` orders highest-first. Picking a stat draws a
+  **magnitude bar on every tile** = `value / roster-max` (precomputed `STAT_MAX` across all creatures),
+  so you see each creature's stat relative to the whole roster. `st.sort` state, `crea-sort` handler
+  (resets pagination). Default sort shows no bars.
+- **#1 Synergy matrix leftmost column right-aligned** (`.xref-rowhead`/`.xref-corner` → `text-align:
+  right`; sub-row indent flipped from `padding-left:26px` to `padding-right:14px`) so member labels sit
+  against the numeric grid.
+jsdom smoke: `creasort_smoke.mjs` 14/14 (null-fill + sort + bars); threats/matrix/builds/asc all green.
+Shipped to `master`. (#2 appendix multi-tag search follows.)
+
 ## 2026-09-21 — session 4k (Threats advisor — realm properties + FG runes to avoid)
 New **Menu → Threats** overlay (`openThreats`/`renderThreats`). Reads the build's THEME off its
 taxonomy tags and surfaces the enemy modifiers that counter it, across BOTH systems that share the
