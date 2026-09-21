@@ -16,9 +16,12 @@ No verify-before-push ceremony (no real users yet) — but every change is check
 - **43 specializations** (incl. Antiquarian + the Royal/Pariah/Deprived challenge specs). Selector + per-perk
   rank steppers (Customize). **Challenge mechanics hard-enforced**: Royal anoint cap → up to 20, Pariah
   3-creature cap, Avatar cap (1 / +Army of Gods / 0 Deprived), Deprived ignores relics + fused traits.
+  **Perk→spec membership is sourced from `Perk_REF.csv`** (the datamined `scr_PerkGetPerkList` leaked perks
+  between specs — see session 4i); code membership is used only for Antiquarian (absent from the CSV).
 - **Anointments**: equip up to **5** by default (raised up to **20** by Royal's perks — `anointMax()`); an
-  anoint applies its perk at **rank 1** (`_su_extract/code/SIGILS_ANOINTMENTS_FINDINGS.md`); can't anoint a
-  perk from your current spec; Spec ▾ filter + taxonomy tag chips.
+  anoint grants the perk's **full bonus** (user in-game truth, reversed the earlier rank-1 decompile); grouped
+  + filtered by affiliated **False God** (combined 6-part portraits); can't anoint a perk from your current
+  spec; Spec ▾ filter + taxonomy tag chips.
 - **Artifacts**: 3-step builder (type → fill slots via right-hand info panel → name), socketing shows an
   item preview + explicit Add/Remove confirm, search matches name OR tag. Library + per-creature equip.
 - **Spell Gems** (spell + up to 3 dust enchants, bolded plain-text descriptions), **Nether Stones**,
@@ -27,6 +30,15 @@ No verify-before-push ceremony (no real users yet) — but every change is check
   trait-items (inherited), spell gems (per-spell), perks (per-perk). Grounded on descriptions via the
   `_su_extract` classification pipeline (codebook + batch agents), NOT the unreliable code decode — rationale
   in `_su_extract/code/TRAIT_EFFECT_DECODE_FINDINGS.md`, taxonomy in `_su_extract/data/model/TAG_TAXONOMY.md`.
+- **Synergy** (Menu → Synergy): one overlay, **Matrix** ⇆ **List** toggle. Matrix = members (Spec /
+  collapsed Anointments / creatures — each expandable to its perks/anoints/traits) × tags; cell = that
+  member's contribution count (sub-rows use dots); columns/cells **coloured by share status** (green = shared
+  with the Spec, yellow = shared among others, red = solo) and **sorted by contribution weight** (a heavy red
+  column = strong-but-unsynergised theme, an intentional alert). List = collapsible per-shared-tag groups +
+  jump-link bar. "Does not stack" excluded (noise).
+- **Builds** (Menu → Builds): save/load/update/delete parties (localStorage `subc.builds`), wardrobe-sprite
+  icon, **sort by Last edited / Name / Spec**.
+- **Appendix** (cross-entity tag search) + right-side info panels throughout.
 - Fed by `_su_extract` via `build-data.mjs` (gitignored extract; only used assets copied). Data model in
   `SPEC_PLAN.md`, pipeline in `WIKI_CONTEXT.md`.
 
