@@ -401,6 +401,11 @@ h1, h2, h3 { margin: 0; }
 .xref-rowhead .xr-dot.k-spec { background: var(--accent); }
 .xref-rowhead .xr-dot.k-anoint { background: var(--accent2); }
 .xref-rowhead .xr-dot.k-crea { background: #9fd0ff; }
+.xref-rowhead .xr-exp { display: inline-block; width: 12px; margin-right: 2px; color: var(--text-mute); cursor: pointer; user-select: none; }
+.xref-rowhead .xr-exp:hover { color: var(--text); }
+.xref-rowhead .xr-exp-sp { display: inline-block; width: 12px; margin-right: 2px; }
+.xref-subrow .xref-subhead { font-weight: 400; color: var(--text-dim); font-size: 10px; padding-left: 26px; }
+.xref-subrow td { background: rgba(255,255,255,.02); color: var(--text-mute); }
 .xref-shared td, .xref-shared th { position: sticky; bottom: 0; z-index: 1; background: var(--surface3); font-weight: 700; }
 .xref-shared th { z-index: 3; }
 .xc-on { color: var(--good); } .xc-active { color: var(--accent); } .xc-latent { color: var(--text-mute); }
@@ -644,13 +649,22 @@ h1, h2, h3 { margin: 0; }
 .ns-info-actions { justify-content: center; }
 .ovl-right .section-label { text-align: center; }
 .card-tile.locked .card-level { opacity: .5; }   /* apply-all mode: per-card steppers are inert */
-/* Tag Synergy — one group per shared tag; each contributing effect shows its description + owner */
+/* Tag Synergy — collapsible group per shared tag; each effect shows its description + owner */
 .syn-list { display: flex; flex-direction: column; gap: 10px; }
-.syn-group { border: 1px solid var(--border-dim); border-radius: 8px; overflow: hidden; }
-.syn-tag { display: flex; align-items: baseline; gap: 8px; padding: 7px 10px; background: var(--surface2); border-bottom: 1px solid var(--border-dim); }
+.syn-group { border: 1px solid var(--border-dim); border-radius: 8px; overflow: hidden; scroll-margin-top: 6px; }
+.syn-tag { display: flex; align-items: baseline; gap: 8px; width: 100%; padding: 7px 10px; background: var(--surface2); border-bottom: 1px solid var(--border-dim); border-radius: 0; border-left: 0; border-right: 0; border-top: 0; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.syn-tag:hover { background: var(--surface3); }
+.syn-group.collapsed .syn-tag { border-bottom: 0; }
 .syn-tag b { font-size: 14px; }
 .syn-tag .syn-count { flex: 0 0 auto; font-weight: 800; color: var(--cap); }
 .syn-tag .opt-chev { margin-left: auto; opacity: .55; font-size: 12px; }
+.syn-tag .syn-caret { flex: 0 0 auto; opacity: .55; font-size: 11px; margin-left: 4px; }
+/* jump-link bar — click a chip to expand + scroll to that tag group */
+.syn-jumpbar { flex: 0 0 auto; display: flex; flex-wrap: wrap; gap: 5px; padding: 8px 12px; border-bottom: 1px solid var(--border-dim); max-height: 92px; overflow-y: auto; }
+.syn-chip { font-size: 11px; padding: 2px 9px; border: 1px solid var(--border-dim); border-radius: 999px; background: var(--surface); color: var(--text-dim); cursor: pointer; white-space: nowrap; }
+.syn-chip:hover { color: var(--text); border-color: var(--accent2); }
+.syn-chip .syn-chip-n { color: var(--cap); font-weight: 700; margin-left: 3px; }
+.syn-chip-all { border-color: var(--accent2); color: var(--text); font-weight: 600; }
 .syn-effs { display: flex; flex-direction: column; }
 .syn-eff { padding: 7px 10px; border-top: 1px solid var(--border-dim); text-align: left; }
 .syn-eff:first-child { border-top: 0; }

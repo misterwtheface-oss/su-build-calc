@@ -30,6 +30,22 @@ No verify-before-push ceremony (no real users yet) — but every change is check
 - Fed by `_su_extract` via `build-data.mjs` (gitignored extract; only used assets copied). Data model in
   `SPEC_PLAN.md`, pipeline in `WIKI_CONTEXT.md`.
 
+## 2026-09-21 — session 4c (Synergy: collapse/expand + jump links + drop noise tag)
+- **Dropped `Effect Limitation::Does not stack`** from BOTH synergy views (`SYN_EXCLUDE`/`synTags` helper) —
+  it's on hundreds of traits and never indicates a synergy. Scoped to Synergy only (still present in Appendix /
+  ＋Filter). Applied in `buildTagCarriers` + `buildTagEffects`.
+- **Matrix: all Anointments collapse into ONE "Anointments" row** (tags = union of equipped anoints), so a tag
+  on 3 anoints now counts as 1 build source in the per-tag total, not 3. **Spec and Anointments rows are
+  expandable** (▸/▾ caret, `matrix-expand-row`, `st.expanded` Set) → per-perk / per-anoint **sub-rows**
+  (`.xref-subrow`, dim `xc-latent` "•" marks; sub-rows are informational, not counted in the sum). Creature
+  rows unchanged. `buildTagCarriers` now returns members with an optional `children[]`.
+- **List: groups are collapsible** (header is a `syn-toggle` button, ▾/▸ caret, `st.listCollapsed` Set) + a
+  **jump-link bar** (`.syn-jumpbar`): a chip per shared tag (value ×count) that expands and `scrollIntoView`s
+  that group (`syn-jump`), plus a **Collapse all / Expand all** toggle (`syn-collapse-all`, driven by
+  `st.lastShared`).
+- jsdom smoke rewritten (21 assertions): noise-tag gone, single collapsed Anointments row, spec/anoint expand
+  → sub-rows with latent marks, independent expand state, list collapse + collapse-all + jump-expand-scroll.
+
 ## 2026-09-21 — session 4b (Synergy: flip the matrix + merge with the list)
 Two changes to the just-shipped matrix, per user:
 - **Flipped the axes** so we sum the *tags*, not per-contributor tag counts. Now **rows = build members**

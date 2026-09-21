@@ -1286,44 +1286,58 @@
   // row sums each TAG (how many members carry it — that's the synergy strength). List = the
   // same data grouped per shared tag, showing each contributing effect's description + owner.
 
-  // matrix data: one entry per build MEMBER (unique ids so dup specs/creatures don't collide)
+  // "Does not stack" is on ~hundreds of traits and never indicates a synergy — drop it from both views.
+  const SYN_EXCLUDE = new Set(["Effect Limitation::Does not stack"]);
+  const synTags = (taxo) => (taxo || []).filter(k => !SYN_EXCLUDE.has(k));
+
+  // matrix data: one entry per build MEMBER. Spec = 1 row (union of allocated perks), expandable to
+  // per-perk sub-rows; ALL anointments collapse into 1 row, expandable to per-anoint sub-rows; each
+  // creature = 1 row. (Collapsing anoints means a tag on 3 anoints counts as 1 build source, not 3.)
   function buildTagCarriers() {
-    const cols = [];   // {id, label, kind, sub, tags:Set}
+    const members = [];   // {id, label, kind, sub, tags:Set, children:[{label,sub,tags:Set}]|null}
     if (build.specId != null) {
       const s = SPEC.get(build.specId);
-      if (s) { const tags = new Set(); for (const p of allocatedPerks(s)) for (const k of (p.taxo || [])) tags.add(k);
-        if (tags.size) cols.push({ id: "spec", label: s.label, kind: "spec", tags }); }
+      if (s) {
+        const tags = new Set(), children = [];
+        for (const p of allocatedPerks(s)) { const pt = synTags(p.taxo); if (!pt.length) continue;
+          children.push({ label: p.name, tags: new Set(pt) }); for (const k of pt) tags.add(k); }
+        if (tags.size) members.push({ id: "spec", label: s.label, kind: "spec", tags, children });
+      }
     }
-    equippedAnointObjs().forEach((a, i) => { const tags = new Set(a.taxo || []);
-      if (tags.size) cols.push({ id: "ano" + i, label: a.name, kind: "anoint", sub: a.spec, tags }); });
+    const anoints = equippedAnointObjs();
+    if (anoints.length) {
+      const tags = new Set(), children = [];
+      for (const a of anoints) { const at = synTags(a.taxo); if (!at.length) continue;
+        children.push({ label: a.name, sub: a.spec, tags: new Set(at) }); for (const k of at) tags.add(k); }
+      if (tags.size) members.push({ id: "anoints", label: "Anointments", kind: "anoint", sub: `${children.length} equipped`, tags, children });
+    }
     build.slots.forEach((slot, i) => {
       const c = CREA.get(slot.cid); if (!c) return;
       const tags = new Set();
-      for (const tid of slotTraitIds(slot)) { const tr = TRAIT[tid]; if (tr) for (const k of (tr.taxo || [])) tags.add(k); }
-      for (const gid of slot.spellGemIds || []) { const g = spellGems.find(x => x.id === gid); const sp = g ? gemSpell(g) : null; if (sp) for (const k of (sp.taxo || [])) tags.add(k); }
-      if (tags.size) cols.push({ id: "crea" + i, label: c.name, kind: "crea", tags });
+      for (const tid of slotTraitIds(slot)) { const tr = TRAIT[tid]; if (tr) for (const k of synTags(tr.taxo)) tags.add(k); }
+      for (const gid of slot.spellGemIds || []) { const g = spellGems.find(x => x.id === gid); const sp = g ? gemSpell(g) : null; if (sp) for (const k of synTags(sp.taxo)) tags.add(k); }
+      if (tags.size) members.push({ id: "crea" + i, label: c.name, kind: "crea", tags, children: null });
     });
-    return cols;
+    return members;
   }
   // list data: one entry per individual EFFECT (perk / anoint / trait / spell) with its description
   function buildTagEffects() {
     const effects = [];   // {name, desc, tags:[], owner, kind}
-    if (build.specId != null) {
-      const s = SPEC.get(build.specId);
-      if (s) for (const p of allocatedPerks(s)) if ((p.taxo || []).length) effects.push({ name: p.name, desc: perkText(p.desc, perkRank(s, p)), tags: p.taxo, owner: s.label, kind: "Perk" });
-    }
-    for (const a of equippedAnointObjs()) if ((a.taxo || []).length) effects.push({ name: a.name, desc: perkText(a.desc, a.ranks), tags: a.taxo, owner: a.spec || "Anointment", kind: "Anointment" });
+    const push = (name, desc, taxo, owner, kind) => { const tags = synTags(taxo); if (tags.length) effects.push({ name, desc, tags, owner, kind }); };
+    if (build.specId != null) { const s = SPEC.get(build.specId); if (s) for (const p of allocatedPerks(s)) push(p.name, perkText(p.desc, perkRank(s, p)), p.taxo, s.label, "Perk"); }
+    for (const a of equippedAnointObjs()) push(a.name, perkText(a.desc, a.ranks), a.taxo, a.spec || "Anointment", "Anointment");
     for (const slot of build.slots) {
       const c = CREA.get(slot.cid); if (!c) continue;
-      for (const tid of slotTraitIds(slot)) { const tr = TRAIT[tid]; if (tr && (tr.taxo || []).length) effects.push({ name: tr.name, desc: richText(tr.desc || ""), tags: tr.taxo, owner: c.name, kind: "Trait" }); }
-      for (const gid of slot.spellGemIds || []) { const g = spellGems.find(x => x.id === gid); const sp = g ? gemSpell(g) : null; if (sp && (sp.taxo || []).length) effects.push({ name: sp.name, desc: richText(sp.desc || ""), tags: sp.taxo, owner: c.name, kind: "Spell" }); }
+      for (const tid of slotTraitIds(slot)) { const tr = TRAIT[tid]; if (tr) push(tr.name, richText(tr.desc || ""), tr.taxo, c.name, "Trait"); }
+      for (const gid of slot.spellGemIds || []) { const g = spellGems.find(x => x.id === gid); const sp = g ? gemSpell(g) : null; if (sp) push(sp.name, richText(sp.desc || ""), sp.taxo, c.name, "Spell"); }
     }
     return effects;
   }
 
-  function openSynergy() { ovState = { kind: "synergy", view: "matrix", sharedOnly: false, render: renderSynergy }; openOverlay(ovState.render()); }
+  function openSynergy() { ovState = { kind: "synergy", view: "matrix", sharedOnly: false, expanded: new Set(), listCollapsed: new Set(), render: renderSynergy }; openOverlay(ovState.render()); }
 
-  // Matrix view — rows = members, columns = tags; the sticky bottom row totals each tag.
+  // Matrix view — rows = members (Spec/Anointments expandable to per-perk/per-anoint sub-rows),
+  // columns = tags; the sticky bottom row totals each tag.
   function synergyMatrixBody(st) {
     const members = buildTagCarriers();
     const deg = new Map();   // tag → how many members carry it (the number we sum)
@@ -1342,12 +1356,25 @@
       const shared = deg.get(k) >= 2;
       return `<th><div class="xref-colhead"><span class="xc-dot ${shared ? "sh" : ""}"></span><span class="xc-name" title="${esc(taxoCatName(k))} → ${esc(taxoValName(k))}">${esc(taxoValName(k))}</span></div></th>`;
     }).join("")}</tr></thead>`;
-    const rows = members.map(m => {
+    const rowFor = (m) => {
+      const expandable = m.children && m.children.length;
+      const isExp = expandable && st.expanded.has(m.id);
+      const caret = expandable
+        ? `<span class="xr-exp" data-action="matrix-expand-row" data-id="${m.id}" title="${isExp ? "Collapse" : "Expand"} per-perk tags">${isExp ? "▾" : "▸"}</span>`
+        : `<span class="xr-exp-sp"></span>`;
       const cells = tags.map(k => m.tags.has(k)
         ? `<td class="${deg.get(k) >= 2 ? "xc-active" : "xc-on"}" title="${esc(m.label)} — ${esc(taxoValName(k))}">●</td>`
         : `<td></td>`).join("");
-      return `<tr><th class="xref-rowhead" title="${esc(m.label)}${m.sub ? " · " + esc(m.sub) : ""}"><span class="xr-dot ${kindCls[m.kind] || ""}"></span><b>${esc(m.label)}</b>${m.sub ? `<span class="xr-cat">${esc(m.sub)}</span>` : ""}</th>${cells}</tr>`;
-    }).join("");
+      let out = `<tr><th class="xref-rowhead" title="${esc(m.label)}${m.sub ? " · " + esc(m.sub) : ""}">${caret}<span class="xr-dot ${kindCls[m.kind] || ""}"></span><b>${esc(m.label)}</b>${m.sub ? `<span class="xr-cat">${esc(m.sub)}</span>` : ""}</th>${cells}</tr>`;
+      if (isExp) for (const ch of m.children) {
+        const ccells = tags.map(k => ch.tags.has(k)
+          ? `<td class="xc-latent" title="${esc(ch.label)} — ${esc(taxoValName(k))}">•</td>`
+          : `<td></td>`).join("");
+        out += `<tr class="xref-subrow"><th class="xref-rowhead xref-subhead" title="${esc(ch.label)}${ch.sub ? " · " + esc(ch.sub) : ""}">${esc(ch.label)}</th>${ccells}</tr>`;
+      }
+      return out;
+    };
+    const rows = members.map(rowFor).join("");
     // sum EACH TAG: how many members carry it (shared tags highlighted)
     const sumRow = `<tr class="xref-shared"><th class="xref-rowhead">Members</th>${tags.map(k => {
       const n = deg.get(k); return `<td class="${n >= 2 ? "xc-active" : ""}">${n}</td>`;
@@ -1355,29 +1382,42 @@
     return { meta, body: `<div class="xref-wrap"><table class="xref-table">${head}<tbody>${rows}${sumRow}</tbody></table></div>` };
   }
 
-  // List view — one group per shared tag; each contributing effect shows its description + owner.
-  function synergyListBody() {
+  // List view — collapsible group per shared tag (+ a jump-link bar to any group).
+  function synergyListBody(st) {
     const effects = buildTagEffects();
     const tagMap = new Map();
     for (const ef of effects) for (const k of ef.tags) (tagMap.get(k) || tagMap.set(k, []).get(k)).push(ef);
     const shared = [...tagMap.entries()].filter(([, es]) => es.length >= 2)
       .sort((a, b) => b[1].length - a[1].length || taxoValName(a[0]).localeCompare(taxoValName(b[0])));
-    const kindCls = { Perk: "k-spec", Anointment: "k-anoint", Trait: "k-crea", Spell: "k-spell" };
-    const rows = shared.map(([k, es]) => `
-      <div class="syn-group">
-        <div class="syn-tag"><span class="syn-count">×${es.length}</span><b>${esc(taxoValName(k))}</b><span class="opt-chev">${esc(taxoCatName(k))}</span></div>
-        <div class="syn-effs">${es.map(e => `<div class="syn-eff">
-          <div class="syn-eff-head"><b>${esc(e.name)}</b><span class="syn-owner ${kindCls[e.kind] || ""}" title="${esc(e.kind)}">${esc(e.owner)}</span></div>
-          ${e.desc ? `<div class="trait-desc">${e.desc}</div>` : ""}</div>`).join("")}</div>
-      </div>`).join("")
-      || `<div class="slot-sub" style="padding:12px">${effects.length ? "No tags are shared across your build's effects yet — add more matching pieces." : "Add a specialization, anointments and creatures to see shared tags."}</div>`;
+    st.lastShared = shared.map(([k]) => k);
     const meta = `${effects.length} build effect${effects.length === 1 ? "" : "s"}`;
-    return { meta, body: `<div class="ovl-center-scroll">${shared.length ? `<div class="section-label">Shared tags — ${shared.length}</div>` : ""}<div class="syn-list">${rows}</div></div>` };
+    if (!shared.length) {
+      const msg = effects.length ? "No tags are shared across your build's effects yet — add more matching pieces." : "Add a specialization, anointments and creatures to see shared tags.";
+      return { meta, body: `<div class="ovl-center-scroll"><div class="slot-sub" style="padding:12px">${msg}</div></div>` };
+    }
+    const kindCls = { Perk: "k-spec", Anointment: "k-anoint", Trait: "k-crea", Spell: "k-spell" };
+    const allCollapsed = shared.every(([k]) => st.listCollapsed.has(k));
+    const jumpbar = `<div class="syn-jumpbar">
+      <button class="syn-chip syn-chip-all" data-action="syn-collapse-all">${allCollapsed ? "Expand all" : "Collapse all"}</button>
+      ${shared.map(([k, es]) => `<button class="syn-chip" data-action="syn-jump" data-key="${esc(k)}" title="${esc(taxoCatName(k))}">${esc(taxoValName(k))} <span class="syn-chip-n">${es.length}</span></button>`).join("")}
+    </div>`;
+    const groups = shared.map(([k, es]) => {
+      const collapsed = st.listCollapsed.has(k);
+      return `<div class="syn-group ${collapsed ? "collapsed" : ""}" data-key="${esc(k)}">
+        <button class="syn-tag" data-action="syn-toggle" data-key="${esc(k)}">
+          <span class="syn-count">×${es.length}</span><b>${esc(taxoValName(k))}</b><span class="opt-chev">${esc(taxoCatName(k))}</span>
+          <span class="syn-caret">${collapsed ? "▸" : "▾"}</span></button>
+        ${collapsed ? "" : `<div class="syn-effs">${es.map(e => `<div class="syn-eff">
+          <div class="syn-eff-head"><b>${esc(e.name)}</b><span class="syn-owner ${kindCls[e.kind] || ""}" title="${esc(e.kind)}">${esc(e.owner)}</span></div>
+          ${e.desc ? `<div class="trait-desc">${e.desc}</div>` : ""}</div>`).join("")}</div>`}
+      </div>`;
+    }).join("");
+    return { meta, body: `${jumpbar}<div class="ovl-center-scroll"><div class="section-label">Shared tags — ${shared.length}</div><div class="syn-list">${groups}</div></div>` };
   }
 
   function renderSynergy() {
     const st = ovState;
-    const { body, meta } = st.view === "list" ? synergyListBody() : synergyMatrixBody(st);
+    const { body, meta } = st.view === "list" ? synergyListBody(st) : synergyMatrixBody(st);
     const seg = `<div class="seg">
       <button class="seg-btn ${st.view !== "list" ? "on" : ""}" data-action="synergy-view" data-view="matrix">Matrix</button>
       <button class="seg-btn ${st.view === "list" ? "on" : ""}" data-action="synergy-view" data-view="list">List</button></div>`;
@@ -2227,6 +2267,12 @@
       case "open-synergy": openSynergy(); break;
       case "synergy-view": if (ovState && ovState.view !== t.dataset.view) { ovState.view = t.dataset.view; refreshOverlay(); } break;
       case "toggle-matrix-shared": ovState.sharedOnly = !ovState.sharedOnly; refreshOverlay(); break;
+      case "matrix-expand-row": { const id = t.dataset.id; ovState.expanded.has(id) ? ovState.expanded.delete(id) : ovState.expanded.add(id); refreshOverlay(); break; }
+      case "syn-toggle": { const k = t.dataset.key; ovState.listCollapsed.has(k) ? ovState.listCollapsed.delete(k) : ovState.listCollapsed.add(k); refreshOverlay(); break; }
+      case "syn-collapse-all": { const keys = ovState.lastShared || []; const allCol = keys.length && keys.every(k => ovState.listCollapsed.has(k));
+        if (allCol) ovState.listCollapsed.clear(); else for (const k of keys) ovState.listCollapsed.add(k); refreshOverlay(); break; }
+      case "syn-jump": { const k = t.dataset.key; ovState.listCollapsed.delete(k); refreshOverlay();
+        for (const g of OV.querySelectorAll(".syn-group")) if (g.dataset.key === k) { g.scrollIntoView({ block: "start" }); break; } break; }
       case "appendix-cat": ovState.cat = t.dataset.c; ovState.search = ""; refreshOverlay(); break;
       case "appendix-cat-back": ovState.cat = null; ovState.tag = null; ovState.search = ""; refreshOverlay(); break;
       case "appendix-tag": ovState.tag = t.dataset.k; ovState.search = ""; refreshOverlay(); break;
