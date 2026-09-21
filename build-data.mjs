@@ -506,13 +506,22 @@ for (const m of matRecs) {
 // (all 10 dual ambers were shifted — the runtime stat isn't a static DB field to read by position).
 const statProps = [...new Set(artGroup.stat.map(p => p.property))];
 const STAT_LETTER = { H: 'Health', A: 'Attack', D: 'Defense', I: 'Intelligence', S: 'Speed' };
-const SINGLE_AMBER_STAT = { REDAMBER: 'Health', PURPLEAMBER: 'Attack', BLUEAMBER: 'Intelligence',
-  GREENAMBER: 'Defense', YELLOWAMBER: 'Speed' };
+// USER-CONFIRMED ground truth (Player Resource sheet): Amber name → boosted stat(s).
+// The stat is runtime-computed (not a static DB field), so the confirmed name map is the authority;
+// icon/colour derivation is kept only as a provenance fallback for any name not in this table.
+const AMBER_BY_NAME = {
+  'Red Amber': 'Attack',        'Rose Amber': 'Attack / Defense',    'Deep Amber': 'Attack / Intelligence',
+  'Glossy Amber': 'Attack / Speed', 'Blue Amber': 'Defense',         'Shiny Amber': 'Defense / Speed',
+  'Yellow Amber': 'Health',     'Bold Amber': 'Health / Attack',     'Pale Amber': 'Health / Defense',
+  'Smoky Amber': 'Health / Intelligence', 'Bright Amber': 'Health / Speed', 'Purple Amber': 'Intelligence',
+  'Murky Amber': 'Intelligence / Defense', 'Sparkling Amber': 'Intelligence / Speed', 'Green Amber': 'Speed',
+};
 const amberProperty = (m) => {
+  if (AMBER_BY_NAME[m.name]) return AMBER_BY_NAME[m.name];              // user-confirmed name → stat
   const icon = matIconByKey.get(m.key) || '';
-  const d = /^amber2_([HADIS])_([HADIS])_/.exec(icon);                    // dual-stat amber
+  const d = /^amber2_([HADIS])_([HADIS])_/.exec(icon);                  // fallback: dual-stat icon code
   if (d) return `${STAT_LETTER[d[1]]} / ${STAT_LETTER[d[2]]}`;
-  return SINGLE_AMBER_STAT[m.key] || null;                               // single-stat amber (by colour)
+  return null;
 };
 const statMats = [];
 {
