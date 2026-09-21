@@ -782,9 +782,38 @@ for (const w of wardrobeRecs) {
 //   canonical  npc_<stem>_1 / _2 / _3   ·  numbered  npc_<stem>01 / 02 / 03
 //   suffix     npc_<stem>   (bare = tier 1) + _2 / _3
 // so derive a tier number per record and prefer an explicit tier over a bare-stem fallback.
-let specCostumes = 0;
+// User-verified costume corrections (wardrobe.json mis-attributes these). Two anti-patterns:
+//  • Defiler/Tribalist costumes live under a DIFFERENT stem (occultist / shaman).
+//  • Many specs' true PLAYER tier-1 is the `_alt` sprite (bare npc_<stem> is the NPC version); the
+//    build's variant filter was dropping it, so tier 1 was wrong (or missing, e.g. Inquisitor).
+// Each entry lists the tier-1/2/3 sprite stems in order; missing ones are filtered out (e.g. Hell Knight = alt only).
+const SPEC_COSTUME_OVERRIDE = {
+  'Defiler':     ['npc_occultist', 'npc_occultist_2', 'npc_occultist_3'],
+  'Tribalist':   ['npc_shaman', 'npc_shaman_2', 'npc_shaman_3'],
+  'Cabalist':    ['npc_cabalist_alt', 'npc_cabalist_2', 'npc_cabalist_3'],
+  'Cleric':      ['npc_cleric_alt', 'npc_cleric_2', 'npc_cleric_3'],
+  'Druid':       ['npc_druid_alt', 'npc_druid_2', 'npc_druid_3'],
+  'Evoker':      ['npc_evoker_alt', 'npc_evoker_2', 'npc_evoker_3'],
+  'Hell Knight': ['npc_hellknight_alt'],
+  'Monk':        ['npc_monk_alt', 'npc_monk_2', 'npc_monk_3'],
+  'Necromancer': ['npc_necromancer_alt', 'npc_necromancer_2', 'npc_necromancer_3'],
+  'Paladin':     ['npc_paladin_alt', 'npc_paladin_2', 'npc_paladin_3'],
+  'Reaver':      ['npc_reaver_alt', 'npc_reaver_2', 'npc_reaver_3'],
+  'Sorcerer':    ['npc_sorcerer_alt', 'npc_sorcerer_2', 'npc_sorcerer_3'],
+  'Trickster':   ['npc_trickster_alt', 'npc_trickster_2', 'npc_trickster_3'],
+  'Inquisitor':  ['npc_inquisitor_alt', 'npc_inquisitor_2', 'npc_inquisitor_3'],
+};
+let specCostumes = 0, specCostumeOverrides = 0;
 const isOspr = (sp) => sp.startsWith('ospr_');
 for (const s of specs) {
+  let chosen;
+  const ov = SPEC_COSTUME_OVERRIDE[s.label];
+  if (ov) {
+    chosen = ov.map((sprite, i) => ({ sprite, tierNum: i + 1, variant: null, order: i, img: `assets/wardrobe/${sprite}.png` }))
+      .filter(w => copyNamedSprite(w.sprite, OUT_WARDROBE, `${w.sprite}.png`));   // keep only stems that have a PNG
+    if (chosen.length) specCostumeOverrides++;
+    else warn(`spec "${s.label}" costume override matched no sprites`);
+  } else {
   const recs = wardrobe.filter(w => w.spec === s.label);
   const real = recs.filter(w => !w.variant && !isOspr(w.sprite)).map(w => {
     const t = Number(w.tier);
@@ -800,13 +829,14 @@ for (const s of specs) {
     const cur = byTier.get(w.tierNum);
     if (!cur || (w.explicit && !cur.explicit) || (w.explicit === cur.explicit && w.order < cur.order)) byTier.set(w.tierNum, w);
   }
-  let chosen = [1, 2, 3].map(t => byTier.get(t)).filter(Boolean);
-  if (!chosen.length) {                                        // data gap: only a variant shipped (Defiler/Tribalist)
+  chosen = [1, 2, 3].map(t => byTier.get(t)).filter(Boolean);
+  if (!chosen.length) {                                        // data gap: only a variant shipped
     const v = recs.filter(w => w.variant).sort((a, b) => a.order - b.order);
     chosen = v.length ? [{ ...v[0], tierNum: null }] : [];
     if (chosen.length) warn(`spec "${s.label}" has no standard tier costume; using variant "${chosen[0].sprite}"`);
   } else if (chosen.length < 3) {
     warn(`spec "${s.label}" has only ${chosen.length} tier costume(s) in the extract (missing tier ${[1, 2, 3].filter(t => !byTier.get(t)).join('/')})`);
+  }
   }
   s.costumes = chosen.map(w => {
     const f0 = `${w.sprite}_0.png`, f1 = `${w.sprite}_1.png`;
@@ -829,7 +859,7 @@ console.log(`  spec sprites: ${specSkins} real skins + ${specs.filter(s => s.spr
   console.log(`  perk icons: ${perkIconsCopied} copied (code-certain from perk_icons.json)${perkIconsMissing ? ` · ${perkIconsMissing} missing` : ' · 100%'}`);
   console.log(`  perk flags (Perk_REF.csv): ${anointFlagged} anointments${perkRefMisses ? ` · ${perkRefMisses} perks not in CSV` : ' · all matched'}`);
   console.log(`  False Gods: ${falseGods.length} with specs · ${specs.length - specGodMisses}/${specs.length} specs mapped${fgodImgMisses ? ` · ${fgodImgMisses} composites MISSING (run tools/build_falsegods.py)` : ' · composites ✓'}`);
-  console.log(`  wardrobe: ${wardrobeCopied} player costumes copied (code-certain)${wardrobeMissing ? ` · ${wardrobeMissing} missing` : ''} · ${specCostumes}/${specs.length} specs linked (all tiers)`);
+  console.log(`  wardrobe: ${wardrobeCopied} player costumes copied (code-certain)${wardrobeMissing ? ` · ${wardrobeMissing} missing` : ''} · ${specCostumes}/${specs.length} specs linked (all tiers) · ${specCostumeOverrides} costume overrides`);
   console.log(`  wardrobe names: ${nameSrc.class_vocab} class-vocab + ${nameSrc.L_WD} L_WD + ${nameSrc.derived} derived (of ${wardrobe.length})`);
   console.log(`  trait-item icons: ${matIconCopied} copied (code-certain from material_icons.json)${matIconMissing ? ` · ${matIconMissing} missing` : ''}`);
 
