@@ -381,16 +381,23 @@ h1, h2, h3 { margin: 0; }
 .rank-picker input[type=range] { flex: 1; accent-color: var(--accent2); }
 .rank-badge { min-width: 44px; text-align: center; font-weight: 700; color: var(--accent); }
 
-/* ── cross-reference matrix (P1 — CSS shipped now) ──────────────────────── */
-.xref-wrap { overflow: auto; max-height: 100%; }
-.xref-table { border-collapse: collapse; font-size: 11px; }
+/* ── Synergy Matrix — carriers × effect-tags grid (complement to Tag Synergy) ── */
+.xref-wrap { flex: 1; min-height: 0; overflow: auto; padding: 12px; }
+.xref-table { border-collapse: separate; border-spacing: 0; font-size: 11px; }
 .xref-table th, .xref-table td { border: 1px solid var(--border-dim); padding: 3px 5px; text-align: center; }
-.xref-corner  { position: sticky; left: 0; top: 0; z-index: 4; background: var(--surface3); }
-.xref-table thead th { position: sticky; top: 0; z-index: 2; background: var(--surface2); }
+.xref-corner  { position: sticky; left: 0; top: 0; z-index: 4; background: var(--surface3); text-align: left; font-size: 10px; color: var(--text-mute); }
+.xref-table thead th { position: sticky; top: 0; z-index: 2; background: var(--surface2); vertical-align: bottom; }
 .xref-rowhead { position: sticky; left: 0; z-index: 1; background: var(--surface2); text-align: left; white-space: nowrap; }
-.xref-colhead { display: flex; flex-direction: column-reverse; align-items: center; gap: 3px; }
-.xref-colhead .xc-name { writing-mode: vertical-rl; transform: rotate(180deg); max-height: 120px; overflow: hidden; }
-.xref-shared td { position: sticky; bottom: 0; z-index: 1; background: var(--surface3); font-weight: 700; }
+.xref-rowhead b { font-weight: 600; }
+.xref-rowhead .xr-cat { display: block; font-size: 9px; color: var(--text-mute); font-weight: 400; }
+.xref-colhead { display: flex; flex-direction: column-reverse; align-items: center; gap: 4px; }
+.xref-colhead .xc-name { writing-mode: vertical-rl; transform: rotate(180deg); max-height: 130px; overflow: hidden; text-overflow: ellipsis; }
+.xref-colhead .xc-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--text-mute); flex: 0 0 auto; }
+.xref-colhead .xc-dot.k-spec { background: var(--accent); }
+.xref-colhead .xc-dot.k-anoint { background: var(--accent2); }
+.xref-colhead .xc-dot.k-crea { background: #9fd0ff; }
+.xref-shared td, .xref-shared th { position: sticky; bottom: 0; z-index: 1; background: var(--surface3); font-weight: 700; }
+.xref-shared th { z-index: 3; }
 .xc-on { color: var(--good); } .xc-active { color: var(--accent); } .xc-latent { color: var(--text-mute); }
 
 /* ── mobile reflow ──────────────────────────────────────────────────────── */

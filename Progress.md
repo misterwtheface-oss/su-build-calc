@@ -30,6 +30,25 @@ No verify-before-push ceremony (no real users yet) — but every change is check
 - Fed by `_su_extract` via `build-data.mjs` (gitignored extract; only used assets copied). Data model in
   `SPEC_PLAN.md`, pipeline in `WIKI_CONTEXT.md`.
 
+## 2026-09-21 — session 4 (Synergy Matrix — the cross-reference grid)
+Wired the long-shelved **cross-reference matrix** (the `.xref-*` CSS shipped months ago but never had JS).
+It's the **grid form of Tag Synergy**, kept as a *complement* (both live in the Menu): Tag Synergy = per-effect
+list with descriptions; **Synergy Matrix** = at-a-glance grid.
+- **Menu → Synergy Matrix** (`open-matrix`). Columns = each build **member** (spec, every equipped anointment,
+  every filled creature — each with a kind-colored dot + vertical name label). Rows = every taxonomy **tag**
+  present in the build. A cell lights up where that member carries that tag: **gold (`xc-active`) = tag shared
+  by ≥2 members (synergy)**, **green (`xc-on`) = unique to that member**. Sticky bottom **"Shared tags"** row =
+  each member's synergy degree (count of shared tags it participates in).
+- Rows sorted shared-first (degree desc), then category, then value. **"Shared only"** facet hides unique rows.
+- `buildTagCarriers()` mirrors `buildTagEffects()`'s gathering but at the **member** grain (unique column ids,
+  so two anoints from the same spec / two copies of a creature don't collide). Reuses `slotTraitIds` +
+  spell-gem taxo, so artifact/nether-granted traits and equipped spell gems flow in.
+- CSS: `.xref-wrap` made a flex scroller (sticky headers anchor to it); `border-collapse:separate` so sticky
+  cells keep their borders; added `.xr-cat` (row sub-label) + `.xc-dot` kind colors. Added `.xref-wrap` to
+  `SCROLLERS` so the shared-only toggle preserves scroll.
+- Verified headless (jsdom, 16 assertions): columns, tag rows, gold/green cell states, sticky shared row,
+  shared-only filtering, and the empty-build guidance state all green.
+
 ## 2026-09-21 — session 3 (nav/UX polish, new specs + challenge mechanics, costume fixes)
 Large batch. All shipped to `master` (auto-deploy). Highlights:
 

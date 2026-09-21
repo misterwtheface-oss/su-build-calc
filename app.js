@@ -570,7 +570,7 @@
     if (ovState && ovState.kind === "spec" && ovState.sel != null) animateCostume(OV, SPEC.get(ovState.sel));
     else if (dovState && dovState.kind === "spec-detail" && dovState.specId != null) animateCostume(DOV, SPEC.get(dovState.specId));
   }
-  const SCROLLERS = [".ovl-center-scroll", ".ovl-left", ".ovl-right", ".art-side-list"];
+  const SCROLLERS = [".ovl-center-scroll", ".ovl-left", ".ovl-right", ".art-side-list", ".xref-wrap"];
 
   function openOverlay(html) { OV.innerHTML = html; OV.classList.remove("hidden"); }
   function closeOverlay() { if (specAnimTimer) { clearInterval(specAnimTimer); specAnimTimer = null; } OV.classList.add("hidden"); OV.innerHTML = ""; ovState = null; }
@@ -1320,6 +1320,74 @@
         <div class="syn-list">${rows}</div>
       </div></div></div>
       <div class="overlay-footer"><span class="foot-info">${effects.length} build effect${effects.length === 1 ? "" : "s"}</span>
+        <button class="btn-confirm" data-action="close-ovl">Done</button></div>
+    </div></div>`;
+  }
+
+  // ── Synergy Matrix — the grid form of Tag Synergy: build members (columns) × the
+  //    taxonomy tags they carry (rows). A cell lights up where a member carries a tag
+  //    (gold = shared by ≥2 members, green = unique). Bottom row = each member's shared
+  //    count (its synergy degree). Members = spec, each equipped anoint, each creature. ──
+  function buildTagCarriers() {
+    const cols = [];   // {id, label, kind, sub, tags:Set}
+    if (build.specId != null) {
+      const s = SPEC.get(build.specId);
+      if (s) { const tags = new Set(); for (const p of allocatedPerks(s)) for (const k of (p.taxo || [])) tags.add(k);
+        if (tags.size) cols.push({ id: "spec", label: s.label, kind: "spec", tags }); }
+    }
+    equippedAnointObjs().forEach((a, i) => { const tags = new Set(a.taxo || []);
+      if (tags.size) cols.push({ id: "ano" + i, label: a.name, kind: "anoint", sub: a.spec, tags }); });
+    build.slots.forEach((slot, i) => {
+      const c = CREA.get(slot.cid); if (!c) return;
+      const tags = new Set();
+      for (const tid of slotTraitIds(slot)) { const tr = TRAIT[tid]; if (tr) for (const k of (tr.taxo || [])) tags.add(k); }
+      for (const gid of slot.spellGemIds || []) { const g = spellGems.find(x => x.id === gid); const sp = g ? gemSpell(g) : null; if (sp) for (const k of (sp.taxo || [])) tags.add(k); }
+      if (tags.size) cols.push({ id: "crea" + i, label: c.name, kind: "crea", tags });
+    });
+    return cols;
+  }
+  function openMatrix() { ovState = { kind: "matrix", sharedOnly: false, render: renderMatrix }; openOverlay(ovState.render()); }
+  function renderMatrix() {
+    const st = ovState;
+    const cols = buildTagCarriers();
+    const deg = new Map();   // tag → how many members carry it
+    for (const c of cols) for (const k of c.tags) deg.set(k, (deg.get(k) || 0) + 1);
+    let tags = [...deg.keys()];
+    if (st.sharedOnly) tags = tags.filter(k => deg.get(k) >= 2);
+    tags.sort((a, b) => deg.get(b) - deg.get(a)
+      || taxoCatName(a).localeCompare(taxoCatName(b))
+      || taxoValName(a).localeCompare(taxoValName(b)));
+    const kindCls = { spec: "k-spec", anoint: "k-anoint", crea: "k-crea" };
+    let body;
+    if (!cols.length) {
+      body = `<div class="slot-sub" style="padding:14px">Add a specialization, anointments and creatures to see the tag matrix.</div>`;
+    } else if (!tags.length) {
+      body = `<div class="slot-sub" style="padding:14px">No ${st.sharedOnly ? "shared " : ""}tags in the current build yet.</div>`;
+    } else {
+      const head = `<thead><tr><th class="xref-corner">Tag \\ Member</th>${cols.map(c =>
+        `<th><div class="xref-colhead"><span class="xc-dot ${kindCls[c.kind] || ""}"></span><span class="xc-name" title="${esc(c.label)}${c.sub ? " · " + esc(c.sub) : ""}">${esc(c.label)}</span></div></th>`).join("")}</tr></thead>`;
+      const rows = tags.map(k => {
+        const shared = deg.get(k) >= 2;
+        const cells = cols.map(c => c.tags.has(k)
+          ? `<td class="${shared ? "xc-active" : "xc-on"}" title="${esc(c.label)} — ${esc(taxoValName(k))}">●</td>`
+          : `<td></td>`).join("");
+        return `<tr><th class="xref-rowhead" title="${esc(taxoCatName(k))} → ${esc(taxoValName(k))}"><b>${esc(taxoValName(k))}</b><span class="xr-cat">${esc(taxoCatName(k))}</span></th>${cells}</tr>`;
+      }).join("");
+      const sharedRow = `<tr class="xref-shared"><th class="xref-rowhead">Shared tags</th>${cols.map(c =>
+        `<td>${[...c.tags].filter(k => deg.get(k) >= 2).length || ""}</td>`).join("")}</tr>`;
+      body = `<div class="xref-wrap"><table class="xref-table">${head}<tbody>${rows}${sharedRow}</tbody></table></div>`;
+    }
+    const sharedCount = [...deg.values()].filter(n => n >= 2).length;
+    return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel">
+      <div class="overlay-header"><h2>Synergy Matrix</h2><button class="ovl-close" data-action="close-ovl">✕</button></div>
+      <div class="overlay-body"><div class="ovl-center">
+        <div class="ovl-filterbar">
+          <button class="facet ${st.sharedOnly ? "on" : ""}" data-action="toggle-matrix-shared">Shared only</button>
+          <span class="foot-info">${cols.length} member${cols.length === 1 ? "" : "s"} · ${sharedCount} shared tag${sharedCount === 1 ? "" : "s"}</span>
+        </div>
+        ${body}
+      </div></div>
+      <div class="overlay-footer"><span class="foot-info"></span>
         <button class="btn-confirm" data-action="close-ovl">Done</button></div>
     </div></div>`;
   }
@@ -2156,6 +2224,8 @@
       case "iconpick-pick": { const w = (D.wardrobe || []).find(x => x.sprite === t.dataset.k); if (w && dovState.onPick) dovState.onPick(w); closeDetail(); refreshOverlay(); break; }
       case "open-appendix": openAppendix(); break;
       case "open-synergy": openSynergy(); break;
+      case "open-matrix": openMatrix(); break;
+      case "toggle-matrix-shared": ovState.sharedOnly = !ovState.sharedOnly; refreshOverlay(); break;
       case "appendix-cat": ovState.cat = t.dataset.c; ovState.search = ""; refreshOverlay(); break;
       case "appendix-cat-back": ovState.cat = null; ovState.tag = null; ovState.search = ""; refreshOverlay(); break;
       case "appendix-tag": ovState.tag = t.dataset.k; ovState.search = ""; refreshOverlay(); break;
