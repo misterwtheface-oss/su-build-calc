@@ -37,7 +37,12 @@ the Spec**, **red = only one member has it** (solo). Added `deg` (distinct-membe
 `synergyMatrixBody`; `shareClass(k)` = red if deg<2 else green if spec-has else yellow, applied to column
 dots, member cells, and the Contributions total row. Numbers still show the contribution weight; colour is now
 an independent signal. Filter reverted to **"Shared only"** (deg≥2, hides red) and meta counts "shared tags".
-Added a compact **colour legend** in the matrix filter bar (Spec / Shared / Solo swatches, tooltipped). CSS:
+Added a compact **colour legend** in the matrix filter bar (Spec / Shared / Solo swatches, tooltipped).
+**DESIGN INTENT — do NOT "fix" the sort:** sort stays by contribution WEIGHT (not colour), so a high-weight
+**red** tag (one member stacking a tag many times, e.g. Evoker's 17× "Spell Gems", shared nowhere else) sorts
+to the LEFT on purpose — that's the intended *poor-optimisation alert* ("you're not synergising this"). Colour
+(cross-member share) and number/sort (theme strength) are deliberately independent signals; a red-left column
+is a feature, not a bug. CSS:
 new `.xc-spec/.xc-other/.xc-none` (green/brass/red) for cells + `.xref-colhead .xc-dot.*` backgrounds +
 `.xref-legend`; retired `.xc-dot.sh` and the old `.xc-on/.xc-active`. Sub-rows stay dim (`xc-latent`). jsdom
 smoke +colour checks (37 assertions: every filled cell & column dot & total matches its column's share status).
