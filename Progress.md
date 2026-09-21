@@ -6,15 +6,19 @@ Pages on `master`/root, Cloudflare analytics active with the shared github.io to
 No verify-before-push ceremony (no real users yet) — but every change is checked with the jsdom smoke suite
 (scratchpad `smoke.mjs`, ~84 assertions across all flows) before commit.
 
-### Current feature snapshot (as of 2026-09-18)
+### Current feature snapshot (as of 2026-09-21)
 - **Build-first home**: 6 creature slots + Specialization tile + Anointments tile; party stat overview.
-- **Creature slots** — guided wizard: Choose creature → Fusion (or a first-class "No fusion"; self-fusion
-  blocked) → Commit. Per-creature **Personality** (flat **+33% raised / −33% lowered** stat, ↑/↓ arrows)
-  and **Scrolls** (+1 base each, cap 15). Edit reopens the wizard prefilled. Detail = Base · Artifact · Total.
-- **Specialization**: selector + per-perk rank steppers (Customize), standardized perk rows, `perkText`
-  strips the `{CONDDESC_*}` tooltip bloat.
-- **Anointments**: equip up to **5** (in-game cap; validated in the exe — an anoint applies its perk at
-  **rank 1**, see `_su_extract/code/SIGILS_ANOINTMENTS_FINDINGS.md`); Spec ▾ filter + taxonomy tag chips.
+  Filled spec/anoint tiles open a **detail page** (Edit → picker); empty tiles open the picker directly.
+- **Creature slots** — 3-step guided wizard: Choose creature → Fusion (first-class "No fusion"; self-fusion
+  blocked) → **Customize** (Personality / Scrolls / Skin). Personality = flat **+33%/−33% on the PURE base**;
+  Scrolls +1 base each (cap 15). Edit reopens prefilled. Detail = **Base · Pers · Scroll · Bonus · Total**
+  with party-nav chevrons.
+- **43 specializations** (incl. Antiquarian + the Royal/Pariah/Deprived challenge specs). Selector + per-perk
+  rank steppers (Customize). **Challenge mechanics hard-enforced**: Royal anoint cap → up to 20, Pariah
+  3-creature cap, Avatar cap (1 / +Army of Gods / 0 Deprived), Deprived ignores relics + fused traits.
+- **Anointments**: equip up to **5** by default (raised up to **20** by Royal's perks — `anointMax()`); an
+  anoint applies its perk at **rank 1** (`_su_extract/code/SIGILS_ANOINTMENTS_FINDINGS.md`); can't anoint a
+  perk from your current spec; Spec ▾ filter + taxonomy tag chips.
 - **Artifacts**: 3-step builder (type → fill slots via right-hand info panel → name), socketing shows an
   item preview + explicit Add/Remove confirm, search matches name OR tag. Library + per-creature equip.
 - **Spell Gems** (spell + up to 3 dust enchants, bolded plain-text descriptions), **Nether Stones**,
@@ -25,6 +29,62 @@ No verify-before-push ceremony (no real users yet) — but every change is check
   in `_su_extract/code/TRAIT_EFFECT_DECODE_FINDINGS.md`, taxonomy in `_su_extract/data/model/TAG_TAXONOMY.md`.
 - Fed by `_su_extract` via `build-data.mjs` (gitignored extract; only used assets copied). Data model in
   `SPEC_PLAN.md`, pipeline in `WIKI_CONTEXT.md`.
+
+## 2026-09-21 — session 3 (nav/UX polish, new specs + challenge mechanics, costume fixes)
+Large batch. All shipped to `master` (auto-deploy). Highlights:
+
+**Wizard & tiles**
+- Creature wizard gained a **3rd step "Customize"** (Personality / Scrolls / Skin on their own screen +
+  a Creature › Fusion › Customize stepbar) so those controls aren't buried below the preview on mobile.
+- Creature-selector tiles: **class-emblem icon** (top-left) + **race icon** (top-right) replace the color
+  dot; **sprite sizing fixed** (absolute + object-fit so a portrait sprite like Torun 40×60 can't stretch a
+  row); **"Load more"** paginates 400 at a time with no filter gate (resets on search/filter, scroll kept).
+
+**Detail pages & navigation**
+- **Creature detail**: added an **Edit** button (→ wizard) and **party navigation** — discrete chevrons that
+  step between filled slots (flank the sprite on mobile, below it with "pos / total" on web).
+- New **Spec detail** page (mirrors the selector info panel: animated costume + perk list) and **Anoint
+  detail** page (equipped-perk list), each with an **Edit** button back to its picker. Filled tiles open the
+  detail; empty tiles open the picker.
+- **Creature detail stat table** broken out into **Base · Pers · Scroll · Bonus · Total** (relic confirmed
+  folded into Bonus). Fixed a real bug: **Personality ±33% now applies to the PURE base**, scrolls added
+  flat after (was scaling the scrolls too) — corrected centrally in `finalStats`.
+
+**Class identity**
+- Class colors re-eyedropped off the emblem icons (user-picked): Nature `#588F17`, Chaos `#8F0202`,
+  Sorcery `#8747CD`, Death `#3E3E69`, Life `#F2A908` (Sorcery/Death were reversed before).
+
+**Appendix / cards / traits**
+- Appendix trait rows: material icon beside the title (mirrors perk layout), creature in its own square;
+  **trait icon = the trait-item icon** (never the creature) — shows for the 399 item-only traits, omitted
+  (space reserved) for creature-only "Avatar-type" traits.
+- Realm cards show **"n / n / n" tier thresholds** (cards needed per effect tier, active tiers highlighted).
+- `richText` now strips `[icons, N]`-style sprite-ref tokens (169 in data) that leaked next to spell names.
+
+**Builds**: footer remapped — primary button toggles **Save ↔ Load** by selection (no accidental overwrite),
+old Load slot holds **Update «build»**, Delete moved far left; labels shortened to fit mobile.
+
+**Specs — big one (spec count 39 → 43):**
+- **Antiquarian** wired in (extractor left id 43 unlabeled; it's a real full ~15-perk spec).
+- **Defiler emblem** fixed — no `spec_defiler` sprite exists; `spec_occultist` IS the Defiler crest.
+- **Royal / Pariah / Deprived** challenge specs wired in (2 perks each, hand-defined from the perk catalog
+  because `scr_PerkGetPerkList` membership is broken for them). **Special mechanics enforced (hard-block):**
+  Royal → anoint cap 5 → up to **20** (Master of All +10 / Highborn +5, by allocated perks; equips trimmed
+  on spec/perk change); Pariah → party locked to **3** (slots 4-6 locked, over-cap dimmed "Ignored");
+  Avatars → **1** default / **+1 per Army of Gods rank** (Fanatic 3) / **0** under Deprived (over-cap Avatar
+  tiles disabled in the picker); Deprived → ignores **Relic effects** + **Fused traits** in `finalStats` /
+  `slotTraitIds`. Anoint picker also **blocks anointing a perk from your current spec**.
+- **Spec tier costumes** corrected for 14 specs (`SPEC_COSTUME_OVERRIDE`): Defiler=occultist stem,
+  Tribalist=shaman stem; Cabalist/Cleric/Druid/Evoker/Monk/Necromancer/Paladin/Reaver/Sorcerer/Trickster/
+  Inquisitor use `npc_<stem>_alt` as the player tier-1 (bare = NPC version); Hell Knight = alt only;
+  Inquisitor's tier-1 was missing entirely. 43/43 specs linked, old costume warnings cleared.
+
+**Datamine reference** updated (`_su_extract/RESUME.md` §5 + `GROUNDING_STATUS.md`): the 4 "low-confidence"
+spec records are COMPLETE, not truncated (Antiquarian full; Royal/Pariah/Deprived legitimately 2 perks — an
+anti-pattern vs the ~15 norm); documented the emblem quirk and the costume stem/`_alt` anti-patterns.
+
+**Ops**: ran a full 404 sweep of all 5,841 referenced assets (local + git-tracked + live HTTP) — **zero real
+404s** (transient GH-Pages throttling only). Trait-material icons 1754/1754 present.
 
 ## Alternate skins + fusion-palette research outcome (2026-09-20)
 **Alternate skins SHIPPED.** Creatures can wear a cosmetic skin, offered strictly by its **code-grounded
