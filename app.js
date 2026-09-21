@@ -659,7 +659,9 @@
       </div>` : "";
     const tiles = noFuseTile + shown.map(c => `
       <div class="pick-tile ${sel === c.id ? "selected" : ""}" data-action="crea-pick" data-id="${c.id}">
-        <span class="pt-cls" style="--pt-cls:${clsColor(c.cls)}"></span>
+        ${c.cls && D.classIcons && D.classIcons[c.cls]
+          ? `<span class="pt-clsico" title="${esc(c.cls)}">${spriteImg(D.classIcons[c.cls], "px")}</span>`
+          : `<span class="pt-cls" style="--pt-cls:${clsColor(c.cls)}"></span>`}
         <div class="pt-sprite">${critFace(c)}</div>
         <div class="pt-name">${esc(c.name)}</div>
       </div>`).join("");
