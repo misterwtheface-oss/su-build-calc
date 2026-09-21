@@ -396,9 +396,19 @@ h1, h2, h3 { margin: 0; }
 .xref-colhead .xc-dot.k-spec { background: var(--accent); }
 .xref-colhead .xc-dot.k-anoint { background: var(--accent2); }
 .xref-colhead .xc-dot.k-crea { background: #9fd0ff; }
+.xref-colhead .xc-dot.sh { background: var(--accent); }         /* shared tag column marker */
+.xref-rowhead .xr-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 5px; background: var(--text-mute); vertical-align: middle; }
+.xref-rowhead .xr-dot.k-spec { background: var(--accent); }
+.xref-rowhead .xr-dot.k-anoint { background: var(--accent2); }
+.xref-rowhead .xr-dot.k-crea { background: #9fd0ff; }
 .xref-shared td, .xref-shared th { position: sticky; bottom: 0; z-index: 1; background: var(--surface3); font-weight: 700; }
 .xref-shared th { z-index: 3; }
 .xc-on { color: var(--good); } .xc-active { color: var(--accent); } .xc-latent { color: var(--text-mute); }
+/* Matrix/List view toggle */
+.seg { display: inline-flex; border: 1px solid var(--border-dim); border-radius: 6px; overflow: hidden; flex: 0 0 auto; }
+.seg-btn { background: var(--surface); color: var(--text-dim); border: none; padding: 4px 12px; font-size: 12px; cursor: pointer; }
+.seg-btn + .seg-btn { border-left: 1px solid var(--border-dim); }
+.seg-btn.on { background: var(--accent); color: var(--surface3); font-weight: 700; }
 
 /* ── mobile reflow ──────────────────────────────────────────────────────── */
 @media (max-width: 700px) {

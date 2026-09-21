@@ -30,6 +30,22 @@ No verify-before-push ceremony (no real users yet) — but every change is check
 - Fed by `_su_extract` via `build-data.mjs` (gitignored extract; only used assets copied). Data model in
   `SPEC_PLAN.md`, pipeline in `WIKI_CONTEXT.md`.
 
+## 2026-09-21 — session 4b (Synergy: flip the matrix + merge with the list)
+Two changes to the just-shipped matrix, per user:
+- **Flipped the axes** so we sum the *tags*, not per-contributor tag counts. Now **rows = build members**
+  (spec / anoints / creatures, each with a kind-colored `.xr-dot`), **columns = tags** (vertical labels, gold
+  `.xc-dot.sh` marker on shared columns). The sticky bottom **"Members" row sums each tag** — how many members
+  carry it, the actual synergy strength — with ≥2 highlighted gold. (Old layout summed per member, which the
+  user flagged as the wrong thing to total.)
+- **Merged Tag Synergy + Matrix into one Menu entry, "Synergy"** (`open-synergy`). The overlay opens on the
+  **Matrix** view with a **Matrix / List segmented toggle** (`.seg`/`.seg-btn`, `synergy-view` action) in the
+  filter bar; List is the former per-effect grouped view (description + owner). "Shared only" shows only in
+  Matrix view. Split the render into `synergyMatrixBody` / `synergyListBody` returning `{body, meta}`, shared
+  chrome in `renderSynergy`; `buildTagCarriers` (members) + `buildTagEffects` (effects) both retained.
+- Removed the separate "Synergy Matrix" menu item and the `open-matrix` handler. jsdom smoke rewritten
+  (28 assertions): single menu entry, flipped orientation, per-tag sum row, gold/green cells, shared-only,
+  Matrix↔List toggle, empty state — all green.
+
 ## 2026-09-21 — session 4 (Synergy Matrix — the cross-reference grid)
 Wired the long-shelved **cross-reference matrix** (the `.xref-*` CSS shipped months ago but never had JS).
 It's the **grid form of Tag Synergy**, kept as a *complement* (both live in the Menu): Tag Synergy = per-effect

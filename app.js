@@ -1280,54 +1280,13 @@
     </div></div>`;
   }
 
-  // ── Tag Synergy — taxonomy tags shared across the build, at the individual EFFECT level ──
-  // Each effect (a single perk, anointment, trait, or spell) is its own entry with its description
-  // and owner; tags carried by ≥2 effects overlap.
-  function buildTagEffects() {
-    const effects = [];   // {name, desc, tags:[], owner, kind}
-    if (build.specId != null) {
-      const s = SPEC.get(build.specId);
-      if (s) for (const p of allocatedPerks(s)) if ((p.taxo || []).length) effects.push({ name: p.name, desc: perkText(p.desc, perkRank(s, p)), tags: p.taxo, owner: s.label, kind: "Perk" });
-    }
-    for (const a of equippedAnointObjs()) if ((a.taxo || []).length) effects.push({ name: a.name, desc: perkText(a.desc, a.ranks), tags: a.taxo, owner: a.spec || "Anointment", kind: "Anointment" });
-    for (const slot of build.slots) {
-      const c = CREA.get(slot.cid); if (!c) continue;
-      for (const tid of slotTraitIds(slot)) { const tr = TRAIT[tid]; if (tr && (tr.taxo || []).length) effects.push({ name: tr.name, desc: richText(tr.desc || ""), tags: tr.taxo, owner: c.name, kind: "Trait" }); }
-      for (const gid of slot.spellGemIds || []) { const g = spellGems.find(x => x.id === gid); const sp = g ? gemSpell(g) : null; if (sp && (sp.taxo || []).length) effects.push({ name: sp.name, desc: richText(sp.desc || ""), tags: sp.taxo, owner: c.name, kind: "Spell" }); }
-    }
-    return effects;
-  }
-  function openSynergy() { ovState = { kind: "synergy", render: renderSynergy }; openOverlay(ovState.render()); }
-  function renderSynergy() {
-    const effects = buildTagEffects();
-    const tagMap = new Map();
-    for (const ef of effects) for (const k of ef.tags) (tagMap.get(k) || tagMap.set(k, []).get(k)).push(ef);
-    const shared = [...tagMap.entries()].filter(([, es]) => es.length >= 2)
-      .sort((a, b) => b[1].length - a[1].length || taxoValName(a[0]).localeCompare(taxoValName(b[0])));
-    const kindCls = { Perk: "k-spec", Anointment: "k-anoint", Trait: "k-crea", Spell: "k-spell" };
-    const rows = shared.map(([k, es]) => `
-      <div class="syn-group">
-        <div class="syn-tag"><span class="syn-count">×${es.length}</span><b>${esc(taxoValName(k))}</b><span class="opt-chev">${esc(taxoCatName(k))}</span></div>
-        <div class="syn-effs">${es.map(e => `<div class="syn-eff">
-          <div class="syn-eff-head"><b>${esc(e.name)}</b><span class="syn-owner ${kindCls[e.kind] || ""}" title="${esc(e.kind)}">${esc(e.owner)}</span></div>
-          ${e.desc ? `<div class="trait-desc">${e.desc}</div>` : ""}</div>`).join("")}</div>
-      </div>`).join("")
-      || `<div class="slot-sub" style="padding:12px">${effects.length ? "No tags are shared across your build's effects yet — add more matching pieces." : "Add a specialization, anointments and creatures to see shared tags."}</div>`;
-    return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel">
-      <div class="overlay-header"><h2>Tag Synergy</h2><button class="ovl-close" data-action="close-ovl">✕</button></div>
-      <div class="overlay-body"><div class="ovl-center"><div class="ovl-center-scroll">
-        ${shared.length ? `<div class="section-label">Shared tags — ${shared.length}</div>` : ""}
-        <div class="syn-list">${rows}</div>
-      </div></div></div>
-      <div class="overlay-footer"><span class="foot-info">${effects.length} build effect${effects.length === 1 ? "" : "s"}</span>
-        <button class="btn-confirm" data-action="close-ovl">Done</button></div>
-    </div></div>`;
-  }
+  // ── Synergy — taxonomy tags shared across the build, in two views (Matrix / List). ──
+  // Members = the spec, each equipped anointment, each creature (+ its artifact/nether traits
+  // and equipped spell gems). Matrix = a grid of members (rows) × tags (columns); the bottom
+  // row sums each TAG (how many members carry it — that's the synergy strength). List = the
+  // same data grouped per shared tag, showing each contributing effect's description + owner.
 
-  // ── Synergy Matrix — the grid form of Tag Synergy: build members (columns) × the
-  //    taxonomy tags they carry (rows). A cell lights up where a member carries a tag
-  //    (gold = shared by ≥2 members, green = unique). Bottom row = each member's shared
-  //    count (its synergy degree). Members = spec, each equipped anoint, each creature. ──
+  // matrix data: one entry per build MEMBER (unique ids so dup specs/creatures don't collide)
   function buildTagCarriers() {
     const cols = [];   // {id, label, kind, sub, tags:Set}
     if (build.specId != null) {
@@ -1346,45 +1305,87 @@
     });
     return cols;
   }
-  function openMatrix() { ovState = { kind: "matrix", sharedOnly: false, render: renderMatrix }; openOverlay(ovState.render()); }
-  function renderMatrix() {
-    const st = ovState;
-    const cols = buildTagCarriers();
-    const deg = new Map();   // tag → how many members carry it
-    for (const c of cols) for (const k of c.tags) deg.set(k, (deg.get(k) || 0) + 1);
+  // list data: one entry per individual EFFECT (perk / anoint / trait / spell) with its description
+  function buildTagEffects() {
+    const effects = [];   // {name, desc, tags:[], owner, kind}
+    if (build.specId != null) {
+      const s = SPEC.get(build.specId);
+      if (s) for (const p of allocatedPerks(s)) if ((p.taxo || []).length) effects.push({ name: p.name, desc: perkText(p.desc, perkRank(s, p)), tags: p.taxo, owner: s.label, kind: "Perk" });
+    }
+    for (const a of equippedAnointObjs()) if ((a.taxo || []).length) effects.push({ name: a.name, desc: perkText(a.desc, a.ranks), tags: a.taxo, owner: a.spec || "Anointment", kind: "Anointment" });
+    for (const slot of build.slots) {
+      const c = CREA.get(slot.cid); if (!c) continue;
+      for (const tid of slotTraitIds(slot)) { const tr = TRAIT[tid]; if (tr && (tr.taxo || []).length) effects.push({ name: tr.name, desc: richText(tr.desc || ""), tags: tr.taxo, owner: c.name, kind: "Trait" }); }
+      for (const gid of slot.spellGemIds || []) { const g = spellGems.find(x => x.id === gid); const sp = g ? gemSpell(g) : null; if (sp && (sp.taxo || []).length) effects.push({ name: sp.name, desc: richText(sp.desc || ""), tags: sp.taxo, owner: c.name, kind: "Spell" }); }
+    }
+    return effects;
+  }
+
+  function openSynergy() { ovState = { kind: "synergy", view: "matrix", sharedOnly: false, render: renderSynergy }; openOverlay(ovState.render()); }
+
+  // Matrix view — rows = members, columns = tags; the sticky bottom row totals each tag.
+  function synergyMatrixBody(st) {
+    const members = buildTagCarriers();
+    const deg = new Map();   // tag → how many members carry it (the number we sum)
+    for (const m of members) for (const k of m.tags) deg.set(k, (deg.get(k) || 0) + 1);
     let tags = [...deg.keys()];
     if (st.sharedOnly) tags = tags.filter(k => deg.get(k) >= 2);
     tags.sort((a, b) => deg.get(b) - deg.get(a)
       || taxoCatName(a).localeCompare(taxoCatName(b))
       || taxoValName(a).localeCompare(taxoValName(b)));
-    const kindCls = { spec: "k-spec", anoint: "k-anoint", crea: "k-crea" };
-    let body;
-    if (!cols.length) {
-      body = `<div class="slot-sub" style="padding:14px">Add a specialization, anointments and creatures to see the tag matrix.</div>`;
-    } else if (!tags.length) {
-      body = `<div class="slot-sub" style="padding:14px">No ${st.sharedOnly ? "shared " : ""}tags in the current build yet.</div>`;
-    } else {
-      const head = `<thead><tr><th class="xref-corner">Tag \\ Member</th>${cols.map(c =>
-        `<th><div class="xref-colhead"><span class="xc-dot ${kindCls[c.kind] || ""}"></span><span class="xc-name" title="${esc(c.label)}${c.sub ? " · " + esc(c.sub) : ""}">${esc(c.label)}</span></div></th>`).join("")}</tr></thead>`;
-      const rows = tags.map(k => {
-        const shared = deg.get(k) >= 2;
-        const cells = cols.map(c => c.tags.has(k)
-          ? `<td class="${shared ? "xc-active" : "xc-on"}" title="${esc(c.label)} — ${esc(taxoValName(k))}">●</td>`
-          : `<td></td>`).join("");
-        return `<tr><th class="xref-rowhead" title="${esc(taxoCatName(k))} → ${esc(taxoValName(k))}"><b>${esc(taxoValName(k))}</b><span class="xr-cat">${esc(taxoCatName(k))}</span></th>${cells}</tr>`;
-      }).join("");
-      const sharedRow = `<tr class="xref-shared"><th class="xref-rowhead">Shared tags</th>${cols.map(c =>
-        `<td>${[...c.tags].filter(k => deg.get(k) >= 2).length || ""}</td>`).join("")}</tr>`;
-      body = `<div class="xref-wrap"><table class="xref-table">${head}<tbody>${rows}${sharedRow}</tbody></table></div>`;
-    }
     const sharedCount = [...deg.values()].filter(n => n >= 2).length;
+    const meta = `${members.length} member${members.length === 1 ? "" : "s"} · ${sharedCount} shared tag${sharedCount === 1 ? "" : "s"}`;
+    if (!members.length) return { meta, body: `<div class="slot-sub" style="padding:14px">Add a specialization, anointments and creatures to see the tag matrix.</div>` };
+    if (!tags.length) return { meta, body: `<div class="slot-sub" style="padding:14px">No ${st.sharedOnly ? "shared " : ""}tags in the current build yet.</div>` };
+    const kindCls = { spec: "k-spec", anoint: "k-anoint", crea: "k-crea" };
+    const head = `<thead><tr><th class="xref-corner">Member \\ Tag</th>${tags.map(k => {
+      const shared = deg.get(k) >= 2;
+      return `<th><div class="xref-colhead"><span class="xc-dot ${shared ? "sh" : ""}"></span><span class="xc-name" title="${esc(taxoCatName(k))} → ${esc(taxoValName(k))}">${esc(taxoValName(k))}</span></div></th>`;
+    }).join("")}</tr></thead>`;
+    const rows = members.map(m => {
+      const cells = tags.map(k => m.tags.has(k)
+        ? `<td class="${deg.get(k) >= 2 ? "xc-active" : "xc-on"}" title="${esc(m.label)} — ${esc(taxoValName(k))}">●</td>`
+        : `<td></td>`).join("");
+      return `<tr><th class="xref-rowhead" title="${esc(m.label)}${m.sub ? " · " + esc(m.sub) : ""}"><span class="xr-dot ${kindCls[m.kind] || ""}"></span><b>${esc(m.label)}</b>${m.sub ? `<span class="xr-cat">${esc(m.sub)}</span>` : ""}</th>${cells}</tr>`;
+    }).join("");
+    // sum EACH TAG: how many members carry it (shared tags highlighted)
+    const sumRow = `<tr class="xref-shared"><th class="xref-rowhead">Members</th>${tags.map(k => {
+      const n = deg.get(k); return `<td class="${n >= 2 ? "xc-active" : ""}">${n}</td>`;
+    }).join("")}</tr>`;
+    return { meta, body: `<div class="xref-wrap"><table class="xref-table">${head}<tbody>${rows}${sumRow}</tbody></table></div>` };
+  }
+
+  // List view — one group per shared tag; each contributing effect shows its description + owner.
+  function synergyListBody() {
+    const effects = buildTagEffects();
+    const tagMap = new Map();
+    for (const ef of effects) for (const k of ef.tags) (tagMap.get(k) || tagMap.set(k, []).get(k)).push(ef);
+    const shared = [...tagMap.entries()].filter(([, es]) => es.length >= 2)
+      .sort((a, b) => b[1].length - a[1].length || taxoValName(a[0]).localeCompare(taxoValName(b[0])));
+    const kindCls = { Perk: "k-spec", Anointment: "k-anoint", Trait: "k-crea", Spell: "k-spell" };
+    const rows = shared.map(([k, es]) => `
+      <div class="syn-group">
+        <div class="syn-tag"><span class="syn-count">×${es.length}</span><b>${esc(taxoValName(k))}</b><span class="opt-chev">${esc(taxoCatName(k))}</span></div>
+        <div class="syn-effs">${es.map(e => `<div class="syn-eff">
+          <div class="syn-eff-head"><b>${esc(e.name)}</b><span class="syn-owner ${kindCls[e.kind] || ""}" title="${esc(e.kind)}">${esc(e.owner)}</span></div>
+          ${e.desc ? `<div class="trait-desc">${e.desc}</div>` : ""}</div>`).join("")}</div>
+      </div>`).join("")
+      || `<div class="slot-sub" style="padding:12px">${effects.length ? "No tags are shared across your build's effects yet — add more matching pieces." : "Add a specialization, anointments and creatures to see shared tags."}</div>`;
+    const meta = `${effects.length} build effect${effects.length === 1 ? "" : "s"}`;
+    return { meta, body: `<div class="ovl-center-scroll">${shared.length ? `<div class="section-label">Shared tags — ${shared.length}</div>` : ""}<div class="syn-list">${rows}</div></div>` };
+  }
+
+  function renderSynergy() {
+    const st = ovState;
+    const { body, meta } = st.view === "list" ? synergyListBody() : synergyMatrixBody(st);
+    const seg = `<div class="seg">
+      <button class="seg-btn ${st.view !== "list" ? "on" : ""}" data-action="synergy-view" data-view="matrix">Matrix</button>
+      <button class="seg-btn ${st.view === "list" ? "on" : ""}" data-action="synergy-view" data-view="list">List</button></div>`;
+    const sharedBtn = st.view === "list" ? "" : `<button class="facet ${st.sharedOnly ? "on" : ""}" data-action="toggle-matrix-shared">Shared only</button>`;
     return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel">
-      <div class="overlay-header"><h2>Synergy Matrix</h2><button class="ovl-close" data-action="close-ovl">✕</button></div>
+      <div class="overlay-header"><h2>Synergy</h2><button class="ovl-close" data-action="close-ovl">✕</button></div>
       <div class="overlay-body"><div class="ovl-center">
-        <div class="ovl-filterbar">
-          <button class="facet ${st.sharedOnly ? "on" : ""}" data-action="toggle-matrix-shared">Shared only</button>
-          <span class="foot-info">${cols.length} member${cols.length === 1 ? "" : "s"} · ${sharedCount} shared tag${sharedCount === 1 ? "" : "s"}</span>
-        </div>
+        <div class="ovl-filterbar">${seg}${sharedBtn}<span class="foot-info">${meta}</span></div>
         ${body}
       </div></div>
       <div class="overlay-footer"><span class="foot-info"></span>
@@ -2224,7 +2225,7 @@
       case "iconpick-pick": { const w = (D.wardrobe || []).find(x => x.sprite === t.dataset.k); if (w && dovState.onPick) dovState.onPick(w); closeDetail(); refreshOverlay(); break; }
       case "open-appendix": openAppendix(); break;
       case "open-synergy": openSynergy(); break;
-      case "open-matrix": openMatrix(); break;
+      case "synergy-view": if (ovState && ovState.view !== t.dataset.view) { ovState.view = t.dataset.view; refreshOverlay(); } break;
       case "toggle-matrix-shared": ovState.sharedOnly = !ovState.sharedOnly; refreshOverlay(); break;
       case "appendix-cat": ovState.cat = t.dataset.c; ovState.search = ""; refreshOverlay(); break;
       case "appendix-cat-back": ovState.cat = null; ovState.tag = null; ovState.search = ""; refreshOverlay(); break;
