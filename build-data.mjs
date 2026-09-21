@@ -455,8 +455,8 @@ function spellClass(name) {
   for (const [rn, cls] of refClassEntries) { const dd = lev(n, rn); if (dd < bd) { bd = dd; best = cls; } }
   return best;
 }
-// generic per-class spell-gem icons (verified by pixel colour): gems are colour-coded by class, not per-spell
-const GEM_SRC = { Nature: 'gem_nature_lvl4', Chaos: 'gem_chaos_lvl4', Sorcery: 'gem_sorceryB_lvl4', Death: 'gem_sorceryP_lvl4', Life: 'gem_lifeG_lvl4' };
+// per-class spell-gem icons: user-authored gems (assets/sprites/<class>_tier15.png), replacing the wrong gem_*_lvl4 sprites
+const GEM_SRC = { Nature: 'nature_tier15', Chaos: 'chaos_tier15', Sorcery: 'sorcery_tier15', Death: 'death_tier15', Life: 'life_tier15' };
 fs.rmSync(OUT_SPELLGEM, { recursive: true, force: true });
 const spellGems = {};
 for (const [cls, base] of Object.entries(GEM_SRC)) {
