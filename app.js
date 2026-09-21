@@ -1691,7 +1691,7 @@
   // ── creature detail ────────────────────────────────────────────────────────
   function openCreatureDetail(slotIdx) {
     const slot = build.slots[slotIdx], c = CREA.get(slot.cid); if (!c) return;
-    dovState = { kind: "creature-detail", slotIdx, render: () => renderCreatureDetail(slotIdx) };
+    dovState = { kind: "creature-detail", slotIdx, render: () => renderCreatureDetail(dovState.slotIdx) };
     openDetail(dovState.render());
   }
   function renderCreatureDetail(slotIdx) {
@@ -1719,12 +1719,19 @@
     const traitHtml = traitIds.map(tid => `<div class="primary-traits" style="margin-bottom:6px">${traitBanner(tid)}
       <div class="trait-desc">${richText((TRAIT[tid] || {}).desc || "")}</div></div>`).join("");
     const relic = slot.relic ? RELIC.get(slot.relic.id) : null;
+    // party navigation — step between filled creature slots (wraps); chevrons flank the sprite on
+    // mobile, sit below it on web. Hidden entirely when there's only one creature.
+    const filled = build.slots.map((s, i) => i).filter(i => build.slots[i].cid != null);
+    const pos = filled.indexOf(slotIdx), total = filled.length, hasNav = total > 1;
+    const chev = (dir, cls) => `<button class="cd-chev ${cls}" data-action="crea-nav" data-dir="${dir}" title="${dir < 0 ? "Previous" : "Next"} creature">${dir < 0 ? "‹" : "›"}</button>`;
     return `<div class="ovl-backdrop" data-action="detail-backdrop"><div class="overlay-panel detail">
       <div class="overlay-header"><h2>${esc(c.name)}${f ? " ⚭ " + esc(f.name) : ""}</h2><button class="ovl-close" data-action="close-detail">✕</button></div>
       <div class="overlay-body">
         <div class="ovl-left cd-left">
-          <div class="cd-sprite">${critFaceSkinned(c, slot.skinId)}</div>
-          <div class="slot-sub"><span style="color:${clsColor(b.cls)};font-weight:700">${esc(b.cls || "—")}</span>${c.race ? " · " + esc(c.race) : ""}</div></div>
+          <div class="cd-sprite-row">${hasNav ? chev(-1, "flank prev") : ""}
+            <div class="cd-sprite">${critFaceSkinned(c, slot.skinId)}</div>${hasNav ? chev(1, "flank next") : ""}</div>
+          <div class="slot-sub"><span style="color:${clsColor(b.cls)};font-weight:700">${esc(b.cls || "—")}</span>${c.race ? " · " + esc(c.race) : ""}</div>
+          ${hasNav ? `<div class="cd-nav-below">${chev(-1, "prev")}<span class="cd-nav-pos">${pos + 1} / ${total}</span>${chev(1, "next")}</div>` : ""}</div>
         <div class="ovl-center"><div class="ovl-center-scroll">
           <div class="stat-grid detailed"><div class="stat-header"><span>Stat</span>
             <span style="text-align:right">Base</span><span style="text-align:right">Pers</span>
@@ -2083,6 +2090,13 @@
       case "build-relic": openRelicBuilder(+t.dataset.slot); break;
       case "creature-detail": openCreatureDetail(+t.dataset.slot); break;
       case "crea-edit": { const si = +t.dataset.slot; closeDetail(); openCreaturePicker(si); break; }
+      case "crea-nav": {
+        const filled = build.slots.map((s, i) => i).filter(i => build.slots[i].cid != null);
+        if (filled.length < 2 || !dovState) break;
+        const cur = filled.indexOf(dovState.slotIdx), dir = +t.dataset.dir;
+        dovState.slotIdx = filled[(cur + dir + filled.length) % filled.length];
+        refreshDetail(); break;
+      }
       case "pick-spec": openSpecPicker(); break;
       case "spec-detail": openSpecDetail(); break;
       case "spec-edit": closeDetail(); openSpecPicker(); break;

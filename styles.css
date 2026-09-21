@@ -639,6 +639,14 @@ h1, h2, h3 { margin: 0; }
 .cd-left { width: 180px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; text-align: center; }
 .cd-sprite { width: 130px; height: 130px; margin: 0 auto 4px; display: flex; align-items: center; justify-content: center; }
 .cd-sprite img { width: 100%; height: 100%; object-fit: contain; }
+/* party navigation — discrete chevrons; below the sprite on web, flanking it on mobile */
+.cd-sprite-row { display: flex; align-items: center; justify-content: center; gap: 4px; }
+.cd-chev { background: none; border: none; color: var(--text-mute); cursor: pointer; font-size: 24px; line-height: 1;
+  padding: 6px 10px; border-radius: 8px; transition: color .1s, background .1s; }
+.cd-chev:hover { color: var(--text); background: rgba(255,255,255,.07); }
+.cd-chev.flank { display: none; }               /* mobile-only; hidden on web */
+.cd-nav-below { display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 2px; }
+.cd-nav-pos { font-size: 12px; color: var(--text-mute); font-variant-numeric: tabular-nums; min-width: 34px; }
 .np-actions { display: flex; justify-content: flex-end; gap: 8px; }
 
 /* artifact library + builder icons */
@@ -752,6 +760,8 @@ h1, h2, h3 { margin: 0; }
 /* mobile overrides for v2 components */
 @media (max-width: 600px) {
   .cd-left { width: auto; }   /* full-width when stacked on top so the sprite centers */
+  .cd-chev.flank { display: block; }   /* flank the sprite on mobile */
+  .cd-nav-below { display: none; }      /* … and drop the below-sprite nav */
   .lib-info { flex: 0 0 34vh; height: 34vh; max-height: 34vh; }   /* static bottom panel; scroll, don't resize to content */
   .spec-grid { grid-template-columns: repeat(5, 1fr); gap: 6px; }        /* ≥5 per row */
   .spec-pick .pt-name { font-size: 9px; line-height: 1.05; }
