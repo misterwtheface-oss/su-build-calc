@@ -104,8 +104,8 @@ function parseCSV(text) {
 const CLASSES = [
   { key: 'Nature',  color: '#4fae5a' },
   { key: 'Chaos',   color: '#c0392b' },
-  { key: 'Sorcery', color: '#3a6ea5' },
-  { key: 'Death',   color: '#7d4fae' },
+  { key: 'Sorcery', color: '#b95ce6' },   // bright purple/magenta — matches card_bg_sorcery
+  { key: 'Death',   color: '#3a5fe0' },   // royal blue — matches card_bg_death + class_death emblem
   { key: 'Life',    color: '#d4af37' },
 ];
 const CLASS_SET = new Set(CLASSES.map(c => c.key));
