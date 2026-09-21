@@ -253,9 +253,24 @@ creaturesRef.forEach((r, i) => {
 // The extractor left a few specs unlabeled; user-confirmed identities are applied here so they ship.
 // (id 43 = Antiquarian, a full 15-perk spec. ids 27/37/38 stay dropped — only 1 perk each, need re-mining.)
 const SPEC_LABEL_OVERRIDE = { 43: 'Antiquarian' };
+// Challenge specs Royal/Pariah/Deprived: the extractor's scr_PerkGetPerkList membership is broken for
+// these (signature perks unassigned/misassigned), so define them from the perk catalog. Each has 2 perks
+// (name/desc/cost/icon still resolve by key). Their special mechanics are enforced app-side.
+const SPEC_EXTRA = [
+  { spec_id: 44, key: 'ROYAL', label: 'Royal',
+    playstyle: 'A prestige specialization whose perks let you equip far more Anointments than any other class — up to 20 total.',
+    perks: [{ key: 'ROYALTY', name: 'Master of All' }, { key: 'HIGHBORN', name: 'Highborn' }] },
+  { spec_id: 45, key: 'PARIAH', label: 'Pariah',
+    playstyle: 'A solitary specialization: you may only use 3 creatures at a time.',
+    perks: [{ key: 'INTROVERSION', name: 'Introversion' }, { key: 'LIFELONGRESPITE', name: 'Lifelong Respite' }] },
+  { spec_id: 46, key: 'DEPRIVED', label: 'Deprived',
+    playstyle: 'A minimalist specialization: Fused traits, Relic effects, and Avatar creatures are all unavailable.',
+    perks: [{ key: 'TOTALDEPRIVATION', name: 'Total Deprivation' }, { key: 'SIMPLELIFE', name: 'Simple Life' }] },
+];
 const specRecs = readJSON(path.join(MODEL, 'specializations.json')).records
   .map(s => (s.label ? s : { ...s, label: SPEC_LABEL_OVERRIDE[s.spec_id] || s.label }))
-  .filter(s => s.label);
+  .filter(s => s.label)
+  .concat(SPEC_EXTRA);
 const spriteMeta = readJSON(path.join(SRC, 'assets', 'sprite_metadata.json'));
 const metaByName = new Map(spriteMeta.map(r => [r.name, r]));
 const skin32 = spriteMeta.filter(r => r.name.startsWith('spec_') && r.w === 32).map(r => r.name);
