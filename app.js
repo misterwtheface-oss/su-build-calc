@@ -165,7 +165,12 @@
     }
     return null;   // placeholder: caller falls back to the raw primary sprite until ready
   }
-  const critFaceFused = (primary, secondary) => secondary
+  // NOTE: fusion recolour is a player-picked choice among 4 game-generated palettes. Until we capture the
+  // exact option palettes (live memory read of the fuse palette globals), show the UNTINTED primary sprite —
+  // always a real in-game option — rather than a guessed recolour. Machinery above stays for wiring the
+  // real palettes into a picker. Set _FUSE_PREVIEW to re-enable the approximate auto-recolour.
+  const _FUSE_PREVIEW = false;
+  const critFaceFused = (primary, secondary) => (secondary && _FUSE_PREVIEW)
     ? spriteImg(fusedSpriteSrc(primary, secondary) || primary.sprite)
     : critFace(primary);
 
