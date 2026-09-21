@@ -307,7 +307,8 @@
   // (e.g. "<1> random buffs" at rank 3 → "3 random buffs"). Only perks carry <N>.
   function richText(str, rank) {
     if (!str) return "";
-    const s = String(str), re = /\{([A-Za-z0-9_]+)\}|\[[a-z0-9_]+\]|<(\d+(?:\.\d+)?)>/g;
+    // [icon] and [icons, 1984]-style sprite refs are dropped (leaves the following spell name as text)
+    const s = String(str), re = /\{([A-Za-z0-9_]+)\}|\[[a-z0-9_]+(?:\s*,\s*\d+)*\]|<(\d+(?:\.\d+)?)>/g;
     let out = "", last = 0, m;
     while ((m = re.exec(s))) {
       out += esc(s.slice(last, m.index));
@@ -1200,12 +1201,15 @@
           _search: t.name + " " + (creature ? creature.name : "") + " " + items.map(i => i.name).join(" ") };
       }).sort((a, b) => a.name.localeCompare(b.name));
       const traitRow = (g) => {
-        // mirror the perk layout: material icon beside the title; the creature gets its own square on the row
-        const iIco = (g.items[0] && g.items[0].icon) ? spriteImg(g.items[0].icon, "px") : "";
+        // the trait's icon is its material (trait-item) icon; if the trait has no item, show NO icon
+        // (not even an empty box) — never derive it from the creature. Creature gets its own square.
+        const itemIco = g.items.find(i => i.icon);
+        const icoSpan = itemIco
+          ? `<span class="perk-ico sm" title="${esc(g.items.map(i => i.name).join(", "))}">${spriteImg(itemIco.icon, "px")}</span>` : "";
         const meta = g.items.length ? `<span class="anoint-spec-tag">${g.items.length} item${g.items.length === 1 ? "" : "s"}</span>` : "";
         const creaSquare = g.creature ? `<div class="apx-crea" title="${esc(g.creature.name)}">${critFace(g.creature)}</div>` : "";
         return `<div class="perk-line apx-trait">
-          <span class="perk-ico sm"${g.items.length ? ` title="${esc(g.items.map(i => i.name).join(", "))}"` : ""}>${iIco}</span>
+          ${icoSpan}
           <div class="perk-line-body">
             <div class="perk-line-head"><b>${esc(g.name)}</b>${meta ? `<span class="perk-line-meta">${meta}</span>` : ""}</div>
             ${g.desc ? `<div class="perk-desc">${richText(g.desc)}</div>` : ""}
