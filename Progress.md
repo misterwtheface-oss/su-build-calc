@@ -54,11 +54,12 @@ Batch of user requests.
   `parseCSVRaw`); verified the filled values align with each creature's non-null code stats (Final
   Arbiter HP=30). `statSource` gains a `+ref` suffix, build logs the 14, and a guard warns on any
   residual null. 0 nulls remain.
-- **#4 Creature-picker stat sort + magnitude bars.** New **Sort** segmented bar (— / HP / Atk / Int /
-  Def / Spd / Total) in the picker; `sortCreatures` orders highest-first. Picking a stat draws a
-  **magnitude bar on every tile** = `value / roster-max` (precomputed `STAT_MAX` across all creatures),
-  so you see each creature's stat relative to the whole roster. `st.sort` state, `crea-sort` handler
-  (resets pagination). Default sort shows no bars.
+- **#4 Creature-picker stat sort + magnitude.** New **Sort** segmented bar (— / HP / Atk / Int / Def /
+  Spd / Total) in the picker; `sortCreatures` orders highest-first. `st.sort` state, `crea-sort` handler
+  (resets pagination). **Magnitude (v2, per follow-up): moved off the tiles into the info-panel base-stat
+  table** — a **discrete** thin track per row (`.stat-grid.single.mag`: name | 3px accent track @ 45%
+  opacity | value) showing `value / roster-max` (`STAT_MAX` across all creatures) for **all 5 stats +
+  Total at once**, always visible for the highlighted creature. Tiles are back to clean name-only.
 - **#1 Synergy matrix leftmost column right-aligned** (`.xref-rowhead`/`.xref-corner` → `text-align:
   right`; sub-row indent flipped from `padding-left:26px` to `padding-right:14px`) so member labels sit
   against the numeric grid.

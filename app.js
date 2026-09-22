@@ -685,8 +685,6 @@
       <button class="seg-btn ${!st.sort ? "on" : ""}" data-action="crea-sort" data-k="">—</button>
       ${CREA_STAT_COLS.map(c => `<button class="seg-btn ${st.sort === c.k ? "on" : ""}" data-action="crea-sort" data-k="${c.k}">${c.lbl}</button>`).join("")}
     </div></div>`;
-    const statBar = (c) => st.sort && STAT_MAX[st.sort]
-      ? `<div class="pt-statbar"><span class="pt-statval">${c[st.sort] || 0}</span><span class="pt-bar"><i style="width:${Math.round((c[st.sort] || 0) / STAT_MAX[st.sort] * 100)}%"></i></span></div>` : "";
 
     // fusion step leads with a "No fusion" tile so skipping is a first-class choice
     const noFuseTile = fusion ? `
@@ -707,7 +705,6 @@
           ? `<span class="pt-raceico" title="${esc(c.race)}">${spriteImg(D.raceIcons[c.race], "px")}</span>` : ""}
         <div class="pt-sprite">${critFace(c)}</div>
         <div class="pt-name">${esc(c.name)}</div>
-        ${statBar(c)}
       </div>`; }).join("");
 
     const title = fusion ? "Fusion partner" : "Choose creature";
@@ -747,10 +744,13 @@
       ${c.traitId != null ? `<div class="section-label">Innate trait</div>
         <div class="primary-traits" style="margin-bottom:12px">${traitBanner(c.traitId)}<div class="trait-desc">${richText((TRAIT[c.traitId] || {}).desc || "")}</div></div>` : ""}
       <div class="section-label">Base stats</div>
-      <div class="stat-grid single">
+      <div class="stat-grid single mag">
         ${STAT_KEYS.map(k => `<div class="stat-row"><span class="stat-name">${STAT_LABEL[k]}</span>
+          <span class="stat-mag" title="${Math.round((c[k] || 0) / (STAT_MAX[k] || 1) * 100)}% of the roster max"><i style="width:${Math.round((c[k] || 0) / (STAT_MAX[k] || 1) * 100)}%"></i></span>
           <span class="stat-val total">${c[k]}</span></div>`).join("")}
-        <div class="stat-row hl-med"><span class="stat-name">Total</span><span class="stat-val total">${c.total}</span></div></div>`;
+        <div class="stat-row hl-med"><span class="stat-name">Total</span>
+          <span class="stat-mag"><i style="width:${Math.round((c.total || 0) / (STAT_MAX.total || 1) * 100)}%"></i></span>
+          <span class="stat-val total">${c.total}</span></div></div>`;
   }
   // wizard step-2 preview: the actual built creature (fusion + personality + scrolls) via the real stat calc
   function renderWizardPreview(st) {
