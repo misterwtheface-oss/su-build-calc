@@ -55,6 +55,11 @@ No verify-before-push ceremony (no real users yet) — but every change is check
   meta chip (`spellMeta`). The spell-gem builder's spell-picker rows got the same inline charges·potency tag.
 - New CSS `.spell-stats`/`.ss-row` (key/value) + `.prop-metatag`. jsdom `spellgem_smoke.mjs` 16/16 (data
   provenance, info-panel stats, Appendix icons+meta); all other suites green. Shipped to `master`.
+- **Follow-up: live info panel while PICKING a spell.** The spell-gem builder's step-1 (Pick spell) gained
+  a right `ovl-right` info panel that previews the highlighted spell's icon + full effect + stat readout
+  (`spellStatsHtml`) as you tap through candidates — so you can compare charges/potency/target BEFORE
+  committing, not only after the gem exists. `sg-spell` already re-renders via `refreshOverlay` (scroll
+  preserved). Smoke extended to 22/22.
 
 ## 2026-09-21 — session 4m (fix Defiler/Tribalist tier-1 costume — split-stem antipattern)
 User: tier-1 Defiler & Tribalist were broken. **Final, user-confirmed truth: these two specs split their

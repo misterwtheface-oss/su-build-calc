@@ -2323,9 +2323,17 @@
       const sTaxo = st.spellTaxo
         ? `<button class="facet on tag" data-action="sg-taxofilter-clear">${esc(taxoCatName(st.spellTaxo))}: <b>${esc(taxoValName(st.spellTaxo))}</b> <span class="facet-x">✕</span></button>`
         : `<button class="facet add" data-action="sg-taxofilter">＋ Filter</button>`;
+      // right info panel — preview the highlighted spell's full effect + stats before committing to it
+      const chosen = g.spellId != null ? SPELL.get(g.spellId) : null;
+      const info = chosen
+        ? `<div class="ns-info-head"><span class="ns-info-icon">${spellIcon(chosen) ? spriteImg(spellIcon(chosen), "px") : ""}</span><h3>${esc(chosen.name)}</h3></div>
+           ${chosen.desc ? `<div class="prop-sub" style="margin-bottom:4px">${perkText(chosen.desc)}</div>` : ""}
+           ${spellStatsHtml(chosen)}`
+        : `<div class="slot-sub" style="padding:12px">Tap a spell to preview its effect, charges and potency.</div>`;
       body = `<div class="ovl-center">
         <div class="ovl-filterbar"><input class="ovl-search" placeholder="Search spells…" value="${esc(st.search)}" data-action="sg-search">${sTaxo}</div>
-        <div class="ovl-center-scroll">${rows}</div></div>`;
+        <div class="ovl-center-scroll">${rows}</div></div>
+        <div class="ovl-right lib-info">${info}</div>`;
       footer = `<button class="btn-ghost" data-action="sg-cancel">Cancel</button>
         <button class="btn-confirm" data-action="sgb-next" ${g.spellId != null ? "" : "disabled"}>Next: Properties ›</button>`;
     } else {
