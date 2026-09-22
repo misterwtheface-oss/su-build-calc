@@ -872,7 +872,11 @@ What works end-to-end:
 - [x] **Taxonomy of remaining surfaces** — DONE (session 4o): Realm Cards + Relics classified (LLM batch)
       → Appendix sections + ＋Filter; relics + nether spell-props counted in Synergy, cards excluded.
       (Nether stones derive taxo from socketed trait/spell contents at runtime.)
-- [ ] Real trait detail page (replace the `nav-trait` `alert()` stub) with tags + "shared by N party members".
+- [x] **Entity taxonomy detail** — DONE (2026-09-22): replaced the `nav-trait` `alert()` stub with a real
+      detail overlay, generalized to trait/spell/perk/relic/card. Any Appendix result row (or trait banner)
+      opens description + full taxonomy grouped by category with provenance chips; tap a tag → filter the
+      Appendix by it. (`resolveEntity`/`entityTaxHtml`/`openEntityDetail`, return-stack to creature detail.)
+      Optional follow-up: add "shared by N party members" to the trait view.
 - [ ] DPS / effective-stat simulation from `damageModel` (spell & melee, crit/dodge, defending). Expose
       class-advantage multiplier as a toggle (unconfirmed in extract).
 - [ ] **Revisit CSV-provenance data (harden vs code)** — several shipped fields come from the user's
@@ -924,6 +928,14 @@ What works end-to-end:
 - Class-advantage multiplier + Nether Stone numerics are runtime/in-game-only (see WIKI_CONTEXT) → modelled around.
 
 ## Session log
+- 2026-09-22: **Entity taxonomy detail** (backlog: real trait detail page, generalized). Clicking any Appendix
+  result row — or any trait banner — opens a detail overlay showing that entity's description + its FULL
+  taxonomy grouped by category, each value chipped with its provenance source (token/keyword/llm/phrase/field/
+  correction). Tapping a tag jumps to the Appendix filtered by it. Reusable `resolveEntity(kind,id)` +
+  `entityTaxHtml(e)` cover trait/spell/perk/relic/card (perk by `key`, rest by id); `openEntityDetail` keeps a
+  return target so opening from the creature detail page returns there on close. Appendix rows made clickable
+  (`apx-open`); `line()`/`traitRow` carry the `{kind,id}` target. Verified headless (row→detail→tag-jump; and
+  creature-detail→banner→detail→close returns to creature). Replaces the `nav-trait` `alert()` stub.
 - 2026-09-22: **Macro Proposal — iteration 2 (extensibility refactor).** No behavior change — `proposeMacro`
   output verified **byte-identical** across a fixture covering every rule branch (headless diff, 54 lines).
   Extracted `MACRO_TUNING` (every threshold: heal %s, finishHp, buff/debuff floors, minionCap, aoeMaxThreshold,
