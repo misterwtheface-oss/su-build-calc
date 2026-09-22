@@ -512,7 +512,9 @@ artRef.forEach((a, i) => {
   let unit = '%';
   for (const [rk, v] of Object.entries(a.per_rank || {})) {
     perRank[rk] = pct(v);
-    if (!String(v).includes('%')) unit = 'flat';
+    // "-" placeholders for low ranks carry no % sign — only a REAL numeric value without % means flat
+    // (e.g. Spell Gem Slots). Ignoring dashes stops them flipping every property to "flat".
+    if (v != null && v !== '-' && pct(v) != null && !String(v).includes('%')) unit = 'flat';
   }
   artGroup[g].push({
     id: `${g}:${i}`,

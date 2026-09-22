@@ -1930,16 +1930,29 @@
   // artifact TYPE (its primary property) → the trigger its native spell-gem slot fires on.
   // Nether-stone spells socketed into the artifact carry their own stored trigger instead.
   const ART_TYPE_TRIGGER = { Helmet: "On Provoke", Sword: "On Attack", Staff: "On Cast", Shield: "On Defend", Boots: "On Turn" };
-  // aggregate an artifact's stat contribution at its rank: core 5 stats (%) + any non-core "trick" stats (flat)
+  // aggregate an artifact's stat contribution at its rank: core 5 stats (% each) + any non-core "trick"
+  // effects, keyed by their full property name ("Snared On Damage") with their unit (% or flat count).
   function artifactBonusRows(a) {
     const rank = a.rank || 50, core = { hp: 0, atk: 0, def: 0, int: 0, spd: 0 }, extra = new Map();
-    const add = (stat, val) => { if (!val) return; const k = PROP_STAT[stat]; if (k) core[k] += val; else extra.set(stat, (extra.get(stat) || 0) + val); };
-    if (a.primary) { const p = PRIMARY.find(x => x.property === a.primary); if (p) add(p.stat, p.perRank[rank] || 0); }
-    for (const name of [...(a.stat || []), ...(a.trick || [])]) { const g = propGroups.get(name); if (g) for (const e of g.entries) add(e.stat, e.perRank[rank] || 0); }
+    const addEntry = (prop, stat, unit, val) => {
+      if (!val) return; const k = PROP_STAT[stat];
+      if (k) { core[k] += val; return; }
+      const cur = extra.get(prop) || { value: 0, unit: unit || "%" }; cur.value += val; extra.set(prop, cur);
+    };
+    if (a.primary) { const p = PRIMARY.find(x => x.property === a.primary); if (p) addEntry(a.primary, p.stat, "%", p.perRank[rank] || 0); }
+    for (const name of [...(a.stat || []), ...(a.trick || [])]) { const g = propGroups.get(name); if (g) for (const e of g.entries) addEntry(name, e.stat, e.unit, e.perRank[rank] || 0); }
     for (const nid of a.netherIds || []) { const n = nether.find(x => x.id === nid); if (!n) continue;
       for (const pr of n.props || []) { if (pr.cat !== "stat" && pr.cat !== "trick") continue; const g = propGroups.get(pr.key);
-        if (g) for (const e of g.entries) add(e.stat, Number(pr.value) || 0); else add(pr.key, Number(pr.value) || 0); } }
+        if (g) for (const e of g.entries) addEntry(pr.key, e.stat, e.unit, Number(pr.value) || 0); else addEntry(pr.key, pr.key, "%", Number(pr.value) || 0); } }
     return { core, extra };
+  }
+  // render a bonus stat table from a {core, extra} aggregate (shared by artifacts + nether stones)
+  function bonusTableHtml(core, extra) {
+    const coreRows = STAT_KEYS.map(k => `<div class="stat-row ${core[k] ? "hl-med" : ""}"><span class="stat-name">${STAT_LABEL[k]}</span>
+      <span class="stat-val art">${core[k] ? "+" + core[k] + "%" : "—"}</span></div>`).join("");
+    const extraRows = [...extra].map(([prop, { value, unit }]) => `<div class="stat-row hl-med"><span class="stat-name">${esc(prop)}</span>
+      <span class="stat-val art">+${value}${unit === "%" ? "%" : ""}</span></div>`).join("");
+    return `<div class="stat-grid single">${coreRows}${extraRows}</div>`;
   }
   // trait containers mirroring the creature detail (trait banner + description, clickable to taxonomy)
   function artifactTraitContainers(a) {
@@ -1960,18 +1973,14 @@
       for (const pr of n.props || []) if (pr.cat === "spell") { const sp = SPELL.get(pr.key); if (sp) rows.push(spellGemCard(sp, pr.trigger, n.name)); } }
     return rows.join("");
   }
-  // "Bonuses" view: stat table + trait containers + spell-gem containers (vs the raw "Sockets" list)
+  // "Bonuses" view (vs the raw "Sockets" list): Traits → Spell Gems → stat table
   function artifactBonusView(a) {
     const { core, extra } = artifactBonusRows(a);
-    const coreRows = STAT_KEYS.map(k => `<div class="stat-row ${core[k] ? "hl-med" : ""}"><span class="stat-name">${STAT_LABEL[k]}</span>
-      <span class="stat-val art">${core[k] ? "+" + core[k] + "%" : "—"}</span></div>`).join("");
-    const extraRows = [...extra].map(([stat, val]) => `<div class="stat-row hl-med"><span class="stat-name">${esc(stat)}</span>
-      <span class="stat-val art">+${val}</span></div>`).join("");
     const traits = artifactTraitContainers(a), spells = artifactSpellContainers(a);
-    return `<div class="section-label">Stat bonuses · rank ${a.rank || 50}</div>
-      <div class="stat-grid single">${coreRows}${extraRows}</div>
-      ${traits ? `<div class="section-label" style="margin-top:12px">Traits</div>${traits}` : ""}
-      ${spells ? `<div class="section-label" style="margin-top:12px">Spell Gems</div><div class="art-spellcards">${spells}</div>` : ""}`;
+    return `${traits ? `<div class="section-label">Traits</div>${traits}` : ""}
+      ${spells ? `<div class="section-label" ${traits ? `style="margin-top:12px"` : ""}>Spell Gems</div><div class="art-spellcards">${spells}</div>` : ""}
+      <div class="section-label" ${traits || spells ? `style="margin-top:12px"` : ""}>Stat bonuses · rank ${a.rank || 50}</div>
+      ${bonusTableHtml(core, extra)}`;
   }
   function renderArtifactLibrary() {
     const st = ovState, manage = st.slotIdx == null;
@@ -2601,9 +2610,10 @@
   // nether "Bonuses" view helpers — mirror the artifact panel (stat table + trait & spell-gem containers)
   function netherBonusRows(n) {
     const core = { hp: 0, atk: 0, def: 0, int: 0, spd: 0 }, extra = new Map();
-    const add = (stat, val) => { if (!val) return; const k = PROP_STAT[stat]; if (k) core[k] += val; else extra.set(stat, (extra.get(stat) || 0) + val); };
+    const addEntry = (prop, stat, unit, val) => { if (!val) return; const k = PROP_STAT[stat];
+      if (k) { core[k] += val; return; } const cur = extra.get(prop) || { value: 0, unit: unit || "%" }; cur.value += val; extra.set(prop, cur); };
     for (const p of n.props || []) { if (p.cat !== "stat" && p.cat !== "trick") continue; const g = propGroups.get(p.key);
-      if (g) for (const e of g.entries) add(e.stat, Number(p.value) || 0); else add(p.key, Number(p.value) || 0); }
+      if (g) for (const e of g.entries) addEntry(p.key, e.stat, e.unit, Number(p.value) || 0); else addEntry(p.key, p.key, "%", Number(p.value) || 0); }
     return { core, extra };
   }
   function netherTraitContainers(n) {
@@ -2615,15 +2625,11 @@
   }
   function netherBonusView(n) {
     const { core, extra } = netherBonusRows(n);
-    const coreRows = STAT_KEYS.map(k => `<div class="stat-row ${core[k] ? "hl-med" : ""}"><span class="stat-name">${STAT_LABEL[k]}</span>
-      <span class="stat-val art">${core[k] ? "+" + core[k] + "%" : "—"}</span></div>`).join("");
-    const extraRows = [...extra].map(([stat, val]) => `<div class="stat-row hl-med"><span class="stat-name">${esc(stat)}</span>
-      <span class="stat-val art">+${val}</span></div>`).join("");
     const traits = netherTraitContainers(n), spells = netherSpellContainers(n);
-    return `<div class="section-label">Stat bonuses</div>
-      <div class="stat-grid single">${coreRows}${extraRows}</div>
-      ${traits ? `<div class="section-label" style="margin-top:12px">Traits</div>${traits}` : ""}
-      ${spells ? `<div class="section-label" style="margin-top:12px">Spell Gems</div><div class="art-spellcards">${spells}</div>` : ""}`;
+    return `${traits ? `<div class="section-label">Traits</div>${traits}` : ""}
+      ${spells ? `<div class="section-label" ${traits ? `style="margin-top:12px"` : ""}>Spell Gems</div><div class="art-spellcards">${spells}</div>` : ""}
+      <div class="section-label" ${traits || spells ? `style="margin-top:12px"` : ""}>Stat bonuses</div>
+      ${bonusTableHtml(core, extra)}`;
   }
   function renderNether() {
     const st = ovState;
