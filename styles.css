@@ -714,6 +714,11 @@ h1, h2, h3 { margin: 0; }
 .realm-race { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; padding: 3px 9px 3px 4px;
   background: var(--surface); border: 1px solid var(--border-dim); border-radius: 999px; }
 .realm-race img { width: 22px; height: 22px; object-fit: contain; image-rendering: pixelated; }
+/* category tag on a realm creature chip: Roaming / Encounter / God Shop */
+.realm-cat { font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: .3px; border-radius: 999px; padding: 1px 6px; }
+.realm-cat.cat-roaming { color: var(--good); background: rgba(0,0,0,.28); }
+.realm-cat.cat-encounter { color: var(--accent2); background: rgba(154,123,214,.16); }
+.realm-cat.cat-godshop { color: var(--accent); background: rgba(201,162,75,.16); }
 /* Realms — stepped list rows + detail header */
 .realm-list { display: flex; flex-direction: column; gap: 6px; }
 .realm-row { text-align: left; width: 100%; padding: 6px 12px 6px 6px; background: var(--surface);

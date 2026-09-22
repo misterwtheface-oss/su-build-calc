@@ -1640,9 +1640,6 @@
       view: realmId != null ? "detail" : "list", sel: realmId != null ? realmId : null, render: renderRealms };
     openOverlay(ovState.render()); maybeFocusSearch(OV);
   }
-  // roaming entries + encounters are RACES → show the race icon (falls back to text-only if unmatched)
-  const realmRaceChip = (name) => { const ic = D.raceIcons && D.raceIcons[name];
-    return `<span class="realm-race" title="${esc(name)}">${ic ? spriteImg(ic, "px") : ""}<span>${esc(name)}</span></span>`; };
   function renderRealms() {
     const st = ovState, rs = D.realms || [];
     return st.view === "detail" ? renderRealmDetail(rs.find(r => r.id === st.sel)) : renderRealmList(rs);
@@ -1679,11 +1676,16 @@
     const facts = [["God", esc(sel.god)], ["Class", sel.cls ? `<span style="color:${clsColor(sel.cls)};font-weight:700">${esc(sel.cls)}</span>` : "—"],
       ["Gemstone", sel.gemstone ? esc(sel.gemstone) : "—"], ["Godspawn", sel.godspawn ? esc(sel.godspawn) : "—"]]
       .map(([k, v]) => `<div class="ss-row"><span class="ss-k">${k}</span><span class="ss-v">${v}</span></div>`).join("");
-    const creatures = sel.creatures.length ? `<div class="section-label">Roaming races</div>
-      <div class="realm-crits">${sel.creatures.map(realmRaceChip).join("")}</div>` : "";
-    const encounters = sel.encounters.length ? `<div class="section-label">Encounters</div>
-      <div class="prop-list">${sel.encounters.map(e => { const ic = D.raceIcons && D.raceIcons[e.value];
-        return `<div class="prop-row static"><span class="prop-ico">${ic ? spriteImg(ic, "px") : ""}</span><span class="prop-name">${esc(e.name)}</span><span class="prop-stat">${esc(e.value)}</span></div>`; }).join("")}</div>` : "";
+    // all creatures in one section, each tagged by how it appears: Roaming / Encounter / God Shop
+    const critEntries = [
+      ...sel.creatures.map(name => ({ name, cat: "Roaming", via: null })),
+      ...sel.encounters.map(e => ({ name: e.value, cat: e.name === "God Shop" ? "God Shop" : "Encounter", via: e.name === "God Shop" ? null : e.name })),
+    ];
+    const critChip = (e) => { const ic = D.raceIcons && D.raceIcons[e.name];
+      return `<span class="realm-race" title="${esc(e.via ? e.cat + " — " + e.via : e.cat)}">${ic ? spriteImg(ic, "px") : ""}<span>${esc(e.name)}</span><span class="realm-cat cat-${e.cat.replace(/\s+/g, "").toLowerCase()}">${esc(e.cat)}</span></span>`; };
+    const creatures = critEntries.length ? `<div class="section-label">Creatures</div>
+      <div class="realm-crits">${critEntries.map(critChip).join("")}</div>` : "";
+    const encounters = "";
     const resources = sel.resources.length ? `<div class="section-label">Resources</div>
       <div class="prop-list">${sel.resources.map(e => `<div class="prop-row static"><span class="prop-name">${esc(e.object)}</span><span class="prop-stat">${esc(e.resource)}</span></div>`).join("")}</div>` : "";
     const uniques = sel.uniques.length ? `<div class="section-label">Realm objects</div>
