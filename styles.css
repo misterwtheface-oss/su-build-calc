@@ -558,8 +558,12 @@ h1, h2, h3 { margin: 0; }
 .perk-line .anoint-eq:disabled { opacity: .35; cursor: not-allowed; }
 .perk-line-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
 .perk-line-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
-.perk-line-head > b { min-width: 0; }
+.perk-line-head > b { min-width: 0; margin-right: auto; }
 .perk-line-meta { flex: 0 0 auto; display: inline-flex; align-items: center; gap: 5px; }
+/* Appendix bookmark star — toggles a trait/spell into the selector filter set. Hollow=off, gold=on. */
+.apx-bk { flex: 0 0 auto; align-self: center; background: none; border: none; cursor: pointer; padding: 0 2px; line-height: 1; font-size: 15px; color: var(--text-mute); }
+.apx-bk:hover { color: var(--accent); }
+.apx-bk.on { color: var(--accent); }
 .perk-ico { flex: 0 0 auto; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,.25); border: 1px solid var(--border-dim); border-radius: 6px; }
 .perk-ico img { width: 28px; height: 28px; object-fit: contain; }
 .perk-ico.empty { background: none; border-color: transparent; }

@@ -197,7 +197,7 @@
   const SCROLL_MAX = D.scrollMax || 15;                                  // total stat scrolls per creature (each +1 base)
 
   // ── persistence (schema 2) ─────────────────────────────────────────────────
-  const LS = { build: "subc.build", cards: "subc.cards", nether: "subc.nether", artifacts: "subc.artifacts", spellgems: "subc.spellgems", builds: "subc.builds" };
+  const LS = { build: "subc.build", cards: "subc.cards", nether: "subc.nether", artifacts: "subc.artifacts", spellgems: "subc.spellgems", builds: "subc.builds", bookmarks: "subc.bookmarks" };
   const jload = (k, dflt) => { try { const v = JSON.parse(localStorage.getItem(k)); return v == null ? dflt : v; } catch { return dflt; } };
   const jsave = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} };
 
@@ -290,6 +290,17 @@
   };
 
   const persistBuild = () => jsave(LS.build, build);
+  // bookmarks — a scratch set of trait / spell ids marked from the Appendix so the selectors can filter
+  // to them. Belongs to the ACTIVE build only: cleared whenever the party is reset or another build loaded.
+  let bookmarks = jload(LS.bookmarks, null);
+  if (!bookmarks || typeof bookmarks !== "object") bookmarks = {};
+  bookmarks.traits = Array.isArray(bookmarks.traits) ? bookmarks.traits : [];
+  bookmarks.spells = Array.isArray(bookmarks.spells) ? bookmarks.spells : [];
+  const persistBookmarks = () => jsave(LS.bookmarks, bookmarks);
+  const isBk = (kind, id) => bookmarks[kind].includes(id);
+  const toggleBk = (kind, id) => { const a = bookmarks[kind], i = a.indexOf(id); if (i >= 0) a.splice(i, 1); else a.push(id); persistBookmarks(); };
+  const clearBookmarks = () => { bookmarks.traits = []; bookmarks.spells = []; persistBookmarks(); };
+  const bkBtn = (kind, id) => `<button class="apx-bk ${isBk(kind, id) ? "on" : ""}" data-action="apx-bookmark" data-kind="${kind}" data-id="${id}" title="Bookmark — filter the selectors to this">${isBk(kind, id) ? "★" : "☆"}</button>`;
   const persistCards = () => jsave(LS.cards, cards);
   const persistNether = () => jsave(LS.nether, nether);
   const persistArtifacts = () => jsave(LS.artifacts, artifacts);
@@ -680,6 +691,7 @@
     if (st.clsFilter && c.cls !== st.clsFilter) return false;
     if (st.raceFilter && c.race !== st.raceFilter) return false;
     if (st.taxoFilters.length) { const tx = creatureTaxo(c); if (!st.taxoFilters.every(k => tx.includes(k))) return false; }
+    if (st.bkOnly && !(c.traitId != null && bookmarks.traits.includes(c.traitId))) return false;
     if (st.search) {
       const q = st.search.toLowerCase();
       const trait = c.traitName || (TRAIT[c.traitId] || {}).name || "";
@@ -721,6 +733,7 @@
       ${facet("Race", st.raceFilter, "facet-race")}
       ${taxoChips}
       <button class="facet add" data-action="facet-taxo">＋ Filter</button>
+      ${bookmarks.traits.length ? `<button class="facet ${st.bkOnly ? "on" : ""}" data-action="crea-bkonly" title="Show only creatures whose trait you bookmarked">★ Bookmarked</button>` : ""}
     </div>`;
     // stat sort — highest first; picking a stat draws a magnitude bar (value / roster max) on each tile
     const sortbar = `<div class="ovl-filterbar crea-sortbar"><span class="foot-info">Sort</span><div class="seg">
@@ -1312,10 +1325,10 @@
           <div class="perk-list">${list.slice(0, CAP).map(renderRow).join("")}
           ${list.length > CAP ? `<div class="slot-sub" style="padding:6px">Showing ${CAP} of ${list.length}.</div>` : ""}</div>`;
       };
-      const line = (ico, name, meta, desc, srcObj) => `<div class="perk-line">
+      const line = (ico, name, meta, desc, srcObj, bk) => `<div class="perk-line">
         <span class="perk-ico sm">${ico || ""}</span>
         <div class="perk-line-body">
-          <div class="perk-line-head"><b>${esc(name)}</b>${meta || srcObj ? `<span class="perk-line-meta">${meta || ""}${srcMeta(srcObj)}</span>` : ""}</div>
+          <div class="perk-line-head"><b>${esc(name)}</b>${meta || srcObj ? `<span class="perk-line-meta">${meta || ""}${srcMeta(srcObj)}</span>` : ""}${bk || ""}</div>
           ${desc ? `<div class="perk-desc">${desc}</div>` : ""}
         </div></div>`;
       // one row per trait, folding in the creature that has it + the items that grant it
@@ -1323,7 +1336,7 @@
       const traitRows = res.traits.map(t => {
         const creature = creatureByTrait.get(t.id);
         const items = itemsByTrait.get(t.id) || [];
-        return { name: t.name, desc: t.desc, creature, items, taxo: t.taxo, taxoSrc: t.taxoSrc,
+        return { id: t.id, name: t.name, desc: t.desc, creature, items, taxo: t.taxo, taxoSrc: t.taxoSrc,
           _search: t.name + " " + (creature ? creature.name : "") + " " + items.map(i => i.name).join(" ") };
       }).sort((a, b) => a.name.localeCompare(b.name));
       const traitRow = (g) => {
@@ -1339,7 +1352,7 @@
         return `<div class="perk-line apx-trait">
           ${icoSpan}
           <div class="perk-line-body">
-            <div class="perk-line-head"><b>${esc(g.name)}</b>${meta ? `<span class="perk-line-meta">${meta}</span>` : ""}</div>
+            <div class="perk-line-head"><b>${esc(g.name)}</b>${meta ? `<span class="perk-line-meta">${meta}</span>` : ""}${bkBtn("traits", g.id)}</div>
             ${g.desc ? `<div class="perk-desc">${richText(g.desc)}</div>` : ""}
           </div>
           ${creaSquare}</div>`;
@@ -1349,7 +1362,7 @@
         section("Perks", res.perks, p => line(p.icon ? spriteImg(p.icon, "px") : "", p.name,
           `<span class="anoint-spec-tag">${esc(p.spec)}</span>`, perkText(p.desc, p.ranks), p)),
         section("Spells", res.spells, s => line(spellIcon(s) ? spriteImg(spellIcon(s), "px") : "", s.name,
-          `${s.cls ? `<span class="anoint-spec-tag">${esc(s.cls)}</span>` : ""}${spellMeta(s) ? `<span class="anoint-spec-tag">${esc(spellMeta(s))}</span>` : ""}`, perkText(s.desc, null), s)),
+          `${s.cls ? `<span class="anoint-spec-tag">${esc(s.cls)}</span>` : ""}${spellMeta(s) ? `<span class="anoint-spec-tag">${esc(spellMeta(s))}</span>` : ""}`, perkText(s.desc, null), s, bkBtn("spells", s.id))),
         section("Relics", res.relics, r => line(r.icon ? spriteImg(r.icon, "px") : "", r.name,
           r.statBonus ? `<span class="anoint-spec-tag">${esc(r.statBonus)}</span>` : "", richText((r.ranks || []).map(x => x.desc).join(" · ")), r)),
         section("Realm Cards", res.cards.map(c => ({ ...c, name: c.family })), c => line(c.sprite ? spriteImg(c.sprite, "px") : "", c.family,
@@ -1936,12 +1949,14 @@
     } else if (type === "trait") {
       rows = D.traitItems.filter(t => t.traitName
           && (!q || t.name.toLowerCase().includes(q) || (t.traitName || "").toLowerCase().includes(q) || matchTaxo(t.taxo))
-          && (!st.traitTaxo || (t.taxo || []).includes(st.traitTaxo))).slice(0, 300)
+          && (!st.traitTaxo || (t.taxo || []).includes(st.traitTaxo))
+          && (!st.bkOnly || bookmarks.traits.includes(t.traitId))).slice(0, 300)
         .map(t => `<div class="prop-row ${has(t.id) ? "chosen" : ""}" data-action="art-preview" data-t="trait" data-v="${t.id}">
           <span class="prop-ico">${t.icon ? spriteImg(t.icon, "px") : ""}</span>
           <span class="prop-name">${esc(t.name)}</span><span class="prop-stat">${esc(t.traitName)}</span></div>`).join("");
     } else if (type === "spell") {   // raw spells (no sockets), like nether stones
-      rows = (D.spells || []).filter(sp => !q || sp.name.toLowerCase().includes(q) || (sp.desc || "").toLowerCase().includes(q) || matchTaxo(sp.taxo)).slice(0, 300).map(sp =>
+      rows = (D.spells || []).filter(sp => (!q || sp.name.toLowerCase().includes(q) || (sp.desc || "").toLowerCase().includes(q) || matchTaxo(sp.taxo))
+          && (!st.bkOnly || bookmarks.spells.includes(sp.id))).slice(0, 300).map(sp =>
         `<div class="prop-row ${has(sp.id) ? "chosen" : ""}" data-action="art-preview" data-t="spell" data-v="${sp.id}">
           <span class="prop-ico">${spellIcon(sp) ? spriteImg(spellIcon(sp), "px") : ""}</span>
           <span class="prop-name">${esc(sp.name)}</span><span class="prop-stat">${esc(sp.cls || "")}</span></div>`).join("");
@@ -1956,10 +1971,13 @@
           ? `<button class="facet on tag" data-action="artb-traitfilter-clear">${esc(taxoCatName(st.traitTaxo))}: <b>${esc(taxoValName(st.traitTaxo))}</b> <span class="facet-x">✕</span></button>`
           : `<button class="facet add" data-action="artb-traitfilter">＋ Filter</button>`)
       : "";
+    const bkKind = type === "trait" ? "traits" : type === "spell" ? "spells" : null;
+    const bkFilter = bkKind && bookmarks[bkKind].length
+      ? `<button class="facet ${st.bkOnly ? "on" : ""}" data-action="artb-bkonly" title="Show only bookmarked ${type === "trait" ? "traits" : "spells"}">★ Bookmarked</button>` : "";
     const label = (ART_SLOTS.find(s => s.pick === type) || {}).label || "";
     return `<div class="art-side-head"><b>Add ${esc(label)}</b><button class="chip" data-action="artb-closecat">Done</button></div>
       <input class="ovl-search art-side-search" placeholder="Search by name or tag…" value="${esc(st.search)}" data-action="artb-search">
-      ${traitFilter ? `<div class="art-side-filter">${traitFilter}</div>` : ""}
+      ${traitFilter || bkFilter ? `<div class="art-side-filter">${traitFilter}${bkFilter}</div>` : ""}
       <div class="art-side-list">${rows}</div>`;
   }
   // item preview with an explicit confirm — socketing never applies silently (shows the effect first)
@@ -2449,7 +2467,8 @@
     let body = "", footer = "";
     if (st.step === "spell") {
       const rows = D.spells.filter(s => (!q || s.name.toLowerCase().includes(q) || (s.desc || "").toLowerCase().includes(q))
-          && (!st.spellTaxo || (s.taxo || []).includes(st.spellTaxo))).slice(0, 300)
+          && (!st.spellTaxo || (s.taxo || []).includes(st.spellTaxo))
+          && (!st.bkOnly || bookmarks.spells.includes(s.id))).slice(0, 300)
         .map(s => `<div class="prop-row rich ${g.spellId === s.id ? "chosen" : ""}" data-action="sg-spell" data-id="${s.id}">
           <span class="prop-ico">${spellIcon(s) ? spriteImg(spellIcon(s), "px") : ""}</span>
           <div class="prop-body"><div class="prop-name">${esc(s.name)}${spellMeta(s) ? `<span class="prop-metatag">${esc(spellMeta(s))}</span>` : ""}</div>
@@ -2465,7 +2484,7 @@
            ${spellStatsHtml(chosen)}`
         : `<div class="slot-sub" style="padding:12px">Tap a spell to preview its effect, charges and potency.</div>`;
       body = `<div class="ovl-center">
-        <div class="ovl-filterbar"><input class="ovl-search" placeholder="Search spells…" value="${esc(st.search)}" data-action="sg-search">${sTaxo}</div>
+        <div class="ovl-filterbar"><input class="ovl-search" placeholder="Search spells…" value="${esc(st.search)}" data-action="sg-search">${sTaxo}${bookmarks.spells.length ? `<button class="facet ${st.bkOnly ? "on" : ""}" data-action="sgb-bkonly" title="Show only bookmarked spells">★ Bookmarked</button>` : ""}</div>
         <div class="ovl-center-scroll">${rows}</div></div>
         <div class="ovl-right lib-info">${info}</div>`;
       footer = `<button class="btn-ghost" data-action="sg-cancel">Cancel</button>
@@ -2544,7 +2563,7 @@
       case "spec-edit": closeDetail(); openSpecPicker(); break;
       case "remove-creature": armOrDo(t, () => { build.slots[+t.dataset.slot] = emptySlot(); persistBuild(); render(); }); break;
       case "clear-spec": e.stopPropagation(); build.specId = null; persistBuild(); render(); break;
-      case "clear-party": armOrDo(t, () => { build = freshBuild(); persistBuild(); render(); }); break;
+      case "clear-party": armOrDo(t, () => { build = freshBuild(); clearBookmarks(); persistBuild(); render(); }); break;
       case "open-artifacts": openArtifactLibrary(null); break;
       case "toggle-menu": e.stopPropagation(); el("main-menu").classList.toggle("hidden"); break;
       case "open-builds": openBuilds(); break;
@@ -2560,7 +2579,7 @@
       }
       case "builds-load": {
         const b = builds.find(x => x.id === +t.dataset.id);
-        if (b) { build = normalizeBuild(JSON.parse(JSON.stringify(b.build))); persistBuild(); closeOverlay(); render(); }
+        if (b) { build = normalizeBuild(JSON.parse(JSON.stringify(b.build))); clearBookmarks(); persistBuild(); closeOverlay(); render(); }
         break;
       }
       case "builds-overwrite": { const b = builds.find(x => x.id === +t.dataset.id); if (b) { b.build = JSON.parse(JSON.stringify(build)); b.ts = Date.now(); persistBuilds(); ovState.sel = b.id; flashBuild(b.id); } break; }
@@ -2604,6 +2623,7 @@
       case "appendix-rm-tag": e.stopPropagation(); ovState.tags = ovState.tags.filter(x => x !== t.dataset.k); ovState.search = ""; refreshOverlay(); break;
       case "appendix-add": ovState.browsing = true; ovState.cat = null; ovState.search = ""; refreshOverlay(); break;
       case "appendix-src": ovState.showSrc = !ovState.showSrc; refreshOverlay(); break;
+      case "apx-bookmark": e.stopPropagation(); toggleBk(t.dataset.kind, +t.dataset.id); refreshOverlay(); break;
       case "appendix-done-adding": ovState.browsing = false; ovState.cat = null; ovState.search = ""; refreshOverlay(); break;
       case "open-anoint": openAnoint(); break;
       case "anoint-detail": openAnointDetail(); break;
@@ -2646,6 +2666,7 @@
         ovState.step = ovState.step === "customize" ? "fusion" : "primary";
         ovState.search = ""; ovState.limit = CREA_PAGE; refreshOverlay(); break;
       case "crea-more": ovState.limit = (ovState.limit || CREA_PAGE) + CREA_PAGE; refreshOverlay(); break;
+      case "crea-bkonly": ovState.bkOnly = !ovState.bkOnly; resetCreaPage(); refreshOverlay(); break;
       case "crea-sort": ovState.sort = t.dataset.k || null; resetCreaPage(); refreshOverlay(); break;
       case "crea-confirm": {
         if (ovState.primaryId == null) break;
@@ -2724,16 +2745,18 @@
       case "art-del": armOrDo(t, () => { const id = +t.dataset.id; artifacts = artifacts.filter(a => a.id !== id); build.slots.forEach(s => { if (s.artifactId === id) s.artifactId = null; }); if (ovState.sel === id) ovState.sel = artifacts[0] ? artifacts[0].id : null; persistArtifacts(); persistBuild(); refreshOverlay(); }); break;
       case "artb-next": ovState.step = ovState.step === "type" ? "slots" : "name"; ovState.pickType = null; ovState.preview = null; ovState.search = ""; refreshOverlay(); break;
       case "artb-back": ovState.step = ovState.step === "name" ? "slots" : "type"; ovState.pickType = null; ovState.preview = null; ovState.search = ""; refreshOverlay(); break;
-      case "artb-closecat": ovState.pickType = null; ovState.preview = null; ovState.search = ""; refreshOverlay(); break;
+      case "artb-closecat": ovState.pickType = null; ovState.preview = null; ovState.search = ""; ovState.bkOnly = false; refreshOverlay(); break;
       case "artb-traitfilter": openFacetPicker("taxo-cat", {
         idx: taxoIndexFor("titem", D.traitItems, ti => ti.taxo || []),
         onPick: (v) => { ovState.traitTaxo = v; } }); break;
       case "artb-traitfilter-clear": ovState.traitTaxo = null; refreshOverlay(); break;
+      case "artb-bkonly": ovState.bkOnly = !ovState.bkOnly; refreshOverlay(); break;
       // spell-gem builder spell picker filter (reuses the facet detail picker)
       case "sg-taxofilter": openFacetPicker("taxo-cat", {
         idx: taxoIndexFor("spell", D.spells, s => s.taxo || []),
         onPick: (v) => { ovState.spellTaxo = v; } }); break;
       case "sg-taxofilter-clear": ovState.spellTaxo = null; refreshOverlay(); break;
+      case "sgb-bkonly": ovState.bkOnly = !ovState.bkOnly; refreshOverlay(); break;
       // perk picker inline taxonomy filter
       case "perk-taxo-open": dovState.perkBrowse = true; refreshDetail(); break;
       case "perk-taxo-cat": dovState.perkCat = t.dataset.c; refreshDetail(); break;
@@ -2741,7 +2764,7 @@
       case "perk-taxo-clear": dovState.perkTaxo = null; dovState.perkCat = null; dovState.perkBrowse = false; refreshDetail(); break;
       case "perk-taxo-back": if (dovState.perkCat) dovState.perkCat = null; else dovState.perkBrowse = false; refreshDetail(); break;
       case "art-primary": ovState.draft.primary = ovState.draft.primary === t.dataset.p ? null : t.dataset.p; refreshOverlay(); break;
-      case "art-slot": ovState.pickType = t.dataset.t; ovState.preview = null; ovState.search = ""; refreshOverlay(); break;
+      case "art-slot": ovState.pickType = t.dataset.t; ovState.preview = null; ovState.search = ""; ovState.bkOnly = false; refreshOverlay(); break;
       // socketing is a two-step: preview the item's effect, then confirm (never applies silently)
       case "art-preview": {
         const type = t.dataset.t;
