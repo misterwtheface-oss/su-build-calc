@@ -31,6 +31,7 @@ const OUT_WARDROBE = path.join(OUT_ASSETS, 'wardrobe');
 const OUT_MATICON = path.join(OUT_ASSETS, 'maticons');
 const OUT_SPELLGEM = path.join(OUT_ASSETS, 'spellgems');
 const OUT_PROPGEM = path.join(OUT_ASSETS, 'propgems');
+const OUT_GODS = path.join(OUT_ASSETS, 'gods');
 const SRC_PROPGEM = path.join(SRC, 'assets', 'spell_gem_property_icons'); // hand-cropped from in-game Enchanter/Materials UI (no named sprite in the dump)
 
 // ── asset provenance registry — permanent preventive guards on everything we ship ──
@@ -830,14 +831,27 @@ function parseRealmOther(other) {
   }
   return { encounters, resources, uniques };
 }
+// each realm god has a canonical portrait sprite `god_<name>` in the sprite export
+fs.rmSync(OUT_GODS, { recursive: true, force: true });
+let godSpriteHits = 0;
+const godSpriteFor = (godName) => {
+  const slug = godName.replace(/[^a-z0-9]/gi, '');
+  const base = 'god_' + slug.toLowerCase();
+  if (copyNamedSprite(base, OUT_GODS, `${slug}.png`)) { godSpriteHits++; return `assets/gods/${slug}.png`; }
+  warn(`realm god "${godName}" portrait sprite missing (${base})`);
+  return null;
+};
 const realms = realmArr.map((r, i) => {
   const godFull = (r.god || '').trim();
   const godName = godFull.split(',')[0].trim();               // short name (matches god-shop `god`)
   const parsed = parseRealmOther(r.other);
+  // drop junk "N/A" unique-object rows (a stray label produced a nameless/empty entry)
+  parsed.uniques = parsed.uniques.filter(u => u.name && u.name !== 'N/A');
   return {
     id: i, god: godFull, godName, realm: r.realm || godName,
     cls: CLASS_SET.has(r.class) ? r.class : null,
     gemstone: cleanRealmVal(r.gemstone), godspawn: cleanRealmVal(r.godspawn),
+    godSprite: godSpriteFor(godName),
     creatures: (r.realm_creatures || []).filter(Boolean),
     ...parsed,
   };

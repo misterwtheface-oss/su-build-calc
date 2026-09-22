@@ -1636,51 +1636,70 @@
 
   // ── Realms reference ────────────────────────────────────────────────────────
   function openRealms(realmId) {
-    const rs = D.realms || [];
-    ovState = { kind: "realms", search: "", sel: realmId != null ? realmId : (rs[0] ? rs[0].id : null), render: renderRealms };
+    ovState = { kind: "realms", search: "", sortBy: "realm",
+      view: realmId != null ? "detail" : "list", sel: realmId != null ? realmId : null, render: renderRealms };
     openOverlay(ovState.render()); maybeFocusSearch(OV);
   }
-  function realmCritChip(name) {
-    const c = realmCritFor(name);
-    return `<span class="realm-crit" title="${esc(name)}">${c ? spriteImg(c.sprite, "rc-ico") : ""}<span>${esc(name)}</span></span>`;
-  }
+  // roaming entries + encounters are RACES → show the race icon (falls back to text-only if unmatched)
+  const realmRaceChip = (name) => { const ic = D.raceIcons && D.raceIcons[name];
+    return `<span class="realm-race" title="${esc(name)}">${ic ? spriteImg(ic, "px") : ""}<span>${esc(name)}</span></span>`; };
   function renderRealms() {
-    const st = ovState, q = st.search.trim().toLowerCase(), rs = D.realms || [];
-    const match = (r) => !q || r.realm.toLowerCase().includes(q) || r.godName.toLowerCase().includes(q)
-      || r.creatures.some(c => c.toLowerCase().includes(q));
-    const list = rs.filter(match);
-    const sel = rs.find(r => r.id === st.sel) || null;
-    const tiles = list.map(r => `<button class="opt-row ${st.sel === r.id ? "on" : ""}" data-action="realm-sel" data-id="${r.id}">
-      <span class="opt-dot" style="background:${clsColor(r.cls)}"></span><span>${esc(r.realm)}</span><span class="anoint-spec-tag">${esc(r.godName)}</span></button>`).join("")
+    const st = ovState, rs = D.realms || [];
+    return st.view === "detail" ? renderRealmDetail(rs.find(r => r.id === st.sel)) : renderRealmList(rs);
+  }
+  function renderRealmList(rs) {
+    const st = ovState, q = st.search.trim().toLowerCase();
+    const match = (r) => !q || r.realm.toLowerCase().includes(q) || r.godName.toLowerCase().includes(q) || r.creatures.some(c => c.toLowerCase().includes(q));
+    const list = rs.filter(match).sort((a, b) => st.sortBy === "god"
+      ? a.godName.localeCompare(b.godName) || a.realm.localeCompare(b.realm)
+      : a.realm.localeCompare(b.realm));
+    const rows = list.map(r => `<button class="realm-row" data-action="realm-sel" data-id="${r.id}">
+      <span class="realm-god-ico">${r.godSprite ? spriteImg(r.godSprite, "px") : ""}</span>
+      <span class="opt-dot" style="background:${clsColor(r.cls)}"></span>
+      <span class="realm-row-name">${esc(r.realm)}</span>
+      <span class="anoint-spec-tag">${esc(r.godName)}</span>
+      <span class="opt-chev">›</span></button>`).join("")
       || `<div class="slot-sub" style="padding:10px">No realms match.</div>`;
-    let info = `<div class="slot-sub" style="padding:12px">Select a realm.</div>`;
-    if (sel) {
-      const facts = [["God", esc(sel.god)], ["Class", sel.cls ? `<span style="color:${clsColor(sel.cls)};font-weight:700">${esc(sel.cls)}</span>` : "—"],
-        ["Gemstone", sel.gemstone ? esc(sel.gemstone) : "—"], ["Godspawn", sel.godspawn ? esc(sel.godspawn) : "—"]]
-        .map(([k, v]) => `<div class="ss-row"><span class="ss-k">${k}</span><span class="ss-v">${v}</span></div>`).join("");
-      const creatures = sel.creatures.length ? `<div class="section-label">Roaming creatures</div>
-        <div class="realm-crits">${sel.creatures.map(realmCritChip).join("")}</div>` : "";
-      const encounters = sel.encounters.length ? `<div class="section-label">Encounters</div>
-        <div class="prop-list">${sel.encounters.map(e => `<div class="prop-row static"><span class="prop-name">${esc(e.name)}</span><span class="prop-stat">${esc(e.value)}</span></div>`).join("")}</div>` : "";
-      const resources = sel.resources.length ? `<div class="section-label">Resources</div>
-        <div class="prop-list">${sel.resources.map(e => `<div class="prop-row static"><span class="prop-name">${esc(e.object)}</span><span class="prop-stat">${esc(e.resource)}</span></div>`).join("")}</div>` : "";
-      const uniques = sel.uniques.length ? `<div class="section-label">Realm objects — Instability rewards</div>
-        ${sel.uniques.map(u => `<div class="realm-uniq"><div class="realm-uniq-head"><b>${esc(u.name)}</b>${u.baseCount != null ? `<span class="anoint-spec-tag">×${u.baseCount}</span>` : ""}</div>
-          ${u.tiers.map(t => `<div class="realm-tier"><span class="rt-at" title="Realm Instability ≥ ${t.at}">${t.at}</span><span class="rt-eff">${esc(t.effect)}</span></div>`).join("")}</div>`).join("")}` : "";
-      const shopLink = sel.hasShop ? `<button class="facet" data-action="realm-shop" data-g="${esc(sel.godName)}" style="margin-top:10px">View ${esc(sel.godName)}'s God Shop ›</button>` : "";
-      info = `<div class="ns-info-head"><h3>${esc(sel.realm)}</h3></div>
-        <div class="spell-stats">${facts}</div>${shopLink}
-        ${creatures}${encounters}${resources}${uniques}`;
-    }
+    const sortToggle = `<div class="art-view-toggle">
+      <button class="av-tab ${st.sortBy === "realm" ? "on" : ""}" data-action="realm-sort" data-v="realm">Realm</button>
+      <span class="av-pipe">|</span>
+      <button class="av-tab ${st.sortBy === "god" ? "on" : ""}" data-action="realm-sort" data-v="god">God</button></div>`;
     return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel">
       <div class="overlay-header"><h2>Realms</h2>
-        <input class="ovl-search" placeholder="Search realm / god / creature…" value="${esc(st.search)}" data-action="realm-search">
+        <input class="ovl-search" placeholder="Search realm / god / race…" value="${esc(st.search)}" data-action="realm-search">
         <button class="ovl-close" data-action="close-ovl">✕</button></div>
-      <div class="overlay-body">
-        <div class="ovl-left"><div class="opt-list">${tiles}</div></div>
-        <div class="ovl-center"><div class="ovl-center-scroll">${info}</div></div>
-      </div>
+      <div class="overlay-body"><div class="ovl-center">${sortToggle}
+        <div class="ovl-center-scroll"><div class="realm-list">${rows}</div></div>
+      </div></div>
       <div class="overlay-footer"><span class="foot-info"></span><button class="btn-confirm" data-action="close-ovl">Done</button></div>
+    </div></div>`;
+  }
+  function renderRealmDetail(sel) {
+    if (!sel) { ovState.view = "list"; return renderRealmList(D.realms || []); }
+    const facts = [["God", esc(sel.god)], ["Class", sel.cls ? `<span style="color:${clsColor(sel.cls)};font-weight:700">${esc(sel.cls)}</span>` : "—"],
+      ["Gemstone", sel.gemstone ? esc(sel.gemstone) : "—"], ["Godspawn", sel.godspawn ? esc(sel.godspawn) : "—"]]
+      .map(([k, v]) => `<div class="ss-row"><span class="ss-k">${k}</span><span class="ss-v">${v}</span></div>`).join("");
+    const creatures = sel.creatures.length ? `<div class="section-label">Roaming races</div>
+      <div class="realm-crits">${sel.creatures.map(realmRaceChip).join("")}</div>` : "";
+    const encounters = sel.encounters.length ? `<div class="section-label">Encounters</div>
+      <div class="prop-list">${sel.encounters.map(e => { const ic = D.raceIcons && D.raceIcons[e.value];
+        return `<div class="prop-row static"><span class="prop-ico">${ic ? spriteImg(ic, "px") : ""}</span><span class="prop-name">${esc(e.name)}</span><span class="prop-stat">${esc(e.value)}</span></div>`; }).join("")}</div>` : "";
+    const resources = sel.resources.length ? `<div class="section-label">Resources</div>
+      <div class="prop-list">${sel.resources.map(e => `<div class="prop-row static"><span class="prop-name">${esc(e.object)}</span><span class="prop-stat">${esc(e.resource)}</span></div>`).join("")}</div>` : "";
+    const uniques = sel.uniques.length ? `<div class="section-label">Realm objects</div>
+      ${sel.uniques.map(u => `<div class="realm-uniq"><div class="realm-uniq-head"><b>${esc(u.name)}</b>${u.baseCount != null ? `<span class="anoint-spec-tag">×${u.baseCount}</span>` : ""}</div>
+        ${u.tiers.map(t => `<div class="realm-tier"><span class="rt-at" title="Realm Instability ≥ ${t.at}">${t.at}</span><span class="rt-eff">${esc(t.effect)}</span></div>`).join("")}</div>`).join("")}` : "";
+    const shopLink = sel.hasShop ? `<button class="facet" data-action="realm-shop" data-g="${esc(sel.godName)}" style="margin-top:10px">View ${esc(sel.godName)}'s God Shop ›</button>` : "";
+    return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel">
+      <div class="overlay-header"><button class="btn-ghost" data-action="realm-back">‹ Realms</button>
+        <h2 style="flex:1">${esc(sel.realm)}</h2><button class="ovl-close" data-action="close-ovl">✕</button></div>
+      <div class="overlay-body"><div class="ovl-center"><div class="ovl-center-scroll">
+        <div class="realm-detail-head">${sel.godSprite ? `<div class="realm-god-portrait">${spriteImg(sel.godSprite, "px")}</div>` : ""}
+          <div class="spell-stats" style="flex:1">${facts}</div></div>
+        ${shopLink}${creatures}${encounters}${resources}${uniques}
+      </div></div></div>
+      <div class="overlay-footer"><button class="btn-ghost" data-action="realm-back">‹ Back to realms</button>
+        <button class="btn-confirm" data-action="close-ovl">Done</button></div>
     </div></div>`;
   }
 
@@ -2966,7 +2985,9 @@
       case "open-appendix": openAppendix(); break;
       case "open-realms": openRealms(); break;
       case "open-godshops": openGodShops(); break;
-      case "realm-sel": ovState.sel = +t.dataset.id; refreshOverlay(); break;
+      case "realm-sel": ovState.sel = +t.dataset.id; ovState.view = "detail"; refreshOverlay(); break;
+      case "realm-back": ovState.view = "list"; refreshOverlay(); maybeFocusSearch(OV); break;
+      case "realm-sort": ovState.sortBy = t.dataset.v; refreshOverlay(); break;
       case "realm-search": break;   // handled in onInput
       case "realm-shop": openGodShops(t.dataset.g); break;
       case "gs-god": ovState.sel = t.dataset.g; refreshOverlay(); break;
