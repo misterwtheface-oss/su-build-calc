@@ -889,6 +889,13 @@ What works end-to-end:
 - Class-advantage multiplier + Nether Stone numerics are runtime/in-game-only (see WIKI_CONTEXT) → modelled around.
 
 ## Session log
+- 2026-09-22: **Appendix bookmarks.** Star toggle on Appendix trait + spell result rows (`bkBtn`, action
+  `apx-bookmark`). Bookmarks = scratch state for the ACTIVE build only (`bookmarks {traits[],spells[]}`,
+  LS key `subc.bookmarks`); cleared on Reset (`clear-party`) and on loading a saved build (`builds-load`).
+  A "★ Bookmarked" facet appears — only when bookmarks of that kind exist — in the creature picker (traits,
+  `crea-bkonly`), spell-gem builder spell step (spells, `sgb-bkonly`), and the artifact builder trait/spell
+  pickers (`artb-bkonly`, reset on picker-category switch). Verified end-to-end with headless Chrome (mark →
+  facet appears → 400 tiles narrow to the 1 creature with that innate trait; Reset clears). Next: macro helper.
 - 2026-09-16: Scaffolded the project via build-calc-planner. Wrote `build-data.mjs` (joins creature_data +
   creatures_ref + sprite index + theorycraft tags + artifacts/relics/cards/materials; hygiene guardrails),
   the vanilla SPA (`index.html`/`styles.css`/`app.js`) with the full overlay/trait/stat house style, and the
