@@ -928,6 +928,18 @@ What works end-to-end:
 - Class-advantage multiplier + Nether Stone numerics are runtime/in-game-only (see WIKI_CONTEXT) → modelled around.
 
 ## Session log
+- 2026-09-22: **Artifact info panel — Bonuses | Sockets views + library UX.** Merged the artifact/gem library
+  Equip/Unequip/Build into one context-aware button; removed auto-selection; tiles now carry an equip-state
+  highlight (purple = this creature, gold = another/all-in-Menu) with a neutral selection ring (`.equip-grid`,
+  decoupled from Builds' `.lib-grid`); gem tile re-click deselects; equipment grids show 6/row on mobile.
+  Then split the artifact info panel into **Bonuses** (default) and **Sockets** (former "Contents") views via
+  a pipe-delimited toggle (`art-view`): Bonuses = per-stat bonus table (core 5 as %, plus trick stats) +
+  trait containers mirroring the creature detail (banner+desc, clickable to taxonomy) + spell-gem containers
+  (name/desc/trigger). Native artifact spell trigger derives from type (`ART_TYPE_TRIGGER`: Helmet=On Provoke,
+  Sword=On Attack, Staff=On Cast, Shield=On Defend, Boots=On Turn); nether-stone spells keep their stored
+  trigger. Helpers `artifactBonusRows`/`artifactTraitContainers`/`artifactSpellContainers`/`artifactBonusView`
+  reuse `artifactPctOf`/`PRIMARY`/`propGroups`. Verified headless (Sword→+118% Atk, On Attack native vs On
+  Turn nether, toggle swaps to raw sockets).
 - 2026-09-22: **Entity taxonomy detail** (backlog: real trait detail page, generalized). Clicking any Appendix
   result row — or any trait banner — opens a detail overlay showing that entity's description + its FULL
   taxonomy grouped by category, each value chipped with its provenance source (token/keyword/llm/phrase/field/
