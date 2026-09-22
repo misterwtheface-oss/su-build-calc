@@ -42,17 +42,18 @@ No verify-before-push ceremony (no real users yet) — but every change is check
 - Fed by `_su_extract` via `build-data.mjs` (gitignored extract; only used assets copied). Data model in
   `SPEC_PLAN.md`, pipeline in `WIKI_CONTEXT.md`.
 
-## 2026-09-21 — session 4m (fix Defiler/Tribalist tier-1 costume regression)
-User: the session-3 costume batch broke **tier-1 Defiler and Tribalist**. Root cause: that batch assumed
-their costumes lived under the occultist / shaman stem and set them to `['npc_occultist, _2, _3']` /
-`['npc_shaman, _2, _3']`. But the wardrobe categories show those are the **Occultist / Shaman CREATURES**
-(`cat=npc`), a different entity — while each spec's actual (and only) player costume is
-`npc_defiler_alt` / `npc_tribalist_alt` (`cat=specialization`). So tier-1 showed the wrong creature and
-the "tier 2/3" were unrelated creature sprites. **Fix:** `SPEC_COSTUME_OVERRIDE` Defiler →
-`['npc_defiler_alt']`, Tribalist → `['npc_tribalist_alt']` (single tier each — they genuinely have no
-tier 2/3), restoring the correct pre-batch state. Verified both resolve to their `_alt` costume (tier 1,
-2 anim frames), PNGs present, no build warnings. The other `_alt`-tier-1 specs (Cabalist/Cleric/… use
-their OWN stem's `_2/_3`) were coherent and untouched.
+## 2026-09-21 — session 4m (fix Defiler/Tribalist tier-1 costume — split-stem antipattern)
+User: tier-1 Defiler & Tribalist were broken. **Final, user-confirmed truth: these two specs split their
+3 costume tiers across TWO stem names** — tier-1 under the SPEC name (`npc_defiler_alt` /
+`npc_tribalist_alt`, `cat=specialization`), tiers **2 & 3 under a mismatched creature-looking name**
+(`npc_occultist_2/_3` / `npc_shaman_2/_3`, `cat=npc`) — the tiers 2/3 ARE correct despite the name; the
+naming itself is the antipattern. The session-3 batch got tiers 2/3 right but used the bare
+`npc_occultist`/`npc_shaman` (the actual creatures) for tier-1 → wrong sprite. (An interim over-correction
+dropped tiers 2/3 entirely; reverted.) **Fix (hard-coded in `SPEC_COSTUME_OVERRIDE`):** Defiler →
+`['npc_defiler_alt','npc_occultist_2','npc_occultist_3']`, Tribalist →
+`['npc_tribalist_alt','npc_shaman_2','npc_shaman_3']`. Verified both resolve to 3 tiers (2 anim frames
+each). Captured in memory `su_spec_costume_tier_stems.md` so it isn't re-broken. Other `_alt`-tier-1 specs
+keep all three tiers under their OWN stem's `_2/_3` and are fine.
 
 ## 2026-09-21 — session 4l (stat anomaly fix + creature stat sort + matrix align)
 Batch of user requests.
