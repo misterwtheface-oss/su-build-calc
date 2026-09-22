@@ -1918,7 +1918,9 @@
   // a row that also shows the granted trait's tooltip (for trait-item entries in info panels)
   const libTraitRow = (ico, name, traitId) => {
     const tr = traitId != null ? TRAIT[traitId] : null;
-    return `<div class="prop-row static rich"><span class="prop-ico">${ico ? spriteImg(ico, "px") : ""}</span>
+    // clickable → the trait's taxonomy detail (same as a creature's innate-trait banner)
+    const open = tr ? ` data-action="apx-open" data-ek="trait" data-eid="${traitId}"` : "";
+    return `<div class="prop-row static rich${tr ? " apx-clickable" : ""}"${open}><span class="prop-ico">${ico ? spriteImg(ico, "px") : ""}</span>
       <div class="prop-body"><span class="prop-name">${esc(name)}</span>
         ${tr ? `<span class="prop-stat">grants <b>${esc(tr.name)}</b></span><div class="trait-desc">${richText(tr.desc || "")}</div>` : ""}</div></div>`;
   };
@@ -2042,7 +2044,7 @@
   // item preview with an explicit confirm — socketing never applies silently (shows the effect first)
   function renderArtPreview(type, v, rank, opts) {
     const equipped = opts && opts.equipped, full = opts && opts.full;
-    let icon = null, name = String(v), sub = "", lines = "";
+    let icon = null, name = String(v), sub = "", lines = "", open = "";
     if (type === "stat" || type === "trick") {
       const mat = MAT_BY_PROP.get(v), g = propGroups.get(v);
       icon = mat && mat.icon; name = mat ? mat.name : v; sub = v;
@@ -2051,10 +2053,12 @@
       const t = TRAITITEM.get(v), tr = t && t.traitId != null ? TRAIT[t.traitId] : null;
       icon = t && t.icon; name = t ? t.name : v; sub = t ? `grants ${t.traitName}` : "";
       lines = tr ? `<div class="trait-desc">${perkText(tr.desc || "")}</div>` : `<div class="slot-sub">${esc(t ? t.traitName : "")}</div>`;
+      if (tr) open = ` data-action="apx-open" data-ek="trait" data-eid="${t.traitId}"`;
     } else if (type === "spell") {
       const sp = SPELL.get(v);
       icon = spellIcon(sp); name = sp ? sp.name : v; sub = sp ? (sp.cls || "spell") : "spell";
       lines = sp ? `<div class="trait-desc">${richText(sp.desc || "")}</div>` : "";
+      if (sp) open = ` data-action="apx-open" data-ek="spell" data-eid="${esc(String(v))}"`;
     } else {
       const n = nether.find(x => x.id === v);
       icon = gemSrc(n); name = n ? n.name : v; sub = "nether stone";
@@ -2062,8 +2066,8 @@
     }
     return `<div class="art-side-head"><button class="chip" data-action="art-preview-back">‹ Back</button></div>
       <div class="art-pv">
-        <div class="art-pv-top"><div class="as-ico">${icon ? spriteImg(icon, "px") : "◆"}</div>
-          <div><div class="art-pv-name">${esc(name)}</div><div class="slot-sub">${esc(sub)}</div></div></div>
+        <div class="art-pv-top${open ? " apx-clickable" : ""}"${open}${open ? ` title="View taxonomy"` : ""}><div class="as-ico">${icon ? spriteImg(icon, "px") : "◆"}</div>
+          <div><div class="art-pv-name">${esc(name)}${open ? ` <span class="etax-hint">tags ›</span>` : ""}</div><div class="slot-sub">${esc(sub)}</div></div></div>
         <div class="art-pv-body">${lines || `<div class="slot-sub">No numeric effect.</div>`}</div>
         <button class="btn-confirm ${equipped ? "danger-confirm" : ""}" data-action="art-confirm-add" data-t="${type}" data-v="${esc(String(v))}" ${full ? "disabled" : ""}>${equipped ? "Remove from artifact" : full ? "Slots full" : "Add to artifact"}</button>
       </div>`;
@@ -2594,8 +2598,8 @@
     const rows = s.props.map((p, i) => {
         const rm = `<button class="as-rm" data-action="nether-prop-del" data-i="${i}">✕</button>`;
         if (p.cat === "trait") {
-          const t = TRAITITEM.get(p.key);
-          return `<div class="art-slot">${rm}<div class="as-ico">${t && t.icon ? spriteImg(t.icon, "px") : "✦"}</div>
+          const t = TRAITITEM.get(p.key), to = t && t.traitId != null ? ` data-action="apx-open" data-ek="trait" data-eid="${t.traitId}"` : "";
+          return `<div class="art-slot${to ? " apx-clickable" : ""}"${to}${to ? ` title="View taxonomy"` : ""}>${rm}<div class="as-ico">${t && t.icon ? spriteImg(t.icon, "px") : "✦"}</div>
             <div class="as-lab">${esc(t ? t.name : p.key)}</div><div class="as-sub">trait</div></div>`;
         }
         if (p.cat === "spell") {

@@ -594,9 +594,11 @@ h1, h2, h3 { margin: 0; }
 .macro-crea-face img { width: 24px; height: 24px; object-fit: contain; image-rendering: pixelated; }
 .macro-crea-name { font-size: 13px; font-weight: 600; white-space: nowrap; }
 
-/* Appendix rows open an entity taxonomy detail; hint clickability */
-.perk-line.apx-clickable { cursor: pointer; }
-.perk-line.apx-clickable:hover { background: rgba(154,123,214,.08); border-radius: 7px; }
+/* Any trait/spell/etc. display can open its taxonomy detail; hint clickability */
+.apx-clickable { cursor: pointer; }
+.perk-line.apx-clickable:hover, .prop-row.apx-clickable:hover { background: rgba(154,123,214,.08); border-radius: 7px; }
+.art-slot.apx-clickable:hover, .art-pv-top.apx-clickable:hover { outline: 1px solid var(--accent2); outline-offset: -1px; border-radius: 7px; }
+.etax-hint { font-size: 10px; font-weight: 700; color: var(--accent2); opacity: .8; white-space: nowrap; }
 /* Entity taxonomy detail — tags grouped by category */
 .etax-group { margin-bottom: 10px; }
 .etax-cat { font-size: 11px; font-weight: 700; letter-spacing: .3px; color: var(--accent); text-transform: uppercase; margin-bottom: 4px; }
