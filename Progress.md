@@ -889,6 +889,18 @@ What works end-to-end:
 - Class-advantage multiplier + Nether Stone numerics are runtime/in-game-only (see WIKI_CONTEXT) → modelled around.
 
 ## Session log
+- 2026-09-22: **Macro Proposal engine.** Predicts a creature's in-game battle-AI Macro from its loadout so
+  players can automate battles (default action = Macro). `proposeMacro(slot)`: `gatherSlotSpells` (gems +
+  nether-stone spells + artifact spell) → `classifySpell` (purpose/side/breadth from taxonomy: rez/heal/
+  damage/debuff/buff/provoke/defend/summon; single vs multi) → ordered lines: rez→heal→provoke→buff→debuff→
+  summon→AoE→focus-fire (Barrier-guarded chain, lowest Max HP)→basic attack (Shell/Barrier-guarded, lowest
+  Defense)→guaranteed fallback. Rendered as a "Proposed Macro" section on the creature detail page (role
+  chips, per-line rationale, chain indentation, Copy-to-clipboard). Grounded in the decompiled `scr_Macro*`
+  system (+`L_MACRO_*` localization) → `_su_extract/data/model/macro_vocab.json` (10 targets/67 conditions/8
+  actions) bundled into data.js as `macroVocab` via build-data.mjs. Verified end-to-end with headless Chrome
+  (heal+debuff+AoE+single-damage loadout → correct 6-line brain, roles Healer/Debuffer). Full model:
+  `_su_extract/code/MACRO_MODEL.md`. Backlog: buff/debuff NAME detection (gate on the specific status);
+  spec/anointment-aware role hints; import/export in the in-game save format.
 - 2026-09-22: **Appendix bookmarks.** Star toggle on Appendix trait + spell result rows (`bkBtn`, action
   `apx-bookmark`). Bookmarks = scratch state for the ACTIVE build only (`bookmarks {traits[],spells[]}`,
   LS key `subc.bookmarks`); cleared on Reset (`clear-party`) and on loading a saved build (`builds-load`).
