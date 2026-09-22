@@ -2140,7 +2140,33 @@
   // player can replicate in the in-game Macro editor so battles can be automated (default action = Macro).
   // This is a heuristic PROPOSAL, not a guaranteed-optimal brain — the game's real vocabulary is D.macroVocab.
 
-  // classify one spell → { name, purpose, side, multi }
+  // ── Tuning knobs — every magic number the proposal engine uses, in one place. Adjust freely; percentages
+  // are % Health, counts are creature/status counts. See MACRO_RULES below for where each is applied. ──
+  const MACRO_TUNING = {
+    maxLines: 32,          // in-game macro line cap (scr_MacroIsLegal 0x20 guard)
+    healEmergency: 25,     // % Health — cast an emergency heal on an ally below this
+    healSustain: 50,       // % Health — top-up heal on an ally below this
+    finishHp: 25,          // % Health — "finish the kill" trigger (spell + basic attack)
+    selfPreserveHp: 25,    // % Health — a squishy caster with no heal defends below this
+    buffFloor: 1,          // cast a buff on an ally with fewer than this many buffs
+    debuffFloor: 1,        // cast a debuff on an enemy with fewer than this many debuffs
+    minionCap: 3,          // summon while the creature has fewer than this many minions
+    aoeMaxThreshold: 3,    // AoE enemy-count gate escalates per extra AoE gem, capped here
+    // single-target focus priorities; each damage gem cycles through these so multiple gems each get a
+    // live, distinct focus line. Reorder / extend to change targeting preference.
+    focusRotation: [
+      { cond: "has lowest Max Health", why: "finish the enemy with the smallest health pool" },
+      { cond: "has highest Attack", why: "kill the biggest physical threat" },
+      { cond: "has highest Intelligence", why: "kill the biggest spell threat" },
+      { cond: "has lowest Defense", why: "hit whoever takes the most damage" },
+      { cond: "has highest Max Health", why: "chip down the toughest enemy" },
+    ],
+  };
+  // Per-spell classification overrides — force a purpose/side/multi for spells the taxonomy mislabels or that
+  // need bespoke handling. Keyed by spell NAME (stable, human-readable). Empty by default; add as needs surface
+  // (e.g. Antidote is tagged "Healing" but really cures debuffs → { "Antidote": { purpose: "cleanse" } }).
+  const SPELL_OVERRIDES = {};
+  // classify one spell → { sp, name, purpose, side, multi } (taxonomy-driven, then per-spell override)
   function classifySpell(sp) {
     const tx = sp.taxo || [], am = (v) => tx.includes("Action/Mechanic::" + v), rs = (v) => tx.includes("Related Spells::" + v);
     const multi = rs("Multi-Target Spells");
@@ -2156,7 +2182,8 @@
     else if (am("Defend")) { purpose = "defend"; side = "self"; }
     else if (am("Minion")) { purpose = "summon"; side = "ally"; }
     else { purpose = "other"; side = null; }
-    return { sp, name: sp.name, purpose, side, multi };
+    const o = SPELL_OVERRIDES[sp.name] || {};
+    return { sp, name: sp.name, purpose: o.purpose || purpose, side: o.side || side, multi: "multi" in o ? o.multi : multi };
   }
   // spells the creature can actually cast in a macro = its equipped spell GEMS only. Spells socketed into an
   // artifact (Spell slot) or a Nether Stone auto-proc and CANNOT be cast manually / by a macro — excluded.
@@ -2169,95 +2196,94 @@
     return out;
   }
   const TAUNT_TAGS = new Set(["Action/Mechanic::Provoke", "Action/Mechanic::Defend"]);
-  const MAX_MACRO_LINES = 32;   // in-game macro line cap (scr_MacroIsLegal 0x20 guard)
-  // varied single-target focus priorities so several damage gems each get a live, distinct line
-  const FOCUS_ROTATION = [
-    { cond: "has lowest Max Health", why: "finish the enemy with the smallest health pool" },
-    { cond: "has highest Attack", why: "kill the biggest physical threat" },
-    { cond: "has highest Intelligence", why: "kill the biggest spell threat" },
-    { cond: "has lowest Defense", why: "hit whoever takes the most damage" },
-    { cond: "has highest Max Health", why: "chip down the toughest enemy" },
-  ];
-  // build the ordered proposal for a slot: { roles:[], lines:[{en,why,chain}], spells:[classified], note }.
-  // Goal: use as many of the 32 lines as sensibly possible to cover edge cases (first matching line acts).
-  function proposeMacro(slot) {
+  // line + target helpers shared by the rules
+  const mLine = (en, why, chain) => ({ en, why, chain: !!chain });
+  const allyT = (s) => s.multi ? "ally (all)" : "that creature";
+  const enemyT = (s) => s.multi ? "enemy (all)" : "that creature";
+  // per-creature context every rule reads from — classify once, expose grouped spells + stat-derived flags
+  function macroContext(slot) {
     const c = CREA.get(slot.cid); if (!c) return null;
     const fs = finalStats(slot), st = fs.final;
     const spells = gatherSlotSpells(slot).map(classifySpell);
     const by = (p) => spells.filter(s => s.purpose === p);
-    const traitIds = slotTraitIds(slot);
-    const traitTags = new Set(); traitIds.forEach(tid => (TRAIT[tid] || {}).taxo && TRAIT[tid].taxo.forEach(t => traitTags.add(t)));
-    const hasTauntTrait = [...traitTags].some(t => TAUNT_TAGS.has(t));
+    const traitTags = new Set();
+    slotTraitIds(slot).forEach(tid => (TRAIT[tid] || {}).taxo && TRAIT[tid].taxo.forEach(t => traitTags.add(t)));
     const dom = STAT_KEYS.reduce((a, k) => st[k] > st[a] ? k : a, "hp");
-    const tanky = (dom === "def" || dom === "hp");
-    const squishy = (dom === "int" || dom === "spd");
-    const physical = st.atk >= st.int;
-    const dmg = by("damage"), singleDmg = dmg.filter(s => !s.multi), aoe = dmg.filter(s => s.multi);
-    const heals = by("heal"), canAttack = !!(dmg.length || physical);
-
-    const lines = [];
-    const push = (en, why, chain) => lines.push({ en, why, chain: !!chain });
-
-    // 1) Resurrection — bring fallen allies back before anything else
-    by("rez").forEach(s => push(`If any ally is dead, cast ${s.name} on that creature`, `${s.name} resurrects a dead ally`));
-    // 2) Emergency heal — someone is about to die
-    heals.forEach(s => push(`If any ally has < 25% Health, cast ${s.name} on ${s.multi ? "ally (all)" : "that creature"}`,
-      `${s.name} — emergency top-up before an ally dies`));
-    // 3) Self-preservation for a squishy caster with no way to heal itself
-    if (squishy && !heals.length) push(`If this creature has < 25% Health, defend`, `Fragile and can't heal — turtle when low`);
-    // 4) Provoke / tank — soak hits so squishier allies survive
-    by("provoke").forEach(s => push(`If this creature has > 0 enemies, cast ${s.name}`, `${s.name} draws enemy fire to this tank`));
-    if (!by("provoke").length && tanky && hasTauntTrait)
-      push(`If this creature has > 0 enemies, provoke`, `Tanky stats + a taunt trait — provoke to protect the party`);
-    // 5) Sustained heal — keep the party topped up (higher threshold, runs after emergencies)
-    heals.forEach(s => push(`If any ally has < 50% Health, cast ${s.name} on ${s.multi ? "ally (all)" : "that creature"}`,
-      `${s.name} — keep allies healthy`));
-    // 6) Debuffs — apply to enemies that aren't debuffed yet (avoids re-casting into a debuffed target)
-    by("debuff").forEach(s => push(`If any enemy has < 1 debuffs, cast ${s.name} on ${s.multi ? "enemy (all)" : "that creature"}`,
-      `${s.name} — debuff an un-debuffed enemy`));
-    // 7) Buffs — apply to allies that aren't buffed yet
-    by("buff").forEach(s => push(`If any ally has < 1 buffs, cast ${s.name} on ${s.multi ? "ally (all)" : "that creature"}`,
-      `${s.name} — buff an un-buffed ally`));
-    // 8) Summons — keep minion slots filled
-    by("summon").forEach(s => push(`If this creature has < 3 minions, cast ${s.name}`, `${s.name} summons while you have room`));
-    // 9) AoE damage — bigger spells kept for when more enemies are on the board
-    aoe.forEach((s, i) => push(`If this creature has > ${Math.min(i + 1, 3)} enemies, cast ${s.name} on enemy (all)`,
-      `${s.name} hits all enemies — worth it while ${Math.min(i + 1, 3) + 1}+ remain`));
-    // 10) Single-target damage — finish a nearly-dead enemy, then focus-fire (each gem gets a distinct priority)
-    if (singleDmg.length) {
-      const primary = singleDmg[0];
-      push(`If any enemy has < 25% Health, cast ${primary.name} on that creature`, `Secure the kill on a nearly-dead enemy`);
-      push(`If any enemy doesn't have Barrier, test next line`, `Don't waste ${primary.name} into a Barrier (spells ignore Shell)`, true);
-      singleDmg.forEach((s, i) => { const f = FOCUS_ROTATION[i % FOCUS_ROTATION.length];
-        push(`If any enemy ${f.cond}, cast ${s.name} on that creature`, `${s.name} — ${f.why}`); });
-    }
-    // 11) Basic attack — a physical attacker (or the fallback when there's no offensive spell)
-    if (physical && (dom === "atk" || !dmg.length)) {
-      push(`If any enemy has < 25% Health, attack that creature`, `Finish a nearly-dead enemy with a basic attack`);
-      push(`If any enemy doesn't have Shell, test next line`, `Shell blunts basic attacks — skip those enemies`, true);
-      push(`If any enemy doesn't have Barrier, test next line`, `Barrier blocks the hit entirely`, true);
-      push(`If any enemy has lowest Defense, attack that creature`, `Hit the enemy your attack does the most to`);
-    }
-    // 12) Guaranteed fallback so "hold to auto-battle" never stalls on a manual prompt
-    push(canAttack ? `If this creature has > 0 enemies, attack a random enemy` : `If this creature has > 0 enemies, defend`,
-      canAttack ? `Catch-all so the macro always acts instead of asking you` : `No offensive option left — defend to pass the turn safely`);
-
-    const truncated = lines.length > MAX_MACRO_LINES;
-    const out = lines.slice(0, MAX_MACRO_LINES);
-
-    // roles (for the header) — dominant purposes + stat lean
+    const dmg = by("damage");
+    return {
+      c, slot, st, spells, by, T: MACRO_TUNING,
+      heals: by("heal"), dmg, singleDmg: dmg.filter(s => !s.multi), aoe: dmg.filter(s => s.multi),
+      hasTauntTrait: [...traitTags].some(t => TAUNT_TAGS.has(t)),
+      dom, tanky: dom === "def" || dom === "hp", squishy: dom === "int" || dom === "spd",
+      physical: st.atk >= st.int, canAttack: !!(dmg.length || st.atk >= st.int),
+    };
+  }
+  // ── The proposal rules, in priority order (first matching line acts in-game). Each rule is standalone:
+  // `when(x)` gates it, `lines(x)` returns its macro lines. THIS is the main surface to modify behavior —
+  // add / remove / reorder rules here, tweak thresholds in MACRO_TUNING, force spell purposes in
+  // SPELL_OVERRIDES. `x` is the macroContext (grouped spells + stat flags + the tuning object as `x.T`). ──
+  const MACRO_RULES = [
+    { key: "rez", when: x => x.by("rez").length,
+      lines: x => x.by("rez").map(s => mLine(`If any ally is dead, cast ${s.name} on that creature`, `${s.name} resurrects a dead ally`)) },
+    { key: "heal-emergency", when: x => x.heals.length,
+      lines: x => x.heals.map(s => mLine(`If any ally has < ${x.T.healEmergency}% Health, cast ${s.name} on ${allyT(s)}`, `${s.name} — emergency top-up before an ally dies`)) },
+    { key: "self-preserve", when: x => x.squishy && !x.heals.length,
+      lines: x => [mLine(`If this creature has < ${x.T.selfPreserveHp}% Health, defend`, `Fragile and can't heal — turtle when low`)] },
+    { key: "provoke-spell", when: x => x.by("provoke").length,
+      lines: x => x.by("provoke").map(s => mLine(`If this creature has > 0 enemies, cast ${s.name}`, `${s.name} draws enemy fire to this tank`)) },
+    { key: "provoke-tank", when: x => !x.by("provoke").length && x.tanky && x.hasTauntTrait,
+      lines: x => [mLine(`If this creature has > 0 enemies, provoke`, `Tanky stats + a taunt trait — provoke to protect the party`)] },
+    { key: "heal-sustain", when: x => x.heals.length,
+      lines: x => x.heals.map(s => mLine(`If any ally has < ${x.T.healSustain}% Health, cast ${s.name} on ${allyT(s)}`, `${s.name} — keep allies healthy`)) },
+    { key: "debuff", when: x => x.by("debuff").length,
+      lines: x => x.by("debuff").map(s => mLine(`If any enemy has < ${x.T.debuffFloor} debuffs, cast ${s.name} on ${enemyT(s)}`, `${s.name} — debuff an un-debuffed enemy`)) },
+    { key: "buff", when: x => x.by("buff").length,
+      lines: x => x.by("buff").map(s => mLine(`If any ally has < ${x.T.buffFloor} buffs, cast ${s.name} on ${allyT(s)}`, `${s.name} — buff an un-buffed ally`)) },
+    { key: "summon", when: x => x.by("summon").length,
+      lines: x => x.by("summon").map(s => mLine(`If this creature has < ${x.T.minionCap} minions, cast ${s.name}`, `${s.name} summons while you have room`)) },
+    { key: "aoe", when: x => x.aoe.length,
+      lines: x => x.aoe.map((s, i) => { const n = Math.min(i + 1, x.T.aoeMaxThreshold);
+        return mLine(`If this creature has > ${n} enemies, cast ${s.name} on enemy (all)`, `${s.name} hits all enemies — worth it while ${n + 1}+ remain`); }) },
+    { key: "damage-single", when: x => x.singleDmg.length,
+      lines: x => { const primary = x.singleDmg[0], out = [];
+        out.push(mLine(`If any enemy has < ${x.T.finishHp}% Health, cast ${primary.name} on that creature`, `Secure the kill on a nearly-dead enemy`));
+        out.push(mLine(`If any enemy doesn't have Barrier, test next line`, `Don't waste ${primary.name} into a Barrier (spells ignore Shell)`, true));
+        x.singleDmg.forEach((s, i) => { const f = x.T.focusRotation[i % x.T.focusRotation.length];
+          out.push(mLine(`If any enemy ${f.cond}, cast ${s.name} on that creature`, `${s.name} — ${f.why}`)); });
+        return out; } },
+    { key: "basic-attack", when: x => x.physical && (x.dom === "atk" || !x.dmg.length),
+      lines: x => [
+        mLine(`If any enemy has < ${x.T.finishHp}% Health, attack that creature`, `Finish a nearly-dead enemy with a basic attack`),
+        mLine(`If any enemy doesn't have Shell, test next line`, `Shell blunts basic attacks — skip those enemies`, true),
+        mLine(`If any enemy doesn't have Barrier, test next line`, `Barrier blocks the hit entirely`, true),
+        mLine(`If any enemy has lowest Defense, attack that creature`, `Hit the enemy your attack does the most to`),
+      ] },
+    { key: "fallback", when: () => true,
+      lines: x => [x.canAttack
+        ? mLine(`If this creature has > 0 enemies, attack a random enemy`, `Catch-all so the macro always acts instead of asking you`)
+        : mLine(`If this creature has > 0 enemies, defend`, `No offensive option left — defend to pass the turn safely`)] },
+  ];
+  // role chips for the header — dominant spell purposes + stat lean
+  function macroRoles(x) {
     const roles = [];
-    if (by("rez").length || heals.length) roles.push("Healer");
-    if (by("buff").length || by("summon").length) roles.push("Support");
-    if (by("debuff").length) roles.push("Debuffer");
-    if (dmg.length && !physical) roles.push("Caster");
-    if (by("provoke").length || (tanky && hasTauntTrait)) roles.push("Tank");
-    if (physical && (dom === "atk" || !dmg.length)) roles.push("Attacker");
-    if (!roles.length) roles.push(dmg.length ? "Caster" : "Attacker");
-
-    const note = !spells.length ? "No spell gems equipped — this proposal assumes a basic-attack bruiser."
-      : truncated ? `Trimmed to the ${MAX_MACRO_LINES}-line in-game cap (${lines.length} proposed).` : null;
-    return { roles: [...new Set(roles)], lines: out, spells, note };
+    if (x.by("rez").length || x.heals.length) roles.push("Healer");
+    if (x.by("buff").length || x.by("summon").length) roles.push("Support");
+    if (x.by("debuff").length) roles.push("Debuffer");
+    if (x.dmg.length && !x.physical) roles.push("Caster");
+    if (x.by("provoke").length || (x.tanky && x.hasTauntTrait)) roles.push("Tank");
+    if (x.physical && (x.dom === "atk" || !x.dmg.length)) roles.push("Attacker");
+    if (!roles.length) roles.push(x.dmg.length ? "Caster" : "Attacker");
+    return [...new Set(roles)];
+  }
+  // assemble the proposal: run each rule in order, collect its lines, trim to the in-game cap
+  function proposeMacro(slot) {
+    const x = macroContext(slot); if (!x) return null;
+    const all = [];
+    for (const rule of MACRO_RULES) if (rule.when(x)) for (const l of rule.lines(x)) all.push(l);
+    const lines = all.slice(0, x.T.maxLines);
+    const note = !x.spells.length ? "No spell gems equipped — this proposal assumes a basic-attack bruiser."
+      : all.length > x.T.maxLines ? `Trimmed to the ${x.T.maxLines}-line in-game cap (${all.length} proposed).` : null;
+    return { roles: macroRoles(x), lines, spells: x.spells, note };
   }
   function macroProposalText(slotIdx) {
     const slot = build.slots[slotIdx], c = CREA.get(slot.cid), p = proposeMacro(slot);
@@ -2275,7 +2301,7 @@
       <div class="macro-line-body"><div class="macro-en">${esc(l.en)}</div>
         <div class="macro-why">${esc(l.why)}</div></div></div>`).join("");
     return `<div class="macro-proposal">
-      <div class="macro-head"><div class="macro-roles">${roleChips}<span class="macro-count">${p.lines.length}/${MAX_MACRO_LINES} lines</span></div>
+      <div class="macro-head"><div class="macro-roles">${roleChips}<span class="macro-count">${p.lines.length}/${MACRO_TUNING.maxLines} lines</span></div>
         <button class="btn-ghost macro-copy" data-action="macro-copy" data-slot="${slotIdx}" title="Copy as plain text">Copy</button></div>
       ${p.note ? `<div class="slot-sub" style="margin:2px 0 6px">${esc(p.note)}</div>` : ""}
       <div class="macro-lines">${rows}</div>
