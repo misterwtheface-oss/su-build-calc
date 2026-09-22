@@ -593,6 +593,20 @@ h1, h2, h3 { margin: 0; }
 .macro-crea-face { width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; overflow: hidden; }
 .macro-crea-face img { width: 24px; height: 24px; object-fit: contain; image-rendering: pixelated; }
 .macro-crea-name { font-size: 13px; font-weight: 600; white-space: nowrap; }
+
+/* Appendix rows open an entity taxonomy detail; hint clickability */
+.perk-line.apx-clickable { cursor: pointer; }
+.perk-line.apx-clickable:hover { background: rgba(154,123,214,.08); border-radius: 7px; }
+/* Entity taxonomy detail — tags grouped by category */
+.etax-group { margin-bottom: 10px; }
+.etax-cat { font-size: 11px; font-weight: 700; letter-spacing: .3px; color: var(--accent); text-transform: uppercase; margin-bottom: 4px; }
+.etax-vals { display: flex; flex-wrap: wrap; gap: 6px; }
+.etax-tag { display: inline-flex; align-items: center; gap: 5px; font-size: 13px; color: var(--text);
+  background: rgba(0,0,0,.22); border: 1px solid var(--border-dim); border-radius: 999px; padding: 3px 10px; cursor: pointer; }
+.etax-tag:hover { border-color: var(--accent2); background: rgba(154,123,214,.14); }
+.etax-tag .apx-src { font-size: 9px; }
+.etax-legend { color: var(--text-mute); font-size: 11px; margin-top: 12px; line-height: 1.5; }
+.etax-legend b { color: var(--text-dim); }
 .perk-ico { flex: 0 0 auto; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,.25); border: 1px solid var(--border-dim); border-radius: 6px; }
 .perk-ico img { width: 28px; height: 28px; object-fit: contain; }
 .perk-ico.empty { background: none; border-color: transparent; }

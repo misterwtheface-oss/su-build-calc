@@ -1325,7 +1325,7 @@
           <div class="perk-list">${list.slice(0, CAP).map(renderRow).join("")}
           ${list.length > CAP ? `<div class="slot-sub" style="padding:6px">Showing ${CAP} of ${list.length}.</div>` : ""}</div>`;
       };
-      const line = (ico, name, meta, desc, srcObj, bk) => `<div class="perk-line">
+      const line = (ico, name, meta, desc, srcObj, bk, open) => `<div class="perk-line${open ? " apx-clickable" : ""}"${open ? ` data-action="apx-open" data-ek="${open.ek}" data-eid="${esc(String(open.eid))}"` : ""}>
         <span class="perk-ico sm">${ico || ""}</span>
         <div class="perk-line-body">
           <div class="perk-line-head"><b>${esc(name)}</b>${meta || srcObj ? `<span class="perk-line-meta">${meta || ""}${srcMeta(srcObj)}</span>` : ""}${bk || ""}</div>
@@ -1349,7 +1349,7 @@
           : `<span class="perk-ico sm empty"></span>`;
         const meta = (g.items.length ? `<span class="anoint-spec-tag">${g.items.length} item${g.items.length === 1 ? "" : "s"}</span>` : "") + srcMeta(g);
         const creaSquare = g.creature ? `<div class="apx-crea" title="${esc(g.creature.name)}">${critFace(g.creature)}</div>` : "";
-        return `<div class="perk-line apx-trait">
+        return `<div class="perk-line apx-trait apx-clickable" data-action="apx-open" data-ek="trait" data-eid="${g.id}">
           ${icoSpan}
           <div class="perk-line-body">
             <div class="perk-line-head"><b>${esc(g.name)}</b>${meta ? `<span class="perk-line-meta">${meta}</span>` : ""}${bkBtn("traits", g.id)}</div>
@@ -1360,13 +1360,13 @@
       const body_sections = [
         section("Traits", traitRows, traitRow),
         section("Perks", res.perks, p => line(p.icon ? spriteImg(p.icon, "px") : "", p.name,
-          `<span class="anoint-spec-tag">${esc(p.spec)}</span>`, perkText(p.desc, p.ranks), p)),
+          `<span class="anoint-spec-tag">${esc(p.spec)}</span>`, perkText(p.desc, p.ranks), p, null, { ek: "perk", eid: p.key })),
         section("Spells", res.spells, s => line(spellIcon(s) ? spriteImg(spellIcon(s), "px") : "", s.name,
-          `${s.cls ? `<span class="anoint-spec-tag">${esc(s.cls)}</span>` : ""}${spellMeta(s) ? `<span class="anoint-spec-tag">${esc(spellMeta(s))}</span>` : ""}`, perkText(s.desc, null), s, bkBtn("spells", s.id))),
+          `${s.cls ? `<span class="anoint-spec-tag">${esc(s.cls)}</span>` : ""}${spellMeta(s) ? `<span class="anoint-spec-tag">${esc(spellMeta(s))}</span>` : ""}`, perkText(s.desc, null), s, bkBtn("spells", s.id), { ek: "spell", eid: s.id })),
         section("Relics", res.relics, r => line(r.icon ? spriteImg(r.icon, "px") : "", r.name,
-          r.statBonus ? `<span class="anoint-spec-tag">${esc(r.statBonus)}</span>` : "", richText((r.ranks || []).map(x => x.desc).join(" · ")), r)),
+          r.statBonus ? `<span class="anoint-spec-tag">${esc(r.statBonus)}</span>` : "", richText((r.ranks || []).map(x => x.desc).join(" · ")), r, null, { ek: "relic", eid: r.id })),
         section("Realm Cards", res.cards.map(c => ({ ...c, name: c.family })), c => line(c.sprite ? spriteImg(c.sprite, "px") : "", c.family,
-          c.cls ? `<span class="anoint-spec-tag">${esc(c.cls)}</span>` : "", richText((c.effects || []).join(" · ")), c)),
+          c.cls ? `<span class="anoint-spec-tag">${esc(c.cls)}</span>` : "", richText((c.effects || []).join(" · ")), c, null, { ek: "card", eid: c.id })),
       ].join("");
       const total = traitRows.length + res.perks.length + res.spells.length + res.relics.length + res.cards.length;
       placeholder = "Filter results…";
@@ -1386,6 +1386,65 @@
       </div></div>
       <div class="overlay-footer"><span class="foot-info"></span>
         <button class="btn-confirm" data-action="close-ovl">Done</button></div>
+    </div></div>`;
+  }
+
+  // ── Entity taxonomy detail — every taxonomy tag on a single trait / spell / perk / relic / card,
+  // grouped by category with its provenance source. Reusable from the Appendix rows + trait banners. ──
+  let PERK_BY_KEY = null;
+  const perkByKey = (key) => {
+    if (!PERK_BY_KEY) { PERK_BY_KEY = new Map(); for (const s of D.specs) for (const p of s.perks) if (!PERK_BY_KEY.has(p.key)) PERK_BY_KEY.set(p.key, p); }
+    return PERK_BY_KEY.get(key);
+  };
+  // trait icon = its trait-item's icon (traits carry no icon of their own)
+  const traitItemIcon = (tid) => { const items = traitSources().itemsByTrait.get(+tid) || []; return (items.find(i => i.icon) || {}).icon || null; };
+  // resolve (kind,id) → { e, icon, name, descHtml, kindLabel } for the detail view
+  function resolveEntity(kind, id) {
+    if (kind === "trait") { const e = TRAIT[+id]; return { e, icon: traitItemIcon(id), name: e && e.name, descHtml: e && richText(e.desc || ""), kindLabel: "Trait" }; }
+    if (kind === "spell") { const e = SPELL.get(+id); return { e, icon: e && spellIcon(e), name: e && e.name, descHtml: e && perkText(e.desc || ""), kindLabel: "Spell" }; }
+    if (kind === "relic") { const e = RELIC.get(+id); return { e, icon: e && e.icon, name: e && e.name, descHtml: e && richText((e.ranks || []).map(x => x.desc).join(" · ")), kindLabel: "Relic" }; }
+    if (kind === "card") { const e = CARD.get(+id); return { e, icon: e && e.sprite, name: e && e.family, descHtml: e && richText((e.effects || []).join(" · ")), kindLabel: "Realm Card" }; }
+    if (kind === "perk") { const e = perkByKey(id); return { e, icon: e && e.icon, name: e && e.name, descHtml: e && perkText(e.desc, e.ranks), kindLabel: "Perk" }; }
+    return { e: null };
+  }
+  // grouped taxonomy: Category → its values, each a chip that (a) shows the provenance source and
+  // (b) jumps to the Appendix filtered by that tag
+  function entityTaxHtml(e) {
+    const groups = new Map();
+    (e.taxo || []).forEach((k, i) => { const cat = taxoCatName(k); if (!groups.has(cat)) groups.set(cat, []);
+      groups.get(cat).push({ val: taxoValName(k), src: e.taxoSrc ? e.taxoSrc[i] : null, key: k }); });
+    if (!groups.size) return `<div class="slot-sub" style="padding:10px">No taxonomy tags on this entry.</div>`;
+    return [...groups].map(([cat, vals]) => `<div class="etax-group">
+      <div class="etax-cat">${esc(cat)}</div>
+      <div class="etax-vals">${vals.map(v => `<button class="etax-tag" data-action="etax-filter" data-k="${esc(v.key)}" title="Filter the Appendix to “${esc(v.val)}”">${esc(v.val)}${v.src ? `<span class="apx-src s-${esc(v.src)}">${esc(v.src)}</span>` : ""}</button>`).join("")}</div>
+    </div>`).join("");
+  }
+  function openEntityDetail(kind, id) {
+    const ret = dovState;   // if we're already in a detail (e.g. creature detail), return to it on close
+    dovState = { kind: "entity-detail", ekind: kind, eid: id, ret, render: renderEntityDetail };
+    openDetail(dovState.render());
+  }
+  function closeEntityDetail() {
+    const ret = dovState && dovState.ret;
+    if (ret) { dovState = ret; openDetail(dovState.render()); } else closeDetail();
+  }
+  function renderEntityDetail() {
+    const st = dovState, r = resolveEntity(st.ekind, st.eid), e = r.e;
+    if (!e) return `<div class="ovl-backdrop" data-action="entity-backdrop"><div class="overlay-panel detail">
+      <div class="overlay-header"><h2>Not found</h2><button class="ovl-close" data-action="close-entity">✕</button></div>
+      <div class="overlay-body"><div class="ovl-center"><div class="slot-sub" style="padding:16px">This entry could not be resolved.</div></div></div></div></div>`;
+    const n = (e.taxo || []).length;
+    return `<div class="ovl-backdrop" data-action="entity-backdrop"><div class="overlay-panel detail">
+      <div class="overlay-header">${r.icon ? `<span class="hdr-ico">${spriteImg(r.icon, "px")}</span>` : ""}
+        <h2>${esc(r.name || "—")}</h2><span class="anoint-spec-tag">${esc(r.kindLabel)}</span>
+        <button class="ovl-close" data-action="close-entity">✕</button></div>
+      <div class="overlay-body"><div class="ovl-center"><div class="ovl-center-scroll">
+        ${r.descHtml ? `<div class="perk-desc" style="margin-bottom:12px">${r.descHtml}</div>` : ""}
+        <div class="section-label">Taxonomy — ${n} tag${n === 1 ? "" : "s"}</div>
+        ${entityTaxHtml(e)}
+        <div class="etax-legend">Provenance: <b>token</b> = game markup · <b>keyword</b> · <b>llm</b> = per-description · <b>phrase</b> · <b>field</b> · <b>correction</b>. Tap a tag to filter the Appendix by it.</div>
+      </div></div></div>
+      <div class="overlay-footer"><span class="foot-info"></span><button class="btn-confirm" data-action="close-entity">Done</button></div>
     </div></div>`;
   }
 
@@ -3101,8 +3160,15 @@
         persistBuild(); persistArtifacts(); refreshOverlay(); break;
       }
 
-      // trait nav (stub — full trait page is P1)
-      case "nav-trait": { const tr = TRAIT[+t.dataset.tid]; if (tr) alert(tr.name + "\n\n" + (tr.desc || "")); break; }
+      // entity taxonomy detail (trait / spell / perk / relic / card)
+      case "nav-trait": openEntityDetail("trait", +t.dataset.tid); break;
+      case "apx-open": openEntityDetail(t.dataset.ek, t.dataset.eid); break;
+      case "close-entity": closeEntityDetail(); break;
+      case "entity-backdrop": if (e.target === t) closeEntityDetail(); break;
+      case "etax-filter": {   // jump to the Appendix filtered by the tapped tag
+        const k = t.dataset.k; closeDetail();
+        openAppendix(); ovState.tags = [k]; ovState.browsing = false; refreshOverlay(); break;
+      }
     }
   }
 
