@@ -936,6 +936,11 @@ What works end-to-end:
   return target so opening from the creature detail page returns there on close. Appendix rows made clickable
   (`apx-open`); `line()`/`traitRow` carry the `{kind,id}` target. Verified headless (row→detail→tag-jump; and
   creature-detail→banner→detail→close returns to creature). Replaces the `nav-trait` `alert()` stub.
+  **Follow-up (same day):** per "all traits, wherever shown, open the taxonomy" — also wired `libTraitRow`
+  (nether + artifact library panels), the artifact socket **preview** header (`art-pv-top`, "tags ›" hint),
+  and the nether builder's socketed-trait **slot**. Nether-socketed traits were already reachable on the
+  creature detail page (they flow through `slotTraitIds` → clickable trait banners). Synergy intentionally
+  left as-is (its matrix already visualizes an object's full tag associations). Generalized `.apx-clickable`.
 - 2026-09-22: **Macro Proposal — iteration 2 (extensibility refactor).** No behavior change — `proposeMacro`
   output verified **byte-identical** across a fixture covering every rule branch (headless diff, 54 lines).
   Extracted `MACRO_TUNING` (every threshold: heal %s, finishHp, buff/debuff floors, minionCap, aoeMaxThreshold,
