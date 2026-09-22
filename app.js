@@ -1026,7 +1026,7 @@
       const badge = mx > 1 ? `<span class="perk-rankbadge">${r}/${mx}</span>` : (on ? `<span class="perk-rankbadge">✓</span>` : "");
       const asc = p.ascension ? `<span class="anoint-badge asc">Ascension</span>` : "";
       const ico = p.icon ? `<span class="perk-ico sm">${spriteImg(p.icon, "px")}</span>` : `<span class="perk-ico sm empty"></span>`;
-      return `<div class="perk-line ${on ? "on" : "off"} ${p.ascension ? "asc" : ""}">${ico}
+      return `<div class="perk-line apx-clickable ${on ? "on" : "off"} ${p.ascension ? "asc" : ""}" data-action="apx-open" data-ek="perk" data-eid="${esc(p.key)}">${ico}
         <div class="perk-line-body">
           <div class="perk-line-head"><b>${esc(p.name)}</b><span class="perk-line-meta">${asc}${badge}</span></div>
           ${p.desc ? `<div class="perk-desc">${perkText(p.desc, r)}</div>` : ""}
@@ -1837,7 +1837,7 @@
       const btn = (inCur && !on)
         ? `<button class="slot-mini anoint-eq" disabled title="Already available in your current specialization">In your spec</button>`
         : `<button class="slot-mini anoint-eq ${on ? "on" : ""}" data-action="anoint-toggle" data-sid="${a.specId}" data-k="${esc(a.key)}" ${(!on && full) ? "disabled" : ""}>${on ? "Equipped ✓" : "Equip"}</button>`;
-      return `<div class="perk-line ${on ? "equipped" : ""} ${inCur ? "anoint-incur" : ""}">
+      return `<div class="perk-line apx-clickable ${on ? "equipped" : ""} ${inCur ? "anoint-incur" : ""}" data-action="apx-open" data-ek="perk" data-eid="${esc(a.key)}">
         <span class="perk-ico sm">${a.icon ? spriteImg(a.icon, "px") : ""}</span>
         <div class="perk-line-body">
           <div class="perk-line-head"><b>${esc(a.name)}</b>
@@ -1881,7 +1881,7 @@
   }
   function renderAnointDetail() {
     const eq = equippedAnointObjs();
-    const rows = eq.map(a => `<div class="perk-line">
+    const rows = eq.map(a => `<div class="perk-line apx-clickable" data-action="apx-open" data-ek="perk" data-eid="${esc(a.key)}">
         <span class="perk-ico sm">${a.icon ? spriteImg(a.icon, "px") : ""}</span>
         <div class="perk-line-body">
           <div class="perk-line-head"><b>${esc(a.name)}</b>
@@ -2235,7 +2235,7 @@
     const rows = list.map(r => `<div class="prop-row ${st.sel === r.id ? "chosen" : ""}" data-action="relic-pick" data-id="${r.id}">
       <span class="prop-ico">${r.icon ? spriteImg(r.icon, "px") : ""}</span>
       <span class="prop-name">${esc(r.name)}</span><span class="prop-stat">${esc(r.statBonus || "")}</span></div>`).join("");
-    const detail = sel ? `<div class="ns-info-head"><span class="ns-info-icon">${sel.icon ? spriteImg(sel.icon, "px") : ""}</span><h3>${esc(sel.name)}</h3></div>
+    const detail = sel ? `<div class="ns-info-head apx-clickable" data-action="apx-open" data-ek="relic" data-eid="${sel.id}" title="View taxonomy"><span class="ns-info-icon">${sel.icon ? spriteImg(sel.icon, "px") : ""}</span><h3>${esc(sel.name)} <span class="etax-hint">tags ›</span></h3></div>
       <div class="slot-sub" style="margin-bottom:10px">Boosts ${esc(sel.statBonus || "—")}</div>
       ${sel.ranks.map(rk => `<div class="prop-row ${st.rank >= rk.rank ? "chosen" : ""}">
         <span class="prop-name" style="flex:0 0 44px;color:var(--accent)">R${rk.rank}</span>
@@ -2524,7 +2524,8 @@
           ${traitHtml || `<div class="slot-sub">No traits.</div>`}
           ${relic ? `<div class="section-label" style="margin-top:14px">Relic — Rank ${slot.relic.rank}${deprivedActive() ? ` <span style="color:var(--bad);font-weight:700">· ignored (Deprived)</span>` : ""}</div>
             <div class="prop-list">
-              <div class="prop-row static"><span class="prop-ico">${relic.icon ? spriteImg(relic.icon, "px") : ""}</span><span class="prop-name"><b>${esc(relic.name)}</b></span></div>
+              <div class="prop-row static apx-clickable" data-action="apx-open" data-ek="relic" data-eid="${slot.relic.id}" title="View taxonomy"><span class="prop-ico">${relic.icon ? spriteImg(relic.icon, "px") : ""}</span><span class="prop-name"><b>${esc(relic.name)}</b> <span class="etax-hint">tags ›</span></span></div>
+
               ${relic.ranks.filter(r => r.rank <= slot.relic.rank).map(r => `<div class="prop-row static">
                 <span class="prop-name" style="flex:0 0 40px;color:var(--accent)">R${r.rank}</span>
                 <span class="prop-stat" style="flex:1;text-align:left">${richText(r.desc)}</span></div>`).join("")}
