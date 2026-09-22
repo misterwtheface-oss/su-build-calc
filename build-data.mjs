@@ -845,13 +845,16 @@ for (const w of wardrobeRecs) {
 //   suffix     npc_<stem>   (bare = tier 1) + _2 / _3
 // so derive a tier number per record and prefer an explicit tier over a bare-stem fallback.
 // User-verified costume corrections (wardrobe.json mis-attributes these). Two anti-patterns:
-//  • Defiler/Tribalist costumes live under a DIFFERENT stem (occultist / shaman).
 //  • Many specs' true PLAYER tier-1 is the `_alt` sprite (bare npc_<stem> is the NPC version); the
 //    build's variant filter was dropping it, so tier 1 was wrong (or missing, e.g. Inquisitor).
+//  • Defiler & Tribalist have ONLY a single player costume — `npc_defiler_alt` / `npc_tribalist_alt`
+//    (wardrobe cat=specialization). An earlier fix wrongly borrowed the SHAMAN / OCCULTIST creature
+//    sprites (`npc_shaman*` / `npc_occultist*`, cat=npc — different entities) as their tiers, which
+//    broke tier 1 (showed the wrong creature). They genuinely have no tier 2/3.
 // Each entry lists the tier-1/2/3 sprite stems in order; missing ones are filtered out (e.g. Hell Knight = alt only).
 const SPEC_COSTUME_OVERRIDE = {
-  'Defiler':     ['npc_occultist', 'npc_occultist_2', 'npc_occultist_3'],
-  'Tribalist':   ['npc_shaman', 'npc_shaman_2', 'npc_shaman_3'],
+  'Defiler':     ['npc_defiler_alt'],
+  'Tribalist':   ['npc_tribalist_alt'],
   'Cabalist':    ['npc_cabalist_alt', 'npc_cabalist_2', 'npc_cabalist_3'],
   'Cleric':      ['npc_cleric_alt', 'npc_cleric_2', 'npc_cleric_3'],
   'Druid':       ['npc_druid_alt', 'npc_druid_2', 'npc_druid_3'],
