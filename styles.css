@@ -608,6 +608,21 @@ h1, h2, h3 { margin: 0; }
 .perk-line.apx-clickable:hover, .prop-row.apx-clickable:hover { background: rgba(154,123,214,.08); border-radius: 7px; }
 .art-slot.apx-clickable:hover, .art-pv-top.apx-clickable:hover { outline: 1px solid var(--accent2); outline-offset: -1px; border-radius: 7px; }
 .etax-hint { font-size: 10px; font-weight: 700; color: var(--accent2); opacity: .8; white-space: nowrap; }
+
+/* Artifact info panel: Bonuses | Sockets view toggle + spell-gem containers */
+.art-view-toggle { display: flex; align-items: center; gap: 10px; margin: 12px 0 8px; }
+.av-tab { background: none; border: none; padding: 0; cursor: pointer; font-size: 13px; font-weight: 700;
+  letter-spacing: .4px; text-transform: uppercase; color: var(--text-mute); }
+.av-tab.on { color: var(--accent); }
+.av-tab:hover { color: var(--text); }
+.av-pipe { color: var(--border-dim); }
+.art-spellcards { display: flex; flex-direction: column; gap: 8px; }
+.art-spellcard { border: 1px solid var(--border-dim); border-left: 3px solid var(--accent2); border-radius: 7px;
+  padding: 8px; background: rgba(0,0,0,.15); }
+.art-spellcard-head { display: flex; align-items: center; gap: 8px; }
+.art-spellcard-head b { flex: 1; min-width: 0; }
+.art-trigger { flex: 0 0 auto; font-size: 11px; font-weight: 700; color: var(--accent2);
+  background: rgba(154,123,214,.16); border: 1px solid var(--border-dim); border-radius: 999px; padding: 2px 9px; white-space: nowrap; }
 /* Entity taxonomy detail — tags grouped by category */
 .etax-group { margin-bottom: 10px; }
 .etax-cat { font-size: 11px; font-weight: 700; letter-spacing: .3px; color: var(--accent); text-transform: uppercase; margin-bottom: 4px; }

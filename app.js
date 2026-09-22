@@ -1934,6 +1934,51 @@
     for (const id of a.netherIds || []) { const nn = nether.find(x => x.id === id); r.push(libRow(gemSrc(nn), nn ? nn.name : id, "nether")); }
     return r.join("") || `<div class="slot-sub" style="padding:8px">Empty artifact.</div>`;
   }
+  // artifact TYPE (its primary property) → the trigger its native spell-gem slot fires on.
+  // Nether-stone spells socketed into the artifact carry their own stored trigger instead.
+  const ART_TYPE_TRIGGER = { Helmet: "On Provoke", Sword: "On Attack", Staff: "On Cast", Shield: "On Defend", Boots: "On Turn" };
+  // aggregate an artifact's stat contribution at its rank: core 5 stats (%) + any non-core "trick" stats (flat)
+  function artifactBonusRows(a) {
+    const rank = a.rank || 50, core = { hp: 0, atk: 0, def: 0, int: 0, spd: 0 }, extra = new Map();
+    const add = (stat, val) => { if (!val) return; const k = PROP_STAT[stat]; if (k) core[k] += val; else extra.set(stat, (extra.get(stat) || 0) + val); };
+    if (a.primary) { const p = PRIMARY.find(x => x.property === a.primary); if (p) add(p.stat, p.perRank[rank] || 0); }
+    for (const name of [...(a.stat || []), ...(a.trick || [])]) { const g = propGroups.get(name); if (g) for (const e of g.entries) add(e.stat, e.perRank[rank] || 0); }
+    for (const nid of a.netherIds || []) { const n = nether.find(x => x.id === nid); if (!n) continue;
+      for (const pr of n.props || []) { if (pr.cat !== "stat" && pr.cat !== "trick") continue; const g = propGroups.get(pr.key);
+        if (g) for (const e of g.entries) add(e.stat, Number(pr.value) || 0); else add(pr.key, Number(pr.value) || 0); } }
+    return { core, extra };
+  }
+  // trait containers mirroring the creature detail (trait banner + description, clickable to taxonomy)
+  function artifactTraitContainers(a) {
+    return (a.traits || []).map(id => { const ti = TRAITITEM.get(id), tid = ti ? ti.traitId : null; if (tid == null) return "";
+      return `<div class="primary-traits" style="margin-bottom:6px">${traitBanner(tid)}<div class="trait-desc">${richText((TRAIT[tid] || {}).desc || "")}</div></div>`; }).join("");
+  }
+  // spell-gem containers: name + trigger + description (clickable to the spell's taxonomy)
+  function artifactSpellContainers(a) {
+    const card = (sp, trigger, src) => `<div class="art-spellcard apx-clickable" data-action="apx-open" data-ek="spell" data-eid="${sp.id}" title="View taxonomy">
+      <div class="art-spellcard-head"><span class="prop-ico">${spellIcon(sp) ? spriteImg(spellIcon(sp), "px") : ""}</span>
+        <b>${esc(sp.name)}</b><span class="art-trigger">${esc(trigger || "—")}</span></div>
+      ${src ? `<div class="slot-sub">from ${esc(src)}</div>` : ""}
+      ${sp.desc ? `<div class="trait-desc">${perkText(sp.desc)}</div>` : ""}</div>`;
+    const rows = [], typeTrig = ART_TYPE_TRIGGER[a.primary];
+    for (const id of a.spells || []) { const sp = SPELL.get(id); if (sp) rows.push(card(sp, typeTrig)); }
+    for (const nid of a.netherIds || []) { const n = nether.find(x => x.id === nid); if (!n) continue;
+      for (const pr of n.props || []) if (pr.cat === "spell") { const sp = SPELL.get(pr.key); if (sp) rows.push(card(sp, pr.trigger, n.name)); } }
+    return rows.join("");
+  }
+  // "Bonuses" view: stat table + trait containers + spell-gem containers (vs the raw "Sockets" list)
+  function artifactBonusView(a) {
+    const { core, extra } = artifactBonusRows(a);
+    const coreRows = STAT_KEYS.map(k => `<div class="stat-row ${core[k] ? "hl-med" : ""}"><span class="stat-name">${STAT_LABEL[k]}</span>
+      <span class="stat-val art">${core[k] ? "+" + core[k] + "%" : "—"}</span></div>`).join("");
+    const extraRows = [...extra].map(([stat, val]) => `<div class="stat-row hl-med"><span class="stat-name">${esc(stat)}</span>
+      <span class="stat-val art">+${val}</span></div>`).join("");
+    const traits = artifactTraitContainers(a), spells = artifactSpellContainers(a);
+    return `<div class="section-label">Stat bonuses · rank ${a.rank || 50}</div>
+      <div class="stat-grid single">${coreRows}${extraRows}</div>
+      ${traits ? `<div class="section-label" style="margin-top:12px">Traits</div>${traits}` : ""}
+      ${spells ? `<div class="section-label" style="margin-top:12px">Spell Gems</div><div class="art-spellcards">${spells}</div>` : ""}`;
+  }
   function renderArtifactLibrary() {
     const st = ovState, manage = st.slotIdx == null;
     const slot = manage ? null : build.slots[st.slotIdx], c = slot ? CREA.get(slot.cid) : null;
@@ -1954,10 +1999,16 @@
     const equippedHere = sel && equippedId === sel.id;
     let info;
     if (sel) {
+      // two views: Bonuses (resolved stat table + trait & spell-gem containers) | Sockets (raw socketed items)
+      const view = st.artView === "sockets" ? "sockets" : "bonuses";
+      const toggle = `<div class="art-view-toggle">
+        <button class="av-tab ${view === "bonuses" ? "on" : ""}" data-action="art-view" data-v="bonuses">Bonuses</button>
+        <span class="av-pipe">|</span>
+        <button class="av-tab ${view === "sockets" ? "on" : ""}" data-action="art-view" data-v="sockets">Sockets</button></div>`;
+      const viewBody = view === "sockets" ? `<div class="prop-list">${artContentRows(sel)}</div>` : artifactBonusView(sel);
       info = `<div class="ns-info-head"><span class="ns-info-icon">${spriteImg(artIcon(sel), "px")}</span><h3>${esc(sel.name)}</h3></div>
         <div class="slot-sub">${esc(artifactSummary(sel))}</div>
-        <div class="section-label" style="margin-top:10px">Contents</div>
-        <div class="prop-list">${artContentRows(sel)}</div>`;
+        ${toggle}${viewBody}`;
     } else info = `<div class="slot-sub" style="padding:12px">Select an artifact.</div>`;
     // footer selector bar (mirrors Builds): Edit/Delete act on the selection; the confirm button
     // switches between Equip (artifact selected, equip mode) and ＋ Build new artifact (none selected).
@@ -3031,6 +3082,7 @@
 
       // artifact library + builder
       case "artlib-sel": { const id = +t.dataset.id; ovState.sel = ovState.sel === id ? null : id; refreshOverlay(); break; }
+      case "art-view": ovState.artView = t.dataset.v; refreshOverlay(); break;
       case "artlib-hide-equipped": e.stopPropagation(); ovState.hideEquipped = !ovState.hideEquipped; refreshOverlay(); break;
       case "art-equip": build.slots[ovState.slotIdx].artifactId = +t.dataset.id; persistBuild(); closeOverlay(); render(); break;
       case "art-unequip": build.slots[ovState.slotIdx].artifactId = null; persistBuild(); closeOverlay(); render(); break;
