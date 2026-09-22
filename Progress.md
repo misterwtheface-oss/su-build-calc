@@ -928,6 +928,13 @@ What works end-to-end:
 - Class-advantage multiplier + Nether Stone numerics are runtime/in-game-only (see WIKI_CONTEXT) → modelled around.
 
 ## Session log
+- 2026-09-22: **Realms reference overhaul.** Stepped page (list → full-screen detail, no split panel);
+  **Realm | God sort toggle**; **god portraits** on every row + detail header (build-data copies the canonical
+  `god_<name>` sprite 30/30 → `assets/gods`, emits `realm.godSprite`); **race icons** for roaming races
+  (150/150) + encounters (67/70, text fallback); "Roaming creatures"→"Roaming races"; dropped 28 junk
+  **"N/A" unique rows** (filtered in build-data); dropped the **"— Instability rewards"** header chrome.
+  Deferred (nice-to-have): breakable environment-object sprite join (no clean object→sprite map). Taxonomy
+  viewer also gained entry points: spec/anoint perk rows + relic overlay/creature-detail relic → taxonomy.
 - 2026-09-22: **Artifact info panel — Bonuses | Sockets views + library UX.** Merged the artifact/gem library
   Equip/Unequip/Build into one context-aware button; removed auto-selection; tiles now carry an equip-state
   highlight (purple = this creature, gold = another/all-in-Menu) with a neutral selection ring (`.equip-grid`,
