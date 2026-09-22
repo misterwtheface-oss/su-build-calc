@@ -281,15 +281,15 @@ h1, h2, h3 { margin: 0; }
 .pick-tile.disabled { opacity: .32; cursor: not-allowed; filter: grayscale(.6); }
 .pick-tile.selected { border-color: var(--accent2); box-shadow: inset 0 0 0 2px var(--accent2); }
 .pick-tile.selected .pt-sprite { background: rgba(154,123,214,.2); border-radius: 8px; filter: brightness(1.12); }
-/* Artifact / spell-gem library tiles: equip-state fill (purple = this creature, gold = another) plus a
-   neutral outline for the user's click-selection so the two never look the same. Scoped to .lib-grid so the
-   creature picker / nether / relic tiles keep the shared purple "selected" look. */
-.lib-grid .pick-tile.selected { border-color: var(--border); box-shadow: none; outline: 2px solid #efeaf7; outline-offset: 2px; }
-.lib-grid .pick-tile.selected .pt-sprite { background: none; filter: none; }
-.lib-grid .pick-tile.eq-here { border-color: var(--accent2); box-shadow: inset 0 0 0 2px var(--accent2); }
-.lib-grid .pick-tile.eq-here .pt-sprite { background: rgba(154,123,214,.22); border-radius: 8px; filter: brightness(1.12); }
-.lib-grid .pick-tile.eq-other { border-color: var(--accent); box-shadow: inset 0 0 0 2px var(--accent); }
-.lib-grid .pick-tile.eq-other .pt-sprite { background: rgba(201,162,75,.20); border-radius: 8px; }
+/* Equipment library grids (artifacts / spell gems / nether stones): equip-state fill (purple = this
+   creature, gold = another) plus a neutral outline for the user's click-selection so the two never look the
+   same. Scoped to .equip-grid so the creature picker / relic / Builds tiles keep their own looks. */
+.equip-grid .pick-tile.selected { border-color: var(--border); box-shadow: none; outline: 2px solid #efeaf7; outline-offset: 2px; }
+.equip-grid .pick-tile.selected .pt-sprite { background: none; filter: none; }
+.equip-grid .pick-tile.eq-here { border-color: var(--accent2); box-shadow: inset 0 0 0 2px var(--accent2); }
+.equip-grid .pick-tile.eq-here .pt-sprite { background: rgba(154,123,214,.22); border-radius: 8px; filter: brightness(1.12); }
+.equip-grid .pick-tile.eq-other { border-color: var(--accent); box-shadow: inset 0 0 0 2px var(--accent); }
+.equip-grid .pick-tile.eq-other .pt-sprite { background: rgba(201,162,75,.20); border-radius: 8px; }
 .pick-tile .pt-cls { position: absolute; top: 4px; left: 4px; width: 8px; height: 8px; border-radius: 50%; background: var(--pt-cls, transparent); }
 /* class emblem icon in place of the color dot — readable regardless of accent luminance */
 .pick-tile .pt-clsico { position: absolute; top: 3px; left: 3px; width: 16px; height: 16px; z-index: 2; pointer-events: none; }
@@ -941,6 +941,9 @@ h1, h2, h3 { margin: 0; }
   .spec-right, .nether-form { width: auto; }
   .card-grid { grid-template-columns: 1fr; }
   .lib-grid { grid-template-columns: repeat(3, 1fr); }   /* saved builds: ≥3 per row on phones */
+  /* equipment overlays (artifacts / spell gems / nether): 6 per row on phones */
+  .equip-grid { grid-template-columns: repeat(6, 1fr); gap: 5px; }
+  .equip-grid .pick-tile .pt-name { font-size: 9px; }
   /* shorter artifact/slot tiles on mobile so the wizard fits without scrolling */
   .art-slot { min-height: 58px; padding: 6px 4px; }
   .art-slot .as-ico { width: 26px; height: 26px; }

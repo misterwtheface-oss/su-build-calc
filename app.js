@@ -1969,7 +1969,7 @@
     return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel">
       <div class="overlay-header"><h2>Artifacts${manage ? "" : " — " + esc(c ? c.name : "")}</h2><button class="ovl-close" data-action="close-ovl">✕</button></div>
       <div class="overlay-body">
-        <div class="ovl-center"><div class="ovl-center-scroll"><div class="pick-grid lib-grid">${tiles}</div></div></div>
+        <div class="ovl-center"><div class="ovl-center-scroll"><div class="pick-grid equip-grid">${tiles}</div></div></div>
         <div class="ovl-right lib-info">${info}</div>
       </div>
       <div class="overlay-footer"><button class="facet ${st.hideEquipped ? "on" : ""}" data-action="artlib-hide-equipped">Hide equipped</button>
@@ -2583,7 +2583,7 @@
     return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel">
       <div class="overlay-header"><h2>Nether Stones</h2><button class="ovl-close" data-action="close-ovl">✕</button></div>
       <div class="overlay-body">
-        <div class="ovl-center"><div class="ovl-center-scroll"><div class="pick-grid">${tiles}</div></div></div>
+        <div class="ovl-center"><div class="ovl-center-scroll"><div class="pick-grid equip-grid">${tiles}</div></div></div>
         <div class="ovl-right lib-info">${info}</div>
       </div>
       <div class="overlay-footer"><button class="facet ${st.hideEquipped ? "on" : ""}" data-action="nether-hide-equipped">Hide equipped</button>
@@ -2727,7 +2727,7 @@
     return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel">
       <div class="overlay-header"><h2>Spell Gems${ctx ? " — equip" : ""}</h2><button class="ovl-close" data-action="close-ovl">✕</button></div>
       <div class="overlay-body">
-        <div class="ovl-center"><div class="ovl-center-scroll"><div class="pick-grid lib-grid">${tiles}</div></div></div>
+        <div class="ovl-center"><div class="ovl-center-scroll"><div class="pick-grid equip-grid">${tiles}</div></div></div>
         <div class="ovl-right lib-info">${info}</div>
       </div>
       <div class="overlay-footer"><button class="facet ${st.hideEquipped ? "on" : ""}" data-action="sg-hide-equipped">Hide equipped</button>
