@@ -1903,8 +1903,8 @@
 
   // ── artifact library (equip) ───────────────────────────────────────────────
   function openArtifactLibrary(slotIdx) {
-    const eq = slotIdx != null ? build.slots[slotIdx].artifactId : null;
-    ovState = { kind: "artlib", slotIdx, hideEquipped: false, sel: eq != null ? eq : (artifacts[0] ? artifacts[0].id : null), render: renderArtifactLibrary };
+    // no auto-selection — tiles show equip state (purple = this creature, gold = another); user picks to act
+    ovState = { kind: "artlib", slotIdx, hideEquipped: false, sel: null, render: renderArtifactLibrary };
     openOverlay(ovState.render());
   }
   function artifactSummary(a) {
@@ -1941,10 +1941,15 @@
     let list = artifacts;
     if (st.hideEquipped) list = list.filter(a => !artifactEquippedInBuild(a.id) || a.id === equippedId);
     const sel = st.sel != null ? artifacts.find(a => a.id === st.sel) : null;
-    const tiles = list.map(a => `
-      <div class="pick-tile ${st.sel === a.id ? "selected" : ""}" data-action="artlib-sel" data-id="${a.id}">
+    // tile equip-state highlight: purple = equipped by THIS creature, gold = equipped by another
+    // (in manage/Menu mode every equipped artifact is "another")
+    const tiles = list.map(a => {
+      const eqHere = !manage && a.id === equippedId;
+      const eqOther = !eqHere && artifactEquippedInBuild(a.id);
+      return `
+      <div class="pick-tile ${st.sel === a.id ? "selected" : ""}${eqHere ? " eq-here" : ""}${eqOther ? " eq-other" : ""}" data-action="artlib-sel" data-id="${a.id}"${eqHere ? ` title="Equipped by this creature"` : eqOther ? ` title="Equipped by another creature"` : ""}>
         <div class="pt-sprite">${spriteImg(artIcon(a), "px")}</div>
-        <div class="pt-name">${esc(a.name)}</div></div>`).join("")
+        <div class="pt-name">${esc(a.name)}</div></div>`; }).join("")
       || `<div class="slot-sub" style="padding:10px">No artifacts${st.hideEquipped ? " match" : " yet — build one"}.</div>`;
     const equippedHere = sel && equippedId === sel.id;
     let info;
@@ -1957,18 +1962,21 @@
     // footer selector bar (mirrors Builds): Edit/Delete act on the selection; the confirm button
     // switches between Equip (artifact selected, equip mode) and ＋ Build new artifact (none selected).
     const canEquip = !manage && sel;
+    // single context-aware primary button: Unequip (this one is equipped) / Equip (a different selection) /
+    // Build (manage mode, or nothing selected to equip).
+    const confAction = !canEquip ? "art-new" : equippedHere ? "art-unequip" : "art-equip";
+    const confLabel = !canEquip ? "Build" : equippedHere ? "Unequip" : "Equip";
     return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel">
       <div class="overlay-header"><h2>Artifacts${manage ? "" : " — " + esc(c ? c.name : "")}</h2><button class="ovl-close" data-action="close-ovl">✕</button></div>
       <div class="overlay-body">
-        <div class="ovl-center"><div class="ovl-center-scroll"><div class="pick-grid">${tiles}</div></div></div>
+        <div class="ovl-center"><div class="ovl-center-scroll"><div class="pick-grid lib-grid">${tiles}</div></div></div>
         <div class="ovl-right lib-info">${info}</div>
       </div>
       <div class="overlay-footer"><button class="facet ${st.hideEquipped ? "on" : ""}" data-action="artlib-hide-equipped">Hide equipped</button>
         <div>
-          ${!manage && equippedId != null ? `<button class="btn-ghost" data-action="art-unequip">Unequip</button>` : ""}
           <button class="btn-ghost" data-action="art-edit" data-id="${sel ? sel.id : ""}" ${sel ? "" : "disabled"}>Edit</button>
           <button class="btn-ghost danger" data-action="art-del" data-id="${sel ? sel.id : ""}" ${sel ? "" : "disabled"}>Delete</button>
-          <button class="btn-confirm" style="min-width:96px" data-action="${canEquip ? "art-equip" : "art-new"}" ${canEquip ? `data-id="${sel.id}"` : ""}>${canEquip ? (equippedHere ? "Equipped ✓" : "Equip") : "Build"}</button>
+          <button class="btn-confirm" style="min-width:96px" data-action="${confAction}"${confAction === "art-equip" ? ` data-id="${sel.id}"` : ""}>${confLabel}</button>
         </div></div>
     </div></div>`;
   }
@@ -2677,7 +2685,7 @@
 
   // ── spell gems: library + stepped wizard (1 spell + up to 3 property items) ──
   function openSpellGems() {   // library (manage mode when equipCtx is null)
-    ovState = { kind: "spellgemlib", equipCtx: null, hideEquipped: false, sel: spellGems[0] ? spellGems[0].id : null, render: renderSpellGemLib };
+    ovState = { kind: "spellgemlib", equipCtx: null, hideEquipped: false, sel: null, render: renderSpellGemLib };
     openOverlay(ovState.render());
   }
   function renderSpellGemLib() {
@@ -2686,10 +2694,15 @@
     let list = spellGems;
     if (st.hideEquipped) list = list.filter(g => !spellGemEquippedInBuild(g.id) || (equipped && equipped.has(g.id)));
     const sel = st.sel != null ? spellGems.find(g => g.id === st.sel) : null;
-    const tiles = list.map(g => `
-      <div class="pick-tile ${st.sel === g.id ? "selected" : ""}" data-action="sg-sel" data-id="${g.id}">
+    // tile equip-state highlight: purple = equipped on THIS creature, gold = equipped on another
+    // (in manage/Menu mode every equipped gem is "another")
+    const tiles = list.map(g => {
+      const eqHere = !!ctx && equipped.has(g.id);
+      const eqOther = !eqHere && spellGemEquippedInBuild(g.id);
+      return `
+      <div class="pick-tile ${st.sel === g.id ? "selected" : ""}${eqHere ? " eq-here" : ""}${eqOther ? " eq-other" : ""}" data-action="sg-sel" data-id="${g.id}"${eqHere ? ` title="Equipped on this creature"` : eqOther ? ` title="Equipped on another creature"` : ""}>
         <div class="pt-sprite">${spriteImg(gemIcon(g), "px")}</div>
-        <div class="pt-name">${esc(gemName(g))}</div></div>`).join("")
+        <div class="pt-name">${esc(gemName(g))}</div></div>`; }).join("")
       || `<div class="slot-sub" style="padding:10px">No spell gems${st.hideEquipped ? " match" : " yet — build one"}.</div>`;
     let info;
     if (sel) {
@@ -2714,14 +2727,14 @@
     return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel">
       <div class="overlay-header"><h2>Spell Gems${ctx ? " — equip" : ""}</h2><button class="ovl-close" data-action="close-ovl">✕</button></div>
       <div class="overlay-body">
-        <div class="ovl-center"><div class="ovl-center-scroll"><div class="pick-grid">${tiles}</div></div></div>
+        <div class="ovl-center"><div class="ovl-center-scroll"><div class="pick-grid lib-grid">${tiles}</div></div></div>
         <div class="ovl-right lib-info">${info}</div>
       </div>
       <div class="overlay-footer"><button class="facet ${st.hideEquipped ? "on" : ""}" data-action="sg-hide-equipped">Hide equipped</button>
         <div>
           <button class="btn-ghost" data-action="sg-edit" data-id="${sel ? sel.id : ""}" ${sel ? "" : "disabled"}>Edit</button>
           <button class="btn-ghost danger" data-action="sg-del" data-id="${sel ? sel.id : ""}" ${sel ? "" : "disabled"}>Delete</button>
-          <button class="btn-confirm" style="min-width:96px" data-action="${canEquip ? "sg-equip" : "sg-new"}" ${canEquip ? `data-id="${sel.id}"` : ""}>${canEquip ? (on ? "Equipped ✓" : "Equip") : "＋ Build new"}</button>
+          <button class="btn-confirm" style="min-width:96px" data-action="${canEquip ? "sg-equip" : "sg-new"}" ${canEquip ? `data-id="${sel.id}"` : ""}>${canEquip ? (on ? "Unequip" : "Equip") : "＋ Build new"}</button>
         </div></div>
     </div></div>`;
   }
@@ -2800,7 +2813,7 @@
 
   // creature spell slots (up to 3 equipped spell gems) — equip from the library
   function openCreatureSpells(slotIdx) {
-    ovState = { kind: "spellgemlib", hideEquipped: false, sel: spellGems[0] ? spellGems[0].id : null, equipCtx: {
+    ovState = { kind: "spellgemlib", hideEquipped: false, sel: null, equipCtx: {
       kind: "creature", slotIdx,
       equipped: () => build.slots[slotIdx].spellGemIds,
       max: creatureSlotMax(build.slots[slotIdx]),
@@ -3128,7 +3141,7 @@
       // spell gems: library + wizard + equip
       case "open-spellgems": openSpellGems(); break;
       case "creature-spells": openCreatureSpells(+t.dataset.slot); break;
-      case "sg-sel": ovState.sel = +t.dataset.id; refreshOverlay(); break;
+      case "sg-sel": { const id = +t.dataset.id; ovState.sel = ovState.sel === id ? null : id; refreshOverlay(); break; }
       case "sg-hide-equipped": e.stopPropagation(); ovState.hideEquipped = !ovState.hideEquipped; refreshOverlay(); break;
       case "sg-new": openSpellGemBuilder(null); break;
       case "sg-edit": openSpellGemBuilder(+t.dataset.id); break;
