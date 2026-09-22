@@ -916,6 +916,10 @@ for (const [k, v] of Object.entries(labelsMap)) terms[k] = (v && v.name) || k;
 // ── damage / stat model (for fusion + future DPS sim) ──
 const damageModel = readJSON(path.join(MODEL, 'damage_model.json'));
 
+// ── creature-AI Macro vocabulary (targets/conditions/actions) — feeds the Macro Proposal engine.
+// Grounded in SiralimUltimate.exe scr_Macro* + L_MACRO_* localization (see _su_extract/code/MACRO_MODEL.md).
+const macroVocab = readJSON(path.join(MODEL, 'macro_vocab.json'));
+
 // ── player wardrobe (every equippable player costume; names/tiers pre-resolved in wardrobe.json) ──
 // Pull EVERY costume sprite into assets/wardrobe/<sprite>.png; consume the enriched extract artifact.
 fs.rmSync(OUT_WARDROBE, { recursive: true, force: true });
@@ -1221,6 +1225,7 @@ const SU_DATA = {
   netherColors,
   terms,
   damageModel,
+  macroVocab,                // creature-AI Macro vocabulary → Macro Proposal engine
   wardrobe,
   spells,
   spellGems,

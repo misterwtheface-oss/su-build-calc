@@ -2133,6 +2133,134 @@
     </div></div>`;
   }
 
+  // ── Macro Proposal — predict a creature's battle-AI "brain" from its loadout ────────────────
+  // In-game, a Macro is an ordered list of conditional lines a creature uses to pick its turn action
+  // (see _su_extract/code/MACRO_MODEL.md). We read the slot's equipped spells + traits + stats, classify
+  // each spell by purpose/side/breadth from its taxonomy, infer the creature's role, and emit lines a
+  // player can replicate in the in-game Macro editor so battles can be automated (default action = Macro).
+  // This is a heuristic PROPOSAL, not a guaranteed-optimal brain — the game's real vocabulary is D.macroVocab.
+
+  // classify one spell → { name, purpose, side, multi }
+  function classifySpell(sp) {
+    const tx = sp.taxo || [], am = (v) => tx.includes("Action/Mechanic::" + v), rs = (v) => tx.includes("Related Spells::" + v);
+    const multi = rs("Multi-Target Spells");
+    const statUp = tx.includes("Affect on Stats::Stat is Increased");
+    const statDown = tx.includes("Affect on Stats::Stat is Decreased");
+    let purpose, side;
+    if (am("Resurrection")) { purpose = "rez"; side = "ally"; }
+    else if ((am("Healing") || rs("Healing Spells")) && !rs("Damaging Spells")) { purpose = "heal"; side = "ally"; }
+    else if (rs("Damaging Spells") || am("Attack") || am("Indirect Damage")) { purpose = "damage"; side = "enemy"; }
+    else if (am("Debuff") || (am("Stats") && statDown && !statUp)) { purpose = "debuff"; side = "enemy"; }
+    else if (am("Buff") || (am("Stats") && statUp)) { purpose = "buff"; side = "ally"; }
+    else if (am("Provoke")) { purpose = "provoke"; side = "self"; }
+    else if (am("Defend")) { purpose = "defend"; side = "self"; }
+    else if (am("Minion")) { purpose = "summon"; side = "ally"; }
+    else { purpose = "other"; side = null; }
+    return { sp, name: sp.name, purpose, side, multi };
+  }
+  // every spell the slot can actually cast (gems + nether-stone spells + artifact spell), de-duped
+  function gatherSlotSpells(slot) {
+    const out = [], seen = new Set();
+    const add = (sp) => { if (sp && !seen.has(sp.id)) { seen.add(sp.id); out.push(sp); } };
+    for (const gid of slot.spellGemIds || []) { const g = spellGems.find(x => x.id === gid); if (g) add(gemSpell(g)); }
+    for (const sp of slotNetherSpells(slot)) add(sp);
+    const a = resolveArtifact(slot); if (a) for (const sid of a.spells || []) add(SPELL.get(sid));
+    return out;
+  }
+  const TAUNT_TAGS = new Set(["Action/Mechanic::Provoke", "Action/Mechanic::Defend"]);
+  // build the ordered proposal for a slot: { roles:[], lines:[{en,why,chain}], spells:[classified], note }
+  function proposeMacro(slot) {
+    const c = CREA.get(slot.cid); if (!c) return null;
+    const fs = finalStats(slot), st = fs.final;
+    const spells = gatherSlotSpells(slot).map(classifySpell);
+    const by = (p) => spells.filter(s => s.purpose === p);
+    const traitIds = slotTraitIds(slot);
+    const traitTags = new Set(); traitIds.forEach(tid => (TRAIT[tid] || {}).taxo && TRAIT[tid].taxo.forEach(t => traitTags.add(t)));
+    const hasTauntTrait = [...traitTags].some(t => TAUNT_TAGS.has(t));
+    const dom = STAT_KEYS.reduce((a, k) => st[k] > st[a] ? k : a, "hp");
+    const tanky = (dom === "def" || dom === "hp");
+    const physical = st.atk >= st.int;
+
+    const lines = [];
+    const push = (en, why, chain) => lines.push({ en, why, chain: !!chain });
+
+    // 1) Resurrection — bring back fallen allies first
+    by("rez").forEach(s => push(`If any ally is dead, cast ${s.name} on that creature`, `${s.name} resurrects a dead ally`));
+    // 2) Healing — patch up whoever is hurt
+    by("heal").forEach(s => s.multi
+      ? push(`If any ally has < 50% Health, cast ${s.name} on ally (all)`, `${s.name} heals every ally at once`)
+      : push(`If any ally has < 50% Health, cast ${s.name} on that creature`, `${s.name} heals the most-hurt ally`));
+    // 3) Provoke / tank — soak hits so squishier allies survive
+    by("provoke").forEach(s => push(`If this creature has > 0 enemies, cast ${s.name}`, `${s.name} draws enemy fire to this tank`));
+    if (!by("provoke").length && tanky && hasTauntTrait)
+      push(`If this creature has > 0 enemies, provoke`, `Tanky stats + a taunt trait — provoke to protect the party`);
+    // 4) Buffs — apply to allies who don't have one yet (avoids over-stacking)
+    by("buff").forEach(s => s.multi
+      ? push(`If any ally has < 1 buffs, cast ${s.name} on ally (all)`, `${s.name} buffs the team; skip once everyone's buffed`)
+      : push(`If any ally has < 1 buffs, cast ${s.name} on that creature`, `${s.name} buffs an un-buffed ally`));
+    // 5) Debuffs — apply to enemies who aren't debuffed yet
+    by("debuff").forEach(s => s.multi
+      ? push(`If any enemy has < 1 debuffs, cast ${s.name} on enemy (all)`, `${s.name} debuffs the enemy side; skip once applied`)
+      : push(`If any enemy has < 1 debuffs, cast ${s.name} on that creature`, `${s.name} debuffs an un-debuffed enemy`));
+    // 6) Summons
+    by("summon").forEach(s => push(`If this creature has < 3 minions, cast ${s.name}`, `${s.name} summons a minion while you have room`));
+    // 7) Damage — AoE when the board is full, then focus-fire the easiest kill (Barrier avoided; spells ignore Shell)
+    const dmg = by("damage");
+    dmg.filter(s => s.multi).forEach(s => push(`If this creature has > 1 enemies, cast ${s.name} on enemy (all)`, `${s.name} hits all enemies — best while several remain`));
+    const singleDmg = dmg.filter(s => !s.multi);
+    if (singleDmg.length) {
+      push(`If any enemy doesn't have Barrier, test next line`, `Don't waste ${singleDmg[0].name} into a Barrier`, true);
+      singleDmg.forEach(s => push(`If any enemy has lowest Max Health, cast ${s.name} on that creature`, `Focus-fire the enemy you can kill quickest with ${s.name}`));
+    }
+    // 8) Basic attack — physical attacker, or a fallback when there's no offensive spell
+    if (physical && (dom === "atk" || !dmg.length)) {
+      push(`If any enemy doesn't have Shell, test next line`, `Shell blunts basic attacks — skip those enemies`, true);
+      push(`If any enemy doesn't have Barrier, test next line`, `Barrier blocks the hit entirely`, true);
+      push(`If any enemy has lowest Defense, attack that creature`, `Hit the enemy your attack does the most to`);
+    }
+    // 9) Guaranteed fallback so "hold to auto-battle" never stalls on a manual prompt
+    const canAttack = dmg.length || physical;
+    push(canAttack ? `If this creature has > 0 enemies, attack a random enemy` : `If this creature has > 0 enemies, defend`,
+      canAttack ? `Catch-all so the macro always acts instead of asking you` : `No offensive option left — defend to pass safely`);
+
+    // roles (for the header) — dominant purposes + stat lean
+    const roles = [];
+    if (by("rez").length || by("heal").length) roles.push("Healer");
+    if (by("buff").length || by("summon").length) roles.push("Support");
+    if (by("debuff").length) roles.push("Debuffer");
+    if (dmg.length && !physical) roles.push("Caster");
+    if (by("provoke").length || (tanky && hasTauntTrait)) roles.push("Tank");
+    if (physical && (dom === "atk" || !dmg.length)) roles.push("Attacker");
+    if (!roles.length) roles.push(dmg.length ? "Caster" : "Attacker");
+
+    return { roles: [...new Set(roles)], lines, spells, note: !spells.length ? "No spell gems equipped — this proposal assumes a basic-attack bruiser." : null };
+  }
+  function macroProposalText(slotIdx) {
+    const slot = build.slots[slotIdx], c = CREA.get(slot.cid), p = proposeMacro(slot);
+    if (!c || !p) return "";
+    const header = `${c.name} Macro — proposed`;
+    const body = p.lines.map((l, i) => `${i + 1}. ${l.en}`).join("\n");
+    return `${header}\n${body}`;
+  }
+  function renderMacroProposal(slotIdx) {
+    const slot = build.slots[slotIdx], p = proposeMacro(slot);
+    if (!p) return "";
+    const roleChips = p.roles.map(r => `<span class="macro-role">${esc(r)}</span>`).join("");
+    const rows = p.lines.map((l, i) => `<div class="macro-line ${l.chain ? "chain" : ""}">
+      <span class="macro-ln">${i + 1}</span>
+      <div class="macro-line-body"><div class="macro-en">${esc(l.en)}</div>
+        <div class="macro-why">${esc(l.why)}</div></div></div>`).join("");
+    return `<div class="macro-proposal">
+      <div class="macro-head"><div class="macro-roles">${roleChips}</div>
+        <button class="btn-ghost macro-copy" data-action="macro-copy" data-slot="${slotIdx}" title="Copy as plain text">Copy</button></div>
+      ${p.note ? `<div class="slot-sub" style="margin:2px 0 6px">${esc(p.note)}</div>` : ""}
+      <div class="macro-lines">${rows}</div>
+      <div class="macro-foot">Lines run top-down; the first that matches acts. Chained lines (indented) must all
+        pass before the action fires. Replicate this in the in-game Macro editor, then set the creature's
+        default action to <b>Macro</b>.</div>
+    </div>`;
+  }
+
   // ── creature detail ────────────────────────────────────────────────────────
   function openCreatureDetail(slotIdx) {
     const slot = build.slots[slotIdx], c = CREA.get(slot.cid); if (!c) return;
@@ -2196,6 +2324,8 @@
                 <span class="prop-name" style="flex:0 0 40px;color:var(--accent)">R${r.rank}</span>
                 <span class="prop-stat" style="flex:1;text-align:left">${richText(r.desc)}</span></div>`).join("")}
             </div>` : ""}
+          <div class="section-label" style="margin-top:14px">Proposed Macro <span class="slot-sub" style="font-weight:400">— battle-AI from this loadout</span></div>
+          ${renderMacroProposal(slotIdx)}
         </div></div>
       </div>
       <div class="overlay-footer"><span class="foot-info"></span>
@@ -2551,6 +2681,13 @@
       case "build-relic": openRelicBuilder(+t.dataset.slot); break;
       case "creature-detail": openCreatureDetail(+t.dataset.slot); break;
       case "crea-edit": { const si = +t.dataset.slot; closeDetail(); openCreaturePicker(si); break; }
+      case "macro-copy": {
+        const txt = macroProposalText(+t.dataset.slot); if (!txt) break;
+        const done = () => { t.textContent = "Copied ✓"; setTimeout(() => { if (t.isConnected) t.textContent = "Copy"; }, 1400); };
+        if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(done, () => {});
+        else { const ta = document.createElement("textarea"); ta.value = txt; document.body.appendChild(ta); ta.select(); try { document.execCommand("copy"); done(); } catch (_) {} ta.remove(); }
+        break;
+      }
       case "crea-nav": {
         const filled = build.slots.map((s, i) => i).filter(i => build.slots[i].cid != null);
         if (filled.length < 2 || !dovState) break;
