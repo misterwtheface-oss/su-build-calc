@@ -6,11 +6,13 @@ Pages on `master`/root, Cloudflare analytics active with the shared github.io to
 No verify-before-push ceremony (no real users yet) — but every change is checked with the jsdom smoke suite
 (scratchpad `smoke.mjs`, ~84 assertions across all flows) before commit.
 
-### Current feature snapshot (as of 2026-09-21, end of sessions 4j–4q)
-> This session added: Ascension-perk badges (4j) · **Threats advisor** (4k) · god base-stat null-fix +
-> creature **stat sort** + matrix align (4l) · Defiler/Tribalist costume split-stem fix (4m) · **spell data
-> enrichment** + spell-gem info panels (4n) · **taxonomy for Realm Cards/Relics/nether** (4o) · **taxonomy
-> provenance** (4p) · **Realms + God Shops reference pages** (4q). Details in the per-session entries below.
+### Current feature snapshot (as of 2026-09-22)
+> 2026-09-22 added: **Appendix bookmarks** (mark traits/spells → filter the selectors) + **Macro Proposal
+> engine** (predict a creature's battle-AI Macro from its loadout — ⭐ actively iterating, see roadmap below).
+> Sessions 4j–4q (2026-09-21) added: Ascension-perk badges (4j) · **Threats advisor** (4k) · god base-stat
+> null-fix + creature **stat sort** + matrix align (4l) · Defiler/Tribalist costume split-stem fix (4m) ·
+> **spell data enrichment** + spell-gem info panels (4n) · **taxonomy for Realm Cards/Relics/nether** (4o) ·
+> **taxonomy provenance** (4p) · **Realms + God Shops reference pages** (4q). Details in the entries below.
 
 - **Build-first home**: 6 creature slots + Specialization tile + Anointments tile; party stat overview.
   Filled spec/anoint tiles open a **detail page** (Edit → picker); empty tiles open the picker directly.
@@ -53,9 +55,39 @@ No verify-before-push ceremony (no real users yet) — but every change is check
   equipped relics + nether spell-props** (4o); Realm cards are deliberately NOT counted.
 - **Builds** (Menu → Builds): save/load/update/delete parties (localStorage `subc.builds`), wardrobe-sprite
   icon, **sort by Last edited / Name / Spec**.
-- **Appendix** (cross-entity tag search) + right-side info panels throughout.
+- **Appendix** (cross-entity tag search) + right-side info panels throughout. **Bookmarks** (2026-09-22): a
+  ★ on Appendix trait/spell rows marks them into a scratch set (`subc.bookmarks`, cleared on Reset/load); a
+  "★ Bookmarked" facet then filters the creature picker (by innate trait), spell-gem builder, and artifact
+  trait/spell pickers.
+- **Macro Proposal** (2026-09-22, creature detail page → "Proposed Macro"): predicts a creature's in-game
+  battle-AI **Macro** from its loadout so battles can be automated (default action = Macro). Classifies each
+  equipped spell (gems+nether+artifact) by purpose/side/breadth → ordered lines (rez→heal→provoke→buff→debuff
+  →summon→AoE→focus-fire→basic attack→fallback) with role chips, per-line rationale, chain indentation, Copy.
+  Fed by `macroVocab` in data.js (from `_su_extract/data/model/macro_vocab.json`; model in
+  `_su_extract/code/MACRO_MODEL.md`). **v1 heuristic — iteration roadmap below.**
 - Fed by `_su_extract` via `build-data.mjs` (gitignored extract; only used assets copied). Data model in
   `SPEC_PLAN.md`, pipeline in `WIKI_CONTEXT.md`.
+
+## ⭐ Macro Proposal — iteration roadmap (ACTIVE)
+v1 shipped 2026-09-22 (`proposeMacro`/`classifySpell`/`gatherSlotSpells`/`renderMacroProposal` in `app.js`;
+grounded in `_su_extract/code/MACRO_MODEL.md` + `data/model/macro_vocab.json`). Known limits + planned work,
+roughly in priority order:
+1. **Named buff/debuff detection** (top ask). Right now buff/debuff lines gate on `has < 1 buffs|debuffs`
+   because we don't know *which* status a spell applies. Detect the granted status name from the spell's
+   effect/taxonomy so lines can read `doesn't have {Shell}` — needs a spell→status map (mine from
+   `_su_extract` spell effects / the `terms` status vocabulary already in data.js).
+2. **Tunable knobs**: focus-target stat (default *lowest Max Health* for nukes / *lowest Defense* for
+   attacks — offer *lowest Health*, highest-threat) and heal threshold (default 50%). Small UI in the
+   Proposed-Macro section.
+3. **Classification accuracy**: taxonomy mislabels some spells (e.g. Antidote tagged "Healing" but it cures
+   debuffs). Add targeted overrides / a secondary signal (Affect on Status vs Affect on Life).
+4. **Spec + anointment context** in role inference (e.g. a summoner spec → Support/Tank lean; damage-amp
+   anoints → Caster). Currently role uses only the creature's own spells + stats + traits.
+5. **Deeper `scr_MacroProcess` mining** (from the on-disk 337 KB decompile): exact chain candidate-scoping
+   (does a chain re-test the whole side or narrow the candidate set?) and the save-format field order
+   (`scr_MacroArrayToString`) if we ever add in-game import/export. Confirm the 32-line cap is per-macro.
+6. **Multi-line-per-role & priority UX**: let the user reorder/toggle proposed lines, and handle creatures
+   with many spells without bloating the list.
 
 ## 2026-09-21 — session 4q (Realms + God Shops reference pages)
 Two new read-only reference overlays (Menu → **Realms**, **God Shops**).
