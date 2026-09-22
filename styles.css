@@ -381,6 +381,13 @@ h1, h2, h3 { margin: 0; }
 /* inline meta chip on a spell picker row (charges · potency) */
 .prop-metatag { margin-left: 8px; font-size: 10px; font-weight: 700; color: var(--text-mute);
   font-variant-numeric: tabular-nums; }
+/* Appendix provenance chips (which layer tagged this result): token=exact markup, llm=classified, etc. */
+.apx-src { font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: .3px;
+  padding: 1px 5px; border-radius: 4px; margin-left: 4px; color: var(--text-mute); background: rgba(255,255,255,.06); }
+.apx-src.s-token { color: #7fd08a; background: rgba(91,214,116,.14); }
+.apx-src.s-keyword { color: #9fd0ff; background: rgba(159,208,255,.14); }
+.apx-src.s-llm { color: var(--accent2); background: rgba(154,123,214,.16); }
+.apx-src.s-correction, .apx-src.s-field, .apx-src.s-phrase { color: var(--accent); background: rgba(201,162,75,.14); }
 /* spell stat readout (spell-gem info panel): key/value rows */
 .spell-stats { display: flex; flex-direction: column; gap: 3px; margin: 8px 0 4px; }
 .spell-stats .ss-row { display: flex; justify-content: space-between; gap: 10px; font-size: 12px;

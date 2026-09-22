@@ -1234,7 +1234,7 @@
     return TRAIT_SOURCES;
   }
   function openAppendix() {
-    ovState = { kind: "appendix", search: "", cat: null, tags: [], browsing: false, render: renderAppendix };
+    ovState = { kind: "appendix", search: "", cat: null, tags: [], browsing: false, showSrc: false, render: renderAppendix };
     openOverlay(ovState.render()); maybeFocusSearch(OV);
   }
   function renderAppendix() {
@@ -1291,6 +1291,11 @@
     } else {
       const res = appendixResults(tags);
       const CAP = 60;
+      // provenance: taxoSrc[i] is the source (token/keyword/llm/phrase/field/correction) of taxo[i].
+      // When "Sources" is toggled on, each result shows how IT got each of the active filter tags.
+      const tagSrc = (e, tag) => { const i = (e && e.taxo ? e.taxo : []).indexOf(tag); return i >= 0 && e.taxoSrc ? e.taxoSrc[i] : null; };
+      const srcMeta = (e) => st.showSrc ? tags.map(t => { const s = tagSrc(e, t); return s
+        ? `<span class="apx-src s-${esc(s)}" title="${esc(taxoValName(t))} — ${esc(s)}">${esc(s)}</span>` : ""; }).join("") : "";
       const section = (title, items, renderRow) => {
         let list = items;
         if (q) list = list.filter(x => ((x._search || x.name) || "").toLowerCase().includes(q));
@@ -1299,10 +1304,10 @@
           <div class="perk-list">${list.slice(0, CAP).map(renderRow).join("")}
           ${list.length > CAP ? `<div class="slot-sub" style="padding:6px">Showing ${CAP} of ${list.length}.</div>` : ""}</div>`;
       };
-      const line = (ico, name, meta, desc) => `<div class="perk-line">
+      const line = (ico, name, meta, desc, srcObj) => `<div class="perk-line">
         <span class="perk-ico sm">${ico || ""}</span>
         <div class="perk-line-body">
-          <div class="perk-line-head"><b>${esc(name)}</b>${meta ? `<span class="perk-line-meta">${meta}</span>` : ""}</div>
+          <div class="perk-line-head"><b>${esc(name)}</b>${meta || srcObj ? `<span class="perk-line-meta">${meta || ""}${srcMeta(srcObj)}</span>` : ""}</div>
           ${desc ? `<div class="perk-desc">${desc}</div>` : ""}
         </div></div>`;
       // one row per trait, folding in the creature that has it + the items that grant it
@@ -1310,7 +1315,7 @@
       const traitRows = res.traits.map(t => {
         const creature = creatureByTrait.get(t.id);
         const items = itemsByTrait.get(t.id) || [];
-        return { name: t.name, desc: t.desc, creature, items,
+        return { name: t.name, desc: t.desc, creature, items, taxo: t.taxo, taxoSrc: t.taxoSrc,
           _search: t.name + " " + (creature ? creature.name : "") + " " + items.map(i => i.name).join(" ") };
       }).sort((a, b) => a.name.localeCompare(b.name));
       const traitRow = (g) => {
@@ -1321,7 +1326,7 @@
         const icoSpan = itemIco
           ? `<span class="perk-ico sm" title="${esc(g.items.map(i => i.name).join(", "))}">${spriteImg(itemIco.icon, "px")}</span>`
           : `<span class="perk-ico sm empty"></span>`;
-        const meta = g.items.length ? `<span class="anoint-spec-tag">${g.items.length} item${g.items.length === 1 ? "" : "s"}</span>` : "";
+        const meta = (g.items.length ? `<span class="anoint-spec-tag">${g.items.length} item${g.items.length === 1 ? "" : "s"}</span>` : "") + srcMeta(g);
         const creaSquare = g.creature ? `<div class="apx-crea" title="${esc(g.creature.name)}">${critFace(g.creature)}</div>` : "";
         return `<div class="perk-line apx-trait">
           ${icoSpan}
@@ -1334,18 +1339,19 @@
       const body_sections = [
         section("Traits", traitRows, traitRow),
         section("Perks", res.perks, p => line(p.icon ? spriteImg(p.icon, "px") : "", p.name,
-          `<span class="anoint-spec-tag">${esc(p.spec)}</span>`, perkText(p.desc, p.ranks))),
+          `<span class="anoint-spec-tag">${esc(p.spec)}</span>`, perkText(p.desc, p.ranks), p)),
         section("Spells", res.spells, s => line(spellIcon(s) ? spriteImg(spellIcon(s), "px") : "", s.name,
-          `${s.cls ? `<span class="anoint-spec-tag">${esc(s.cls)}</span>` : ""}${spellMeta(s) ? `<span class="anoint-spec-tag">${esc(spellMeta(s))}</span>` : ""}`, perkText(s.desc, null))),
+          `${s.cls ? `<span class="anoint-spec-tag">${esc(s.cls)}</span>` : ""}${spellMeta(s) ? `<span class="anoint-spec-tag">${esc(spellMeta(s))}</span>` : ""}`, perkText(s.desc, null), s)),
         section("Relics", res.relics, r => line(r.icon ? spriteImg(r.icon, "px") : "", r.name,
-          r.statBonus ? `<span class="anoint-spec-tag">${esc(r.statBonus)}</span>` : "", richText((r.ranks || []).map(x => x.desc).join(" · ")))),
+          r.statBonus ? `<span class="anoint-spec-tag">${esc(r.statBonus)}</span>` : "", richText((r.ranks || []).map(x => x.desc).join(" · ")), r)),
         section("Realm Cards", res.cards.map(c => ({ ...c, name: c.family })), c => line(c.sprite ? spriteImg(c.sprite, "px") : "", c.family,
-          c.cls ? `<span class="anoint-spec-tag">${esc(c.cls)}</span>` : "", richText((c.effects || []).join(" · ")))),
+          c.cls ? `<span class="anoint-spec-tag">${esc(c.cls)}</span>` : "", richText((c.effects || []).join(" · ")), c)),
       ].join("");
       const total = traitRows.length + res.perks.length + res.spells.length + res.relics.length + res.cards.length;
       placeholder = "Filter results…";
       sub = `<div class="ovl-filterbar">${tagChips}
         <button class="facet add" data-action="appendix-add">＋ Filter</button>
+        <button class="facet ${st.showSrc ? "on" : ""}" data-action="appendix-src" title="Show how each result was tagged (token = game markup · keyword · llm = per-description · correction)">Sources</button>
         <span class="foot-info">${total} result${total === 1 ? "" : "s"}</span></div>`;
       body = body_sections || `<div class="slot-sub" style="padding:10px">Nothing matches this tag.</div>`;
     }
@@ -2499,6 +2505,7 @@
       }
       case "appendix-rm-tag": e.stopPropagation(); ovState.tags = ovState.tags.filter(x => x !== t.dataset.k); ovState.search = ""; refreshOverlay(); break;
       case "appendix-add": ovState.browsing = true; ovState.cat = null; ovState.search = ""; refreshOverlay(); break;
+      case "appendix-src": ovState.showSrc = !ovState.showSrc; refreshOverlay(); break;
       case "appendix-done-adding": ovState.browsing = false; ovState.cat = null; ovState.search = ""; refreshOverlay(); break;
       case "open-anoint": openAnoint(); break;
       case "anoint-detail": openAnointDetail(); break;

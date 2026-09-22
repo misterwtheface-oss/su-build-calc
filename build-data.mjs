@@ -146,6 +146,16 @@ function correctTaxo(taxo, desc) {
   }
   return [...new Set(out)];
 }
+// Provenance: the taxonomy pipeline records a `src` per tag — token (game structured markup, exact),
+// keyword (word-boundaried domain keyword), field/phrase (structured code fields), llm (per-description
+// classification). Emit it as a PARALLEL ARRAY aligned to the entity's final (corrected) `taxo` (so
+// taxoSrc[i] explains taxo[i]) — compact vs repeating the "Cat::Val" strings. correctTaxo-added tags
+// (no pipeline src) are marked "correction"; anything else falls back to "derived".
+function taxoSrcArr(srcArr, finalTaxo) {
+  const m = {};
+  for (const a of (srcArr || [])) if (a && a.cat) m[a.cat + '::' + a.val] = a.src || 'derived';
+  return (finalTaxo || []).map(k => m[k] || 'correction');
+}
 // material NAME -> granted trait id, inverted from traits_consolidated.source_item (the trait's own
 // record names the item that grants it). This is the game's actual link. NOTE: material_stats.trait_id
 // is UNRELIABLE — the granted trait is runtime-computed in the game (proven: not a static field in
@@ -161,7 +171,8 @@ for (const t of consolidated) {
   const tag = tagByTraitId.get(t.id) || {};
   const cls = (t.source_creature && CLASS_SET.has(t.source_creature.class)) ? t.source_creature.class : null;
   const desc = t.desc || t.effect_prose || '';
-  const taxo = correctTaxo((taxoTags[String(t.id)] || []).map(a => a.cat + '::' + a.val), desc);
+  const srcArr = taxoTags[String(t.id)] || [];
+  const taxo = correctTaxo(srcArr.map(a => a.cat + '::' + a.val), desc);
   traits[t.id] = {
     id: t.id,
     name: t.name || t.key || `Trait ${t.id}`,
@@ -172,6 +183,7 @@ for (const t of consolidated) {
     labels: tag.labels || [],
     stats: tag.stats || [],
     taxo,
+    taxoSrc: taxoSrcArr(srcArr, taxo),
   };
 }
 
@@ -438,10 +450,11 @@ for (const s of specRecs) {
     if (fl && (fl.anoint || fl.asc != null)) { if (fl.anoint) anointFlagged++; } else if (p.fromCode) perkRefMisses++;
     const pdesc = perkDescByKey.get(p.key) || p.desc || '';
     const name = perkNameByKey.get(p.key) || p.name;
+    const pTaxo = correctTaxo(taxoStrs(perkTaxoByKey[p.key]), pdesc);
     return { key: p.key, name, desc: pdesc,
              cost: st ? st.cost : (p.cost ?? null), ranks: st ? st.ranks : (p.ranks || 1), icon,
              anointment: fl ? !!fl.anoint : false, ascension: fl ? !!fl.asc : false,
-             taxo: correctTaxo(taxoStrs(perkTaxoByKey[p.key]), pdesc) };
+             taxo: pTaxo, taxoSrc: taxoSrcArr(perkTaxoByKey[p.key], pTaxo) };
   });
   const falseGod = godBySpec.get(norm(s.label)) || null;
   if (!falseGod) { specGodMisses++; warn(`specialization "${s.label}" has no False God mapping`); }
@@ -571,9 +584,10 @@ const spells = spellArr.map((s, i) => {
   const ref = spellRefByName.get(norm(s.name)) || {};
   const charges = spellChargesByKey.has(s.key) ? spellChargesByKey.get(s.key) : null;
   if (charges != null) spellCharged++;
+  const sTaxo = correctTaxo(taxoStrs(spellTaxo[String(i)]), s.desc || '');
   return { id: i, key: s.key, name: s.name, desc: s.desc || '', cls,
     charges, potency: ref.potency || null, target: ref.target || null, source: ref.source || null,
-    taxo: correctTaxo(taxoStrs(spellTaxo[String(i)]), s.desc || '') };
+    taxo: sTaxo, taxoSrc: taxoSrcArr(spellTaxo[String(i)], sTaxo) };
 }).filter(s => s.name);
 console.log(`  spells: ${spells.length} · ${spellCharged} w/ code charges · ${spells.filter(s => s.potency).length} w/ potency`);
 console.log(`  taxonomy fixes: Innate-Trait stripped ${innateTagStripped} · Animatus retagged ${animatusRetagged} (was mis-tagged Animation)`);
@@ -601,7 +615,8 @@ for (const m of matRecs) {
   if (!traits[tid]) { warn(`trait item "${m.name}" grants trait ${tid} not in traits table`); continue; }
   traitItems.push({ id: m.index, name: m.name, traitId: tid,
     traitName: traits[tid].name, icon: matIcon(m),
-    taxo: traits[tid].taxo || [] });                       // inherits its granted trait's taxonomy tags
+    taxo: traits[tid].taxo || [],                          // inherits its granted trait's taxonomy tags
+    taxoSrc: traits[tid].taxoSrc || [] });                 // …and its provenance (parallel to taxo)
 }
 
 // ── Stat materials (Ambers) → Stat-slot properties ──
@@ -732,13 +747,15 @@ const relics = relicRef.map((r, i) => {
   if (!base) { const rn = norm(r.relic); base = relicSpriteBases.find(b => b.replace(/^relicW_/, '').split('_').some(p => p.length >= 4 && rn.includes(p))); }
   let icon = null;
   if (base && copySpriteFrame(base, 0, OUT_RELIC, `${i}.png`)) { icon = `assets/relics/${i}.png`; relicIconCopied++; }
+  const rTaxo = correctTaxo(taxoStrs(relicTaxo[String(i)]), (r.ranks || []).map(x => x.description || '').join(' '));
   return {
     id: i,
     name: r.relic,
     icon,
     statBonus: r.stat_bonus || null,
     ranks: (r.ranks || []).map(x => ({ rank: pct(x.rank), desc: x.description || '' })),
-    taxo: correctTaxo(taxoStrs(relicTaxo[String(i)]), (r.ranks || []).map(x => x.description || '').join(' ')),
+    taxo: rTaxo,
+    taxoSrc: taxoSrcArr(relicTaxo[String(i)], rTaxo),
   };
 });
 console.log(`  relic icons: ${relicIconCopied}/${relics.length} copied`);
@@ -752,14 +769,17 @@ let cardArt = 0;
 const cards = cardRef.map((c, i) => {
   const rep = critByRace.get(norm(c.family));
   if (rep) cardArt++; else warn(`card family "${c.family}" has no matching creature race for art`);
+  const cEffects = [c.unlock_1, c.unlock_2, c.unlock_3].filter(Boolean);
+  const cTaxo = correctTaxo(taxoStrs(cardTaxo[String(i)]), cEffects.join(' '));
   return {
     id: i,
     family: c.family,
     cls: rep ? rep.cls : null,
     sprite: rep ? rep.sprite : null,
     tiers: String(c.tiers || '').split('/').map(x => pct(x)).filter(x => x != null),
-    effects: [c.unlock_1, c.unlock_2, c.unlock_3].filter(Boolean),
-    taxo: correctTaxo(taxoStrs(cardTaxo[String(i)]), [c.unlock_1, c.unlock_2, c.unlock_3].filter(Boolean).join(' ')),
+    effects: cEffects,
+    taxo: cTaxo,
+    taxoSrc: taxoSrcArr(cardTaxo[String(i)], cTaxo),
   };
 });
 

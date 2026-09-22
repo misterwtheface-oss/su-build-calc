@@ -42,6 +42,25 @@ No verify-before-push ceremony (no real users yet) — but every change is check
 - Fed by `_su_extract` via `build-data.mjs` (gitignored extract; only used assets copied). Data model in
   `SPEC_PLAN.md`, pipeline in `WIKI_CONTEXT.md`.
 
+## 2026-09-21 — session 4p (taxonomy PROVENANCE — surface how each tag was derived)
+Clarified/hardened how taxonomy is derived and made the source surfaceable on demand. **Derivation is NOT a
+naive prose heuristic**: each tag carries a `src` from the pipeline — `token` (the game's own structured
+markup `{CONDNAME_}{STAT_}{RACE_}{CLASS_}{ACTION_}{SPELL_}{TIMELINE}` — exact, wording-independent so
+"has" vs "have" can't matter), `keyword` (a small word-boundaried domain-keyword layer for broad mechanics),
+`llm` (per-description classification for the ~15 trigger/effect categories markup can't express), plus
+`phrase`/`field`/`correction`. A has/have split therefore comes from an LLM coverage gap or a markup gap,
+never a coded verb rule.
+- **build-data** now PRESERVES that `src` (was dropped in the flatten). New `taxoSrcArr(srcArr, finalTaxo)`
+  emits `taxoSrc` as a **parallel array aligned to `taxo`** (taxoSrc[i] explains taxo[i]) on traits, perks,
+  spells, trait-items (inherited), relics, cards. Parallel-array form keeps the size hit small (3.13→3.41 MB;
+  the naive per-tag map was 4.42 MB). Distribution: token 4235 · llm 7003 · keyword 478 · phrase 785 ·
+  correction 21 · field 16.
+- **Appendix "Sources" toggle** (`appendix-src`, off by default per minimal-chrome): when on, every result row
+  shows a colour-coded provenance chip for how IT earned each active filter tag (green token / blue keyword /
+  violet llm / gold correction), with a tooltip. This is the "surface provenance when needed" path — filter a
+  group, flip Sources, and immediately see which members are exact-markup vs classified (spotting the gaps).
+jsdom `appendix_smoke.mjs` +provenance 20/20; all suites green. Shipped to `master`.
+
 ## 2026-09-21 — session 4o (taxonomy for Realm Cards + Relics + nether; drop perk-tree item)
 Extended the tag taxonomy to the remaining fixed surfaces, per user.
 - **Classification**: exported card (141, effects joined) + relic (31, all rank effects joined) descriptions,
