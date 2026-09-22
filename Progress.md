@@ -69,9 +69,12 @@ No verify-before-push ceremony (no real users yet) — but every change is check
   `SPEC_PLAN.md`, pipeline in `WIKI_CONTEXT.md`.
 
 ## ⭐ Macro Proposal — iteration roadmap (ACTIVE)
-v1 shipped 2026-09-22 (`proposeMacro`/`classifySpell`/`gatherSlotSpells`/`renderMacroProposal` in `app.js`;
-grounded in `_su_extract/code/MACRO_MODEL.md` + `data/model/macro_vocab.json`). Known limits + planned work,
-roughly in priority order:
+v1 shipped 2026-09-22, then **refactored for extensibility** (behavior byte-identical): the engine now has
+three clean modification surfaces (see **`MACRO_ENGINE.md`**) — `MACRO_TUNING` (all thresholds/knobs),
+`SPELL_OVERRIDES` (per-spell `{purpose,side,multi}` hook in `classifySpell`), and `MACRO_RULES` (ordered
+`{key,when(x),lines(x)}` array over a shared `macroContext(x)`; array order = priority). `proposeMacro` is a
+thin iterator; `macroRoles(x)` split out. Grounded in `_su_extract/code/MACRO_MODEL.md` + `macro_vocab.json`.
+Known limits + planned work, roughly in priority order (all now cheap to implement against the new surfaces):
 1. **Named buff/debuff detection** (top ask). Right now buff/debuff lines gate on `has < 1 buffs|debuffs`
    because we don't know *which* status a spell applies. Detect the granted status name from the spell's
    effect/taxonomy so lines can read `doesn't have {Shell}` — needs a spell→status map (mine from
@@ -921,6 +924,14 @@ What works end-to-end:
 - Class-advantage multiplier + Nether Stone numerics are runtime/in-game-only (see WIKI_CONTEXT) → modelled around.
 
 ## Session log
+- 2026-09-22: **Macro Proposal — iteration 2 (extensibility refactor).** No behavior change — `proposeMacro`
+  output verified **byte-identical** across a fixture covering every rule branch (headless diff, 54 lines).
+  Extracted `MACRO_TUNING` (every threshold: heal %s, finishHp, buff/debuff floors, minionCap, aoeMaxThreshold,
+  focusRotation), added `SPELL_OVERRIDES` (per-spell `{purpose,side,multi}` hook in `classifySpell`), turned
+  the 12 inline rule blocks into an ordered `MACRO_RULES` array of `{key,when(x),lines(x)}` over a shared
+  `macroContext(x)`; `proposeMacro` is now a thin iterator; `macroRoles(x)` split out; helpers `mLine`/`allyT`/
+  `enemyT`. New **`MACRO_ENGINE.md`** documents the three modification surfaces + how-to. This is the
+  foundation for spell-specific logic + target-priority work.
 - 2026-09-22: **Macro Proposal — iteration 1** (user feedback). (1) **Gems-only**: `gatherSlotSpells` now uses
   ONLY equipped spell gems — artifact Spell-slot + Nether-Stone spells auto-proc and can't be cast by a macro,
   so they're excluded. (2) **Fuller coverage** toward the 32-line cap: emergency (<25%) vs sustained (<50%)
