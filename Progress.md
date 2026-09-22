@@ -921,6 +921,17 @@ What works end-to-end:
 - Class-advantage multiplier + Nether Stone numerics are runtime/in-game-only (see WIKI_CONTEXT) → modelled around.
 
 ## Session log
+- 2026-09-22: **Macro Proposal — iteration 1** (user feedback). (1) **Gems-only**: `gatherSlotSpells` now uses
+  ONLY equipped spell gems — artifact Spell-slot + Nether-Stone spells auto-proc and can't be cast by a macro,
+  so they're excluded. (2) **Fuller coverage** toward the 32-line cap: emergency (<25%) vs sustained (<50%)
+  heal thresholds, squishy-caster self-preserve turtle, finish-the-kill lines, a FOCUS_ROTATION giving each
+  damage gem a distinct target priority (lowest Max HP / highest Atk / highest Int / lowest Def / highest Max
+  HP), escalating AoE enemy-count thresholds; trimmed to 32 with a note when a kit overflows (`MAX_MACRO_LINES`).
+  (3) **Moved out of the creature detail panel** into its own **Menu → Macros** overlay (below Threats):
+  party creature selector (`macro-crea`) + the selected creature's proposal, framed as "set default action =
+  Macro, hold to auto-battle" (`openMacros`/`renderMacros`). Verified headless (detail has 0 macro sections;
+  2-creature selector switches; richer line sets). Roadmap items 1–4 (named status, knobs, classification,
+  spec/anoint context) still open.
 - 2026-09-22: **Macro Proposal engine.** Predicts a creature's in-game battle-AI Macro from its loadout so
   players can automate battles (default action = Macro). `proposeMacro(slot)`: `gatherSlotSpells` (gems +
   nether-stone spells + artifact spell) → `classifySpell` (purpose/side/breadth from taxonomy: rez/heal/
