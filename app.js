@@ -1946,17 +1946,18 @@
     return (a.traits || []).map(id => { const ti = TRAITITEM.get(id), tid = ti ? ti.traitId : null; if (tid == null) return "";
       return `<div class="primary-traits" style="margin-bottom:6px">${traitBanner(tid)}<div class="trait-desc">${richText((TRAIT[tid] || {}).desc || "")}</div></div>`; }).join("");
   }
-  // spell-gem containers: name + trigger + description (clickable to the spell's taxonomy)
+  // one spell-gem container: name + trigger + description (clickable to the spell's taxonomy)
+  const spellGemCard = (sp, trigger, src) => `<div class="art-spellcard apx-clickable" data-action="apx-open" data-ek="spell" data-eid="${sp.id}" title="View taxonomy">
+    <div class="art-spellcard-head"><span class="prop-ico">${spellIcon(sp) ? spriteImg(spellIcon(sp), "px") : ""}</span>
+      <b>${esc(sp.name)}</b><span class="art-trigger">${esc(trigger || "—")}</span></div>
+    ${src ? `<div class="slot-sub">from ${esc(src)}</div>` : ""}
+    ${sp.desc ? `<div class="trait-desc">${perkText(sp.desc)}</div>` : ""}</div>`;
+  // spell-gem containers for an artifact: native slot fires on the type trigger; nether stones keep their own
   function artifactSpellContainers(a) {
-    const card = (sp, trigger, src) => `<div class="art-spellcard apx-clickable" data-action="apx-open" data-ek="spell" data-eid="${sp.id}" title="View taxonomy">
-      <div class="art-spellcard-head"><span class="prop-ico">${spellIcon(sp) ? spriteImg(spellIcon(sp), "px") : ""}</span>
-        <b>${esc(sp.name)}</b><span class="art-trigger">${esc(trigger || "—")}</span></div>
-      ${src ? `<div class="slot-sub">from ${esc(src)}</div>` : ""}
-      ${sp.desc ? `<div class="trait-desc">${perkText(sp.desc)}</div>` : ""}</div>`;
     const rows = [], typeTrig = ART_TYPE_TRIGGER[a.primary];
-    for (const id of a.spells || []) { const sp = SPELL.get(id); if (sp) rows.push(card(sp, typeTrig)); }
+    for (const id of a.spells || []) { const sp = SPELL.get(id); if (sp) rows.push(spellGemCard(sp, typeTrig)); }
     for (const nid of a.netherIds || []) { const n = nether.find(x => x.id === nid); if (!n) continue;
-      for (const pr of n.props || []) if (pr.cat === "spell") { const sp = SPELL.get(pr.key); if (sp) rows.push(card(sp, pr.trigger, n.name)); } }
+      for (const pr of n.props || []) if (pr.cat === "spell") { const sp = SPELL.get(pr.key); if (sp) rows.push(spellGemCard(sp, pr.trigger, n.name)); } }
     return rows.join("");
   }
   // "Bonuses" view: stat table + trait containers + spell-gem containers (vs the raw "Sockets" list)
@@ -2597,6 +2598,33 @@
     ovState = { kind: "nether", sel: nether[0] ? nether[0].id : null, hideEquipped: false, render: renderNether };
     openOverlay(ovState.render());
   }
+  // nether "Bonuses" view helpers — mirror the artifact panel (stat table + trait & spell-gem containers)
+  function netherBonusRows(n) {
+    const core = { hp: 0, atk: 0, def: 0, int: 0, spd: 0 }, extra = new Map();
+    const add = (stat, val) => { if (!val) return; const k = PROP_STAT[stat]; if (k) core[k] += val; else extra.set(stat, (extra.get(stat) || 0) + val); };
+    for (const p of n.props || []) { if (p.cat !== "stat" && p.cat !== "trick") continue; const g = propGroups.get(p.key);
+      if (g) for (const e of g.entries) add(e.stat, Number(p.value) || 0); else add(p.key, Number(p.value) || 0); }
+    return { core, extra };
+  }
+  function netherTraitContainers(n) {
+    return (n.props || []).filter(p => p.cat === "trait").map(p => { const ti = TRAITITEM.get(p.key), tid = ti ? ti.traitId : null; if (tid == null) return "";
+      return `<div class="primary-traits" style="margin-bottom:6px">${traitBanner(tid)}<div class="trait-desc">${richText((TRAIT[tid] || {}).desc || "")}</div></div>`; }).join("");
+  }
+  function netherSpellContainers(n) {
+    return (n.props || []).filter(p => p.cat === "spell").map(p => { const sp = SPELL.get(p.key); return sp ? spellGemCard(sp, p.trigger) : ""; }).join("");
+  }
+  function netherBonusView(n) {
+    const { core, extra } = netherBonusRows(n);
+    const coreRows = STAT_KEYS.map(k => `<div class="stat-row ${core[k] ? "hl-med" : ""}"><span class="stat-name">${STAT_LABEL[k]}</span>
+      <span class="stat-val art">${core[k] ? "+" + core[k] + "%" : "—"}</span></div>`).join("");
+    const extraRows = [...extra].map(([stat, val]) => `<div class="stat-row hl-med"><span class="stat-name">${esc(stat)}</span>
+      <span class="stat-val art">+${val}</span></div>`).join("");
+    const traits = netherTraitContainers(n), spells = netherSpellContainers(n);
+    return `<div class="section-label">Stat bonuses</div>
+      <div class="stat-grid single">${coreRows}${extraRows}</div>
+      ${traits ? `<div class="section-label" style="margin-top:12px">Traits</div>${traits}` : ""}
+      ${spells ? `<div class="section-label" style="margin-top:12px">Spell Gems</div><div class="art-spellcards">${spells}</div>` : ""}`;
+  }
   function renderNether() {
     const st = ovState;
     const sel = st.sel != null ? nether.find(n => n.id === st.sel) : null;
@@ -2616,9 +2644,15 @@
           <span class="prop-ico">${netherPropIcon(p) ? spriteImg(netherPropIcon(p), "px") : ""}</span>
           <span class="prop-name">${esc(netherPropLabel(p))}</span></div>`;
       }).join("") || `<div class="slot-sub" style="padding:8px">No effects.</div>`;
+      // two views: Bonuses (resolved stat table + trait & spell-gem containers) | Sockets (raw socketed props)
+      const view = st.nsView === "sockets" ? "sockets" : "bonuses";
+      const toggle = `<div class="art-view-toggle">
+        <button class="av-tab ${view === "bonuses" ? "on" : ""}" data-action="ns-view" data-v="bonuses">Bonuses</button>
+        <span class="av-pipe">|</span>
+        <button class="av-tab ${view === "sockets" ? "on" : ""}" data-action="ns-view" data-v="sockets">Sockets</button></div>`;
+      const viewBody = view === "sockets" ? `<div class="prop-list">${rows}</div>` : netherBonusView(sel);
       info = `<div class="ns-info-head"><span class="ns-info-icon">${spriteImg(gemSrc(sel), "px")}</span><h3>${esc(sel.name)}</h3></div>
-        <div class="section-label">Effects</div>
-        <div class="prop-list">${rows}</div>
+        ${toggle}${viewBody}
         <div class="ns-info-actions">
           <button class="slot-mini" data-action="nether-edit" data-id="${sel.id}">Edit</button>
           <button class="slot-mini danger" data-action="nether-del" data-id="${sel.id}">Delete</button></div>`;
@@ -3151,6 +3185,7 @@
       // nether library + wizard
       case "nether-new": openNetherBuilder(null); break;
       case "nether-sel": ovState.sel = +t.dataset.id; refreshOverlay(); break;
+      case "ns-view": ovState.nsView = t.dataset.v; refreshOverlay(); break;
       case "nether-hide-equipped": e.stopPropagation(); ovState.hideEquipped = !ovState.hideEquipped; refreshOverlay(); break;
       case "nether-edit": openNetherBuilder(+t.dataset.id); break;
       case "nether-del": armOrDo(t, () => { const id = +t.dataset.id; nether = nether.filter(n => n.id !== id); artifacts.forEach(a => a.netherIds = (a.netherIds || []).filter(x => x !== id)); if (ovState.sel === id) ovState.sel = nether[0] ? nether[0].id : null; persistNether(); persistArtifacts(); refreshOverlay(); }); break;
