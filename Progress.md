@@ -6,7 +6,12 @@ Pages on `master`/root, Cloudflare analytics active with the shared github.io to
 No verify-before-push ceremony (no real users yet) — but every change is checked with the jsdom smoke suite
 (scratchpad `smoke.mjs`, ~84 assertions across all flows) before commit.
 
-### Current feature snapshot (as of 2026-09-21)
+### Current feature snapshot (as of 2026-09-21, end of sessions 4j–4q)
+> This session added: Ascension-perk badges (4j) · **Threats advisor** (4k) · god base-stat null-fix +
+> creature **stat sort** + matrix align (4l) · Defiler/Tribalist costume split-stem fix (4m) · **spell data
+> enrichment** + spell-gem info panels (4n) · **taxonomy for Realm Cards/Relics/nether** (4o) · **taxonomy
+> provenance** (4p) · **Realms + God Shops reference pages** (4q). Details in the per-session entries below.
+
 - **Build-first home**: 6 creature slots + Specialization tile + Anointments tile; party stat overview.
   Filled spec/anoint tiles open a **detail page** (Edit → picker); empty tiles open the picker directly.
 - **Creature slots** — 3-step guided wizard: Choose creature → Fusion (first-class "No fusion"; self-fusion
@@ -26,16 +31,26 @@ No verify-before-push ceremony (no real users yet) — but every change is check
   item preview + explicit Add/Remove confirm, search matches name OR tag. Library + per-creature equip.
 - **Spell Gems** (spell + up to 3 dust enchants, bolded plain-text descriptions), **Nether Stones**,
   **Relics**, **Realm Cards** collection.
-- **Taxonomy ＋ Filter** (Category→Value drill-down) on all 4 surfaces: creatures (innate trait), artifact
-  trait-items (inherited), spell gems (per-spell), perks (per-perk). Grounded on descriptions via the
-  `_su_extract` classification pipeline (codebook + batch agents), NOT the unreliable code decode — rationale
-  in `_su_extract/code/TRAIT_EFFECT_DECODE_FINDINGS.md`, taxonomy in `_su_extract/data/model/TAG_TAXONOMY.md`.
+- **Taxonomy ＋ Filter** (Category→Value drill-down) now on **6 surfaces**: creatures (innate trait), artifact
+  trait-items (inherited), spell gems (per-spell), perks (per-perk), **Realm Cards + Relics** (classified 4o).
+  Grounded on descriptions via the `_su_extract` classification pipeline (codebook + batch agents), NOT the
+  unreliable code decode. **Every tag carries a `src` (provenance)** — token (exact game markup) / keyword /
+  llm / phrase / field / correction — shipped as a parallel `taxoSrc` array and surfaceable via the Appendix
+  **Sources** toggle (4p). Rationale in `_su_extract/code/TRAIT_EFFECT_DECODE_FINDINGS.md`.
+- **Threats advisor** (Menu → Threats): detects the build's theme from its tags and lists the **realm
+  properties + False God runes that counter it** (auto-detect + manual override; theme-specific "Counters your
+  build" + collapsible "Generally punishing"). Fed by `realm_properties.json` (56) + `runes.json` (18).
+- **Realms** + **God Shops** reference overlays (Menu, 4q): 30 realms (denizens/resources/instability-tier
+  objects) with a cross-link to the 22 per-god favor shops (items · type · favor price · desc).
+- **Spells** carry code-certain `charges` + community `potency`/`target`/`source`; shown in spell-gem info
+  panels (library + builder step-1) and Appendix spell rows (class gem icon + charges·potency).
 - **Synergy** (Menu → Synergy): one overlay, **Matrix** ⇆ **List** toggle. Matrix = members (Spec /
   collapsed Anointments / creatures — each expandable to its perks/anoints/traits) × tags; cell = that
   member's contribution count (sub-rows use dots); columns/cells **coloured by share status** (green = shared
   with the Spec, yellow = shared among others, red = solo) and **sorted by contribution weight** (a heavy red
   column = strong-but-unsynergised theme, an intentional alert). List = collapsible per-shared-tag groups +
-  jump-link bar. "Does not stack" excluded (noise).
+  jump-link bar. "Does not stack" excluded (noise). Counts perks/anoints/creature-traits/spell-gems **plus
+  equipped relics + nether spell-props** (4o); Realm cards are deliberately NOT counted.
 - **Builds** (Menu → Builds): save/load/update/delete parties (localStorage `subc.builds`), wardrobe-sprite
   icon, **sort by Last edited / Name / Spec**.
 - **Appendix** (cross-entity tag search) + right-side info panels throughout.
