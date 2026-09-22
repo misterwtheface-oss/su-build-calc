@@ -1907,13 +1907,6 @@
     ovState = { kind: "artlib", slotIdx, hideEquipped: false, sel: null, render: renderArtifactLibrary };
     openOverlay(ovState.render());
   }
-  function artifactSummary(a) {
-    const parts = [];
-    if (a.primary) parts.push(a.primary);
-    const n = (a.stat || []).length + (a.trick || []).length + (a.traits || []).length + (a.spells || []).length + (a.netherIds || []).length;
-    if (n) parts.push(`${n}/8 slots`);
-    return `R${a.rank} · ` + (parts.join(" · ") || "empty");
-  }
   const libRow = (ico, name, sub) => `<div class="prop-row static"><span class="prop-ico">${ico ? spriteImg(ico, "px") : ""}</span><span class="prop-name">${esc(name)}</span>${sub ? `<span class="prop-stat">${esc(sub)}</span>` : ""}</div>`;
   // a row that also shows the granted trait's tooltip (for trait-item entries in info panels)
   const libTraitRow = (ico, name, traitId) => {
@@ -2007,7 +2000,6 @@
         <button class="av-tab ${view === "sockets" ? "on" : ""}" data-action="art-view" data-v="sockets">Sockets</button></div>`;
       const viewBody = view === "sockets" ? `<div class="prop-list">${artContentRows(sel)}</div>` : artifactBonusView(sel);
       info = `<div class="ns-info-head"><span class="ns-info-icon">${spriteImg(artIcon(sel), "px")}</span><h3>${esc(sel.name)}</h3></div>
-        <div class="slot-sub">${esc(artifactSummary(sel))}</div>
         ${toggle}${viewBody}`;
     } else info = `<div class="slot-sub" style="padding:12px">Select an artifact.</div>`;
     // footer selector bar (mirrors Builds): Edit/Delete act on the selection; the confirm button
