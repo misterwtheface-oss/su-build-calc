@@ -845,8 +845,8 @@ const realms = realmArr.map((r, i) => {
   const godFull = (r.god || '').trim();
   const godName = godFull.split(',')[0].trim();               // short name (matches god-shop `god`)
   const parsed = parseRealmOther(r.other);
-  // drop junk "N/A" unique-object rows (a stray label produced a nameless/empty entry)
-  parsed.uniques = parsed.uniques.filter(u => u.name && u.name !== 'N/A');
+  // drop junk unique-object rows whose name is a placeholder ("N/A", "-", "—", empty)
+  parsed.uniques = parsed.uniques.filter(u => cleanRealmVal(u.name));
   return {
     id: i, god: godFull, godName, realm: r.realm || godName,
     cls: CLASS_SET.has(r.class) ? r.class : null,
