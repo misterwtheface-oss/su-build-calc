@@ -1651,7 +1651,7 @@
       ? a.godName.localeCompare(b.godName) || a.realm.localeCompare(b.realm)
       : a.realm.localeCompare(b.realm));
     const rows = list.map(r => `<button class="realm-row" data-action="realm-sel" data-id="${r.id}">
-      <span class="realm-god-ico">${r.godSprite ? spriteImg(r.godSprite, "px") : ""}</span>
+      <span class="realm-icon">${r.icon ? spriteImg(r.icon, "px") : ""}</span>
       <span class="opt-dot" style="background:${clsColor(r.cls)}"></span>
       <span class="realm-row-name">${esc(r.realm)}</span>
       <span class="anoint-spec-tag">${esc(r.godName)}</span>
@@ -1696,7 +1696,7 @@
       <div class="overlay-header"><button class="btn-ghost" data-action="realm-back">‹ Realms</button>
         <h2 style="flex:1">${esc(sel.realm)}</h2><button class="ovl-close" data-action="close-ovl">✕</button></div>
       <div class="overlay-body"><div class="ovl-center"><div class="ovl-center-scroll">
-        <div class="realm-detail-head">${sel.godSprite ? `<div class="realm-god-portrait">${spriteImg(sel.godSprite, "px")}</div>` : ""}
+        <div class="realm-detail-head">${sel.icon ? `<div class="realm-icon-lg">${spriteImg(sel.icon, "px")}</div>` : ""}
           <div class="spell-stats" style="flex:1">${facts}</div></div>
         ${shopLink}${creatures}${encounters}${resources}${uniques}
       </div></div></div>

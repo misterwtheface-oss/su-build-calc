@@ -725,15 +725,15 @@ h1, h2, h3 { margin: 0; }
   border: 1px solid var(--border-dim); border-radius: 8px; color: var(--text); font-size: 14px;
   display: flex; align-items: center; gap: 9px; cursor: pointer; }
 .realm-row:hover { border-color: var(--accent2); }
-.realm-god-ico { flex: 0 0 auto; width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; }
-.realm-god-ico img { width: 32px; height: 32px; object-fit: contain; image-rendering: pixelated; }
+.realm-icon { flex: 0 0 auto; width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; }
+.realm-icon img { width: 32px; height: 32px; object-fit: contain; image-rendering: pixelated; }
 .realm-row-name { font-weight: 600; }
 .realm-row .anoint-spec-tag { margin-left: auto; }
 .realm-row .opt-chev { margin-left: 6px; opacity: .45; font-size: 16px; }
 .realm-detail-head { display: flex; align-items: center; gap: 14px; margin-bottom: 12px; }
-.realm-god-portrait { flex: 0 0 auto; width: 72px; height: 72px; display: flex; align-items: center; justify-content: center;
+.realm-icon-lg { flex: 0 0 auto; width: 72px; height: 72px; display: flex; align-items: center; justify-content: center;
   background: rgba(0,0,0,.2); border: 1px solid var(--border-dim); border-radius: 10px; }
-.realm-god-portrait img { width: 64px; height: 64px; object-fit: contain; image-rendering: pixelated; }
+.realm-icon-lg img { width: 64px; height: 64px; object-fit: contain; image-rendering: pixelated; }
 .realm-uniq { background: var(--surface); border: 1px solid var(--border-dim); border-radius: 8px; padding: 8px 10px; margin-bottom: 6px; }
 .realm-uniq-head { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
 .realm-tier { display: grid; grid-template-columns: 34px 1fr; gap: 8px; align-items: baseline; font-size: 12px; padding: 2px 0; }
