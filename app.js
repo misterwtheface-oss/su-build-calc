@@ -2272,7 +2272,6 @@
       || `<div class="slot-sub" style="padding:10px">No spell gems${st.hideEquipped ? " match" : " yet — build one"}.</div>`;
     let info;
     if (sel) {
-      const on = equipped ? equipped.has(sel.id) : false;
       const sp = gemSpell(sel);
       const propRows = (sel.propIds || []).map(pid => { const p = SPELLPROP.get(pid);
         return libRow(p && p.icon, p ? p.name : pid, p ? (p.effect || "").split(":")[0].slice(0, 28) : ""); }).join("");
@@ -2285,12 +2284,12 @@
         : `<div class="slot-sub" style="padding:6px">No spell chosen.</div>`;
       info = `<div class="ns-info-head"><span class="ns-info-icon">${spriteImg(gemIcon(sel), "px")}</span><h3>${esc(gemName(sel))}</h3></div>
         ${spellBlock}
-        ${propRows ? `<div class="section-label">Enchants</div><div class="prop-list">${propRows}</div>` : ""}
-        <div class="ns-info-actions">
-          ${ctx ? `<button class="slot-mini ${on ? "on" : ""}" data-action="sg-equip" data-id="${sel.id}">${on ? "Equipped" : "Equip"}</button>` : ""}
-          <button class="slot-mini" data-action="sg-edit" data-id="${sel.id}">Edit</button>
-          <button class="slot-mini danger" data-action="sg-del" data-id="${sel.id}">Delete</button></div>`;
+        ${propRows ? `<div class="section-label">Enchants</div><div class="prop-list">${propRows}</div>` : ""}`;
     } else info = `<div class="slot-sub" style="padding:12px">Select a spell gem.</div>`;
+    // footer selector bar (mirrors Artifacts/Builds): Edit/Delete act on the selection; the confirm
+    // switches between Equip (equip context + selection) and ＋ Build new (manage mode / no selection).
+    const canEquip = !!ctx && !!sel;
+    const on = canEquip ? equipped.has(sel.id) : false;
     return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel">
       <div class="overlay-header"><h2>Spell Gems${ctx ? " — equip" : ""}</h2><button class="ovl-close" data-action="close-ovl">✕</button></div>
       <div class="overlay-body">
@@ -2298,7 +2297,11 @@
         <div class="ovl-right lib-info">${info}</div>
       </div>
       <div class="overlay-footer"><button class="facet ${st.hideEquipped ? "on" : ""}" data-action="sg-hide-equipped">Hide equipped</button>
-        <button class="btn-confirm" data-action="sg-new">＋ Build new spell gem</button></div>
+        <div>
+          <button class="btn-ghost" data-action="sg-edit" data-id="${sel ? sel.id : ""}" ${sel ? "" : "disabled"}>Edit</button>
+          <button class="btn-ghost danger" data-action="sg-del" data-id="${sel ? sel.id : ""}" ${sel ? "" : "disabled"}>Delete</button>
+          <button class="btn-confirm" style="min-width:96px" data-action="${canEquip ? "sg-equip" : "sg-new"}" ${canEquip ? `data-id="${sel.id}"` : ""}>${canEquip ? (on ? "Equipped ✓" : "Equip") : "＋ Build new"}</button>
+        </div></div>
     </div></div>`;
   }
   function openSpellGemBuilder(id) {

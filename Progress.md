@@ -60,6 +60,11 @@ No verify-before-push ceremony (no real users yet) — but every change is check
   (`spellStatsHtml`) as you tap through candidates — so you can compare charges/potency/target BEFORE
   committing, not only after the gem exists. `sg-spell` already re-renders via `refreshOverlay` (scroll
   preserved). Smoke extended to 22/22.
+- **Follow-up: Spell-Gem library footer parity with Artifacts.** Moved the buried Edit/Delete/Equip out of
+  the info panel onto the **bottom bar** (mirrors the Artifacts/Builds footer): left = Hide equipped; right
+  = Edit + Delete (`.btn-ghost`, disabled without a selection) + a mode-switching confirm that reads **Equip
+  / Equipped ✓** in a creature equip context or **＋ Build new** in manage mode. Info panel is now
+  content-only. Smoke 31/31 (footer buttons, disabled states, equip-context toggle).
 
 ## 2026-09-21 — session 4m (fix Defiler/Tribalist tier-1 costume — split-stem antipattern)
 User: tier-1 Defiler & Tribalist were broken. **Final, user-confirmed truth: these two specs split their
