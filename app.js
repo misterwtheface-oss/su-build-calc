@@ -159,6 +159,22 @@
   const gemName = (g) => g ? (g.name || (gemSpell(g) ? gemSpell(g).name : "Spell Gem")) : "";
   const gemSummary = (g) => { const s = gemSpell(g); const np = (g.propIds || []).length;
     return (s ? s.name : "—") + (np ? ` · ${np} propert${np === 1 ? "y" : "ies"}` : ""); };
+  // compact stat readout for a spell — whatever we have (charges = code-certain; potency/target/source
+  // = community compendium). Returns "" if nothing to show.
+  function spellStatsHtml(sp) {
+    if (!sp) return "";
+    const rows = [];
+    if (sp.cls) rows.push(["Class", `<span style="color:${clsColor(sp.cls)};font-weight:700">${esc(sp.cls)}</span>`]);
+    if (sp.charges != null) rows.push(["Charges", sp.charges]);
+    if (sp.potency) rows.push(["Potency", esc(sp.potency)]);
+    if (sp.target) rows.push(["Target", esc(sp.target)]);
+    if (sp.source) rows.push(["Source", esc(sp.source)]);
+    return rows.length ? `<div class="spell-stats">${rows.map(([k, v]) =>
+      `<div class="ss-row"><span class="ss-k">${k}</span><span class="ss-v">${v}</span></div>`).join("")}</div>` : "";
+  }
+  // brief inline meta (charges · potency) for spell picker rows
+  const spellMeta = (sp) => sp ? [sp.charges != null ? `${sp.charges} charge${sp.charges === 1 ? "" : "s"}` : null,
+    sp.potency ? sp.potency : null].filter(Boolean).join(" · ") : "";
   // fixed artifact slot template (all artifacts, max level): 1 primary + these; nether = 1 slot
   const ART_SLOTS = [
     { key: "stat", label: "Stat", max: 3, pick: "stat" },
@@ -1297,8 +1313,8 @@
         section("Traits", traitRows, traitRow),
         section("Perks", res.perks, p => line(p.icon ? spriteImg(p.icon, "px") : "", p.name,
           `<span class="anoint-spec-tag">${esc(p.spec)}</span>`, perkText(p.desc, p.ranks))),
-        section("Spells", res.spells, s => line("", s.name,
-          s.cls ? `<span class="anoint-spec-tag">${esc(s.cls)}</span>` : "", perkText(s.desc, null))),
+        section("Spells", res.spells, s => line(spellIcon(s) ? spriteImg(spellIcon(s), "px") : "", s.name,
+          `${s.cls ? `<span class="anoint-spec-tag">${esc(s.cls)}</span>` : ""}${spellMeta(s) ? `<span class="anoint-spec-tag">${esc(spellMeta(s))}</span>` : ""}`, perkText(s.desc, null))),
       ].join("");
       const total = traitRows.length + res.perks.length + res.spells.length;
       placeholder = "Filter results…";
@@ -2243,12 +2259,6 @@
     ovState = { kind: "spellgemlib", equipCtx: null, hideEquipped: false, sel: spellGems[0] ? spellGems[0].id : null, render: renderSpellGemLib };
     openOverlay(ovState.render());
   }
-  function sgContentRows(g) {
-    const sp = gemSpell(g);
-    const r = [libRow(gemIcon(g), sp ? sp.name : "—", "spell")];
-    for (const pid of g.propIds || []) { const p = SPELLPROP.get(pid); r.push(libRow(p && p.icon, p ? p.name : pid, p ? (p.effect || "").split(":")[0].slice(0, 28) : "")); }
-    return r.join("");
-  }
   function renderSpellGemLib() {
     const st = ovState, ctx = st.equipCtx;   // {kind:'artifact'|'creature'} when equipping
     const equipped = ctx ? new Set(ctx.equipped()) : null;
@@ -2263,9 +2273,19 @@
     let info;
     if (sel) {
       const on = equipped ? equipped.has(sel.id) : false;
+      const sp = gemSpell(sel);
+      const propRows = (sel.propIds || []).map(pid => { const p = SPELLPROP.get(pid);
+        return libRow(p && p.icon, p ? p.name : pid, p ? (p.effect || "").split(":")[0].slice(0, 28) : ""); }).join("");
+      const spellBlock = sp
+        ? `<div class="section-label" style="margin-top:6px">Spell</div>
+           <div class="prop-row rich"><span class="prop-ico">${spellIcon(sp) ? spriteImg(spellIcon(sp), "px") : ""}</span>
+             <div class="prop-body"><div class="prop-name">${esc(sp.name)}</div>
+               ${sp.desc ? `<div class="prop-sub">${perkText(sp.desc)}</div>` : ""}</div></div>
+           ${spellStatsHtml(sp)}`
+        : `<div class="slot-sub" style="padding:6px">No spell chosen.</div>`;
       info = `<div class="ns-info-head"><span class="ns-info-icon">${spriteImg(gemIcon(sel), "px")}</span><h3>${esc(gemName(sel))}</h3></div>
-        <div class="section-label" style="margin-top:6px">Contents</div>
-        <div class="prop-list">${sgContentRows(sel)}</div>
+        ${spellBlock}
+        ${propRows ? `<div class="section-label">Enchants</div><div class="prop-list">${propRows}</div>` : ""}
         <div class="ns-info-actions">
           ${ctx ? `<button class="slot-mini ${on ? "on" : ""}" data-action="sg-equip" data-id="${sel.id}">${on ? "Equipped" : "Equip"}</button>` : ""}
           <button class="slot-mini" data-action="sg-edit" data-id="${sel.id}">Edit</button>
@@ -2298,7 +2318,7 @@
           && (!st.spellTaxo || (s.taxo || []).includes(st.spellTaxo))).slice(0, 300)
         .map(s => `<div class="prop-row rich ${g.spellId === s.id ? "chosen" : ""}" data-action="sg-spell" data-id="${s.id}">
           <span class="prop-ico">${spellIcon(s) ? spriteImg(spellIcon(s), "px") : ""}</span>
-          <div class="prop-body"><div class="prop-name">${esc(s.name)}</div>
+          <div class="prop-body"><div class="prop-name">${esc(s.name)}${spellMeta(s) ? `<span class="prop-metatag">${esc(spellMeta(s))}</span>` : ""}</div>
             ${s.desc ? `<div class="prop-sub clamp">${perkText(s.desc)}</div>` : ""}</div></div>`).join("");
       const sTaxo = st.spellTaxo
         ? `<button class="facet on tag" data-action="sg-taxofilter-clear">${esc(taxoCatName(st.spellTaxo))}: <b>${esc(taxoValName(st.spellTaxo))}</b> <span class="facet-x">✕</span></button>`

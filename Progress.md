@@ -42,6 +42,20 @@ No verify-before-push ceremony (no real users yet) — but every change is check
 - Fed by `_su_extract` via `build-data.mjs` (gitignored extract; only used assets copied). Data model in
   `SPEC_PLAN.md`, pipeline in `WIKI_CONTEXT.md`.
 
+## 2026-09-21 — session 4n (spell data enrichment + spell-gem info panel + Appendix spell icons)
+- **Spell data enriched** in the pipeline: each `SU_DATA.spells` entry now carries **`charges`** (CODE-certain
+  from `_su_extract/data/model/spell_stats.json` — authoritative, e.g. Affliction 14 beats the community
+  CSV's 17; 712/747 covered) plus **`potency` / `target` / `source`** (community `spells_ref.json`, `-`
+  normalized to null; 402 have potency). `build-data.mjs` loads both, logs the coverage.
+- **Spell-gem library info panel** (`renderSpellGemLib`) reworked: the selected gem now shows a **Spell**
+  section (class gem icon + name + full desc) followed by a compact **stat readout** (`spellStatsHtml`:
+  Class / Charges / Potency / Target / Source — only the fields we have), then an **Enchants** section for
+  the dust props. Replaced the old flat "Contents" list; dropped `sgContentRows`.
+- **Appendix spell rows** now render the **class-coloured gem icon** (was iconless) plus a charges·potency
+  meta chip (`spellMeta`). The spell-gem builder's spell-picker rows got the same inline charges·potency tag.
+- New CSS `.spell-stats`/`.ss-row` (key/value) + `.prop-metatag`. jsdom `spellgem_smoke.mjs` 16/16 (data
+  provenance, info-panel stats, Appendix icons+meta); all other suites green. Shipped to `master`.
+
 ## 2026-09-21 — session 4m (fix Defiler/Tribalist tier-1 costume — split-stem antipattern)
 User: tier-1 Defiler & Tribalist were broken. **Final, user-confirmed truth: these two specs split their
 3 costume tiers across TWO stem names** — tier-1 under the SPEC name (`npc_defiler_alt` /
@@ -756,7 +770,8 @@ What works end-to-end:
 - [ ] **Realm reference** — the realms (`Realm_REF.csv`) + their properties/denizens/resources.
 - [ ] **God shop reference** — per-god favor shops (`god_shop_ref.json` / `shops.json`), items + prices.
 - [ ] **Godforge helper** — Godforge (spell-gem enchant / artifact forging) planner.
-- [ ] **Add spell-gem icons to the Appendix** — surface the class-coloured spell-gem icons in Appendix spell rows.
+- [x] **Add spell-gem icons to the Appendix** — DONE (session 4n): class gem icon + charges·potency meta on
+      each Appendix spell row; plus a spell-gem info panel (charges/potency/target/source).
 - [ ] **Macro helper** — build/plan combat macros (action sequences / auto-cast ordering).
 - [x] **Differentiate Ascension perks from normal perks** — DONE (session 4j). Gold "Ascension" badge +
       subtle gold left edge on the row, in the spec perk list (detail + picker info panel) and the Customize

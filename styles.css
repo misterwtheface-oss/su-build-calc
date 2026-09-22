@@ -378,6 +378,15 @@ h1, h2, h3 { margin: 0; }
 .prop-sub { font-size: 11.5px; color: var(--text-dim); line-height: 1.35; }
 .prop-sub .param { color: var(--accent); }
 .prop-sub.clamp { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+/* inline meta chip on a spell picker row (charges · potency) */
+.prop-metatag { margin-left: 8px; font-size: 10px; font-weight: 700; color: var(--text-mute);
+  font-variant-numeric: tabular-nums; }
+/* spell stat readout (spell-gem info panel): key/value rows */
+.spell-stats { display: flex; flex-direction: column; gap: 3px; margin: 8px 0 4px; }
+.spell-stats .ss-row { display: flex; justify-content: space-between; gap: 10px; font-size: 12px;
+  padding: 3px 8px; background: var(--surface); border-radius: 6px; }
+.spell-stats .ss-k { color: var(--text-mute); text-transform: uppercase; letter-spacing: .4px; font-size: 10px; align-self: center; }
+.spell-stats .ss-v { color: var(--text); text-align: right; font-variant-numeric: tabular-nums; }
 .prop-row .prop-val { font-size: 13px; font-weight: 700; color: #9fd0ff; }
 .slot-chip {
   display: inline-flex; align-items: center; gap: 6px; padding: 5px 9px; border-radius: 8px;

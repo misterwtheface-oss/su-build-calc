@@ -520,11 +520,23 @@ for (const p of artGroup.primary) {
 // ── spells (for the artifact spell slot) — class from spells_ref, class-coloured gem icon ──
 const spellCatalog = readJSON(path.join(SRC, 'data', 'catalog', 'spells.json'));
 const spellArr = Array.isArray(spellCatalog) ? spellCatalog : (spellCatalog.records || Object.values(spellCatalog));
-// name -> class from the user compendium ref
+// name -> class + compendium details (potency/target/source) from the user ref
 const spellClassByName = new Map();
+const spellRefByName = new Map();
+const cleanRef = (v) => { const s = (v == null ? '' : String(v)).trim(); return s && s !== '-' ? s : null; };
 {
   const ref = readJSON(path.join(REF, 'spells_ref.json'));
-  for (const r of (ref.records || ref)) if (r.name && r.class) spellClassByName.set(norm(r.name), r.class);
+  for (const r of (ref.records || ref)) {
+    if (r.name && r.class) spellClassByName.set(norm(r.name), r.class);
+    if (r.name) spellRefByName.set(norm(r.name), { potency: cleanRef(r.potency), target: cleanRef(r.target), source: cleanRef(r.source) });
+  }
+}
+// key -> charges from CODE (scr_DatabaseSpells; authoritative — beats the community CSV, e.g. Affliction
+// code 14 vs CSV 17, user-verified in-game). 712/741 covered; rest have no code-grounded charge count.
+const spellChargesByKey = new Map();
+{
+  const st = readJSON(path.join(MODEL, 'spell_stats.json'));
+  for (const r of (st.records || st)) if (r.key && r.charges != null) spellChargesByKey.set(r.key, r.charges);
 }
 // fuzzy fallback for ref typos (e.g. "Lucious Lager"/"Ignus Fatuus" vs catalog spelling)
 const lev = (a, b) => { const m = a.length, n = b.length; if (Math.abs(m - n) > 2) return 9;
@@ -550,11 +562,18 @@ for (const [cls, base] of Object.entries(GEM_SRC)) {
   else warn(`spell-gem icon missing for class ${cls}`);
 }
 let spellNoClass = 0;
+let spellCharged = 0;
 const spells = spellArr.map((s, i) => {
   const cls = spellClass(s.name);
   if (!cls) { spellNoClass++; warn(`spell "${s.name}" has no class match in spells_ref`); }
-  return { id: i, key: s.key, name: s.name, desc: s.desc || '', cls, taxo: correctTaxo(taxoStrs(spellTaxo[String(i)]), s.desc || '') };
+  const ref = spellRefByName.get(norm(s.name)) || {};
+  const charges = spellChargesByKey.has(s.key) ? spellChargesByKey.get(s.key) : null;
+  if (charges != null) spellCharged++;
+  return { id: i, key: s.key, name: s.name, desc: s.desc || '', cls,
+    charges, potency: ref.potency || null, target: ref.target || null, source: ref.source || null,
+    taxo: correctTaxo(taxoStrs(spellTaxo[String(i)]), s.desc || '') };
 }).filter(s => s.name);
+console.log(`  spells: ${spells.length} · ${spellCharged} w/ code charges · ${spells.filter(s => s.potency).length} w/ potency`);
 console.log(`  taxonomy fixes: Innate-Trait stripped ${innateTagStripped} · Animatus retagged ${animatusRetagged} (was mis-tagged Animation)`);
 
 // ── trait items (slottable into artifact trait slots) — with material icons ──
