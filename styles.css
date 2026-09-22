@@ -618,8 +618,8 @@ h1, h2, h3 { margin: 0; }
 .av-tab:hover { color: var(--text); }
 .av-pipe { color: var(--border-dim); }
 .art-spellcards { display: flex; flex-direction: column; gap: 8px; }
-.art-spellcard { border: 1px solid var(--border-dim); border-left: 3px solid var(--accent2); border-radius: 7px;
-  padding: 8px; background: rgba(0,0,0,.15); }
+.art-spellcard { border: 1px solid var(--accent2); border-radius: 9px;
+  padding: 8px; background: rgba(154,123,214,.08); }
 .art-spellcard-head { display: flex; align-items: center; gap: 8px; }
 .art-spellcard-head b { flex: 1; min-width: 0; }
 .art-trigger { flex: 0 0 auto; font-size: 11px; font-weight: 700; color: var(--accent2);
