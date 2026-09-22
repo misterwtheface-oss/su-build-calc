@@ -42,6 +42,27 @@ No verify-before-push ceremony (no real users yet) — but every change is check
 - Fed by `_su_extract` via `build-data.mjs` (gitignored extract; only used assets copied). Data model in
   `SPEC_PLAN.md`, pipeline in `WIKI_CONTEXT.md`.
 
+## 2026-09-21 — session 4o (taxonomy for Realm Cards + Relics + nether; drop perk-tree item)
+Extended the tag taxonomy to the remaining fixed surfaces, per user.
+- **Classification**: exported card (141, effects joined) + relic (31, all rank effects joined) descriptions,
+  ran the existing batch-LLM pipeline (6 parallel agents vs `TRAIT_CLASSIFICATION_CODEBOOK.md` + the fixed
+  468-value vocab), aggregated via `aggregate_surface.py` → `card_taxonomy_tags.json` (125/141 tagged; 16 are
+  pure economy/resource cards with no combat mechanic → empty) + `relic_taxonomy_tags.json` (31/31, 702 tags).
+  All emitted tags validated against the vocabulary (0 dropped). Repro dir: `_su_extract/code/cardrelic_classify/`.
+- **build-data**: `cardTaxo`/`relicTaxo` loaders; each card/relic gets `taxo` via `correctTaxo(taxoStrs(...))`.
+- **Appendix**: cards + relics now feed `appendixTaxoIndex` and appear as **Relics** + **Realm Cards** result
+  sections (icon + stat/class chip + effect text), searchable by the same multi-tag AND drill-down.
+- **＋Filter**: added to the **Cards** collection and the **Relic builder** (shared `taxoFilterBar`/`taxoMatch`
+  helpers + surface-aware `facet-taxo` idx via `cardTaxoIndex`/`relicTaxoIndex`; reuses `rm-taxo`/`facet-pick`).
+- **Synergy**: **relics** (equipped per creature; skipped under Deprived) and **nether-stone spell props**
+  (`slotNetherSpells`; nether traits already flow via `slotTraitIds`) are now counted as creature-attached
+  effects in both Matrix + List views (List kind `Relic`). **Realm cards are deliberately NOT synergy
+  carriers** (user: don't count card taxonomy in synergy totals) — they're never gathered by
+  `buildTagCarriers`/`buildTagEffects`.
+- **Dropped the perk-tree picker** backlog item (user: no such thing exists).
+jsdom `cardrelic_smoke.mjs` 12/12 (data, Appendix sections, card ＋Filter narrow/restore, relic in synergy);
+matrix/appendix/spellgem/creasort/threats/builds/asc all green. Shipped to `master`.
+
 ## 2026-09-21 — session 4n (spell data enrichment + spell-gem info panel + Appendix spell icons)
 - **Spell data enriched** in the pipeline: each `SU_DATA.spells` entry now carries **`charges`** (CODE-certain
   from `_su_extract/data/model/spell_stats.json` — authoritative, e.g. Affliction 14 beats the community
@@ -761,12 +782,12 @@ What works end-to-end:
 ### Next up (P1)
 - [ ] **Boss-prep planner element** — surface the boss/enemy trait taxo (`trait_meta.scope=boss_enemy_flavor`,
       already in `data.js`) as a "prepare for this fight / what to expect" view. Verify tags in-game first.
-- [ ] Taxonomy of remaining surfaces if wanted: cards / relics / nether stones (stat/trick artifact materials
-      only map to Related Stat / Affect-on-Stats — narrow, from material_stats).
+- [x] **Taxonomy of remaining surfaces** — DONE (session 4o): Realm Cards + Relics classified (LLM batch)
+      → Appendix sections + ＋Filter; relics + nether spell-props counted in Synergy, cards excluded.
+      (Nether stones derive taxo from socketed trait/spell contents at runtime.)
 - [ ] Real trait detail page (replace the `nav-trait` `alert()` stub) with tags + "shared by N party members".
 - [ ] DPS / effective-stat simulation from `damageModel` (spell & melee, crit/dodge, defending). Expose
       class-advantage multiplier as a toggle (unconfirmed in extract).
-- [ ] Perk-tree picker per specialization (perks[] already in data + now taxo-tagged; needs tree layout).
 - [ ] **Revisit CSV-provenance data (harden vs code)** — several shipped fields come from the user's
       community compendium CSVs (`_raw_csv/*_REF.csv` / `*_ref.json`), NOT code, so they can be stale/wrong
       (recall Affliction CSV charges 17 vs code 14). Come back and re-ground them against the datamine /

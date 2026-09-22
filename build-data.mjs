@@ -377,6 +377,8 @@ function findEmblem(label) {
 const loadTaxoBy = (fname) => { const p = path.join(MODEL, fname); return fs.existsSync(p) ? (readJSON(p).by_key || {}) : {}; };
 const spellTaxo = loadTaxoBy('spell_taxonomy_tags.json');
 const perkTaxo = loadTaxoBy('perk_taxonomy_tags.json');
+const cardTaxo = loadTaxoBy('card_taxonomy_tags.json');     // keyed by card id (LLM-classified)
+const relicTaxo = loadTaxoBy('relic_taxonomy_tags.json');   // keyed by relic id (LLM-classified)
 const taxoStrs = (arr) => (arr || []).map(a => a.cat + '::' + a.val);
 // perk taxo is keyed "spec_id:perk_key" but a perk's tags are intrinsic to the perk — re-key by perk_key
 // so membership reassignment (CSV-driven) still finds each perk's tags regardless of which spec now owns it.
@@ -736,6 +738,7 @@ const relics = relicRef.map((r, i) => {
     icon,
     statBonus: r.stat_bonus || null,
     ranks: (r.ranks || []).map(x => ({ rank: pct(x.rank), desc: x.description || '' })),
+    taxo: correctTaxo(taxoStrs(relicTaxo[String(i)]), (r.ranks || []).map(x => x.description || '').join(' ')),
   };
 });
 console.log(`  relic icons: ${relicIconCopied}/${relics.length} copied`);
@@ -756,6 +759,7 @@ const cards = cardRef.map((c, i) => {
     sprite: rep ? rep.sprite : null,
     tiers: String(c.tiers || '').split('/').map(x => pct(x)).filter(x => x != null),
     effects: [c.unlock_1, c.unlock_2, c.unlock_3].filter(Boolean),
+    taxo: correctTaxo(taxoStrs(cardTaxo[String(i)]), [c.unlock_1, c.unlock_2, c.unlock_3].filter(Boolean).join(' ')),
   };
 });
 

@@ -369,6 +369,13 @@
     return byCat;
   }
   const taxoIndex = () => taxoIndexFor("crea", D.creatures, creatureTaxo);
+  const cardTaxoIndex = () => taxoIndexFor("cards", D.cards, c => c.taxo || []);
+  const relicTaxoIndex = () => taxoIndexFor("relics", D.relics, r => r.taxo || []);
+  // shared ＋Filter bar (active tag chips + add button) for taxo-filterable list overlays (cards, relics)
+  const taxoFilterBar = (st) => st.taxoFilters.map((k, i) =>
+    `<button class="facet on tag" data-action="rm-taxo" data-i="${i}">${esc(taxoCatName(k))}: <b>${esc(taxoValName(k))}</b> <span class="facet-x">✕</span></button>`).join("")
+    + `<button class="facet add" data-action="facet-taxo">＋ Filter</button>`;
+  const taxoMatch = (st, item) => !st.taxoFilters.length || st.taxoFilters.every(k => (item.taxo || []).includes(k));
   const taxoValName = (k) => { const i = k.indexOf("::"); return i < 0 ? k : k.slice(i + 2); };
   const taxoCatName = (k) => { const i = k.indexOf("::"); return i < 0 ? "" : k.slice(0, i); };
 
@@ -465,6 +472,17 @@
       }
     }
     return [...new Set(ids)];
+  }
+  // nether stones socketed in the slot's artifact → their spell-property spells (trait props already
+  // flow through slotTraitIds; this covers the spell props so a nether stone is fully represented).
+  function slotNetherSpells(slot) {
+    const a = resolveArtifact(slot); if (!a) return [];
+    const out = [];
+    for (const nid of a.netherIds || []) {
+      const n = nether.find(x => x.id === nid); if (!n) continue;
+      for (const p of n.props || []) if (p.cat === "spell") { const sp = SPELL.get(p.key); if (sp) out.push(sp); }
+    }
+    return out;
   }
   // creature spell-gem slot count: base + perk/trait grants (e.g. Animator's Gray Matter → Animatus +N)
   const SPELL_SLOT_BASE = 3;
@@ -1184,6 +1202,8 @@
     for (const s of D.specs) for (const p of s.perks) items.push(p.taxo || []);
     for (const s of (D.spells || [])) items.push(s.taxo || []);
     for (const ti of (D.traitItems || [])) items.push(ti.taxo || []);
+    for (const r of (D.relics || [])) items.push(r.taxo || []);
+    for (const c of (D.cards || [])) items.push(c.taxo || []);
     return taxoIndexFor("appendix", items, (x) => x);
   }
   // AND across every selected tag (multi-tag search, like the creature selector)
@@ -1195,6 +1215,8 @@
       traits: Object.values(D.traits).filter(t => has(t.taxo)),
       perks: D.specs.flatMap(s => s.perks.filter(p => has(p.taxo)).map(p => ({ ...p, spec: s.label }))),
       spells: (D.spells || []).filter(s => has(s.taxo)),
+      relics: (D.relics || []).filter(r => has(r.taxo)),
+      cards: (D.cards || []).filter(c => has(c.taxo)),
     };
   }
   // trait id → the creature that has it innately + the trait-items that grant it (built once)
@@ -1315,8 +1337,12 @@
           `<span class="anoint-spec-tag">${esc(p.spec)}</span>`, perkText(p.desc, p.ranks))),
         section("Spells", res.spells, s => line(spellIcon(s) ? spriteImg(spellIcon(s), "px") : "", s.name,
           `${s.cls ? `<span class="anoint-spec-tag">${esc(s.cls)}</span>` : ""}${spellMeta(s) ? `<span class="anoint-spec-tag">${esc(spellMeta(s))}</span>` : ""}`, perkText(s.desc, null))),
+        section("Relics", res.relics, r => line(r.icon ? spriteImg(r.icon, "px") : "", r.name,
+          r.statBonus ? `<span class="anoint-spec-tag">${esc(r.statBonus)}</span>` : "", richText((r.ranks || []).map(x => x.desc).join(" · ")))),
+        section("Realm Cards", res.cards.map(c => ({ ...c, name: c.family })), c => line(c.sprite ? spriteImg(c.sprite, "px") : "", c.family,
+          c.cls ? `<span class="anoint-spec-tag">${esc(c.cls)}</span>` : "", richText((c.effects || []).join(" · ")))),
       ].join("");
-      const total = traitRows.length + res.perks.length + res.spells.length;
+      const total = traitRows.length + res.perks.length + res.spells.length + res.relics.length + res.cards.length;
       placeholder = "Filter results…";
       sub = `<div class="ovl-filterbar">${tagChips}
         <button class="facet add" data-action="appendix-add">＋ Filter</button>
@@ -1375,6 +1401,10 @@
       // it carries is the counted effect — the creature's own name never contributes.
       for (const tid of slotTraitIds(slot)) { const tr = TRAIT[tid]; if (tr) addEffect(m, tr.name, tr.taxo, "trait"); }
       for (const gid of slot.spellGemIds || []) { const g = spellGems.find(x => x.id === gid); const sp = g ? gemSpell(g) : null; if (sp) addEffect(m, sp.name, sp.taxo, "spell gem"); }
+      // relic (equipped per creature; Deprived ignores relics) + nether spell props
+      const rel = slot.relic && !deprivedActive() ? RELIC.get(slot.relic.id) : null;
+      if (rel) addEffect(m, rel.name, rel.taxo, "relic");
+      for (const sp of slotNetherSpells(slot)) addEffect(m, sp.name, sp.taxo, "nether spell");
       if (m.tags.size) members.push(m);
     });
     return members;
@@ -1389,6 +1419,9 @@
       const c = CREA.get(slot.cid); if (!c) continue;
       for (const tid of slotTraitIds(slot)) { const tr = TRAIT[tid]; if (tr) push(tr.name, richText(tr.desc || ""), tr.taxo, c.name, "Trait"); }
       for (const gid of slot.spellGemIds || []) { const g = spellGems.find(x => x.id === gid); const sp = g ? gemSpell(g) : null; if (sp) push(sp.name, richText(sp.desc || ""), sp.taxo, c.name, "Spell"); }
+      const rel = slot.relic && !deprivedActive() ? RELIC.get(slot.relic.id) : null;
+      if (rel) push(rel.name, rel.ranks.map(r => r.desc).join(" · "), rel.taxo, c.name, "Relic");
+      for (const sp of slotNetherSpells(slot)) push(sp.name, richText(sp.desc || ""), sp.taxo, c.name, "Spell");
     }
     return effects;
   }
@@ -1552,7 +1585,7 @@
       const msg = effects.length ? "No tags are shared across your build's effects yet — add more matching pieces." : "Add a specialization, anointments and creatures to see shared tags.";
       return { meta, body: `<div class="ovl-center-scroll"><div class="slot-sub" style="padding:12px">${msg}</div></div>` };
     }
-    const kindCls = { Perk: "k-spec", Anointment: "k-anoint", Trait: "k-crea", Spell: "k-spell" };
+    const kindCls = { Perk: "k-spec", Anointment: "k-anoint", Trait: "k-crea", Spell: "k-spell", Relic: "k-crea" };
     const allCollapsed = shared.every(([k]) => st.listCollapsed.has(k));
     const jumpbar = `<div class="syn-jumpbar">
       <button class="syn-chip syn-chip-all" data-action="syn-collapse-all">${allCollapsed ? "Expand all" : "Collapse all"}</button>
@@ -1952,13 +1985,13 @@
   // ── relic builder ──────────────────────────────────────────────────────────
   function openRelicBuilder(slotIdx) {
     const slot = build.slots[slotIdx];
-    ovState = { kind: "relic", slotIdx, sel: slot.relic ? slot.relic.id : null, rank: slot.relic ? slot.relic.rank : 50, search: "", render: renderRelicBuilder };
+    ovState = { kind: "relic", slotIdx, sel: slot.relic ? slot.relic.id : null, rank: slot.relic ? slot.relic.rank : 50, search: "", taxoFilters: [], render: renderRelicBuilder };
     openOverlay(ovState.render());
   }
   function renderRelicBuilder() {
     const st = ovState, c = CREA.get(build.slots[st.slotIdx].cid);
     const q = st.search.trim().toLowerCase();
-    const list = D.relics.filter(r => !q || r.name.toLowerCase().includes(q) || (r.statBonus || "").toLowerCase().includes(q));
+    const list = D.relics.filter(r => (!q || r.name.toLowerCase().includes(q) || (r.statBonus || "").toLowerCase().includes(q)) && taxoMatch(st, r));
     const sel = st.sel != null ? RELIC.get(st.sel) : null;
     const rows = list.map(r => `<div class="prop-row ${st.sel === r.id ? "chosen" : ""}" data-action="relic-pick" data-id="${r.id}">
       <span class="prop-ico">${r.icon ? spriteImg(r.icon, "px") : ""}</span>
@@ -1973,7 +2006,8 @@
       <div class="overlay-header"><h2>Relic — ${esc(c ? c.name : "")}</h2>
         <input class="ovl-search" placeholder="Search relic / stat…" value="${esc(st.search)}" data-action="relic-search">
         <button class="ovl-close" data-action="close-ovl">✕</button></div>
-      <div class="overlay-body"><div class="ovl-center"><div class="ovl-center-scroll">${rows}</div></div>
+      <div class="overlay-body"><div class="ovl-center"><div class="ovl-filterbar">${taxoFilterBar(st)}</div>
+        <div class="ovl-center-scroll">${rows || `<div class="slot-sub" style="padding:10px">No relics match.</div>`}</div></div>
         <div class="ovl-right">
           ${sel ? `<div class="rank-picker"><span class="slot-sub">Rank</span>
             <input type="range" min="10" max="${Math.max(...sel.ranks.map(r => r.rank), 10)}" step="10" value="${st.rank}" data-action="relic-rank"><span class="rank-badge">${st.rank}</span></div>` : ""}
@@ -2056,11 +2090,11 @@
   }
 
   // ── realm cards (leveled collection) ───────────────────────────────────────
-  function openCards() { ovState = { kind: "cards", search: "", clsFilter: null, render: renderCards }; openOverlay(ovState.render()); maybeFocusSearch(OV); }
+  function openCards() { ovState = { kind: "cards", search: "", clsFilter: null, taxoFilters: [], render: renderCards }; openOverlay(ovState.render()); maybeFocusSearch(OV); }
   function renderCards() {
     const st = ovState, q = st.search.trim().toLowerCase();
     const applyAll = cards.applyAll;
-    const list = D.cards.filter(c => (!q || c.family.toLowerCase().includes(q)) && (!st.clsFilter || c.cls === st.clsFilter));
+    const list = D.cards.filter(c => (!q || c.family.toLowerCase().includes(q)) && (!st.clsFilter || c.cls === st.clsFilter) && taxoMatch(st, c));
     const clsChip = st.clsFilter
       ? `<button class="facet on" data-action="facet-class">Class: <b>${esc(st.clsFilter)}</b> <span class="facet-x" data-action="facet-class-clear">✕</span></button>`
       : `<button class="facet" data-action="facet-class">Class ▾</button>`;
@@ -2093,7 +2127,7 @@
         <input class="ovl-search" placeholder="Search family…" value="${esc(st.search)}" data-action="cards-search">
         <button class="ovl-close" data-action="close-ovl">✕</button></div>
       <div class="overlay-body"><div class="ovl-center"><div class="ovl-filterbar">
-        ${clsChip}
+        ${clsChip}${taxoFilterBar(st)}
         <button class="facet" data-action="cards-all-on" ${applyAll ? "disabled" : ""}>All on</button>
         <button class="facet" data-action="cards-all-off" ${applyAll ? "disabled" : ""}>All off</button>
         <button class="facet ${applyAll ? "on" : ""}" data-action="cards-applyall" title="Ignore saved selections and treat every card as maxed">Apply all</button></div>
@@ -2530,7 +2564,12 @@
         if (sc[k] > 0) { sc[k]--; if (!sc[k]) delete sc[k]; refreshOverlay(); } break; }
       case "facet-class": openFacetPicker("class"); break;
       case "facet-race": openFacetPicker("race"); break;
-      case "facet-taxo": openFacetPicker("taxo-cat"); break;
+      case "facet-taxo": {
+        const idxByKind = { cards: cardTaxoIndex, relic: relicTaxoIndex };
+        const f = idxByKind[ovState.kind];
+        openFacetPicker("taxo-cat", f ? { idx: f() } : {});   // creature default = taxoIndex()
+        break;
+      }
       case "anoint-taxo": openFacetPicker("taxo-cat", { idx: anointTaxoIndex() }); break;
       case "anoint-spec": openFacetPicker("anoint-spec"); break;
       case "anoint-spec-clear": e.stopPropagation(); ovState.specFilter = null; refreshOverlay(); break;
