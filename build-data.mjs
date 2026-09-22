@@ -791,6 +791,59 @@ for (const cl of CLASSES) {
   if (copyNamedSprite(`card_bg_${norm(cl.key)}`, OUT_CARDBG, dest)) classBg[cl.key] = `assets/cardbg/${dest}`;
 }
 
+// ── God Shops reference (per-god favor shops) ─────────────────────────────────
+// god_shop_ref.json: flat {god,tier,item,price,type,description}; group per god, sorted by tier.
+const godShopRecs = readJSON(path.join(REF, 'god_shop_ref.json'));
+const godShopArr = Array.isArray(godShopRecs) ? godShopRecs : (godShopRecs.records || Object.values(godShopRecs));
+const godShopMap = new Map();
+for (const r of godShopArr) {
+  if (!r.god) continue;
+  if (!godShopMap.has(r.god)) godShopMap.set(r.god, []);
+  godShopMap.get(r.god).push({ tier: parseInt(r.tier, 10) || 0, item: r.item || '', type: r.type || null,
+    price: parseInt(r.price, 10) || null, desc: r.description || '' });
+}
+const godShops = [...godShopMap.entries()].sort((a, b) => a[0].localeCompare(b[0]))
+  .map(([god, items]) => ({ god, items: items.sort((a, b) => a.tier - b.tier || a.item.localeCompare(b.item)) }));
+console.log(`  god shops: ${godShops.length} gods · ${godShopArr.length} items`);
+
+// ── Realms reference ──────────────────────────────────────────────────────────
+// realms_ref.json: {god("Name, God of X"), realm, class, godspawn, gemstone, realm_creatures[], other[]}.
+// The flat `other` list is section-delimited; parse it into encounters / resources / unique objects
+// (each unique object carries 4 Realm-Instability tier thresholds → interaction reward).
+const realmRecs = readJSON(path.join(REF, 'realms_ref.json'));
+const realmArr = Array.isArray(realmRecs) ? realmRecs : (realmRecs.records || Object.values(realmRecs));
+const cleanRealmVal = (v) => { const s = (v == null ? '' : String(v)).trim(); return s && s !== 'N/A' && s !== '-' ? s : null; };
+function parseRealmOther(other) {
+  const encounters = [], resources = [], uniques = []; let sec = 'enc', cur = null;
+  for (const e of other || []) {
+    const lbl = (e.label || '').trim(); const val = cleanRealmVal(e.value);
+    if (/^Resource\b/i.test(lbl)) { sec = 'res'; continue; }
+    if (/^Unique Realm Objects/i.test(lbl)) { sec = 'uniq'; continue; }
+    if (/^Realm Creatures/i.test(lbl)) { sec = 'enc'; continue; }
+    if (sec === 'uniq') {
+      if (/^\d+$/.test(lbl)) { if (cur && val) cur.tiers.push({ at: +lbl, effect: val }); }
+      else { const m = lbl.match(/^(.*?)\s*\[(\d+)\]\s*$/); cur = { name: m ? m[1].trim() : lbl, baseCount: m ? +m[2] : null, tiers: [] }; uniques.push(cur); }
+    } else if (sec === 'res') { if (val) resources.push({ object: lbl, resource: val }); }
+    else { if (val) encounters.push({ name: lbl, value: val }); }
+  }
+  return { encounters, resources, uniques };
+}
+const realms = realmArr.map((r, i) => {
+  const godFull = (r.god || '').trim();
+  const godName = godFull.split(',')[0].trim();               // short name (matches god-shop `god`)
+  const parsed = parseRealmOther(r.other);
+  return {
+    id: i, god: godFull, godName, realm: r.realm || godName,
+    cls: CLASS_SET.has(r.class) ? r.class : null,
+    gemstone: cleanRealmVal(r.gemstone), godspawn: cleanRealmVal(r.godspawn),
+    creatures: (r.realm_creatures || []).filter(Boolean),
+    ...parsed,
+  };
+});
+const shopGods = new Set(godShops.map(g => g.god));
+for (const rm of realms) rm.hasShop = shopGods.has(rm.godName);   // cross-link to the God Shop reference
+console.log(`  realms: ${realms.length} · ${realms.reduce((n, r) => n + r.uniques.length, 0)} unique objects · ${realms.filter(r => r.hasShop).length} w/ god shop`);
+
 // class + per-race 16×16 emblem icons (shown top-left on each creature tile in place of the class rail)
 const OUT_CLSICON = path.join(OUT_ASSETS, 'clsicons');
 const OUT_RACEICON = path.join(OUT_ASSETS, 'raceicons');
@@ -1175,6 +1228,8 @@ const SU_DATA = {
   personalities: PERSONALITIES,
   runes,                    // False God difficulty runes (18) + authored theme counters
   realmProps,               // Realm-Instability realm properties (56) + authored theme/class counters
+  godShops,                 // per-god favor shops (22 gods) — reference
+  realms,                   // 30 realms + denizens/resources/instability-tier objects — reference
   buildThemes: BUILD_THEMES,// detectable build intents (Action/Mechanic taxonomy) for the Threats advisor
   skins,                    // alternate creature skins, gated by code-grounded race/creature restriction
   scrollMax: 15,            // creatures consume up to 15 stat scrolls total, each +1 base stat (L_ID_SCROLL_*)

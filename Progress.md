@@ -42,6 +42,24 @@ No verify-before-push ceremony (no real users yet) — but every change is check
 - Fed by `_su_extract` via `build-data.mjs` (gitignored extract; only used assets copied). Data model in
   `SPEC_PLAN.md`, pipeline in `WIKI_CONTEXT.md`.
 
+## 2026-09-21 — session 4q (Realms + God Shops reference pages)
+Two new read-only reference overlays (Menu → **Realms**, **God Shops**).
+- **build-data**: `godShops` (from `god_shop_ref.json` — 22 gods × ~21 items, grouped per god, sorted by tier;
+  each `{tier,item,type,price,desc}`) + `realms` (from `realms_ref.json` — 30 realms; the flat section-
+  delimited `other` array is parsed into `encounters`/`resources`/`uniques`, each unique object carrying its
+  4 **Realm-Instability tier thresholds** → interaction reward). Realm `godName` = short name (before the
+  comma); `hasShop` cross-links the 21 realms whose god runs a shop.
+- **God Shops overlay** (`openGodShops`/`renderGodShops`): left god list (item count) + right item list
+  (name · type chip · **favor price ✦** · description); search matches item/type/desc.
+- **Realms overlay** (`openRealms`/`renderRealms`): left realm list (class-dot + god) + right detail —
+  facts (God/Class/Gemstone/Godspawn via the `.spell-stats` grid), **Roaming creatures** as sprite chips
+  (`realmCritFor` resolves race/name → a representative creature sprite), Encounters, Resources, and
+  **Realm objects → Instability rewards** (each object's 4 tier rows: `≥N instability → effect`). Realms
+  with a shop get a **"View <god>'s God Shop ›"** cross-link button (`realm-shop` → `openGodShops(god)`).
+- Menu gained a separator + the two items; searches wired in `onInput`; `.opt-row.on` selected style +
+  realm-crit/realm-uniq/realm-tier/gs-price CSS. jsdom `refpages_smoke.mjs` 19/19 (data shape, both
+  overlays, selection, cross-link lands on the right god); all suites green. Shipped to `master`.
+
 ## 2026-09-21 — session 4p (taxonomy PROVENANCE — surface how each tag was derived)
 Clarified/hardened how taxonomy is derived and made the source surfaceable on demand. **Derivation is NOT a
 naive prose heuristic**: each tag carries a `src` from the pipeline — `token` (the game's own structured
@@ -824,8 +842,8 @@ What works end-to-end:
 ### New helper / reference ideas (2026-09-21 — user backlog)
 - [x] **Realm Property + False God rune helper** — DONE (session 4k) as the combined **Threats**
       advisor: detects build theme from tags, surfaces realm properties + runes that counter it.
-- [ ] **Realm reference** — the realms (`Realm_REF.csv`) + their properties/denizens/resources.
-- [ ] **God shop reference** — per-god favor shops (`god_shop_ref.json` / `shops.json`), items + prices.
+- [x] **Realm reference** — DONE (session 4q): Menu → Realms (denizens/resources/instability-tier objects + god-shop cross-link).
+- [x] **God shop reference** — DONE (session 4q): Menu → God Shops (per-god items, type, favor price, description).
 - [ ] **Godforge helper** — Godforge (spell-gem enchant / artifact forging) planner.
 - [x] **Add spell-gem icons to the Appendix** — DONE (session 4n): class gem icon + charges·potency meta on
       each Appendix spell row; plus a spell-gem info panel (charges/potency/target/source).

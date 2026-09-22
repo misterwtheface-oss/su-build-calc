@@ -27,6 +27,14 @@
 
   // ── indices ──────────────────────────────────────────────────────────────
   const CREA = new Map(D.creatures.map(c => [c.id, c]));
+  // name/race → representative creature (for the Realms reference: realm creatures are race names,
+  // godspawn is a creature name). First match wins.
+  const CREA_BY_NAME = new Map(), RACE_REP = new Map();
+  for (const c of D.creatures) {
+    const nk = (c.name || "").toLowerCase(); if (nk && !CREA_BY_NAME.has(nk)) CREA_BY_NAME.set(nk, c);
+    if (c.sprite && c.race && !RACE_REP.has(c.race)) RACE_REP.set(c.race, c);
+  }
+  const realmCritFor = (name) => CREA_BY_NAME.get((name || "").toLowerCase()) || RACE_REP.get(name) || null;
   const SPEC = new Map(D.specs.map(s => [s.id, s]));
   const TRAIT = D.traits;                                   // id -> {name,desc,cls,produces,consumes,labels}
   const CLS_COLOR = Object.fromEntries(D.classes.map(c => [c.key, c.color]));
@@ -1521,6 +1529,89 @@
     </div></div>`;
   }
 
+  // ── God Shops reference ─────────────────────────────────────────────────────
+  function openGodShops(godName) {
+    const gs = D.godShops || [];
+    ovState = { kind: "godshops", search: "", sel: godName || (gs[0] ? gs[0].god : null), render: renderGodShops };
+    openOverlay(ovState.render()); maybeFocusSearch(OV);
+  }
+  function renderGodShops() {
+    const st = ovState, q = st.search.trim().toLowerCase(), gs = D.godShops || [];
+    const sel = gs.find(g => g.god === st.sel) || null;
+    const tiles = gs.map(g => `<button class="opt-row ${st.sel === g.god ? "on" : ""}" data-action="gs-god" data-g="${esc(g.god)}"><span>${esc(g.god)}</span><span class="opt-chev">${g.items.length}</span></button>`).join("");
+    const typeChip = (t) => t ? `<span class="anoint-spec-tag">${esc(t)}</span>` : "";
+    let items = sel ? sel.items : [];
+    if (q) items = items.filter(it => it.item.toLowerCase().includes(q) || (it.desc || "").toLowerCase().includes(q) || (it.type || "").toLowerCase().includes(q));
+    const rows = items.map(it => `<div class="perk-line">
+      <div class="perk-line-body">
+        <div class="perk-line-head"><b>${esc(it.item)}</b><span class="perk-line-meta">${typeChip(it.type)}${it.price != null ? `<span class="gs-price" title="Favor">${it.price} ✦</span>` : ""}</span></div>
+        ${it.desc ? `<div class="perk-desc">${esc(it.desc)}</div>` : ""}</div></div>`).join("")
+      || `<div class="slot-sub" style="padding:10px">No items match.</div>`;
+    const info = sel ? `<div class="ns-info-head"><h3>${esc(sel.god)}</h3></div>
+      <div class="section-label">Shop items — ${sel.items.length}</div>
+      <div class="perk-list">${rows}</div>` : `<div class="slot-sub" style="padding:12px">Select a god.</div>`;
+    return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel">
+      <div class="overlay-header"><h2>God Shops</h2>
+        <input class="ovl-search" placeholder="Search items…" value="${esc(st.search)}" data-action="gs-search">
+        <button class="ovl-close" data-action="close-ovl">✕</button></div>
+      <div class="overlay-body">
+        <div class="ovl-left"><div class="opt-list">${tiles}</div></div>
+        <div class="ovl-center"><div class="ovl-center-scroll">${info}</div></div>
+      </div>
+      <div class="overlay-footer"><span class="foot-info"></span><button class="btn-confirm" data-action="close-ovl">Done</button></div>
+    </div></div>`;
+  }
+
+  // ── Realms reference ────────────────────────────────────────────────────────
+  function openRealms(realmId) {
+    const rs = D.realms || [];
+    ovState = { kind: "realms", search: "", sel: realmId != null ? realmId : (rs[0] ? rs[0].id : null), render: renderRealms };
+    openOverlay(ovState.render()); maybeFocusSearch(OV);
+  }
+  function realmCritChip(name) {
+    const c = realmCritFor(name);
+    return `<span class="realm-crit" title="${esc(name)}">${c ? spriteImg(c.sprite, "rc-ico") : ""}<span>${esc(name)}</span></span>`;
+  }
+  function renderRealms() {
+    const st = ovState, q = st.search.trim().toLowerCase(), rs = D.realms || [];
+    const match = (r) => !q || r.realm.toLowerCase().includes(q) || r.godName.toLowerCase().includes(q)
+      || r.creatures.some(c => c.toLowerCase().includes(q));
+    const list = rs.filter(match);
+    const sel = rs.find(r => r.id === st.sel) || null;
+    const tiles = list.map(r => `<button class="opt-row ${st.sel === r.id ? "on" : ""}" data-action="realm-sel" data-id="${r.id}">
+      <span class="opt-dot" style="background:${clsColor(r.cls)}"></span><span>${esc(r.realm)}</span><span class="anoint-spec-tag">${esc(r.godName)}</span></button>`).join("")
+      || `<div class="slot-sub" style="padding:10px">No realms match.</div>`;
+    let info = `<div class="slot-sub" style="padding:12px">Select a realm.</div>`;
+    if (sel) {
+      const facts = [["God", esc(sel.god)], ["Class", sel.cls ? `<span style="color:${clsColor(sel.cls)};font-weight:700">${esc(sel.cls)}</span>` : "—"],
+        ["Gemstone", sel.gemstone ? esc(sel.gemstone) : "—"], ["Godspawn", sel.godspawn ? esc(sel.godspawn) : "—"]]
+        .map(([k, v]) => `<div class="ss-row"><span class="ss-k">${k}</span><span class="ss-v">${v}</span></div>`).join("");
+      const creatures = sel.creatures.length ? `<div class="section-label">Roaming creatures</div>
+        <div class="realm-crits">${sel.creatures.map(realmCritChip).join("")}</div>` : "";
+      const encounters = sel.encounters.length ? `<div class="section-label">Encounters</div>
+        <div class="prop-list">${sel.encounters.map(e => `<div class="prop-row static"><span class="prop-name">${esc(e.name)}</span><span class="prop-stat">${esc(e.value)}</span></div>`).join("")}</div>` : "";
+      const resources = sel.resources.length ? `<div class="section-label">Resources</div>
+        <div class="prop-list">${sel.resources.map(e => `<div class="prop-row static"><span class="prop-name">${esc(e.object)}</span><span class="prop-stat">${esc(e.resource)}</span></div>`).join("")}</div>` : "";
+      const uniques = sel.uniques.length ? `<div class="section-label">Realm objects — Instability rewards</div>
+        ${sel.uniques.map(u => `<div class="realm-uniq"><div class="realm-uniq-head"><b>${esc(u.name)}</b>${u.baseCount != null ? `<span class="anoint-spec-tag">×${u.baseCount}</span>` : ""}</div>
+          ${u.tiers.map(t => `<div class="realm-tier"><span class="rt-at" title="Realm Instability ≥ ${t.at}">${t.at}</span><span class="rt-eff">${esc(t.effect)}</span></div>`).join("")}</div>`).join("")}` : "";
+      const shopLink = sel.hasShop ? `<button class="facet" data-action="realm-shop" data-g="${esc(sel.godName)}" style="margin-top:10px">View ${esc(sel.godName)}'s God Shop ›</button>` : "";
+      info = `<div class="ns-info-head"><h3>${esc(sel.realm)}</h3></div>
+        <div class="spell-stats">${facts}</div>${shopLink}
+        ${creatures}${encounters}${resources}${uniques}`;
+    }
+    return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel">
+      <div class="overlay-header"><h2>Realms</h2>
+        <input class="ovl-search" placeholder="Search realm / god / creature…" value="${esc(st.search)}" data-action="realm-search">
+        <button class="ovl-close" data-action="close-ovl">✕</button></div>
+      <div class="overlay-body">
+        <div class="ovl-left"><div class="opt-list">${tiles}</div></div>
+        <div class="ovl-center"><div class="ovl-center-scroll">${info}</div></div>
+      </div>
+      <div class="overlay-footer"><span class="foot-info"></span><button class="btn-confirm" data-action="close-ovl">Done</button></div>
+    </div></div>`;
+  }
+
   function openSynergy() { ovState = { kind: "synergy", view: "matrix", sharedOnly: false, expanded: new Set(), listCollapsed: new Set(), render: renderSynergy }; openOverlay(ovState.render()); }
 
   // Matrix view — rows = members (Spec/Anointments/creatures expandable to their effect sub-rows),
@@ -2478,6 +2569,13 @@
       case "iconpick-cat-clear": e.stopPropagation(); dovState.cat = null; refreshDetail(); break;
       case "iconpick-pick": { const w = (D.wardrobe || []).find(x => x.sprite === t.dataset.k); if (w && dovState.onPick) dovState.onPick(w); closeDetail(); refreshOverlay(); break; }
       case "open-appendix": openAppendix(); break;
+      case "open-realms": openRealms(); break;
+      case "open-godshops": openGodShops(); break;
+      case "realm-sel": ovState.sel = +t.dataset.id; refreshOverlay(); break;
+      case "realm-search": break;   // handled in onInput
+      case "realm-shop": openGodShops(t.dataset.g); break;
+      case "gs-god": ovState.sel = t.dataset.g; refreshOverlay(); break;
+      case "gs-search": break;      // handled in onInput
       case "open-threats": openThreats(); break;
       case "threat-theme": {
         const k = t.dataset.k;
@@ -2787,7 +2885,7 @@
     if (A === "builds-name") { ovState.draft.name = v; return; }
     // search fields — live filter without losing caret
     const searchMap = { "crea-search": [OV, ovState], "spec-search": [OV, ovState], "artb-search": [OV, ovState],
-      "relic-search": [OV, ovState], "cards-search": [OV, ovState], "anoint-search": [OV, ovState], "nether-search": [OV, ovState], "sg-search": [OV, ovState], "appendix-search": [OV, ovState], "facet-search": [DOV, dovState], "perk-search": [DOV, dovState], "pers-search": [DOV, dovState], "iconpick-search": [DOV, dovState], "skin-search": [DOV, dovState] };
+      "relic-search": [OV, ovState], "cards-search": [OV, ovState], "anoint-search": [OV, ovState], "nether-search": [OV, ovState], "sg-search": [OV, ovState], "appendix-search": [OV, ovState], "gs-search": [OV, ovState], "realm-search": [OV, ovState], "facet-search": [DOV, dovState], "perk-search": [DOV, dovState], "pers-search": [DOV, dovState], "iconpick-search": [DOV, dovState], "skin-search": [DOV, dovState] };
     if (searchMap[A]) {
       const [root, state] = searchMap[A]; state.search = v;
       if (A === "crea-search") resetCreaPage();   // new query → back to page 1
