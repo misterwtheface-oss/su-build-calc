@@ -757,6 +757,13 @@ What works end-to-end:
 - [ ] DPS / effective-stat simulation from `damageModel` (spell & melee, crit/dodge, defending). Expose
       class-advantage multiplier as a toggle (unconfirmed in extract).
 - [ ] Perk-tree picker per specialization (perks[] already in data + now taxo-tagged; needs tree layout).
+- [ ] **Revisit CSV-provenance data (harden vs code)** — several shipped fields come from the user's
+      community compendium CSVs (`_raw_csv/*_REF.csv` / `*_ref.json`), NOT code, so they can be stale/wrong
+      (recall Affliction CSV charges 17 vs code 14). Come back and re-ground them against the datamine /
+      in-game where possible, or at least tag provenance in the UI. Known CSV-sourced fields today:
+      **spell `potency`/`target`/`source`** (spells_ref.json — charges are already code), **god base-stat
+      null-fills** (Creature_REF.csv, 14 creatures), **perk→spec membership + anoint/ascension flags**
+      (Perk_REF.csv), **amber name→stat map** (user sheet). Audit each; prefer code, mark the rest.
 
 ### Later (P2)
 - [ ] Spell-gem loadouts (potency tiers already in `damageModel`).
