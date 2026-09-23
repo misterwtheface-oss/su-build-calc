@@ -867,12 +867,13 @@ What works end-to-end:
 - [x] Boss/NYI trait taxo mapped on the backend for a future boss-prep planner (`trait_meta.scope`).
 
 ### Next up (P1)
-- [x] **Glossary icons** (2026-09-23): wired the in-game status glyph sets onto `D.conditions` —
+- [x] **Glossary icons** (2026-09-23): wired the in-game status glyph sets onto `D.conditions` — **65/65** —
       Buff→`stat_g_<name>`, Debuff→`stat_b_<name>`, Minion→`stat_m_<name>`, plus a small alias map for the
-      CONDNAME→sprite-stem gaps (Stunned→stun, Mania→drunk, six Inner Demons sins share `stat_m_innerdemons`).
-      Coverage 60/65: all 18 buffs + 20 debuffs, 22/27 minions. The 5 minions with no `stat_m_` sprite
-      (Brimfiend/Chaos Satyr/Fire Imp/Leviathan/Microbot) render iconless — no fallback (existence-gated to keep
-      the 404 guard clean). `assets/condicons/<cat>_<slug>.png`; rendered as `.gloss-icon` in the glossary rows.
+      CONDNAME→sprite-stem gaps (Stunned→stun, Mania→drunk, Repelling→splash). The 11 Demonologist summon-minions
+      (six Inner Demons sins + Brimfiend/Chaos Satyr/Fire Imp/Leviathan/Microbot) have no `stat_m_` glyph, so a
+      full-base override routes them to the dedicated `m_<name>` portrait set — giving each sin its own icon
+      rather than a shared generic. `assets/condicons/<cat>_<slug>.png`; rendered as `.gloss-icon` in glossary
+      rows. Existence-gated so any future gap renders iconless without tripping the 404 guard.
 - [ ] **Threat-set icons**: both threat sources have icons to wire onto the Threats page (per the Realm Props |
       False God toggle) — Realm Property icons (`realmprop_e_<slug>` sprites, ~32 exist but slug ≠ `L_RP_` key,
       so the join was deferred) and False God rune icons. Find/curate the joins like realm icons + realm objects.
