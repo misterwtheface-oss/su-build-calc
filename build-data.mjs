@@ -1060,8 +1060,28 @@ console.log(`  nether colour options: ${netherColors.mains.length} mains · ${ne
 
 // ── plain-language term map (labels.json) — turns {TOKEN} params into UI words ──
 const labelsMap = readJSON(path.join(SRC, 'labels.json')).labels;
+// Display-name overrides for condition tokens whose extracted label is a mashed single word
+// (the game stores e.g. "Animatedgem"/"Brimfiend"/"Zombie"; proper UI names are multi-word / pluralized).
+// Keyed by the full CONDNAME token so it patches BOTH the runtime {TOKEN} humanizer (terms → app.js
+// termWord) AND the baked glossary/prose names (condName below) from one source. Icon slugs are keyed off
+// the stable CONDNAME suffix, NOT these display names, so overriding here never disturbs the icon join.
+const CONDNAME_OVERRIDE = {
+  CONDNAME_MINION_ANIMATEDGEM: 'Animated Gem',
+  CONDNAME_MINION_ANIMATEDWEAPON: 'Animated Weapon',
+  CONDNAME_MINION_BRIMFIEND: 'Brim Fiends',
+  CONDNAME_MINION_CHAOSSATYR: 'Chaos Satyrs',
+  CONDNAME_MINION_FIREIMP: 'Fire Imps',
+  CONDNAME_MINION_GUARDIANOFSURATHLI: 'Guardian of Surathli',
+  CONDNAME_MINION_LITTLETORUN: 'Torun Junior',
+  CONDNAME_MINION_MICROBOT: 'Microbots',
+  CONDNAME_MINION_SPIDERLING: 'Spiderlings',
+  CONDNAME_MINION_UNSTABLEHORROR: 'Unstable Horror',
+  CONDNAME_MINION_WRITHELING: 'Writhelings',
+  CONDNAME_MINION_ZOMBIE: 'Zombies',
+};
 const terms = {};
 for (const [k, v] of Object.entries(labelsMap)) terms[k] = (v && v.name) || k;
+Object.assign(terms, CONDNAME_OVERRIDE);   // runtime {CONDNAME_*} tokens in trait/spell/perk text
 
 // ── damage / stat model (for fusion + future DPS sim) ──
 const damageModel = readJSON(path.join(MODEL, 'damage_model.json'));
@@ -1073,7 +1093,7 @@ const macroVocab = readJSON(path.join(MODEL, 'macro_vocab.json'));
 // ── Buff / Debuff / Minion glossary — L_CDESC_* prose from vocabulary.csv + CONDNAME_* names (labels.json),
 // with runtime tokens ({CONDNAME_*}/{STAT_*}/{ACTION_*}) expanded to plain text. 65 conditions. ──
 const STAT_TOK = { health: 'Health', attack: 'Attack', intelligence: 'Intelligence', defense: 'Defense', speed: 'Speed', mana: 'Mana' };
-const condName = (cat, suf) => (labelsMap[`CONDNAME_${cat}_${suf}`] || {}).name || (suf[0] + suf.slice(1).toLowerCase());
+const condName = (cat, suf) => CONDNAME_OVERRIDE[`CONDNAME_${cat}_${suf}`] || (labelsMap[`CONDNAME_${cat}_${suf}`] || {}).name || (suf[0] + suf.slice(1).toLowerCase());
 const expandCond = (t) => {
   if (!t) return '';
   return t
@@ -1088,7 +1108,8 @@ for (const r of parseCSVRaw(fs.readFileSync(path.join(REF, '..', 'localization',
   const m = /^L_CDESC_(BUFF|DEBUFF|MINION)_(.+)$/.exec(r[0] || '');
   if (!m) continue;
   const cat = m[1][0] + m[1].slice(1).toLowerCase();   // Buff / Debuff / Minion
-  conditions.push({ cat, name: condName(m[1], m[2]), desc: expandCond(r[2] || '') });
+  // `key` = the stable CONDNAME suffix (icon-slug source, immune to display-name overrides)
+  conditions.push({ cat, key: m[2].toLowerCase().replace(/[^a-z0-9]/g, ''), name: condName(m[1], m[2]), desc: expandCond(r[2] || '') });
 }
 conditions.sort((a, b) => a.cat.localeCompare(b.cat) || a.name.localeCompare(b.name));
 
@@ -1115,7 +1136,7 @@ const COND_ICON_OVERRIDE = {
 fs.rmSync(OUT_CONDICON, { recursive: true, force: true });
 let condIconHits = 0;
 for (const c of conditions) {
-  const s0 = c.name.toLowerCase().replace(/[^a-z0-9]/g, '');
+  const s0 = c.key;   // stable CONDNAME suffix — not the (overridable) display name
   const base = COND_ICON_OVERRIDE[s0] || (COND_ICON_PRE[c.cat] + (COND_ICON_ALIAS[s0] || s0));
   const dest = `${c.cat.toLowerCase()}_${s0}.png`;
   // Existence-gate so a documented, fallback-free gap never trips the 404 guard — a miss renders iconless.
