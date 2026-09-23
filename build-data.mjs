@@ -859,7 +859,41 @@ const REALM_ACRONYMS = {
 // user-dispositioned outliers. key "<realm>::<object>": string = exact sprite base (e.g. "tol_bigtreasure").
 // NOTE: encounter/boss/creature objects DO have sprites (the in-world object that triggers them on
 // interaction) — they're slug mismatches, not "no sprite". null is reserved for the rare true no-object row.
-const REALM_OBJ_OVERRIDE = {};
+const REALM_OBJ_OVERRIDE = {
+  'Forgotten Lab::Inactive Automatons': 'fl_robohead', 'Forgotten Lab::Robot Assembly': 'fl_machine',
+  'Forgotten Lab::Schematic': 'fl_circuit', 'Forgotten Lab::Weapon Pile': 'fl_weapons',
+  'Unsullied Meadows::Gem Pile': 'um_gems', 'Unsullied Meadows::Nomads': 'um_tent',
+  'Forbidden Depths::Blue Magnetic Stone': 'fdp_bluemagnet', 'Forbidden Depths::Music Crystal': 'fdp_musiccrystals',
+  'Forbidden Depths::Red Magnetic Stone': 'fdp_redmagnet', 'Forbidden Depths::Waspid Hive': 'fdp_bughive',
+  'Land of Breath and Balance::Bookshelves': 'lobab_book', 'Land of Breath and Balance::Figurines': 'lobab_horse',
+  'Land of Breath and Balance::Left-Tipping Scales': 'lobab_scaleleft', 'Land of Breath and Balance::Right-Tipping Scales': 'lobab_scaleright',
+  'Temple of Lies::Giant Gems': 'tol_giantgem', 'Temple of Lies::Large Treasure Chest': 'tol_bigtreasure',
+  'Path of the Damned::Death Blossom': 'ptd_flower', 'Path of the Damned::Illuminated Skull Candle': 'ptd_skullcandle',
+  'Path of the Damned::Mushroom': 'ptd_mushrooms', 'Path of the Damned::Skull Pile': 'ptd_skulls',
+  'Where the Dead Ships Dwell::Doubloons': 'wdsd_doubloon', 'Where the Dead Ships Dwell::Large Treasure Chest': 'wdsd_treasure',
+  'Overgrown Temple::Bookshelves': 'ot_bookshelf',
+  'Kingdom of Heretics::Bloodstain': 'kh_blood', 'Kingdom of Heretics::Book Shelves': 'kh_books',
+  'Kingdom of Heretics::Cache': 'kh_satchel', 'Kingdom of Heretics::Potion Shelves': 'kh_potions',
+  'Faraway Enclave::Altar': 'fe_moai', 'Faraway Enclave::Drake Egg': 'fe_eggs',
+  'The Swamplands::Im Cave': 'swm_ims',
+  "Titan's Wound::Large Treasure Chest": 'tw_bigchest', "Titan's Wound::Zit": 'tw_zits',
+  'Astral Gallery::Animation Statue': 'ag_greenstatue', 'Astral Gallery::Large Treasure Chest': 'ag_bigtreasure',
+  'Sanctum Umbra::Angel Statue': 'su_statueangel', 'Sanctum Umbra::Demon Statue': 'su_statuedevil',
+  'Sanctum Umbra::King Shrine/Statue': 'su_statuemonarch',
+  "Gambler's Hive::Large Slot Machine": 'gh_bigslots', "Gambler's Hive::Small Slot Machine": 'gh_smallslots',
+  'Fae Lands::Dream Catcher': 'fae_dreamcatch',
+  'Azure Dream::Portal Boss': 'ad_plasmaportal', 'Azure Dream::Star': 'ad_starpiece',
+  'Amalgam Gardens::Blue Runestone': 'amg_bluerune', 'Amalgam Gardens::Red Runestone': 'amg_redrune',
+  "Amalgam Gardens::Eyes of T'mere M'rgo": 'amg_eyeportal', 'Amalgam Gardens::Neon Rose': 'amg_roses',
+  'Torture Chamber::Parchment': 'tc_paper', 'Torture Chamber::Torture Device': 'tc_rack',
+  'Bastion of the Void::Shadow Locker': 'btv_shadowcage', 'Bastion of the Void::Wisp': 'btv_wisps',
+  'Cutthroat Jungle::Orange Fruit Tree': 'cj_treeo', 'Cutthroat Jungle::Pink Fruit Tree': 'cj_treep',
+  'Cutthroat Jungle::Yellow Fruit Tree': 'cj_treey',
+  'Caustic Reactor::Concoction': 'cr_slime',
+  "Eternity's End::Arcane Orb": 'ee_orbarcane', "Eternity's End::Moon Orb": 'ee_orbmoon', "Eternity's End::Sun Orb": 'ee_orbsun',
+  'Great Pandemonium::Apocalypse Nest': 'gpn_devilnest', 'Great Pandemonium::Magma Orb': 'gpn_magmaball',
+  'Refuge of the Magi::Grimoire Shelves': 'rfm_bookshelf',
+};
 const realmObjSlugs = (name) => { const w = name.toLowerCase().replace(/[^a-z0-9 ]/g, '').split(/\s+/).filter(Boolean);
   return [...new Set([w.join(''), w.slice(0, 2).join(''), w[0], w[w.length - 1]].filter(Boolean))]; };
 fs.rmSync(OUT_REALMOBJ, { recursive: true, force: true });
