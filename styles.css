@@ -924,11 +924,6 @@ h1, h2, h3 { margin: 0; }
 .build-icon-pick .slot-empty-icon { font-size: 26px; }
 
 /* artifact builder wizard */
-.art-steps { display: flex; align-items: center; gap: 6px; margin-left: auto; flex-wrap: wrap; }
-.art-step { font-size: 11px; color: var(--text-mute); padding: 2px 6px; border-radius: 5px; }
-.art-step.on { color: var(--bg); background: var(--accent2); font-weight: 700; }
-.art-step.done { color: var(--accent2); }
-.art-step-sep { color: var(--text-mute); font-size: 11px; }
 .art-type-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 10px; }
 .art-type-tile { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 12px 8px;
   background: var(--surface); border: 1px solid var(--border-dim); border-radius: 10px; cursor: pointer; text-align: center; }

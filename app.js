@@ -669,10 +669,6 @@
   const sortCreatures = (list, key) => key
     ? list.slice().sort((a, b) => (b[key] || 0) - (a[key] || 0) || (a.name || "").localeCompare(b.name || ""))
     : list;
-  const CREA_STEPS = ["primary", "fusion", "customize"];
-  const CREA_STEP_LABELS = { primary: "Creature", fusion: "Fusion", customize: "Customize" };
-  const renderCreaStepbar = (step) => `<div class="art-steps">${CREA_STEPS.map(s =>
-    `<span class="art-step ${s === step ? "on" : ""} ${CREA_STEPS.indexOf(s) < CREA_STEPS.indexOf(step) ? "done" : ""}">${CREA_STEP_LABELS[s]}</span>`).join("<span class='art-step-sep'>›</span>")}</div>`;
   function openCreaturePicker(slotIdx) {
     const slot = build.slots[slotIdx];
     ovState = {
@@ -708,7 +704,7 @@
       const footer = `<button class="btn-ghost" data-action="crea-back">‹ Back</button>
         <button class="btn-confirm" data-action="crea-confirm" ${st.primaryId == null ? "disabled" : ""}>${st.fusionId == null ? "Commit (no fusion)" : "Commit fusion"}</button>`;
       return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel">
-        <div class="overlay-header"><h2>Customize</h2>${renderCreaStepbar(st.step)}
+        <div class="overlay-header"><h2>Customize</h2>
           <button class="ovl-close" data-action="close-ovl">✕</button></div>
         <div class="overlay-body">
           <div class="ovl-center"><div class="ovl-center-scroll">${renderCreatureCustomize(st, true)}</div></div>
@@ -778,7 +774,6 @@
     return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel">
       <div class="overlay-header"><h2>${title}</h2>
         <input class="ovl-search" placeholder="Search name / trait / race…" value="${esc(st.search)}" data-action="crea-search">
-        ${renderCreaStepbar(st.step)}
         <button class="ovl-close" data-action="close-ovl">✕</button></div>
       <div class="overlay-body">
         <div class="ovl-center">${filterbar}${sortbar}
@@ -2166,11 +2161,6 @@
     ovState = { kind: "artbuild", artId, slotIdx, draft, step: artId != null ? "slots" : "type", pickType: null, search: "", render: renderArtifactBuilder };
     openOverlay(ovState.render());
   }
-  const artStepLabels = { type: "1 · Pick artifact", slots: "2 · Fill slots", name: "3 · Name it" };
-  function renderArtStepbar(step) {
-    return `<div class="art-steps">${["type", "slots", "name"].map(s =>
-      `<span class="art-step ${s === step ? "on" : ""} ${["type", "slots", "name"].indexOf(s) < ["type", "slots", "name"].indexOf(step) ? "done" : ""}">${artStepLabels[s]}</span>`).join("<span class='art-step-sep'>›</span>")}</div>`;
-  }
   // artifact slots step — right-hand info panel: picker list › item preview (confirm) › live bonus
   const artSlotKey = (type) => (ART_SLOTS.find(s => s.pick === type) || {}).key;
   const artHas = (a, type, v) => (a[artSlotKey(type)] || []).includes(v);
@@ -2336,7 +2326,7 @@
     return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel detail">
       <div class="overlay-header">
         <span class="hdr-ico">${spriteImg(artIcon(a), "px")}</span>
-        <h2>${esc(a.name)}</h2>${renderArtStepbar(st.step)}
+        <h2>${esc(a.name)}</h2>
         <button class="ovl-close" data-action="close-ovl">✕</button></div>
       <div class="overlay-body">${body}</div>
       <div class="overlay-footer"><span class="foot-info"></span>
@@ -2951,9 +2941,6 @@
     ovState = { kind: "sgbuild", editId: id, draft, step: id != null ? "props" : "spell", search: "", render: renderSpellGemBuilder };
     openOverlay(ovState.render());
   }
-  const sgStepLabels = { spell: "1 · Pick spell", props: "2 · Properties" };
-  const renderSgStepbar = (step) => `<div class="art-steps">${["spell", "props"].map(s =>
-    `<span class="art-step ${s === step ? "on" : ""} ${["spell", "props"].indexOf(s) < ["spell", "props"].indexOf(step) ? "done" : ""}">${sgStepLabels[s]}</span>`).join("<span class='art-step-sep'>›</span>")}</div>`;
   function renderSpellGemBuilder() {
     const st = ovState, g = st.draft, q = st.search.trim().toLowerCase();
     let body = "", footer = "";
@@ -3011,7 +2998,7 @@
     }
     return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel detail">
       <div class="overlay-header"><span class="hdr-ico">${spriteImg(gemIcon(g), "px")}</span>
-        <h2>${esc(gemName(g) || "New Spell Gem")}</h2>${renderSgStepbar(st.step)}
+        <h2>${esc(gemName(g) || "New Spell Gem")}</h2>
         <button class="ovl-close" data-action="close-ovl">✕</button></div>
       <div class="overlay-body">${body}</div>
       <div class="overlay-footer"><span class="foot-info"></span><div>${footer}</div></div>
