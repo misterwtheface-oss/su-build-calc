@@ -867,9 +867,12 @@ What works end-to-end:
 - [x] Boss/NYI trait taxo mapped on the backend for a future boss-prep planner (`trait_meta.scope`).
 
 ### Next up (P1)
-- [ ] **Realm object sprite — 1 outlier**: Amalgam Gardens "Abandoned Cave" has no matched sprite (it's NOT
-      `amg_chimera` nor `amg_puddle`). 181/182 objects matched; find the correct `amg_*` sprite later and add to
-      `REALM_OBJ_OVERRIDE` in build-data.mjs. (Low priority — renders cleanly with no icon.)
+- [ ] **Antiquarian anointment eligibility — VALIDATE**: Antiquarian (13 perks) isn't in `Perk_REF.csv`, so
+      all its perks default to `anointment:false` and never appear in the Anointments overlay — but some are
+      likely anointable in-game. Flagged in data as `perk.anointValidate:true` (build-data.mjs). Confirm which
+      Antiquarian perks are anointable in-game, then set their anoint flag (needs a per-perk override since
+      the CSV doesn't cover them).
+- [x] **Realm object sprites** — DONE: 182/182 objects matched, 0 dupes (Abandoned Cave = `amg_chimera`).
 - [ ] **Boss-prep planner element** — surface the boss/enemy trait taxo (`trait_meta.scope=boss_enemy_flavor`,
       already in `data.js`) as a "prepare for this fight / what to expect" view. Verify tags in-game first.
 - [x] **Taxonomy of remaining surfaces** — DONE (session 4o): Realm Cards + Relics classified (LLM batch)

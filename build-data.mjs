@@ -456,6 +456,9 @@ for (const s of specRecs) {
     return { key: p.key, name, desc: pdesc,
              cost: st ? st.cost : (p.cost ?? null), ranks: st ? st.ranks : (p.ranks || 1), icon,
              anointment: fl ? !!fl.anoint : false, ascension: fl ? !!fl.asc : false,
+             // Antiquarian isn't in Perk_REF.csv → all its perks default to anointment:false, but some are
+             // likely anointable in-game. Flag them for validation (Progress.md backlog) so we can revisit.
+             anointValidate: /antiquarian/i.test(s.label) || undefined,
              taxo: pTaxo, taxoSrc: taxoSrcArr(perkTaxoByKey[p.key], pTaxo) };
   });
   const falseGod = godBySpec.get(norm(s.label)) || null;
@@ -902,6 +905,7 @@ const REALM_OBJ_OVERRIDE = {
   'Fae Lands::Fae': 'fae_fae', 'Fae Lands::Fae Cache': 'fae_treasure',
   'Fae Lands::Fae Fountain': 'fae_fountain', 'Fae Lands::Mischievous Fae': 'fae_fairy',
   'Cutthroat Jungle::Fruit': 'cj_fruito',
+  'Amalgam Gardens::Abandoned Cave': 'amg_chimera',
 };
 const realmObjSlugs = (name) => { const w = name.toLowerCase().replace(/[^a-z0-9 ]/g, '').split(/\s+/).filter(Boolean);
   return [...new Set([w.join(''), w.slice(0, 2).join(''), w[0], w[w.length - 1]].filter(Boolean))]; };
