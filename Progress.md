@@ -937,6 +937,12 @@ What works end-to-end:
 - Class-advantage multiplier + Nether Stone numerics are runtime/in-game-only (see WIKI_CONTEXT) → modelled around.
 
 ## Session log
+- 2026-09-22: **Riddle Dwarf** (Menu → Riddle Dwarf). One-screen fast trivia lookup for the in-game Riddle
+  Dwarf: type the given name → answer surfaces instantly across all 4 forms — Class of [Spell], Class of
+  [Creature], Ruler of [Realm], Realm of [Ruler] — grouped by answer type, prefix-matches first, class answers
+  colour-coded + class icon. `openRiddle`/`renderRiddle`, `riddle-search` in the onInput registry. No menu
+  navigation; reads D.spells/creatures/realms.
+- 2026-09-22: **God Shops** rebuilt to the Realms stepped flow (full list → full detail, no info panel).
 - 2026-09-22: **God battle sprites + more Realms polish.** Curated `GOD_BSPR` map (30 gods → `bspr_god_*`
   battle sprite; 8 by name, 22 theme/arena names user-dispositioned) → `assets/godbattle/`, emitted as
   `realm.godBattle` + `godShop.battle`. Shown in the **God Shop** (row + header) and on **realm pages**, where
