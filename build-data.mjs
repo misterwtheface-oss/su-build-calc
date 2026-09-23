@@ -1095,26 +1095,30 @@ conditions.sort((a, b) => a.cat.localeCompare(b.cat) || a.name.localeCompare(b.n
 // Condition icons — the in-game status glyph sets keyed by category:
 //   Buff → stat_g_<name>, Debuff → stat_b_<name>, Minion → stat_m_<name>.
 // A small alias map bridges the few naming gaps between the CONDNAME_* labels and the sprite stems
-// (e.g. Stunned→stun, Mania→drunk, the six Inner Demons sins share stat_m_innerdemons). The 5 minions
-// with no stat_m_ sprite (Brimfiend/Chaos Satyr/Fire Imp/Leviathan/Microbot) render iconless — no fallback.
+// (e.g. Stunned→stun, Mania→drunk). The Demonologist summon-minions (the six Inner Demons sins + Brimfiend/
+// Chaos Satyr/Fire Imp/Leviathan/Microbot) have no stat_m_ glyph — they use the dedicated m_<name> minion
+// portrait set instead (gives each sin its own icon rather than the generic stat_m_innerdemons).
 const COND_ICON_PRE = { Buff: 'stat_g_', Debuff: 'stat_b_', Minion: 'stat_m_' };
 const COND_ICON_ALIAS = {
   // buffs
   leeching: 'leech', mending: 'mend', protected: 'protect', immune: 'immunity', warded: 'ward', gracious: 'grace', repelling: 'splash',
   // debuffs
   burned: 'burn', disarmed: 'disarm', snared: 'snare', stunned: 'stun', mania: 'drunk',
-  // minions
+  // minions (stat_m_ set)
   littletorun: 'liltorun', unstablehorror: 'shamblinghorror',
-  asmodeus: 'innerdemons', beelzebub: 'innerdemons', belphegor: 'innerdemons', lucifer: 'innerdemons', mammon: 'innerdemons', satanachia: 'innerdemons',
+};
+// Full-base overrides (prefix included) — the m_<name> Demonologist-summon minion portraits.
+const COND_ICON_OVERRIDE = {
+  brimfiend: 'm_brimfiend', chaossatyr: 'm_chaossatyr', fireimp: 'm_fireimps', leviathan: 'm_leviathan', microbot: 'm_microbots',
+  asmodeus: 'm_asmodeus', beelzebub: 'm_beelzebub', belphegor: 'm_belphegor', lucifer: 'm_lucifer', mammon: 'm_mammon', satanachia: 'm_satanachia',
 };
 fs.rmSync(OUT_CONDICON, { recursive: true, force: true });
 let condIconHits = 0;
 for (const c of conditions) {
   const s0 = c.name.toLowerCase().replace(/[^a-z0-9]/g, '');
-  const base = COND_ICON_PRE[c.cat] + (COND_ICON_ALIAS[s0] || s0);
+  const base = COND_ICON_OVERRIDE[s0] || (COND_ICON_PRE[c.cat] + (COND_ICON_ALIAS[s0] || s0));
   const dest = `${c.cat.toLowerCase()}_${s0}.png`;
-  // These 5 minions (Brimfiend/Chaos Satyr/Fire Imp/Leviathan/Microbot) have no stat_m_ status glyph;
-  // skip the copy so we don't trip the 404 guard on a documented, fallback-free gap — they render iconless.
+  // Existence-gate so a documented, fallback-free gap never trips the 404 guard — a miss renders iconless.
   const exists = fs.existsSync(path.join(SRC_SPEC_PNG, `${base}_0.png`)) || fs.existsSync(path.join(SRC_SPEC_PNG, `${base}.png`));
   if (exists && copyNamedSprite(base, OUT_CONDICON, dest)) { c.icon = `assets/condicons/${dest}`; condIconHits++; }
 }
