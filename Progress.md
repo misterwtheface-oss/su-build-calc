@@ -867,6 +867,8 @@ What works end-to-end:
 - [x] Boss/NYI trait taxo mapped on the backend for a future boss-prep planner (`trait_meta.scope`).
 
 ### Next up (P1)
+- [ ] **Glossary icons**: the Buff/Debuff/Minion glossary (Menu → Glossary) ships name + prose but no icons.
+      Find/curate the status/minion icon sprites and add them to `D.conditions` (each entry → sprite path).
 - [ ] **Threat-set icons**: both threat sources have icons to wire onto the Threats page (per the Realm Props |
       False God toggle) — Realm Property icons (`realmprop_e_<slug>` sprites, ~32 exist but slug ≠ `L_RP_` key,
       so the join was deferred) and False God rune icons. Find/curate the joins like realm icons + realm objects.
@@ -937,6 +939,10 @@ What works end-to-end:
 - Class-advantage multiplier + Nether Stone numerics are runtime/in-game-only (see WIKI_CONTEXT) → modelled around.
 
 ## Session log
+- 2026-09-23: **Buff/Debuff/Minion glossary** (Menu → Glossary). 65 conditions with in-game prose, sourced from
+  `_su_extract` vocabulary.csv `L_CDESC_{BUFF,DEBUFF,MINION}_*` (NOT the codex.json topics; names via
+  labels.json `CONDNAME_*`), runtime tokens expanded in build-data → `D.conditions` [{cat,name,desc}]. Overlay
+  groups Buff(18)/Debuff(20)/Minion(27) with category filter + search. Icons backlogged.
 - 2026-09-22: **Riddle Dwarf** (Menu → Riddle Dwarf). One-screen fast trivia lookup for the in-game Riddle
   Dwarf: type the given name → answer surfaces instantly across all 4 forms — Class of [Spell], Class of
   [Creature], Ruler of [Realm], Realm of [Ruler] — grouped by answer type, prefix-matches first, class answers
