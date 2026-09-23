@@ -1666,8 +1666,10 @@
     openOverlay(ovState.render()); maybeFocusSearch(OV);
   }
   function renderRiddle() {
-    const st = ovState, q = st.search.trim().toLowerCase(), CAP = 12;
-    const rank = (name) => name.toLowerCase().startsWith(q) ? 0 : 1;   // exact-prefix hits first
+    // normalize away punctuation so a query missing it still hits — e.g. "tmer" → T'mere M'rgo
+    const nrm = (s) => String(s || "").toLowerCase().replace(/[^a-z0-9\s]/g, "");
+    const st = ovState, q = nrm(st.search).trim(), CAP = 12;
+    const rank = (name) => nrm(name).startsWith(q) ? 0 : 1;   // exact-prefix hits first
     const clsAns = (cls) => `<span class="riddle-a" style="color:${clsColor(cls)}">${D.classIcons && D.classIcons[cls] ? spriteImg(D.classIcons[cls], "px") : ""}${esc(cls || "—")}</span>`;
     const row = (name, ans) => `<div class="riddle-row"><span class="riddle-q">${esc(name)}</span>${ans}</div>`;
     const section = (title, items) => items.length ? `<div class="section-label">${title}</div><div class="riddle-list">${items.join("")}</div>` : "";
@@ -1677,10 +1679,10 @@
         <ul><li><b>Class of</b> a spell or creature</li><li><b>Ruler of</b> a realm</li><li><b>Realm of</b> a ruler (god)</li></ul></div>`;
     } else {
       const byName = (k) => (a, b) => rank(a[k]) - rank(b[k]) || a[k].localeCompare(b[k]);
-      const spells = D.spells.filter(s => s.name.toLowerCase().includes(q)).sort(byName("name")).slice(0, CAP).map(s => row(s.name, clsAns(s.cls)));
-      const creatures = D.creatures.filter(c => c.name.toLowerCase().includes(q)).sort(byName("name")).slice(0, CAP).map(c => row(c.name, clsAns(c.cls)));
-      const realms = D.realms.filter(r => r.realm.toLowerCase().includes(q)).sort(byName("realm")).map(r => row(r.realm, `<span class="riddle-a">${esc(r.godName)}</span>`));
-      const gods = D.realms.filter(r => r.godName.toLowerCase().includes(q) || (r.god || "").toLowerCase().includes(q)).sort(byName("godName")).map(r => row(r.godName, `<span class="riddle-a">${esc(r.realm)}</span>`));
+      const spells = D.spells.filter(s => nrm(s.name).includes(q)).sort(byName("name")).slice(0, CAP).map(s => row(s.name, clsAns(s.cls)));
+      const creatures = D.creatures.filter(c => nrm(c.name).includes(q)).sort(byName("name")).slice(0, CAP).map(c => row(c.name, clsAns(c.cls)));
+      const realms = D.realms.filter(r => nrm(r.realm).includes(q)).sort(byName("realm")).map(r => row(r.realm, `<span class="riddle-a">${esc(r.godName)}</span>`));
+      const gods = D.realms.filter(r => nrm(r.godName).includes(q) || nrm(r.god).includes(q)).sort(byName("godName")).map(r => row(r.godName, `<span class="riddle-a">${esc(r.realm)}</span>`));
       body = section("Class of Spell", spells) + section("Class of Creature", creatures) + section("Ruler of Realm", realms) + section("Realm of Ruler", gods)
         || `<div class="slot-sub" style="padding:10px">No spell, creature, realm or god matches “${esc(st.search)}”.</div>`;
     }
