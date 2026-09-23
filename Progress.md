@@ -867,6 +867,9 @@ What works end-to-end:
 - [x] Boss/NYI trait taxo mapped on the backend for a future boss-prep planner (`trait_meta.scope`).
 
 ### Next up (P1)
+- [ ] **Realm object sprite — 1 outlier**: Amalgam Gardens "Abandoned Cave" has no matched sprite (it's NOT
+      `amg_chimera` nor `amg_puddle`). 181/182 objects matched; find the correct `amg_*` sprite later and add to
+      `REALM_OBJ_OVERRIDE` in build-data.mjs. (Low priority — renders cleanly with no icon.)
 - [ ] **Boss-prep planner element** — surface the boss/enemy trait taxo (`trait_meta.scope=boss_enemy_flavor`,
       already in `data.js`) as a "prepare for this fight / what to expect" view. Verify tags in-game first.
 - [x] **Taxonomy of remaining surfaces** — DONE (session 4o): Realm Cards + Relics classified (LLM batch)
@@ -928,6 +931,13 @@ What works end-to-end:
 - Class-advantage multiplier + Nether Stone numerics are runtime/in-game-only (see WIKI_CONTEXT) → modelled around.
 
 ## Session log
+- 2026-09-22: **Realm object sprites (item 6).** Joined breakable-object sprites to realm objects via a
+  curated 30-realm acronym map (`REALM_ACRONYMS`) + word-slug matching + a hand-dispositioned
+  `REALM_OBJ_OVERRIDE` (build-data.mjs), copied to `assets/realmobjects/`, shown as an icon per Realm-objects
+  row. **181/182 objects matched, 0 duplicate sprite assignments** (audited — fixed 4 first-word slug
+  collisions: Gears/Cards/Spider/Fae). Also renamed the realm ICON (`god_<name>` → `realm.icon`,
+  `assets/realmicons/`). Validated via contact-sheet screenshots. 1 backlog outlier: Amalgam Gardens
+  "Abandoned Cave" (no matching amg_* sprite found yet).
 - 2026-09-22: **Realms reference overhaul.** Stepped page (list → full-screen detail, no split panel);
   **Realm | God sort toggle**; **god portraits** on every row + detail header (build-data copies the canonical
   `god_<name>` sprite 30/30 → `assets/gods`, emits `realm.godSprite`); **race icons** for roaming races
