@@ -1694,6 +1694,37 @@
     </div></div>`;
   }
 
+  // ── Glossary — Buff / Debuff / Minion reference (name + prose from the game). Icons: backlog. ──
+  function openGlossary() {
+    ovState = { kind: "glossary", search: "", cat: null, render: renderGlossary };
+    openOverlay(ovState.render()); maybeFocusSearch(OV);
+  }
+  const GLOSSARY_CATS = ["Buff", "Debuff", "Minion"];
+  function renderGlossary() {
+    const st = ovState, q = st.search.trim().toLowerCase(), all = D.conditions || [];
+    const catChip = (c) => `<button class="facet ${st.cat === c ? "on" : ""}" data-action="gloss-cat" data-c="${c}">${c}${st.cat === c ? ` <span class="facet-x" data-action="gloss-cat-clear">✕</span>` : ""}</button>`;
+    const match = (e) => (!st.cat || e.cat === st.cat) && (!q || e.name.toLowerCase().includes(q) || e.desc.toLowerCase().includes(q));
+    const list = all.filter(match);
+    const catCls = (c) => c === "Buff" ? "cat-roaming" : c === "Debuff" ? "cat-encounter" : "cat-godshop";
+    const body = GLOSSARY_CATS.map(c => {
+      const items = list.filter(e => e.cat === c);
+      if (!items.length) return "";
+      return `<div class="section-label">${c}s — ${items.length}</div>
+        ${items.map(e => `<div class="gloss-row"><div class="gloss-head"><b>${esc(e.name)}</b><span class="realm-cat ${catCls(c)}">${c}</span></div>
+          <div class="perk-desc">${esc(e.desc)}</div></div>`).join("")}`;
+    }).join("") || `<div class="slot-sub" style="padding:10px">No buff, debuff or minion matches “${esc(st.search)}”.</div>`;
+    return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel">
+      <div class="overlay-header"><h2>Glossary</h2>
+        <input class="ovl-search" placeholder="Search buffs / debuffs / minions…" value="${esc(st.search)}" data-action="gloss-search">
+        <button class="ovl-close" data-action="close-ovl">✕</button></div>
+      <div class="overlay-body"><div class="ovl-center">
+        <div class="ovl-filterbar">${GLOSSARY_CATS.map(catChip).join("")}<span class="foot-info">${list.length} of ${all.length}</span></div>
+        <div class="ovl-center-scroll">${body}</div>
+      </div></div>
+      <div class="overlay-footer"><span class="foot-info"></span><button class="btn-confirm" data-action="close-ovl">Done</button></div>
+    </div></div>`;
+  }
+
   // ── Realms reference ────────────────────────────────────────────────────────
   function openRealms(realmId) {
     ovState = { kind: "realms", search: "", sortBy: "realm",
@@ -3058,6 +3089,10 @@
       case "open-godshops": openGodShops(); break;
       case "open-riddle": openRiddle(); break;
       case "riddle-search": break;   // handled in onInput
+      case "open-glossary": openGlossary(); break;
+      case "gloss-search": break;    // handled in onInput
+      case "gloss-cat": ovState.cat = t.dataset.c; refreshOverlay(); break;
+      case "gloss-cat-clear": e.stopPropagation(); ovState.cat = null; refreshOverlay(); break;
       case "realm-sel": ovState.sel = +t.dataset.id; ovState.view = "detail"; refreshOverlay(); break;
       case "realm-back": ovState.view = "list"; refreshOverlay(); maybeFocusSearch(OV); break;
       case "realm-sort": ovState.sortBy = t.dataset.v; refreshOverlay(); break;
@@ -3393,7 +3428,7 @@
     if (A === "builds-name") { ovState.draft.name = v; return; }
     // search fields — live filter without losing caret
     const searchMap = { "crea-search": [OV, ovState], "spec-search": [OV, ovState], "artb-search": [OV, ovState],
-      "relic-search": [OV, ovState], "cards-search": [OV, ovState], "anoint-search": [OV, ovState], "nether-search": [OV, ovState], "sg-search": [OV, ovState], "appendix-search": [OV, ovState], "gs-search": [OV, ovState], "realm-search": [OV, ovState], "riddle-search": [OV, ovState], "facet-search": [DOV, dovState], "perk-search": [DOV, dovState], "pers-search": [DOV, dovState], "iconpick-search": [DOV, dovState], "skin-search": [DOV, dovState] };
+      "relic-search": [OV, ovState], "cards-search": [OV, ovState], "anoint-search": [OV, ovState], "nether-search": [OV, ovState], "sg-search": [OV, ovState], "appendix-search": [OV, ovState], "gs-search": [OV, ovState], "realm-search": [OV, ovState], "riddle-search": [OV, ovState], "gloss-search": [OV, ovState], "facet-search": [DOV, dovState], "perk-search": [DOV, dovState], "pers-search": [DOV, dovState], "iconpick-search": [DOV, dovState], "skin-search": [DOV, dovState] };
     if (searchMap[A]) {
       const [root, state] = searchMap[A]; state.search = v;
       if (A === "crea-search") resetCreaPage();   // new query → back to page 1

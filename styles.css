@@ -741,6 +741,10 @@ h1, h2, h3 { margin: 0; }
 .riddle-q { font-weight: 600; min-width: 0; }
 .riddle-a { font-weight: 800; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
 .riddle-a img { width: 18px; height: 18px; object-fit: contain; image-rendering: pixelated; }
+/* Glossary — buff/debuff/minion reference rows */
+.gloss-row { border: 1px solid var(--border-dim); border-radius: 8px; padding: 8px 10px; margin-bottom: 6px; background: var(--surface); }
+.gloss-head { display: flex; align-items: center; gap: 8px; margin-bottom: 3px; }
+.gloss-head b { flex: 1; min-width: 0; }
 .riddle-hint { color: var(--text-dim); padding: 12px; line-height: 1.5; }
 .riddle-hint b { color: var(--accent); }
 .riddle-hint ul { margin: 8px 0 0; padding-left: 18px; }

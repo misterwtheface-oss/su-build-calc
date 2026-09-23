@@ -1069,6 +1069,29 @@ const damageModel = readJSON(path.join(MODEL, 'damage_model.json'));
 // Grounded in SiralimUltimate.exe scr_Macro* + L_MACRO_* localization (see _su_extract/code/MACRO_MODEL.md).
 const macroVocab = readJSON(path.join(MODEL, 'macro_vocab.json'));
 
+// ── Buff / Debuff / Minion glossary — L_CDESC_* prose from vocabulary.csv + CONDNAME_* names (labels.json),
+// with runtime tokens ({CONDNAME_*}/{STAT_*}/{ACTION_*}) expanded to plain text. 65 conditions. ──
+const STAT_TOK = { health: 'Health', attack: 'Attack', intelligence: 'Intelligence', defense: 'Defense', speed: 'Speed', mana: 'Mana' };
+const condName = (cat, suf) => (labelsMap[`CONDNAME_${cat}_${suf}`] || {}).name || (suf[0] + suf.slice(1).toLowerCase());
+const expandCond = (t) => {
+  if (!t) return '';
+  return t
+    .replace(/\{CONDNAME_(BUFF|DEBUFF|MINION)_([A-Z0-9]+)\}/g, (_, c, s) => condName(c, s))
+    .replace(/\{STAT_([a-z]+)\}/g, (_, s) => STAT_TOK[s] || (s[0].toUpperCase() + s.slice(1)))
+    .replace(/\{ACTION_([a-z]+)\}/g, (_, s) => s)
+    .replace(/\{[^}]+\}/g, (m) => { const p = m.slice(1, -1).split('_').pop(); return p[0] + p.slice(1).toLowerCase(); })
+    .replace(/\s+/g, ' ').trim();
+};
+const conditions = [];
+for (const r of parseCSVRaw(fs.readFileSync(path.join(REF, '..', 'localization', 'vocabulary.csv'), 'utf8'))) {
+  const m = /^L_CDESC_(BUFF|DEBUFF|MINION)_(.+)$/.exec(r[0] || '');
+  if (!m) continue;
+  const cat = m[1][0] + m[1].slice(1).toLowerCase();   // Buff / Debuff / Minion
+  conditions.push({ cat, name: condName(m[1], m[2]), desc: expandCond(r[2] || '') });
+}
+conditions.sort((a, b) => a.cat.localeCompare(b.cat) || a.name.localeCompare(b.name));
+console.log(`  conditions glossary: ${conditions.length} (${['Buff', 'Debuff', 'Minion'].map(c => c + ' ' + conditions.filter(x => x.cat === c).length).join(' · ')})`);
+
 // ── player wardrobe (every equippable player costume; names/tiers pre-resolved in wardrobe.json) ──
 // Pull EVERY costume sprite into assets/wardrobe/<sprite>.png; consume the enriched extract artifact.
 fs.rmSync(OUT_WARDROBE, { recursive: true, force: true });
@@ -1375,6 +1398,7 @@ const SU_DATA = {
   terms,
   damageModel,
   macroVocab,                // creature-AI Macro vocabulary → Macro Proposal engine
+  conditions,                // Buff / Debuff / Minion glossary (name + prose)
   wardrobe,
   spells,
   spellGems,
