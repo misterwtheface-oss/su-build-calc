@@ -948,8 +948,17 @@ What works end-to-end:
 ## Session log
 - 2026-09-23: **Buff/Debuff/Minion glossary** (Menu → Glossary). 65 conditions with in-game prose, sourced from
   `_su_extract` vocabulary.csv `L_CDESC_{BUFF,DEBUFF,MINION}_*` (NOT the codex.json topics; names via
-  labels.json `CONDNAME_*`), runtime tokens expanded in build-data → `D.conditions` [{cat,name,desc}]. Overlay
-  groups Buff(18)/Debuff(20)/Minion(27) with category filter + search. Icons backlogged.
+  labels.json `CONDNAME_*`), runtime tokens expanded in build-data → `D.conditions` [{cat,key,name,desc,icon,taxo,taxoSrc}].
+  Overlay groups Buff(18)/Debuff(20)/Minion(27) with category filter + search. **Icons** (65/65) + **taxonomy**
+  now wired (see below).
+- 2026-09-23: **Condition taxonomy in the entity viewer.** Buffs/debuffs/minions are a 5th taxonomy surface —
+  glossary rows are clickable → `openEntityDetail("condition", "<Cat>:<key>")`, rendering the same grouped
+  taxonomy chips as traits/spells/relics. Tags = per-description classification pass vs the canonical
+  `tag_taxonomy.json` (identity Related tag src=token + semantic tags src=llm; e.g. Agile→Dodge/More Dodge
+  Chance, Berserk→Deal More Damage, Conquest→Apply a Buff). 65/65 tagged · 248 tags; every (cat,val) validated
+  against the vocabulary and identity tags validated to exist on a real trait/spell. Generator:
+  `_su_extract/code/build_condition_tags.mjs` → `condition_taxonomy_tags.json`; `build-data` attaches
+  `taxo`/`taxoSrc`; app.js adds `CONDITION` map + `resolveEntity("condition")`.
 - 2026-09-22: **Riddle Dwarf** (Menu → Riddle Dwarf). One-screen fast trivia lookup for the in-game Riddle
   Dwarf: type the given name → answer surfaces instantly across all 4 forms — Class of [Spell], Class of
   [Creature], Ruler of [Realm], Realm of [Ruler] — grouped by answer type, prefix-matches first, class answers
