@@ -1620,7 +1620,7 @@
   function renderGodShops() {
     const st = ovState, q = st.search.trim().toLowerCase(), gs = D.godShops || [];
     const sel = gs.find(g => g.god === st.sel) || null;
-    const tiles = gs.map(g => `<button class="opt-row ${st.sel === g.god ? "on" : ""}" data-action="gs-god" data-g="${esc(g.god)}"><span>${esc(g.god)}</span><span class="opt-chev">${g.items.length}</span></button>`).join("");
+    const tiles = gs.map(g => `<button class="opt-row ${st.sel === g.god ? "on" : ""}" data-action="gs-god" data-g="${esc(g.god)}">${g.battle ? `<span class="gs-god-ico">${spriteImg(g.battle, "px")}</span>` : ""}<span>${esc(g.god)}</span><span class="opt-chev">${g.items.length}</span></button>`).join("");
     const typeChip = (t) => t ? `<span class="anoint-spec-tag">${esc(t)}</span>` : "";
     let items = sel ? sel.items : [];
     if (q) items = items.filter(it => it.item.toLowerCase().includes(q) || (it.desc || "").toLowerCase().includes(q) || (it.type || "").toLowerCase().includes(q));
@@ -1629,7 +1629,7 @@
         <div class="perk-line-head"><b>${esc(it.item)}</b><span class="perk-line-meta">${typeChip(it.type)}${it.price != null ? `<span class="gs-price" title="Favor">${it.price} ✦</span>` : ""}</span></div>
         ${it.desc ? `<div class="perk-desc">${esc(it.desc)}</div>` : ""}</div></div>`).join("")
       || `<div class="slot-sub" style="padding:10px">No items match.</div>`;
-    const info = sel ? `<div class="ns-info-head"><h3>${esc(sel.god)}</h3></div>
+    const info = sel ? `<div class="ns-info-head">${sel.battle ? `<div class="realm-icon-lg">${spriteImg(sel.battle, "px")}</div>` : ""}<h3>${esc(sel.god)}</h3></div>
       <div class="section-label">Shop items — ${sel.items.length}</div>
       <div class="perk-list">${rows}</div>` : `<div class="slot-sub" style="padding:12px">Select a god.</div>`;
     return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel">
@@ -1660,8 +1660,10 @@
     const list = rs.filter(match).sort((a, b) => st.sortBy === "god"
       ? a.godName.localeCompare(b.godName) || a.realm.localeCompare(b.realm)
       : a.realm.localeCompare(b.realm));
+    // the Realm | God toggle also picks the icon: Realm → realm icon, God → god battle sprite
+    const heroIco = (x) => st.sortBy === "god" ? (x.godBattle || x.icon) : (x.icon || x.godBattle);
     const rows = list.map(r => `<button class="realm-row" data-action="realm-sel" data-id="${r.id}">
-      <span class="realm-icon">${r.icon ? spriteImg(r.icon, "px") : ""}</span>
+      <span class="realm-icon">${heroIco(r) ? spriteImg(heroIco(r), "px") : ""}</span>
       <span class="opt-dot" style="background:${clsColor(r.cls)}"></span>
       <span class="realm-row-name">${esc(r.realm)}</span>
       <span class="anoint-spec-tag">${esc(r.godName)}</span>
@@ -1710,7 +1712,8 @@
       <div class="overlay-header"><button class="btn-ghost" data-action="realm-back">‹ Realms</button>
         <h2 style="flex:1">${esc(sel.realm)}</h2><button class="ovl-close" data-action="close-ovl">✕</button></div>
       <div class="overlay-body"><div class="ovl-center"><div class="ovl-center-scroll">
-        <div class="realm-detail-head">${sel.icon ? `<div class="realm-icon-lg">${spriteImg(sel.icon, "px")}</div>` : ""}
+        <div class="realm-detail-head">${(() => { const ico = ovState.sortBy === "god" ? (sel.godBattle || sel.icon) : (sel.icon || sel.godBattle);
+          return ico ? `<div class="realm-icon-lg">${spriteImg(ico, "px")}</div>` : ""; })()}
           <div class="spell-stats" style="flex:1">${facts}</div></div>
         ${shopLink}${creatures}${encounters}${resources}${uniques}${combos}
       </div></div></div>

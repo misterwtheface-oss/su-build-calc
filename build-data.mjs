@@ -33,6 +33,7 @@ const OUT_SPELLGEM = path.join(OUT_ASSETS, 'spellgems');
 const OUT_PROPGEM = path.join(OUT_ASSETS, 'propgems');
 const OUT_REALMICON = path.join(OUT_ASSETS, 'realmicons');
 const OUT_REALMOBJ = path.join(OUT_ASSETS, 'realmobjects');
+const OUT_GODBATTLE = path.join(OUT_ASSETS, 'godbattle');
 const SRC_PROPGEM = path.join(SRC, 'assets', 'spell_gem_property_icons'); // hand-cropped from in-game Enchanter/Materials UI (no named sprite in the dump)
 
 // ── asset provenance registry — permanent preventive guards on everything we ship ──
@@ -809,8 +810,34 @@ for (const r of godShopArr) {
   godShopMap.get(r.god).push({ tier: parseInt(r.tier, 10) || 0, item: r.item || '', type: r.type || null,
     price: parseInt(r.price, 10) || null, desc: r.description || '' });
 }
+// god BATTLE sprite (bspr_god_<name-or-theme>) → shown on the realm detail page (in place of the realm icon)
+// and in the God Shop. Mapping is hand-curated (theme/arena naming; see _su_extract memory). Keyed by god
+// short-name; copied to assets/godbattle/<godSlug>.png. Memoized so realms + shops share one copy.
+const GOD_BSPR = {
+  'Alexandria': 'alexandria', 'Anneltha': 'anneltha', 'Ariamaki': 'ariamaki', 'Genaros': 'genaros', 'Muse': 'muse',
+  'Reclusa': 'reclusa', 'Shallan': 'shallan', "T'Mere M'rgo": 'tmeremrgo', 'Azural': 'snow', 'Friden': 'underwater',
+  'Gonfurian': 'war', 'Torun': 'jungle', 'Yseros': 'desert', 'Tenebris': 'void', 'Tartarith': 'dungeon', 'Aurum': 'gem',
+  'Aeolian': 'grassland', 'Mortem': 'bloodbone', 'Regalis': 'cave', 'Lister': 'island', '4080': 'robo', 'Vulcanar': 'chaos',
+  'Surathli': 'life', 'Apocranox': 'autumn', 'Erebyss': 'death', 'Meraxis': 'nature', 'Perdition': 'purgatory',
+  'Venedon': 'reactor', 'Vertraag': 'space', 'Zonte': 'sorcery',
+};
+fs.rmSync(OUT_GODBATTLE, { recursive: true, force: true });
+// case-insensitive lookup (the God Shop spells "T'mere M'rgo" vs the realm's "T'Mere M'rgo")
+const GOD_BSPR_CI = Object.fromEntries(Object.entries(GOD_BSPR).map(([k, v]) => [k.toLowerCase(), v]));
+const godBattleCache = {};
+let godBattleHits = 0;
+function godBattleFor(godName) {
+  const slug = godName.replace(/[^a-z0-9]/gi, '').toLowerCase();   // lowercase slug → one file per god
+  if (slug in godBattleCache) return godBattleCache[slug];
+  const sp = GOD_BSPR_CI[godName.toLowerCase()]; let out = null;
+  if (sp) {
+    if (copyNamedSprite('bspr_god_' + sp, OUT_GODBATTLE, `${slug}.png`)) { godBattleHits++; out = `assets/godbattle/${slug}.png`; }
+    else warn(`god battle sprite bspr_god_${sp} missing for "${godName}"`);
+  }
+  return godBattleCache[slug] = out;
+}
 const godShops = [...godShopMap.entries()].sort((a, b) => a[0].localeCompare(b[0]))
-  .map(([god, items]) => ({ god, items: items.sort((a, b) => a.tier - b.tier || a.item.localeCompare(b.item)) }));
+  .map(([god, items]) => ({ god, battle: godBattleFor(god), items: items.sort((a, b) => a.tier - b.tier || a.item.localeCompare(b.item)) }));
 console.log(`  god shops: ${godShops.length} gods · ${godShopArr.length} items`);
 
 // ── Realms reference ──────────────────────────────────────────────────────────
@@ -936,7 +963,7 @@ const realms = realmArr.map((r, i) => {
     id: i, god: godFull, godName, realm: r.realm || godName,
     cls: CLASS_SET.has(r.class) ? r.class : null,
     gemstone: cleanRealmVal(r.gemstone), godspawn: cleanRealmVal(r.godspawn),
-    icon: realmIconFor(godName),
+    icon: realmIconFor(godName), godBattle: godBattleFor(godName),
     creatures: (r.realm_creatures || []).filter(Boolean),
     ...parsed,
   };
