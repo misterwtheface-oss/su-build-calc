@@ -1557,7 +1557,7 @@
   }
   function openThreats() {
     ovState = { kind: "threats", themeMode: "auto", manual: new Set(), showGeneral: false,
-      weights: detectBuildThemes(), render: renderThreats };
+      srcView: "realm", weights: detectBuildThemes(), render: renderThreats };   // "realm" = Realm Props · "fgod" = False God runes
     openOverlay(ovState.render());
   }
   function threatRow(m) {
@@ -1579,13 +1579,21 @@
     }).join("");
     const modeReset = st.themeMode === "manual"
       ? `<button class="chip" data-action="threat-auto">↺ Detected</button>` : "";
-    const counters = active.length || heavy.length ? threatCounters(active, heavy) : [];
+    // source toggle: Realm Props (source "Realm") ⇆ False God runes (source "Rune")
+    const srcView = st.srcView === "fgod" ? "fgod" : "realm";
+    const wantSrc = srcView === "fgod" ? "Rune" : "Realm";
+    const srcToggle = `<div class="art-view-toggle">
+      <button class="av-tab ${srcView === "realm" ? "on" : ""}" data-action="threat-src" data-v="realm">Realm Props</button>
+      <span class="av-pipe">|</span>
+      <button class="av-tab ${srcView === "fgod" ? "on" : ""}" data-action="threat-src" data-v="fgod">False God</button></div>`;
+    const counters = (active.length || heavy.length ? threatCounters(active, heavy) : []).filter(m => m.source === wantSrc);
     const general = [...(D.realmProps || []).map(m => ({ ...m, source: "Realm" })),
                      ...(D.runes || []).map(m => ({ ...m, source: "Rune" }))]
-                    .filter(m => m.general).sort((a, b) => a.name.localeCompare(b.name));
+                    .filter(m => m.general && m.source === wantSrc).sort((a, b) => a.name.localeCompare(b.name));
+    const srcLabel = srcView === "fgod" ? "False God runes" : "realm properties";
     const countersBody = active.length
       ? (counters.length ? counters.map(threatRow).join("")
-          : `<div class="slot-sub" style="padding:10px">Nothing in either system directly counters ${active.map(themeLabel).join(", ")}. Watch the general list below.</div>`)
+          : `<div class="slot-sub" style="padding:10px">No ${srcLabel} directly counter ${active.map(themeLabel).join(", ")}. Watch the general list below.</div>`)
       : `<div class="slot-sub" style="padding:10px">Build a party (creatures + perks) to detect a theme, or pick one above to explore what would counter it.</div>`;
     const genRows = general.map(m => threatRow({ ...m, hitThemes: [], hitClass: null })).join("");
     return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel">
@@ -1593,6 +1601,7 @@
       <div class="overlay-body"><div class="ovl-center"><div class="ovl-center-scroll">
         <div class="thr-intro">${st.themeMode === "manual" ? "Themes you picked" : "Detected build theme"}${active.length ? " — reroll realm properties and skip runes that counter it." : "."}</div>
         <div class="thr-themebar">${chipbar}${modeReset}</div>
+        ${srcToggle}
         <div class="section-label">Counters your build</div>
         <div class="thr-list">${countersBody}</div>
         <button class="thr-genhead ${st.showGeneral ? "open" : ""}" data-action="threat-general">${st.showGeneral ? "▾" : "▸"} Generally punishing <span class="thr-w">${general.length}</span></button>
@@ -3008,6 +3017,7 @@
       }
       case "threat-auto": ovState.themeMode = "auto"; ovState.manual = new Set(); refreshOverlay(); break;
       case "threat-general": ovState.showGeneral = !ovState.showGeneral; refreshOverlay(); break;
+      case "threat-src": ovState.srcView = t.dataset.v; refreshOverlay(); break;
       case "open-synergy": openSynergy(); break;
       case "synergy-view": if (ovState && ovState.view !== t.dataset.view) { ovState.view = t.dataset.view; refreshOverlay(); } break;
       case "toggle-matrix-shared": ovState.sharedOnly = !ovState.sharedOnly; refreshOverlay(); break;
