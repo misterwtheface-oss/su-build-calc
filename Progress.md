@@ -937,6 +937,13 @@ What works end-to-end:
 - Class-advantage multiplier + Nether Stone numerics are runtime/in-game-only (see WIKI_CONTEXT) → modelled around.
 
 ## Session log
+- 2026-09-22: **God battle sprites + more Realms polish.** Curated `GOD_BSPR` map (30 gods → `bspr_god_*`
+  battle sprite; 8 by name, 22 theme/arena names user-dispositioned) → `assets/godbattle/`, emitted as
+  `realm.godBattle` + `godShop.battle`. Shown in the **God Shop** (row + header) and on **realm pages**, where
+  the **Realm|God sort toggle now also drives the icon** (Realm = realm icon, God = god battle sprite) on both
+  list rows and the detail hero. Also wired the **complex-interaction combination tables** (Combination_REF.csv,
+  5 realms) and added the **Threats Realm Props|False God source toggle** + **perk bookmarks** (Appendix/anoint/
+  spec) with an anoint ★ filter. Backlog: threat-set icons.
 - 2026-09-22: **Realm object sprites (item 6).** Joined breakable-object sprites to realm objects via a
   curated 30-realm acronym map (`REALM_ACRONYMS`) + word-slug matching + a hand-dispositioned
   `REALM_OBJ_OVERRIDE` (build-data.mjs), copied to `assets/realmobjects/`, shown as an icon per Realm-objects
