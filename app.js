@@ -1684,12 +1684,13 @@
       body = section("Class of Spell", spells) + section("Class of Creature", creatures) + section("Ruler of Realm", realms) + section("Realm of Ruler", gods)
         || `<div class="slot-sub" style="padding:10px">No spell, creature, realm or god matches “${esc(st.search)}”.</div>`;
     }
-    return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel">
-      <div class="overlay-header"><h2>Riddle Dwarf</h2>
-        <input class="ovl-search" placeholder="Type a spell / creature / realm / god…" value="${esc(st.search)}" data-action="riddle-search">
+    // compact popover anchored top-right — no full overlay, click-outside to close
+    return `<div class="ovl-backdrop riddle-backdrop" data-action="backdrop"><div class="overlay-panel riddle-pop">
+      <div class="riddle-pop-head">
+        <span class="riddle-pop-title">Riddle Dwarf</span>
+        <input class="ovl-search" placeholder="spell / creature / realm / god…" value="${esc(st.search)}" data-action="riddle-search">
         <button class="ovl-close" data-action="close-ovl">✕</button></div>
-      <div class="overlay-body"><div class="ovl-center"><div class="ovl-center-scroll">${body}</div></div></div>
-      <div class="overlay-footer"><span class="foot-info">Answers surface as you type.</span><button class="btn-confirm" data-action="close-ovl">Done</button></div>
+      <div class="riddle-pop-body">${body}</div>
     </div></div>`;
   }
 
