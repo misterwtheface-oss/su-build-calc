@@ -32,6 +32,7 @@ const OUT_MATICON = path.join(OUT_ASSETS, 'maticons');
 const OUT_SPELLGEM = path.join(OUT_ASSETS, 'spellgems');
 const OUT_PROPGEM = path.join(OUT_ASSETS, 'propgems');
 const OUT_REALMICON = path.join(OUT_ASSETS, 'realmicons');
+const OUT_REALMOBJ = path.join(OUT_ASSETS, 'realmobjects');
 const SRC_PROPGEM = path.join(SRC, 'assets', 'spell_gem_property_icons'); // hand-cropped from in-game Enchanter/Materials UI (no named sprite in the dump)
 
 // ── asset provenance registry — permanent preventive guards on everything we ship ──
@@ -842,12 +843,48 @@ const realmIconFor = (godName) => {
   warn(`realm "${godName}" icon sprite missing (${base})`);
   return null;
 };
+// Realm breakable-object sprites follow `<realm-acronym>_<object-slug>_0.png`. The acronym is NOT clean
+// initials (curated map below, discovered from sprite prefixes + hand-corrected collisions). The object slug
+// is usually a word-join of the name; misses are dispositioned via REALM_OBJ_OVERRIDE.
+const REALM_ACRONYMS = {
+  'Forgotten Lab': 'fl', 'Unsullied Meadows': 'um', 'Damarel': 'dmr', 'Forbidden Depths': 'fdp',
+  'Blood Grove': 'bg', 'Land of Breath and Balance': 'lobab', 'Temple of Lies': 'tol', 'Frostbite Cavern': 'fc',
+  'Path of the Damned': 'ptd', 'Where the Dead Ships Dwell': 'wdsd', 'Overgrown Temple': 'ot',
+  'Kingdom of Heretics': 'kh', 'Faraway Enclave': 'fe', 'The Swamplands': 'swm', "Titan's Wound": 'tw',
+  'Astral Gallery': 'ag', 'Sanctum Umbra': 'su', "Gambler's Hive": 'gh', 'Arachnid Nest': 'an',
+  'Fae Lands': 'fae', 'Azure Dream': 'ad', 'Amalgam Gardens': 'amg', 'Torture Chamber': 'tc',
+  'Bastion of the Void': 'btv', 'Cutthroat Jungle': 'cj', 'Caustic Reactor': 'cr', "Eternity's End": 'ee',
+  'Great Pandemonium': 'gpn', 'The Barrens': 'bns', 'Refuge of the Magi': 'rfm',
+};
+// user-dispositioned outliers. key "<realm>::<object>": string = exact sprite base (e.g. "tol_bigtreasure").
+// NOTE: encounter/boss/creature objects DO have sprites (the in-world object that triggers them on
+// interaction) — they're slug mismatches, not "no sprite". null is reserved for the rare true no-object row.
+const REALM_OBJ_OVERRIDE = {};
+const realmObjSlugs = (name) => { const w = name.toLowerCase().replace(/[^a-z0-9 ]/g, '').split(/\s+/).filter(Boolean);
+  return [...new Set([w.join(''), w.slice(0, 2).join(''), w[0], w[w.length - 1]].filter(Boolean))]; };
+fs.rmSync(OUT_REALMOBJ, { recursive: true, force: true });
+let realmObjHits = 0, realmObjMiss = 0;
+function realmObjectSprite(realmName, objName, acr) {
+  const key = `${realmName}::${objName}`;
+  if (key in REALM_OBJ_OVERRIDE) { const ov = REALM_OBJ_OVERRIDE[key];
+    if (!ov) return null;
+    if (copyNamedSprite(ov, OUT_REALMOBJ, `${ov}.png`)) { realmObjHits++; return `assets/realmobjects/${ov}.png`; }
+    warn(`realm-object override ${key} -> "${ov}" sprite not found`); return null; }
+  if (!acr) return null;
+  for (const slug of realmObjSlugs(objName)) { const base = `${acr}_${slug}`;
+    if (fs.existsSync(path.join(SRC_SPEC_PNG, `${base}_0.png`)) || fs.existsSync(path.join(SRC_SPEC_PNG, `${base}.png`))) {
+      if (copyNamedSprite(base, OUT_REALMOBJ, `${base}.png`)) { realmObjHits++; return `assets/realmobjects/${base}.png`; } } }
+  realmObjMiss++; return null;
+}
 const realms = realmArr.map((r, i) => {
   const godFull = (r.god || '').trim();
   const godName = godFull.split(',')[0].trim();               // short name (matches god-shop `god`)
+  const rName = r.realm || godName;
   const parsed = parseRealmOther(r.other);
   // drop junk unique-object rows whose name is a placeholder ("N/A", "-", "—", empty)
   parsed.uniques = parsed.uniques.filter(u => cleanRealmVal(u.name));
+  const racr = REALM_ACRONYMS[rName] || null;
+  parsed.uniques.forEach(u => { u.sprite = realmObjectSprite(rName, u.name, racr); });
   return {
     id: i, god: godFull, godName, realm: r.realm || godName,
     cls: CLASS_SET.has(r.class) ? r.class : null,
@@ -860,6 +897,7 @@ const realms = realmArr.map((r, i) => {
 const shopGods = new Set(godShops.map(g => g.god));
 for (const rm of realms) rm.hasShop = shopGods.has(rm.godName);   // cross-link to the God Shop reference
 console.log(`  realms: ${realms.length} · ${realms.reduce((n, r) => n + r.uniques.length, 0)} unique objects · ${realms.filter(r => r.hasShop).length} w/ god shop`);
+console.log(`  realm object sprites: ${realmObjHits} matched · ${realmObjMiss} need a slug/override`);
 
 // class + per-race 16×16 emblem icons (shown top-left on each creature tile in place of the class rail)
 const OUT_CLSICON = path.join(OUT_ASSETS, 'clsicons');

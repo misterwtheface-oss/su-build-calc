@@ -736,6 +736,8 @@ h1, h2, h3 { margin: 0; }
 .realm-icon-lg img { width: 64px; height: 64px; object-fit: contain; image-rendering: pixelated; }
 .realm-uniq { background: var(--surface); border: 1px solid var(--border-dim); border-radius: 8px; padding: 8px 10px; margin-bottom: 6px; }
 .realm-uniq-head { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+.realm-obj-ico { flex: 0 0 auto; width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; }
+.realm-obj-ico img { width: 24px; height: 24px; object-fit: contain; image-rendering: pixelated; }
 .realm-tier { display: grid; grid-template-columns: 34px 1fr; gap: 8px; align-items: baseline; font-size: 12px; padding: 2px 0; }
 .realm-tier .rt-at { text-align: right; font-weight: 800; color: var(--accent2); font-variant-numeric: tabular-nums; }
 .realm-tier .rt-eff { color: var(--text-dim); }

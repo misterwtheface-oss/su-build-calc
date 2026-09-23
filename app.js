@@ -1689,7 +1689,7 @@
     const resources = sel.resources.length ? `<div class="section-label">Resources</div>
       <div class="prop-list">${sel.resources.map(e => `<div class="prop-row static"><span class="prop-name">${esc(e.object)}</span><span class="prop-stat">${esc(e.resource)}</span></div>`).join("")}</div>` : "";
     const uniques = sel.uniques.length ? `<div class="section-label">Realm objects</div>
-      ${sel.uniques.map(u => `<div class="realm-uniq"><div class="realm-uniq-head"><b>${esc(u.name)}</b>${u.baseCount != null ? `<span class="anoint-spec-tag">×${u.baseCount}</span>` : ""}</div>
+      ${sel.uniques.map(u => `<div class="realm-uniq"><div class="realm-uniq-head">${u.sprite ? `<span class="realm-obj-ico">${spriteImg(u.sprite, "px")}</span>` : ""}<b>${esc(u.name)}</b>${u.baseCount != null ? `<span class="anoint-spec-tag">×${u.baseCount}</span>` : ""}</div>
         ${u.tiers.map(t => `<div class="realm-tier"><span class="rt-at" title="Realm Instability ≥ ${t.at}">${t.at}</span><span class="rt-eff">${esc(t.effect)}</span></div>`).join("")}</div>`).join("")}` : "";
     const shopLink = sel.hasShop ? `<button class="facet" data-action="realm-shop" data-g="${esc(sel.godName)}" style="margin-top:10px">View ${esc(sel.godName)}'s God Shop ›</button>` : "";
     return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel">
