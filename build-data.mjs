@@ -893,6 +893,15 @@ const REALM_OBJ_OVERRIDE = {
   "Eternity's End::Arcane Orb": 'ee_orbarcane', "Eternity's End::Moon Orb": 'ee_orbmoon', "Eternity's End::Sun Orb": 'ee_orbsun',
   'Great Pandemonium::Apocalypse Nest': 'gpn_devilnest', 'Great Pandemonium::Magma Orb': 'gpn_magmaball',
   'Refuge of the Magi::Grimoire Shelves': 'rfm_bookshelf',
+  // de-duped: first-word slug collisions resolved to distinct sprites (one sprite per object)
+  'Damarel::Giant Gears': 'dmr_biggears', 'Damarel::Pile of Gears': 'dmr_gears',
+  "Gambler's Hive::Decks of Cards": 'gh_cards', "Gambler's Hive::Houses of Cards": 'gh_housecards',
+  "Gambler's Hive::Portal Boss": 'gh_gamewheel',
+  'Arachnid Nest::Spider Eggs': 'an_eggs', 'Arachnid Nest::Spider Shrine': 'an_shrine',
+  'Arachnid Nest::Spiderlings': 'an_spider', 'Arachnid Nest::Victim': 'an_webs',
+  'Fae Lands::Fae': 'fae_fae', 'Fae Lands::Fae Cache': 'fae_treasure',
+  'Fae Lands::Fae Fountain': 'fae_fountain', 'Fae Lands::Mischievous Fae': 'fae_fairy',
+  'Cutthroat Jungle::Fruit': 'cj_fruito',
 };
 const realmObjSlugs = (name) => { const w = name.toLowerCase().replace(/[^a-z0-9 ]/g, '').split(/\s+/).filter(Boolean);
   return [...new Set([w.join(''), w.slice(0, 2).join(''), w[0], w[w.length - 1]].filter(Boolean))]; };
