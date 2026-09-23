@@ -1659,6 +1659,40 @@
     </div></div>`;
   }
 
+  // ── Riddle Dwarf — fast trivia lookup (Class of Spell/Creature · Ruler of Realm · Realm of Ruler).
+  // One screen: type the name you're given, the answer surfaces instantly. No menu navigation. ──
+  function openRiddle() {
+    ovState = { kind: "riddle", search: "", render: renderRiddle };
+    openOverlay(ovState.render()); maybeFocusSearch(OV);
+  }
+  function renderRiddle() {
+    const st = ovState, q = st.search.trim().toLowerCase(), CAP = 12;
+    const rank = (name) => name.toLowerCase().startsWith(q) ? 0 : 1;   // exact-prefix hits first
+    const clsAns = (cls) => `<span class="riddle-a" style="color:${clsColor(cls)}">${D.classIcons && D.classIcons[cls] ? spriteImg(D.classIcons[cls], "px") : ""}${esc(cls || "—")}</span>`;
+    const row = (name, ans) => `<div class="riddle-row"><span class="riddle-q">${esc(name)}</span>${ans}</div>`;
+    const section = (title, items) => items.length ? `<div class="section-label">${title}</div><div class="riddle-list">${items.join("")}</div>` : "";
+    let body;
+    if (q.length < 2) {
+      body = `<div class="riddle-hint">The Riddle Dwarf gives you a name — type it to reveal the answer:
+        <ul><li><b>Class of</b> a spell or creature</li><li><b>Ruler of</b> a realm</li><li><b>Realm of</b> a ruler (god)</li></ul></div>`;
+    } else {
+      const byName = (k) => (a, b) => rank(a[k]) - rank(b[k]) || a[k].localeCompare(b[k]);
+      const spells = D.spells.filter(s => s.name.toLowerCase().includes(q)).sort(byName("name")).slice(0, CAP).map(s => row(s.name, clsAns(s.cls)));
+      const creatures = D.creatures.filter(c => c.name.toLowerCase().includes(q)).sort(byName("name")).slice(0, CAP).map(c => row(c.name, clsAns(c.cls)));
+      const realms = D.realms.filter(r => r.realm.toLowerCase().includes(q)).sort(byName("realm")).map(r => row(r.realm, `<span class="riddle-a">${esc(r.godName)}</span>`));
+      const gods = D.realms.filter(r => r.godName.toLowerCase().includes(q) || (r.god || "").toLowerCase().includes(q)).sort(byName("godName")).map(r => row(r.godName, `<span class="riddle-a">${esc(r.realm)}</span>`));
+      body = section("Class of Spell", spells) + section("Class of Creature", creatures) + section("Ruler of Realm", realms) + section("Realm of Ruler", gods)
+        || `<div class="slot-sub" style="padding:10px">No spell, creature, realm or god matches “${esc(st.search)}”.</div>`;
+    }
+    return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel">
+      <div class="overlay-header"><h2>Riddle Dwarf</h2>
+        <input class="ovl-search" placeholder="Type a spell / creature / realm / god…" value="${esc(st.search)}" data-action="riddle-search">
+        <button class="ovl-close" data-action="close-ovl">✕</button></div>
+      <div class="overlay-body"><div class="ovl-center"><div class="ovl-center-scroll">${body}</div></div></div>
+      <div class="overlay-footer"><span class="foot-info">Answers surface as you type.</span><button class="btn-confirm" data-action="close-ovl">Done</button></div>
+    </div></div>`;
+  }
+
   // ── Realms reference ────────────────────────────────────────────────────────
   function openRealms(realmId) {
     ovState = { kind: "realms", search: "", sortBy: "realm",
@@ -3021,6 +3055,8 @@
       case "open-appendix": openAppendix(); break;
       case "open-realms": openRealms(); break;
       case "open-godshops": openGodShops(); break;
+      case "open-riddle": openRiddle(); break;
+      case "riddle-search": break;   // handled in onInput
       case "realm-sel": ovState.sel = +t.dataset.id; ovState.view = "detail"; refreshOverlay(); break;
       case "realm-back": ovState.view = "list"; refreshOverlay(); maybeFocusSearch(OV); break;
       case "realm-sort": ovState.sortBy = t.dataset.v; refreshOverlay(); break;
@@ -3356,7 +3392,7 @@
     if (A === "builds-name") { ovState.draft.name = v; return; }
     // search fields — live filter without losing caret
     const searchMap = { "crea-search": [OV, ovState], "spec-search": [OV, ovState], "artb-search": [OV, ovState],
-      "relic-search": [OV, ovState], "cards-search": [OV, ovState], "anoint-search": [OV, ovState], "nether-search": [OV, ovState], "sg-search": [OV, ovState], "appendix-search": [OV, ovState], "gs-search": [OV, ovState], "realm-search": [OV, ovState], "facet-search": [DOV, dovState], "perk-search": [DOV, dovState], "pers-search": [DOV, dovState], "iconpick-search": [DOV, dovState], "skin-search": [DOV, dovState] };
+      "relic-search": [OV, ovState], "cards-search": [OV, ovState], "anoint-search": [OV, ovState], "nether-search": [OV, ovState], "sg-search": [OV, ovState], "appendix-search": [OV, ovState], "gs-search": [OV, ovState], "realm-search": [OV, ovState], "riddle-search": [OV, ovState], "facet-search": [DOV, dovState], "perk-search": [DOV, dovState], "pers-search": [DOV, dovState], "iconpick-search": [DOV, dovState], "skin-search": [DOV, dovState] };
     if (searchMap[A]) {
       const [root, state] = searchMap[A]; state.search = v;
       if (A === "crea-search") resetCreaPage();   // new query → back to page 1

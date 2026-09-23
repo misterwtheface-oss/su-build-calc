@@ -734,6 +734,16 @@ h1, h2, h3 { margin: 0; }
 .realm-icon-lg { flex: 0 0 auto; width: 72px; height: 72px; display: flex; align-items: center; justify-content: center;
   background: rgba(0,0,0,.2); border: 1px solid var(--border-dim); border-radius: 10px; }
 .realm-icon-lg img { width: 64px; height: 64px; object-fit: contain; image-rendering: pixelated; }
+/* Riddle Dwarf — fast trivia lookup */
+.riddle-list { display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px; }
+.riddle-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 7px 12px;
+  background: var(--surface); border: 1px solid var(--border-dim); border-radius: 7px; }
+.riddle-q { font-weight: 600; min-width: 0; }
+.riddle-a { font-weight: 800; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+.riddle-a img { width: 18px; height: 18px; object-fit: contain; image-rendering: pixelated; }
+.riddle-hint { color: var(--text-dim); padding: 12px; line-height: 1.5; }
+.riddle-hint b { color: var(--accent); }
+.riddle-hint ul { margin: 8px 0 0; padding-left: 18px; }
 .realm-uniq { background: var(--surface); border: 1px solid var(--border-dim); border-radius: 8px; padding: 8px 10px; margin-bottom: 6px; }
 .realm-uniq-head { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
 .realm-obj-ico { flex: 0 0 auto; width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; }
