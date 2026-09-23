@@ -867,8 +867,12 @@ What works end-to-end:
 - [x] Boss/NYI trait taxo mapped on the backend for a future boss-prep planner (`trait_meta.scope`).
 
 ### Next up (P1)
-- [ ] **Glossary icons**: the Buff/Debuff/Minion glossary (Menu → Glossary) ships name + prose but no icons.
-      Find/curate the status/minion icon sprites and add them to `D.conditions` (each entry → sprite path).
+- [x] **Glossary icons** (2026-09-23): wired the in-game status glyph sets onto `D.conditions` —
+      Buff→`stat_g_<name>`, Debuff→`stat_b_<name>`, Minion→`stat_m_<name>`, plus a small alias map for the
+      CONDNAME→sprite-stem gaps (Stunned→stun, Mania→drunk, six Inner Demons sins share `stat_m_innerdemons`).
+      Coverage 60/65: all 18 buffs + 20 debuffs, 22/27 minions. The 5 minions with no `stat_m_` sprite
+      (Brimfiend/Chaos Satyr/Fire Imp/Leviathan/Microbot) render iconless — no fallback (existence-gated to keep
+      the 404 guard clean). `assets/condicons/<cat>_<slug>.png`; rendered as `.gloss-icon` in the glossary rows.
 - [ ] **Threat-set icons**: both threat sources have icons to wire onto the Threats page (per the Realm Props |
       False God toggle) — Realm Property icons (`realmprop_e_<slug>` sprites, ~32 exist but slug ≠ `L_RP_` key,
       so the join was deferred) and False God rune icons. Find/curate the joins like realm icons + realm objects.
