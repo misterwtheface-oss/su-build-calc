@@ -193,6 +193,7 @@
   ];
   const RELIC = new Map(D.relics.map(r => [r.id, r]));
   const CARD = new Map(D.cards.map(c => [c.id, c]));
+  const CONDITION = new Map((D.conditions || []).map(c => [`${c.cat}:${c.key}`, c]));   // keyed "Buff:agile" for the taxonomy viewer
   const PERS = new Map((D.personalities || []).map(p => [p.key, p]));   // personality key -> {name,raise,lower}
   const SCROLL_MAX = D.scrollMax || 15;                                  // total stat scrolls per creature (each +1 base)
 
@@ -1401,6 +1402,7 @@
     if (kind === "relic") { const e = RELIC.get(+id); return { e, icon: e && e.icon, name: e && e.name, descHtml: e && richText((e.ranks || []).map(x => x.desc).join(" · ")), kindLabel: "Relic" }; }
     if (kind === "card") { const e = CARD.get(+id); return { e, icon: e && e.sprite, name: e && e.family, descHtml: e && richText((e.effects || []).join(" · ")), kindLabel: "Realm Card" }; }
     if (kind === "perk") { const e = perkByKey(id); return { e, icon: e && e.icon, name: e && e.name, descHtml: e && perkText(e.desc, e.ranks), kindLabel: "Perk" }; }
+    if (kind === "condition") { const e = CONDITION.get(id); return { e, icon: e && e.icon, name: e && e.name, descHtml: e && richText(e.desc || ""), kindLabel: e && e.cat }; }
     return { e: null };
   }
   // grouped taxonomy: Category → its values, each a chip that (a) shows the provenance source and
@@ -1707,7 +1709,7 @@
       const items = list.filter(e => e.cat === c);
       if (!items.length) return "";
       return `<div class="section-label">${c}s — ${items.length}</div>
-        ${items.map(e => `<div class="gloss-row"><div class="gloss-head">${e.icon ? `<img class="gloss-icon" src="${e.icon}" alt="">` : ""}<b>${esc(e.name)}</b><span class="realm-cat ${catCls(c)}">${c}</span></div>
+        ${items.map(e => `<div class="gloss-row apx-clickable" data-action="apx-open" data-ek="condition" data-eid="${esc(e.cat + ':' + e.key)}" title="View taxonomy"><div class="gloss-head">${e.icon ? `<img class="gloss-icon" src="${e.icon}" alt="">` : ""}<b>${esc(e.name)}</b><span class="etax-hint">tags ›</span><span class="realm-cat ${catCls(c)}">${c}</span></div>
           <div class="perk-desc">${esc(e.desc)}</div></div>`).join("")}`;
     }).join("") || `<div class="slot-sub" style="padding:10px">No buff, debuff or minion matches “${esc(st.search)}”.</div>`;
     return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel">
