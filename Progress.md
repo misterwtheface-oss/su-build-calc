@@ -959,6 +959,9 @@ What works end-to-end:
   against the vocabulary and identity tags validated to exist on a real trait/spell. Generator:
   `_su_extract/code/build_condition_tags.mjs` → `condition_taxonomy_tags.json`; `build-data` attaches
   `taxo`/`taxoSrc`; app.js adds `CONDITION` map + `resolveEntity("condition")`.
+  50 identity tags (4 Horsemen share one value). **15 niche minions get NO identity chip on purpose** —
+  a corpus sweep of all traits+spells confirms 13/15 have zero references anywhere and the other 2 appear only
+  in their own `Summon X` spell, so an identity chip would filter to nothing; they carry only semantic tags.
 - 2026-09-22: **Riddle Dwarf** (Menu → Riddle Dwarf). One-screen fast trivia lookup for the in-game Riddle
   Dwarf: type the given name → answer surfaces instantly across all 4 forms — Class of [Spell], Class of
   [Creature], Ruler of [Realm], Realm of [Ruler] — grouped by answer type, prefix-matches first, class answers
