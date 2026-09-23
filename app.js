@@ -1701,6 +1701,10 @@
     const uniques = sel.uniques.length ? `<div class="section-label">Realm objects</div>
       ${sel.uniques.map(u => `<div class="realm-uniq"><div class="realm-uniq-head">${u.sprite ? `<span class="realm-obj-ico">${spriteImg(u.sprite, "px")}</span>` : ""}<b>${esc(u.name)}</b>${u.baseCount != null ? `<span class="anoint-spec-tag">×${u.baseCount}</span>` : ""}</div>
         ${u.tiers.map(t => `<div class="realm-tier"><span class="rt-at" title="Realm Instability ≥ ${t.at}">${t.at}</span><span class="rt-eff">${esc(t.effect)}</span></div>`).join("")}</div>`).join("")}` : "";
+    // complex-interaction combination table (5 realms have a combine-objects puzzle)
+    const combos = sel.combinations ? `<div class="section-label" style="margin-top:12px">Complex Interaction — ${esc(sel.combinations.title)}</div>
+      <div class="realm-combos">${sel.combinations.rows.map(c => `<div class="rc-row"><span class="rc-combo">${esc(c.combo)}</span><span class="rc-arrow">→</span><span class="rc-result">${esc(c.result)}</span></div>`).join("")}</div>
+      <div class="slot-sub" style="margin-top:4px">${esc(sel.combinations.note)}</div>` : "";
     const shopLink = sel.hasShop ? `<button class="facet" data-action="realm-shop" data-g="${esc(sel.godName)}" style="margin-top:10px">View ${esc(sel.godName)}'s God Shop ›</button>` : "";
     return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel">
       <div class="overlay-header"><button class="btn-ghost" data-action="realm-back">‹ Realms</button>
@@ -1708,7 +1712,7 @@
       <div class="overlay-body"><div class="ovl-center"><div class="ovl-center-scroll">
         <div class="realm-detail-head">${sel.icon ? `<div class="realm-icon-lg">${spriteImg(sel.icon, "px")}</div>` : ""}
           <div class="spell-stats" style="flex:1">${facts}</div></div>
-        ${shopLink}${creatures}${encounters}${resources}${uniques}
+        ${shopLink}${creatures}${encounters}${resources}${uniques}${combos}
       </div></div></div>
       <div class="overlay-footer"><button class="btn-ghost" data-action="realm-back">‹ Back to realms</button>
         <button class="btn-confirm" data-action="close-ovl">Done</button></div>

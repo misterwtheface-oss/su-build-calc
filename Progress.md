@@ -867,6 +867,9 @@ What works end-to-end:
 - [x] Boss/NYI trait taxo mapped on the backend for a future boss-prep planner (`trait_meta.scope`).
 
 ### Next up (P1)
+- [ ] **Threat-set icons**: both threat sources have icons to wire onto the Threats page (per the Realm Props |
+      False God toggle) — Realm Property icons (`realmprop_e_<slug>` sprites, ~32 exist but slug ≠ `L_RP_` key,
+      so the join was deferred) and False God rune icons. Find/curate the joins like realm icons + realm objects.
 - [ ] **Antiquarian anointment eligibility — VALIDATE**: Antiquarian (13 perks) isn't in `Perk_REF.csv`, so
       all its perks default to `anointment:false` and never appear in the Anointments overlay — but some are
       likely anointable in-game. Flagged in data as `perk.anointValidate:true` (build-data.mjs). Confirm which

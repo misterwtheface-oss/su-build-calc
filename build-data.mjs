@@ -943,6 +943,26 @@ const realms = realmArr.map((r, i) => {
 });
 const shopGods = new Set(godShops.map(g => g.god));
 for (const rm of realms) rm.hasShop = shopGods.has(rm.godName);   // cross-link to the God Shop reference
+// complex-interaction combination tables (Combination_REF.csv) — 5 realms with a combine-objects puzzle
+// (Tarot Cards / Squash / Music Crystal / Fruit / Chemistry Table). Wide layout: 3 cols per realm at [1,4,7,10,13].
+{
+  const cr = parseCSVRaw(fs.readFileSync(path.join(REF, '_raw_csv', 'Combination_REF.csv'), 'utf8'));
+  let comboHits = 0;
+  for (const b of [1, 4, 7, 10, 13]) {
+    const realmName = (cr[1] && cr[1][b] || '').trim(), title = (cr[2] && cr[2][b] || '').trim();
+    if (!realmName) continue;
+    const rows = [];
+    for (let r = 3; r < cr.length; r++) {
+      const combo = (cr[r][b] || '').trim(), result = (cr[r][b + 1] || '').trim();
+      if (/can be in any order/i.test(combo)) break;
+      if (combo && result) rows.push({ combo, result });
+    }
+    const rm = realms.find(x => x.realm === realmName);
+    if (rm && rows.length) { rm.combinations = { title, note: 'Combinations can be in any order.', rows }; comboHits++; }
+    else if (!rm) warn(`Combination_REF realm "${realmName}" not matched to a realm`);
+  }
+  console.log(`  realm combination tables: ${comboHits}/5 wired`);
+}
 console.log(`  realms: ${realms.length} · ${realms.reduce((n, r) => n + r.uniques.length, 0)} unique objects · ${realms.filter(r => r.hasShop).length} w/ god shop`);
 console.log(`  realm object sprites: ${realmObjHits} matched · ${realmObjMiss} need a slug/override`);
 
