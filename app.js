@@ -296,10 +296,11 @@
   if (!bookmarks || typeof bookmarks !== "object") bookmarks = {};
   bookmarks.traits = Array.isArray(bookmarks.traits) ? bookmarks.traits : [];
   bookmarks.spells = Array.isArray(bookmarks.spells) ? bookmarks.spells : [];
+  bookmarks.perks = Array.isArray(bookmarks.perks) ? bookmarks.perks : [];   // perk KEYS (strings, unlike numeric trait/spell ids)
   const persistBookmarks = () => jsave(LS.bookmarks, bookmarks);
   const isBk = (kind, id) => bookmarks[kind].includes(id);
   const toggleBk = (kind, id) => { const a = bookmarks[kind], i = a.indexOf(id); if (i >= 0) a.splice(i, 1); else a.push(id); persistBookmarks(); };
-  const clearBookmarks = () => { bookmarks.traits = []; bookmarks.spells = []; persistBookmarks(); };
+  const clearBookmarks = () => { bookmarks.traits = []; bookmarks.spells = []; bookmarks.perks = []; persistBookmarks(); };
   const bkBtn = (kind, id) => `<button class="apx-bk ${isBk(kind, id) ? "on" : ""}" data-action="apx-bookmark" data-kind="${kind}" data-id="${id}" title="Bookmark — filter the selectors to this">${isBk(kind, id) ? "★" : "☆"}</button>`;
   const persistCards = () => jsave(LS.cards, cards);
   const persistNether = () => jsave(LS.nether, nether);
@@ -1360,7 +1361,7 @@
       const body_sections = [
         section("Traits", traitRows, traitRow),
         section("Perks", res.perks, p => line(p.icon ? spriteImg(p.icon, "px") : "", p.name,
-          `<span class="anoint-spec-tag">${esc(p.spec)}</span>`, perkText(p.desc, p.ranks), p, null, { ek: "perk", eid: p.key })),
+          `<span class="anoint-spec-tag">${esc(p.spec)}</span>`, perkText(p.desc, p.ranks), p, bkBtn("perks", p.key), { ek: "perk", eid: p.key })),
         section("Spells", res.spells, s => line(spellIcon(s) ? spriteImg(spellIcon(s), "px") : "", s.name,
           `${s.cls ? `<span class="anoint-spec-tag">${esc(s.cls)}</span>` : ""}${spellMeta(s) ? `<span class="anoint-spec-tag">${esc(spellMeta(s))}</span>` : ""}`, perkText(s.desc, null), s, bkBtn("spells", s.id), { ek: "spell", eid: s.id })),
         section("Relics", res.relics, r => line(r.icon ? spriteImg(r.icon, "px") : "", r.name,
@@ -1842,6 +1843,7 @@
       (!q || a.name.toLowerCase().includes(q) || (a.desc || "").toLowerCase().includes(q)) &&
       (!st.godFilter || a.falseGod === st.godFilter) &&
       (!st.specFilter || a.spec === st.specFilter) &&
+      (!st.bkOnly || bookmarks.perks.includes(a.key)) &&
       (!st.taxoFilters.length || st.taxoFilters.every(k => (a.taxo || []).includes(k))));
     const godChip = st.godFilter
       ? `<button class="facet on" data-action="anoint-fgod">False God: <b>${esc(godName(st.godFilter))}</b> <span class="facet-x" data-action="anoint-fgod-clear">✕</span></button>`
@@ -1851,7 +1853,8 @@
       : `<button class="facet" data-action="anoint-spec">Spec ▾</button>`;
     const taxoChips = st.taxoFilters.map((k, i) =>
       `<button class="facet on tag" data-action="rm-taxo" data-i="${i}">${esc(taxoCatName(k))}: <b>${esc(taxoValName(k))}</b> <span class="facet-x">✕</span></button>`).join("");
-    const filterbar = `<div class="ovl-filterbar">${godChip}${specChip}${taxoChips}<button class="facet add" data-action="anoint-taxo">＋ Filter</button></div>`;
+    const bkChip = bookmarks.perks.length ? `<button class="facet ${st.bkOnly ? "on" : ""}" data-action="anoint-bkonly" title="Show only bookmarked perks">★ Bookmarked</button>` : "";
+    const filterbar = `<div class="ovl-filterbar">${godChip}${specChip}${taxoChips}<button class="facet add" data-action="anoint-taxo">＋ Filter</button>${bkChip}</div>`;
     const full = build.anoints.length >= anointMax();
     const anointRow = (a) => { const on = anointEquipped(a); const inCur = a.specId === build.specId;
       // a perk from your current spec is already in your tree — block anointing it (removal still allowed)
@@ -1862,7 +1865,7 @@
         <span class="perk-ico sm">${a.icon ? spriteImg(a.icon, "px") : ""}</span>
         <div class="perk-line-body">
           <div class="perk-line-head"><b>${esc(a.name)}</b>
-            <span class="perk-line-meta"><span class="anoint-spec-tag">${esc(a.spec)}</span>${inCur ? `<span class="anoint-badge">Current spec</span>` : ""}${a.ascension ? `<span class="anoint-badge asc">Ascension</span>` : ""}</span></div>
+            <span class="perk-line-meta"><span class="anoint-spec-tag">${esc(a.spec)}</span>${inCur ? `<span class="anoint-badge">Current spec</span>` : ""}${a.ascension ? `<span class="anoint-badge asc">Ascension</span>` : ""}</span>${bkBtn("perks", a.key)}</div>
           ${a.desc ? `<div class="perk-desc">${perkText(a.desc, a.ranks)}</div>` : ""}
         </div>
         ${btn}
@@ -3024,7 +3027,8 @@
       case "appendix-rm-tag": e.stopPropagation(); ovState.tags = ovState.tags.filter(x => x !== t.dataset.k); ovState.search = ""; refreshOverlay(); break;
       case "appendix-add": ovState.browsing = true; ovState.cat = null; ovState.search = ""; refreshOverlay(); break;
       case "appendix-src": ovState.showSrc = !ovState.showSrc; refreshOverlay(); break;
-      case "apx-bookmark": e.stopPropagation(); toggleBk(t.dataset.kind, +t.dataset.id); refreshOverlay(); break;
+      case "apx-bookmark": { e.stopPropagation(); const k = t.dataset.kind;   // perks key by string, traits/spells by numeric id
+        toggleBk(k, k === "perks" ? t.dataset.id : +t.dataset.id); refreshOverlay(); break; }
       case "appendix-done-adding": ovState.browsing = false; ovState.cat = null; ovState.search = ""; refreshOverlay(); break;
       case "open-anoint": openAnoint(); break;
       case "anoint-detail": openAnointDetail(); break;
@@ -3098,6 +3102,7 @@
         break;
       }
       case "anoint-taxo": openFacetPicker("taxo-cat", { idx: anointTaxoIndex() }); break;
+      case "anoint-bkonly": ovState.bkOnly = !ovState.bkOnly; refreshOverlay(); break;
       case "anoint-spec": openFacetPicker("anoint-spec"); break;
       case "anoint-spec-clear": e.stopPropagation(); ovState.specFilter = null; refreshOverlay(); break;
       case "anoint-fgod": openFacetPicker("anoint-fgod"); break;
