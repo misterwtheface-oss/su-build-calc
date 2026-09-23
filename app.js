@@ -1694,7 +1694,7 @@
     </div></div>`;
   }
 
-  // ── Glossary — Buff / Debuff / Minion reference (name + prose from the game). Icons: backlog. ──
+  // ── Glossary — Buff / Debuff / Minion reference (name + prose + in-game status glyph from the game). ──
   function openGlossary() {
     ovState = { kind: "glossary", search: "", cat: null, render: renderGlossary };
     openOverlay(ovState.render()); maybeFocusSearch(OV);
@@ -1710,7 +1710,7 @@
       const items = list.filter(e => e.cat === c);
       if (!items.length) return "";
       return `<div class="section-label">${c}s — ${items.length}</div>
-        ${items.map(e => `<div class="gloss-row"><div class="gloss-head"><b>${esc(e.name)}</b><span class="realm-cat ${catCls(c)}">${c}</span></div>
+        ${items.map(e => `<div class="gloss-row"><div class="gloss-head">${e.icon ? `<img class="gloss-icon" src="${e.icon}" alt="">` : ""}<b>${esc(e.name)}</b><span class="realm-cat ${catCls(c)}">${c}</span></div>
           <div class="perk-desc">${esc(e.desc)}</div></div>`).join("")}`;
     }).join("") || `<div class="slot-sub" style="padding:10px">No buff, debuff or minion matches “${esc(st.search)}”.</div>`;
     return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel">
