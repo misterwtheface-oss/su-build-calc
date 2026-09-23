@@ -734,8 +734,6 @@ h1, h2, h3 { margin: 0; }
 .realm-icon-lg { flex: 0 0 auto; width: 72px; height: 72px; display: flex; align-items: center; justify-content: center;
   background: rgba(0,0,0,.2); border: 1px solid var(--border-dim); border-radius: 10px; }
 .realm-icon-lg img { width: 64px; height: 64px; object-fit: contain; image-rendering: pixelated; }
-.gs-god-ico { flex: 0 0 auto; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; }
-.gs-god-ico img { width: 28px; height: 30px; object-fit: contain; image-rendering: pixelated; }
 .realm-uniq { background: var(--surface); border: 1px solid var(--border-dim); border-radius: 8px; padding: 8px 10px; margin-bottom: 6px; }
 .realm-uniq-head { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
 .realm-obj-ico { flex: 0 0 auto; width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; }

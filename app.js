@@ -1613,34 +1613,49 @@
 
   // ── God Shops reference ─────────────────────────────────────────────────────
   function openGodShops(godName) {
-    const gs = D.godShops || [];
-    ovState = { kind: "godshops", search: "", sel: godName || (gs[0] ? gs[0].god : null), render: renderGodShops };
+    // stepped page (mirrors Realms): full-page god list → full-screen detail, no split info panel
+    ovState = { kind: "godshops", search: "", view: godName ? "detail" : "list", sel: godName || null, render: renderGodShops };
     openOverlay(ovState.render()); maybeFocusSearch(OV);
   }
   function renderGodShops() {
-    const st = ovState, q = st.search.trim().toLowerCase(), gs = D.godShops || [];
-    const sel = gs.find(g => g.god === st.sel) || null;
-    const tiles = gs.map(g => `<button class="opt-row ${st.sel === g.god ? "on" : ""}" data-action="gs-god" data-g="${esc(g.god)}">${g.battle ? `<span class="gs-god-ico">${spriteImg(g.battle, "px")}</span>` : ""}<span>${esc(g.god)}</span><span class="opt-chev">${g.items.length}</span></button>`).join("");
+    const st = ovState, gs = D.godShops || [];
+    return st.view === "detail" ? renderGodShopDetail(gs.find(g => g.god === st.sel)) : renderGodShopList(gs);
+  }
+  function renderGodShopList(gs) {
+    const st = ovState, q = st.search.trim().toLowerCase();
+    const list = gs.filter(g => !q || g.god.toLowerCase().includes(q) || g.items.some(it => it.item.toLowerCase().includes(q) || (it.desc || "").toLowerCase().includes(q)));
+    const rows = list.map(g => `<button class="realm-row" data-action="gs-god" data-g="${esc(g.god)}">
+      ${g.battle ? `<span class="realm-icon">${spriteImg(g.battle, "px")}</span>` : ""}
+      <span class="realm-row-name">${esc(g.god)}</span>
+      <span class="anoint-spec-tag">${g.items.length} items</span>
+      <span class="opt-chev">›</span></button>`).join("")
+      || `<div class="slot-sub" style="padding:10px">No gods match.</div>`;
+    return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel">
+      <div class="overlay-header"><h2>God Shops</h2>
+        <input class="ovl-search" placeholder="Search god / item…" value="${esc(st.search)}" data-action="gs-search">
+        <button class="ovl-close" data-action="close-ovl">✕</button></div>
+      <div class="overlay-body"><div class="ovl-center"><div class="ovl-center-scroll"><div class="realm-list">${rows}</div></div></div></div>
+      <div class="overlay-footer"><span class="foot-info"></span><button class="btn-confirm" data-action="close-ovl">Done</button></div>
+    </div></div>`;
+  }
+  function renderGodShopDetail(sel) {
+    if (!sel) { ovState.view = "list"; return renderGodShopList(D.godShops || []); }
     const typeChip = (t) => t ? `<span class="anoint-spec-tag">${esc(t)}</span>` : "";
-    let items = sel ? sel.items : [];
-    if (q) items = items.filter(it => it.item.toLowerCase().includes(q) || (it.desc || "").toLowerCase().includes(q) || (it.type || "").toLowerCase().includes(q));
-    const rows = items.map(it => `<div class="perk-line">
+    const rows = sel.items.map(it => `<div class="perk-line">
       <div class="perk-line-body">
         <div class="perk-line-head"><b>${esc(it.item)}</b><span class="perk-line-meta">${typeChip(it.type)}${it.price != null ? `<span class="gs-price" title="Favor">${it.price} ✦</span>` : ""}</span></div>
         ${it.desc ? `<div class="perk-desc">${esc(it.desc)}</div>` : ""}</div></div>`).join("")
-      || `<div class="slot-sub" style="padding:10px">No items match.</div>`;
-    const info = sel ? `<div class="ns-info-head">${sel.battle ? `<div class="realm-icon-lg">${spriteImg(sel.battle, "px")}</div>` : ""}<h3>${esc(sel.god)}</h3></div>
-      <div class="section-label">Shop items — ${sel.items.length}</div>
-      <div class="perk-list">${rows}</div>` : `<div class="slot-sub" style="padding:12px">Select a god.</div>`;
+      || `<div class="slot-sub" style="padding:10px">No items.</div>`;
     return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel">
-      <div class="overlay-header"><h2>God Shops</h2>
-        <input class="ovl-search" placeholder="Search items…" value="${esc(st.search)}" data-action="gs-search">
-        <button class="ovl-close" data-action="close-ovl">✕</button></div>
-      <div class="overlay-body">
-        <div class="ovl-left"><div class="opt-list">${tiles}</div></div>
-        <div class="ovl-center"><div class="ovl-center-scroll">${info}</div></div>
-      </div>
-      <div class="overlay-footer"><span class="foot-info"></span><button class="btn-confirm" data-action="close-ovl">Done</button></div>
+      <div class="overlay-header"><button class="btn-ghost" data-action="gs-back">‹ God Shops</button>
+        <h2 style="flex:1">${esc(sel.god)}</h2><button class="ovl-close" data-action="close-ovl">✕</button></div>
+      <div class="overlay-body"><div class="ovl-center"><div class="ovl-center-scroll">
+        <div class="realm-detail-head">${sel.battle ? `<div class="realm-icon-lg">${spriteImg(sel.battle, "px")}</div>` : ""}
+          <div class="spell-stats" style="flex:1"><div class="ss-row"><span class="ss-k">Shop items</span><span class="ss-v">${sel.items.length}</span></div></div></div>
+        <div class="perk-list">${rows}</div>
+      </div></div></div>
+      <div class="overlay-footer"><button class="btn-ghost" data-action="gs-back">‹ Back to gods</button>
+        <button class="btn-confirm" data-action="close-ovl">Done</button></div>
     </div></div>`;
   }
 
@@ -3011,7 +3026,8 @@
       case "realm-sort": ovState.sortBy = t.dataset.v; refreshOverlay(); break;
       case "realm-search": break;   // handled in onInput
       case "realm-shop": openGodShops(t.dataset.g); break;
-      case "gs-god": ovState.sel = t.dataset.g; refreshOverlay(); break;
+      case "gs-god": ovState.sel = t.dataset.g; ovState.view = "detail"; refreshOverlay(); break;
+      case "gs-back": ovState.view = "list"; refreshOverlay(); maybeFocusSearch(OV); break;
       case "gs-search": break;      // handled in onInput
       case "open-threats": openThreats(); break;
       case "open-macros": openMacros(); break;
