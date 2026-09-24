@@ -145,6 +145,14 @@ const excludedTraitIds = new Set(consolidated
 //   keep #2179 drop #1998 (Marionette) · keep #2183 drop #1996 (Elementasaur) · keep #2184 drop #1997 (Mireling)
 const DUPLICATE_TRAIT_IDS = new Set([1996, 1997, 1998]);
 for (const id of DUPLICATE_TRAIT_IDS) excludedTraitIds.add(id);
+// UNRESOLVED — factually unresolvable traits (category "unresolved"). These 17 carry recon
+// status="boss" but have NULL owner AND NULL item, and appear in NONE of the authoritative sources:
+// not the roster (no innate creature), not the Nether Bosses / Gate of the Gods (Deities) / False Gods
+// wiki, not Trait_REF.csv (no item/encounter), and not code (creature_stats has no trait field). A trait
+// with neither an owner nor an item has no provenance at all → unresolved (per user rule 2026-09-24).
+// Re-derive on a game update; if a future source (e.g. Pandemonium/other-boss page) names one, resolve it.
+const UNRESOLVED_OWNERLESS_IDS = new Set([538, 554, 555, 596, 711, 919, 920, 921, 922, 1213, 1215, 1217, 1218, 1219, 1227, 1231, 1521]);
+for (const id of UNRESOLVED_OWNERLESS_IDS) excludedTraitIds.add(id);
 const tc = readJSON(path.join(MODEL, 'theorycraft_tags.json'));
 const tagLabels = tc.label_map;
 const tagByTraitId = new Map();
@@ -213,11 +221,9 @@ for (const t of consolidated) {
     stats: tag.stats || [],
     taxo,
     taxoSrc: taxoSrcArr(srcArr, taxo),
-    // reconciliation: how the trait is obtained + boss tags (owner=boss-owned, obtainedFrom=boss-obtained)
+    // reconciliation status (raw); the OWNER MODEL (owner/ownerType/ownerCategory/ownerGroup/
+    // ownerProvenance + itemSource) is attached by the owner-enrichment pass after creatures+items exist.
     obtainStatus: rec.status || null,
-    obtainSrc: rec.provenance || null,
-    bossOwner: rec.owner || null,
-    obtainedFrom: rec.obtained_from || null,
   };
 }
 console.log(`  traits: ${Object.keys(traits).length} shipped · ${traitsExcluded} blacklisted (${DUPLICATE_TRAIT_IDS.size} duplicate + ${traitsExcluded - DUPLICATE_TRAIT_IDS.size} unresolved/NYI/legacy — not in live Ultimate)`);
@@ -708,7 +714,19 @@ const matIcon = (m) => {                                    // copy a material's
     if (!m) { refUnresolved.push(`${traitName} ⟵ "${item}"`); continue; }
     if (!traitIdByItemName.has(m.name)) { traitIdByItemName.set(m.name, tid); refLinked++; }
   }
-  warn(`Trait_REF reconciliation: +${refLinked} blank trait(s) linked to their granting item${refUnresolved.length ? ` · ${refUnresolved.length} still unresolved (no material): ${refUnresolved.slice(0, 6).join(', ')}` : ''}`);
+  // Fallback: some reward traits aren't in Trait_REF but the recon `detail` names the granting item
+  // (e.g. "Final Act of Judgment" → item "Claymore of Judgment"; material_stats.trait_id drifts ~1 so
+  // it can't be trusted). Link any still-blank trait whose recon detail cites a real material.
+  const linkedTids = new Set([...traitIdByItemName.values()]);
+  let detailLinked = 0;
+  for (const t of consolidated) {
+    if (excludedTraitIds.has(t.id) || creaTraitIds.has(t.id) || linkedTids.has(t.id)) continue;
+    const dm = /item "([^"]+)"/.exec((reconById.get(t.id) || {}).detail || '');
+    if (!dm) continue;
+    const m = matByName.get(dm[1]) || matByPoss.get(normP(dm[1]));
+    if (m && !traitIdByItemName.has(m.name)) { traitIdByItemName.set(m.name, t.id); detailLinked++; }
+  }
+  warn(`Trait_REF reconciliation: +${refLinked} blank trait(s) linked to their granting item · +${detailLinked} via recon detail${refUnresolved.length ? ` · ${refUnresolved.length} still unresolved (no material): ${refUnresolved.slice(0, 6).join(', ')}` : ''}`);
 }
 
 // item_class discriminates the artifact slot a material enchants:
@@ -725,6 +743,74 @@ for (const m of matRecs) {
     traitName: traits[tid].name, icon: matIcon(m),
     taxo: traits[tid].taxo || [],                          // inherits its granted trait's taxonomy tags
     taxoSrc: traits[tid].taxoSrc || [] });                 // …and its provenance (parallel to taxo)
+}
+
+// ── OWNER MODEL — every shipped trait gets an innate owner (1:1) and/or an item source ──────────
+// Ownership = "whose INNATE trait is this" (creature or boss), strictly 1:1 (one trait ↔ one owner).
+// A trait obtained from an item is item-only (owner=null); where the ITEM drops (`itemSource`) is a
+// SEPARATE attribute and never implies ownership. Fields set here: owner / ownerType ('creature'|'boss')
+// / ownerCategory ('Nether Boss'|'Deity'|'False God') / ownerGroup (the ENCOUNTER grouping 1:1 owners:
+// a False God over its body parts; "Judgment and Mercy" over the pair) / ownerProvenance ('code'|'wiki')
+// / itemSource. Sources: creature owner = roster traitId (code); boss/deity owner = the wiki lists below;
+// False God part owner = the body-part creature (its name == the trait name, code); itemSource = Trait_REF
+// source column (the "Boss Trait Materials" / Master / Treasure / Pandemonium encounter).
+{
+  // wiki rosters (siralimultimate.wiki.gg): Nether_Bosses + Gate_of_the_Gods — used ONLY to assign the
+  // Nether Boss vs Deity category to an owner; owner NAMES come from the recon (already wiki-sourced).
+  const WIKI_NETHER = new Set(['Kiichi','Blacksmith Ianne','Ceaseless Gladiator','Myrtle','Nerlyx','King Andrick','Loid','Zenpang','Phobos','Giran','Chroma','Flubris','Vlora','Sarea','Shackler','Furness','Aspect of Meraxis','Vext','Xyrxzys','Katarina','Medierra','Spoonor','Deathwalker','Qila','Scylla & Charybdis','Vitja','Imp Impington','Judgment','Mercy','Etta','Tellur','Noetherian','Ramses','Kraynaks','Cyhra','Inner Darkness'].map(s => s.toLowerCase()));
+  const WIKI_DEITY = new Set(['4080','Aeolian','Alexandria','Anneltha','Apocranox','Ariamaki','Aurum','Azural','Caliban','Erebyss','Friden','Genaros','Gonfurian','Lister','Meraxis','Mortem','Muse','Perdition','Reclusa','Regalis','Shallan','Surathli',"T'mere M'rgo",'Tartarith','Tenebris','Torun','Venedon','Vertraag','Vulcanar','Yseros','Zonte'].map(s => s.toLowerCase()));
+  // ownership is 1:1: the Judgment&Mercy paired encounter splits by trait (wiki), keeping the pair as the group
+  const JM_SPLIT = { 'Sacrilege': 'Judgment', 'Boneyard': 'Mercy' };
+  const creatureOwner = new Map();                                 // traitId → first creature that has it innately
+  for (const c of creatures) if (c.traitId != null && !creatureOwner.has(c.traitId)) creatureOwner.set(c.traitId, c.name);
+  const itemTraitIds = new Set(traitItems.map(ti => ti.traitId));
+  const normPo = (s) => String(s || '').toLowerCase().replace(/'s?\b/g, '').replace(/[^a-z0-9]+/g, '');  // possessive-tolerant
+  const normLo = (s) => normPo(s).replace(/s$/, '');                                                    // + trailing-plural tolerant
+  // Trait_REF source column (col 6) = where the granting item is obtained (encounter); possessive- + plural-keyed
+  const refSourceByTrait = new Map(), refSourceByLoose = new Map();
+  for (const r of parseCSVRaw(fs.readFileSync(path.join(REF, '_raw_csv', 'Trait_REF.csv'), 'utf8')).slice(1)) {
+    const nm = (r[0] || '').trim(), src = (r[6] || '').trim();
+    if (!nm || !src || src === 'N/A') continue;
+    if (!refSourceByTrait.has(normPo(nm))) refSourceByTrait.set(normPo(nm), src);
+    if (!refSourceByLoose.has(normLo(nm))) refSourceByLoose.set(normLo(nm), src);
+  }
+  const bossCat = (owner, detail) => {
+    if (/False God/i.test(detail)) return 'False God';
+    if (/Gate_of_the_Gods/i.test(detail)) return 'Deity';
+    if (/Nether_Bosses/i.test(detail)) return 'Nether Boss';
+    const o = (owner || '').toLowerCase();
+    if (WIKI_NETHER.has(o)) return 'Nether Boss';
+    if (WIKI_DEITY.has(o)) return 'Deity';
+    return null;
+  };
+  let ownCrea = 0, ownBoss = 0, itemOnly = 0, ownGap = 0;
+  const ownerCatCount = {};
+  for (const id in traits) {
+    const t = traits[id]; const r = reconById.get(+id) || {}; const st = r.status;
+    const hasItem = itemTraitIds.has(+id);
+    let owner = null, ownerType = null, ownerCategory = null, ownerGroup = null, ownerProvenance = null;
+    if (st === 'creature_innate') {
+      owner = creatureOwner.get(+id) || null; ownerType = owner ? 'creature' : null; ownerProvenance = owner ? 'code' : null;
+    } else if (st === 'boss' && !hasItem) {                        // genuine boss-innate (item ⇒ item-only, handled below)
+      if (/False God/i.test(r.detail || '')) {                    // 1:1 owner = the body-part creature (== trait name)
+        owner = t.name; ownerCategory = 'False God'; ownerGroup = r.owner || null; ownerProvenance = 'code';
+      } else {
+        owner = JM_SPLIT[t.name] || r.owner || null;
+        ownerGroup = JM_SPLIT[t.name] ? 'Judgment and Mercy' : owner;
+        ownerCategory = bossCat(owner, r.detail || ''); ownerProvenance = 'wiki';
+      }
+      ownerType = owner ? 'boss' : null;
+    }
+    // else: item-only (master/treasure/reward/Pandemonium) or boss-tagged-with-item (e.g. Ramses) → owner stays null
+    // itemSource = where the item is obtained: Trait_REF source col (possessive-tolerant), else recon obtained_from
+    const itemSource = hasItem ? (refSourceByTrait.get(normPo(t.name)) || refSourceByLoose.get(normLo(t.name)) || r.obtained_from || null) : null;
+    Object.assign(t, { owner, ownerType, ownerCategory, ownerGroup, ownerProvenance, itemSource });
+    if (ownerType === 'creature') ownCrea++;
+    else if (ownerType === 'boss') { ownBoss++; ownerCatCount[ownerCategory] = (ownerCatCount[ownerCategory] || 0) + 1; }
+    else if (hasItem) itemOnly++;
+    if (!owner && !hasItem) ownGap++;                              // should be 0 — the 17 are already excluded
+  }
+  console.log(`  owner model: ${ownCrea} creature · ${ownBoss} boss (${Object.entries(ownerCatCount).map(([k, v]) => `${v} ${k}`).join(', ')}) · ${itemOnly} item-only · ${ownGap} unresolved-gap${ownGap ? ' ⚠' : ' ✓'}`);
 }
 
 // ── Stat materials (Ambers) → Stat-slot properties ──
