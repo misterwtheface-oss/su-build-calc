@@ -947,6 +947,13 @@ What works end-to-end:
 - Class-advantage multiplier + Nether Stone numerics are runtime/in-game-only (see WIKI_CONTEXT) → modelled around.
 
 ## Session log
+- 2026-09-24: **Trait reconciliation wired into the build; UNRESOLVED traits excluded from the app.**
+  `build-data.mjs` now reads `_su_extract/data/model/trait_reconciliation.json`: the **124 UNRESOLVED traits**
+  (not present in live Ultimate — sandbox-unreleased or prior-game legacy) are **dropped from `SU_DATA.traits`
+  entirely** (2063 shipped / 124 excluded; verified 0 dangling creature or trait-item refs). Every shipped trait
+  now carries reconciliation tags: `obtainStatus` (creature_innate/master/reward/treasure/item/boss/legacy/NYI),
+  `obtainSrc` (ID/community/wiki), **`bossOwner`** (214 — Gate-of-Gods + Nether-boss innate + False God parts) and
+  `obtainedFrom` (15 — Nether-boss trait materials). Boss-owned tag now available in `data.js` for downstream use.
 - 2026-09-24: **Trait guardrails (G1+G2) + 2 community mislabels fixed via code.** Added a G2 check to
   `build-data.mjs` (no innate trait may be owned by >1 creature). The code-backed reconciliation audit
   (`_su_extract/code/audit_trait_reconciliation.py`, universe = 2148 code passives, NOT the community CSV)
