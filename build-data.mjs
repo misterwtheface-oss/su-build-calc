@@ -308,6 +308,13 @@ creaturesRef.forEach((r, i) => {
   });
 });
 
+// GUARDRAIL G2: no innate trait may be owned by more than one creature (a collision means a
+// bad name-reconciliation, e.g. two creatures pointing at the same trait id by mistake).
+const traitOwners = new Map();
+for (const c of creatures) if (c.traitId != null) (traitOwners.get(c.traitId) || traitOwners.set(c.traitId, []).get(c.traitId)).push(c.name);
+for (const [tid, cs] of traitOwners) if (cs.length > 1)
+  warn(`trait id ${tid} is the innate of ${cs.length} creatures (should be exactly one): ${cs.join(', ')}`);
+
 // ── specializations (player slot) — prefer the 32×32 character SKIN, else the 16×16 emblem icon ──
 // The `spec_<key>` sprites are tiny 16×16 emblems. The real skins are the 32×32 player-costume sprites
 // (`spec_<class>_<spec>_<theme>` / `spec_<spec>_<theme>`) + the animated `TS_SU_Costume_<Spec>` set.

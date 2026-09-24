@@ -947,6 +947,14 @@ What works end-to-end:
 - Class-advantage multiplier + Nether Stone numerics are runtime/in-game-only (see WIKI_CONTEXT) → modelled around.
 
 ## Session log
+- 2026-09-24: **Trait guardrails (G1+G2) + 2 community mislabels fixed via code.** Added a G2 check to
+  `build-data.mjs` (no innate trait may be owned by >1 creature). The code-backed reconciliation audit
+  (`_su_extract/code/audit_trait_reconciliation.py`, universe = 2148 code passives, NOT the community CSV)
+  surfaced the 2 remaining bad trait names, both corrected in `name_reconciliation.json` and now resolved with
+  full synergy tags: **Lurid Masochist "Shrug Off" → Purge (393)** and **Shapeshifter Novice "Transformation
+  Apprenticeship" → Rapid Learning (785)** (the old "→Apprenticeship" entry collided with Spider Occultist).
+  App now: **G1 1362/1362 innate traits resolved · G2 0 collisions.** (G3/G4 full-universe reconciliation =
+  93.99%; the 129 remaining are Nether-boss signature traits + tiers, tracked in `_su_extract`.)
 - 2026-09-24: **Innate-trait resolution alert + name-reconciliation fix.** `build-data.mjs` now applies
   `_su_extract/data/reference/name_reconciliation.json` when resolving each creature's innate trait name→id
   (`resolveTraitId`), and **alerts on any playable creature whose trait is missing or unresolved** (warn +
