@@ -34,6 +34,14 @@
 }
 
 *, *::before, *::after { box-sizing: border-box; }
+
+/* a broken/missing sprite must be UNMISSABLE — no silent blanks (fail loudly) */
+img.sprite-missing {
+  visibility: visible !important;
+  min-width: 16px; min-height: 16px;
+  outline: 2px solid #ff2d2d;
+  background: repeating-linear-gradient(45deg, #ff2d2d33, #ff2d2d33 3px, transparent 3px, transparent 6px);
+}
 html, body { margin: 0; padding: 0; overscroll-behavior: none; height: 100%; }   /* no rubber-band bounce / pull-to-refresh */
 body {
   background: radial-gradient(1200px 700px at 50% -10%, var(--bg2), var(--bg)) fixed;

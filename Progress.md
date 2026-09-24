@@ -851,6 +851,20 @@ What works end-to-end:
 - Realm Cards → owned + on/off toggles per family, stored in `subc.cards`.
 
 ## Backlog
+### ⭐ HIGH PRIORITY — next session (2026-09-24)
+- [ ] **Resolve the 19 missing trait sprites.** 19 item-backed traits (7 Master, 11 reward/Nether-boss trait
+      material, 1 treasure) ship with no material icon → they render BLANK (now FAIL LOUD w/ red marker after
+      removing the onerror-hide). **The sprites exist in the dump — find/join them.** Only 3/19 resolve via
+      `Trait_REF.csv` item-name → `material_icons.json`; the rest (boss reward-item icons) need the material-icon
+      coverage gap closed. Examples: Master of Amphisbaenas/Leeches/Sphinxes/Unguided, Flubris's ×3, Phobos's
+      Grip/Bladedancing/Butterfly Touch, Final Act of Judgment, Perishing Salvo.
+- [ ] **Appendix: surface boss-only traits by their new tag.** Traits now carry `bossOwner` (boss-owned) /
+      `obtainedFrom` (boss-obtained) / `obtainStatus`. Boss-only traits should render **at the very bottom of the
+      Appendix** (grouped/after player traits), and feed **per-boss detail pages** (future Boss Guides). Any
+      boss-owned trait WITHOUT a mapped owner needs its owner mapped so we can surface the boss sprite. (250
+      boss-owned tagged; a handful of `boss`-status traits still have no owner — e.g. Multiply→Pandemonium King,
+      Crucifixion — map those.)
+
 ### Done (2026-09-18) — session 2 (UX + mechanics)
 - [x] Perk rows standardized (spec list / Customize / Anointments); `{CONDDESC_*}` tooltip bloat stripped.
 - [x] Creature selection = guided wizard (creature → fusion/skip → commit; **no self-fusion**; edit prefilled).
@@ -947,6 +961,11 @@ What works end-to-end:
 - Class-advantage multiplier + Nether Stone numerics are runtime/in-game-only (see WIKI_CONTEXT) → modelled around.
 
 ## Session log
+- 2026-09-24: **Fail loudly on missing sprites (removed the silent-hide fallback).** `spriteImg` no longer
+  hides broken images (`onerror` was `this.style.visibility='hidden'` = silent blank, as bad as a 404). Now a
+  broken/missing sprite gets `class="sprite-missing"` (unmissable red hatched outline, `!important` visible) +
+  `console.error('MISSING SPRITE', src)`. Surfaces the 19 item-backed traits with no material icon loudly
+  instead of rendering blank. (Resolving those 19 + Appendix boss-trait surfacing = high-priority backlog.)
 - 2026-09-24: **Nether-boss bare-slot fix + blacklist NYI/legacy + only-live-traits ship.** Reconciliation
   now spans the full `traits_consolidated` universe (2186), so the same-name Nether-boss tier variants whose
   `passive_names` name was blank (e.g. Waking the Fallen 544/587, Undying 543/586) correctly resolve as

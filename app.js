@@ -325,8 +325,10 @@
     const r = parseInt(h.slice(0, 2), 16), g = parseInt(h.slice(2, 4), 16), b = parseInt(h.slice(4, 6), 16);
     return (0.299 * r + 0.587 * g + 0.114 * b) > 150 ? "#150e26" : "#fff";
   }
+  // NO silent-hide fallback: a broken/missing sprite must FAIL LOUDLY (visible marker + console error),
+  // never render blank (a silent error is as bad as a 404).
   const spriteImg = (src, cls) =>
-    src ? `<img src="${esc(src)}" alt="" class="${cls || ""}" onerror="this.style.visibility='hidden'">` : "";
+    src ? `<img src="${esc(src)}" alt="" class="${cls || ""}" onerror="this.classList.add('sprite-missing');console.error('MISSING SPRITE:', this.getAttribute('src'))">` : "";
   const critFace = (c) => c.sprite ? spriteImg(c.sprite)
     : `<div class="crit-face" style="--face-cls:${clsColor(c.cls)}">${esc((c.name || "?").trim()[0] || "?")}</div>`;
 
