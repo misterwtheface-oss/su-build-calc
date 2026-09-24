@@ -947,6 +947,14 @@ What works end-to-end:
 - Class-advantage multiplier + Nether Stone numerics are runtime/in-game-only (see WIKI_CONTEXT) → modelled around.
 
 ## Session log
+- 2026-09-24: **Nether-boss bare-slot fix + blacklist NYI/legacy + only-live-traits ship.** Reconciliation
+  now spans the full `traits_consolidated` universe (2186), so the same-name Nether-boss tier variants whose
+  `passive_names` name was blank (e.g. Waking the Fallen 544/587, Undying 543/586) correctly resolve as
+  **boss-owned** (they lack an item *because* they're boss-owned) instead of shipping status-less. Blacklist =
+  {UNRECONCILED, Not Yet Implemented, legacy} + the lone unnamed fragment (EMBEROFVULCANAR): **2049 shipped /
+  138 excluded**, 0 null-status, 0 dangling refs. boss-owned tag = 250. Image hygiene: **0 404-shipped**
+  (asset guards + runtime onerror). Only remaining sprite gap = **19 item-backed traits** (master/reward/treasure)
+  whose material-icon join is missing — render blank, NOT 404 (material-icon coverage gap, tracked separately).
 - 2026-09-24: **Trait reconciliation wired into the build; UNRESOLVED traits excluded from the app.**
   `build-data.mjs` now reads `_su_extract/data/model/trait_reconciliation.json`: the **124 UNRESOLVED traits**
   (not present in live Ultimate — sandbox-unreleased or prior-game legacy) are **dropped from `SU_DATA.traits`

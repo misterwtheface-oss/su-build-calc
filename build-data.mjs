@@ -130,7 +130,12 @@ const consolidated = readJSON(path.join(MODEL, 'traits_consolidated.json')).reco
 const TRAIT_BLACKLIST = new Set(['UNRECONCILED', 'Not Yet Implemented', 'legacy']);
 const RECON = readJSON(path.join(MODEL, 'trait_reconciliation.json'));
 const reconById = new Map(RECON.records.map(r => [r.id, r]));
-const excludedTraitIds = new Set(RECON.records.filter(r => TRAIT_BLACKLIST.has(r.status)).map(r => r.id));
+// Exclude blacklisted statuses (unresolved/NYI/legacy — not in live Ultimate). The reconciliation now
+// covers the full traits_consolidated NAMED universe, so the only not-in-reconciliation trait is the lone
+// unnamed key-only fragment (EMBEROFVULCANAR) — also excluded (not a proper live trait).
+const excludedTraitIds = new Set(consolidated
+  .filter(t => { const r = reconById.get(t.id); return !r || TRAIT_BLACKLIST.has(r.status); })
+  .map(t => t.id));
 const tc = readJSON(path.join(MODEL, 'theorycraft_tags.json'));
 const tagLabels = tc.label_map;
 const tagByTraitId = new Map();
