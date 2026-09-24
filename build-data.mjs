@@ -136,6 +136,13 @@ const reconById = new Map(RECON.records.map(r => [r.id, r]));
 const excludedTraitIds = new Set(consolidated
   .filter(t => { const r = reconById.get(t.id); return !r || TRAIT_BLACKLIST.has(r.status); })
   .map(t => t.id));
+// STALE MASTER-TRAIT DUPLICATES: three Master traits exist twice with the SAME name but different
+// (reworked) descriptions — a legacy definition and the current one. The user's authoritative
+// Trait_REF.csv effect text matches the HIGHER id in each pair (verified by token similarity: 1.00 /
+// 0.87 / 1.00), so the lower ids are the stale legacy versions. Drop them so each Master shows ONE
+// correct row; the Trait_REF reconciliation below then links the sigil to the surviving current id.
+//   Marionettes keep #2179 / drop #1998 · Elementasaurs keep #2183 / drop #1996 · Mirelings keep #2184 / drop #1997
+for (const id of [1996, 1997, 1998]) excludedTraitIds.add(id);
 const tc = readJSON(path.join(MODEL, 'theorycraft_tags.json'));
 const tagLabels = tc.label_map;
 const tagByTraitId = new Map();
@@ -182,6 +189,9 @@ for (const t of consolidated) {
   const si = t.source_item && t.source_item.name;
   if (si && si !== 'N/A' && !traitIdByItemName.has(si)) traitIdByItemName.set(si, t.id);
 }
+// drop links whose target trait is blacklisted (e.g. the stale Master-dupe sigils above) so the
+// Trait_REF reconciliation can re-point that item to the surviving same-named current trait.
+for (const [name, id] of [...traitIdByItemName]) if (excludedTraitIds.has(id)) traitIdByItemName.delete(name);
 const traits = {};
 let traitsExcluded = 0;
 for (const t of consolidated) {
