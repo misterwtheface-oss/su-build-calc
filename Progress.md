@@ -850,6 +850,35 @@ What works end-to-end:
 - Nether Stones → add/edit/delete user stones (name/rarity/property lines), stored in `subc.nether`, socketable.
 - Realm Cards → owned + on/off toggles per family, stored in `subc.cards`.
 
+## 2026-09-24 — Extract reconciliation program (creatures + two-form owner model)
+Deepened the trait owner model into a full **two-form** model and did a **creature census**, all
+extract-grounded with provenance (user directive: reconcile everything from the extract; wiki OK for
+MAPPING not for asserting PRESENCE; no inventing entities from the community-CSV source column).
+- **Two-form owner model** (commit f3d5a94): every trait carries `owner`/`ownerType`(`creature`|`boss`)/
+  **`ownerForm`**(`player`|`encounter`)/`ownerCategory`(`Avatar`|`Nether Boss`|`Deity`|`False God`|`Special
+  Boss`)/`ownerGroup`(encounter)/`ownerProvenance`(`code`|`wiki`)/`itemSource`. KEY validated finding:
+  **Deities == Avatars** — the 31 roster Avatar-race creatures ARE the 31 Gate-of-the-Gods deities, each with
+  a DIFFERENT trait per form (player Avatar trait vs encounter Deity trait). Same as **Zantai** (player
+  Quadhits #298) vs **Lord Zantai** (encounter "The Ultimate Strategy" #1538). So a creature owns one trait
+  per form; 1:1 holds within a form. Dist: 1331 creature/player · 31 Avatar · 161 Nether Boss · 58 False God ·
+  30 Deity · 1 Special Boss · 418 item-only · 0 gap. **Lord Zantai is NOT a separate creature** — he's the
+  code-present roster "Zantai" in encounter form (wiki only maps the trait). Nether Bosses (0/36 in roster) +
+  9 non-Caliban False Gods are encounter-only; Caliban is triple-form (Avatar+Deity+False God).
+- **Creature census** (research + extract-grounded): 1362 playable (code) + 87 non-roster `creature_stats`
+  extras = 66 False God parts (code+convention) · **10 NYI** (future False God set — Balcan/Xandor/Gorpin/…
+  each tied to a False God per `lore_ref.json`; overworld sprite but null battle_frame) · **5 Orbs** =
+  Caliban story-encounter creatures (NOT spells — they have creature stats) · **Failed Experiment** = Siralim-3
+  legacy creature · **Relic** = unresolved · 4 CSV spelling-variants → corrected. Pandemonium K/Q + Treasure
+  Golem are real roster creatures (not invented). LESSON: don't reclassify a creature as a spell on a name
+  match; a creature with stat data is a creature.
+- **4 CSV creature-name typos corrected at source** (commit 88179da): Manticore Conquerer→Conqueror,
+  Phenominal→Phenomenal Possum, Maionette→Marionette Charlatan, Gloopidator→Gloopdiator (code-authoritative;
+  `CREATURE_SPELLING_FIX`, dropped 4 redundant sprite overrides; sprites intact 1362/1362).
+- **REMAINING program (user: reconcile everything):** persist a `creature_reconciliation.json`
+  (per-entity category+provenance, mirroring `trait_reconciliation.json`) + confirm the 10 NYI / Relic;
+  **Phase B** audit the UNRECONCILED 124 traits (many are real player content mis-parked — the #853–869
+  artifact-power run, the "of Misery" set); **Phase C** items; **Phase D** spells.
+
 ## Backlog
 ### ⭐ HIGH PRIORITY — next session (2026-09-24)
 - [x] **Resolve the missing item-backed trait sprites — DONE (2026-09-24, commit e993af5).** 18 item-backed
