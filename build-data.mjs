@@ -654,6 +654,53 @@ const matIcon = (m) => {                                    // copy a material's
   if (iconName && copyNamedSprite(iconName, OUT_MATICON, `${iconName}.png`)) { matIconCopied++; return `assets/maticons/${iconName}.png`; }
   matIconMissing++; return null;
 };
+// ── reconcile Trait_REF.csv → the item that grants each trait (fills coverage gaps) ──────────
+// The consolidated `source_item` link (above) leaves ~16 boss-reward / Master / treasure traits with
+// NO trait-item — so they render iconless in the Appendix. Root cause is a name mismatch, not missing
+// data: every one of those items IS in material_stats (item_class 2) with a real icon+sprite, and the
+// user's authoritative Trait_REF.csv names the exact grant. We reconcile the CSV's trait→item link to
+// the game-authoritative material name (possessive-tolerant: CSV "Flubris' Ichor" ↔ material
+// "Flubris's Ichor"; CSV trait "Flubris' Engulfing" ↔ shipped "Flubris's Engulfing") and add the link
+// keyed by the material's exact name, so the loop below emits it with the correct icon + inherited taxo.
+// material_stats.trait_id is NOT used here (it drifts ~1 block — e.g. Flubris's Ichor says 567, CSV 565).
+{
+  const normP = (s) => String(s || '').toLowerCase().replace(/'s?\b/g, '').replace(/[^a-z0-9]+/g, '');
+  // genuine CSV item-name errors → the game's material name
+  const ITEM_ALIAS = { "sigil of the leeche": 'Sigil of the Leech', "sigil of the sphinxe": 'Sigil of the Sphinx',
+    'faded garnet': 'Fading Garnet', "cyhra's adamance": "Cyhra's Tattered Ear" };
+  const matByName = new Map(), matByPoss = new Map();
+  for (const m of matRecs) { if (!m.name) continue; if (!matByName.has(m.name)) matByName.set(m.name, m); const p = normP(m.name); if (!matByPoss.has(p)) matByPoss.set(p, m); }
+  const normL = (s) => normP(s).replace(/s$/, '');       // + trailing-plural tolerance (CSV "Amphisbaena" ↔ "Amphisbaenas")
+  const traitIdByName = new Map(), traitIdByPoss = new Map();
+  const looseCount = new Map(), looseId = new Map();      // loose key → id, but ONLY if unambiguous (drop collisions)
+  for (const id in traits) {
+    const nm = traits[id].name; if (!nm) continue;
+    if (!traitIdByName.has(nm)) traitIdByName.set(nm, +id);
+    const p = normP(nm); if (!traitIdByPoss.has(p)) traitIdByPoss.set(p, +id);
+    const l = normL(nm); looseCount.set(l, (looseCount.get(l) || 0) + 1); if (!looseId.has(l)) looseId.set(l, +id);
+  }
+  const traitIdByLoose = new Map([...looseId].filter(([l]) => looseCount.get(l) === 1));
+  const creaTraitIds = new Set(creatures.map(c => c.traitId).filter(x => x != null));   // has an innate creature → not blank
+  const preLinked = new Set();                                                          // traits already granted by an existing material link
+  for (const m of matRecs) { const t = traitIdByItemName.get(m.name); if (t != null) preLinked.add(t); }
+  const refRows = parseCSVRaw(fs.readFileSync(path.join(REF, '_raw_csv', 'Trait_REF.csv'), 'utf8')).slice(1);
+  let refLinked = 0; const refUnresolved = [];
+  for (const r of refRows) {
+    const traitName = (r[0] || '').trim(), item = (r[5] || '').trim();
+    if (!traitName || !item || item === 'N/A' || item === 'No Material Exists') continue;
+    let tid = traitIdByName.get(traitName);
+    if (tid == null) tid = traitIdByPoss.get(normP(traitName));
+    if (tid == null) tid = traitIdByLoose.get(normL(traitName));  // last resort: unambiguous plural-tolerant match
+    if (tid == null) continue;                                   // trait not shipped
+    if (creaTraitIds.has(tid) || preLinked.has(tid)) continue;   // only truly-blank traits (no creature, no item)
+    const alias = ITEM_ALIAS[item.toLowerCase()];
+    const m = (alias && matByName.get(alias)) || matByName.get(item) || matByPoss.get(normP(item));
+    if (!m) { refUnresolved.push(`${traitName} ⟵ "${item}"`); continue; }
+    if (!traitIdByItemName.has(m.name)) { traitIdByItemName.set(m.name, tid); refLinked++; }
+  }
+  warn(`Trait_REF reconciliation: +${refLinked} blank trait(s) linked to their granting item${refUnresolved.length ? ` · ${refUnresolved.length} still unresolved (no material): ${refUnresolved.slice(0, 6).join(', ')}` : ''}`);
+}
+
 // item_class discriminates the artifact slot a material enchants:
 //   2  → trait material (grants a creature trait)         → Trait slot
 //   1  → trick material (Slate/Curio/Crippler/…)          → Trick slot
