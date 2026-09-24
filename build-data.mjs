@@ -153,13 +153,13 @@ for (const id of DUPLICATE_TRAIT_IDS) excludedTraitIds.add(id);
 // Re-derive on a game update; if a future source (e.g. Pandemonium/other-boss page) names one, resolve it.
 const UNRESOLVED_OWNERLESS_IDS = new Set([538, 554, 555, 596, 711, 919, 920, 921, 922, 1213, 1215, 1217, 1218, 1219, 1227, 1231, 1521]);
 for (const id of UNRESOLVED_OWNERLESS_IDS) excludedTraitIds.add(id);
-// MANUAL owner reconciliation — traits for bosses OUTSIDE the three wiki category sources (Nether
-// Bosses / Deities / False Gods), sourced from their own wiki page. Un-excluded from UNRECONCILED and
-// given an explicit owner model (applied in the owner pass). Lord Zantai
-// (siralimultimate.wiki.gg/wiki/Lord_Zantai) is a boss-only encounter; his innate "The Ultimate
-// Strategy" (#1538) is boss-owned. His Jewel of Zantai drops stay item-only (handled via itemSource).
+// MANUAL owner reconciliation. "Lord Zantai" is NOT a separate creature — he's the roster creature
+// **Zantai** in its ENCOUNTER form (same creature, different trait: player form = Quadhits #298; encounter
+// form = "The Ultimate Strategy" #1538). The creature is code-present (roster); the wiki
+// (siralimultimate.wiki.gg/wiki/Lord_Zantai) only MAPS the encounter trait to it. So #1538 is owned by
+// Zantai, ownerForm=encounter. His Jewel of Zantai drops stay item-only (via itemSource).
 const MANUAL_TRAIT_OWNERS = new Map([
-  [1538, { owner: 'Lord Zantai', ownerType: 'boss', ownerCategory: null, ownerGroup: 'Lord Zantai', ownerProvenance: 'wiki' }],
+  [1538, { owner: 'Zantai', ownerType: 'boss', ownerForm: 'encounter', ownerCategory: 'Special Boss', ownerGroup: 'Lord Zantai', ownerProvenance: 'wiki' }],
 ]);
 for (const id of MANUAL_TRAIT_OWNERS.keys()) excludedTraitIds.delete(id);   // ship these despite their raw status
 const tc = readJSON(path.join(MODEL, 'theorycraft_tags.json'));
@@ -778,8 +778,8 @@ for (const m of matRecs) {
   const WIKI_DEITY = new Set(['4080','Aeolian','Alexandria','Anneltha','Apocranox','Ariamaki','Aurum','Azural','Caliban','Erebyss','Friden','Genaros','Gonfurian','Lister','Meraxis','Mortem','Muse','Perdition','Reclusa','Regalis','Shallan','Surathli',"T'mere M'rgo",'Tartarith','Tenebris','Torun','Venedon','Vertraag','Vulcanar','Yseros','Zonte'].map(s => s.toLowerCase()));
   // ownership is 1:1: the Judgment&Mercy paired encounter splits by trait (wiki), keeping the pair as the group
   const JM_SPLIT = { 'Sacrilege': 'Judgment', 'Boneyard': 'Mercy' };
-  const creatureOwner = new Map();                                 // traitId → first creature that has it innately
-  for (const c of creatures) if (c.traitId != null && !creatureOwner.has(c.traitId)) creatureOwner.set(c.traitId, c.name);
+  const creatureOwner = new Map();                                 // traitId → the creature that has it innately (player form)
+  for (const c of creatures) if (c.traitId != null && !creatureOwner.has(c.traitId)) creatureOwner.set(c.traitId, c);
   const itemTraitIds = new Set(traitItems.map(ti => ti.traitId));
   const normPo = (s) => String(s || '').toLowerCase().replace(/'s?\b/g, '').replace(/[^a-z0-9]+/g, '');  // possessive-tolerant
   const normLo = (s) => normPo(s).replace(/s$/, '');                                                    // + trailing-plural tolerant
@@ -812,10 +812,16 @@ for (const m of matRecs) {
       ownBoss++; ownerCatCount[mo.ownerCategory] = (ownerCatCount[mo.ownerCategory] || 0) + 1;
       continue;
     }
-    let owner = null, ownerType = null, ownerCategory = null, ownerGroup = null, ownerProvenance = null;
+    // ownerForm: 'player' = the creature's regular roster form; 'encounter' = its boss/Deity/False-God
+    // form. Dual-form creatures (the 31 Avatars=Deities, Zantai) own one trait per form.
+    let owner = null, ownerType = null, ownerForm = null, ownerCategory = null, ownerGroup = null, ownerProvenance = null;
     if (st === 'creature_innate') {
-      owner = creatureOwner.get(+id) || null; ownerType = owner ? 'creature' : null; ownerProvenance = owner ? 'code' : null;
+      const co = creatureOwner.get(+id);
+      owner = co ? co.name : null; ownerType = owner ? 'creature' : null; ownerForm = owner ? 'player' : null;
+      ownerCategory = co && co.race === 'Avatar' ? 'Avatar' : null;   // Avatars are the player form of the Deities
+      ownerProvenance = owner ? 'code' : null;
     } else if (st === 'boss' && !hasItem) {                        // genuine boss-innate (item ⇒ item-only, handled below)
+      ownerForm = 'encounter';
       if (/False God/i.test(r.detail || '')) {                    // 1:1 owner = the body-part creature (== trait name)
         owner = t.name; ownerCategory = 'False God'; ownerGroup = r.owner || null; ownerProvenance = 'code';
       } else {
@@ -828,7 +834,7 @@ for (const m of matRecs) {
     // else: item-only (master/treasure/reward/Pandemonium) or boss-tagged-with-item (e.g. Ramses) → owner stays null
     // itemSource = where the item is obtained: Trait_REF source col (possessive-tolerant), else recon obtained_from
     const itemSource = hasItem ? (refSourceByTrait.get(normPo(t.name)) || refSourceByLoose.get(normLo(t.name)) || r.obtained_from || null) : null;
-    Object.assign(t, { owner, ownerType, ownerCategory, ownerGroup, ownerProvenance, itemSource });
+    Object.assign(t, { owner, ownerType, ownerForm, ownerCategory, ownerGroup, ownerProvenance, itemSource });
     if (ownerType === 'creature') ownCrea++;
     else if (ownerType === 'boss') { ownBoss++; ownerCatCount[ownerCategory] = (ownerCatCount[ownerCategory] || 0) + 1; }
     else if (hasItem) itemOnly++;
