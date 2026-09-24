@@ -890,12 +890,28 @@ What works end-to-end:
       blacklist stale twins. Needs a taxonomy call (see the 4-way trait-source model: False God = body-part /
       Nether Boss boss-owned = no item, 3-same-name / Gate of the Gods deity = no item / Nether Boss reward =
       item-associated ← the only one that gets an item sprite, now done).
-- [ ] **Appendix: surface boss-only traits by their new tag.** Traits now carry `bossOwner` (boss-owned) /
-      `obtainedFrom` (boss-obtained) / `obtainStatus`. Boss-only traits should render **at the very bottom of the
-      Appendix** (grouped/after player traits), and feed **per-boss detail pages** (future Boss Guides). Any
-      boss-owned trait WITHOUT a mapped owner needs its owner mapped so we can surface the boss sprite. (250
-      boss-owned tagged; a handful of `boss`-status traits still have no owner — e.g. Multiply→Pandemonium King,
-      Crucifixion — map those.)
+- [x] **Trait OWNER MODEL — DONE (2026-09-24, commit d38833d). Data foundation for #2 below.** Every shipped
+      trait now carries a provenance-backed ownership model: `owner` / `ownerType` (`creature`|`boss`) /
+      `ownerCategory` (`Nether Boss`|`Deity`|`False God`) / `ownerGroup` (the ENCOUNTER grouping 1:1 owners —
+      a False God over its 6 body parts; "Judgment and Mercy" over the pair) / `ownerProvenance` (`code`|`wiki`)
+      / `itemSource` (where the granting item is obtained). Coverage: **1362 creature · 249 boss (161 Nether
+      Boss / 30 Deity / 58 False God) · 418 item-only · 0 unresolved-gap · 0 itemSource-null.** RULES (user, do
+      not regress): ownership = **whose INNATE trait this is, strictly 1:1, never inferred** — every owner
+      traces to a source; a trait with an item is item-only (owner=null) unless a *creature* holds it innately
+      (so the 3 Ramses reward traits are item-only, boss link in `itemSource`). **Null owner AND null item =
+      unresolved** → 17 boss-tagged traits in NO source excluded under a new `unresolved` reason (see the
+      HIGH-PRIORITY item above). Provenance: creature=roster `traitId` (code); Nether Boss + Deity =
+      siralimultimate.wiki.gg (Nether_Bosses + Gate_of_the_Gods, 180 exact validations); **False God =
+      "[Body Part] of [False God]" convention** (owner=body-part creature via `creature_stats`, grouped by the
+      False God — the wiki False-God pages DON'T name traits, so this is code-backed). `itemSource` from
+      Trait_REF source col (the "Boss Trait Materials" reference — NOT ownership) + recon `obtained_from`
+      fallback. `material_stats.trait_id` is drifted bad data (never used). Wiki source list preserved in
+      `build-data.mjs` (`WIKI_NETHER`/`WIKI_DEITY`).
+- [ ] **#2 — Appendix: surface boss-only traits (NOW UNBLOCKED by the owner model above).** Render
+      `ownerType:'boss'` traits **at the bottom of the Appendix** grouped by `ownerGroup` (boss/False-God
+      encounter) with the boss/False-God sprite (composites already in `assets/falsegods/`), and feed
+      **per-boss detail pages** (Boss Guides). Item-only traits can show their `itemSource` ("dropped by …").
+      No owner data is missing anymore (0 gap); the 17 truly-unresolved are excluded, not blank.
 
 ### Done (2026-09-18) — session 2 (UX + mechanics)
 - [x] Perk rows standardized (spec list / Customize / Anointments); `{CONDDESC_*}` tooltip bloat stripped.
