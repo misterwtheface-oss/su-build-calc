@@ -865,11 +865,22 @@ What works end-to-end:
       `traitIdByItemName` by exact material name so the existing loop emits icon+inherited-taxo. trait-item
       icons **1764→1782, 0 404-shipped**, cross-usage guards unchanged (2, pre-existing). **General, not
       hardcoded** — a future game update auto-resolves new boss-reward traits if the CSV + material DB carry them.
-      **⚠ 3 still blank — a DIFFERENT problem (data dedup, not a sprite):** "Master of Marionettes/
-      Elementasaurs/Mirelings" (#2179/2183/2184) are **duplicate trait entries** whose canonical twin
-      (#1998/1996/1997) already carries the sigil icon. The twins have **distinct desc + taxo** (not identical
-      copies), so it's unclear which id the Sigil grants in-game → NOT safe to auto-dedupe. Folds into the
-      broader duplicate-name finding below.
+      **✓ Last 3 DONE (commit b7b5a0b) — new "duplicate" blacklist category.** "Master of Marionettes/
+      Elementasaurs/Mirelings" (brand-new backer-paid races) each had TWO same-named trait entries: the
+      current live trait on the `MASTER_<RACE>` key + an unused near-duplicate on the old `MASTEROF<RACE>S`
+      key (differing desc AND `code_effects`). **User verified in-game the live trait is the HIGHER id**
+      (#2179/#2183/#2184). Added `DUPLICATE_TRAIT_IDS {1996,1997,1998}` to `excludedTraitIds` under a new
+      **`duplicate`** label (explicitly NOT `legacy` — new races, cause unknown, likely testing leftovers) +
+      made the sigil→trait link skip excluded ids so each Sigil re-points to the surviving current trait and
+      shows its `sigil_<race>` icon. Each Master = ONE correct row; 0 blank Masters; all 21 item-backed traits resolve.
+      **⚠ PROCESS LESSON (validated the hard way — see the race-roster reconciliation):** do NOT auto-pick the
+      "current" duplicate by CSV similarity or id-ordering. The full race-spine pass (164 creature races) proved
+      153 map 1:1 to a Master trait, 8 are legitimately master-less (single-creature/special: Animatus, Avatar,
+      Exotic, Guardian, Herbling, Mogwai, Purrghast, Tanukrook), "Master of Time" is a Treasure trait (not a race
+      master), and ONLY these 3 races are ambiguous. `material_stats.trait_id` is BAD DATA (drifts ~1–2 blocks
+      for ~100 races — never used). `Trait_REF.csv` was itself STALE for Marionette (its text matched the wrong
+      id), so **in-game observation was the only true ground truth**. Always confirm the live tooltip before
+      dropping a same-name duplicate; no blacklisting without user approval.
 - [ ] **Duplicate-name traits (58 groups) — decide handling.** Surfaced while fixing the sprites: 58 shipped
       trait NAMES have ≥2 ids (19 identical-desc, 39 differing-desc). Most are the **Nether Boss (boss-owned)**
       "3-same-name convention" + **False God** body-part copies + **Gate of the Gods deity** traits (e.g.
