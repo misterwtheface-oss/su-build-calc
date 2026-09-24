@@ -136,6 +136,15 @@ const reconById = new Map(RECON.records.map(r => [r.id, r]));
 const excludedTraitIds = new Set(consolidated
   .filter(t => { const r = reconById.get(t.id); return !r || TRAIT_BLACKLIST.has(r.status); })
   .map(t => t.id));
+// DUPLICATE trait ids (category "duplicate" — NOT "legacy"). Three brand-new backer-paid races
+// (Marionette/Elementasaur/Mireling) each have TWO trait entries under the same display name: the
+// current live trait on the `MASTER_<RACE>` key + an unused near-duplicate on the old `MASTEROF<RACE>S`
+// key (differing desc/code_effects — likely a testing leftover). In-game (user-verified) the live
+// trait is the higher id in each pair, so we drop the lower `MASTEROF…` ids. Labeled "duplicate"
+// because we lack context on WHY they're duplicated — they are NOT prior-Siralim legacy.
+//   keep #2179 drop #1998 (Marionette) · keep #2183 drop #1996 (Elementasaur) · keep #2184 drop #1997 (Mireling)
+const DUPLICATE_TRAIT_IDS = new Set([1996, 1997, 1998]);
+for (const id of DUPLICATE_TRAIT_IDS) excludedTraitIds.add(id);
 const tc = readJSON(path.join(MODEL, 'theorycraft_tags.json'));
 const tagLabels = tc.label_map;
 const tagByTraitId = new Map();
@@ -179,6 +188,7 @@ function taxoSrcArr(srcArr, finalTaxo) {
 // the trait side: "Sigil of the Amaranth" → "Master of Amaranths" (not "…Abominations").
 const traitIdByItemName = new Map();
 for (const t of consolidated) {
+  if (excludedTraitIds.has(t.id)) continue;   // skip blacklisted/duplicate ids so the item links to the surviving trait
   const si = t.source_item && t.source_item.name;
   if (si && si !== 'N/A' && !traitIdByItemName.has(si)) traitIdByItemName.set(si, t.id);
 }
@@ -210,7 +220,7 @@ for (const t of consolidated) {
     obtainedFrom: rec.obtained_from || null,
   };
 }
-console.log(`  traits: ${Object.keys(traits).length} shipped · ${traitsExcluded} blacklisted (unresolved/NYI/legacy — not in live Ultimate)`);
+console.log(`  traits: ${Object.keys(traits).length} shipped · ${traitsExcluded} blacklisted (${DUPLICATE_TRAIT_IDS.size} duplicate + ${traitsExcluded - DUPLICATE_TRAIT_IDS.size} unresolved/NYI/legacy — not in live Ultimate)`);
 
 // ── creatures ──────────────────────────────────────────────────────────────
 // Spine = creatures_ref: the AUTHORITATIVE playable roster (1362), where EVERY
