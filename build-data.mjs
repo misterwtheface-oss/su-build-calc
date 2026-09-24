@@ -153,6 +153,15 @@ for (const id of DUPLICATE_TRAIT_IDS) excludedTraitIds.add(id);
 // Re-derive on a game update; if a future source (e.g. Pandemonium/other-boss page) names one, resolve it.
 const UNRESOLVED_OWNERLESS_IDS = new Set([538, 554, 555, 596, 711, 919, 920, 921, 922, 1213, 1215, 1217, 1218, 1219, 1227, 1231, 1521]);
 for (const id of UNRESOLVED_OWNERLESS_IDS) excludedTraitIds.add(id);
+// MANUAL owner reconciliation — traits for bosses OUTSIDE the three wiki category sources (Nether
+// Bosses / Deities / False Gods), sourced from their own wiki page. Un-excluded from UNRECONCILED and
+// given an explicit owner model (applied in the owner pass). Lord Zantai
+// (siralimultimate.wiki.gg/wiki/Lord_Zantai) is a boss-only encounter; his innate "The Ultimate
+// Strategy" (#1538) is boss-owned. His Jewel of Zantai drops stay item-only (handled via itemSource).
+const MANUAL_TRAIT_OWNERS = new Map([
+  [1538, { owner: 'Lord Zantai', ownerType: 'boss', ownerCategory: null, ownerGroup: 'Lord Zantai', ownerProvenance: 'wiki' }],
+]);
+for (const id of MANUAL_TRAIT_OWNERS.keys()) excludedTraitIds.delete(id);   // ship these despite their raw status
 const tc = readJSON(path.join(MODEL, 'theorycraft_tags.json'));
 const tagLabels = tc.label_map;
 const tagByTraitId = new Map();
@@ -788,6 +797,13 @@ for (const m of matRecs) {
   for (const id in traits) {
     const t = traits[id]; const r = reconById.get(+id) || {}; const st = r.status;
     const hasItem = itemTraitIds.has(+id);
+    if (MANUAL_TRAIT_OWNERS.has(+id)) {                            // wiki-sourced boss outside the 3 category sources
+      const mo = MANUAL_TRAIT_OWNERS.get(+id);
+      const itemSource = hasItem ? (refSourceByTrait.get(normPo(t.name)) || refSourceByLoose.get(normLo(t.name)) || r.obtained_from || null) : null;
+      Object.assign(t, mo, { itemSource });
+      ownBoss++; ownerCatCount[mo.ownerCategory] = (ownerCatCount[mo.ownerCategory] || 0) + 1;
+      continue;
+    }
     let owner = null, ownerType = null, ownerCategory = null, ownerGroup = null, ownerProvenance = null;
     if (st === 'creature_innate') {
       owner = creatureOwner.get(+id) || null; ownerType = owner ? 'creature' : null; ownerProvenance = owner ? 'code' : null;
