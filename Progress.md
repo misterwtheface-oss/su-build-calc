@@ -909,7 +909,8 @@ What works end-to-end:
 - [ ] Spell-gem loadouts (potency tiers already in `damageModel`).
 - [ ] Fusion palette / colour-combination picker (cosmetic).
 - [ ] Save / load / share builds; multiple saved parties.
-- [ ] Turn on the Cloudflare analytics beacon at public release (shared github.io token).
+- [x] Turn on the Cloudflare analytics beacon (shared github.io token). DONE — beacon is in `index.html`
+      and live on master (deployed 2026-09-23).
 
 ### New helper / reference ideas (2026-09-21 — user backlog)
 - [x] **Realm Property + False God rune helper** — DONE (session 4k) as the combined **Threats**
@@ -946,6 +947,17 @@ What works end-to-end:
 - Class-advantage multiplier + Nether Stone numerics are runtime/in-game-only (see WIKI_CONTEXT) → modelled around.
 
 ## Session log
+- 2026-09-24: **Innate-trait resolution alert + name-reconciliation fix.** `build-data.mjs` now applies
+  `_su_extract/data/reference/name_reconciliation.json` when resolving each creature's innate trait name→id
+  (`resolveTraitId`), and **alerts on any playable creature whose trait is missing or unresolved** (warn +
+  a prominent "innate-trait coverage: N/1362 resolved" summary line; gated by `--strict`). One-time pass found
+  **7 creatures silently tag-less** due to community spelling variants — 6 now fixed via reconciliation
+  (Ritual Abomination "Turn to Grey"→Gray, Fire Priest "Shepard"→Shepherd, Cerebral Vortex "Impedence"→Impedance,
+  Trollboar "Trolboar"→Trollboar, Mireling Dart Frog "Scoundrel Strike"→Scoundrel's Strike, Shapeshifter Novice
+  "Transformation Apprenticeship"→Apprenticeship). **1 genuine gap remains, now loudly flagged:** Lurid Masochist
+  "Shrug Off" — not in the game trait DB under any spelling (community name likely wrong; needs the real in-game
+  name added to name_reconciliation.json). Boss/non-player-trait groundwork this session lives in `_su_extract`
+  (`BOSS_DATA.md`, `nonplayer_traits.json`) — not shipped in the app yet (prelim for Godforge + Realm-boss features).
 - 2026-09-23: **Buff/Debuff/Minion glossary** (Menu → Glossary). 65 conditions with in-game prose, sourced from
   `_su_extract` vocabulary.csv `L_CDESC_{BUFF,DEBUFF,MINION}_*` (NOT the codex.json topics; names via
   labels.json `CONDNAME_*`), runtime tokens expanded in build-data → `D.conditions` [{cat,key,name,desc,icon,taxo,taxoSrc}].

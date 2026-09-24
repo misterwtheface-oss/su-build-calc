@@ -222,6 +222,17 @@ const creatureRefStats = new Map();
 // trait NAME -> id (traits_consolidated) so a ref creature resolves its innate trait id
 const traitIdByName = new Map();
 for (const t of consolidated) { const k = norm(t.name); if (k && !traitIdByName.has(k)) traitIdByName.set(k, t.id); }
+// community-spelling reconciliation (Grey->Gray, Shepard->Shepherd, Scoundrel Strike->Scoundrel's
+// Strike, Trolboar->Trollboar, Impedence->Impedance…) so a creature's misspelled innate trait name
+// still resolves to its game trait id. Without this, ~7 creatures show a trait with no synergy tags.
+const traitNameRecon = new Map();
+for (const x of readJSON(path.join(REF, 'name_reconciliation.json'))) traitNameRecon.set(norm(x.your_name), norm(x.game_name));
+const resolveTraitId = (name) => {
+  if (!name) return null;
+  const k = norm(name);
+  return traitIdByName.get(k) ?? traitIdByName.get(traitNameRecon.get(k)) ?? null;
+};
+const traitUnresolved = [];  // playable creatures whose innate trait name never resolves to an id
 
 fs.rmSync(OUT_CRIT, { recursive: true, force: true });
 fs.mkdirSync(OUT_CRIT, { recursive: true });
@@ -264,8 +275,11 @@ creaturesRef.forEach((r, i) => {
     : (stats.hp || 0) + (stats.atk || 0) + (stats.def || 0) + (stats.int || 0) + (stats.spd || 0);
 
   const traitName = (r.trait && r.trait.name) || (cd && cd.trait_name) || null;
-  const traitId = (cd && cd.trait_id != null) ? cd.trait_id
-    : (traitName ? (traitIdByName.get(norm(traitName)) ?? null) : null);
+  const traitId = (cd && cd.trait_id != null) ? cd.trait_id : resolveTraitId(traitName);
+  // ALERT: every playable creature must have a trait that resolves to a trait record (else it
+  // carries no synergy tags). Missing name = hard gap; unresolved = spelling not yet reconciled.
+  if (!traitName) { warn(`creature "${r.name}" has NO innate trait name`); traitUnresolved.push(`${r.name} (no name)`); }
+  else if (traitId == null) { warn(`creature "${r.name}" innate trait "${traitName}" does not resolve to a trait id (add to name_reconciliation.json)`); traitUnresolved.push(`${r.name} -> "${traitName}"`); }
 
   // battle sprite — spr_crits_battle frame from the capstone battle_frame, else legacy field0,
   // else a name-mismatch override (roster spelling ≠ sprite-catalog spelling)
@@ -1495,4 +1509,6 @@ console.log(`✓ wrote data.js (${(fs.statSync(path.join(ROOT, 'data.js')).size 
   console.log('  cache-bust: stamped index.html (data.js/app.js/styles.css ?v=<hash>)');
 }
 console.log(`  creatures ${creatures.length} · specs ${specs.length} · traits ${Object.keys(traits).length} · trait-items ${traitItems.length} · relics ${relics.length} · cards ${cards.length}`);
+console.log(`  innate-trait coverage: ${creatures.length - traitUnresolved.length}/${creatures.length} resolved` +
+  (traitUnresolved.length ? ` · ${traitUnresolved.length} UNRESOLVED (no synergy tags): ${traitUnresolved.join('; ')}` : ' ✓ every creature has a resolved trait'));
 if (warnings.length) console.log(`  (${warnings.length} warnings — recorded, non-fatal; see Progress.md)`);
