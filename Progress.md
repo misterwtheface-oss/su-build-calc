@@ -865,11 +865,14 @@ What works end-to-end:
       `traitIdByItemName` by exact material name so the existing loop emits icon+inherited-taxo. trait-item
       icons **1764→1782, 0 404-shipped**, cross-usage guards unchanged (2, pre-existing). **General, not
       hardcoded** — a future game update auto-resolves new boss-reward traits if the CSV + material DB carry them.
-      **⚠ 3 still blank — a DIFFERENT problem (data dedup, not a sprite):** "Master of Marionettes/
-      Elementasaurs/Mirelings" (#2179/2183/2184) are **duplicate trait entries** whose canonical twin
-      (#1998/1996/1997) already carries the sigil icon. The twins have **distinct desc + taxo** (not identical
-      copies), so it's unclear which id the Sigil grants in-game → NOT safe to auto-dedupe. Folds into the
-      broader duplicate-name finding below.
+      **✓ The last 3 also DONE (commit 2dc391d):** "Master of Marionettes/Elementasaurs/Mirelings" were
+      **stale-legacy duplicate entries**. Token-similarity vs the authoritative `Trait_REF.csv` effect text
+      (1.00 / 0.87 / 1.00) showed the **HIGHER id is the current trait** (#2179/#2183/#2184) and the lower
+      (#1998/#1996/#1997) is a reworked-away legacy version. Blacklisted the 3 stale ids + pruned their sigil
+      links so the reconciler re-points each Sigil to the surviving current trait, which now shows its
+      `sigil_<race>` icon. Each Master = ONE correct row; **0 blank Master traits, 0 404-shipped**; reconciler
+      +21, traits 2049→2046. Reusable lesson: for same-name trait dupes, the CSV effect text is the tiebreaker
+      and the higher/later id tends to be the current definition.
 - [ ] **Duplicate-name traits (58 groups) — decide handling.** Surfaced while fixing the sprites: 58 shipped
       trait NAMES have ≥2 ids (19 identical-desc, 39 differing-desc). Most are the **Nether Boss (boss-owned)**
       "3-same-name convention" + **False God** body-part copies + **Gate of the Gods deity** traits (e.g.
