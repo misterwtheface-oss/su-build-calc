@@ -124,12 +124,13 @@ console.log('· reading _su_extract …');
 
 // ── traits (association layer): id -> {name, desc, cls, produces, consumes, labels, stats} ──
 const consolidated = readJSON(path.join(MODEL, 'traits_consolidated.json')).records;
-// Trait reconciliation (code/CSV/wiki + owner tags). UNRESOLVED traits (not present in live Ultimate —
-// sandbox-unreleased or prior-game legacy) are EXCLUDED from the app entirely. Resolved traits carry their
-// status/provenance + boss owner/obtained_from tags.
+// Trait reconciliation (code/CSV/wiki + owner tags). Traits NOT present in live Ultimate are EXCLUDED from
+// the app entirely: UNRESOLVED (sandbox-unreleased / undetermined) + Not Yet Implemented (code desc "NYI") +
+// legacy (prior-Siralim, deliberately not implemented). Resolved live traits carry status/provenance + boss tags.
+const TRAIT_BLACKLIST = new Set(['UNRECONCILED', 'Not Yet Implemented', 'legacy']);
 const RECON = readJSON(path.join(MODEL, 'trait_reconciliation.json'));
 const reconById = new Map(RECON.records.map(r => [r.id, r]));
-const excludedTraitIds = new Set(RECON.records.filter(r => r.status === 'UNRECONCILED').map(r => r.id));
+const excludedTraitIds = new Set(RECON.records.filter(r => TRAIT_BLACKLIST.has(r.status)).map(r => r.id));
 const tc = readJSON(path.join(MODEL, 'theorycraft_tags.json'));
 const tagLabels = tc.label_map;
 const tagByTraitId = new Map();
@@ -179,7 +180,7 @@ for (const t of consolidated) {
 const traits = {};
 let traitsExcluded = 0;
 for (const t of consolidated) {
-  if (excludedTraitIds.has(t.id)) { traitsExcluded++; continue; }   // unresolved -> never ships
+  if (excludedTraitIds.has(t.id)) { traitsExcluded++; continue; }   // blacklisted -> never ships
   const tag = tagByTraitId.get(t.id) || {};
   const cls = (t.source_creature && CLASS_SET.has(t.source_creature.class)) ? t.source_creature.class : null;
   const desc = t.desc || t.effect_prose || '';
@@ -204,7 +205,7 @@ for (const t of consolidated) {
     obtainedFrom: rec.obtained_from || null,
   };
 }
-console.log(`  traits: ${Object.keys(traits).length} shipped · ${traitsExcluded} UNRESOLVED excluded (not in live Ultimate)`);
+console.log(`  traits: ${Object.keys(traits).length} shipped · ${traitsExcluded} blacklisted (unresolved/NYI/legacy — not in live Ultimate)`);
 
 // ── creatures ──────────────────────────────────────────────────────────────
 // Spine = creatures_ref: the AUTHORITATIVE playable roster (1362), where EVERY
