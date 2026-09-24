@@ -852,12 +852,33 @@ What works end-to-end:
 
 ## Backlog
 ### ⭐ HIGH PRIORITY — next session (2026-09-24)
-- [ ] **Resolve the 19 missing trait sprites.** 19 item-backed traits (7 Master, 11 reward/Nether-boss trait
-      material, 1 treasure) ship with no material icon → they render BLANK (now FAIL LOUD w/ red marker after
-      removing the onerror-hide). **The sprites exist in the dump — find/join them.** Only 3/19 resolve via
-      `Trait_REF.csv` item-name → `material_icons.json`; the rest (boss reward-item icons) need the material-icon
-      coverage gap closed. Examples: Master of Amphisbaenas/Leeches/Sphinxes/Unguided, Flubris's ×3, Phobos's
-      Grip/Bladedancing/Butterfly Touch, Final Act of Judgment, Perishing Salvo.
+- [x] **Resolve the missing item-backed trait sprites — DONE (2026-09-24, commit e993af5).** 18 item-backed
+      traits (13 Nether-Boss **reward** items — Flubris/Phobos/Ramses/Kraynaks/Cyhra body parts; 4 Master
+      **sigils** — Leeches/Sphinxes/Amphisbaenas/Unguided; 1 **treasure** — Perishing Salvo/Fading Garnet)
+      rendered iconless. Root cause was a **join gap, not missing data**: every item IS in `material_stats`
+      (item_class 2) with a real icon+sprite, but the consolidated `source_item` link was `undefined` for 7
+      traits and used a mismatched possessive/plural spelling for others (`material_stats.trait_id` drifts ~1
+      block, so it's unusable). Fix in `build-data.mjs`: a **`Trait_REF.csv` reconciliation pass** — resolves
+      the authoritative CSV trait→item link to the game material name (possessive- + plural-tolerant `normP`/
+      `normL`, plus `ITEM_ALIAS` for genuine CSV typos: Leeche→Leech, Faded→Fading Garnet, Cyhra's Adamance→
+      Cyhra's Tattered Ear), scoped to truly-blank traits (no creature, no existing item), keying
+      `traitIdByItemName` by exact material name so the existing loop emits icon+inherited-taxo. trait-item
+      icons **1764→1782, 0 404-shipped**, cross-usage guards unchanged (2, pre-existing). **General, not
+      hardcoded** — a future game update auto-resolves new boss-reward traits if the CSV + material DB carry them.
+      **⚠ 3 still blank — a DIFFERENT problem (data dedup, not a sprite):** "Master of Marionettes/
+      Elementasaurs/Mirelings" (#2179/2183/2184) are **duplicate trait entries** whose canonical twin
+      (#1998/1996/1997) already carries the sigil icon. The twins have **distinct desc + taxo** (not identical
+      copies), so it's unclear which id the Sigil grants in-game → NOT safe to auto-dedupe. Folds into the
+      broader duplicate-name finding below.
+- [ ] **Duplicate-name traits (58 groups) — decide handling.** Surfaced while fixing the sprites: 58 shipped
+      trait NAMES have ≥2 ids (19 identical-desc, 39 differing-desc). Most are the **Nether Boss (boss-owned)**
+      "3-same-name convention" + **False God** body-part copies + **Gate of the Gods deity** traits (e.g.
+      "Undying" ×5, "Crucifixion" ×2) — all blank, and they belong to the boss-only surfacing task below (no
+      item icon; boss sprite/portrait). A handful are **player-facing** (the 3 Master duplicates above). Decide:
+      dedupe/collapse duplicate rows in the Appendix by name, vs. surface boss-owned dupes at the bottom, vs.
+      blacklist stale twins. Needs a taxonomy call (see the 4-way trait-source model: False God = body-part /
+      Nether Boss boss-owned = no item, 3-same-name / Gate of the Gods deity = no item / Nether Boss reward =
+      item-associated ← the only one that gets an item sprite, now done).
 - [ ] **Appendix: surface boss-only traits by their new tag.** Traits now carry `bossOwner` (boss-owned) /
       `obtainedFrom` (boss-obtained) / `obtainStatus`. Boss-only traits should render **at the very bottom of the
       Appendix** (grouped/after player traits), and feed **per-boss detail pages** (future Boss Guides). Any
