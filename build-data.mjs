@@ -283,11 +283,18 @@ const traitUnresolved = [];  // playable creatures whose innate trait name never
 fs.rmSync(OUT_CRIT, { recursive: true, force: true });
 fs.mkdirSync(OUT_CRIT, { recursive: true });
 
-// battle-sprite frame overrides for creatures whose roster name is spelled differently in the
-// sprite catalog (creature_sprites.json), so the name-join misses (verified frame-by-frame).
+// CSV typos in the roster spine (creatures_ref) — the community CSV misspells 4 creatures whose
+// CODE-authoritative spelling (catalog + creature_stats + creature_data all agree) is different.
+// Correcting the name at the source fixes the code-join (stats + battle sprite resolve naturally),
+// so these no longer need a sprite-frame override. No alias — the wrong spelling is replaced outright.
+const CREATURE_SPELLING_FIX = {
+  'Manticore Conquerer': 'Manticore Conqueror', 'Phenominal Possum': 'Phenomenal Possum',
+  'Maionette Charlatan': 'Marionette Charlatan', 'Gloopidator': 'Gloopdiator',
+};
+// battle-sprite frame overrides for the REMAINING creatures whose roster name matches the code but
+// whose sprite-catalog (creature_sprites.json) entry is under a different key (verified frame-by-frame).
 const SPRITE_FRAME_OVERRIDE = {
-  atlasbeacon: 2941, gloopidator: 1133, elfhuntsman: 1299, phenominalpossum: 3504,
-  manticoreconquerer: 1542, maionettecharlatan: 3502, tipsydenizen: 3444,
+  atlasbeacon: 2941, elfhuntsman: 1299, tipsydenizen: 3444,
 };
 
 const creatures = [];
@@ -295,6 +302,7 @@ let spriteCopied = 0, codeStats = 0, spriteOverrides = 0;
 const statFilled = [];   // creatures whose null base stat was filled from Creature_REF.csv
 creaturesRef.forEach((r, i) => {
   const id = i;
+  if (CREATURE_SPELLING_FIX[r.name]) r.name = CREATURE_SPELLING_FIX[r.name];   // correct CSV typo → code spelling
   const cd = cdByName.get(norm(r.name));                    // capstone twin (best stats + battle_frame)
   const cs = csByName.get(norm(r.name));                    // legacy twin (frame + stats, wider coverage)
   const cls = CLASS_SET.has(r.class) ? r.class
