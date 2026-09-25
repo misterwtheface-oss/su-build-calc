@@ -954,6 +954,42 @@ for (const m of matRecs) {
   }
 }
 
+// ── False God detail data — each FG is a set of body-part creatures that SHARE one stat spread. Attach
+// a shared `stats` block + a `parts` list ({name, traitId}) to each falseGods entry so the app can render
+// one boss detail page per False God. Parts + stats come from the extract (creature_reconciliation "False
+// God part" tiedTo + creature_stats by key); the trait is the shipped FG trait whose name == the part name.
+{
+  const recRecs = readJSON(path.join(MODEL, 'creature_reconciliation.json')).records || [];
+  const statByKey = new Map(readJSON(path.join(MODEL, 'creature_stats.json')).records.filter(r => r && r.key).map(r => [r.key, r]));
+  const fgTraitByName = new Map();
+  for (const id in traits) { const t = traits[id]; if (t.ownerCategory === 'False God') fgTraitByName.set(norm(t.name), +id); }
+  const partsByFg = new Map();   // normalized tiedTo → [{name, traitId, stats}]
+  for (const r of recRecs) {
+    if (r.category !== 'False God part' || !r.tiedTo) continue;
+    const s = statByKey.get(r.key) || {};
+    const stats = { hp: s.hp || 0, atk: s.atk || 0, int: s.int || 0, def: s.def || 0, spd: s.spd || 0 };
+    stats.total = stats.hp + stats.atk + stats.int + stats.def + stats.spd;
+    const k = norm(r.tiedTo);
+    if (!partsByFg.has(k)) partsByFg.set(k, []);
+    partsByFg.get(k).push({ name: r.name, traitId: fgTraitByName.get(norm(r.name)) ?? null, stats });
+  }
+  let fgPartsHits = 0, fgSpreadWarn = 0;
+  for (const g of falseGods) {
+    const gk = norm(g.name);
+    // tiedTo is a short name (Impington ↔ Imp Impington, Althea ↔ Saint Althea, Jotun ↔ Jotunir …)
+    let parts = partsByFg.get(gk);
+    if (!parts) { for (const [k, v] of partsByFg) if (k.includes(gk) || gk.includes(k)) { parts = v; break; } }
+    if (!parts || !parts.length) { warn(`False God "${g.name}" has no body-part creatures`); continue; }
+    const spreads = new Set(parts.map(p => `${p.stats.hp}/${p.stats.atk}/${p.stats.int}/${p.stats.def}/${p.stats.spd}`));
+    if (spreads.size > 1) { fgSpreadWarn++; warn(`False God "${g.name}" parts do NOT share one stat spread (${spreads.size}) — app shows per-part`); }
+    g.stats = parts[0].stats;                                  // shared spread (verified uniform in the extract)
+    g.statsShared = spreads.size === 1;
+    g.parts = parts.map(p => ({ name: p.name, traitId: p.traitId, ...(spreads.size > 1 ? { stats: p.stats } : {}) }));
+    fgPartsHits++;
+  }
+  console.log(`  False God parts: ${fgPartsHits}/${falseGods.length} gods enriched with body parts + shared stat spread${fgSpreadWarn ? ` · ${fgSpreadWarn} non-uniform` : ''}`);
+}
+
 // ── Stat materials (Ambers) → Stat-slot properties ──
 // The Amber's boosted stat(s) are encoded in the sprite the game assigns it (dev-authored code):
 // dual ambers = amber2_<X>_<Y>_<name> where X,Y ∈ {H,A,D,I,S} (e.g. amber2_H_A_bold → Health/Attack);

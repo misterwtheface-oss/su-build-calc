@@ -1098,6 +1098,26 @@ MAPPING not for asserting PRESENCE; no inventing entities from the community-CSV
 - Class-advantage multiplier + Nether Stone numerics are runtime/in-game-only (see WIKI_CONTEXT) → modelled around.
 
 ## Session log
+- 2026-09-24: **Appendix — pass 3 (search-w/o-filter, centered labels, perk spec icon, taxonomy Source, Caliban sprite, False God boss pages).**
+  Follow-ups to the six upgrades: **(1)** center the "N cards" / "Rank N" labels in their column; **(3)** name
+  search now returns matches with **no taxonomy filter** applied (a query at zero tags shows name-filtered
+  results instead of the category browser); **(5)** dropped the token/llm provenance chips from result rows
+  (kept on the taxonomy detail page only; removed the dead Sources toggle); **(6)** taxonomy detail page gained
+  a **Source** block — Material (or "No Material Exists"), Item source, and the innate **Creature/Boss owner**
+  (creature owner clickable → creature preview; False God owner → boss page); **(7)** perk rows show the
+  **specialization emblem** where trait rows show a creature.
+  **(2) Caliban Deity battle sprite:** Caliban is a Deity AND a False God as separate entries; added
+  `bspr_god_caliban` via `GOD_BSPR` + a new `bossSprites` map (normalized Deity owner → bspr_ battle sprite,
+  all 31 Deities incl. Caliban). **Nether/Special bosses have NO `bspr_` battle sprite in the extract** (only
+  overworld + 16×16 material sprites) — left **unmapped** (owner-name chip) pending a code-grounded source, per
+  user (do NOT assume the overworld sprite is the battle sprite).
+  **(8) False God boss detail pages:** every False God is a set of body-part creatures that **share one stat
+  spread** (all 40 parts = 50/25/25/25/25, verified). `build-data` enriches each `falseGods` entry with a shared
+  `stats` block + a `parts` list ({name, traitId}) from `creature_reconciliation` (tiedTo) + `creature_stats`
+  (by key) + the shipped FG trait (by name; 34/40 parts have a distinct-name trait, 6 "Arm of X" show stats
+  only). App adds `openFalseGodDetail`/`renderFalseGodDetail`: portrait + shared base-stat table + each part's
+  trait, reached from the FG boss row's portrait (and the taxonomy owner link). Verified headless (fgod 9/9;
+  appendix-v2 15, v3 13, collapse 13, abation 3).
 - 2026-09-24: **Appendix — six upgrades (creature detail · item names · search · boss grouping · relic/card legibility).**
   (1) **Creature sprites open a read-only creature detail** (`openCreaturePreview`/`renderCreaturePreview`,
   reusing the main-screen `renderCreatureIdentity`: sprite · class/race · innate trait · base stats); the row's

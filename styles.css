@@ -587,6 +587,8 @@ h1, h2, h3 { margin: 0; }
 .apx-tier-n { color: var(--cap); }
 .apx-rank-d, .apx-tier-d { flex: 1; color: var(--text-dim); }
 .cd-preview { padding: 4px 2px; }
+.fg-part-name { margin-bottom: 4px; }
+.fg-part-name b { font-size: 14px; }
 /* perk spec emblem square (mirrors the trait row's creature square) */
 .apx-crea.apx-spec { padding: 3px; background: var(--surface2); }
 .apx-crea.apx-spec img { padding: 2px; }

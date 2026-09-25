@@ -53,6 +53,13 @@
     }
     return null;   // Nether Boss / Special Boss — no sprite extracted
   }
+  const FG_BY_KEY = new Map((D.falseGods || []).map(g => [g.key, g]));
+  // resolve a False-God-owned trait → its False God entry (ownerGroup is a short name: Impington ↔ Imp Impington)
+  function falseGodFor(t) {
+    if (!t || t.ownerCategory !== "False God") return null;
+    const g = normNm(t.ownerGroup || t.owner);
+    return (D.falseGods || []).find(f => { const k = normNm(f.name); return k === g || k.includes(g) || g.includes(k); }) || null;
+  }
   const SPEC = new Map(D.specs.map(s => [s.id, s]));
   const SPEC_SPRITE = new Map(D.specs.map(s => [s.label, s.sprite]));   // spec label → emblem sprite (perk rows)
   const TRAIT = D.traits;                                   // id -> {name,desc,cls,produces,consumes,labels}
@@ -843,6 +850,42 @@
       <div class="overlay-footer"><span class="foot-info"></span><button class="btn-confirm" data-action="close-detail">Done</button></div>
     </div></div>`;
   }
+  // False God detail — a boss is a set of body-part creatures that share one stat spread. One page:
+  // portrait + the shared base-stat table + each part's trait. Opened from the Appendix boss-trait row.
+  function openFalseGodDetail(key) {
+    const g = FG_BY_KEY.get(key); if (!g) return;
+    dovState = { kind: "fgod-detail", fg: key, render: () => renderFalseGodDetail(key) };
+    openDetail(dovState.render());
+  }
+  function renderFalseGodDetail(key) {
+    const g = FG_BY_KEY.get(key); if (!g) return "";
+    const s = g.stats || {};
+    const statTable = (st) => `<div class="stat-grid single mag">
+      ${STAT_KEYS.map(k => `<div class="stat-row"><span class="stat-name">${STAT_LABEL[k]}</span>
+        <span class="stat-mag"><i style="width:${Math.round((st[k] || 0) / (STAT_MAX[k] || 1) * 100)}%"></i></span>
+        <span class="stat-val total">${st[k] || 0}</span></div>`).join("")}
+      <div class="stat-row hl-med"><span class="stat-name">Total</span><span class="stat-mag"></span><span class="stat-val total">${st.total || 0}</span></div></div>`;
+    const parts = (g.parts || []).map(p => {
+      const tr = p.traitId != null ? TRAIT[p.traitId] : null;
+      return `<div class="primary-traits" style="margin-bottom:8px">
+        <div class="fg-part-name"><b>${esc(p.name)}</b>${tr ? "" : `<span class="slot-sub"> · no distinct trait</span>`}</div>
+        ${tr ? `${traitBanner(p.traitId)}<div class="trait-desc">${richText(tr.desc || "")}</div>` : ""}
+        ${p.stats ? `<div class="slot-sub">${STAT_KEYS.map(k => `${STAT_LABEL[k].slice(0, 3)} ${p.stats[k]}`).join(" · ")}</div>` : ""}
+      </div>`;
+    }).join("");
+    return `<div class="ovl-backdrop" data-action="detail-backdrop"><div class="overlay-panel detail">
+      <div class="overlay-header">${g.img ? `<span class="hdr-ico">${spriteImg(g.img)}</span>` : ""}
+        <h2>${esc(g.name)}</h2><span class="anoint-spec-tag apx-boss-cat">False God</span>
+        <button class="ovl-close" data-action="close-detail">✕</button></div>
+      <div class="overlay-body"><div class="ovl-center"><div class="ovl-center-scroll">
+        <div class="section-label">Body-part base stats${g.statsShared ? " · shared by all parts" : ""}</div>
+        ${statTable(s)}
+        <div class="section-label" style="margin-top:14px">Body parts — ${(g.parts || []).length}</div>
+        ${parts || `<div class="slot-sub">No body parts.</div>`}
+      </div></div></div>
+      <div class="overlay-footer"><span class="foot-info"></span><button class="btn-confirm" data-action="close-detail">Done</button></div>
+    </div></div>`;
+  }
   // wizard step-2 preview: the actual built creature (fusion + personality + scrolls) via the real stat calc
   function renderWizardPreview(st) {
     const primary = CREA.get(st.primaryId); if (!primary) return "";
@@ -1401,9 +1444,11 @@
       // boss-owned traits: category chip + the boss's sprite (Deity/False God) or an owner-name chip fallback
       const bossTraitRow = (g) => {
         const spr = bossSpriteFor(g);
+        const fg = falseGodFor(g);   // False God parts open a boss detail page from their portrait
         const meta = `<span class="anoint-spec-tag apx-boss-cat">${esc(g.ownerCategory || "Boss")}</span>${itemNameMeta(g)}`;
         const bossSquare = spr
-          ? `<div class="apx-crea apx-boss" title="${esc(g.owner || g.ownerGroup || "")}">${spriteImg(spr)}</div>`
+          ? (fg ? `<div class="apx-crea apx-boss apx-clickable" data-action="apx-fg-open" data-fg="${esc(fg.key)}" title="${esc(fg.name)} — view boss">${spriteImg(spr)}</div>`
+                : `<div class="apx-crea apx-boss" title="${esc(g.owner || g.ownerGroup || "")}">${spriteImg(spr)}</div>`)
           : `<div class="apx-boss-name" title="${esc(g.ownerCategory || "Boss")}">${esc(g.owner || g.ownerGroup || "—")}</div>`;
         return `<div class="perk-line apx-trait apx-clickable" data-action="apx-open" data-ek="trait" data-eid="${g.id}">
           ${traitIco(g)}
@@ -1500,8 +1545,11 @@
         ? `<button class="apx-owner apx-clickable" data-action="apx-crea-open" data-cid="${c.id}" title="View creature"><span class="apx-owner-ico">${critFace(c)}</span><b>${esc(e.owner)}</b></button>`
         : `<b>${esc(e.owner)}</b>`;
     } else if (e.ownerType === "boss") {
-      const spr = bossSpriteFor(e);
-      ownerHtml = `<span class="apx-owner">${spr ? `<span class="apx-owner-ico">${spriteImg(spr)}</span>` : ""}<b>${esc(e.owner || e.ownerGroup || "—")}</b><span class="anoint-spec-tag apx-boss-cat">${esc(e.ownerCategory || "Boss")}</span></span>`;
+      const spr = bossSpriteFor(e), fg = falseGodFor(e);
+      const inner = `${spr ? `<span class="apx-owner-ico">${spriteImg(spr)}</span>` : ""}<b>${esc(e.owner || e.ownerGroup || "—")}</b><span class="anoint-spec-tag apx-boss-cat">${esc(e.ownerCategory || "Boss")}</span>`;
+      ownerHtml = fg
+        ? `<button class="apx-owner apx-clickable" data-action="apx-fg-open" data-fg="${esc(fg.key)}" title="View boss">${inner}</button>`
+        : `<span class="apx-owner">${inner}</span>`;
     } else {
       ownerHtml = `<span class="slot-sub">Item-only (no innate owner)</span>`;
     }
@@ -3484,6 +3532,7 @@
       case "nav-trait": openEntityDetail("trait", +t.dataset.tid); break;
       case "apx-open": openEntityDetail(t.dataset.ek, t.dataset.eid); break;
       case "apx-crea-open": e.stopPropagation(); openCreaturePreview(t.dataset.cid); break;
+      case "apx-fg-open": e.stopPropagation(); openFalseGodDetail(t.dataset.fg); break;
       case "close-entity": closeEntityDetail(); break;
       case "entity-backdrop": if (e.target === t) closeEntityDetail(); break;
       case "etax-filter": {   // jump to the Appendix filtered by the tapped tag
