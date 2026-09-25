@@ -913,7 +913,16 @@ MAPPING not for asserting PRESENCE; no inventing entities from the community-CSV
   DRIFTS (wrongly guessed Ramses's Crest→"Coercion") so it's unusable, and there's NO Material/Item_REF
   compendium. The 81 are mostly redundant alt creature-trait materials (their trait already has a linked
   material) + some legacy/NYI boss items (Unguided/Misery/Itherian). Practical gap is small; needs in-game/
-  compendium ground truth to link precisely. **Phase D — Spells** not started.
+  compendium ground truth to link precisely. (User: leave the 81 unlinked — they map to excluded legacy
+  traits; every live trait is matched or expectedly item-less.)
+- **Phase D — Spells DONE (2026-09-24).** 747 code spells all shipped, **0 duplicates, 0 missing class**, no
+  legacy/NYI/duplicate spells (code↔community are 1:1). Reconciliation fixes: the only 2 "orphans" were
+  community-CSV spelling typos (Luscious Lager / Ignis Fatuus) → resolved via fuzzy match (0 no-source now);
+  the 35 spells missing code charges (Morph set, etc.) filled from the community count (`chargesSrc` =
+  code 712 / community 35 — code stays authoritative, Affliction 14 not 17). Compendium fields (Potency/
+  Target/**Source**) now read straight from the user's `Spell_REF.csv` (verified 747/747 identical to
+  spells_ref.json). Per-attribute provenance recorded. **The whole "reconcile everything" program (creatures/
+  traits/items/spells) is now complete.**
 
 ## Backlog
 ### ⭐ HIGH PRIORITY — next session (2026-09-24)
