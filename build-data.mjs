@@ -1740,12 +1740,16 @@ const OUT_SKIN = path.join(OUT_ASSETS, 'skins');
 fs.rmSync(OUT_SKIN, { recursive: true, force: true });
 fs.mkdirSync(OUT_SKIN, { recursive: true });
 const skinRecs = readJSON(path.join(MODEL, 'skins.json')).records;
+// skins.json OVER-claims: the Nether boss roster + Inner Darkness/Shadow Lord parts are mislabeled as skins.
+// Exclude them (canonical, human-validated) so they don't ship as skins — their frames are boss sprites.
+const skinExclusions = new Set((readJSON(path.join(MODEL, 'skin_exclusions.json')).exclude || []).map(e => e.key));
 const creNameSet = new Set(creatures.map(c => c.name));
 const creRaceSet = new Set(creatures.map(c => c.race).filter(Boolean));
 const skins = [];
-let skinUnresolved = 0, skinFrameMissing = 0;
+let skinUnresolved = 0, skinFrameMissing = 0, skinExcluded = 0;
 const skinFrames = new Set();
 for (const s of skinRecs) {
+  if (skinExclusions.has(s.key)) { skinExcluded++; continue; }   // actually a boss, not a skin
   let race = null, creatureName = null;
   if (s.restriction === 'race') {
     if (!s.race || !creRaceSet.has(s.race)) { skinUnresolved++; continue; }         // unresolved / race not in roster
@@ -1761,7 +1765,7 @@ for (const s of skinRecs) {
   if (!skinFrames.has(frame)) { fs.copyFileSync(srcPng, path.join(OUT_SKIN, `${frame}.png`)); skinFrames.add(frame); }
   skins.push({ id: s.skin_id, name: s.name, restriction: s.restriction, race, creature: creatureName, img: `assets/skins/${frame}.png` });
 }
-console.log(`  skins: ${skins.length} applicable (${skinFrames.size} frames) · ${skinUnresolved} unresolved-skip${skinFrameMissing ? ` · ${skinFrameMissing} frame-missing(404)` : ''}`);
+console.log(`  skins: ${skins.length} applicable (${skinFrames.size} frames) · ${skinExcluded} boss-skins excluded · ${skinUnresolved} unresolved-skip${skinFrameMissing ? ` · ${skinFrameMissing} frame-missing(404)` : ''}`);
 
 // ── Threats advisor: Realm Properties (instability) + False God Runes ───────────────────────
 // Both systems are "enemy modifiers that make a fight harder". A build tool reads the build's
