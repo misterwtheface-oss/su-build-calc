@@ -176,7 +176,8 @@ for (const id of UNRESOLVED_OWNERLESS_IDS) excludedTraitIds.add(id);
 //     Better to Receive, Maximum Hydration, Undead Army ×2, Eager Recruit, Delusion, Vext's Grace.
 // Only UNRESOLVED ids flagged — none matches a resolved trait (guardrail verified), so no live trait flips.
 const LEGACY_TRAIT_IDS = new Set([...Array.from({ length: 869 - 812 + 1 }, (_, i) => 812 + i), 538, 554, 555, 562, 596,
-  870, 871, 872, 873, 875, 876, 887, 888, 889, 901, 902, 903, 904, 905, 916, 917, 918, 950, 951, 965, 970, 981, 988, 989, 1009, 1010, 1023]);
+  870, 871, 872, 873, 875, 876, 887, 888, 889, 901, 902, 903, 904, 905, 916, 917, 918, 950, 951, 965, 969, 970, 981, 988, 989, 1009, 1010, 1023]);
+// (#969 Inner Demons = a Siralim-3 Nether Boss trait — user-confirmed.)
 for (const id of LEGACY_TRAIT_IDS) excludedTraitIds.add(id);
 // NYI (non-sandbox) — staged/cut upcoming content not accessible in live (user-confirmed): Anathema, Poison
 // Bath, The Wishing Stick, Sorcerous Statue, Thunder God's Wrath; Stolen by Damnation's Edge = a cut early
