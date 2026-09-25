@@ -145,6 +145,14 @@ const excludedTraitIds = new Set(consolidated
 //   keep #2179 drop #1998 (Marionette) · keep #2183 drop #1996 (Elementasaur) · keep #2184 drop #1997 (Mireling)
 const DUPLICATE_TRAIT_IDS = new Set([1996, 1997, 1998]);
 for (const id of DUPLICATE_TRAIT_IDS) excludedTraitIds.add(id);
+// NETHER-BOSS DUPLICATE COPIES. Every Ultimate Nether Boss has exactly 3 same-named trait tiers
+// (escalating difficulty). Some bosses carry 4–5 copies — extra duplicates: empty-prose stubs + stale
+// lower-id versions whose prose does NOT match the current wiki (verified: e.g. Kiichi's live tier-1
+// "Enemies always have Bleeding…" is #1233, not the older #1200; same for Nerlyx/Myrtle/Giran/Vitja/
+// Etta/Tellur/Loid/Flubris). Rule: per >3-copy boss, drop empty-prose + keep the 3 highest-id non-empty
+// (the canonical tier triple); ≤3-copy bosses (e.g. Kraynaks) untouched. (Flubris has only 2 real tiers.)
+const NETHER_DUP_TRAIT_IDS = new Set([543, 544, 545, 546, 548, 549, 550, 551, 552, 553, 586, 587, 588, 589, 590, 591, 592, 593, 594, 595, 877, 878, 879, 880, 881, 882, 883, 884, 885, 886, 906, 907, 908, 909, 910, 911, 912, 913, 914, 915, 1200, 1201, 1202, 1203, 1204, 1205, 1206, 1208, 1209, 1210, 1211, 1212, 1214, 1216]);
+for (const id of NETHER_DUP_TRAIT_IDS) excludedTraitIds.add(id);
 // UNRESOLVED — factually unresolvable traits (category "unresolved"). These 17 carry recon
 // status="boss" but have NULL owner AND NULL item, and appear in NONE of the authoritative sources:
 // not the roster (no innate creature), not the Nether Bosses / Gate of the Gods (Deities) / False Gods
@@ -284,7 +292,7 @@ for (const t of consolidated) {
     obtainStatus: rec.status || null,
   };
 }
-console.log(`  traits: ${Object.keys(traits).length} shipped · ${traitsExcluded} blacklisted (${DUPLICATE_TRAIT_IDS.size} duplicate + ${NYI_SANDBOX_TRAIT_IDS.size + NYI_OTHER_TRAIT_IDS.size} NYI + ${LEGACY_TRAIT_IDS.size} legacy-S3 + ${UNRESOLVED_OWNERLESS_IDS.size} unresolved-ownerless + ${traitsExcluded - DUPLICATE_TRAIT_IDS.size - NYI_SANDBOX_TRAIT_IDS.size - NYI_OTHER_TRAIT_IDS.size - LEGACY_TRAIT_IDS.size - UNRESOLVED_OWNERLESS_IDS.size} recon — not in live Ultimate)`);
+console.log(`  traits: ${Object.keys(traits).length} shipped · ${traitsExcluded} blacklisted (${DUPLICATE_TRAIT_IDS.size + NETHER_DUP_TRAIT_IDS.size} duplicate + ${NYI_SANDBOX_TRAIT_IDS.size + NYI_OTHER_TRAIT_IDS.size} NYI + ${LEGACY_TRAIT_IDS.size} legacy-S3 + ${UNRESOLVED_OWNERLESS_IDS.size} unresolved-ownerless + ${traitsExcluded - DUPLICATE_TRAIT_IDS.size - NETHER_DUP_TRAIT_IDS.size - NYI_SANDBOX_TRAIT_IDS.size - NYI_OTHER_TRAIT_IDS.size - LEGACY_TRAIT_IDS.size - UNRESOLVED_OWNERLESS_IDS.size} recon — not in live Ultimate)`);
 
 // ── creatures ──────────────────────────────────────────────────────────────
 // Spine = creatures_ref: the AUTHORITATIVE playable roster (1362), where EVERY
