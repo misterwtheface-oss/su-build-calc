@@ -151,8 +151,15 @@ for (const id of DUPLICATE_TRAIT_IDS) excludedTraitIds.add(id);
 // wiki, not Trait_REF.csv (no item/encounter), and not code (creature_stats has no trait field). A trait
 // with neither an owner nor an item has no provenance at all → unresolved (per user rule 2026-09-24).
 // Re-derive on a game update; if a future source (e.g. Pandemonium/other-boss page) names one, resolve it.
-const UNRESOLVED_OWNERLESS_IDS = new Set([538, 554, 555, 596, 1213, 1215, 1217, 1218, 1219, 1227, 1231, 1521]);
+const UNRESOLVED_OWNERLESS_IDS = new Set([1213, 1215, 1217, 1218, 1219, 1227, 1231, 1521]);
 for (const id of UNRESOLVED_OWNERLESS_IDS) excludedTraitIds.add(id);
+// LEGACY — Siralim-3 carryover content, present in the extract but not in live Ultimate (user-confirmed).
+//   • Itherian Artifact trait set (contiguous 812–869) — the artifact-power / condition-synergy / Core sets.
+//   • Multiply (Failed Experiment's innate — a S3 legacy creature) · Crucifixion #554/#596 + Crucify Me
+//     (the "Misery" boss, S3) · Betrayer of the Code (The Unguided boss, S3).
+// Only UNRESOLVED ids are flagged — none matches a resolved trait (guardrail verified), so no live trait flips.
+const LEGACY_TRAIT_IDS = new Set([...Array.from({ length: 869 - 812 + 1 }, (_, i) => 812 + i), 538, 554, 555, 562, 596]);
+for (const id of LEGACY_TRAIT_IDS) excludedTraitIds.add(id);
 // NYI — SANDBOX/STAGED content. User-confirmed list of traits found in the game's sandbox ~1 year ago
 // that are NOT accessible yet (staged for upcoming content), plus the 12 Zodiac "Sign of <sign>" traits.
 // These fail our recon parameters (no live owner / item) precisely because they aren't live yet — so they
@@ -171,6 +178,10 @@ for (const id of NYI_SANDBOX_TRAIT_IDS) excludedTraitIds.add(id);
 // Zantai, ownerForm=encounter. His Jewel of Zantai drops stay item-only (via itemSource).
 const MANUAL_TRAIT_OWNERS = new Map([
   [1538, { owner: 'Zantai', ownerType: 'boss', ownerForm: 'encounter', ownerCategory: 'Special Boss', ownerGroup: 'Lord Zantai', ownerProvenance: 'wiki' }],
+  // Guided by Darkness = Erebyss's CURRENT Deity (encounter) trait — patch 2.0.17 (2025-05-24) changed it
+  // FROM "Absence of Light" (which is now just Fog Spirit's creature trait #797). This fills Erebyss's
+  // previously-empty Deity slot; her Avatar/player trait (#609 Avenged Sevenfold) is unchanged.
+  [668, { owner: 'Erebyss', ownerType: 'boss', ownerForm: 'encounter', ownerCategory: 'Deity', ownerGroup: 'Erebyss', ownerProvenance: 'wiki' }],
 ]);
 for (const id of MANUAL_TRAIT_OWNERS.keys()) excludedTraitIds.delete(id);   // ship these despite their raw status
 const tc = readJSON(path.join(MODEL, 'theorycraft_tags.json'));
@@ -246,7 +257,7 @@ for (const t of consolidated) {
     obtainStatus: rec.status || null,
   };
 }
-console.log(`  traits: ${Object.keys(traits).length} shipped · ${traitsExcluded} blacklisted (${DUPLICATE_TRAIT_IDS.size} duplicate + ${NYI_SANDBOX_TRAIT_IDS.size} NYI-sandbox + ${UNRESOLVED_OWNERLESS_IDS.size} unresolved-ownerless + ${traitsExcluded - DUPLICATE_TRAIT_IDS.size - NYI_SANDBOX_TRAIT_IDS.size - UNRESOLVED_OWNERLESS_IDS.size} recon UNRECONCILED/NYI/legacy — not in live Ultimate)`);
+console.log(`  traits: ${Object.keys(traits).length} shipped · ${traitsExcluded} blacklisted (${DUPLICATE_TRAIT_IDS.size} duplicate + ${NYI_SANDBOX_TRAIT_IDS.size} NYI-sandbox + ${LEGACY_TRAIT_IDS.size} legacy-S3 + ${UNRESOLVED_OWNERLESS_IDS.size} unresolved-ownerless + ${traitsExcluded - DUPLICATE_TRAIT_IDS.size - NYI_SANDBOX_TRAIT_IDS.size - LEGACY_TRAIT_IDS.size - UNRESOLVED_OWNERLESS_IDS.size} recon — not in live Ultimate)`);
 
 // ── creatures ──────────────────────────────────────────────────────────────
 // Spine = creatures_ref: the AUTHORITATIVE playable roster (1362), where EVERY
