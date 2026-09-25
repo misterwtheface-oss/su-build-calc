@@ -151,8 +151,19 @@ for (const id of DUPLICATE_TRAIT_IDS) excludedTraitIds.add(id);
 // wiki, not Trait_REF.csv (no item/encounter), and not code (creature_stats has no trait field). A trait
 // with neither an owner nor an item has no provenance at all → unresolved (per user rule 2026-09-24).
 // Re-derive on a game update; if a future source (e.g. Pandemonium/other-boss page) names one, resolve it.
-const UNRESOLVED_OWNERLESS_IDS = new Set([538, 554, 555, 596, 711, 919, 920, 921, 922, 1213, 1215, 1217, 1218, 1219, 1227, 1231, 1521]);
+const UNRESOLVED_OWNERLESS_IDS = new Set([538, 554, 555, 596, 1213, 1215, 1217, 1218, 1219, 1227, 1231, 1521]);
 for (const id of UNRESOLVED_OWNERLESS_IDS) excludedTraitIds.add(id);
+// NYI — SANDBOX/STAGED content. User-confirmed list of traits found in the game's sandbox ~1 year ago
+// that are NOT accessible yet (staged for upcoming content), plus the 12 Zodiac "Sign of <sign>" traits.
+// These fail our recon parameters (no live owner / item) precisely because they aren't live yet — so they
+// carry the NYI flag (kept out of the app), NOT "unresolved". Provenance: user (in-sandbox observation).
+//   sandbox set: Acclimation · Brain/Hand/Heart of Misery · Breathe Underwater · Collapsed Dream ·
+//   Damaos' Dishonesty/Treason/Subversion · Hebron's Deceit/Trickery/Hypocrisy/Artifice · Leap of Faith ·
+//   Reap Destruction · Serenade of Guilt · Siralim's Ascendance/Attunement/Prayer · Syndrome · Ultima
+//   + Zodiac (Sign of Aquarius…Virgo). (Failed Experiment is a Siralim-3 LEGACY creature — no trait record.)
+const NYI_SANDBOX_TRAIT_IDS = new Set([563, 564, 568, 569, 570, 711, 919, 920, 921, 922, 947, 948, 949, 952,
+  959, 960, 961, 962, 963, 964, 1175, 1176, 1177, 1178, 1179, 1180, 1181, 1182, 1183, 1184, 1185, 1186, 1187]);
+for (const id of NYI_SANDBOX_TRAIT_IDS) excludedTraitIds.add(id);
 // MANUAL owner reconciliation. "Lord Zantai" is NOT a separate creature — he's the roster creature
 // **Zantai** in its ENCOUNTER form (same creature, different trait: player form = Quadhits #298; encounter
 // form = "The Ultimate Strategy" #1538). The creature is code-present (roster); the wiki
@@ -235,7 +246,7 @@ for (const t of consolidated) {
     obtainStatus: rec.status || null,
   };
 }
-console.log(`  traits: ${Object.keys(traits).length} shipped · ${traitsExcluded} blacklisted (${DUPLICATE_TRAIT_IDS.size} duplicate + ${traitsExcluded - DUPLICATE_TRAIT_IDS.size} unresolved/NYI/legacy — not in live Ultimate)`);
+console.log(`  traits: ${Object.keys(traits).length} shipped · ${traitsExcluded} blacklisted (${DUPLICATE_TRAIT_IDS.size} duplicate + ${NYI_SANDBOX_TRAIT_IDS.size} NYI-sandbox + ${UNRESOLVED_OWNERLESS_IDS.size} unresolved-ownerless + ${traitsExcluded - DUPLICATE_TRAIT_IDS.size - NYI_SANDBOX_TRAIT_IDS.size - UNRESOLVED_OWNERLESS_IDS.size} recon UNRECONCILED/NYI/legacy — not in live Ultimate)`);
 
 // ── creatures ──────────────────────────────────────────────────────────────
 // Spine = creatures_ref: the AUTHORITATIVE playable roster (1362), where EVERY
