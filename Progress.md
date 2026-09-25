@@ -1098,6 +1098,21 @@ MAPPING not for asserting PRESENCE; no inventing entities from the community-CSV
 - Class-advantage multiplier + Nether Stone numerics are runtime/in-game-only (see WIKI_CONTEXT) → modelled around.
 
 ## Session log
+- 2026-09-24: **Appendix — six upgrades (creature detail · item names · search · boss grouping · relic/card legibility).**
+  (1) **Creature sprites open a read-only creature detail** (`openCreaturePreview`/`renderCreaturePreview`,
+  reusing the main-screen `renderCreatureIdentity`: sprite · class/race · innate trait · base stats); the row's
+  creature square is now `apx-crea-open` (its own `data-action` so `closest()` beats the row's trait-open).
+  (2) **Item names shown in the row** — the trait meta now lists the granting material name(s) (deduped) instead
+  of a bare "N items" count. (3) **Name search hits trait / creature / boss-owner / item names** (`_search`
+  extended with the boss owner + deduped item names). (4) **Boss-owned traits get their own "Boss Traits"
+  section** (sorted by ownerCategory), with the **boss's sprite** mapped in: Deity → god battle sprite (30/31),
+  False God → combined portrait (58/58) via `bossSpriteFor` over `D.realms`/`D.godShops`/`D.falseGods`;
+  Nether (107) + Special (8) + 1 Deity have **no sprite in the extract** → a legible owner-name chip fallback
+  (backlog: extract Nether/Special boss sprites). (5) **Relic text** is now one labelled line per rank
+  (`relicRanksHtml`: "Rank 10 / Rank 20 …") instead of an illegible `·`-joined block — also fixes the shared
+  entity-detail overlay. (6) **Card effects** render one line per tier labelled by the card count that unlocks
+  it (`cardTiersHtml`: "3 cards / 5 cards / 8 cards") — the repeated effects are per-tier stacks, not
+  duplicates. Verified headless (appendix-v2 smoke 15/15; collapse 13/13; abation-ui 3/3).
 - 2026-09-24: **Trait item-owner reconciliation — fix the join + add a build-time validation guardrail.**
   Symptom: Abation (and others) shipped with a creature owner but no trait-item icon in the Appendix.
   Two root causes, both fixed:

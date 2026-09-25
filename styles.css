@@ -571,6 +571,22 @@ h1, h2, h3 { margin: 0; }
   background: var(--surface); border: 1px solid var(--border-dim); border-radius: 8px; overflow: hidden; }
 .apx-crea img { width: 100%; height: 100%; object-fit: contain; padding: 4px; }
 .apx-crea .crit-face { width: 100%; height: 100%; }
+.apx-crea.apx-clickable { cursor: pointer; }
+.apx-crea.apx-clickable:hover { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; }
+.apx-crea.apx-boss { border-color: var(--accent2); }
+/* boss owner with no extracted sprite (Nether/Special) → a name chip in the sprite slot */
+.apx-boss-name { flex: 0 0 auto; align-self: center; max-width: 90px; padding: 4px 7px; border-radius: 8px;
+  background: rgba(154,123,214,.12); border: 1px solid var(--accent2); color: var(--accent2);
+  font-size: 10px; font-weight: 700; line-height: 1.2; text-align: center; }
+.anoint-spec-tag.apx-boss-cat { color: var(--accent2); border-color: var(--accent2); }
+/* relic ranks + card tiers: one legible labelled line each, not a run-on block */
+.apx-ranklist, .apx-tierlist { display: flex; flex-direction: column; gap: 3px; margin-top: 2px; }
+.apx-rank, .apx-tier { display: flex; gap: 8px; align-items: baseline; }
+.apx-rank-n, .apx-tier-n { flex: 0 0 auto; min-width: 58px; font-weight: 800; font-size: 11px; color: var(--accent);
+  text-transform: uppercase; letter-spacing: .3px; }
+.apx-tier-n { color: var(--cap); }
+.apx-rank-d, .apx-tier-d { flex: 1; color: var(--text-dim); }
+.cd-preview { padding: 4px 2px; }
 /* source-spec tag on each anointment row (rows are grouped by False God, not spec) */
 .anoint-spec-tag {
   font-size: 10px; color: var(--text-dim); background: var(--surface2);

@@ -35,6 +35,23 @@
     if (c.sprite && c.race && !RACE_REP.has(c.race)) RACE_REP.set(c.race, c);
   }
   const realmCritFor = (name) => CREA_BY_NAME.get((name || "").toLowerCase()) || RACE_REP.get(name) || null;
+  // boss-owned trait → boss sprite (Appendix). Deity = god battle sprite (D.realms/D.godShops), False God =
+  // combined portrait (D.falseGods). Nether/Special bosses have no sprite in the extract yet → null.
+  const normNm = (s) => String(s || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+  const GOD_BATTLE = new Map();
+  for (const r of (D.realms || [])) if (r.god && r.godBattle) { const k = normNm(String(r.god).split(",")[0]); if (!GOD_BATTLE.has(k)) GOD_BATTLE.set(k, r.godBattle); }
+  for (const g of (D.godShops || [])) if (g.god && g.battle) { const k = normNm(String(g.god).split(",")[0]); if (!GOD_BATTLE.has(k)) GOD_BATTLE.set(k, g.battle); }
+  const FG_PORTRAITS = (D.falseGods || []).map(f => ({ k: normNm(f.name), img: f.img, name: f.name }));
+  function bossSpriteFor(t) {
+    if (!t || t.ownerType !== "boss") return null;
+    if (t.ownerCategory === "Deity") return GOD_BATTLE.get(normNm(t.owner)) || null;
+    if (t.ownerCategory === "False God") {
+      const g = normNm(t.ownerGroup || t.owner);
+      const m = FG_PORTRAITS.find(f => f.k === g || f.k.includes(g) || g.includes(f.k));
+      return m ? m.img : null;
+    }
+    return null;   // Nether Boss / Special Boss — no sprite extracted
+  }
   const SPEC = new Map(D.specs.map(s => [s.id, s]));
   const TRAIT = D.traits;                                   // id -> {name,desc,cls,produces,consumes,labels}
   const CLS_COLOR = Object.fromEntries(D.classes.map(c => [c.key, c.color]));
@@ -806,6 +823,24 @@
           <span class="stat-mag"><i style="width:${Math.round((c.total || 0) / (STAT_MAX.total || 1) * 100)}%"></i></span>
           <span class="stat-val total">${c.total}</span></div></div>`;
   }
+  // read-only creature detail opened from the Appendix (a creature not in the party) — reuses the
+  // main-screen identity panel (sprite · class/race · innate trait · base stats). Closing reveals the
+  // Appendix overlay underneath; trait banners inside chain to the trait detail and back.
+  function openCreaturePreview(cid) {
+    const c = CREA.get(+cid); if (!c) return;
+    dovState = { kind: "creature-preview", cid: +cid, render: () => renderCreaturePreview(+cid) };
+    openDetail(dovState.render());
+  }
+  function renderCreaturePreview(cid) {
+    const c = CREA.get(+cid); if (!c) return "";
+    return `<div class="ovl-backdrop" data-action="detail-backdrop"><div class="overlay-panel detail">
+      <div class="overlay-header"><h2>${esc(c.name)}</h2><button class="ovl-close" data-action="close-detail">✕</button></div>
+      <div class="overlay-body"><div class="ovl-center"><div class="ovl-center-scroll cd-preview">
+        ${renderCreatureIdentity(c)}
+      </div></div></div>
+      <div class="overlay-footer"><span class="foot-info"></span><button class="btn-confirm" data-action="close-detail">Done</button></div>
+    </div></div>`;
+  }
   // wizard step-2 preview: the actual built creature (fusion + personality + scrolls) via the real stat calc
   function renderWizardPreview(st) {
     const primary = CREA.get(st.primaryId); if (!primary) return "";
@@ -1332,42 +1367,61 @@
           <div class="perk-line-head"><b>${esc(name)}</b>${meta || srcObj ? `<span class="perk-line-meta">${meta || ""}${srcMeta(srcObj)}</span>` : ""}${bk || ""}</div>
           ${desc ? `<div class="perk-desc">${desc}</div>` : ""}
         </div></div>`;
-      // one row per trait, folding in the creature that has it + the items that grant it
+      // one row per trait, folding in the creature that has it + the items that grant it.
+      // _search covers trait / creature / boss-owner / item names so name search hits any of them.
       const { creatureByTrait, itemsByTrait } = traitSources();
       const traitRows = res.traits.map(t => {
         const creature = creatureByTrait.get(t.id);
         const items = itemsByTrait.get(t.id) || [];
-        return { id: t.id, name: t.name, desc: t.desc, creature, items, taxo: t.taxo, taxoSrc: t.taxoSrc,
-          _search: t.name + " " + (creature ? creature.name : "") + " " + items.map(i => i.name).join(" ") };
+        const itemNames = [...new Set(items.map(i => i.name))];   // dedup (a trait can carry duplicate material records)
+        return { id: t.id, name: t.name, desc: t.desc, creature, items, itemNames, taxo: t.taxo, taxoSrc: t.taxoSrc,
+          ownerType: t.ownerType, ownerCategory: t.ownerCategory, owner: t.owner, ownerGroup: t.ownerGroup,
+          _search: [t.name, creature ? creature.name : "", t.owner || "", itemNames.join(" ")].join(" ") };
       }).sort((a, b) => a.name.localeCompare(b.name));
+      const creatureTraitRows = traitRows.filter(g => g.ownerType !== "boss");
+      const bossTraitRows = traitRows.filter(g => g.ownerType === "boss")
+        .sort((a, b) => (a.ownerCategory || "").localeCompare(b.ownerCategory || "") || a.name.localeCompare(b.name));
+      const itemNameMeta = (g) => g.itemNames.length ? `<span class="anoint-spec-tag" title="Trait material${g.itemNames.length > 1 ? "s" : ""}">${esc(g.itemNames.join(", "))}</span>` : "";
+      const traitIco = (g) => { const it = g.items.find(i => i.icon);
+        return it ? `<span class="perk-ico sm" title="${esc(g.itemNames.join(", "))}">${spriteImg(it.icon, "px")}</span>` : `<span class="perk-ico sm empty"></span>`; };
       const traitRow = (g) => {
-        // the trait's icon is its material (trait-item) icon; if the trait has no item, show NO icon
-        // (not even an empty box) — never derive it from the creature. Creature gets its own square.
-        const itemIco = g.items.find(i => i.icon);
-        // no item → invisible placeholder (transparent, no box) so text stays aligned across rows
-        const icoSpan = itemIco
-          ? `<span class="perk-ico sm" title="${esc(g.items.map(i => i.name).join(", "))}">${spriteImg(itemIco.icon, "px")}</span>`
-          : `<span class="perk-ico sm empty"></span>`;
-        const meta = (g.items.length ? `<span class="anoint-spec-tag">${g.items.length} item${g.items.length === 1 ? "" : "s"}</span>` : "") + srcMeta(g);
-        const creaSquare = g.creature ? `<div class="apx-crea" title="${esc(g.creature.name)}">${critFace(g.creature)}</div>` : "";
+        // trait icon = its trait-item's icon (never the creature's); the creature gets its own clickable square
+        const meta = itemNameMeta(g) + srcMeta(g);
+        const creaSquare = g.creature ? `<div class="apx-crea apx-clickable" data-action="apx-crea-open" data-cid="${g.creature.id}" title="${esc(g.creature.name)} — view creature">${critFace(g.creature)}</div>` : "";
         return `<div class="perk-line apx-trait apx-clickable" data-action="apx-open" data-ek="trait" data-eid="${g.id}">
-          ${icoSpan}
+          ${traitIco(g)}
           <div class="perk-line-body">
             <div class="perk-line-head"><b>${esc(g.name)}</b>${meta ? `<span class="perk-line-meta">${meta}</span>` : ""}${bkBtn("traits", g.id)}</div>
             ${g.desc ? `<div class="perk-desc">${richText(g.desc)}</div>` : ""}
           </div>
           ${creaSquare}</div>`;
       };
+      // boss-owned traits: category chip + the boss's sprite (Deity/False God) or an owner-name chip fallback
+      const bossTraitRow = (g) => {
+        const spr = bossSpriteFor(g);
+        const meta = `<span class="anoint-spec-tag apx-boss-cat">${esc(g.ownerCategory || "Boss")}</span>${itemNameMeta(g)}${srcMeta(g)}`;
+        const bossSquare = spr
+          ? `<div class="apx-crea apx-boss" title="${esc(g.owner || g.ownerGroup || "")}">${spriteImg(spr)}</div>`
+          : `<div class="apx-boss-name" title="${esc(g.ownerCategory || "Boss")}">${esc(g.owner || g.ownerGroup || "—")}</div>`;
+        return `<div class="perk-line apx-trait apx-clickable" data-action="apx-open" data-ek="trait" data-eid="${g.id}">
+          ${traitIco(g)}
+          <div class="perk-line-body">
+            <div class="perk-line-head"><b>${esc(g.name)}</b><span class="perk-line-meta">${meta}</span>${bkBtn("traits", g.id)}</div>
+            ${g.desc ? `<div class="perk-desc">${richText(g.desc)}</div>` : ""}
+          </div>
+          ${bossSquare}</div>`;
+      };
       const body_sections = [
-        section("Traits", traitRows, traitRow),
+        section("Traits", creatureTraitRows, traitRow),
+        section("Boss Traits", bossTraitRows, bossTraitRow),
         section("Perks", res.perks, p => line(p.icon ? spriteImg(p.icon, "px") : "", p.name,
           `<span class="anoint-spec-tag">${esc(p.spec)}</span>`, perkText(p.desc, p.ranks), p, bkBtn("perks", p.key), { ek: "perk", eid: p.key })),
         section("Spells", res.spells, s => line(spellIcon(s) ? spriteImg(spellIcon(s), "px") : "", s.name,
           `${s.cls ? `<span class="anoint-spec-tag">${esc(s.cls)}</span>` : ""}${spellMeta(s) ? `<span class="anoint-spec-tag">${esc(spellMeta(s))}</span>` : ""}`, perkText(s.desc, null), s, bkBtn("spells", s.id), { ek: "spell", eid: s.id })),
         section("Relics", res.relics, r => line(r.icon ? spriteImg(r.icon, "px") : "", r.name,
-          r.statBonus ? `<span class="anoint-spec-tag">${esc(r.statBonus)}</span>` : "", richText((r.ranks || []).map(x => x.desc).join(" · ")), r, null, { ek: "relic", eid: r.id })),
+          r.statBonus ? `<span class="anoint-spec-tag">${esc(r.statBonus)}</span>` : "", relicRanksHtml(r.ranks), r, null, { ek: "relic", eid: r.id })),
         section("Realm Cards", res.cards.map(c => ({ ...c, name: c.family })), c => line(c.sprite ? spriteImg(c.sprite, "px") : "", c.family,
-          c.cls ? `<span class="anoint-spec-tag">${esc(c.cls)}</span>` : "", richText((c.effects || []).join(" · ")), c, null, { ek: "card", eid: c.id })),
+          c.cls ? `<span class="anoint-spec-tag">${esc(c.cls)}</span>` : "", cardTiersHtml(c.effects, c.tiers), c, null, { ek: "card", eid: c.id })),
       ].join("");
       const total = traitRows.length + res.perks.length + res.spells.length + res.relics.length + res.cards.length;
       placeholder = "Filter results…";
@@ -1399,12 +1453,22 @@
   };
   // trait icon = its trait-item's icon (traits carry no icon of their own)
   const traitItemIcon = (tid) => { const items = traitSources().itemsByTrait.get(+tid) || []; return (items.find(i => i.icon) || {}).icon || null; };
+  // relic ranks → one line per rank ("Rank 10 · …"), not an illegible " · "-joined block
+  const relicRanksHtml = (ranks) => (ranks || []).length
+    ? `<div class="apx-ranklist">${ranks.map(r => `<div class="apx-rank"><span class="apx-rank-n">Rank ${r.rank}</span><span class="apx-rank-d">${richText(r.desc || "")}</span></div>`).join("")}</div>`
+    : "";
+  // card effects → one line per tier, labelled by the card count that unlocks it (effects legitimately
+  // repeat per tier — they stack, they're not duplicates); tiers[i] = cards needed for effects[i]
+  const cardTiersHtml = (effects, tiers) => (effects || []).length
+    ? `<div class="apx-tierlist">${effects.map((e, i) => { const n = tiers && tiers[i] != null ? tiers[i] : null;
+        return `<div class="apx-tier"><span class="apx-tier-n">${n != null ? `${n} card${n === 1 ? "" : "s"}` : `Tier ${i + 1}`}</span><span class="apx-tier-d">${richText(e || "")}</span></div>`; }).join("")}</div>`
+    : "";
   // resolve (kind,id) → { e, icon, name, descHtml, kindLabel } for the detail view
   function resolveEntity(kind, id) {
     if (kind === "trait") { const e = TRAIT[+id]; return { e, icon: traitItemIcon(id), name: e && e.name, descHtml: e && richText(e.desc || ""), kindLabel: "Trait" }; }
     if (kind === "spell") { const e = SPELL.get(+id); return { e, icon: e && spellIcon(e), name: e && e.name, descHtml: e && perkText(e.desc || ""), kindLabel: "Spell" }; }
-    if (kind === "relic") { const e = RELIC.get(+id); return { e, icon: e && e.icon, name: e && e.name, descHtml: e && richText((e.ranks || []).map(x => x.desc).join(" · ")), kindLabel: "Relic" }; }
-    if (kind === "card") { const e = CARD.get(+id); return { e, icon: e && e.sprite, name: e && e.family, descHtml: e && richText((e.effects || []).join(" · ")), kindLabel: "Realm Card" }; }
+    if (kind === "relic") { const e = RELIC.get(+id); return { e, icon: e && e.icon, name: e && e.name, descHtml: e && relicRanksHtml(e.ranks), kindLabel: "Relic" }; }
+    if (kind === "card") { const e = CARD.get(+id); return { e, icon: e && e.sprite, name: e && e.family, descHtml: e && cardTiersHtml(e.effects, e.tiers), kindLabel: "Realm Card" }; }
     if (kind === "perk") { const e = perkByKey(id); return { e, icon: e && e.icon, name: e && e.name, descHtml: e && perkText(e.desc, e.ranks), kindLabel: "Perk" }; }
     if (kind === "condition") { const e = CONDITION.get(id); return { e, icon: e && e.icon, name: e && e.name, descHtml: e && richText(e.desc || ""), kindLabel: e && e.cat }; }
     return { e: null };
@@ -3395,6 +3459,7 @@
       // entity taxonomy detail (trait / spell / perk / relic / card)
       case "nav-trait": openEntityDetail("trait", +t.dataset.tid); break;
       case "apx-open": openEntityDetail(t.dataset.ek, t.dataset.eid); break;
+      case "apx-crea-open": e.stopPropagation(); openCreaturePreview(t.dataset.cid); break;
       case "close-entity": closeEntityDetail(); break;
       case "entity-backdrop": if (e.target === t) closeEntityDetail(); break;
       case "etax-filter": {   // jump to the Appendix filtered by the tapped tag
