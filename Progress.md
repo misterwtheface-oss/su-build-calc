@@ -6,7 +6,22 @@ Pages on `master`/root, Cloudflare analytics active with the shared github.io to
 No verify-before-push ceremony (no real users yet) — but every change is checked with the jsdom smoke suite
 (scratchpad `smoke.mjs`, ~84 assertions across all flows) before commit.
 
-### Current feature snapshot (as of 2026-09-22)
+### Current feature snapshot (as of 2026-09-24)
+> **2026-09-24 — FULL EXTRACT RECONCILIATION (creatures / traits / items / spells).** Every entity now carries a
+> per-attribute, provenance-backed classification — the data foundation for boss-guide / owner-surfacing features.
+> **Traits**: 2187 fully classified (1984 shipped w/ a two-form **owner model** — `owner`/`ownerType`/`ownerForm`
+> player·encounter/`ownerCategory`/`ownerGroup`/`ownerProvenance`/`itemSource`; 203 blacklisted: 58 duplicate + 39
+> NYI + 91 legacy-S3 + 15 recon), **0 unresolved**. Validated structure: **Deities == Avatars** (31 gods, each a
+> player Avatar trait + an encounter Deity trait = 62); **every Nether Boss = 3 same-name tiers** (54 extra dup copies
+> dropped, wiki-verified); False-God part dupes are valid (body parts); special/story bosses (Lord Zantai=Zantai
+> encounter, Treasure Golem 2.0, Imp Impington Prime, Caliban-story) wired. **Creatures**: `creature_reconciliation.json`
+> (1419: Playable/False-God-part/NYI-anagram-set/Story-Boss/Legacy). **Items**: `item_reconciliation.json` (1862
+> categorized, 1719 linked, 81 unlinked=data-limitation). **Spells**: 747 all live, Source from `Spell_REF.csv`.
+> Generators + reconciliation artifacts live in `_su_extract/data/model/` + `_su_extract/code/`; the LIVE trait
+> classification is the `build-data.mjs` override lists. **Provenance rules (do not violate):** wiki maps but doesn't
+> assert presence; no invented categories; no name-match identity; `material_stats.trait_id` drifts (never trust);
+> in-game truth beats stale CSVs. See `_su_extract/CONTEXT_MAP.md` "FULL RECONCILIATION LAYER" for the durable map.
+>
 > 2026-09-22 added: **Appendix bookmarks** (mark traits/spells → filter the selectors) + **Macro Proposal
 > engine** (predict a creature's battle-AI Macro from its loadout — ⭐ actively iterating, see roadmap below).
 > Sessions 4j–4q (2026-09-21) added: Ascension-perk badges (4j) · **Threats advisor** (4k) · god base-stat
