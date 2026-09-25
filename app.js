@@ -42,9 +42,10 @@
   for (const r of (D.realms || [])) if (r.god && r.godBattle) { const k = normNm(String(r.god).split(",")[0]); if (!GOD_BATTLE.has(k)) GOD_BATTLE.set(k, r.godBattle); }
   for (const g of (D.godShops || [])) if (g.god && g.battle) { const k = normNm(String(g.god).split(",")[0]); if (!GOD_BATTLE.has(k)) GOD_BATTLE.set(k, g.battle); }
   const FG_PORTRAITS = (D.falseGods || []).map(f => ({ k: normNm(f.name), img: f.img, name: f.name }));
+  const BOSS_SPRITES = D.bossSprites || {};   // normalized Deity owner → bspr_ battle sprite (incl. Caliban)
   function bossSpriteFor(t) {
     if (!t || t.ownerType !== "boss") return null;
-    if (t.ownerCategory === "Deity") return GOD_BATTLE.get(normNm(t.owner)) || null;
+    if (t.ownerCategory === "Deity") return BOSS_SPRITES[normNm(t.owner)] || GOD_BATTLE.get(normNm(t.owner)) || null;
     if (t.ownerCategory === "False God") {
       const g = normNm(t.ownerGroup || t.owner);
       const m = FG_PORTRAITS.find(f => f.k === g || f.k.includes(g) || g.includes(f.k));

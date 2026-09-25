@@ -1147,6 +1147,8 @@ const GOD_BSPR = {
   'Aeolian': 'grassland', 'Mortem': 'bloodbone', 'Regalis': 'cave', 'Lister': 'island', '4080': 'robo', 'Vulcanar': 'chaos',
   'Surathli': 'life', 'Apocranox': 'autumn', 'Erebyss': 'death', 'Meraxis': 'nature', 'Perdition': 'purgatory',
   'Venedon': 'reactor', 'Vertraag': 'space', 'Zonte': 'sorcery',
+  // Caliban is a Deity AND a False God (separate entries); his Deity battle sprite is bspr_god_caliban.
+  'Caliban': 'caliban',
 };
 fs.rmSync(OUT_GODBATTLE, { recursive: true, force: true });
 // case-insensitive lookup (the God Shop spells "T'mere M'rgo" vs the realm's "T'Mere M'rgo")
@@ -1166,6 +1168,26 @@ function godBattleFor(godName) {
 const godShops = [...godShopMap.entries()].sort((a, b) => a[0].localeCompare(b[0]))
   .map(([god, items]) => ({ god, battle: godBattleFor(god), items: items.sort((a, b) => a.tier - b.tier || a.item.localeCompare(b.item)) }));
 console.log(`  god shops: ${godShops.length} gods · ${godShopArr.length} items`);
+
+// ── boss battle sprites (Appendix boss-trait rows) ────────────────────────────
+// Only DEITY bosses have a bspr_ (battle sprite) in the extract — including Caliban, who is a Deity AND
+// a False God as separate entries (bspr_god_caliban). Nether/Special bosses have NO bspr_ battle sprite
+// (they only have tiny overworld + 16×16 material sprites) → they fall back to an owner-name chip in the
+// app. Keyed by normalized owner name. False God portraits are shipped separately (D.falseGods).
+const bossSprites = {};
+{
+  const seen = new Set();
+  for (const id in traits) {
+    const t = traits[id];
+    if (t.ownerType === 'boss' && t.ownerCategory === 'Deity' && t.owner && !seen.has(t.owner)) {
+      seen.add(t.owner);
+      const p = godBattleFor(t.owner);
+      if (p) bossSprites[norm(t.owner)] = p;
+      else warn(`Deity boss "${t.owner}" has no bspr_ battle sprite`);
+    }
+  }
+}
+console.log(`  boss sprites: ${Object.keys(bossSprites).length} Deity battle sprites (Nether/Special have none in the extract)`);
 
 // ── Realms reference ──────────────────────────────────────────────────────────
 // realms_ref.json: {god("Name, God of X"), realm, class, godspawn, gemstone, realm_creatures[], other[]}.
@@ -1774,6 +1796,7 @@ const SU_DATA = {
   creatures,
   specs,
   falseGods,
+  bossSprites,              // normalized Deity owner name → bspr_ battle sprite (Appendix boss rows)
   spellSlotGrants,
   traits,
   tagLabels,
