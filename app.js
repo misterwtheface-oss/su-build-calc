@@ -61,7 +61,9 @@
     return (D.falseGods || []).find(f => { const k = normNm(f.name); return k === g || k.includes(g) || g.includes(k); }) || null;
   }
   const SPEC = new Map(D.specs.map(s => [s.id, s]));
-  const SPEC_SPRITE = new Map(D.specs.map(s => [s.label, s.sprite]));   // spec label → emblem sprite (perk rows)
+  // spec label → spec EMBLEM (the class icon). NOT s.sprite — that's the player-character costume, a different
+  // asset used on the spec detail/picker. Sprite (costume) and emblem (icon) are not interchangeable.
+  const SPEC_EMBLEM = new Map(D.specs.map(s => [s.label, s.emblem]));
   const TRAIT = D.traits;                                   // id -> {name,desc,cls,produces,consumes,labels}
   const CLS_COLOR = Object.fromEntries(D.classes.map(c => [c.key, c.color]));
   const CLASS_BG = D.classBg || {};
@@ -1426,7 +1428,7 @@
         .sort((a, b) => (a.ownerCategory || "").localeCompare(b.ownerCategory || "") || a.name.localeCompare(b.name));
       const itemNameMeta = (g) => g.itemNames.length ? `<span class="anoint-spec-tag" title="Trait material${g.itemNames.length > 1 ? "s" : ""}">${esc(g.itemNames.join(", "))}</span>` : "";
       // perk right-square = its specialization emblem (mirrors the trait row's creature square)
-      const specSquare = (label) => { const sp = SPEC_SPRITE.get(label); return sp ? `<div class="apx-crea apx-spec" title="${esc(label)}">${spriteImg(sp, "px")}</div>` : ""; };
+      const specSquare = (label) => { const em = SPEC_EMBLEM.get(label); return em ? `<div class="apx-crea apx-spec" title="${esc(label)}">${spriteImg(em, "px")}</div>` : ""; };
       const traitIco = (g) => { const it = g.items.find(i => i.icon);
         return it ? `<span class="perk-ico sm" title="${esc(g.itemNames.join(", "))}">${spriteImg(it.icon, "px")}</span>` : `<span class="perk-ico sm empty"></span>`; };
       const traitRow = (g) => {
