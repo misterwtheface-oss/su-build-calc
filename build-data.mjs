@@ -150,7 +150,9 @@ for (const id of DUPLICATE_TRAIT_IDS) excludedTraitIds.add(id);
 // lower-id versions whose prose does NOT match the current wiki (verified: e.g. Kiichi's live tier-1
 // "Enemies always have Bleeding…" is #1233, not the older #1200; same for Nerlyx/Myrtle/Giran/Vitja/
 // Etta/Tellur/Loid/Flubris). Rule: per >3-copy boss, drop empty-prose + keep the 3 highest-id non-empty
-// (the canonical tier triple); ≤3-copy bosses (e.g. Kraynaks) untouched. (Flubris has only 2 real tiers.)
+// (the canonical tier triple); ≤3-copy bosses (e.g. Kraynaks) untouched. Flubris keeps its 2 entries
+// (#1323/#1324) — its tier-3 reuses tier-2's prose (difference = an all-Flubrises battle setup, not text),
+// an antipattern but VALID, so no separate tier-3 entry exists in the data.
 const NETHER_DUP_TRAIT_IDS = new Set([543, 544, 545, 546, 548, 549, 550, 551, 552, 553, 586, 587, 588, 589, 590, 591, 592, 593, 594, 595, 877, 878, 879, 880, 881, 882, 883, 884, 885, 886, 906, 907, 908, 909, 910, 911, 912, 913, 914, 915, 1200, 1201, 1202, 1203, 1204, 1205, 1206, 1208, 1209, 1210, 1211, 1212, 1214, 1216]);
 for (const id of NETHER_DUP_TRAIT_IDS) excludedTraitIds.add(id);
 // UNRESOLVED — factually unresolvable traits (category "unresolved"). These 17 carry recon
