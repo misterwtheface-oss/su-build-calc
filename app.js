@@ -53,6 +53,7 @@
     return null;   // Nether Boss / Special Boss — no sprite extracted
   }
   const SPEC = new Map(D.specs.map(s => [s.id, s]));
+  const SPEC_SPRITE = new Map(D.specs.map(s => [s.label, s.sprite]));   // spec label → emblem sprite (perk rows)
   const TRAIT = D.traits;                                   // id -> {name,desc,cls,produces,consumes,labels}
   const CLS_COLOR = Object.fromEntries(D.classes.map(c => [c.key, c.color]));
   const CLASS_BG = D.classBg || {};
@@ -1289,15 +1290,16 @@
     return TRAIT_SOURCES;
   }
   function openAppendix() {
-    ovState = { kind: "appendix", search: "", cat: null, tags: [], browsing: false, showSrc: false, collapsed: new Set(), render: renderAppendix };
+    ovState = { kind: "appendix", search: "", cat: null, tags: [], browsing: false, collapsed: new Set(), render: renderAppendix };
     openOverlay(ovState.render()); maybeFocusSearch(OV);
   }
   function renderAppendix() {
     const st = ovState, q = st.search.trim().toLowerCase();
     const tags = st.tags;
-    // drill-down (category → value) is shown when picking a filter: on first entry (no tags yet) or
-    // when the user taps ＋ Filter. Otherwise we show the AND-combined results for the chosen tags.
-    const browsing = st.browsing || tags.length === 0;
+    // drill-down (category → value) is shown when picking a filter: on first entry (no tags AND no search)
+    // or when the user taps ＋ Filter. A name search with no tags jumps straight to name-filtered results
+    // (search by name works without first applying a taxonomy filter). Otherwise = AND-combined tag results.
+    const browsing = st.browsing || (tags.length === 0 && !q);
     // active-tag chips (removable) — mirror the creature selector's multi-AND facet chips
     const tagChips = tags.map(k =>
       `<button class="facet on tag" data-action="appendix-rm-tag" data-k="${esc(k)}">${esc(taxoCatName(k))}: <b>${esc(taxoValName(k))}</b> <span class="facet-x">✕</span></button>`).join("");
@@ -1346,11 +1348,7 @@
     } else {
       const res = appendixResults(tags);
       const CAP = 60;
-      // provenance: taxoSrc[i] is the source (token/keyword/llm/phrase/field/correction) of taxo[i].
-      // When "Sources" is toggled on, each result shows how IT got each of the active filter tags.
-      const tagSrc = (e, tag) => { const i = (e && e.taxo ? e.taxo : []).indexOf(tag); return i >= 0 && e.taxoSrc ? e.taxoSrc[i] : null; };
-      const srcMeta = (e) => st.showSrc ? tags.map(t => { const s = tagSrc(e, t); return s
-        ? `<span class="apx-src s-${esc(s)}" title="${esc(taxoValName(t))} — ${esc(s)}">${esc(s)}</span>` : ""; }).join("") : "";
+      // provenance chips (token/llm/…) live ONLY on the taxonomy detail page now — the result rows stay clean.
       const section = (title, items, renderRow) => {
         let list = items;
         if (q) list = list.filter(x => ((x._search || x.name) || "").toLowerCase().includes(q));
@@ -1361,12 +1359,13 @@
           ${collapsed ? "" : `<div class="perk-list">${list.slice(0, CAP).map(renderRow).join("")}
           ${list.length > CAP ? `<div class="slot-sub" style="padding:6px">Showing ${CAP} of ${list.length}.</div>` : ""}</div>`}`;
       };
-      const line = (ico, name, meta, desc, srcObj, bk, open) => `<div class="perk-line${open ? " apx-clickable" : ""}"${open ? ` data-action="apx-open" data-ek="${open.ek}" data-eid="${esc(String(open.eid))}"` : ""}>
+      // right = an optional right-side square (e.g. the perk's spec icon, mirroring the trait's creature square)
+      const line = (ico, name, meta, desc, bk, open, right) => `<div class="perk-line${open ? " apx-clickable" : ""}"${open ? ` data-action="apx-open" data-ek="${open.ek}" data-eid="${esc(String(open.eid))}"` : ""}>
         <span class="perk-ico sm">${ico || ""}</span>
         <div class="perk-line-body">
-          <div class="perk-line-head"><b>${esc(name)}</b>${meta || srcObj ? `<span class="perk-line-meta">${meta || ""}${srcMeta(srcObj)}</span>` : ""}${bk || ""}</div>
+          <div class="perk-line-head"><b>${esc(name)}</b>${meta ? `<span class="perk-line-meta">${meta}</span>` : ""}${bk || ""}</div>
           ${desc ? `<div class="perk-desc">${desc}</div>` : ""}
-        </div></div>`;
+        </div>${right || ""}</div>`;
       // one row per trait, folding in the creature that has it + the items that grant it.
       // _search covers trait / creature / boss-owner / item names so name search hits any of them.
       const { creatureByTrait, itemsByTrait } = traitSources();
@@ -1382,11 +1381,13 @@
       const bossTraitRows = traitRows.filter(g => g.ownerType === "boss")
         .sort((a, b) => (a.ownerCategory || "").localeCompare(b.ownerCategory || "") || a.name.localeCompare(b.name));
       const itemNameMeta = (g) => g.itemNames.length ? `<span class="anoint-spec-tag" title="Trait material${g.itemNames.length > 1 ? "s" : ""}">${esc(g.itemNames.join(", "))}</span>` : "";
+      // perk right-square = its specialization emblem (mirrors the trait row's creature square)
+      const specSquare = (label) => { const sp = SPEC_SPRITE.get(label); return sp ? `<div class="apx-crea apx-spec" title="${esc(label)}">${spriteImg(sp, "px")}</div>` : ""; };
       const traitIco = (g) => { const it = g.items.find(i => i.icon);
         return it ? `<span class="perk-ico sm" title="${esc(g.itemNames.join(", "))}">${spriteImg(it.icon, "px")}</span>` : `<span class="perk-ico sm empty"></span>`; };
       const traitRow = (g) => {
         // trait icon = its trait-item's icon (never the creature's); the creature gets its own clickable square
-        const meta = itemNameMeta(g) + srcMeta(g);
+        const meta = itemNameMeta(g);
         const creaSquare = g.creature ? `<div class="apx-crea apx-clickable" data-action="apx-crea-open" data-cid="${g.creature.id}" title="${esc(g.creature.name)} — view creature">${critFace(g.creature)}</div>` : "";
         return `<div class="perk-line apx-trait apx-clickable" data-action="apx-open" data-ek="trait" data-eid="${g.id}">
           ${traitIco(g)}
@@ -1399,7 +1400,7 @@
       // boss-owned traits: category chip + the boss's sprite (Deity/False God) or an owner-name chip fallback
       const bossTraitRow = (g) => {
         const spr = bossSpriteFor(g);
-        const meta = `<span class="anoint-spec-tag apx-boss-cat">${esc(g.ownerCategory || "Boss")}</span>${itemNameMeta(g)}${srcMeta(g)}`;
+        const meta = `<span class="anoint-spec-tag apx-boss-cat">${esc(g.ownerCategory || "Boss")}</span>${itemNameMeta(g)}`;
         const bossSquare = spr
           ? `<div class="apx-crea apx-boss" title="${esc(g.owner || g.ownerGroup || "")}">${spriteImg(spr)}</div>`
           : `<div class="apx-boss-name" title="${esc(g.ownerCategory || "Boss")}">${esc(g.owner || g.ownerGroup || "—")}</div>`;
@@ -1415,21 +1416,20 @@
         section("Traits", creatureTraitRows, traitRow),
         section("Boss Traits", bossTraitRows, bossTraitRow),
         section("Perks", res.perks, p => line(p.icon ? spriteImg(p.icon, "px") : "", p.name,
-          `<span class="anoint-spec-tag">${esc(p.spec)}</span>`, perkText(p.desc, p.ranks), p, bkBtn("perks", p.key), { ek: "perk", eid: p.key })),
+          `<span class="anoint-spec-tag">${esc(p.spec)}</span>`, perkText(p.desc, p.ranks), bkBtn("perks", p.key), { ek: "perk", eid: p.key }, specSquare(p.spec))),
         section("Spells", res.spells, s => line(spellIcon(s) ? spriteImg(spellIcon(s), "px") : "", s.name,
-          `${s.cls ? `<span class="anoint-spec-tag">${esc(s.cls)}</span>` : ""}${spellMeta(s) ? `<span class="anoint-spec-tag">${esc(spellMeta(s))}</span>` : ""}`, perkText(s.desc, null), s, bkBtn("spells", s.id), { ek: "spell", eid: s.id })),
+          `${s.cls ? `<span class="anoint-spec-tag">${esc(s.cls)}</span>` : ""}${spellMeta(s) ? `<span class="anoint-spec-tag">${esc(spellMeta(s))}</span>` : ""}`, perkText(s.desc, null), bkBtn("spells", s.id), { ek: "spell", eid: s.id })),
         section("Relics", res.relics, r => line(r.icon ? spriteImg(r.icon, "px") : "", r.name,
-          r.statBonus ? `<span class="anoint-spec-tag">${esc(r.statBonus)}</span>` : "", relicRanksHtml(r.ranks), r, null, { ek: "relic", eid: r.id })),
+          r.statBonus ? `<span class="anoint-spec-tag">${esc(r.statBonus)}</span>` : "", relicRanksHtml(r.ranks), null, { ek: "relic", eid: r.id })),
         section("Realm Cards", res.cards.map(c => ({ ...c, name: c.family })), c => line(c.sprite ? spriteImg(c.sprite, "px") : "", c.family,
-          c.cls ? `<span class="anoint-spec-tag">${esc(c.cls)}</span>` : "", cardTiersHtml(c.effects, c.tiers), c, null, { ek: "card", eid: c.id })),
+          c.cls ? `<span class="anoint-spec-tag">${esc(c.cls)}</span>` : "", cardTiersHtml(c.effects, c.tiers), null, { ek: "card", eid: c.id })),
       ].join("");
       const total = traitRows.length + res.perks.length + res.spells.length + res.relics.length + res.cards.length;
-      placeholder = "Filter results…";
+      placeholder = "Search by name…";
       sub = `<div class="ovl-filterbar">${tagChips}
         <button class="facet add" data-action="appendix-add">＋ Filter</button>
-        <button class="facet ${st.showSrc ? "on" : ""}" data-action="appendix-src" title="Show how each result was tagged (token = game markup · keyword · llm = per-description · correction)">Sources</button>
-        <span class="foot-info">${total} result${total === 1 ? "" : "s"}</span></div>`;
-      body = body_sections || `<div class="slot-sub" style="padding:10px">Nothing matches this tag.</div>`;
+        <span class="foot-info">${tags.length ? total + " result" + (total === 1 ? "" : "s") : "Search any name, or ＋ Filter by tag"}</span></div>`;
+      body = body_sections || `<div class="slot-sub" style="padding:10px">Nothing matches${q ? ` “${esc(st.search.trim())}”` : " this tag"}.</div>`;
     }
     return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel">
       <div class="overlay-header"><h2>Appendix</h2>
@@ -1485,6 +1485,29 @@
       <div class="etax-vals">${vals.map(v => `<button class="etax-tag" data-action="etax-filter" data-k="${esc(v.key)}" title="Filter the Appendix to “${esc(v.val)}”">${esc(v.val)}${v.src ? `<span class="apx-src s-${esc(v.src)}">${esc(v.src)}</span>` : ""}</button>`).join("")}</div>
     </div>`).join("");
   }
+  // trait provenance sections for the detail page: the granting material (or "No Material Exists"),
+  // where that item is obtained, and the innate owner (a clickable creature, or the boss + category).
+  function traitDetailSections(e) {
+    const items = traitSources().itemsByTrait.get(+e.id) || [];
+    const names = [...new Set(items.map(i => i.name))];
+    const material = names.length ? esc(names.join(", ")) : `<span class="apx-none">No Material Exists</span>`;
+    const src = e.itemSource ? esc(e.itemSource) : `<span class="slot-sub">—</span>`;
+    let ownerHtml, ownerCat = e.ownerType === "boss" ? "Boss owner" : "Creature owner";
+    if (e.ownerType === "creature" && e.owner) {
+      const c = CREA_BY_NAME.get(e.owner.toLowerCase());
+      ownerHtml = c
+        ? `<button class="apx-owner apx-clickable" data-action="apx-crea-open" data-cid="${c.id}" title="View creature"><span class="apx-owner-ico">${critFace(c)}</span><b>${esc(e.owner)}</b></button>`
+        : `<b>${esc(e.owner)}</b>`;
+    } else if (e.ownerType === "boss") {
+      const spr = bossSpriteFor(e);
+      ownerHtml = `<span class="apx-owner">${spr ? `<span class="apx-owner-ico">${spriteImg(spr)}</span>` : ""}<b>${esc(e.owner || e.ownerGroup || "—")}</b><span class="anoint-spec-tag apx-boss-cat">${esc(e.ownerCategory || "Boss")}</span></span>`;
+    } else {
+      ownerHtml = `<span class="slot-sub">Item-only (no innate owner)</span>`;
+    }
+    return `<div class="etax-group"><div class="etax-cat">Material</div><div class="apx-fact">${material}</div></div>
+      <div class="etax-group"><div class="etax-cat">Item source</div><div class="apx-fact">${src}</div></div>
+      <div class="etax-group"><div class="etax-cat">${ownerCat}</div><div class="apx-fact">${ownerHtml}</div></div>`;
+  }
   function openEntityDetail(kind, id) {
     const ret = dovState;   // if we're already in a detail (e.g. creature detail), return to it on close
     dovState = { kind: "entity-detail", ekind: kind, eid: id, ret, render: renderEntityDetail };
@@ -1506,6 +1529,7 @@
         <button class="ovl-close" data-action="close-entity">✕</button></div>
       <div class="overlay-body"><div class="ovl-center"><div class="ovl-center-scroll">
         ${r.descHtml ? `<div class="perk-desc" style="margin-bottom:12px">${r.descHtml}</div>` : ""}
+        ${st.ekind === "trait" ? `<div class="section-label">Source</div>${traitDetailSections(e)}` : ""}
         <div class="section-label">Taxonomy — ${n} tag${n === 1 ? "" : "s"}</div>
         ${entityTaxHtml(e)}
         <div class="etax-legend">Provenance: <b>token</b> = game markup · <b>keyword</b> · <b>llm</b> = per-description · <b>phrase</b> · <b>field</b> · <b>correction</b>. Tap a tag to filter the Appendix by it.</div>
@@ -3190,7 +3214,6 @@
       }
       case "appendix-rm-tag": e.stopPropagation(); ovState.tags = ovState.tags.filter(x => x !== t.dataset.k); ovState.search = ""; refreshOverlay(); break;
       case "appendix-add": ovState.browsing = true; ovState.cat = null; ovState.search = ""; refreshOverlay(); break;
-      case "appendix-src": ovState.showSrc = !ovState.showSrc; refreshOverlay(); break;
       case "appendix-toggle-sec": { const s = t.dataset.sec; ovState.collapsed.has(s) ? ovState.collapsed.delete(s) : ovState.collapsed.add(s); refreshOverlay(); break; }
       case "apx-bookmark": { e.stopPropagation(); const k = t.dataset.kind;   // perks key by string, traits/spells by numeric id
         toggleBk(k, k === "perks" ? t.dataset.id : +t.dataset.id); refreshOverlay(); break; }

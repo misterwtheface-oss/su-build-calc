@@ -582,11 +582,23 @@ h1, h2, h3 { margin: 0; }
 /* relic ranks + card tiers: one legible labelled line each, not a run-on block */
 .apx-ranklist, .apx-tierlist { display: flex; flex-direction: column; gap: 3px; margin-top: 2px; }
 .apx-rank, .apx-tier { display: flex; gap: 8px; align-items: baseline; }
-.apx-rank-n, .apx-tier-n { flex: 0 0 auto; min-width: 58px; font-weight: 800; font-size: 11px; color: var(--accent);
-  text-transform: uppercase; letter-spacing: .3px; }
+.apx-rank-n, .apx-tier-n { flex: 0 0 auto; min-width: 62px; font-weight: 800; font-size: 11px; color: var(--accent);
+  text-transform: uppercase; letter-spacing: .3px; text-align: center; }
 .apx-tier-n { color: var(--cap); }
 .apx-rank-d, .apx-tier-d { flex: 1; color: var(--text-dim); }
 .cd-preview { padding: 4px 2px; }
+/* perk spec emblem square (mirrors the trait row's creature square) */
+.apx-crea.apx-spec { padding: 3px; background: var(--surface2); }
+.apx-crea.apx-spec img { padding: 2px; }
+/* taxonomy detail — Source facts (material / item source / owner) */
+.apx-fact { color: var(--text); font-size: 13px; padding: 2px 2px 8px; }
+.apx-none { color: var(--text-mute); font-style: italic; }
+.apx-owner { display: inline-flex; align-items: center; gap: 8px; }
+.apx-owner-ico { width: 34px; height: 34px; flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center;
+  background: var(--surface); border: 1px solid var(--border-dim); border-radius: 6px; overflow: hidden; }
+.apx-owner-ico img, .apx-owner-ico .crit-face { width: 100%; height: 100%; object-fit: contain; }
+button.apx-owner { background: none; border: 0; cursor: pointer; font: inherit; color: var(--text); }
+button.apx-owner:hover .apx-owner-ico { border-color: var(--accent); }
 /* source-spec tag on each anointment row (rows are grouped by False God, not spec) */
 .anoint-spec-tag {
   font-size: 10px; color: var(--text-dim); background: var(--surface2);
