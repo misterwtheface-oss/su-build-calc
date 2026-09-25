@@ -905,7 +905,15 @@ MAPPING not for asserting PRESENCE; no inventing entities from the community-CSV
   - **STILL UNRESOLVED — just 3:** Pandemonium Unfairness (#898, tied to the Pandemonium K/Q shrine fight —
     user unsure) · Inner Demons (#969) · Who Am I? (#1215 outlier). `unresolved_traits.csv` regenerated 124→3.
   Final blacklist: 3 duplicate + 39 NYI + 90 legacy-S3 + 1 unresolved-ownerless + 16 recon; **2038 shipped**.
-- **Phase C** items · **Phase D** spells — not started.
+- **Phase C — Items (first pass, 2026-09-24).** `item_reconciliation.json` +
+  `unresolved_items.csv` persisted (`_su_extract`, generator `code/build_item_reconciliation.mjs`). All
+  **1862 materials categorized** (code-certain by shape): Trait material 1644 · Mastery Sigil 156 · Trick 47 ·
+  Amber/Stat 15. **1719 reliably linked** to their granted trait (`source_item` / `Trait_REF`, possessive+
+  plural tolerant). **81 unlinked** — no reliable item→trait source names them; `material_stats.trait_id`
+  DRIFTS (wrongly guessed Ramses's Crest→"Coercion") so it's unusable, and there's NO Material/Item_REF
+  compendium. The 81 are mostly redundant alt creature-trait materials (their trait already has a linked
+  material) + some legacy/NYI boss items (Unguided/Misery/Itherian). Practical gap is small; needs in-game/
+  compendium ground truth to link precisely. **Phase D — Spells** not started.
 
 ## Backlog
 ### ⭐ HIGH PRIORITY — next session (2026-09-24)
