@@ -874,10 +874,25 @@ MAPPING not for asserting PRESENCE; no inventing entities from the community-CSV
 - **4 CSV creature-name typos corrected at source** (commit 88179da): Manticore Conquerer→Conqueror,
   Phenominal→Phenomenal Possum, Maionette→Marionette Charlatan, Gloopidator→Gloopdiator (code-authoritative;
   `CREATURE_SPELLING_FIX`, dropped 4 redundant sprite overrides; sprites intact 1362/1362).
-- **REMAINING program (user: reconcile everything):** persist a `creature_reconciliation.json`
-  (per-entity category+provenance, mirroring `trait_reconciliation.json`) + confirm the 10 NYI / Relic;
-  **Phase B** audit the UNRECONCILED 124 traits (many are real player content mis-parked — the #853–869
-  artifact-power run, the "of Misery" set); **Phase C** items; **Phase D** spells.
+- **`creature_reconciliation.json` PERSISTED** (`_su_extract/data/model/`, generator
+  `code/build_creature_reconciliation.mjs`): 1419 entities — 1362 Playable · 40 False God part · 10 NYI
+  (each tied to its False God; **the NYI names are anagrams/letter-subsets of their False God** — Darboen=
+  exact anagram of Nebodar — deliberate staged naming) · 5 Story Boss (Caliban Orbs) · 1 Legacy (Failed
+  Experiment, Siralim 3) · 1 unresolved (Relic).
+- **Phase B — UNRECONCILED trait revalidation (commit bdb8d03):** the 124 UNRECONCILED genuinely fail our
+  recon params (0 creature owner, 0 item). VALIDATED (user caution) that 6 same-named "perks" are DISTINCT
+  traits (different effects) — a name match ≠ identity, so NOT recategorized. **33 classified NYI-sandbox**
+  (user-confirmed staged content found in the sandbox ~1yr ago + the 12 Zodiac "Sign of X"): Acclimation ·
+  Brain/Hand/Heart of Misery · Breathe Underwater · Collapsed Dream · Damaos' ×3 · Hebron's ×4 · Leap of
+  Faith · Reap Destruction · Serenade of Guilt · Siralim's Ascendance/Attunement/Prayer · Syndrome · Ultima
+  · Zodiac ×12 (`NYI_SANDBOX_TRAIT_IDS`; moved Acclimation+Hebron out of unresolved-ownerless). Blacklist =
+  3 dup + 33 NYI-sandbox + 12 unresolved-ownerless + 109 recon.
+- **STILL to classify (needs user's sandbox/game knowledge):** ~96 remaining UNRECONCILED, notably the
+  **systematic sets** — artifact-slot power (17, "\<slot\> artifacts 50% more powerful"), condition-synergy
+  buff (10) + enemy-debuff (12), Core-extraction/Nether (3) — likely live specialization/system content OR
+  more staged; plus the **12 unresolved-ownerless** (Multiply, Crucifixion ×2, Crucify Me, Boon of the Hee
+  Hoo Hay Ho, Who Am I?, IMMORTALITY, God of Dreams/Nightmares, Nether Orb/Orbs, Torun's Blessing).
+- **Phase C** items · **Phase D** spells — not started.
 
 ## Backlog
 ### ⭐ HIGH PRIORITY — next session (2026-09-24)
