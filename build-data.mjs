@@ -151,15 +151,28 @@ for (const id of DUPLICATE_TRAIT_IDS) excludedTraitIds.add(id);
 // wiki, not Trait_REF.csv (no item/encounter), and not code (creature_stats has no trait field). A trait
 // with neither an owner nor an item has no provenance at all → unresolved (per user rule 2026-09-24).
 // Re-derive on a game update; if a future source (e.g. Pandemonium/other-boss page) names one, resolve it.
-const UNRESOLVED_OWNERLESS_IDS = new Set([1213, 1215, 1217, 1218, 1219, 1227, 1231, 1521]);
+// Still genuinely unresolved: #1215 "Who Am I?" (an OUTLIER — Kraynaks already owns its 3 canonical
+// "Who Am I? None Of Your Business" traits; this shorter-named extra has no confirmed owner). Pandemonium
+// Unfairness (#898) + Inner Demons (#969) stay UNRECONCILED via recon status.
+const UNRESOLVED_OWNERLESS_IDS = new Set([1215]);
 for (const id of UNRESOLVED_OWNERLESS_IDS) excludedTraitIds.add(id);
 // LEGACY — Siralim-3 carryover content, present in the extract but not in live Ultimate (user-confirmed).
 //   • Itherian Artifact trait set (contiguous 812–869) — the artifact-power / condition-synergy / Core sets.
 //   • Multiply (Failed Experiment's innate — a S3 legacy creature) · Crucifixion #554/#596 + Crucify Me
-//     (the "Misery" boss, S3) · Betrayer of the Code (The Unguided boss, S3).
-// Only UNRESOLVED ids are flagged — none matches a resolved trait (guardrail verified), so no live trait flips.
-const LEGACY_TRAIT_IDS = new Set([...Array.from({ length: 869 - 812 + 1 }, (_, i) => 812 + i), 538, 554, 555, 562, 596]);
+//     ("Misery" boss, S3) · Betrayer of the Code (The Unguided boss, S3).
+//   • Mage Perks (S3): Nighttaker/Daybreaker/Death's Edge/Damnation's Edge. · Boss-innate (S3): Hearty/
+//     Very Hearty ×2, Betrayer/Deceiver/Ascension ×2. · Corrupted God fights (S3): Corrupted God/GET/Trait
+//     Disabled. · Nether-Boss-innate (S3): Torn Betwixt and Asunder, Boneyard and Sacrilege, Nasty Surprise!,
+//     Better to Receive, Maximum Hydration, Undead Army ×2, Eager Recruit, Delusion, Vext's Grace.
+// Only UNRESOLVED ids flagged — none matches a resolved trait (guardrail verified), so no live trait flips.
+const LEGACY_TRAIT_IDS = new Set([...Array.from({ length: 869 - 812 + 1 }, (_, i) => 812 + i), 538, 554, 555, 562, 596,
+  870, 871, 872, 873, 875, 876, 887, 888, 889, 901, 902, 903, 904, 905, 916, 917, 918, 950, 951, 965, 970, 981, 988, 989, 1009, 1010, 1023]);
 for (const id of LEGACY_TRAIT_IDS) excludedTraitIds.add(id);
+// NYI (non-sandbox) — staged/cut upcoming content not accessible in live (user-confirmed): Anathema, Poison
+// Bath, The Wishing Stick, Sorcerous Statue, Thunder God's Wrath; Stolen by Damnation's Edge = a cut early
+// Animator feature (likely never shipping). Kept out like the other NYI.
+const NYI_OTHER_TRAIT_IDS = new Set([1197, 1198, 1199, 1207, 2073, 2173]);
+for (const id of NYI_OTHER_TRAIT_IDS) excludedTraitIds.add(id);
 // NYI — SANDBOX/STAGED content. User-confirmed list of traits found in the game's sandbox ~1 year ago
 // that are NOT accessible yet (staged for upcoming content), plus the 12 Zodiac "Sign of <sign>" traits.
 // These fail our recon parameters (no live owner / item) precisely because they aren't live yet — so they
@@ -182,6 +195,20 @@ const MANUAL_TRAIT_OWNERS = new Map([
   // FROM "Absence of Light" (which is now just Fog Spirit's creature trait #797). This fills Erebyss's
   // previously-empty Deity slot; her Avatar/player trait (#609 Avenged Sevenfold) is unchanged.
   [668, { owner: 'Erebyss', ownerType: 'boss', ownerForm: 'encounter', ownerCategory: 'Deity', ownerGroup: 'Erebyss', ownerProvenance: 'wiki' }],
+  // Special/story bosses outside the 3 wiki categories (user-confirmed, live):
+  // Treasure Golem 2.0 (Nether Realm boss — Cutthroat Jungle / Forgotten Lab) — its innate is Torun's
+  // Blessing; drops Treasure Golem's Core/Plate/Teddy Bear materials + the 2.0 skin. The creature "Treasure
+  // Golem" is in the roster (player form); this is its encounter form.
+  [1521, { owner: 'Treasure Golem', ownerType: 'boss', ownerForm: 'encounter', ownerCategory: 'Special Boss', ownerGroup: 'Treasure Golem 2.0', ownerProvenance: 'user' }],
+  // Imp Impington Prime — a STORY-only boss, distinct from the "Imp Impington Reborn" False God and the
+  // "Imp Impington" Nether Boss; Boon of the Hee Hoo Hay Ho is its innate.
+  [1213, { owner: 'Imp Impington Prime', ownerType: 'boss', ownerForm: 'encounter', ownerCategory: 'Special Boss', ownerGroup: 'Imp Impington Prime', ownerProvenance: 'user' }],
+  // Caliban STORY encounter (distinct from Caliban the Deity / the False God): these 5 are its fight traits.
+  [1217, { owner: 'Caliban', ownerType: 'boss', ownerForm: 'encounter', ownerCategory: 'Special Boss', ownerGroup: 'Caliban (story)', ownerProvenance: 'user' }],
+  [1218, { owner: 'Caliban', ownerType: 'boss', ownerForm: 'encounter', ownerCategory: 'Special Boss', ownerGroup: 'Caliban (story)', ownerProvenance: 'user' }],
+  [1219, { owner: 'Caliban', ownerType: 'boss', ownerForm: 'encounter', ownerCategory: 'Special Boss', ownerGroup: 'Caliban (story)', ownerProvenance: 'user' }],
+  [1227, { owner: 'Caliban', ownerType: 'boss', ownerForm: 'encounter', ownerCategory: 'Special Boss', ownerGroup: 'Caliban (story)', ownerProvenance: 'user' }],
+  [1231, { owner: 'Caliban', ownerType: 'boss', ownerForm: 'encounter', ownerCategory: 'Special Boss', ownerGroup: 'Caliban (story)', ownerProvenance: 'user' }],
 ]);
 for (const id of MANUAL_TRAIT_OWNERS.keys()) excludedTraitIds.delete(id);   // ship these despite their raw status
 const tc = readJSON(path.join(MODEL, 'theorycraft_tags.json'));
@@ -257,7 +284,7 @@ for (const t of consolidated) {
     obtainStatus: rec.status || null,
   };
 }
-console.log(`  traits: ${Object.keys(traits).length} shipped · ${traitsExcluded} blacklisted (${DUPLICATE_TRAIT_IDS.size} duplicate + ${NYI_SANDBOX_TRAIT_IDS.size} NYI-sandbox + ${LEGACY_TRAIT_IDS.size} legacy-S3 + ${UNRESOLVED_OWNERLESS_IDS.size} unresolved-ownerless + ${traitsExcluded - DUPLICATE_TRAIT_IDS.size - NYI_SANDBOX_TRAIT_IDS.size - LEGACY_TRAIT_IDS.size - UNRESOLVED_OWNERLESS_IDS.size} recon — not in live Ultimate)`);
+console.log(`  traits: ${Object.keys(traits).length} shipped · ${traitsExcluded} blacklisted (${DUPLICATE_TRAIT_IDS.size} duplicate + ${NYI_SANDBOX_TRAIT_IDS.size + NYI_OTHER_TRAIT_IDS.size} NYI + ${LEGACY_TRAIT_IDS.size} legacy-S3 + ${UNRESOLVED_OWNERLESS_IDS.size} unresolved-ownerless + ${traitsExcluded - DUPLICATE_TRAIT_IDS.size - NYI_SANDBOX_TRAIT_IDS.size - NYI_OTHER_TRAIT_IDS.size - LEGACY_TRAIT_IDS.size - UNRESOLVED_OWNERLESS_IDS.size} recon — not in live Ultimate)`);
 
 // ── creatures ──────────────────────────────────────────────────────────────
 // Spine = creatures_ref: the AUTHORITATIVE playable roster (1362), where EVERY
