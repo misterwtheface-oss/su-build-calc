@@ -51,7 +51,7 @@
       const m = FG_PORTRAITS.find(f => f.k === g || f.k.includes(g) || g.includes(f.k));
       return m ? m.img : null;
     }
-    return null;   // Nether Boss / Special Boss — no sprite extracted
+    return BOSS_SPRITES[normNm(t.owner)] || null;   // Nether/Special boss (spr_crits_battle frame) or name chip
   }
   const FG_BY_KEY = new Map((D.falseGods || []).map(g => [g.key, g]));
   // resolve a False-God-owned trait → its False God entry (ownerGroup is a short name: Impington ↔ Imp Impington)

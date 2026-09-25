@@ -1214,11 +1214,14 @@ const godShops = [...godShopMap.entries()].sort((a, b) => a[0].localeCompare(b[0
 console.log(`  god shops: ${godShops.length} gods · ${godShopArr.length} items`);
 
 // ── boss battle sprites (Appendix boss-trait rows) ────────────────────────────
-// Only DEITY bosses have a bspr_ (battle sprite) in the extract — including Caliban, who is a Deity AND
-// a False God as separate entries (bspr_god_caliban). Nether/Special bosses have NO bspr_ battle sprite
-// (they only have tiny overworld + 16×16 material sprites) → they fall back to an owner-name chip in the
-// app. Keyed by normalized owner name. False God portraits are shipped separately (D.falseGods).
+// DEITY bosses use bspr_god_* (incl. Caliban). NETHER/SPECIAL bosses use spr_crits_battle_<frame> — the
+// standard creature convention — human-validated in nether_boss_frames.json (Kiichi=2061, etc.; multi-frame
+// bosses like Chroma/Flubris ship their primary frame[0]). Keyed by normalized owner name. False God
+// portraits are shipped separately (D.falseGods). Bosses with no frame keep the owner-name chip.
+const OUT_BOSSBATTLE = path.join(OUT_ASSETS, 'bossbattle');
+fs.rmSync(OUT_BOSSBATTLE, { recursive: true, force: true });
 const bossSprites = {};
+let deityBoss = 0, netherBoss = 0;
 {
   const seen = new Set();
   for (const id in traits) {
@@ -1226,12 +1229,21 @@ const bossSprites = {};
     if (t.ownerType === 'boss' && t.ownerCategory === 'Deity' && t.owner && !seen.has(t.owner)) {
       seen.add(t.owner);
       const p = godBattleFor(t.owner);
-      if (p) bossSprites[norm(t.owner)] = p;
+      if (p) { bossSprites[norm(t.owner)] = p; deityBoss++; }
       else warn(`Deity boss "${t.owner}" has no bspr_ battle sprite`);
     }
   }
+  // Nether/Special: copy each boss's primary spr_crits_battle frame → assets/bossbattle/<slug>.png
+  const netherFrames = readJSON(path.join(MODEL, 'nether_boss_frames.json')).bosses || {};
+  for (const [boss, frames] of Object.entries(netherFrames)) {
+    if (!frames || !frames.length) continue;
+    const slug = norm(boss);
+    if (copyNamedSprite(`spr_crits_battle_${frames[0]}`, OUT_BOSSBATTLE, `${slug}.png`)) {
+      bossSprites[slug] = `assets/bossbattle/${slug}.png`; netherBoss++;
+    } else warn(`nether boss "${boss}" frame ${frames[0]} missing`);
+  }
 }
-console.log(`  boss sprites: ${Object.keys(bossSprites).length} Deity battle sprites (Nether/Special have none in the extract)`);
+console.log(`  boss sprites: ${deityBoss} Deity (bspr_) + ${netherBoss} Nether/Special (spr_crits_battle) = ${Object.keys(bossSprites).length}`);
 
 // ── Realms reference ──────────────────────────────────────────────────────────
 // realms_ref.json: {god("Name, God of X"), realm, class, godspawn, gemstone, realm_creatures[], other[]}.
