@@ -1254,7 +1254,7 @@
     return TRAIT_SOURCES;
   }
   function openAppendix() {
-    ovState = { kind: "appendix", search: "", cat: null, tags: [], browsing: false, showSrc: false, render: renderAppendix };
+    ovState = { kind: "appendix", search: "", cat: null, tags: [], browsing: false, showSrc: false, collapsed: new Set(), render: renderAppendix };
     openOverlay(ovState.render()); maybeFocusSearch(OV);
   }
   function renderAppendix() {
@@ -1320,9 +1320,11 @@
         let list = items;
         if (q) list = list.filter(x => ((x._search || x.name) || "").toLowerCase().includes(q));
         if (!list.length) return "";
-        return `<div class="section-label">${title} — ${list.length}</div>
-          <div class="perk-list">${list.slice(0, CAP).map(renderRow).join("")}
-          ${list.length > CAP ? `<div class="slot-sub" style="padding:6px">Showing ${CAP} of ${list.length}.</div>` : ""}</div>`;
+        const collapsed = st.collapsed.has(title);
+        return `<button class="apx-sec-head${collapsed ? " collapsed" : ""}" data-action="appendix-toggle-sec" data-sec="${esc(title)}">
+            <span class="apx-sec-caret">${collapsed ? "▸" : "▾"}</span>${esc(title)} <span class="apx-sec-n">${list.length}</span></button>
+          ${collapsed ? "" : `<div class="perk-list">${list.slice(0, CAP).map(renderRow).join("")}
+          ${list.length > CAP ? `<div class="slot-sub" style="padding:6px">Showing ${CAP} of ${list.length}.</div>` : ""}</div>`}`;
       };
       const line = (ico, name, meta, desc, srcObj, bk, open) => `<div class="perk-line${open ? " apx-clickable" : ""}"${open ? ` data-action="apx-open" data-ek="${open.ek}" data-eid="${esc(String(open.eid))}"` : ""}>
         <span class="perk-ico sm">${ico || ""}</span>
@@ -3125,6 +3127,7 @@
       case "appendix-rm-tag": e.stopPropagation(); ovState.tags = ovState.tags.filter(x => x !== t.dataset.k); ovState.search = ""; refreshOverlay(); break;
       case "appendix-add": ovState.browsing = true; ovState.cat = null; ovState.search = ""; refreshOverlay(); break;
       case "appendix-src": ovState.showSrc = !ovState.showSrc; refreshOverlay(); break;
+      case "appendix-toggle-sec": { const s = t.dataset.sec; ovState.collapsed.has(s) ? ovState.collapsed.delete(s) : ovState.collapsed.add(s); refreshOverlay(); break; }
       case "apx-bookmark": { e.stopPropagation(); const k = t.dataset.kind;   // perks key by string, traits/spells by numeric id
         toggleBk(k, k === "perks" ? t.dataset.id : +t.dataset.id); refreshOverlay(); break; }
       case "appendix-done-adding": ovState.browsing = false; ovState.cat = null; ovState.search = ""; refreshOverlay(); break;

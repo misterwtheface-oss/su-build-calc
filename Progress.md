@@ -1098,6 +1098,15 @@ MAPPING not for asserting PRESENCE; no inventing entities from the community-CSV
 - Class-advantage multiplier + Nether Stone numerics are runtime/in-game-only (see WIKI_CONTEXT) → modelled around.
 
 ## Session log
+- 2026-09-24: **Appendix — collapsible result sections.** Each category group (Traits / Perks / Spells /
+  Relics / Realm Cards) now has a clickable header that collapses/expands just its own list, so a busy
+  multi-tag result set can be folded down to the section(s) you care about. The `section()` helper renders
+  the header as an `.apx-sec-head` button (caret ▾/▸ + a right-aligned `.apx-sec-n` count badge) and drops
+  its `.perk-list` when collapsed; state lives in `ovState.collapsed` (a `Set` of section titles, per open
+  overlay) toggled by the new `appendix-toggle-sec` action. Reuses the existing `syn-*` collapse idiom.
+  Verified headless (jsdom): a 4-section result (Traits 38 / Perks 7 / Spells 5 / Realm Cards 1) collapses
+  the clicked section only, flips its caret, drops one `.perk-list`, leaves siblings expanded, and restores
+  on re-click — 13/13 assertions.
 - 2026-09-24: **Fail loudly on missing sprites (removed the silent-hide fallback).** `spriteImg` no longer
   hides broken images (`onerror` was `this.style.visibility='hidden'` = silent blank, as bad as a 404). Now a
   broken/missing sprite gets `class="sprite-missing"` (unmissable red hatched outline, `!important` visible) +

@@ -109,6 +109,16 @@ h1, h2, h3 { margin: 0; }
   font-size: 12px; letter-spacing: 1.4px; text-transform: uppercase;
   color: var(--text-mute); margin: 4px 2px 8px;
 }
+.apx-sec-head {
+  display: flex; align-items: center; gap: 8px; width: 100%;
+  font-size: 12px; letter-spacing: 1.4px; text-transform: uppercase;
+  color: var(--text-mute); margin: 10px 0 8px; padding: 4px 2px;
+  background: none; border: 0; border-bottom: 1px solid var(--border-dim);
+  font-family: inherit; text-align: left; cursor: pointer;
+}
+.apx-sec-head:hover { color: var(--text); }
+.apx-sec-head .apx-sec-caret { flex: 0 0 auto; font-size: 11px; opacity: .6; }
+.apx-sec-head .apx-sec-n { margin-left: auto; font-weight: 800; color: var(--cap); }
 .party-grid {
   display: grid; gap: var(--gap);
   grid-template-columns: repeat(2, 1fr);
