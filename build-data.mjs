@@ -354,6 +354,12 @@ const CREATURE_SPELLING_FIX = {
 const SPRITE_FRAME_OVERRIDE = {
   atlasbeacon: 2941, elfhuntsman: 1299, tipsydenizen: 3444,
 };
+// VALIDATED frame corrections — loaded from the CANONICAL data file (data/model/creature_frame_overrides.json),
+// NOT hardcoded. The source docs have duplicate creature names (a current SU frame + a legacy Siralim-3 frame);
+// the auto-pick (battle_frame ?? field0) sometimes lands on the WRONG one (e.g. Aaxer shipped 9 = an S3 Paragon;
+// correct 2095). These overrides win (top priority). Human-validated via frame_disagreements.html.
+const CREATURE_FRAME_FIX = readJSON(path.join(MODEL, 'creature_frame_overrides.json')).overrides || {};
+const CREATURE_FRAME_FIX_N = Object.fromEntries(Object.entries(CREATURE_FRAME_FIX).map(([k, v]) => [norm(k), v]));
 
 const creatures = [];
 let spriteCopied = 0, codeStats = 0, spriteOverrides = 0;
@@ -396,7 +402,9 @@ creaturesRef.forEach((r, i) => {
   // battle sprite — spr_crits_battle frame from the capstone battle_frame, else legacy field0,
   // else a name-mismatch override (roster spelling ≠ sprite-catalog spelling)
   let frame = (cd && cd.battle_frame != null) ? cd.battle_frame : (cs ? cs.field0 : null);
-  if ((frame == null || frame === 6969) && SPRITE_FRAME_OVERRIDE[norm(r.name)] != null) {
+  if (CREATURE_FRAME_FIX_N[norm(r.name)] != null) {          // validated correction wins over the auto-pick
+    frame = CREATURE_FRAME_FIX_N[norm(r.name)]; spriteOverrides++;
+  } else if ((frame == null || frame === 6969) && SPRITE_FRAME_OVERRIDE[norm(r.name)] != null) {
     frame = SPRITE_FRAME_OVERRIDE[norm(r.name)]; spriteOverrides++;
   }
   let sprite = null;
