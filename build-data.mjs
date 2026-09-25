@@ -768,8 +768,23 @@ const matIcon = (m) => {                                    // copy a material's
   // genuine CSV item-name errors → the game's material name
   const ITEM_ALIAS = { "sigil of the leeche": 'Sigil of the Leech', "sigil of the sphinxe": 'Sigil of the Sphinx',
     'faded garnet': 'Fading Garnet', "cyhra's adamance": "Cyhra's Tattered Ear" };
-  const matByName = new Map(), matByPoss = new Map();
-  for (const m of matRecs) { if (!m.name) continue; if (!matByName.has(m.name)) matByName.set(m.name, m); const p = normP(m.name); if (!matByPoss.has(p)) matByPoss.set(p, m); }
+  const matByName = new Map(), matByPoss = new Map(), matByLower = new Map();
+  for (const m of matRecs) { if (!m.name) continue; if (!matByName.has(m.name)) matByName.set(m.name, m); const p = normP(m.name); if (!matByPoss.has(p)) matByPoss.set(p, m); const lo = m.name.toLowerCase(); if (!matByLower.has(lo)) matByLower.set(lo, m); }
+  // Canonicalize the primary source_item links (built at file top from trait.source_item.name) to the
+  // EXACT material name, so a pure CASE mismatch on the trait side still links: e.g. Abation's
+  // "Lunar Blood vial" → material "Lunar Blood Vial", "Soulslayer claymore" → "Soulslayer Claymore",
+  // "Inox SInew" → "Inox Sinew". The 823 loop looks up by the material's real name, so a case-only
+  // difference on the claim silently dropped the item (leaving a creature-owned trait iconless).
+  // CASE-INSENSITIVE ONLY — possessive/plural tolerance is NOT safe here: community source_item names
+  // carry typos that would false-match (e.g. "Particle of Grommet" has no material at all).
+  let siCanon = 0;
+  for (const t of consolidated) {
+    if (excludedTraitIds.has(t.id)) continue;
+    const si = t.source_item && t.source_item.name;
+    if (!si || si === 'N/A' || si === 'No Material Exists' || matByName.has(si)) continue;  // missing / already exact
+    const m = matByLower.get(si.toLowerCase());
+    if (m && !traitIdByItemName.has(m.name)) { traitIdByItemName.set(m.name, t.id); siCanon++; }
+  }
   const normL = (s) => normP(s).replace(/s$/, '');       // + trailing-plural tolerance (CSV "Amphisbaena" ↔ "Amphisbaenas")
   const traitIdByName = new Map(), traitIdByPoss = new Map();
   const looseCount = new Map(), looseId = new Map();      // loose key → id, but ONLY if unambiguous (drop collisions)
@@ -810,7 +825,7 @@ const matIcon = (m) => {                                    // copy a material's
     const m = matByName.get(dm[1]) || matByPoss.get(normP(dm[1]));
     if (m && !traitIdByItemName.has(m.name)) { traitIdByItemName.set(m.name, t.id); detailLinked++; }
   }
-  warn(`Trait_REF reconciliation: +${refLinked} blank trait(s) linked to their granting item · +${detailLinked} via recon detail${refUnresolved.length ? ` · ${refUnresolved.length} still unresolved (no material): ${refUnresolved.slice(0, 6).join(', ')}` : ''}`);
+  warn(`Trait_REF reconciliation: +${siCanon} case-only source_item link(s) canonicalized · +${refLinked} blank trait(s) linked to their granting item · +${detailLinked} via recon detail${refUnresolved.length ? ` · ${refUnresolved.length} still unresolved (no material): ${refUnresolved.slice(0, 6).join(', ')}` : ''}`);
 }
 
 // item_class discriminates the artifact slot a material enchants:
@@ -869,6 +884,7 @@ for (const m of matRecs) {
   };
   let ownCrea = 0, ownBoss = 0, itemOnly = 0, ownGap = 0;
   const ownerCatCount = {};
+  const creaNoItem = [];   // creature-owned traits that ship WITHOUT a trait-item (should be rare + boss-ish)
   for (const id in traits) {
     const t = traits[id]; const r = reconById.get(+id) || {}; const st = r.status;
     const hasItem = itemTraitIds.has(+id);
@@ -902,12 +918,28 @@ for (const m of matRecs) {
     // itemSource = where the item is obtained: Trait_REF source col (possessive-tolerant), else recon obtained_from
     const itemSource = hasItem ? (refSourceByTrait.get(normPo(t.name)) || refSourceByLoose.get(normLo(t.name)) || r.obtained_from || null) : null;
     Object.assign(t, { owner, ownerType, ownerForm, ownerCategory, ownerGroup, ownerProvenance, itemSource });
-    if (ownerType === 'creature') ownCrea++;
+    if (ownerType === 'creature') { ownCrea++; if (!hasItem) creaNoItem.push(t); }
     else if (ownerType === 'boss') { ownBoss++; ownerCatCount[ownerCategory] = (ownerCatCount[ownerCategory] || 0) + 1; }
     else if (hasItem) itemOnly++;
     if (!owner && !hasItem) ownGap++;                              // should be 0 — the 17 are already excluded
   }
   console.log(`  owner model: ${ownCrea} creature · ${ownBoss} boss (${Object.entries(ownerCatCount).map(([k, v]) => `${v} ${k}`).join(', ')}) · ${itemOnly} item-only · ${ownGap} unresolved-gap${ownGap ? ' ⚠' : ' ✓'}`);
+  // GUARDRAIL — a playable creature's innate trait is normally extractable as a trait-material, so a
+  // creature-owned trait with NO item is the exception. The VALID exceptions are encoded in the data,
+  // not guessed: (a) Avatar/Deity forms (unique, not farmable) and (b) traits the reference explicitly
+  // marks "No Material Exists" (bosses like Pandemonium/Treasure Golem/Mimic + Godspawn + special sets —
+  // creatures that look like they'd have an item but their particular trait has no item equivalent).
+  // Anything else = a creature that appears to warrant an item but has neither a link nor the
+  // "No Material Exists" marker → surfaced for review (fix the Trait_REF item name, or add the marker).
+  {
+    const declaredItemless = new Set(consolidated.filter(c => ((c.source_item || {}).name) === 'No Material Exists').map(c => c.id));
+    const valid = (t) => t.ownerCategory === 'Avatar' || declaredItemless.has(+t.id);
+    const expected = creaNoItem.filter(valid), suspect = creaNoItem.filter(t => !valid(t));
+    warn(`item coverage: ${ownCrea - creaNoItem.length}/${ownCrea} creature-owned traits also have a trait-item · ${creaNoItem.length} without` +
+      (creaNoItem.length ? ` (${expected.length} valid = Avatar or "No Material Exists" · ${suspect.length} to review)` : ''));
+    if (suspect.length) warn(`  ⚠ ${suspect.length} creature-owned trait(s) with NO item and NO "No Material Exists" marker — fix the Trait_REF item name or mark it itemless: ` +
+      suspect.map(t => `${t.name} (#${t.id}, owner ${t.owner || '?'})`).join(' · '));
+  }
 }
 
 // ── Stat materials (Ambers) → Stat-slot properties ──
