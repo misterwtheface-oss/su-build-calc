@@ -887,11 +887,24 @@ MAPPING not for asserting PRESENCE; no inventing entities from the community-CSV
   Faith · Reap Destruction · Serenade of Guilt · Siralim's Ascendance/Attunement/Prayer · Syndrome · Ultima
   · Zodiac ×12 (`NYI_SANDBOX_TRAIT_IDS`; moved Acclimation+Hebron out of unresolved-ownerless). Blacklist =
   3 dup + 33 NYI-sandbox + 12 unresolved-ownerless + 109 recon.
-- **STILL to classify (needs user's sandbox/game knowledge):** ~96 remaining UNRECONCILED, notably the
-  **systematic sets** — artifact-slot power (17, "\<slot\> artifacts 50% more powerful"), condition-synergy
-  buff (10) + enemy-debuff (12), Core-extraction/Nether (3) — likely live specialization/system content OR
-  more staged; plus the **12 unresolved-ownerless** (Multiply, Crucifixion ×2, Crucify Me, Boon of the Hee
-  Hoo Hay Ho, Who Am I?, IMMORTALITY, God of Dreams/Nightmares, Nether Orb/Orbs, Torun's Blessing).
+- **Phase B COMPLETE (user-classified the whole tail; commits 5ea7fcb, 4202077).** All 124 UNRECONCILED +
+  12 ownerless resolved to a KNOWN category (no name-match/identity assumptions; only unresolved ids touched):
+  - **legacy-S3 (90):** Itherian Artifact set (812–869) · Mage Perks (Nighttaker/Daybreaker/Death's/
+    Damnation's Edge) · Multiply (Failed Experiment) · Crucifixion/Crucify Me (Misery boss) · Betrayer of the
+    Code (The Unguided) · Corrupted God fights (Corrupted God/GET/Trait Disabled) · boss-innate Hearty/Very
+    Hearty/Betrayer/Deceiver/Ascension · Nether-boss-innate (Torn Betwixt and Asunder, Boneyard and Sacrilege,
+    Nasty Surprise!, Better to Receive, Maximum Hydration, Undead Army, Eager Recruit, Delusion, Vext's Grace).
+  - **NYI (39):** 33 sandbox (+Zodiac) + Anathema/Poison Bath/Wishing Stick/Sorcerous Statue/Thunder God's
+    Wrath + Stolen by Damnation's Edge (cut Animator feature).
+  - **LIVE special/story bosses (+8):** Guided by Darkness→Erebyss Deity (2.0.17 replaced Absence of Light) ·
+    Torun's Blessing→Treasure Golem 2.0 · Boon of the Hee Hoo Hay Ho→Imp Impington Prime (story) · IMMORTALITY/
+    God of Dreams/Nightmares/Nether Orb/Orbs→Caliban story encounter. `Special Boss` category = 8 (Zantai +
+    these). NEW STRUCTURE FACT: every Ultimate Nether Boss owns **3 same-named copies** of its trait
+    (validated — some have 4–5 from dupes); Kraynaks has its 3 "Who Am I? None Of Your Business", so #1215
+    "Who Am I?" is an outlier.
+  - **STILL UNRESOLVED — just 3:** Pandemonium Unfairness (#898, tied to the Pandemonium K/Q shrine fight —
+    user unsure) · Inner Demons (#969) · Who Am I? (#1215 outlier). `unresolved_traits.csv` regenerated 124→3.
+  Final blacklist: 3 duplicate + 39 NYI + 90 legacy-S3 + 1 unresolved-ownerless + 16 recon; **2038 shipped**.
 - **Phase C** items · **Phase D** spells — not started.
 
 ## Backlog
