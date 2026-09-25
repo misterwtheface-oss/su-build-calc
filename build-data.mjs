@@ -682,10 +682,13 @@ const spellClassByName = new Map();
 const spellRefByName = new Map();
 const cleanRef = (v) => { const s = (v == null ? '' : String(v)).trim(); return s && s !== '-' ? s : null; };
 {
-  const ref = readJSON(path.join(REF, 'spells_ref.json'));
-  for (const r of (ref.records || ref)) {
-    if (r.name && r.class) spellClassByName.set(norm(r.name), r.class);
-    if (r.name) spellRefByName.set(norm(r.name), { potency: cleanRef(r.potency), target: cleanRef(r.target), source: cleanRef(r.source) });
+  // read the compendium fields (Class/Potency/Target/Charges/SOURCE) straight from the user's authoritative
+  // Spell_REF.csv. Columns: 0 Spell Name · 1 Class · 2 Potency · 3 Target · 4 Charges · 5 Source · 6 Ingame Desc.
+  const num = (v) => (v && /^\d+$/.test(v) ? +v : null);
+  for (const r of parseCSVRaw(fs.readFileSync(path.join(REF, '_raw_csv', 'Spell_REF.csv'), 'utf8')).slice(1)) {
+    const name = (r[0] || '').trim(); if (!name) continue;
+    if (r[1]) spellClassByName.set(norm(name), (r[1] || '').trim());
+    spellRefByName.set(norm(name), { potency: cleanRef(r[2]), target: cleanRef(r[3]), source: cleanRef(r[5]), charges: num(cleanRef(r[4])) });
   }
 }
 // key -> charges from CODE (scr_DatabaseSpells; authoritative — beats the community CSV, e.g. Affliction
@@ -701,14 +704,17 @@ const lev = (a, b) => { const m = a.length, n = b.length; if (Math.abs(m - n) > 
   for (let j = 0; j <= n; j++) d[0][j] = j;
   for (let i = 1; i <= m; i++) for (let j = 1; j <= n; j++) d[i][j] = Math.min(d[i-1][j]+1, d[i][j-1]+1, d[i-1][j-1]+(a[i-1]===b[j-1]?0:1));
   return d[m][n]; };
-const refClassEntries = [...spellClassByName.entries()];
-function spellClass(name) {
+const refDetailEntries = [...spellRefByName.entries()];
+// exact-or-fuzzy compendium lookup (recovers the 2 community-CSV spelling typos "Lucious Lager"/
+// "Ignus Fatuus" vs the code-authoritative catalog spelling) → returns the whole ref entry.
+function spellRef(name) {
   const n = norm(name);
-  if (spellClassByName.has(n)) return spellClassByName.get(n);
+  if (spellRefByName.has(n)) return spellRefByName.get(n);
   let best = null, bd = 3;
-  for (const [rn, cls] of refClassEntries) { const dd = lev(n, rn); if (dd < bd) { bd = dd; best = cls; } }
-  return best;
+  for (const [rn, e] of refDetailEntries) { const dd = lev(n, rn); if (dd < bd) { bd = dd; best = e; } }
+  return best || {};
 }
+const spellClass = (name) => { const n = norm(name); return spellClassByName.get(n) || (spellRef(name), (() => { let best = null, bd = 3; for (const [rn, cls] of [...spellClassByName.entries()]) { const dd = lev(n, rn); if (dd < bd) { bd = dd; best = cls; } } return best; })()); };
 // per-class spell-gem icons: user-authored gems (assets/sprites/<class>_tier15.png), replacing the wrong gem_*_lvl4 sprites
 const GEM_SRC = { Nature: 'nature_tier15', Chaos: 'chaos_tier15', Sorcery: 'sorcery_tier15', Death: 'death_tier15', Life: 'life_tier15' };
 fs.rmSync(OUT_SPELLGEM, { recursive: true, force: true });
@@ -723,15 +729,18 @@ let spellCharged = 0;
 const spells = spellArr.map((s, i) => {
   const cls = spellClass(s.name);
   if (!cls) { spellNoClass++; warn(`spell "${s.name}" has no class match in spells_ref`); }
-  const ref = spellRefByName.get(norm(s.name)) || {};
-  const charges = spellChargesByKey.has(s.key) ? spellChargesByKey.get(s.key) : null;
+  const ref = spellRef(s.name);
+  // charges: CODE (spell_stats) is authoritative; fall back to the community count where code lacks it
+  const codeCharge = spellChargesByKey.has(s.key) ? spellChargesByKey.get(s.key) : null;
+  const charges = codeCharge != null ? codeCharge : (ref.charges != null ? ref.charges : null);
+  const chargesSrc = codeCharge != null ? 'code' : (ref.charges != null ? 'community' : null);
   if (charges != null) spellCharged++;
   const sTaxo = correctTaxo(taxoStrs(spellTaxo[String(i)]), s.desc || '');
   return { id: i, key: s.key, name: s.name, desc: s.desc || '', cls,
-    charges, potency: ref.potency || null, target: ref.target || null, source: ref.source || null,
+    charges, chargesSrc, potency: ref.potency || null, target: ref.target || null, source: ref.source || null,
     taxo: sTaxo, taxoSrc: taxoSrcArr(spellTaxo[String(i)], sTaxo) };
 }).filter(s => s.name);
-console.log(`  spells: ${spells.length} · ${spellCharged} w/ code charges · ${spells.filter(s => s.potency).length} w/ potency`);
+console.log(`  spells: ${spells.length} · charges ${spells.filter(s => s.chargesSrc === 'code').length} code + ${spells.filter(s => s.chargesSrc === 'community').length} community · ${spells.filter(s => s.potency).length} w/ potency · potency/target/source from Spell_REF.csv`);
 console.log(`  taxonomy fixes: Innate-Trait stripped ${innateTagStripped} · Animatus retagged ${animatusRetagged} (was mis-tagged Animation)`);
 
 // ── trait items (slottable into artifact trait slots) — with material icons ──
