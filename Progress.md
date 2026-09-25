@@ -1098,6 +1098,30 @@ MAPPING not for asserting PRESENCE; no inventing entities from the community-CSV
 - Class-advantage multiplier + Nether Stone numerics are runtime/in-game-only (see WIKI_CONTEXT) → modelled around.
 
 ## Session log
+- 2026-09-24: **ASSET OWNERSHIP INDEX + boss/skin reconciliation (source-of-truth layer).** Built a canonical,
+  schema-validated relational index of every mapped object and used it to fix real asset-ownership bugs.
+  **Sources of truth (all in `_su_extract/data/model/`, gitignored from this repo; consumed by `build-data.mjs`):**
+  - `object_index.json` (+ `object_index.schema.json`, `schema_version:1`) — THE canonical index of all 7.4k
+    objects `{type,name,id,assetName,assetPath,related}`. Creature/skin `assetName` = the true
+    `spr_crits_battle_<frame>`, **byte-validated** against the shipped sprite. Gen `code/build_object_index.mjs`,
+    gate `code/validate_object_index.mjs` (schema + byte-truth; 0 mismatches). Docs: `_su_extract/OBJECT_INDEX.md`.
+  - `creature_frame_overrides.json` — validated creature frame corrections (dup source docs shipped legacy-S3
+    frames): Aaxer 9→2095, Blood Slime 541→2205, Dumpling 1310→1304, Unguided Agnostic 1804→1802, Shambler
+    Benefactor 1209→3396. **These changed 5 shipped creature sprites (deployed).**
+  - `nether_boss_frames.json` — 38 Nether/Special boss → `spr_crits_battle` frame(s) (from the user's Google
+    Sheet). build-data ships them → `assets/bossbattle/` + `D.bossSprites`; Appendix boss rows render real
+    battle sprites (deployed). Includes the found-via-skins bosses: Imp Impington 1876, Prime 1877, Treasure
+    Golem 2822, Inner Darkness/Shadow Lord 1888–1893.
+  - `false_god_part_frames.json` — FG body-part frames + positions (Arm of Althea L/R, Head of Hydranox 5 heads).
+  - `frame_duplicates.json` — 135 byte-identical frames → canonical+owner (so dup art never resurfaces).
+  - `skin_exclusions.json` — 37 `skins.json` entries that are actually bosses (the Nether roster + the 4 above),
+    excluded from the shipped skin set (skins 743→734). skins.json OVER-claimed boss sprites.
+  **Reference/validation tools (`_su_extract/`, NOT shipped):** `contact_sheet.html` (every battle frame, mapped
+  dimmed + candidates highlighted; Focus toggle), `frame_disagreements.html/.csv` (now 0 open), `skin_validation.csv`
+  (834 skins, 37 flagged applied), `build_contact_sheet.py`, `build_frame_disagreements.py`, `apply_frame_validations.py`,
+  `build_skin_validation.py`, `build_frame_duplicates.py`.
+  **⏸ PENDING (user returning to it):** the UNMAPPED-skin hunt — scan `contact_sheet.html` candidate pool (~1465
+  unowned frames = real skins-to-surface + NPC/legacy) and mark real skins; also finish reviewing `skin_validation.csv`.
 - 2026-09-24: **Appendix — pass 3 (search-w/o-filter, centered labels, perk spec icon, taxonomy Source, Caliban sprite, False God boss pages).**
   Follow-ups to the six upgrades: **(1)** center the "N cards" / "Rank N" labels in their column; **(3)** name
   search now returns matches with **no taxonomy filter** applied (a query at zero tags shows name-filtered
