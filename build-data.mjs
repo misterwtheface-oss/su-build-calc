@@ -153,7 +153,7 @@ for (const id of DUPLICATE_TRAIT_IDS) excludedTraitIds.add(id);
 // (the canonical tier triple); ≤3-copy bosses (e.g. Kraynaks) untouched. Flubris keeps its 2 entries
 // (#1323/#1324) — its tier-3 reuses tier-2's prose (difference = an all-Flubrises battle setup, not text),
 // an antipattern but VALID, so no separate tier-3 entry exists in the data.
-const NETHER_DUP_TRAIT_IDS = new Set([543, 544, 545, 546, 548, 549, 550, 551, 552, 553, 586, 587, 588, 589, 590, 591, 592, 593, 594, 595, 877, 878, 879, 880, 881, 882, 883, 884, 885, 886, 906, 907, 908, 909, 910, 911, 912, 913, 914, 915, 1200, 1201, 1202, 1203, 1204, 1205, 1206, 1208, 1209, 1210, 1211, 1212, 1214, 1216]);
+const NETHER_DUP_TRAIT_IDS = new Set([543, 544, 545, 546, 548, 549, 550, 551, 552, 553, 586, 587, 588, 589, 590, 591, 592, 593, 594, 595, 877, 878, 879, 880, 881, 882, 883, 884, 885, 886, 906, 907, 908, 909, 910, 911, 912, 913, 914, 915, 1200, 1201, 1202, 1203, 1204, 1205, 1206, 1208, 1209, 1210, 1211, 1212, 1214, 1215, 1216]);   // 1215 "Who Am I?" = a Kraynaks outlier duplicate (short-name extra)
 for (const id of NETHER_DUP_TRAIT_IDS) excludedTraitIds.add(id);
 // UNRESOLVED — factually unresolvable traits (category "unresolved"). These 17 carry recon
 // status="boss" but have NULL owner AND NULL item, and appear in NONE of the authoritative sources:
@@ -161,10 +161,8 @@ for (const id of NETHER_DUP_TRAIT_IDS) excludedTraitIds.add(id);
 // wiki, not Trait_REF.csv (no item/encounter), and not code (creature_stats has no trait field). A trait
 // with neither an owner nor an item has no provenance at all → unresolved (per user rule 2026-09-24).
 // Re-derive on a game update; if a future source (e.g. Pandemonium/other-boss page) names one, resolve it.
-// Still genuinely unresolved: #1215 "Who Am I?" (an OUTLIER — Kraynaks already owns its 3 canonical
-// "Who Am I? None Of Your Business" traits; this shorter-named extra has no confirmed owner). Pandemonium
-// Unfairness (#898) + Inner Demons (#969) stay UNRECONCILED via recon status.
-const UNRESOLVED_OWNERLESS_IDS = new Set([1215]);
+// (Empty — the whole tail is now classified: #1215 → duplicate, #898 → NYI, everything else owned/legacy/NYI.)
+const UNRESOLVED_OWNERLESS_IDS = new Set([]);
 for (const id of UNRESOLVED_OWNERLESS_IDS) excludedTraitIds.add(id);
 // LEGACY — Siralim-3 carryover content, present in the extract but not in live Ultimate (user-confirmed).
 //   • Itherian Artifact trait set (contiguous 812–869) — the artifact-power / condition-synergy / Core sets.
@@ -182,7 +180,7 @@ for (const id of LEGACY_TRAIT_IDS) excludedTraitIds.add(id);
 // NYI (non-sandbox) — staged/cut upcoming content not accessible in live (user-confirmed): Anathema, Poison
 // Bath, The Wishing Stick, Sorcerous Statue, Thunder God's Wrath; Stolen by Damnation's Edge = a cut early
 // Animator feature (likely never shipping). Kept out like the other NYI.
-const NYI_OTHER_TRAIT_IDS = new Set([1197, 1198, 1199, 1207, 2073, 2173]);
+const NYI_OTHER_TRAIT_IDS = new Set([898, 1197, 1198, 1199, 1207, 2073, 2173]);   // 898 Pandemonium Unfairness = NYI (Pandemonium shrine fight)
 for (const id of NYI_OTHER_TRAIT_IDS) excludedTraitIds.add(id);
 // NYI — SANDBOX/STAGED content. User-confirmed list of traits found in the game's sandbox ~1 year ago
 // that are NOT accessible yet (staged for upcoming content), plus the 12 Zodiac "Sign of <sign>" traits.
