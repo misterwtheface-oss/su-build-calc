@@ -1101,29 +1101,34 @@ MAPPING not for asserting PRESENCE; no inventing entities from the community-CSV
 - 2026-09-24: **Trait item-owner reconciliation — fix the join + add a build-time validation guardrail.**
   Symptom: Abation (and others) shipped with a creature owner but no trait-item icon in the Appendix.
   Two root causes, both fixed:
-  (1) **Case-only mismatch** between a trait's claimed `source_item.name` and the real material name
-  ("Lunar Blood vial" vs material "Lunar Blood Vial"). `build-data.mjs` now canonicalizes `source_item`
-  links to the exact material name **case-insensitively** (matByLower) before the trait-item build.
-  CASE-ONLY on purpose — possessive/plural tolerance false-matches (e.g. "Particle of Grommet" has no
-  material). Rescued Abation, Soul to Keep, Naxor Harbinger.
-  (2) **Wrong/missing community item names.** 20 creature traits either had a typo'd Trait_REF Item Name
+  (1) **Case / punctuation / space mismatch** between a trait's claimed `source_item.name` and the real
+  material name. `build-data.mjs` now canonicalizes `source_item` links to the exact material name via a
+  **punctuation+space+case-insensitive** normalized key (`normPS`, strip all non-alphanumerics) with an
+  **unambiguity guard** (a normalized key shared by 2+ distinct materials is dropped — never guess).
+  Rescues Abation "Lunar Blood vial"→**Lunar Blood Vial** (case), Soul to Keep, Naxor Harbinger, and
+  Echobreather "Particle of Grommet"→**Particle of Grom'Met** (apostrophe+case).
+  (2) **Wrong/missing community item names.** ~21 creature traits either had a typo'd Trait_REF Item Name
   (Misanthropy "Berseker Sweat"→**Berserker Sweat**, Volley "Archer Break"→**Archer Beak**, Chaotic Mind
   "Math Textbook"→**Arithmetician's Textbook**, "Voltatic"→Voltaic, "Opalscent"→Opalescent, Turbulent
-  Waters' item wrongly set to the trait name→**Still Waters**, "8004"→B004 …) or **no CSV row at all**
-  (Shepherd of Fire, Purge, Impedance, Rapid Learning, Year of the Trollboar, Scoundrel's Strike). Per
-  the "update the source CSV, don't hard-swap the join" call, I corrected/added those rows in
+  Waters' item wrongly set to the trait name→**Still Waters**, "8004"→B004, Autonomous Network's
+  "Ne**u**tral Hive Network Implant"→"Ne**u**ral…" …) or **no CSV row at all** (Shepherd of Fire, Purge,
+  Impedance, Rapid Learning, Year of the Trollboar, Scoundrel's Strike). Per the "update the source CSV,
+  don't hard-swap the join" call, I corrected/added those rows in
   `_su_extract/data/reference/_raw_csv/Trait_REF.csv` (col 5 Item Name), grounding every name on the
   **code-corrected `material_stats.trait_index`** (validated: agrees with all 1422 existing name-based
   links, 0 disagreements) — NOT a runtime trait_index join. Regenerated traits_ref → traits_consolidated.
-  Result: creature-owned traits with a trait-item **1299 → 1319**; trait-items **1724 → 1744**.
+  (3) **Code-extraction name typo.** #703's passive name was "Turn to **Gray**" but the game (and
+  Trait_REF/Creature_REF) spell it "Turn to **Grey**" → the name-keyed reference join missed, leaving it
+  itemless. Added a tiny, justified `NAME_CORRECTIONS` map in `build_trait_consolidation.py`
+  (`Turn to Gray → Turn to Grey`); the corrected name both ships correctly and attaches its item
+  (**Ritual Stitches**).
+  Result: creature-owned traits with a trait-item **1299 → 1322**; trait-items **1724 → 1748**.
   **Guardrail** (`build-data.mjs` owner-model block): reports "item coverage: N/M creature-owned traits
   also have a trait-item". The VALID itemless cases are read from the data, not guessed — **Avatar/Deity**
   forms and traits the reference explicitly marks **"No Material Exists"** (bosses like Pandemonium /
-  Treasure Golem / Mimic, Godspawn, special sets). Everything else is surfaced for review. Currently 43
-  itemless = 40 valid + **3 to review**: Turn to Gray (#703, Ritual Abomination), Echobreather (#1782,
-  Grom'met=Godspawn → likely genuinely itemless), Autonomous Network (#1910, War Clockwork → material
-  "Neural Hive Network Implant" exists; CSV typo "Neutral"). Verified headless (Abation ships
-  "Lunar Blood Vial" + icon; app boots; collapse smoke still 13/13).
+  Treasure Golem / Mimic + special sets). Everything else is surfaced for review. Now **40 itemless =
+  40 valid · 0 to review** (all resolved). Verified headless (Abation/Echobreather/Autonomous Network/
+  Turn to Grey all ship items+icons; app boots; collapse smoke 13/13, Abation UI 3/3).
 - 2026-09-24: **Appendix — collapsible result sections.** Each category group (Traits / Perks / Spells /
   Relics / Realm Cards) now has a clickable header that collapses/expands just its own list, so a busy
   multi-tag result set can be folded down to the section(s) you care about. The `section()` helper renders

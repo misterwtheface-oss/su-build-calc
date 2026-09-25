@@ -768,21 +768,33 @@ const matIcon = (m) => {                                    // copy a material's
   // genuine CSV item-name errors → the game's material name
   const ITEM_ALIAS = { "sigil of the leeche": 'Sigil of the Leech', "sigil of the sphinxe": 'Sigil of the Sphinx',
     'faded garnet': 'Fading Garnet', "cyhra's adamance": "Cyhra's Tattered Ear" };
-  const matByName = new Map(), matByPoss = new Map(), matByLower = new Map();
-  for (const m of matRecs) { if (!m.name) continue; if (!matByName.has(m.name)) matByName.set(m.name, m); const p = normP(m.name); if (!matByPoss.has(p)) matByPoss.set(p, m); const lo = m.name.toLowerCase(); if (!matByLower.has(lo)) matByLower.set(lo, m); }
+  const matByName = new Map(), matByPoss = new Map();
+  // punctuation/space/case-insensitive key: strip everything but [a-z0-9]. Built with collision
+  // detection so an ambiguous key (2+ distinct materials) is DROPPED — we only canonicalize to an
+  // unambiguous match.
+  const normPS = (s) => String(s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+  const matByNorm = new Map(), normAmbig = new Set();
+  for (const m of matRecs) {
+    if (!m.name) continue;
+    if (!matByName.has(m.name)) matByName.set(m.name, m);
+    const p = normP(m.name); if (!matByPoss.has(p)) matByPoss.set(p, m);
+    const k = normPS(m.name);
+    if (matByNorm.has(k) && matByNorm.get(k).name !== m.name) normAmbig.add(k); else if (!matByNorm.has(k)) matByNorm.set(k, m);
+  }
   // Canonicalize the primary source_item links (built at file top from trait.source_item.name) to the
-  // EXACT material name, so a pure CASE mismatch on the trait side still links: e.g. Abation's
-  // "Lunar Blood vial" → material "Lunar Blood Vial", "Soulslayer claymore" → "Soulslayer Claymore",
-  // "Inox SInew" → "Inox Sinew". The 823 loop looks up by the material's real name, so a case-only
-  // difference on the claim silently dropped the item (leaving a creature-owned trait iconless).
-  // CASE-INSENSITIVE ONLY — possessive/plural tolerance is NOT safe here: community source_item names
-  // carry typos that would false-match (e.g. "Particle of Grommet" has no material at all).
+  // EXACT material name, so a case / punctuation / space mismatch on the trait side still links:
+  // Abation's "Lunar Blood vial" → "Lunar Blood Vial" (case), Echobreather's "Particle of Grommet" →
+  // "Particle of Grom'Met" (apostrophe+case). The 823 loop looks up by the material's real name, so any
+  // such difference on the claim silently dropped the item (leaving a creature-owned trait iconless).
+  // Guarded by the unambiguity check above so a normalized collision never links to the wrong material.
   let siCanon = 0;
   for (const t of consolidated) {
     if (excludedTraitIds.has(t.id)) continue;
     const si = t.source_item && t.source_item.name;
     if (!si || si === 'N/A' || si === 'No Material Exists' || matByName.has(si)) continue;  // missing / already exact
-    const m = matByLower.get(si.toLowerCase());
+    const k = normPS(si);
+    if (normAmbig.has(k)) continue;                        // ambiguous normalized key — don't guess
+    const m = matByNorm.get(k);
     if (m && !traitIdByItemName.has(m.name)) { traitIdByItemName.set(m.name, t.id); siCanon++; }
   }
   const normL = (s) => normP(s).replace(/s$/, '');       // + trailing-plural tolerance (CSV "Amphisbaena" ↔ "Amphisbaenas")
