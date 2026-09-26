@@ -2070,7 +2070,7 @@
   const anointEquipped = (a) => build.anoints.some(x => x.specId === a.specId && x.key === a.key);
   const equippedAnointObjs = () => build.anoints.map(x => anointList().find(a => a.specId === x.specId && a.key === x.key)).filter(Boolean);
   function openAnoint() {
-    ovState = { kind: "anoint", search: "", taxoFilters: [], specFilter: null, godFilter: null, render: renderAnoint };
+    ovState = { kind: "anoint", search: "", taxoFilters: [], specFilter: null, godFilter: null, collapsedGods: [], render: renderAnoint };
     openOverlay(ovState.render()); maybeFocusSearch(OV);
   }
   let ANOINT_SPECS = null;
@@ -2117,10 +2117,15 @@
     for (const k of byGod.keys()) if (!godOrder.includes(k)) godOrder.push(k);   // any unmapped bucket last
     const body = godOrder.map(k => {
       const g = godByKey.get(k);
+      const rows = byGod.get(k);
+      const collapsed = (st.collapsedGods || []).includes(k);
+      const caret = `<span class="fgod-caret">${collapsed ? "▸" : "▾"}</span>`;
+      const count = `<span class="fgod-count">${rows.length}</span>`;
       const head = g
-        ? `<div class="fgod-head"><div class="fgod-portrait">${spriteImg(g.img, "px")}</div><span class="fgod-name">${esc(g.name)}</span></div>`
-        : `<div class="fgod-head"><span class="fgod-name">Other</span></div>`;
-      return `<div class="fgod-group">${head}${byGod.get(k).slice().sort(byName).map(anointRow).join("")}</div>`;
+        ? `<button class="fgod-head" data-action="anoint-god-toggle" data-k="${esc(k)}">${caret}<span class="fgod-portrait">${spriteImg(g.img, "px")}</span><span class="fgod-name">${esc(g.name)}</span>${count}</button>`
+        : `<button class="fgod-head" data-action="anoint-god-toggle" data-k="${esc(k)}">${caret}<span class="fgod-name">Other</span>${count}</button>`;
+      const rowsHtml = collapsed ? "" : rows.slice().sort(byName).map(anointRow).join("");
+      return `<div class="fgod-group">${head}${rowsHtml}</div>`;
     }).join("")
       || `<div class="slot-sub" style="padding:10px">No anointments match.</div>`;
     return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel">
@@ -3346,6 +3351,8 @@
       case "anoint-spec-clear": e.stopPropagation(); ovState.specFilter = null; refreshOverlay(); break;
       case "anoint-fgod": openFacetPicker("anoint-fgod"); break;
       case "anoint-fgod-clear": e.stopPropagation(); ovState.godFilter = null; refreshOverlay(); break;
+      case "anoint-god-toggle": { const k = t.dataset.k; const set = ovState.collapsedGods || (ovState.collapsedGods = []);
+        const i = set.indexOf(k); if (i >= 0) set.splice(i, 1); else set.push(k); refreshOverlay(); break; }
       case "taxo-back": dovState.facet = "taxo-cat"; dovState.taxoCat = null; dovState.search = ""; refreshDetail(); break;
       case "facet-class-clear": e.stopPropagation(); ovState.clsFilter = null; resetCreaPage(); refreshOverlay(); break;
       case "facet-race-clear": e.stopPropagation(); ovState.raceFilter = null; resetCreaPage(); refreshOverlay(); break;
