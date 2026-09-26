@@ -1419,9 +1419,13 @@
         const creature = creatureByTrait.get(t.id);
         const items = itemsByTrait.get(t.id) || [];
         const itemNames = [...new Set(items.map(i => i.name))];   // dedup (a trait can carry duplicate material records)
+        // search index: trait name + creature name (creature-owned) + boss owner + the boss ENCOUNTER group +
+        // the False God's full display name (Althea part → "Saint Althea"), so searching a boss/False God
+        // name surfaces its traits the same way a creature name does.
+        const fg = falseGodFor(t);
         return { id: t.id, name: t.name, desc: t.desc, creature, items, itemNames, taxo: t.taxo, taxoSrc: t.taxoSrc,
           ownerType: t.ownerType, ownerCategory: t.ownerCategory, owner: t.owner, ownerGroup: t.ownerGroup,
-          _search: [t.name, creature ? creature.name : "", t.owner || "", itemNames.join(" ")].join(" ") };
+          _search: [t.name, creature ? creature.name : "", t.owner || "", t.ownerGroup || "", fg ? fg.name : "", itemNames.join(" ")].join(" ") };
       }).sort((a, b) => a.name.localeCompare(b.name));
       const creatureTraitRows = traitRows.filter(g => g.ownerType !== "boss");
       const bossTraitRows = traitRows.filter(g => g.ownerType === "boss")
