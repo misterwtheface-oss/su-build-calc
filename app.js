@@ -997,7 +997,7 @@
     if (st.facet === "class") { title = "Filter by Class"; opts = D.classes.map(c => ({ v: c.key, label: c.key, color: c.color })); }
     else if (st.facet === "anoint-spec") { title = "Filter by Specialization"; opts = anointSpecs().map(s => ({ v: s, label: s })); }
     else if (st.facet === "anoint-fgod") { title = "Filter by False God"; opts = (D.falseGods || []).map(g => ({ v: g.key, label: g.name })); }
-    else if (st.facet === "race") { title = "Filter by Race"; opts = raceOptions().map(r => ({ v: r, label: r })); }
+    else if (st.facet === "race") { title = "Filter by Race"; opts = raceOptions().map(r => ({ v: r, label: r, icon: D.raceIcons && D.raceIcons[r] })); }
     else if (st.facet === "taxo-cat") { title = "Filter by mechanic"; opts = [...idx.keys()].map(cat => ({ v: cat, label: cat })); }
     else { // taxo-val
       title = st.taxoCat;
@@ -1006,7 +1006,7 @@
     }
     if (q) opts = opts.filter(o => o.label.toLowerCase().includes(q));
     const rows = opts.slice(0, 400).map(o =>
-      `<button class="opt-row" data-action="facet-pick" data-v="${esc(o.v)}">${o.color ? `<span class="opt-dot" style="background:${o.color}"></span>` : ""}${esc(o.label)}${st.facet === "taxo-cat" ? ` <span class="opt-chev">›</span>` : ""}</button>`).join("");
+      `<button class="opt-row" data-action="facet-pick" data-v="${esc(o.v)}">${o.icon ? `<span class="opt-ico">${spriteImg(o.icon, "px")}</span>` : ""}${o.color ? `<span class="opt-dot" style="background:${o.color}"></span>` : ""}${esc(o.label)}${st.facet === "taxo-cat" ? ` <span class="opt-chev">›</span>` : ""}</button>`).join("");
     return `<div class="ovl-backdrop" data-action="facet-backdrop"><div class="overlay-panel detail facet-panel">
       <div class="overlay-header"><h2>${esc(title)}</h2>
         <input class="ovl-search" placeholder="Search…" value="${esc(st.search)}" data-action="facet-search">
