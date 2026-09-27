@@ -88,8 +88,9 @@ h1, h2, h3 { margin: 0; }
 .menu-wrap { position: relative; }
 .menu-btn .chev { font-size: 10px; opacity: .8; margin-left: 2px; }
 .menu-dropdown {
-  /* header actions are left-aligned, so open rightward (anchoring right:0 clipped off-screen left) */
-  position: absolute; top: calc(100% + 6px); left: 0; z-index: 50; min-width: 168px;
+  /* actions sit on the right of the bar, so anchor the dropdown's right edge to the button
+     and open leftward — anchoring left:0 would spill it off the right side of the viewport */
+  position: absolute; top: calc(100% + 6px); right: 0; z-index: 50; min-width: 168px;
   max-width: calc(100vw - 24px);
   display: flex; flex-direction: column; padding: 5px;
   background: var(--surface2); border: 1px solid var(--border); border-radius: 10px;
@@ -485,6 +486,11 @@ h1, h2, h3 { margin: 0; }
   .ovl-left, .ovl-right { width: 260px; }   /* narrower on tablets so the grid keeps its room */
 }
 @media (max-width: 600px) {
+  /* header: let the title take its own full-width row so it isn't crushed by the
+     action buttons; actions wrap onto the next row and stay fully in view */
+  .topbar { flex-wrap: wrap; row-gap: 6px; }
+  .topbar-title { flex: 1 0 100%; }
+  .topbar-actions { width: 100%; justify-content: flex-end; }
   .overlay-panel, .overlay-panel.detail {
     /* svh = the SMALL viewport height: it does NOT change as the mobile URL bar shows/hides,
        so the pinned header/search never expands & contracts while scrolling */
