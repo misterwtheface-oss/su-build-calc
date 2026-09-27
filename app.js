@@ -805,7 +805,7 @@
     // customization (personality / scrolls / skin) now lives on its own step 3, not buried here.
     let side = "";
     if (fusion) side = renderWizardPreview(st);
-    else if (selC) side = renderCreatureIdentity(selC);
+    else if (selC) side = renderCreatureIdentity(selC, { infoCid: selC.id });
 
     return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel">
       <div class="overlay-header"><h2>${title}</h2>
@@ -823,9 +823,11 @@
       <div class="overlay-footer"><span class="foot-info"></span><div>${footer}</div></div>
     </div></div>`;
   }
-  // creature info panel: trait leads, stat table follows (per house layout)
-  function renderCreatureIdentity(c) {
-    return `<div class="cd-sprite">${critFace(c)}</div>
+  // creature info panel: trait leads, stat table follows (per house layout). `opts.infoCid` adds an "i"
+  // button (shown in the selector panel, not the detail page itself) that opens the full-screen detail.
+  function renderCreatureIdentity(c, opts) {
+    return `${opts && opts.infoCid != null ? `<button class="cd-info-btn" data-action="crea-info" data-cid="${opts.infoCid}" title="Open full details" aria-label="Open full creature details">i</button>` : ""}
+      <div class="cd-sprite">${critFace(c)}</div>
       <h3 style="text-align:center;margin:6px 0">${esc(c.name)}</h3>
       <div class="slot-sub" style="margin-bottom:10px"><span style="color:${clsColor(c.cls)};font-weight:700">${esc(c.cls || "—")}</span>${c.race ? " · " + esc(c.race) : ""}</div>
       ${c.traitId != null ? `<div class="section-label">Innate trait</div>
@@ -904,7 +906,8 @@
     const mark = (k) => { if (!pers) return ""; if (pers.raise === k) return ` <span class="growth up" title="Personality +33%">↑</span>`;
       if (pers.lower === k) return ` <span class="growth down" title="Personality −33%">↓</span>`; return ""; };
     const traitIds = [primary.traitId, secondary ? secondary.traitId : null].filter(x => x != null);
-    return `<div class="cd-sprite">${critFaceSkinned(primary, st.skinId)}</div>
+    return `<button class="cd-info-btn" data-action="crea-info" data-cid="${primary.id}" title="Open full details for ${esc(primary.name)}" aria-label="Open full creature details">i</button>
+      <div class="cd-sprite">${critFaceSkinned(primary, st.skinId)}</div>
       <h3 style="text-align:center;margin:6px 0">${esc(primary.name)}${secondary ? ` <span style="color:var(--accent2)">⚭</span> ${esc(secondary.name)}` : ""}</h3>
       <div class="slot-sub" style="margin-bottom:10px"><span style="color:${clsColor(b.cls)};font-weight:700">${esc(b.cls || "—")}</span></div>
       ${traitIds.length ? `<div class="section-label">Traits</div><div style="margin-bottom:10px">${traitIds.map(tid => `<div class="primary-traits" style="margin-bottom:6px">${traitBanner(tid)}<div class="trait-desc">${richText((TRAIT[tid] || {}).desc || "")}</div></div>`).join("")}</div>` : ""}
@@ -3338,6 +3341,7 @@
       case "equip-artifact": openArtifactLibrary(+t.dataset.slot); break;
       case "build-relic": openRelicBuilder(+t.dataset.slot); break;
       case "creature-detail": openCreatureDetail(+t.dataset.slot); break;
+      case "crea-info": e.stopPropagation(); openCreaturePreview(+t.dataset.cid); break;
       case "crea-edit": { const si = +t.dataset.slot; closeDetail(); openCreaturePicker(si); break; }
       case "macro-copy": {
         const txt = macroProposalText(+t.dataset.slot); if (!txt) break;
