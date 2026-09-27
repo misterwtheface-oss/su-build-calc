@@ -853,6 +853,17 @@ button.apx-owner:hover .apx-owner-ico { border-color: var(--accent); }
 .rcat-mag > i { display: block; height: 100%; background: var(--accent); opacity: .6; border-radius: 3px; transition: width .12s ease; }
 .rcat-val { text-align: right; font-size: 12px; font-weight: 700; color: var(--accent2); font-variant-numeric: tabular-nums; min-width: 34px; }
 .rcat-val.rcat-val-wide { min-width: 52px; color: var(--text); }
+/* LIST view — the favor reward track as a rank→effect ladder */
+.fav-tiers { display: flex; flex-direction: column; gap: 3px; }
+.fav-tier { display: grid; grid-template-columns: 34px 1fr auto; gap: 10px; align-items: baseline;
+  background: var(--surface); border-radius: 6px; padding: 5px 10px; font-size: 12.5px; }
+.fav-tier-rk { text-align: right; font-weight: 800; color: var(--text-mute); font-variant-numeric: tabular-nums; }
+.fav-tier-eff { color: var(--text-dim); min-width: 0; }
+.fav-tier-uniq { background: rgba(201,162,75,.10); border-left: 2px solid var(--accent); }
+.fav-tier-uniq .fav-tier-rk { color: var(--accent); }
+.fav-tier-uniq .fav-tier-eff { color: var(--text); }
+.fav-tier-tag { font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: .3px;
+  color: var(--accent); background: rgba(201,162,75,.16); border-radius: 4px; padding: 1px 5px; }
 
 /* cross-realm compare — accordion per category; expand to a ranked bar list of realms */
 .rcmp-list { display: flex; flex-direction: column; gap: 5px; }

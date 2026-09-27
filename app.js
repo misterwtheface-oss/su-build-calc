@@ -1874,7 +1874,7 @@
   // ── Realms reference ────────────────────────────────────────────────────────
   function openRealms(realmId) {
     ovState = { kind: "realms", search: "", sortBy: "realm", mode: "list", cmpExpanded: new Set(),
-      favorRank: 100, showCommon: false,
+      favorRank: 100, showCommon: false, favorView: "bars",
       view: realmId != null ? "detail" : "list", sel: realmId != null ? realmId : null, render: renderRealms };
     openOverlay(ovState.render()); maybeFocusSearch(OV);
   }
@@ -2006,19 +2006,34 @@
         <span class="realm-objrow-base">${o.base ? esc(o.base) : ""}</span></div>`).join("")}</div>` : "";
     // What makes this realm unique — the Favor_MTX Unique Bonuses at the selected favor rank. The rank slider
     // scrubs 0→100; the common-bonuses toggle also shows the Generic Bonuses (shared by every realm).
-    // All Unique columns render as stable rows (data-ci → live slider updates); values/bars reflect the rank.
+    // Two ways to read the favor track (toggle): BARS = magnitude values at the slider's rank; LIST = the
+    // full unlock schedule (rank → effect), unique blessing tiers interleaved with the common track.
     const rank = favRank();
     const uCols = favUnique(), gCols = favGeneric();
-    const uniqueList = `<div class="section-label">What makes this realm unique</div>
-      ${favorSlider()}
-      <label class="fav-common"><input type="checkbox" data-action="realm-common" ${ovState.showCommon ? "checked" : ""}> Show common (all-realm) bonuses</label>
+    const view = ovState.favorView || "bars";
+    const commonToggle = `<label class="fav-common"><input type="checkbox" data-action="realm-common" ${ovState.showCommon ? "checked" : ""}> Show common (all-realm) bonuses</label>`;
+    const viewToggle = `<div class="art-view-toggle" style="margin:2px 0 8px">
+      <button class="av-tab ${view === "bars" ? "on" : ""}" data-action="realm-favview" data-v="bars">Bars</button>
+      <span class="av-pipe">|</span>
+      <button class="av-tab ${view === "list" ? "on" : ""}" data-action="realm-favview" data-v="list">List</button></div>`;
+    const barsView = `${favorSlider()}${commonToggle}
       <div class="rcat-list">${uCols.map((c, i) => { const v = favVal(sel, i, rank);
-        return `<div class="rcat-row rcat-static${v ? "" : " rcat-empty"}" data-rid="${sel.id}" data-ci="${i}"><span class="rcat-name">${esc(c.label)}</span>${favBar(c, v)}</div>`; }).join("")}</div>`;
-    const commonList = ovState.showCommon ? `<div class="section-label">Common bonuses (every realm)</div>
-      <div class="slot-sub" style="margin:-2px 0 6px">Shared favor-rank rewards from the generic track — identical across all realms.</div>
-      <div class="rcat-list">${gCols.map((c, j) => { const i = uCols.length + j, v = favVal(sel, i, rank);
-        return `<div class="rcat-row rcat-static rcat-generic${v ? "" : " rcat-empty"}" data-rid="${sel.id}" data-ci="${i}"><span class="rcat-name">${esc(c.label)}</span><span class="rcat-val rcat-val-wide">${fmtFav(c, v)}</span></div>`; }).join("")}</div>` : "";
-    const profile = uniqueList + commonList;
+        return `<div class="rcat-row rcat-static${v ? "" : " rcat-empty"}" data-rid="${sel.id}" data-ci="${i}"><span class="rcat-name">${esc(c.label)}</span>${favBar(c, v)}</div>`; }).join("")}</div>
+      ${ovState.showCommon ? `<div class="section-label">Common bonuses (every realm)</div>
+        <div class="slot-sub" style="margin:-2px 0 6px">Shared favor-rank rewards from the generic track — identical across all realms.</div>
+        <div class="rcat-list">${gCols.map((c, j) => { const i = uCols.length + j, v = favVal(sel, i, rank);
+          return `<div class="rcat-row rcat-static rcat-generic${v ? "" : " rcat-empty"}" data-rid="${sel.id}" data-ci="${i}"><span class="rcat-name">${esc(c.label)}</span><span class="rcat-val rcat-val-wide">${fmtFav(c, v)}</span></div>`; }).join("")}</div>` : ""}`;
+    // LIST view: the god's full Favor Reward track. Blessing ranks show this realm's unique effect (sel.traits
+    // joined by rank); every other rank shows the common bonus from Favor_REF (hidden unless "Show common" on).
+    const traitByAt = {}; (sel.traits || []).forEach(t => { traitByAt[t.at] = t.effect; });
+    const tierRows = (D.favorCommon || []).filter(c => ovState.showCommon || c.blessing).map(c => {
+      const uniq = c.blessing, eff = uniq ? (traitByAt[c.rank] || c.effect) : c.effect;
+      return `<div class="fav-tier${uniq ? " fav-tier-uniq" : ""}"><span class="fav-tier-rk">${c.rank}</span><span class="fav-tier-eff">${esc(eff)}</span>${uniq ? `<span class="fav-tier-tag">unique</span>` : ""}</div>`;
+    }).join("");
+    const listView = `${commonToggle}
+      <div class="slot-sub" style="margin:-2px 0 6px">The god's favor reward track, rank 1→100. ${ovState.showCommon ? "Unique tiers highlighted; the rest are shared by every realm." : "Showing only this realm's unique tiers — enable common bonuses for the full track."}</div>
+      <div class="fav-tiers">${tierRows}</div>`;
+    const profile = `<div class="section-label">What makes this realm unique</div>${viewToggle}${view === "list" ? listView : barsView}`;
     const other = "";
     // complex-interaction combination table (5 realms have a combine-objects puzzle)
     const combos = sel.combinations ? `<div class="section-label" style="margin-top:12px">Complex Interaction — ${esc(sel.combinations.title)}</div>
@@ -3330,6 +3345,7 @@
       case "realm-back": ovState.view = "list"; refreshOverlay(); maybeFocusSearch(OV); break;
       case "realm-sort": ovState.sortBy = t.dataset.v; refreshOverlay(); break;
       case "realm-mode": ovState.mode = t.dataset.v; ovState.search = ""; refreshOverlay(); maybeFocusSearch(OV); break;
+      case "realm-favview": ovState.favorView = t.dataset.v; refreshOverlay(); break;
       case "realm-cat": { const k = t.dataset.k; ovState.cmpExpanded.has(k) ? ovState.cmpExpanded.delete(k) : ovState.cmpExpanded.add(k); refreshOverlay(); break; }
       case "realm-search": break;   // handled in onInput
       case "realm-shop": openGodShops(t.dataset.g); break;
