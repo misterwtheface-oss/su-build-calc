@@ -1873,14 +1873,23 @@
 
   // ── Realms reference ────────────────────────────────────────────────────────
   function openRealms(realmId) {
-    ovState = { kind: "realms", search: "", sortBy: "realm",
+    ovState = { kind: "realms", search: "", sortBy: "realm", mode: "list", cmpExpanded: new Set(),
       view: realmId != null ? "detail" : "list", sel: realmId != null ? realmId : null, render: renderRealms };
     openOverlay(ovState.render()); maybeFocusSearch(OV);
   }
   function renderRealms() {
     const st = ovState, rs = D.realms || [];
-    return st.view === "detail" ? renderRealmDetail(rs.find(r => r.id === st.sel)) : renderRealmList(rs);
+    if (st.view === "detail") return renderRealmDetail(rs.find(r => r.id === st.sel));
+    return st.mode === "compare" ? renderRealmCompare(rs) : renderRealmList(rs);
   }
+  // ── realm outcome helpers (Favor_MTX categories) ──────────────────────────────
+  const realmCats = () => D.realmOutcomeCats || [];
+  const realmCatDef = (k) => realmCats().find(c => c.key === k);
+  function fmtHead(k, v) { const c = realmCatDef(k); const n = Number.isInteger(v) ? v : (+v).toFixed(1);
+    return c && c.unit === "%" ? `${n}%` : `${n}`; }
+  function outcomeBar(k, v) { const max = (D.realmCatMax && D.realmCatMax[k]) || 1;
+    const w = Math.max(3, Math.round((v / max) * 100));
+    return `<span class="rcat-mag"><i style="width:${w}%"></i></span><span class="rcat-val">${fmtHead(k, v)}</span>`; }
   function renderRealmList(rs) {
     const st = ovState, q = st.search.trim().toLowerCase();
     const match = (r) => !q || r.realm.toLowerCase().includes(q) || r.godName.toLowerCase().includes(q) || r.creatures.some(c => c.toLowerCase().includes(q));
@@ -1904,8 +1913,46 @@
       <div class="overlay-header"><h2>Realms</h2>
         <input class="ovl-search" placeholder="Search realm / god / race…" value="${esc(st.search)}" data-action="realm-search">
         <button class="ovl-close" data-action="close-ovl">✕</button></div>
-      <div class="overlay-body"><div class="ovl-center">${sortToggle}
+      <div class="overlay-body"><div class="ovl-center">${realmModeToggle("list")}${sortToggle}
         <div class="ovl-center-scroll"><div class="realm-list">${rows}</div></div>
+      </div></div>
+      <div class="overlay-footer"><span class="foot-info"></span><button class="btn-confirm" data-action="close-ovl">Done</button></div>
+    </div></div>`;
+  }
+  // Browse (per-realm list) | Compare (cross-realm outcome comparison)
+  function realmModeToggle(mode) {
+    return `<div class="art-view-toggle">
+      <button class="av-tab ${mode === "list" ? "on" : ""}" data-action="realm-mode" data-v="list">Browse</button>
+      <span class="av-pipe">|</span>
+      <button class="av-tab ${mode === "compare" ? "on" : ""}" data-action="realm-mode" data-v="compare">Compare outcomes</button></div>`;
+  }
+  // Cross-realm comparison: one collapsible accordion per outcome category; expand to see every realm that
+  // provides it, ranked by headline magnitude, on a shared bar scale. "How realms differ" at a glance.
+  function renderRealmCompare(rs) {
+    const st = ovState, q = st.search.trim().toLowerCase();
+    const groups = realmCats().map(def => {
+      const rows = rs.map(r => ({ r, c: r.outcomes[def.key] })).filter(x => x.c && x.c.head > 0)
+        .filter(x => !q || x.r.realm.toLowerCase().includes(q) || def.label.toLowerCase().includes(q))
+        .sort((a, b) => b.c.head - a.c.head);
+      return { def, rows };
+    }).filter(g => g.rows.length);
+    const body = groups.length ? groups.map(g => {
+      const open = st.cmpExpanded.has(g.def.key);
+      const top = g.rows[0];
+      const bars = g.rows.map(({ r, c }) => `<button class="rcmp-row" data-action="realm-sel" data-id="${r.id}">
+        <span class="rcmp-realm">${esc(r.realm)}</span>${outcomeBar(g.def.key, c.head)}</button>`).join("");
+      return `<div class="rcmp-grp"><button class="rcmp-head ${open ? "open" : ""}" data-action="realm-cat" data-k="${g.def.key}">
+        <span class="rcmp-caret">${open ? "▾" : "▸"}</span><span class="rcmp-cat">${esc(g.def.label)}</span>
+        <span class="rcmp-meta">${g.rows.length} realm${g.rows.length === 1 ? "" : "s"} · top ${esc(top.r.realm)} ${fmtHead(g.def.key, top.c.head)}</span></button>
+        ${open ? `<div class="rcmp-bars">${bars}</div>` : ""}</div>`;
+    }).join("") : `<div class="slot-sub" style="padding:12px">No categories match “${esc(st.search)}”.</div>`;
+    return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel">
+      <div class="overlay-header"><h2>Realms</h2>
+        <input class="ovl-search" placeholder="Search category / realm…" value="${esc(st.search)}" data-action="realm-search">
+        <button class="ovl-close" data-action="close-ovl">✕</button></div>
+      <div class="overlay-body"><div class="ovl-center">${realmModeToggle("compare")}
+        <div class="slot-sub" style="margin:0 0 6px">What makes each realm unique — Favor-track + rank-0 object interactions, bucketed by outcome. Tap a category to rank realms; tap a realm to open it.</div>
+        <div class="ovl-center-scroll"><div class="rcmp-list">${body}</div></div>
       </div></div>
       <div class="overlay-footer"><span class="foot-info"></span><button class="btn-confirm" data-action="close-ovl">Done</button></div>
     </div></div>`;
@@ -1927,18 +1974,29 @@
     const encounters = "";
     const resources = sel.resources.length ? `<div class="section-label">Resources</div>
       <div class="prop-list">${sel.resources.map(e => `<div class="prop-row static"><span class="prop-name">${esc(e.object)}</span><span class="prop-stat">${esc(e.resource)}</span></div>`).join("")}</div>` : "";
-    // Realm Objects — the interactable world objects (name + how many spawn). A SEPARATE topic from the
-    // Unique Realm Traits ladder below (they are not the same thing; don't merge or label with "instability").
+    // Realm Objects — the interactable world objects (name + spawn count + rank-0 base interaction).
     const objects = sel.objects.length ? `<div class="section-label">Realm Objects</div>
-      <div class="realm-objs">${sel.objects.map(o => `<span class="realm-obj" title="${esc(o.name)}${o.baseCount != null ? ` — spawns ×${o.baseCount}` : ""}">${o.sprite ? `<span class="realm-obj-ico">${spriteImg(o.sprite, "px")}</span>` : ""}<span class="realm-obj-name">${esc(o.name)}</span>${o.baseCount != null ? `<span class="realm-obj-ct">×${o.baseCount}</span>` : ""}</span>`).join("")}</div>` : "";
-    // Unique Realm Traits — the realm-wide bonus ladder. All 30 realms share the SAME 18 unlock thresholds
-    // (the "common set"); the effect at each rung is realm-specific ("asymmetrical"). Rendered as magnitude
-    // bars on the shared 0–100 threshold axis (mirrors the stat-magnitude panel) so realms compare at a glance.
-    const traits = sel.traits.length ? `<div class="section-label">Unique Realm Traits</div>
-      <div class="realm-traits">${sel.traits.map(t => `<div class="rtrait-row">
-        <span class="rtrait-eff">${esc(t.effect)}</span>
-        <span class="rtrait-mag"><i style="width:${Math.max(3, Math.round(t.at))}%"></i></span>
-        <span class="rtrait-at" title="Unlocks at ${t.at}">${t.at}</span></div>`).join("")}</div>` : "";
+      <div class="realm-objlist">${sel.objects.map(o => `<div class="realm-objrow">
+        <span class="realm-obj-ico">${o.sprite ? spriteImg(o.sprite, "px") : ""}</span>
+        <span class="realm-objrow-name">${esc(o.name)}${o.baseCount != null ? ` <span class="realm-obj-ct">×${o.baseCount}</span>` : ""}</span>
+        <span class="realm-objrow-base">${o.base ? esc(o.base) : ""}</span></div>`).join("")}</div>` : "";
+    // What makes this realm unique — the Favor-track Traits + each object's rank-0 base interaction, bucketed
+    // into the Favor_MTX outcome categories. Each row's bar = this realm's headline vs the strongest realm
+    // (D.realmCatMax); expand to see the contributing effects. Complex-interaction combos give weighted credit.
+    const cats = sel.outcomes || {};
+    const catKeys = realmCats().map(c => c.key).filter(k => cats[k]);
+    const srcMark = (it) => it.from === "trait" ? `<span class="rcat-src rcat-src-trait" title="Favor tier ${it.at}">${it.at}</span>`
+      : it.from === "combo" ? `<span class="rcat-src rcat-src-combo" title="combo (weighted ${it.weight})">◆</span>`
+      : `<span class="rcat-src rcat-src-object" title="object base interaction">●</span>`;
+    const profile = catKeys.length ? `<div class="section-label">What makes this realm unique</div>
+      <div class="slot-sub" style="margin:-2px 0 7px">Favor-track bonuses + rank-0 object interactions, grouped by outcome. Bar = this realm vs. the strongest realm.</div>
+      <div class="rcat-list">${catKeys.map(k => { const c = cats[k], def = realmCatDef(k);
+        const items = c.items.slice().sort((a, b) => (a.from === "trait" ? a.at : -1) - (b.from === "trait" ? b.at : -1));
+        return `<details class="rcat"><summary class="rcat-row"><span class="rcat-name">${esc(def.label)}</span>${outcomeBar(k, c.head)}<span class="rcat-caret">▸</span></summary>
+          <div class="rcat-items">${items.map(it => `<div class="rcat-item">${srcMark(it)}<span class="rcat-itxt">${esc(it.text)}</span></div>`).join("")}</div></details>`;
+      }).join("")}</div>` : "";
+    const other = (sel.outcomesOther || []).length ? `<div class="section-label">Other</div>
+      <div class="rcat-items">${sel.outcomesOther.map(t => `<div class="rcat-item"><span class="rcat-src rcat-src-object">●</span><span class="rcat-itxt">${esc(t)}</span></div>`).join("")}</div>` : "";
     // complex-interaction combination table (5 realms have a combine-objects puzzle)
     const combos = sel.combinations ? `<div class="section-label" style="margin-top:12px">Complex Interaction — ${esc(sel.combinations.title)}</div>
       <div class="realm-combos">${sel.combinations.rows.map(c => `<div class="rc-row"><span class="rc-combo">${esc(c.combo)}</span><span class="rc-arrow">→</span><span class="rc-result">${esc(c.result)}</span></div>`).join("")}</div>
@@ -1951,7 +2009,7 @@
         <div class="realm-detail-head">${(() => { const ico = ovState.sortBy === "god" ? (sel.godBattle || sel.icon) : (sel.icon || sel.godBattle);
           return ico ? `<div class="realm-icon-lg">${spriteImg(ico, "px")}</div>` : ""; })()}
           <div class="spell-stats" style="flex:1">${facts}</div></div>
-        ${shopLink}${creatures}${encounters}${resources}${objects}${traits}${combos}
+        ${shopLink}${profile}${other}${objects}${creatures}${encounters}${resources}${combos}
       </div></div></div>
       <div class="overlay-footer"><button class="btn-ghost" data-action="realm-back">‹ Back to realms</button>
         <button class="btn-confirm" data-action="close-ovl">Done</button></div>
@@ -3248,6 +3306,8 @@
       case "realm-sel": ovState.sel = +t.dataset.id; ovState.view = "detail"; refreshOverlay(); break;
       case "realm-back": ovState.view = "list"; refreshOverlay(); maybeFocusSearch(OV); break;
       case "realm-sort": ovState.sortBy = t.dataset.v; refreshOverlay(); break;
+      case "realm-mode": ovState.mode = t.dataset.v; ovState.search = ""; refreshOverlay(); maybeFocusSearch(OV); break;
+      case "realm-cat": { const k = t.dataset.k; ovState.cmpExpanded.has(k) ? ovState.cmpExpanded.delete(k) : ovState.cmpExpanded.add(k); refreshOverlay(); break; }
       case "realm-search": break;   // handled in onInput
       case "realm-shop": openGodShops(t.dataset.g); break;
       case "gs-god": ovState.sel = t.dataset.g; ovState.view = "detail"; refreshOverlay(); break;
