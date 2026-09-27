@@ -842,6 +842,21 @@ button.apx-owner:hover .apx-owner-ico { border-color: var(--accent); }
 .fav-range { flex: 1; accent-color: var(--accent); height: 20px; cursor: pointer; }
 .fav-common { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-dim); margin: 0 0 8px; cursor: pointer; }
 .fav-common input { accent-color: var(--accent); }
+/* Compare rank-source control (same-rank slider vs per-realm "My ranks") + Customize button */
+.fav-rankmode { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin: 0 0 8px; }
+.fav-editbtn { font-size: 12px; white-space: nowrap; }
+.rcmp-rk { font-size: 10px; font-weight: 800; color: var(--accent); background: rgba(201,162,75,.16); border-radius: 4px; padding: 1px 5px; font-variant-numeric: tabular-nums; }
+/* Customize favor ranks editor */
+.frank-list { display: flex; flex-direction: column; gap: 4px; }
+.frank-row { display: grid; grid-template-columns: 34px 1fr 68px; gap: 10px; align-items: center;
+  background: var(--surface); border-radius: 7px; padding: 5px 10px; }
+.frank-row .realm-icon { width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; }
+.frank-row .realm-icon img { width: 28px; height: 28px; object-fit: contain; image-rendering: pixelated; }
+.frank-name { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; min-width: 0; font-size: 13px; }
+.frank-name b { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.frank-input { width: 100%; background: var(--bg2); border: 1px solid var(--border-dim); border-radius: 6px;
+  color: var(--text); font-size: 14px; text-align: center; padding: 6px 4px; font-variant-numeric: tabular-nums; }
+.frank-input:focus { border-color: var(--accent); outline: none; }
 /* realm outcome profile (detail) — one static row per Favor_MTX column: name · magnitude bar · value */
 .rcat-list { display: flex; flex-direction: column; gap: 4px; }
 .rcat-row { display: grid; grid-template-columns: minmax(120px, 1.2fr) 1fr 46px; gap: 10px; align-items: center;

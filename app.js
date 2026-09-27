@@ -226,7 +226,7 @@
   const SCROLL_MAX = D.scrollMax || 15;                                  // total stat scrolls per creature (each +1 base)
 
   // ── persistence (schema 2) ─────────────────────────────────────────────────
-  const LS = { build: "subc.build", cards: "subc.cards", nether: "subc.nether", artifacts: "subc.artifacts", spellgems: "subc.spellgems", builds: "subc.builds", bookmarks: "subc.bookmarks" };
+  const LS = { build: "subc.build", cards: "subc.cards", nether: "subc.nether", artifacts: "subc.artifacts", spellgems: "subc.spellgems", builds: "subc.builds", bookmarks: "subc.bookmarks", favorRanks: "subc.favorRanks" };
   const jload = (k, dflt) => { try { const v = JSON.parse(localStorage.getItem(k)); return v == null ? dflt : v; } catch { return dflt; } };
   const jsave = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} };
 
@@ -331,6 +331,11 @@
   const toggleBk = (kind, id) => { const a = bookmarks[kind], i = a.indexOf(id); if (i >= 0) a.splice(i, 1); else a.push(id); persistBookmarks(); };
   const clearBookmarks = () => { bookmarks.traits = []; bookmarks.spells = []; bookmarks.perks = []; persistBookmarks(); };
   const bkBtn = (kind, id) => `<button class="apx-bk ${isBk(kind, id) ? "on" : ""}" data-action="apx-bookmark" data-kind="${kind}" data-id="${id}" title="Bookmark — filter the selectors to this">${isBk(kind, id) ? "★" : "☆"}</button>`;
+  // player's tracked favor rank per realm (for the personalized "best realm right now" comparison)
+  let favorPrefs = jload(LS.favorRanks, null);
+  if (!favorPrefs || typeof favorPrefs !== "object") favorPrefs = { use: false, ranks: {} };
+  if (!favorPrefs.ranks || typeof favorPrefs.ranks !== "object") favorPrefs.ranks = {};
+  const persistFavorPrefs = () => jsave(LS.favorRanks, favorPrefs);
   const persistCards = () => jsave(LS.cards, cards);
   const persistNether = () => jsave(LS.nether, nether);
   const persistArtifacts = () => jsave(LS.artifacts, artifacts);
@@ -1874,13 +1879,14 @@
   // ── Realms reference ────────────────────────────────────────────────────────
   function openRealms(realmId) {
     ovState = { kind: "realms", search: "", sortBy: "realm", mode: "list", cmpExpanded: new Set(),
-      favorRank: 100, showCommon: false, favorView: "bars",
+      favorRank: 100, showCommon: false, favorView: "bars", useCustom: favorPrefs.use, editingRanks: false,
       view: realmId != null ? "detail" : "list", sel: realmId != null ? realmId : null, render: renderRealms };
     openOverlay(ovState.render()); maybeFocusSearch(OV);
   }
   function renderRealms() {
     const st = ovState, rs = D.realms || [];
     if (st.view === "detail") return renderRealmDetail(rs.find(r => r.id === st.sel));
+    if (st.editingRanks) return renderRealmCustomize(rs);
     return st.mode === "compare" ? renderRealmCompare(rs) : renderRealmList(rs);
   }
   // ── Favor-track helpers (values sourced from Favor_MTX via D.realms[].favor) ───────────────────
@@ -1888,7 +1894,9 @@
   const favGeneric = () => (D.favorCols && D.favorCols.generic) || [];
   const favAll = () => [...favUnique(), ...favGeneric()];   // matrix rows are aligned to this order
   const favRank = () => (ovState.favorRank == null ? 100 : ovState.favorRank);
-  // value of column at flat index `i` for a realm at the current favor rank
+  // the rank to read a realm at: its tracked custom rank when "My ranks" is on, else the global slider rank
+  const rankFor = (realm) => ovState.useCustom && realm ? (favorPrefs.ranks[realm.id] != null ? favorPrefs.ranks[realm.id] : favRank()) : favRank();
+  // value of column at flat index `i` for a realm at a given favor rank
   const favVal = (realm, i, rank = favRank()) => { const m = realm.favor; if (!m) return null; const row = m[rank] || m[100]; return row ? row[i] : null; };
   function fmtFav(col, v) { if (v == null || v === 0) return "—"; const n = Number.isInteger(v) ? v : +(+v).toFixed(2);
     return col.unit === "%" ? `${n}%` : col.unit === "bool" ? "✓" : `${n}`; }
@@ -1896,23 +1904,24 @@
   function favBarPct(col, v) { const max = (D.favorColMax && D.favorColMax[col.key]) || 1;
     return v == null || v <= 0 ? 0 : Math.max(3, Math.min(100, Math.round((v / max) * 100))); }
   function favBar(col, v) { return `<span class="rcat-mag"><i style="width:${favBarPct(col, v)}%"></i></span><span class="rcat-val">${fmtFav(col, v)}</span>`; }
-  // in-place slider update: recompute every [data-ci] row's bar + value at the current rank WITHOUT a full
-  // re-render, so dragging the range stays smooth (the slider element itself is never replaced mid-drag).
+  // in-place slider update: recompute [data-ci] bar rows + condense [data-rank] list rows to the slider's
+  // value WITHOUT a full re-render, so dragging the range stays smooth (the slider is never replaced mid-drag).
   function favorLiveUpdate(root) {
-    if (!root) return; const rank = favRank(); const cols = favAll();
-    root.querySelectorAll(".fav-slider-lbl b").forEach(b => b.textContent = rank);
+    if (!root) return; const cols = favAll();
+    const rangeEl = root.querySelector(".fav-range"); const sv = rangeEl ? +rangeEl.value : favRank();
+    root.querySelectorAll(".fav-slider-lbl b, [data-favrank-text]").forEach(b => b.textContent = sv);
     root.querySelectorAll("[data-ci]").forEach(el => {
       const col = cols[+el.dataset.ci], realm = D.realms[+el.dataset.rid]; if (!col || !realm) return;
-      const v = favVal(realm, +el.dataset.ci, rank);
+      const v = favVal(realm, +el.dataset.ci, sv);
       const bar = el.querySelector(".rcat-mag > i"); if (bar) bar.style.width = favBarPct(col, v) + "%";
       const val = el.querySelector(".rcat-val"); if (val) val.textContent = fmtFav(col, v);
     });
+    root.querySelectorAll(".fav-tier[data-rank]").forEach(el => { el.style.display = (+el.dataset.rank <= sv) ? "" : "none"; });
   }
-  // shared favor-rank slider (0..100) — drives every realm view
-  function favorSlider() {
-    const r = favRank();
-    return `<div class="fav-slider"><label class="fav-slider-lbl">Favor rank <b>${r}</b></label>
-      <input type="range" min="0" max="100" value="${r}" class="fav-range" data-action="realm-rank"></div>`;
+  // shared favor-rank slider (0..100) — `cur` is the rank it shows/edits (a realm's tracked rank in detail)
+  function favorSlider(cur = favRank()) {
+    return `<div class="fav-slider"><label class="fav-slider-lbl">Favor rank <b>${cur}</b></label>
+      <input type="range" min="0" max="100" value="${cur}" class="fav-range" data-action="realm-rank"></div>`;
   }
   function renderRealmList(rs) {
     const st = ovState, q = st.search.trim().toLowerCase();
@@ -1952,33 +1961,72 @@
   }
   // Cross-realm comparison: one collapsible accordion per Unique Bonus column; expand to rank every realm by
   // its value at the current favor rank, on a shared bar scale. The rank slider scrubs the whole comparison.
+  // rank-source control shared by Compare: same rank for all (global slider) vs each realm's tracked rank
+  function rankSourceCtl() {
+    const uc = ovState.useCustom;
+    return `<div class="fav-rankmode">
+      <div class="art-view-toggle">
+        <button class="av-tab ${!uc ? "on" : ""}" data-action="realm-usecustom" data-v="0">Same rank</button>
+        <span class="av-pipe">|</span>
+        <button class="av-tab ${uc ? "on" : ""}" data-action="realm-usecustom" data-v="1">My ranks</button>
+      </div>
+      <button class="btn-ghost fav-editbtn" data-action="realm-editranks">⚙ Customize ranks</button></div>`;
+  }
   function renderRealmCompare(rs) {
-    const st = ovState, q = st.search.trim().toLowerCase(), rank = favRank();
+    const st = ovState, q = st.search.trim().toLowerCase(), uc = st.useCustom;
     const uCols = favUnique();
     const groups = uCols.map((col, i) => {
-      const rows = rs.map(r => ({ r, v: favVal(r, i, rank) })).filter(x => x.v != null && x.v > 0)
+      const rows = rs.map(r => ({ r, v: favVal(r, i, rankFor(r)) })).filter(x => x.v != null && x.v > 0)
         .filter(x => !q || x.r.realm.toLowerCase().includes(q) || col.label.toLowerCase().includes(q))
         .sort((a, b) => b.v - a.v);
       return { col, i, rows };
     }).filter(g => g.rows.length);
     const body = groups.length ? groups.map(g => {
       const open = st.cmpExpanded.has(g.col.key), top = g.rows[0];
-      const bars = g.rows.map(({ r, v }) => `<button class="rcmp-row" data-action="realm-sel" data-id="${r.id}" data-rid="${r.id}" data-ci="${g.i}">
-        <span class="rcmp-realm">${esc(r.realm)}</span>${favBar(g.col, v)}</button>`).join("");
+      const bars = g.rows.map(({ r, v }) => `<button class="rcmp-row" data-action="realm-sel" data-id="${r.id}"${uc ? "" : ` data-rid="${r.id}" data-ci="${g.i}"`}>
+        <span class="rcmp-realm">${esc(r.realm)}${uc ? ` <span class="rcmp-rk">r${rankFor(r)}</span>` : ""}</span>${favBar(g.col, v)}</button>`).join("");
       return `<div class="rcmp-grp"><button class="rcmp-head ${open ? "open" : ""}" data-action="realm-cat" data-k="${g.col.key}">
         <span class="rcmp-caret">${open ? "▾" : "▸"}</span><span class="rcmp-cat">${esc(g.col.label)}</span>
         <span class="rcmp-meta">${g.rows.length} realm${g.rows.length === 1 ? "" : "s"} · top ${esc(top.r.realm)} ${fmtFav(g.col, top.v)}</span></button>
         ${open ? `<div class="rcmp-bars">${bars}</div>` : ""}</div>`;
-    }).join("") : `<div class="slot-sub" style="padding:12px">No unique bonuses at favor rank ${rank}${q ? ` matching “${esc(st.search)}”` : ""}.</div>`;
+    }).join("") : `<div class="slot-sub" style="padding:12px">No unique bonuses yet${q ? ` matching “${esc(st.search)}”` : ""}.</div>`;
+    const intro = uc
+      ? `Each realm's Unique Bonuses at <b>your</b> tracked favor rank. Tap ⚙ to edit ranks; tap a realm to open it.`
+      : `Each realm's Unique Bonuses at favor rank <b data-favrank-text>${favRank()}</b>. Tap a category to rank realms; tap a realm to open it.`;
     return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel">
       <div class="overlay-header"><h2>Realms</h2>
         <input class="ovl-search" placeholder="Search category / realm…" value="${esc(st.search)}" data-action="realm-search">
         <button class="ovl-close" data-action="close-ovl">✕</button></div>
-      <div class="overlay-body"><div class="ovl-center">${realmModeToggle("compare")}${favorSlider()}
-        <div class="slot-sub" style="margin:0 0 6px">Each realm's Unique Bonuses at favor rank ${rank}. Tap a category to rank realms; tap a realm to open it.</div>
+      <div class="overlay-body"><div class="ovl-center">${realmModeToggle("compare")}${rankSourceCtl()}${uc ? "" : favorSlider()}
+        <div class="slot-sub" style="margin:0 0 6px">${intro}</div>
         <div class="ovl-center-scroll"><div class="rcmp-list">${body}</div></div>
       </div></div>
       <div class="overlay-footer"><span class="foot-info"></span><button class="btn-confirm" data-action="close-ovl">Done</button></div>
+    </div></div>`;
+  }
+  // Customize Ranks editor — enter your current favor rank (0-100) per realm; drives the "My ranks" comparison.
+  function renderRealmCustomize(rs) {
+    const st = ovState, q = st.search.trim().toLowerCase();
+    const list = rs.filter(r => !q || r.realm.toLowerCase().includes(q) || r.godName.toLowerCase().includes(q))
+      .sort((a, b) => a.realm.localeCompare(b.realm));
+    const rows = list.map(r => { const val = favorPrefs.ranks[r.id]; const ico = r.icon || r.godBattle;
+      return `<div class="frank-row">
+        <span class="realm-icon">${ico ? spriteImg(ico, "px") : ""}</span>
+        <span class="frank-name"><b>${esc(r.realm)}</b><span class="anoint-spec-tag">${esc(r.godName)}</span></span>
+        <input class="frank-input" type="number" min="0" max="100" inputmode="numeric" placeholder="0" value="${val != null ? val : ""}" data-action="realm-setrank" data-id="${r.id}"></div>`;
+    }).join("") || `<div class="slot-sub" style="padding:10px">No realms match.</div>`;
+    return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel">
+      <div class="overlay-header"><button class="btn-ghost" data-action="realm-editdone">‹ Compare</button>
+        <h2 style="flex:1">Customize favor ranks</h2><button class="ovl-close" data-action="close-ovl">✕</button></div>
+      <div class="overlay-body"><div class="ovl-center">
+        <label class="fav-common"><input type="checkbox" data-action="realm-usecustom-cb" ${st.useCustom ? "checked" : ""}> Use my ranks in the comparison</label>
+        <div class="fav-rankmode" style="justify-content:flex-start;gap:8px">
+          <input class="ovl-search" style="flex:1" placeholder="Search realm / god…" value="${esc(st.search)}" data-action="realm-search">
+          <button class="btn-ghost" data-action="realm-clearranks">Clear all</button></div>
+        <div class="slot-sub" style="margin:6px 0">Enter your current favor rank (0–100) for each realm. Saved automatically.</div>
+        <div class="ovl-center-scroll"><div class="frank-list">${rows}</div></div>
+      </div></div>
+      <div class="overlay-footer"><span class="foot-info"></span><button class="btn-confirm" data-action="realm-editdone">Done</button></div>
     </div></div>`;
   }
   function renderRealmDetail(sel) {
@@ -2006,9 +2054,10 @@
         <span class="realm-objrow-base">${o.base ? esc(o.base) : ""}</span></div>`).join("")}</div>` : "";
     // What makes this realm unique — the Favor_MTX Unique Bonuses at the selected favor rank. The rank slider
     // scrubs 0→100; the common-bonuses toggle also shows the Generic Bonuses (shared by every realm).
-    // Two ways to read the favor track (toggle): BARS = magnitude values at the slider's rank; LIST = the
-    // full unlock schedule (rank → effect), unique blessing tiers interleaved with the common track.
-    const rank = favRank();
+    // Two ways to read the favor track (toggle), both driven by the rank slider: BARS = magnitude values at the
+    // rank; LIST = the unlock schedule condensed to rank (unique blessing tiers interleaved with the common track).
+    // In "My ranks" mode the slider shows/edits THIS realm's tracked favor rank (persisted).
+    const rank = rankFor(sel);
     const uCols = favUnique(), gCols = favGeneric();
     const view = ovState.favorView || "bars";
     const commonToggle = `<label class="fav-common"><input type="checkbox" data-action="realm-common" ${ovState.showCommon ? "checked" : ""}> Show common (all-realm) bonuses</label>`;
@@ -2016,22 +2065,23 @@
       <button class="av-tab ${view === "bars" ? "on" : ""}" data-action="realm-favview" data-v="bars">Bars</button>
       <span class="av-pipe">|</span>
       <button class="av-tab ${view === "list" ? "on" : ""}" data-action="realm-favview" data-v="list">List</button></div>`;
-    const barsView = `${favorSlider()}${commonToggle}
+    const rankNote = ovState.useCustom ? `<div class="slot-sub" style="margin:-4px 0 6px">Tracking <b>your</b> favor rank for this realm — drag to update it (saved).</div>` : "";
+    const barsView = `${favorSlider(rank)}${rankNote}${commonToggle}
       <div class="rcat-list">${uCols.map((c, i) => { const v = favVal(sel, i, rank);
         return `<div class="rcat-row rcat-static${v ? "" : " rcat-empty"}" data-rid="${sel.id}" data-ci="${i}"><span class="rcat-name">${esc(c.label)}</span>${favBar(c, v)}</div>`; }).join("")}</div>
       ${ovState.showCommon ? `<div class="section-label">Common bonuses (every realm)</div>
         <div class="slot-sub" style="margin:-2px 0 6px">Shared favor-rank rewards from the generic track — identical across all realms.</div>
         <div class="rcat-list">${gCols.map((c, j) => { const i = uCols.length + j, v = favVal(sel, i, rank);
           return `<div class="rcat-row rcat-static rcat-generic${v ? "" : " rcat-empty"}" data-rid="${sel.id}" data-ci="${i}"><span class="rcat-name">${esc(c.label)}</span><span class="rcat-val rcat-val-wide">${fmtFav(c, v)}</span></div>`; }).join("")}</div>` : ""}`;
-    // LIST view: the god's full Favor Reward track. Blessing ranks show this realm's unique effect (sel.traits
-    // joined by rank); every other rank shows the common bonus from Favor_REF (hidden unless "Show common" on).
+    // LIST view: the god's Favor Reward track condensed to `rank`. Blessing ranks show this realm's unique effect
+    // (sel.traits joined by rank); every other rank shows the common bonus from Favor_REF (hidden unless toggled).
     const traitByAt = {}; (sel.traits || []).forEach(t => { traitByAt[t.at] = t.effect; });
     const tierRows = (D.favorCommon || []).filter(c => ovState.showCommon || c.blessing).map(c => {
       const uniq = c.blessing, eff = uniq ? (traitByAt[c.rank] || c.effect) : c.effect;
-      return `<div class="fav-tier${uniq ? " fav-tier-uniq" : ""}"><span class="fav-tier-rk">${c.rank}</span><span class="fav-tier-eff">${esc(eff)}</span>${uniq ? `<span class="fav-tier-tag">unique</span>` : ""}</div>`;
+      return `<div class="fav-tier${uniq ? " fav-tier-uniq" : ""}" data-rank="${c.rank}"${c.rank <= rank ? "" : ` style="display:none"`}><span class="fav-tier-rk">${c.rank}</span><span class="fav-tier-eff">${esc(eff)}</span>${uniq ? `<span class="fav-tier-tag">unique</span>` : ""}</div>`;
     }).join("");
-    const listView = `${commonToggle}
-      <div class="slot-sub" style="margin:-2px 0 6px">The god's favor reward track, rank 1→100. ${ovState.showCommon ? "Unique tiers highlighted; the rest are shared by every realm." : "Showing only this realm's unique tiers — enable common bonuses for the full track."}</div>
+    const listView = `${favorSlider(rank)}${rankNote}${commonToggle}
+      <div class="slot-sub" style="margin:-2px 0 6px">The god's favor reward track up to rank <b data-favrank-text>${rank}</b>. ${ovState.showCommon ? "Unique tiers highlighted; the rest are shared by every realm." : "Unique tiers only — enable common bonuses for the full track."}</div>
       <div class="fav-tiers">${tierRows}</div>`;
     const profile = `<div class="section-label">What makes this realm unique</div>${viewToggle}${view === "list" ? listView : barsView}`;
     const other = "";
@@ -3346,6 +3396,10 @@
       case "realm-sort": ovState.sortBy = t.dataset.v; refreshOverlay(); break;
       case "realm-mode": ovState.mode = t.dataset.v; ovState.search = ""; refreshOverlay(); maybeFocusSearch(OV); break;
       case "realm-favview": ovState.favorView = t.dataset.v; refreshOverlay(); break;
+      case "realm-usecustom": ovState.useCustom = t.dataset.v === "1"; favorPrefs.use = ovState.useCustom; persistFavorPrefs(); refreshOverlay(); break;
+      case "realm-editranks": ovState.editingRanks = true; ovState.search = ""; refreshOverlay(); maybeFocusSearch(OV); break;
+      case "realm-editdone": ovState.editingRanks = false; ovState.search = ""; refreshOverlay(); break;
+      case "realm-clearranks": favorPrefs.ranks = {}; persistFavorPrefs(); refreshOverlay(); break;
       case "realm-cat": { const k = t.dataset.k; ovState.cmpExpanded.has(k) ? ovState.cmpExpanded.delete(k) : ovState.cmpExpanded.add(k); refreshOverlay(); break; }
       case "realm-search": break;   // handled in onInput
       case "realm-shop": openGodShops(t.dataset.g); break;
@@ -3672,8 +3726,20 @@
     // range sliders / selects
     if (A === "artb-rank") { ovState.draft.rank = +v; refreshOverlay(); return; }
     if (A === "relic-rank") { ovState.rank = +v; refreshOverlay(); return; }
-    // favor rank: live in-place update while dragging (no re-render → smooth); 'change' re-sorts (below)
-    if (A === "realm-rank") { ovState.favorRank = +v; favorLiveUpdate(OV); return; }
+    // favor rank slider: live in-place update while dragging (no re-render → smooth); 'change' re-sorts (below).
+    // In "My ranks" mode the detail slider edits THIS realm's tracked rank (persisted); otherwise the global rank.
+    if (A === "realm-rank") {
+      if (ovState.view === "detail" && ovState.useCustom && ovState.sel != null) { favorPrefs.ranks[ovState.sel] = +v; persistFavorPrefs(); }
+      else ovState.favorRank = +v;
+      favorLiveUpdate(OV); return;
+    }
+    // Customize-Ranks entry (0-100). Store the clamped value; don't re-render (keep caret) — 'change' reflects clamp.
+    if (A === "realm-setrank") {
+      const id = +t.dataset.id;
+      if (v.trim() === "") { delete favorPrefs.ranks[id]; persistFavorPrefs(); return; }
+      let n = parseInt(v, 10); if (isNaN(n)) return;
+      favorPrefs.ranks[id] = Math.max(0, Math.min(100, n)); persistFavorPrefs(); return;
+    }
     if (A === "nether-propval") { ovState.draft.props[+t.dataset.i].value = Number(v) || 0; return; }
     if (A === "nether-trigger") { ovState.draft.props[+t.dataset.i].trigger = v; return; }
     // name fields (no re-render — keep focus/caret)
@@ -3712,8 +3778,17 @@
   // 'change' fires on slider release / checkbox toggle: re-render so the compare view re-sorts by the new rank
   document.addEventListener("change", (e) => {
     const t = e.target.closest("[data-action]"); if (!t) return;
-    if (t.dataset.action === "realm-rank") { ovState.favorRank = +t.value; refreshOverlay(); }
-    else if (t.dataset.action === "realm-common") { ovState.showCommon = t.checked; refreshOverlay(); }
+    const A = t.dataset.action;
+    if (A === "realm-rank") {
+      if (ovState.view === "detail" && ovState.useCustom && ovState.sel != null) { favorPrefs.ranks[ovState.sel] = +t.value; persistFavorPrefs(); }
+      else ovState.favorRank = +t.value;
+      refreshOverlay();
+    } else if (A === "realm-common") { ovState.showCommon = t.checked; refreshOverlay(); }
+    else if (A === "realm-usecustom-cb") { ovState.useCustom = t.checked; favorPrefs.use = t.checked; persistFavorPrefs(); refreshOverlay(); }
+    else if (A === "realm-setrank") {   // reflect the clamped value on blur, without disturbing the caret mid-type
+      const id = +t.dataset.id, cur = favorPrefs.ranks[id];
+      t.value = cur != null ? cur : "";
+    }
   });
   document.addEventListener("keydown", (e) => {
     if (e.key === "Escape") { if (!DOV.classList.contains("hidden")) closeDetail(); else if (!OV.classList.contains("hidden")) closeOverlay(); }
