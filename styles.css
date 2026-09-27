@@ -278,10 +278,11 @@ h1, h2, h3 { margin: 0; }
 .ovl-left, .ovl-right { width: 340px; flex-shrink: 0; overflow-y: auto; overscroll-behavior: contain; padding: 12px; }
 .ovl-left  { border-right: 1px solid var(--border-dim); }
 .ovl-right { border-left: 1px solid var(--border-dim); position: relative; }
-/* "i" button in the creature selector info panel → opens the full-screen creature detail */
-.cd-info-btn { position: absolute; top: 8px; right: 8px; z-index: 2; width: 26px; height: 26px; border-radius: 50%;
-  display: flex; align-items: center; justify-content: center; font-family: Georgia, "Times New Roman", serif;
-  font-style: italic; font-weight: 700; font-size: 15px; line-height: 1; cursor: pointer;
+/* "i" button in the creature selector info panel → opens the full-screen creature detail. Mobile-only:
+   on desktop the side info panel is already fully visible, so the button is hidden (shown ≤600px below). */
+.cd-info-btn { display: none; position: absolute; top: 8px; right: 8px; z-index: 2; width: 30px; height: 30px; border-radius: 50%;
+  align-items: center; justify-content: center; font-family: Georgia, "Times New Roman", serif;
+  font-style: italic; font-weight: 700; font-size: 16px; line-height: 1; cursor: pointer;
   background: var(--surface2); color: var(--accent2); border: 1px solid var(--border-dim); }
 .cd-info-btn:hover { background: var(--surface3); border-color: var(--accent2); }
 .ovl-center { flex: 1; display: flex; flex-direction: column; min-width: 0; min-height: 0; }
@@ -512,6 +513,7 @@ h1, h2, h3 { margin: 0; }
     -webkit-overflow-scrolling: touch;
   }
   .ovl-center-scroll { -webkit-overflow-scrolling: touch; }
+  .cd-info-btn { display: flex; }   /* full-screen detail shortcut — the side panel is a cramped strip here */
   .crea-grid { grid-template-columns: repeat(4, 1fr); gap: 6px; }   /* 4 creatures per row on phones */
   /* saved lists (artifacts / spell gems / nether stones) — at least 4 per row on phones */
   .pick-grid { grid-template-columns: repeat(4, 1fr); gap: 6px; }
