@@ -361,6 +361,17 @@ const SPRITE_FRAME_OVERRIDE = {
 const CREATURE_FRAME_FIX = readJSON(path.join(MODEL, 'creature_frame_overrides.json')).overrides || {};
 const CREATURE_FRAME_FIX_N = Object.fromEntries(Object.entries(CREATURE_FRAME_FIX).map(([k, v]) => [norm(k), v]));
 
+// Canonical frame remap (asset-index driven). The appraisal (frame_index.json) marks each spr_crits_battle
+// frame keep|removable; removable = legacy / unused / a non-canonical byte-duplicate, with canonical_frame
+// = the KEPT byte-twin. Route every copied frame through its canonical so nothing references a frame the
+// directory-cleanup will delete (byte-identical → zero visual change). Frames with no canonical (whole group
+// legacy/unused) are left as-is — their owners are handled by explicit creature overrides.
+const ASSET_INDEX = (readJSON(path.join(MODEL, 'frame_index.json')).frames) || {};
+const canonFrame = (f) => {
+  const r = ASSET_INDEX[String(f)];
+  return (r && !r.keep && r.canonical_frame != null) ? r.canonical_frame : f;
+};
+
 const creatures = [];
 let spriteCopied = 0, codeStats = 0, spriteOverrides = 0;
 const statFilled = [];   // creatures whose null base stat was filled from Creature_REF.csv
@@ -407,6 +418,7 @@ creaturesRef.forEach((r, i) => {
   } else if ((frame == null || frame === 6969) && SPRITE_FRAME_OVERRIDE[norm(r.name)] != null) {
     frame = SPRITE_FRAME_OVERRIDE[norm(r.name)]; spriteOverrides++;
   }
+  if (frame != null && frame !== 6969) frame = canonFrame(frame);   // route to the kept byte-twin (cleanup-safe)
   let sprite = null;
   if (frame != null && frame !== 6969 /* "no battle sprite" sentinel */) {
     const srcPng = path.join(SRC_BATTLE, `spr_crits_battle_${frame}.png`);
@@ -1758,7 +1770,7 @@ for (const s of skinRecs) {
     if (!s.locked_creature || !creNameSet.has(s.locked_creature)) { skinUnresolved++; continue; }
     creatureName = s.locked_creature;
   } else { skinUnresolved++; continue; }
-  const frame = s.sprite_frame;
+  const frame = s.sprite_frame == null ? null : canonFrame(s.sprite_frame);   // kept byte-twin (cleanup-safe)
   if (frame == null) { skinUnresolved++; continue; }
   const srcPng = path.join(SRC_BATTLE, `spr_crits_battle_${frame}.png`);
   if (!fs.existsSync(srcPng)) { warn(`skin "${s.name}" battle frame ${frame} missing (404-source)`); skinFrameMissing++; continue; }
