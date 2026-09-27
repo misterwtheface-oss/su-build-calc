@@ -235,7 +235,7 @@ const taxoTags = readJSON(path.join(MODEL, 'trait_taxonomy_tags.json')).by_trait
 { const rt = taxonomy.categories.find(c => c.category === 'Related Types');
   if (rt && !rt.values.includes('Animatus')) { rt.values.push('Animatus'); rt.values.sort(); } }
 // shared per-effect taxonomy corrections (traits / perks / spells all pass through this)
-let animatusRetagged = 0, innateTagStripped = 0;
+let animatusRetagged = 0, innateTagStripped = 0, persistRetagged = 0;
 function correctTaxo(taxo, desc) {
   let out = taxo;
   if (out.includes('Related Types::Animation') && /animatus/i.test(desc) && !/\banimation\b/i.test(desc)) {
@@ -243,6 +243,16 @@ function correctTaxo(taxo, desc) {
   }
   if (out.includes('Related Trait::Innate Trait') && !/innate/i.test(desc)) {
     out = out.filter(k => k !== 'Related Trait::Innate Trait'); innateTagStripped++;
+  }
+  // "Persist (Minion)" means the minion persists BEYOND DEATH. The LLM over-applied it to effects that merely
+  // make minions last longer / less likely to go away — those are "Extend Duration (Minion)". Retag when the
+  // desc is about duration and NOT death (validated vs every taggee: keeps Undying Loyalty / Grimkeeper /
+  // Destiny Bond / Visitors From Before / Stick Soul as Persist; flips Midnight Bargain / Master of Dryads /
+  // Hound Legion / Void Shift). Ambiguous ones with neither cue (e.g. Inquisitor) stay Persist.
+  if (out.some(k => k.endsWith('::Persist (Minion)'))) {
+    const death = /persist(s|ed)? (through|beyond)|through .{0,16}death|beyond .{0,16}death|master'?s death|when .{0,20}(dies|killed)/i.test(desc);
+    const duration = /go away|last(s)? (forever|longer)|never (go away|expire|leave|disappear)|less likely|lower chance|extend|duration|expire/i.test(desc);
+    if (!death && duration) { out = out.map(k => k.endsWith('::Persist (Minion)') ? k.replace('::Persist (Minion)', '::Extend Duration (Minion)') : k); persistRetagged++; }
   }
   return [...new Set(out)];
 }
@@ -761,7 +771,7 @@ const spells = spellArr.map((s, i) => {
     taxo: sTaxo, taxoSrc: taxoSrcArr(spellTaxo[String(i)], sTaxo) };
 }).filter(s => s.name);
 console.log(`  spells: ${spells.length} · charges ${spells.filter(s => s.chargesSrc === 'code').length} code + ${spells.filter(s => s.chargesSrc === 'community').length} community · ${spells.filter(s => s.potency).length} w/ potency · potency/target/source from Spell_REF.csv`);
-console.log(`  taxonomy fixes: Innate-Trait stripped ${innateTagStripped} · Animatus retagged ${animatusRetagged} (was mis-tagged Animation)`);
+console.log(`  taxonomy fixes: Innate-Trait stripped ${innateTagStripped} · Animatus retagged ${animatusRetagged} · Persist→Extend-Duration retagged ${persistRetagged} (duration, not death)`);
 
 // ── trait items (slottable into artifact trait slots) — with material icons ──
 const matStats = readJSON(path.join(MODEL, 'material_stats.json'));
