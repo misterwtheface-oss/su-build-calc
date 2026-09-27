@@ -1927,9 +1927,18 @@
     const encounters = "";
     const resources = sel.resources.length ? `<div class="section-label">Resources</div>
       <div class="prop-list">${sel.resources.map(e => `<div class="prop-row static"><span class="prop-name">${esc(e.object)}</span><span class="prop-stat">${esc(e.resource)}</span></div>`).join("")}</div>` : "";
-    const uniques = sel.uniques.length ? `<div class="section-label">Realm objects</div>
-      ${sel.uniques.map(u => `<div class="realm-uniq"><div class="realm-uniq-head">${u.sprite ? `<span class="realm-obj-ico">${spriteImg(u.sprite, "px")}</span>` : ""}<b>${esc(u.name)}</b>${u.baseCount != null ? `<span class="anoint-spec-tag">×${u.baseCount}</span>` : ""}</div>
-        ${u.tiers.map(t => `<div class="realm-tier"><span class="rt-at" title="Realm Instability ≥ ${t.at}">${t.at}</span><span class="rt-eff">${esc(t.effect)}</span></div>`).join("")}</div>`).join("")}` : "";
+    // Realm Objects — the interactable world objects (name + how many spawn). A SEPARATE topic from the
+    // Unique Realm Traits ladder below (they are not the same thing; don't merge or label with "instability").
+    const objects = sel.objects.length ? `<div class="section-label">Realm Objects</div>
+      <div class="realm-objs">${sel.objects.map(o => `<span class="realm-obj" title="${esc(o.name)}${o.baseCount != null ? ` — spawns ×${o.baseCount}` : ""}">${o.sprite ? `<span class="realm-obj-ico">${spriteImg(o.sprite, "px")}</span>` : ""}<span class="realm-obj-name">${esc(o.name)}</span>${o.baseCount != null ? `<span class="realm-obj-ct">×${o.baseCount}</span>` : ""}</span>`).join("")}</div>` : "";
+    // Unique Realm Traits — the realm-wide bonus ladder. All 30 realms share the SAME 18 unlock thresholds
+    // (the "common set"); the effect at each rung is realm-specific ("asymmetrical"). Rendered as magnitude
+    // bars on the shared 0–100 threshold axis (mirrors the stat-magnitude panel) so realms compare at a glance.
+    const traits = sel.traits.length ? `<div class="section-label">Unique Realm Traits</div>
+      <div class="realm-traits">${sel.traits.map(t => `<div class="rtrait-row">
+        <span class="rtrait-eff">${esc(t.effect)}</span>
+        <span class="rtrait-mag"><i style="width:${Math.max(3, Math.round(t.at))}%"></i></span>
+        <span class="rtrait-at" title="Unlocks at ${t.at}">${t.at}</span></div>`).join("")}</div>` : "";
     // complex-interaction combination table (5 realms have a combine-objects puzzle)
     const combos = sel.combinations ? `<div class="section-label" style="margin-top:12px">Complex Interaction — ${esc(sel.combinations.title)}</div>
       <div class="realm-combos">${sel.combinations.rows.map(c => `<div class="rc-row"><span class="rc-combo">${esc(c.combo)}</span><span class="rc-arrow">→</span><span class="rc-result">${esc(c.result)}</span></div>`).join("")}</div>
@@ -1942,7 +1951,7 @@
         <div class="realm-detail-head">${(() => { const ico = ovState.sortBy === "god" ? (sel.godBattle || sel.icon) : (sel.icon || sel.godBattle);
           return ico ? `<div class="realm-icon-lg">${spriteImg(ico, "px")}</div>` : ""; })()}
           <div class="spell-stats" style="flex:1">${facts}</div></div>
-        ${shopLink}${creatures}${encounters}${resources}${uniques}${combos}
+        ${shopLink}${creatures}${encounters}${resources}${objects}${traits}${combos}
       </div></div></div>
       <div class="overlay-footer"><button class="btn-ghost" data-action="realm-back">‹ Back to realms</button>
         <button class="btn-confirm" data-action="close-ovl">Done</button></div>

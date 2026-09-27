@@ -825,10 +825,14 @@ button.apx-owner:hover .apx-owner-ico { border-color: var(--accent); }
 .riddle-pop-head .ovl-search { flex: 1; min-width: 0; }
 .riddle-pop-body { overflow-y: auto; padding: 10px; }
 .tb-btn.tb-riddle { min-width: 34px; padding: 0 10px; font-weight: 800; }
-.realm-uniq { background: var(--surface); border: 1px solid var(--border-dim); border-radius: 8px; padding: 8px 10px; margin-bottom: 6px; }
-.realm-uniq-head { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
-.realm-obj-ico { flex: 0 0 auto; width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; }
-.realm-obj-ico img { width: 24px; height: 24px; object-fit: contain; image-rendering: pixelated; }
+/* realm objects — interactable world objects (name + spawn count) as a compact chip row */
+.realm-objs { display: flex; flex-wrap: wrap; gap: 6px; margin: 2px 0 6px; }
+.realm-obj { display: inline-flex; align-items: center; gap: 6px; background: var(--surface2);
+  border: 1px solid var(--border-dim); border-radius: 8px; padding: 4px 9px 4px 5px; font-size: 13px; }
+.realm-obj-name { color: var(--text); }
+.realm-obj-ct { color: var(--text-mute); font-size: 11px; font-variant-numeric: tabular-nums; }
+.realm-obj-ico { flex: 0 0 auto; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; }
+.realm-obj-ico img { width: 22px; height: 22px; object-fit: contain; image-rendering: pixelated; }
 /* realm complex-interaction combination table */
 .realm-combos { display: flex; flex-direction: column; gap: 3px; }
 .rc-row { display: grid; grid-template-columns: 1fr 18px 1fr; align-items: baseline; gap: 8px; font-size: 13px;
@@ -836,9 +840,16 @@ button.apx-owner:hover .apx-owner-ico { border-color: var(--accent); }
 .rc-combo { font-weight: 600; }
 .rc-arrow { color: var(--text-mute); text-align: center; }
 .rc-result { color: var(--accent); }
-.realm-tier { display: grid; grid-template-columns: 34px 1fr; gap: 8px; align-items: baseline; font-size: 12px; padding: 2px 0; }
-.realm-tier .rt-at { text-align: right; font-weight: 800; color: var(--accent2); font-variant-numeric: tabular-nums; }
-.realm-tier .rt-eff { color: var(--text-dim); }
+/* unique realm traits — bonus ladder on the shared 0–100 threshold axis. effect | magnitude track | value,
+   mirroring the stat-magnitude panel so every realm reads on the same scale and compares at a glance. */
+.realm-traits { display: flex; flex-direction: column; gap: 4px; }
+.rtrait-row { display: grid; grid-template-columns: 1fr 96px 30px; gap: 10px; align-items: center;
+  background: var(--surface); border-radius: 7px; padding: 6px 10px; }
+.rtrait-eff { font-size: 13px; color: var(--text); }
+.rtrait-mag { height: 4px; border-radius: 2px; background: rgba(255,255,255,.07); overflow: hidden; }
+.rtrait-mag > i { display: block; height: 100%; background: var(--accent); opacity: .5; border-radius: 2px; }
+.rtrait-at { text-align: right; font-size: 12px; font-weight: 700; color: var(--accent2); font-variant-numeric: tabular-nums; }
+@media (max-width: 600px) { .rtrait-row { grid-template-columns: 1fr 60px 26px; gap: 8px; } }
 
 /* realm card tiles */
 .card-grid { display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(258px, 1fr)); }

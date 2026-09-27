@@ -1259,25 +1259,39 @@ console.log(`  boss sprites: ${deityBoss} Deity (bspr_) + ${netherBoss} Nether/S
 
 // ── Realms reference ──────────────────────────────────────────────────────────
 // realms_ref.json: {god("Name, God of X"), realm, class, godspawn, gemstone, realm_creatures[], other[]}.
-// The flat `other` list is section-delimited; parse it into encounters / resources / unique objects
-// (each unique object carries 4 Realm-Instability tier thresholds → interaction reward).
+// The flat `other` list is section-delimited into FOUR distinct, UNRELATED sections:
+//   • encounters             — creatures/bosses/God-Shop you meet in the realm
+//   • Resource Objects        — world objects that yield a crafting resource
+//   • Unique Realm Objects    — interactable world objects, each "<Name> [baseCount]"
+//   • Unique Realm Traits     — a realm-wide bonus LADDER: {unlock threshold → effect}. Every realm
+//                               shares the SAME 18 thresholds (1..100); only the effects differ per realm.
+// NOTE: the ladder threshold is NOT "Realm Instability" — instability is the separate, rerollable Realm
+// Properties/Threats system (see realmProps). Realm Objects and the Traits ladder are kept as separate
+// arrays; do not merge them or label the ladder with "instability".
 const realmRecs = readJSON(path.join(REF, 'realms_ref.json'));
 const realmArr = Array.isArray(realmRecs) ? realmRecs : (realmRecs.records || Object.values(realmRecs));
 const cleanRealmVal = (v) => { const s = (v == null ? '' : String(v)).trim(); return s && s !== 'N/A' && s !== '-' ? s : null; };
 function parseRealmOther(other) {
-  const encounters = [], resources = [], uniques = []; let sec = 'enc', cur = null;
+  const encounters = [], resources = [], objects = [], traits = []; let sec = 'enc';
   for (const e of other || []) {
     const lbl = (e.label || '').trim(); const val = cleanRealmVal(e.value);
     if (/^Resource\b/i.test(lbl)) { sec = 'res'; continue; }
-    if (/^Unique Realm Objects/i.test(lbl)) { sec = 'uniq'; continue; }
+    if (/^Unique Realm Objects/i.test(lbl)) { sec = 'obj'; continue; }
+    if (/^Unique Realm Traits/i.test(lbl)) { sec = 'traits'; continue; }
     if (/^Realm Creatures/i.test(lbl)) { sec = 'enc'; continue; }
-    if (sec === 'uniq') {
-      if (/^\d+$/.test(lbl)) { if (cur && val) cur.tiers.push({ at: +lbl, effect: val }); }
-      else { const m = lbl.match(/^(.*?)\s*\[(\d+)\]\s*$/); cur = { name: m ? m[1].trim() : lbl, baseCount: m ? +m[2] : null, tiers: [] }; uniques.push(cur); }
+    if (sec === 'obj') {
+      // "<Name> [baseCount]" begins an object. Numeric rows under it are that object's OWN reward
+      // milestones — not surfaced per-object; the Traits ladder is the canonical, comparable view.
+      if (/^\d+$/.test(lbl)) continue;
+      const m = lbl.match(/^(.*?)\s*\[(\d+)\]\s*$/); const name = (m ? m[1] : lbl).trim();
+      if (cleanRealmVal(name)) objects.push({ name, baseCount: m ? +m[2] : null });
+    } else if (sec === 'traits') {
+      // realm-wide bonus ladder: unlock threshold → effect (shared thresholds, realm-specific effects)
+      if (/^\d+$/.test(lbl) && val) traits.push({ at: +lbl, effect: val });
     } else if (sec === 'res') { if (val) resources.push({ object: lbl, resource: val }); }
     else { if (val) encounters.push({ name: lbl, value: val }); }
   }
-  return { encounters, resources, uniques };
+  return { encounters, resources, objects, traits };
 }
 // each realm has a canonical ICON sprite; despite the `god_<name>` filename it's the REALM's icon (tied to
 // the realm, not a god portrait). Keyed by the realm's god short-name.
@@ -1372,10 +1386,8 @@ const realms = realmArr.map((r, i) => {
   const godName = godFull.split(',')[0].trim();               // short name (matches god-shop `god`)
   const rName = r.realm || godName;
   const parsed = parseRealmOther(r.other);
-  // drop junk unique-object rows whose name is a placeholder ("N/A", "-", "—", empty)
-  parsed.uniques = parsed.uniques.filter(u => cleanRealmVal(u.name));
   const racr = REALM_ACRONYMS[rName] || null;
-  parsed.uniques.forEach(u => { u.sprite = realmObjectSprite(rName, u.name, racr); });
+  parsed.objects.forEach(u => { u.sprite = realmObjectSprite(rName, u.name, racr); });
   return {
     id: i, god: godFull, godName, realm: r.realm || godName,
     cls: CLASS_SET.has(r.class) ? r.class : null,
@@ -1407,7 +1419,7 @@ for (const rm of realms) rm.hasShop = shopGods.has(rm.godName);   // cross-link 
   }
   console.log(`  realm combination tables: ${comboHits}/5 wired`);
 }
-console.log(`  realms: ${realms.length} · ${realms.reduce((n, r) => n + r.uniques.length, 0)} unique objects · ${realms.filter(r => r.hasShop).length} w/ god shop`);
+console.log(`  realms: ${realms.length} · ${realms.reduce((n, r) => n + r.objects.length, 0)} realm objects · ${realms.reduce((n, r) => n + r.traits.length, 0)} unique realm traits · ${realms.filter(r => r.hasShop).length} w/ god shop`);
 console.log(`  realm object sprites: ${realmObjHits} matched · ${realmObjMiss} need a slug/override`);
 
 // class + per-race 16×16 emblem icons (shown top-left on each creature tile in place of the class rail)
