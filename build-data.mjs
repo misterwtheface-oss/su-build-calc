@@ -1382,74 +1382,49 @@ function realmObjectSprite(realmName, objName, acr) {
       if (copyNamedSprite(base, OUT_REALMOBJ, `${base}.png`)) { realmObjHits++; return `assets/realmobjects/${base}.png`; } } }
   realmObjMiss++; return null;
 }
-// ── realm "what makes it unique" outcome taxonomy (Favor_MTX "Unique Bonuses" headers) ──
-// Each unique reward — a Trait-ladder effect OR an object's rank-0 base interaction — is bucketed into one
-// or more of these categories. `agg`: 'max' = headline is the largest magnitude; 'count' = headline is how
-// many contributing effects. The last three aren't in Favor_MTX but keep genuine unique outcomes from being
-// dropped. Instability / generic-guaranteed baselines are deliberately excluded (not realm-unique).
-const REALM_OUTCOME_CATS = [
-  { key: 'favor', label: 'Favor Rewarded', unit: '', agg: 'max' },
-  { key: 'emblem', label: 'Additional Emblems', unit: '%', agg: 'max' },
-  { key: 'treasure', label: 'Treasure Rewarded', unit: '', agg: 'count' },
-  { key: 'knowledge', label: 'Knowledge Rewarded', unit: '', agg: 'max' },
-  { key: 'resources', label: 'Resources Reward', unit: '', agg: 'count' },
-  { key: 'tickets', label: 'Game Tickets', unit: '', agg: 'count' },
-  { key: 'dumpling', label: 'Spawn Dumpling Chance', unit: '%', agg: 'max' },
-  { key: 'nemesis', label: 'Additional Nemesis Creatures', unit: '', agg: 'count' },
-  { key: 'golem', label: 'Spawn Treasure Golem', unit: '%', agg: 'max' },
-  { key: 'buff', label: 'Buff Realm Boosts', unit: '', agg: 'count' },
-  { key: 'debuff', label: 'Debuff Realm Boosts', unit: '', agg: 'count' },
-  { key: 'minion', label: 'Minion Realm Boost', unit: '', agg: 'count' },
-  { key: 'statdown', label: 'Stat Decrease Realm Boost', unit: '', agg: 'count' },
-  { key: 'statup', label: 'Stat Increase Realm Boost', unit: '', agg: 'count' },
-  { key: 'damage', label: 'Damage Enemies', unit: '', agg: 'count' },
-  { key: 'nextbattle', label: 'Next Battle Bonus', unit: '', agg: 'count' },
-  { key: 'spellgem', label: 'Spell Gem Effect', unit: '', agg: 'count' },
-  { key: 'quest', label: 'Faster Quest Completion', unit: '', agg: 'count' },
-  { key: 'reveal', label: 'Reveal Area', unit: '', agg: 'count' },
-  { key: 'spawns', label: 'Object Spawns', unit: '', agg: 'count' },
-  { key: 'rewarding', label: '“More Rewarding”', unit: '', agg: 'count' },
-  { key: 'materials', label: 'Materials', unit: '', agg: 'count' },
-];
-const REALM_CAT_KEYS = new Set(REALM_OUTCOME_CATS.map(c => c.key));
-// classify one reward string → array of {cat, mag}. Order matters (specific spawn-chances before generic words).
-function classifyRealmOutcome(t) {
-  const out = [];
-  const pct = () => { const m = t.match(/(\d+)\s*%/); return m ? +m[1] : null; };
-  const bracket = () => { const m = t.match(/\[(\d+)/); return m ? +m[1] : null; };
-  const lead = () => { const m = t.match(/^\+?(\d+)\b/); return m ? +m[1] : null; };
-  const add = (cat, mag) => { if (REALM_CAT_KEYS.has(cat)) out.push({ cat, mag: mag == null ? null : mag }); };
-  const enemies = /Enem(y|ies)/i.test(t);
-  if (/Dumpling/i.test(t)) add('dumpling', pct());
-  if (/Treasure Golem/i.test(t)) add('golem', pct());
-  if (/Nemesis/i.test(t)) add('nemesis', lead() ?? 1);
-  if (/Game Ticket|\bTickets?\b/i.test(t)) add('tickets', bracket() ?? lead() ?? 1);
-  if (/Emblem/i.test(t)) add('emblem', pct());
-  if (/Knowledge/i.test(t)) add('knowledge', bracket() ?? lead());
-  if (/Refill Spell Gem|Random Spell Gem|Spell Gem Charges|Grant \d* ?\w* ?Spell Gem/i.test(t) && !enemies) add('spellgem', 1);
-  if (/Material/i.test(t)) add('materials', 1);
-  if (/Reveal|Pre-Revealed|Massive Area|Large Area|View Distance/i.test(t)) add('reveal', 1);
-  if (/Chase Time|Quest Completion|Closer to You/i.test(t)) add('quest', lead());
-  if (/(?<!De)Buff Realm Boost|(?<!de)Buffs? From|Grant an? (Random )?Buff|Additional Buff|Realm Boost \(Buff\)/i.test(t)) add('buff', lead());
-  if (/Debuff Realm Boost|Debuffs? From|Afflict .* Debuff|Grant a Debuff|Realm Boost \(Debuff\)/i.test(t)) add('debuff', lead());
-  if (/Minion/i.test(t)) add('minion', lead() ?? 1);
-  if (/Summon Enemies/i.test(t)) add('nemesis', 1);
-  if (/Stat (Reduction|Decrease) Realm Boost|Reduce Enemies|Decrease Enemies|Additional Stat Reduction/i.test(t)) add('statdown', lead() ?? 1);
-  if (/Stat Increase Realm Boost|Stat Increase|Grants? (a |an )?(All Stats|Intelligence|Health|Defense|Attack|Power)( Boost)?|Additional Stat Increase|Random Stat Increase/i.test(t)) add('statup', lead() ?? 1);
-  if (/Damage Enemies|Kill (a )?Random Enemy/i.test(t)) add('damage', 1);
-  if (/Next Battle|Timeline Priority|Reduced Damage In|Increased Damage In|More Damage In|Resistance to Debuffs|Go First|\+\d+ (Attacks|Casts)|Critical Chance In|Dodge Chance In|Treasure Chest (In|After) Next|Speed Boost/i.test(t)) add('nextbattle', 1);
-  if (/\bSpawns?\b/i.test(t) && !/Dumpling|Treasure Golem|Nemesis|Closer/i.test(t)) add('spawns', lead() ?? 1);
-  if (/More Rewarding/i.test(t)) add('rewarding', 1);
-  if (/Resource|\bEssence\b|Brimstone|Granite|Crystal|\bPower\b|Doubloon/i.test(t)) add('resources', bracket() ?? lead() ?? 1);
-  if (/Treasure/i.test(t) && !/Treasure Golem/i.test(t)) add('treasure', bracket() ?? lead() ?? 1);
-  if (/Favor/i.test(t)) add('favor', bracket() ?? pct());
-  else if (/^Complex Interaction\b/i.test(t) && bracket() != null) add('favor', bracket());
-  else if (/^Encounter\b/i.test(t) && !out.length) add('favor', null);
-  // dedupe by cat, keeping the larger magnitude
-  const byCat = {};
-  for (const o of out) { if (!(o.cat in byCat) || (o.mag || 0) > (byCat[o.cat].mag || 0)) byCat[o.cat] = o; }
-  return Object.values(byCat);
+// ── Favor Reward track data (user-authored CSVs in data/favor/) — the source of truth for realm outcomes ──
+// Favor_MTX: per-realm × rank(0..100) matrix of every reward column, in TWO groups — Unique Bonuses (what
+// makes a realm unique; the user's weighted averages) and Generic Bonuses (the COMMON favor-rank rewards,
+// identical across realms). Favor_REF: the shared 1..100 tier schedule (ranks == "Realm Blessing" are where a
+// realm's unique bonus fires; every other rank is the common bonus unlocked there). Favor_MAX: rank-100 snapshot.
+// No parser/derivation — the app slides the favor rank and reads these values directly.
+const FAVOR_DIR = path.join(ROOT, 'data', 'favor');
+function parseFavorCSV(file) {
+  const rows = []; let row = [], cur = '', q = false; const txt = fs.readFileSync(path.join(FAVOR_DIR, file), 'utf8');
+  for (let i = 0; i < txt.length; i++) { const ch = txt[i];
+    if (q) { if (ch === '"') { if (txt[i + 1] === '"') { cur += '"'; i++; } else q = false; } else cur += ch; }
+    else if (ch === '"') q = true; else if (ch === ',') { row.push(cur); cur = ''; }
+    else if (ch === '\n') { row.push(cur); rows.push(row); row = []; cur = ''; } else if (ch !== '\r') cur += ch; }
+  if (cur.length || row.length) { row.push(cur); rows.push(row); }
+  return rows.filter(r => r.some(c => c && c.trim()));
 }
+// a MTX/MAX cell → numeric magnitude (null when empty/"-"; % stripped to a number; "X" boolean → 1)
+const favCell = (v) => { v = (v || '').trim(); if (!v || v === '-') return null; if (v === 'X') return 1;
+  const m = v.match(/^(-?\d+(?:\.\d+)?)%?$/); return m ? +m[1] : null; };
+const favUnit = (v) => /%/.test(v || '') ? '%' : (v || '').trim() === 'X' ? 'bool' : '';
+const cleanColLabel = (h) => h.replace(/\s*\(.*$/, '').replace(/Embem/i, 'Emblem').trim();
+const _mtx = parseFavorCSV('Favor_MTX.csv'); const _mh = _mtx[0].map(h => h.trim());
+// column defs from the MTX header: cols 4..22 = Unique group, 24..39 = Generic group (23 is the group label)
+const favorColDefs = (a, b, group) => { const out = [];
+  for (let c = a; c <= b; c++) { const label = cleanColLabel(_mh[c]); if (!label) continue;
+    let unit = ''; for (let r = 1; r < _mtx.length; r++) { const raw = (_mtx[r][c] || '').trim(); if (raw && raw !== '-') { unit = favUnit(raw); break; } }
+    out.push({ key: 'c' + c, col: c, label, group, unit }); }
+  return out;
+};
+const favorCols = { unique: favorColDefs(4, 22, 'unique'), generic: favorColDefs(24, 39, 'generic') };
+const favorAllCols = [...favorCols.unique, ...favorCols.generic];
+// matrix: realmName → { rank(0..100) → [value per favorAllCols index] }
+const favorMatrix = {};
+for (let r = 1; r < _mtx.length; r++) { const row = _mtx[r]; const realm = (row[1] || '').trim(); const rank = +row[2];
+  if (!realm || Number.isNaN(rank)) continue;
+  (favorMatrix[realm] = favorMatrix[realm] || {})[rank] = favorAllCols.map(d => favCell(row[d.col])); }
+// rank-100 cross-realm max per column (scales the magnitude bars so they grow with rank)
+const favorColMax = {};
+favorAllCols.forEach((d, i) => { favorColMax[d.key] = Math.max(1, ...Object.values(favorMatrix).map(m => (m[100] && m[100][i]) || 0)); });
+// common favor-rank schedule from Favor_REF: rank → {effect, blessing?} (blessing = a realm-unique tier)
+const _ref = parseFavorCSV('Favor_REF.csv');
+const favorCommon = _ref.slice(1).filter(r => r[0]).map(r => ({ rank: +r[0], effect: (r[1] || '').trim(), blessing: /Realm Blessing/i.test(r[1] || '') }));
+console.log(`  favor track: ${Object.keys(favorMatrix).length} realms × 101 ranks · ${favorCols.unique.length} unique + ${favorCols.generic.length} generic cols · ${favorCommon.filter(c => !c.blessing).length} common tiers`);
 const realms = realmArr.map((r, i) => {
   const godFull = (r.god || '').trim();
   const godName = godFull.split(',')[0].trim();               // short name (matches god-shop `god`)
@@ -1491,52 +1466,12 @@ for (const rm of realms) rm.hasShop = shopGods.has(rm.godName);   // cross-link 
   }
   console.log(`  realm combination tables: ${comboHits}/5 wired`);
 }
-// per-realm categorized outcomes (what makes the realm unique) + residual "other" list.
-// Sources: each object's rank-0 base interaction (from='object'), each Trait tier (from='trait'), and —
-// for Complex-Interaction objects — the combo table distributed as weighted partial credit (from='combo').
-for (const rm of realms) {
-  const cats = {}; const other = [];
-  // add a contribution to a category. weight defaults to 1 (a discrete effect); combo credit is fractional.
-  const contribute = (cat, { text, at, from, mag = null, weight = 1 }) => {
-    const c = (cats[cat] = cats[cat] || { items: [], maxNum: null, weight: 0 });
-    c.items.push({ text, at, from, mag, weight: +weight.toFixed(2) });
-    c.weight += weight;
-    if (mag != null) c.maxNum = Math.max(c.maxNum ?? 0, mag);
-  };
-  const push = (item, hits) => { if (!hits.length) { other.push(item.text); return; } for (const h of hits) contribute(h.cat, { ...item, mag: h.mag }); };
-  for (const o of rm.objects) {
-    if (!o.base) continue;
-    if (/Complex Interaction/i.test(o.base) && rm.combinations) {
-      // distribute the combo results as partial credit: weight = baseCount × (results in cat / total combos)
-      const rows = rm.combinations.rows, total = rows.length || 1, n = o.baseCount || 1;
-      const perCat = {};
-      for (const row of rows) for (const h of classifyRealmOutcome(row.result)) perCat[h.cat] = (perCat[h.cat] || 0) + 1;
-      for (const [cat, cnt] of Object.entries(perCat))
-        contribute(cat, { text: `${o.name} ×${n} — ${cnt}/${total} combos → ${(REALM_OUTCOME_CATS.find(c => c.key === cat) || {}).label || cat}`, at: 0, from: 'combo', weight: n * cnt / total });
-      // still credit the explicit guaranteed favor payload, if any ("Complex Interaction [Favor: 100]")
-      const fav = (o.base.match(/\[(?:Favor:\s*)?(\d+)\]/i) || [])[1];
-      if (fav) contribute('favor', { text: `${o.name}: ${o.base}`, at: 0, from: 'object', mag: +fav });
-    } else {
-      push({ text: `${o.name}: ${o.base}`, at: 0, from: 'object' }, classifyRealmOutcome(o.base));
-    }
-  }
-  for (const t of rm.traits) push({ text: t.effect, at: t.at, from: 'trait' }, classifyRealmOutcome(t.effect));
-  // headline value per category per its agg rule: 'max' = biggest magnitude (fallback weight), 'count' = summed weight
-  for (const [k, c] of Object.entries(cats)) {
-    const def = REALM_OUTCOME_CATS.find(x => x.key === k);
-    c.weight = +c.weight.toFixed(2);
-    c.head = def && def.agg === 'max' ? (c.maxNum ?? c.weight) : c.weight;
-    c.head = +(+c.head).toFixed(2);
-  }
-  rm.outcomes = cats; rm.outcomesOther = other;
-}
-// cross-realm headline max per category (for scaling comparison bars)
-const realmCatMax = {};
-for (const def of REALM_OUTCOME_CATS) realmCatMax[def.key] = Math.max(1, ...realms.map(r => (r.outcomes[def.key]?.head) || 0));
-{ const oth = realms.reduce((n, r) => n + r.outcomesOther.length, 0);
-  const tot = realms.reduce((n, r) => n + r.objects.filter(o => o.base).length + r.traits.length, 0);
-  console.log(`  realms: ${realms.length} · ${realms.reduce((n, r) => n + r.objects.length, 0)} realm objects · ${realms.reduce((n, r) => n + r.traits.length, 0)} unique traits · ${realms.filter(r => r.hasShop).length} w/ god shop`);
-  console.log(`  realm outcomes: classified ${tot - oth}/${tot} unique rewards into ${REALM_OUTCOME_CATS.length} categories (${oth} residual → “Other”)`); }
+// join the Favor-track matrix to each realm by name (Favor_MTX realm names == D.realms[].realm)
+let favorJoined = 0;
+for (const rm of realms) { if (favorMatrix[rm.realm]) { rm.favor = favorMatrix[rm.realm]; favorJoined++; }
+  else warn(`realm "${rm.realm}" has no Favor_MTX row`); }
+{ console.log(`  realms: ${realms.length} · ${realms.reduce((n, r) => n + r.objects.length, 0)} realm objects · ${realms.filter(r => r.hasShop).length} w/ god shop`);
+  console.log(`  favor matrix joined: ${favorJoined}/${realms.length} realms`); }
 console.log(`  realm object sprites: ${realmObjHits} matched · ${realmObjMiss} need a slug/override`);
 
 // class + per-race 16×16 emblem icons (shown top-left on each creature tile in place of the class rail)
@@ -2022,10 +1957,11 @@ const SU_DATA = {
   runes,                    // False God difficulty runes (18) + authored theme counters
   realmProps,               // Realm-Instability realm properties (56) + authored theme/class counters
   godShops,                 // per-god favor shops (22 gods) — reference
-  realms,                   // 30 realms: denizens/resources + Realm Objects (w/ rank-0 base) + Favor-track
-                            //   Traits, each realm carrying categorized `outcomes` (what makes it unique)
-  realmOutcomeCats: REALM_OUTCOME_CATS,  // outcome taxonomy (Favor_MTX "Unique Bonuses" headers) + agg rule
-  realmCatMax,              // cross-realm headline max per category — scales the comparison magnitude bars
+  realms,                   // 30 realms: denizens/resources + Realm Objects (w/ rank-0 base); each carries a
+                            //   `favor` matrix { rank(0..100) → [value per favorAllCols] } from Favor_MTX
+  favorCols,                // { unique:[{key,col,label,unit}], generic:[...] } — the Favor_MTX column groups
+  favorColMax,              // rank-100 cross-realm max per column key — scales the magnitude bars
+  favorCommon,              // Favor_REF: [{rank,effect,blessing}] — the shared favor-rank tier schedule
   buildThemes: BUILD_THEMES,// detectable build intents (Action/Mechanic taxonomy) for the Threats advisor
   skins,                    // alternate creature skins, gated by code-grounded race/creature restriction
   scrollMax: 15,            // creatures consume up to 15 stat scrolls total, each +1 base stat (L_ID_SCROLL_*)

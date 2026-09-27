@@ -1874,6 +1874,7 @@
   // ── Realms reference ────────────────────────────────────────────────────────
   function openRealms(realmId) {
     ovState = { kind: "realms", search: "", sortBy: "realm", mode: "list", cmpExpanded: new Set(),
+      favorRank: 100, showCommon: false,
       view: realmId != null ? "detail" : "list", sel: realmId != null ? realmId : null, render: renderRealms };
     openOverlay(ovState.render()); maybeFocusSearch(OV);
   }
@@ -1882,14 +1883,37 @@
     if (st.view === "detail") return renderRealmDetail(rs.find(r => r.id === st.sel));
     return st.mode === "compare" ? renderRealmCompare(rs) : renderRealmList(rs);
   }
-  // ── realm outcome helpers (Favor_MTX categories) ──────────────────────────────
-  const realmCats = () => D.realmOutcomeCats || [];
-  const realmCatDef = (k) => realmCats().find(c => c.key === k);
-  function fmtHead(k, v) { const c = realmCatDef(k); const n = Number.isInteger(v) ? v : (+v).toFixed(1);
-    return c && c.unit === "%" ? `${n}%` : `${n}`; }
-  function outcomeBar(k, v) { const max = (D.realmCatMax && D.realmCatMax[k]) || 1;
-    const w = Math.max(3, Math.round((v / max) * 100));
-    return `<span class="rcat-mag"><i style="width:${w}%"></i></span><span class="rcat-val">${fmtHead(k, v)}</span>`; }
+  // ── Favor-track helpers (values sourced from Favor_MTX via D.realms[].favor) ───────────────────
+  const favUnique = () => (D.favorCols && D.favorCols.unique) || [];
+  const favGeneric = () => (D.favorCols && D.favorCols.generic) || [];
+  const favAll = () => [...favUnique(), ...favGeneric()];   // matrix rows are aligned to this order
+  const favRank = () => (ovState.favorRank == null ? 100 : ovState.favorRank);
+  // value of column at flat index `i` for a realm at the current favor rank
+  const favVal = (realm, i, rank = favRank()) => { const m = realm.favor; if (!m) return null; const row = m[rank] || m[100]; return row ? row[i] : null; };
+  function fmtFav(col, v) { if (v == null || v === 0) return "—"; const n = Number.isInteger(v) ? v : +(+v).toFixed(2);
+    return col.unit === "%" ? `${n}%` : col.unit === "bool" ? "✓" : `${n}`; }
+  // bar fill % for a unique column (scaled to the rank-100 cross-realm max so bars grow with the rank)
+  function favBarPct(col, v) { const max = (D.favorColMax && D.favorColMax[col.key]) || 1;
+    return v == null || v <= 0 ? 0 : Math.max(3, Math.min(100, Math.round((v / max) * 100))); }
+  function favBar(col, v) { return `<span class="rcat-mag"><i style="width:${favBarPct(col, v)}%"></i></span><span class="rcat-val">${fmtFav(col, v)}</span>`; }
+  // in-place slider update: recompute every [data-ci] row's bar + value at the current rank WITHOUT a full
+  // re-render, so dragging the range stays smooth (the slider element itself is never replaced mid-drag).
+  function favorLiveUpdate(root) {
+    if (!root) return; const rank = favRank(); const cols = favAll();
+    root.querySelectorAll(".fav-slider-lbl b").forEach(b => b.textContent = rank);
+    root.querySelectorAll("[data-ci]").forEach(el => {
+      const col = cols[+el.dataset.ci], realm = D.realms[+el.dataset.rid]; if (!col || !realm) return;
+      const v = favVal(realm, +el.dataset.ci, rank);
+      const bar = el.querySelector(".rcat-mag > i"); if (bar) bar.style.width = favBarPct(col, v) + "%";
+      const val = el.querySelector(".rcat-val"); if (val) val.textContent = fmtFav(col, v);
+    });
+  }
+  // shared favor-rank slider (0..100) — drives every realm view
+  function favorSlider() {
+    const r = favRank();
+    return `<div class="fav-slider"><label class="fav-slider-lbl">Favor rank <b>${r}</b></label>
+      <input type="range" min="0" max="100" value="${r}" class="fav-range" data-action="realm-rank"></div>`;
+  }
   function renderRealmList(rs) {
     const st = ovState, q = st.search.trim().toLowerCase();
     const match = (r) => !q || r.realm.toLowerCase().includes(q) || r.godName.toLowerCase().includes(q) || r.creatures.some(c => c.toLowerCase().includes(q));
@@ -1926,32 +1950,32 @@
       <span class="av-pipe">|</span>
       <button class="av-tab ${mode === "compare" ? "on" : ""}" data-action="realm-mode" data-v="compare">Compare outcomes</button></div>`;
   }
-  // Cross-realm comparison: one collapsible accordion per outcome category; expand to see every realm that
-  // provides it, ranked by headline magnitude, on a shared bar scale. "How realms differ" at a glance.
+  // Cross-realm comparison: one collapsible accordion per Unique Bonus column; expand to rank every realm by
+  // its value at the current favor rank, on a shared bar scale. The rank slider scrubs the whole comparison.
   function renderRealmCompare(rs) {
-    const st = ovState, q = st.search.trim().toLowerCase();
-    const groups = realmCats().map(def => {
-      const rows = rs.map(r => ({ r, c: r.outcomes[def.key] })).filter(x => x.c && x.c.head > 0)
-        .filter(x => !q || x.r.realm.toLowerCase().includes(q) || def.label.toLowerCase().includes(q))
-        .sort((a, b) => b.c.head - a.c.head);
-      return { def, rows };
+    const st = ovState, q = st.search.trim().toLowerCase(), rank = favRank();
+    const uCols = favUnique();
+    const groups = uCols.map((col, i) => {
+      const rows = rs.map(r => ({ r, v: favVal(r, i, rank) })).filter(x => x.v != null && x.v > 0)
+        .filter(x => !q || x.r.realm.toLowerCase().includes(q) || col.label.toLowerCase().includes(q))
+        .sort((a, b) => b.v - a.v);
+      return { col, i, rows };
     }).filter(g => g.rows.length);
     const body = groups.length ? groups.map(g => {
-      const open = st.cmpExpanded.has(g.def.key);
-      const top = g.rows[0];
-      const bars = g.rows.map(({ r, c }) => `<button class="rcmp-row" data-action="realm-sel" data-id="${r.id}">
-        <span class="rcmp-realm">${esc(r.realm)}</span>${outcomeBar(g.def.key, c.head)}</button>`).join("");
-      return `<div class="rcmp-grp"><button class="rcmp-head ${open ? "open" : ""}" data-action="realm-cat" data-k="${g.def.key}">
-        <span class="rcmp-caret">${open ? "▾" : "▸"}</span><span class="rcmp-cat">${esc(g.def.label)}</span>
-        <span class="rcmp-meta">${g.rows.length} realm${g.rows.length === 1 ? "" : "s"} · top ${esc(top.r.realm)} ${fmtHead(g.def.key, top.c.head)}</span></button>
+      const open = st.cmpExpanded.has(g.col.key), top = g.rows[0];
+      const bars = g.rows.map(({ r, v }) => `<button class="rcmp-row" data-action="realm-sel" data-id="${r.id}" data-rid="${r.id}" data-ci="${g.i}">
+        <span class="rcmp-realm">${esc(r.realm)}</span>${favBar(g.col, v)}</button>`).join("");
+      return `<div class="rcmp-grp"><button class="rcmp-head ${open ? "open" : ""}" data-action="realm-cat" data-k="${g.col.key}">
+        <span class="rcmp-caret">${open ? "▾" : "▸"}</span><span class="rcmp-cat">${esc(g.col.label)}</span>
+        <span class="rcmp-meta">${g.rows.length} realm${g.rows.length === 1 ? "" : "s"} · top ${esc(top.r.realm)} ${fmtFav(g.col, top.v)}</span></button>
         ${open ? `<div class="rcmp-bars">${bars}</div>` : ""}</div>`;
-    }).join("") : `<div class="slot-sub" style="padding:12px">No categories match “${esc(st.search)}”.</div>`;
+    }).join("") : `<div class="slot-sub" style="padding:12px">No unique bonuses at favor rank ${rank}${q ? ` matching “${esc(st.search)}”` : ""}.</div>`;
     return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel">
       <div class="overlay-header"><h2>Realms</h2>
         <input class="ovl-search" placeholder="Search category / realm…" value="${esc(st.search)}" data-action="realm-search">
         <button class="ovl-close" data-action="close-ovl">✕</button></div>
-      <div class="overlay-body"><div class="ovl-center">${realmModeToggle("compare")}
-        <div class="slot-sub" style="margin:0 0 6px">What makes each realm unique — Favor-track + rank-0 object interactions, bucketed by outcome. Tap a category to rank realms; tap a realm to open it.</div>
+      <div class="overlay-body"><div class="ovl-center">${realmModeToggle("compare")}${favorSlider()}
+        <div class="slot-sub" style="margin:0 0 6px">Each realm's Unique Bonuses at favor rank ${rank}. Tap a category to rank realms; tap a realm to open it.</div>
         <div class="ovl-center-scroll"><div class="rcmp-list">${body}</div></div>
       </div></div>
       <div class="overlay-footer"><span class="foot-info"></span><button class="btn-confirm" data-action="close-ovl">Done</button></div>
@@ -1980,23 +2004,22 @@
         <span class="realm-obj-ico">${o.sprite ? spriteImg(o.sprite, "px") : ""}</span>
         <span class="realm-objrow-name">${esc(o.name)}${o.baseCount != null ? ` <span class="realm-obj-ct">×${o.baseCount}</span>` : ""}</span>
         <span class="realm-objrow-base">${o.base ? esc(o.base) : ""}</span></div>`).join("")}</div>` : "";
-    // What makes this realm unique — the Favor-track Traits + each object's rank-0 base interaction, bucketed
-    // into the Favor_MTX outcome categories. Each row's bar = this realm's headline vs the strongest realm
-    // (D.realmCatMax); expand to see the contributing effects. Complex-interaction combos give weighted credit.
-    const cats = sel.outcomes || {};
-    const catKeys = realmCats().map(c => c.key).filter(k => cats[k]);
-    const srcMark = (it) => it.from === "trait" ? `<span class="rcat-src rcat-src-trait" title="Favor tier ${it.at}">${it.at}</span>`
-      : it.from === "combo" ? `<span class="rcat-src rcat-src-combo" title="combo (weighted ${it.weight})">◆</span>`
-      : `<span class="rcat-src rcat-src-object" title="object base interaction">●</span>`;
-    const profile = catKeys.length ? `<div class="section-label">What makes this realm unique</div>
-      <div class="slot-sub" style="margin:-2px 0 7px">Favor-track bonuses + rank-0 object interactions, grouped by outcome. Bar = this realm vs. the strongest realm.</div>
-      <div class="rcat-list">${catKeys.map(k => { const c = cats[k], def = realmCatDef(k);
-        const items = c.items.slice().sort((a, b) => (a.from === "trait" ? a.at : -1) - (b.from === "trait" ? b.at : -1));
-        return `<details class="rcat"><summary class="rcat-row"><span class="rcat-name">${esc(def.label)}</span>${outcomeBar(k, c.head)}<span class="rcat-caret">▸</span></summary>
-          <div class="rcat-items">${items.map(it => `<div class="rcat-item">${srcMark(it)}<span class="rcat-itxt">${esc(it.text)}</span></div>`).join("")}</div></details>`;
-      }).join("")}</div>` : "";
-    const other = (sel.outcomesOther || []).length ? `<div class="section-label">Other</div>
-      <div class="rcat-items">${sel.outcomesOther.map(t => `<div class="rcat-item"><span class="rcat-src rcat-src-object">●</span><span class="rcat-itxt">${esc(t)}</span></div>`).join("")}</div>` : "";
+    // What makes this realm unique — the Favor_MTX Unique Bonuses at the selected favor rank. The rank slider
+    // scrubs 0→100; the common-bonuses toggle also shows the Generic Bonuses (shared by every realm).
+    // All Unique columns render as stable rows (data-ci → live slider updates); values/bars reflect the rank.
+    const rank = favRank();
+    const uCols = favUnique(), gCols = favGeneric();
+    const uniqueList = `<div class="section-label">What makes this realm unique</div>
+      ${favorSlider()}
+      <label class="fav-common"><input type="checkbox" data-action="realm-common" ${ovState.showCommon ? "checked" : ""}> Show common (all-realm) bonuses</label>
+      <div class="rcat-list">${uCols.map((c, i) => { const v = favVal(sel, i, rank);
+        return `<div class="rcat-row rcat-static${v ? "" : " rcat-empty"}" data-rid="${sel.id}" data-ci="${i}"><span class="rcat-name">${esc(c.label)}</span>${favBar(c, v)}</div>`; }).join("")}</div>`;
+    const commonList = ovState.showCommon ? `<div class="section-label">Common bonuses (every realm)</div>
+      <div class="slot-sub" style="margin:-2px 0 6px">Shared favor-rank rewards from the generic track — identical across all realms.</div>
+      <div class="rcat-list">${gCols.map((c, j) => { const i = uCols.length + j, v = favVal(sel, i, rank);
+        return `<div class="rcat-row rcat-static rcat-generic${v ? "" : " rcat-empty"}" data-rid="${sel.id}" data-ci="${i}"><span class="rcat-name">${esc(c.label)}</span><span class="rcat-val rcat-val-wide">${fmtFav(c, v)}</span></div>`; }).join("")}</div>` : "";
+    const profile = uniqueList + commonList;
+    const other = "";
     // complex-interaction combination table (5 realms have a combine-objects puzzle)
     const combos = sel.combinations ? `<div class="section-label" style="margin-top:12px">Complex Interaction — ${esc(sel.combinations.title)}</div>
       <div class="realm-combos">${sel.combinations.rows.map(c => `<div class="rc-row"><span class="rc-combo">${esc(c.combo)}</span><span class="rc-arrow">→</span><span class="rc-result">${esc(c.result)}</span></div>`).join("")}</div>
@@ -3633,6 +3656,8 @@
     // range sliders / selects
     if (A === "artb-rank") { ovState.draft.rank = +v; refreshOverlay(); return; }
     if (A === "relic-rank") { ovState.rank = +v; refreshOverlay(); return; }
+    // favor rank: live in-place update while dragging (no re-render → smooth); 'change' re-sorts (below)
+    if (A === "realm-rank") { ovState.favorRank = +v; favorLiveUpdate(OV); return; }
     if (A === "nether-propval") { ovState.draft.props[+t.dataset.i].value = Number(v) || 0; return; }
     if (A === "nether-trigger") { ovState.draft.props[+t.dataset.i].trigger = v; return; }
     // name fields (no re-render — keep focus/caret)
@@ -3668,6 +3693,12 @@
     openCreaturePicker(+slotEl.dataset.slot);
   });
   document.addEventListener("input", onInput);
+  // 'change' fires on slider release / checkbox toggle: re-render so the compare view re-sorts by the new rank
+  document.addEventListener("change", (e) => {
+    const t = e.target.closest("[data-action]"); if (!t) return;
+    if (t.dataset.action === "realm-rank") { ovState.favorRank = +t.value; refreshOverlay(); }
+    else if (t.dataset.action === "realm-common") { ovState.showCommon = t.checked; refreshOverlay(); }
+  });
   document.addEventListener("keydown", (e) => {
     if (e.key === "Escape") { if (!DOV.classList.contains("hidden")) closeDetail(); else if (!OV.classList.contains("hidden")) closeOverlay(); }
   });
