@@ -273,6 +273,18 @@ h1, h2, h3 { margin: 0; }
   border: 1px solid var(--border-dim); border-radius: 9px; padding: 8px 14px; font-size: 14px;
 }
 .btn-ghost:disabled { opacity: .4; cursor: default; }
+
+/* "Press back again to exit" toast (installed PWA back-button guard) */
+.exit-toast {
+  position: fixed; left: 50%; bottom: calc(18px + env(safe-area-inset-bottom, 0px));
+  transform: translateX(-50%) translateY(14px);
+  background: rgba(20,14,38,.96); color: var(--text);
+  border: 1px solid var(--border); border-radius: 999px;
+  padding: 10px 18px; font-size: 13px; white-space: nowrap;
+  z-index: 9999; opacity: 0; pointer-events: none;
+  box-shadow: var(--shadow); transition: opacity .18s ease, transform .18s ease;
+}
+.exit-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 .btn-ghost.on { color: var(--cap); border-color: var(--cap); background: rgba(201,162,75,.16); }   /* active toggle (e.g. Appendix bookmark filter) */
 .btn-ghost.danger { color: var(--bad); border-color: #6b2f2f; }
 .btn-ghost.danger:disabled { color: var(--text-mute); border-color: var(--border-dim); }

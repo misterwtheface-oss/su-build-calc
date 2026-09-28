@@ -691,42 +691,65 @@
   }
   const SCROLLERS = [".ovl-center-scroll", ".ovl-left", ".ovl-right", ".art-side-list", ".xref-wrap"];
 
-  // ── overlay history: the Android/browser Back button closes the top overlay
-  //    (detail before selector) instead of exiting the app. One "guard" history
-  //    entry is parked whenever any overlay is open; Back pops it and we close the
-  //    top layer. Reconciliation is deferred to a microtask so a synchronous
+  // ── Back-button handling (Android/browser) ────────────────────────────────
+  //    A single synthetic history entry is "parked" whenever Back should be
+  //    intercepted: while any overlay is open (both modes), and always when the
+  //    app runs installed/standalone (so the exit guard can fire). It is NOT
+  //    parked in a plain browser tab with nothing open, so Back leaves the site
+  //    naturally (never traps a fresh tab with no prior history). A Back press
+  //    consumes the parked entry, and we decide what it meant:
+  //      • overlay open        → close the top layer (detail before selector)
+  //      • nothing open + PWA   → "press Back again to exit" (re-park + toast);
+  //                               a second press within 2s actually exits
+  //    Parking is reconciled on open/close via a microtask, so a synchronous
   //    close→open transition nets to one final state with no history churn.
-  let ovlGuard = false, ovlIgnorePop = false, ovlReconcileQueued = false;
   const anyOverlayOpen = () => !OV.classList.contains("hidden") || !DOV.classList.contains("hidden");
-  function reconcileOverlayHistory() {
-    if (ovlReconcileQueued) return;
-    ovlReconcileQueued = true;
+  const isStandalone = window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true;
+  let synthParked = false, ignorePop = false, reconcileQueued = false, armExit = false, exitTimer = null;
+  const wantPark = () => isStandalone || anyOverlayOpen();
+  function reconcilePark() {
+    if (reconcileQueued) return;
+    reconcileQueued = true;
     Promise.resolve().then(() => {
-      ovlReconcileQueued = false;
-      if (anyOverlayOpen()) {
-        if (!ovlGuard) { ovlGuard = true; history.pushState({ ovlGuard: true }, ""); }
-      } else if (ovlGuard) {
-        ovlGuard = false; ovlIgnorePop = true; history.back();   // remove our parked entry
-      }
+      reconcileQueued = false;
+      if (wantPark() && !synthParked) { synthParked = true; history.pushState({ syn: 1 }, ""); }
+      else if (!wantPark() && synthParked) { synthParked = false; ignorePop = true; history.back(); }
     });
   }
+
+  let exitToastEl = null;
+  function showExitToast() {
+    if (!exitToastEl) { exitToastEl = document.createElement("div"); exitToastEl.className = "exit-toast"; exitToastEl.textContent = "Press back again to exit"; document.body.appendChild(exitToastEl); }
+    exitToastEl.classList.add("show");
+  }
+  function hideExitToast() { if (exitToastEl) exitToastEl.classList.remove("show"); }
+
   window.addEventListener("popstate", () => {
-    if (ovlIgnorePop) { ovlIgnorePop = false; return; }   // our own synthetic unwind — ignore
-    ovlGuard = false;                                      // the parked guard was consumed by Back
+    if (ignorePop) { ignorePop = false; return; }   // our own synthetic unpark — ignore
+    synthParked = false;                             // the parked entry was consumed by this Back
     if (anyOverlayOpen()) {
       if (!DOV.classList.contains("hidden")) closeDetailReal(); else closeOverlayReal();
-      reconcileOverlayHistory();                           // re-park if a lower layer remains open
+      reconcilePark();                               // re-park if still wanted (lower layer / standalone)
+      return;
     }
+    if (!isStandalone) return;                       // browser tab, nothing open → let Back leave
+    if (armExit) {                                   // second press within the window → exit
+      if (exitTimer) { clearTimeout(exitTimer); exitTimer = null; }
+      armExit = false; history.back(); return;
+    }
+    armExit = true; showExitToast(); reconcilePark();  // first press → warn and stay in-app
+    exitTimer = setTimeout(() => { armExit = false; hideExitToast(); exitTimer = null; }, 2000);
   });
+  reconcilePark();   // establish the initial parked entry when standalone
 
-  // DOM-only closes (no history side effects) — used by the Back handler above.
+  // DOM-only closes; the Back handler above and the UI wrappers both use these.
   function closeOverlayReal() { if (specAnimTimer) { clearInterval(specAnimTimer); specAnimTimer = null; } OV.classList.add("hidden"); OV.innerHTML = ""; ovState = null; }
   function closeDetailReal() { if (specAnimTimer) { clearInterval(specAnimTimer); specAnimTimer = null; } DOV.classList.add("hidden"); DOV.innerHTML = ""; dovState = null; }
 
-  function openOverlay(html) { OV.innerHTML = html; OV.classList.remove("hidden"); reconcileOverlayHistory(); }
-  function closeOverlay() { closeOverlayReal(); reconcileOverlayHistory(); }
-  function openDetail(html) { if (specAnimTimer) { clearInterval(specAnimTimer); specAnimTimer = null; } DOV.innerHTML = html; DOV.classList.remove("hidden"); reconcileOverlayHistory(); }
-  function closeDetail() { closeDetailReal(); reconcileOverlayHistory(); }
+  function openOverlay(html) { OV.innerHTML = html; OV.classList.remove("hidden"); reconcilePark(); }
+  function closeOverlay() { closeOverlayReal(); reconcilePark(); }
+  function openDetail(html) { if (specAnimTimer) { clearInterval(specAnimTimer); specAnimTimer = null; } DOV.innerHTML = html; DOV.classList.remove("hidden"); reconcilePark(); }
+  function closeDetail() { closeDetailReal(); reconcilePark(); }
 
   function refreshOverlay() {
     if (!ovState) return;
