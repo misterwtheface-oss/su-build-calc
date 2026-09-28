@@ -1350,6 +1350,7 @@
   function renderAppendix() {
     const st = ovState, q = st.search.trim().toLowerCase();
     const tags = st.tags;
+    const bkCount = bookmarks.traits.length + bookmarks.spells.length + bookmarks.perks.length;
     // drill-down (category → value) is shown when picking a filter: on first entry (no tags AND no search)
     // or when the user taps ＋ Filter. A name search with no tags jumps straight to name-filtered results
     // (search by name works without first applying a taxonomy filter). Otherwise = AND-combined tag results.
@@ -1499,7 +1500,8 @@
         ${sub}
         <div class="ovl-center-scroll">${body}</div>
       </div></div>
-      <div class="overlay-footer"><span class="foot-info"></span>
+      <div class="overlay-footer"><span class="foot-info">${bkCount ? `${bkCount} bookmark${bkCount === 1 ? "" : "s"}` : ""}</span>
+        ${bkCount ? `<button class="btn-ghost tb-danger" data-action="appendix-clear-bk" title="Remove all ${bkCount} bookmark${bkCount === 1 ? "" : "s"}">Clear bookmarks</button>` : ""}
         <button class="btn-confirm" data-action="close-ovl">Done</button></div>
     </div></div>`;
   }
@@ -3443,6 +3445,11 @@
       case "appendix-toggle-sec": { const s = t.dataset.sec; ovState.collapsed.has(s) ? ovState.collapsed.delete(s) : ovState.collapsed.add(s); refreshOverlay(); break; }
       case "apx-bookmark": { e.stopPropagation(); const k = t.dataset.kind;   // perks key by string, traits/spells by numeric id
         toggleBk(k, k === "perks" ? t.dataset.id : +t.dataset.id); refreshOverlay(); break; }
+      case "appendix-clear-bk": {   // tap-again-to-confirm guard (destructive)
+        if (t.dataset.armed) { clearBookmarks(); refreshOverlay(); break; }
+        t.dataset.armed = "1"; t.classList.add("armed"); const orig = t.textContent; t.textContent = "Tap again to clear";
+        setTimeout(() => { if (t.isConnected) { t.classList.remove("armed"); delete t.dataset.armed; t.textContent = orig; } }, 2500);
+        break; }
       case "appendix-done-adding": ovState.browsing = false; ovState.cat = null; ovState.search = ""; refreshOverlay(); break;
       case "open-anoint": openAnoint(); break;
       case "anoint-detail": openAnointDetail(); break;
