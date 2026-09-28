@@ -1,0 +1,9 @@
+#!/bin/sh
+# Keep the service worker honest: re-stamp index.html ?v= tokens + sw.js BUILD from the current
+# app.js / styles.css / data.js content, then re-stage them. Without this, editing a sub-resource
+# without bumping its ?v= makes the SW serve the stale cached copy after deploy ("nothing changed").
+# Lightweight (no data rebuild) so it's cheap on every commit. Requires node on PATH.
+command -v node >/dev/null 2>&1 || { echo "pre-commit: node not found, skipping cache-bust stamp"; exit 0; }
+node tools/stamp-cache.mjs || { echo "pre-commit: stamp-cache failed"; exit 1; }
+git add index.html sw.js 2>/dev/null || true
+exit 0

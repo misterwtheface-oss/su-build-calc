@@ -6,6 +6,14 @@ Pages on `master`/root, Cloudflare analytics active with the shared github.io to
 No verify-before-push ceremony (no real users yet) — but every change is checked with the jsdom smoke suite
 (scratchpad `smoke.mjs`, ~84 assertions across all flows) before commit.
 
+### ⚠ Cache-bust is ENFORCED by a git pre-commit hook (do not bypass)
+The service worker serves `app.js`/`styles.css`/`data.js` **cache-first**, keyed by their `?v=` token
+(only `index.html` is network-first). So editing a sub-resource without re-stamping its `?v=` ships a
+stale asset ("nothing changed after deploy"). The stamp logic lives in **`tools/stamp-cache.mjs`** (single
+source of truth), called by both `build-data.mjs` and the **`.githooks/pre-commit`** hook — which re-stamps
+`index.html` (`?v=`) + `sw.js` (`BUILD`) and re-stages them on **every commit**. One-time per clone:
+`git config core.hooksPath .githooks`. Don't commit with `--no-verify` (skips the stamp).
+
 ### Current feature snapshot (as of 2026-09-24)
 > **2026-09-24 — FULL EXTRACT RECONCILIATION (creatures / traits / items / spells).** Every entity now carries a
 > per-attribute, provenance-backed classification — the data foundation for boss-guide / owner-surfacing features.
