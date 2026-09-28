@@ -389,10 +389,17 @@ h1, h2, h3 { margin: 0; }
 /* discrete per-stat magnitude (value / roster max) — name | thin track | value.
    FIXED name + value columns (not auto) so every row's track shares the same left start and
    the same length — each .stat-row is its own grid, so auto columns would shift per label width. */
-.stat-grid.single.mag .stat-row { grid-template-columns: 104px 1fr 34px; gap: 10px; }
+.stat-grid.single.mag .stat-row { grid-template-columns: 96px 1fr auto; gap: 10px; }
 .stat-grid.single.mag .stat-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.stat-mag { height: 3px; border-radius: 2px; background: rgba(255,255,255,.07); overflow: hidden; }
+.stat-mag { position: relative; height: 3px; border-radius: 2px; background: rgba(255,255,255,.07); overflow: hidden; }
 .stat-mag > i { display: block; height: 100%; background: var(--accent); opacity: .45; border-radius: 2px; }
+/* fusion delta segment: green = fusing this partner raised the stat, red = lowered it */
+.stat-mag .delta { position: absolute; top: 0; height: 100%; border-radius: 2px; }
+.stat-mag .delta.up { background: var(--good); opacity: .9; }
+.stat-mag .delta.down { background: var(--bad); opacity: .9; }
+.stat-delta { font-size: 10px; font-weight: 800; margin-left: 3px; }
+.stat-delta.up { color: var(--good); }
+.stat-delta.down { color: var(--bad); }
 .stat-header { font-size: 11px; letter-spacing: .6px; text-transform: uppercase; color: var(--text-mute); }
 .stat-row { background: var(--surface); }
 .stat-row .stat-name { text-align: left; font-weight: 600; font-size: 13px; }

@@ -902,9 +902,24 @@
     const tempSlot = { cid: st.primaryId, fusion: st.fusionId, personality: st.personality, scrolls: st.scrolls || {},
                        artifactId: null, relic: null, spellGemIds: [] };
     const fs = finalStats(tempSlot), b = fs.base;
+    // baseline = the primary WITHOUT fusion (same scrolls/personality) so each bar's coloured segment
+    // shows exactly what fusing this partner does to the stat: green = raised, red = lowered.
+    const soloSlot = { cid: st.primaryId, fusion: null, personality: st.personality, scrolls: st.scrolls || {},
+                       artifactId: null, relic: null, spellGemIds: [] };
+    const fs0 = finalStats(soloSlot);
     const pers = st.personality ? PERS.get(st.personality) : null;
     const mark = (k) => { if (!pers) return ""; if (pers.raise === k) return ` <span class="growth up" title="Personality +33%">↑</span>`;
       if (pers.lower === k) return ` <span class="growth down" title="Personality −33%">↓</span>`; return ""; };
+    // magnitude bar (value / roster-max) with a diverging fusion delta segment vs the primary alone
+    const magRow = (k, label, curr, base0, rowCls) => {
+      const M = STAT_MAX[k] || 1, pc = (v) => Math.max(0, Math.min(100, (v || 0) / M * 100));
+      const cW = pc(curr), bW = pc(base0), solid = Math.min(cW, bW), seg = Math.abs(cW - bW);
+      const d = curr - base0, dcls = d >= 0 ? "up" : "down";
+      const title = secondary && d !== 0 ? `Fusion ${d > 0 ? "+" : ""}${d} vs ${esc(primary.name)} alone` : `${Math.round(cW)}% of the roster max`;
+      return `<div class="stat-row${rowCls || ""}"><span class="stat-name">${label}${mark(k)}</span>
+        <span class="stat-mag" title="${title}"><i style="width:${solid}%"></i>${seg > 0.5 ? `<b class="delta ${dcls}" style="left:${solid}%;width:${seg}%"></b>` : ""}</span>
+        <span class="stat-val total">${curr}${secondary && d !== 0 ? ` <span class="stat-delta ${dcls}">${d > 0 ? "+" : ""}${d}</span>` : ""}</span></div>`;
+    };
     const traitIds = [primary.traitId, secondary ? secondary.traitId : null].filter(x => x != null);
     return `<button class="cd-info-btn" data-action="crea-info" data-cid="${primary.id}" title="Open full details for ${esc(primary.name)}" aria-label="Open full creature details">i</button>
       <div class="cd-sprite">${critFaceSkinned(primary, st.skinId)}</div>
@@ -912,10 +927,9 @@
       <div class="slot-sub" style="margin-bottom:10px"><span style="color:${clsColor(b.cls)};font-weight:700">${esc(b.cls || "—")}</span></div>
       ${traitIds.length ? `<div class="section-label">Traits</div><div style="margin-bottom:10px">${traitIds.map(tid => `<div class="primary-traits" style="margin-bottom:6px">${traitBanner(tid)}<div class="trait-desc">${richText((TRAIT[tid] || {}).desc || "")}</div></div>`).join("")}</div>` : ""}
       <div class="section-label">Stats</div>
-      <div class="stat-grid single">
-        ${STAT_KEYS.map(k => `<div class="stat-row"><span class="stat-name">${STAT_LABEL[k]}${mark(k)}</span>
-          <span class="stat-val total">${fs.final[k]}</span></div>`).join("")}
-        <div class="stat-row hl-med"><span class="stat-name">Total</span><span class="stat-val total">${fs.total}</span></div></div>`;
+      <div class="stat-grid single mag">
+        ${STAT_KEYS.map(k => magRow(k, STAT_LABEL[k], fs.final[k], fs0.final[k])).join("")}
+        ${magRow("total", "Total", fs.total, fs0.total, " hl-med")}</div>`;
   }
 
   // per-creature customization in the wizard: Personality (base-stat ↑/↓) + Scrolls (+1 base each, cap 15 total)

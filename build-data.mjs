@@ -234,8 +234,27 @@ const taxoTags = readJSON(path.join(MODEL, 'trait_taxonomy_tags.json')).by_trait
 // so the remap below has a valid target and it's filterable.
 { const rt = taxonomy.categories.find(c => c.category === 'Related Types');
   if (rt && !rt.values.includes('Animatus')) { rt.values.push('Animatus'); rt.values.sort(); } }
+// ── Canon-status validation (user directive): buff / debuff / minion RELATIONAL tags must be
+// grounded in the description against the canonical status list (the in-game Buff/Debuff/Minion
+// glossary). The LLM occasionally (a) misreads "gain [icons,N] <Spell>" as gaining a buff, (b) tags
+// a status/minion the effect merely counts or extends (e.g. "minions gain 1 stack" → Random Minion),
+// or (c) files a permanent minion under a buff/debuff slot. Descriptions name statuses either as plain
+// words (traits: "Burned", "Taunting") or as {CONDNAME_BUFF_/DEBUFF_/MINION_X} markup (spells/perks) —
+// so we match BOTH. Only the GENERIC/relational assertions below are validated; specific token-grounded
+// "Related Buff::Barrier"-style tags are left untouched (markup awareness already spares any real ref).
+const CANON_BUFF_STEMS = ['agil','arcane','barrier','berserk','defensive','immun','invisib','leech','mend','proficien','protect','rebirth','repel','savage','shell','splash','taunt','ward','alcohol'];
+const CANON_DEBUFF_STEMS = ['bleed','blight','blind','bomb','burn','confus','curse','disarm','fear','fr[eo]z','invert','mania','poison','scorn','silenc','slee','snar','stone','vulnerab','weak'];
+const buffRefRe = new RegExp('\\b(buff|' + CANON_BUFF_STEMS.join('|') + ')', 'i');
+const debuffRefRe = new RegExp('\\b(debuff|' + CANON_DEBUFF_STEMS.join('|') + ')', 'i');
+const hasBuffRef = (d) => /\{condname_buff_/i.test(d) || buffRefRe.test(d);
+const hasDebuffRef = (d) => /\{condname_debuff_/i.test(d) || debuffRefRe.test(d);
+const hasMinionSummon = (d) => /\bsummon|\bconjure|\bcreate|army of minions?|random minions?|\{condname_minion_|(gain|gains|get|gets|give|gives|grant|grants)\b[^.]{0,40}minion|minion.{0,20}(summon|created|conjured)/i.test(d);
+// "gain/grant [icons,N] <Spell>" — the icon token immediately after the verb flags a SPELL grant, not a buff
+const spellGainRe = /\b(gain|gains|grant|grants|give|gives)\s+\[icons?,\s*\d+\]/i;
+const BUFF_ASSERT = new Set(['Action/Mechanic::Buff','Affect on Status::Apply/Gain a Buff','Affect on Status::More Powerful Buff','Affect on Status::Remove Buff','Affect on Status::Share/Gain Copy of Buff','Affect on Status::Buffs Persist','Affect on Status::Limit/Prevent Buff Gain','Related Buff::Random Buff']);
+const DEBUFF_ASSERT = new Set(['Action/Mechanic::Debuff','Affect on Status::Afflict with/Gain a Debuff','Affect on Status::Increase Debuff Potency','Affect on Status::Remove Debuff','Affect on Status::Resistant to Debuff','Affect on Status::Avoid/Immune to Debuff','Affect on Status::Debuffs Persist','Related Debuff::Random Debuff']);
 // shared per-effect taxonomy corrections (traits / perks / spells all pass through this)
-let animatusRetagged = 0, innateTagStripped = 0, persistRetagged = 0;
+let animatusRetagged = 0, innateTagStripped = 0, persistRetagged = 0, statusUngrounded = 0, randomMinionStripped = 0, spellGainTagged = 0;
 function correctTaxo(taxo, desc) {
   let out = taxo;
   if (out.includes('Related Types::Animation') && /animatus/i.test(desc) && !/\banimation\b/i.test(desc)) {
@@ -253,6 +272,20 @@ function correctTaxo(taxo, desc) {
     const death = /persist(s|ed)? (through|beyond)|through .{0,16}death|beyond .{0,16}death|master'?s death|when .{0,20}(dies|killed)/i.test(desc);
     const duration = /go away|last(s)? (forever|longer)|never (go away|expire|leave|disappear)|less likely|lower chance|extend|duration|expire/i.test(desc);
     if (!death && duration) { out = out.map(k => k.endsWith('::Persist (Minion)') ? k.replace('::Persist (Minion)', '::Extend Duration (Minion)') : k); persistRetagged++; }
+  }
+  // canon-status validation: drop buff/debuff/minion assertions the description doesn't ground
+  const dl = (desc || '').toLowerCase();
+  const b = hasBuffRef(dl), db = hasDebuffRef(dl);
+  out = out.filter(k => {
+    if (BUFF_ASSERT.has(k) && !b) { statusUngrounded++; return false; }
+    if (DEBUFF_ASSERT.has(k) && !db) { statusUngrounded++; return false; }
+    if (k === 'Affect on Status::Always Has X Buff/Debuff' && !b && !db) { statusUngrounded++; return false; }
+    if (k === 'Related Minion::Random Minion' && !hasMinionSummon(dl)) { randomMinionStripped++; return false; }
+    return true;
+  });
+  // a "gain [icons,N] <Spell>" that isn't a status → tag it as gaining a spell (the LLM missed this)
+  if (spellGainRe.test(desc || '') && !b && !db && !out.includes('Affect on Spells::Extra/Gain a Spell Gem')) {
+    out.push('Affect on Spells::Extra/Gain a Spell Gem'); spellGainTagged++;
   }
   return [...new Set(out)];
 }
@@ -772,6 +805,7 @@ const spells = spellArr.map((s, i) => {
 }).filter(s => s.name);
 console.log(`  spells: ${spells.length} · charges ${spells.filter(s => s.chargesSrc === 'code').length} code + ${spells.filter(s => s.chargesSrc === 'community').length} community · ${spells.filter(s => s.potency).length} w/ potency · potency/target/source from Spell_REF.csv`);
 console.log(`  taxonomy fixes: Innate-Trait stripped ${innateTagStripped} · Animatus retagged ${animatusRetagged} · Persist→Extend-Duration retagged ${persistRetagged} (duration, not death)`);
+console.log(`  canon-status validation: ${statusUngrounded} ungrounded buff/debuff tags dropped · ${randomMinionStripped} ungrounded Random-Minion dropped · ${spellGainTagged} spell-gain tags added`);
 
 // ── trait items (slottable into artifact trait slots) — with material icons ──
 const matStats = readJSON(path.join(MODEL, 'material_stats.json'));
