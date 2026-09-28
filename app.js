@@ -1634,7 +1634,7 @@
         section("Traits", creatureTraitRows, traitRow),
         section("Item-only Traits", itemOnlyTraitRows, traitRow),
         section("Boss Traits", bossTraitRows, bossTraitRow),
-        section("Perks", res.perks, p => line(apxStack(apxIcon(p.icon), apxIcon(SPEC_EMBLEM.get(p.spec), "apx-spec", ` title="${esc(p.spec)}"`)), p.name,
+        section("Perks", res.perks, p => line(apxStack(apxIcon(SPEC_EMBLEM.get(p.spec), "apx-spec", ` title="${esc(p.spec)}"`), apxIcon(p.icon)), p.name,
           `<span class="anoint-spec-tag">${esc(p.spec)}</span>`, perkText(p.desc, p.ranks), bkBtn("perks", p.key), { ek: "perk", eid: p.key })),
         section("Spells", res.spells, s => line(apxStack(apxIcon(spellIcon(s))), s.name,
           `${s.cls ? `<span class="anoint-spec-tag">${esc(s.cls)}</span>` : ""}${spellMeta(s) ? `<span class="anoint-spec-tag">${esc(spellMeta(s))}</span>` : ""}`, perkText(s.desc, null), bkBtn("spells", s.id), { ek: "spell", eid: s.id })),
@@ -1893,7 +1893,7 @@
     // theme selector — a single dropdown (Auto-detected, or explore one theme) replaces the chip toggles
     const det = detectedThemeKeys();
     const themeSelect = `<select class="app-select" data-action="threat-navsel">
-      <option value=""${st.themeSel ? "" : " selected"}>Auto — ${det.length ? det.map(themeLabel).join(", ") : "no theme detected"}</option>
+      <option value=""${st.themeSel ? "" : " selected"}>Auto</option>
       ${THEMES.map(t => `<option value="${t.key}"${st.themeSel === t.key ? " selected" : ""}>${esc(t.label)}${(w[t.key] || 0) > 0 ? ` · ${w[t.key]} in build` : ""}</option>`).join("")}
     </select>`;
     // source toggle: Realm Props (source "Realm") ⇆ False God runes (source "Rune")
@@ -2005,27 +2005,30 @@
   function renderRiddle() {
     // normalize away punctuation so a query missing it still hits — e.g. "tmer" → T'mere M'rgo
     const nrm = (s) => String(s || "").toLowerCase().replace(/[^a-z0-9\s]/g, "");
-    const st = ovState, q = nrm(st.search).trim();
+    const st = ovState, q = nrm(st.search).trim(), CAP = 12;
     const rank = (name) => nrm(name).startsWith(q) ? 0 : 1;   // exact-prefix hits first
+    const clsAns = (cls) => `<span class="riddle-a" style="color:${clsColor(cls)}">${D.classIcons && D.classIcons[cls] ? spriteImg(D.classIcons[cls], "px") : ""}${esc(cls || "—")}</span>`;
     const row = (name, ans) => `<div class="riddle-row"><span class="riddle-q">${esc(name)}</span>${ans}</div>`;
     const section = (title, items) => items.length ? `<div class="section-label">${title}</div><div class="riddle-list">${items.join("")}</div>` : "";
     let body;
     if (q.length < 2) {
-      // The Riddle Dwarf only ever asks for the REALM (of a ruler) or the RULER (of a realm) — never class.
       body = `<div class="riddle-hint">The Riddle Dwarf gives you a name — type it to reveal the answer:
-        <ul><li><b>Ruler of</b> a realm</li><li><b>Realm of</b> a ruler (god)</li></ul></div>`;
+        <ul><li><b>Class of</b> a spell or creature</li><li><b>Ruler of</b> a realm</li><li><b>Realm of</b> a ruler (god)</li></ul></div>`;
     } else {
       const byName = (k) => (a, b) => rank(a[k]) - rank(b[k]) || a[k].localeCompare(b[k]);
+      const spells = D.spells.filter(s => nrm(s.name).includes(q)).sort(byName("name")).slice(0, CAP).map(s => row(s.name, clsAns(s.cls)));
+      // Avatars (gods) are only ever asked about their REALM, never their class → exclude them from class lookups
+      const creatures = D.creatures.filter(c => !isAvatar(c) && nrm(c.name).includes(q)).sort(byName("name")).slice(0, CAP).map(c => row(c.name, clsAns(c.cls)));
       const realms = D.realms.filter(r => nrm(r.realm).includes(q)).sort(byName("realm")).map(r => row(r.realm, `<span class="riddle-a">${esc(r.godName)}</span>`));
       const gods = D.realms.filter(r => nrm(r.godName).includes(q) || nrm(r.god).includes(q)).sort(byName("godName")).map(r => row(r.godName, `<span class="riddle-a">${esc(r.realm)}</span>`));
-      body = section("Ruler of Realm", realms) + section("Realm of Ruler", gods)
-        || `<div class="slot-sub" style="padding:10px">No realm or god matches “${esc(st.search)}”.</div>`;
+      body = section("Class of Spell", spells) + section("Class of Creature", creatures) + section("Ruler of Realm", realms) + section("Realm of Ruler", gods)
+        || `<div class="slot-sub" style="padding:10px">No spell, creature, realm or god matches “${esc(st.search)}”.</div>`;
     }
     // compact popover anchored top-right — no full overlay, click-outside to close
     return `<div class="ovl-backdrop riddle-backdrop" data-action="backdrop"><div class="overlay-panel riddle-pop">
       <div class="riddle-pop-head">
         <span class="riddle-pop-title">Riddle Dwarf</span>
-        <input class="ovl-search" placeholder="realm / god…" value="${esc(st.search)}" data-action="riddle-search">
+        <input class="ovl-search" placeholder="spell / creature / realm / god…" value="${esc(st.search)}" data-action="riddle-search">
         <button class="ovl-close" data-action="close-ovl">✕</button></div>
       <div class="riddle-pop-body">${body}</div>
     </div></div>`;
@@ -3314,7 +3317,7 @@
         }
         const mat = MAT_BY_PROP.get(p.key);
         return `<div class="art-slot">${rm}<div class="as-ico">${mat && mat.icon ? spriteImg(mat.icon, "px") : "◆"}</div>
-          <div class="as-lab">${esc(p.key)}</div>
+          <div class="as-lab">${esc(mat ? mat.name : p.key)}</div><div class="as-sub">${esc(p.key)}</div>
           <div class="np-wrap"><input type="number" class="np-num" data-action="nether-propval" data-i="${i}" value="${p.value}"><span class="np-pct">%</span></div></div>`;
       }).join("");
       const slotsBox = `<div class="art-slot-grid">${rows}<div class="art-slot add ${st.picking ? "picking" : ""}" data-action="nether-addprop"><div class="as-ico glyph">＋</div><div class="as-lab">Add</div></div></div>`;
@@ -3327,7 +3330,7 @@
           rowsHtml = [...propGroups.values()].filter(g => g.group === st.picking && (!q || g.name.toLowerCase().includes(q))).map(g => {
             const mat = MAT_BY_PROP.get(g.name);
             return `<div class="prop-row" data-action="nether-pickprop" data-k="${esc(g.name)}">
-              <span class="prop-ico">${mat && mat.icon ? spriteImg(mat.icon, "px") : ""}</span><span class="prop-name">${esc(g.name)}</span><span class="prop-stat">${esc(g.entries.map(e => e.stat).join(" / "))}</span></div>`;
+              <span class="prop-ico">${mat && mat.icon ? spriteImg(mat.icon, "px") : ""}</span><span class="prop-name">${esc(mat ? mat.name : g.name)}</span><span class="prop-stat">${esc(g.entries.map(e => e.stat).join(" / "))}</span></div>`;
           }).join("");
         } else if (st.picking === "trait") {
           rowsHtml = D.traitItems.filter(t => t.traitName && (!q || t.name.toLowerCase().includes(q) || (t.traitName || "").toLowerCase().includes(q))).slice(0, 300).map(t =>
