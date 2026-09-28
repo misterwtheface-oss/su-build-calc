@@ -944,15 +944,16 @@ button.apx-owner:hover .apx-owner-ico { border-color: var(--accent); }
   color: var(--accent); background: rgba(201,162,75,.16); border-radius: 4px; padding: 1px 5px; }
 
 /* cross-realm compare — accordion per category; expand to a ranked bar list of realms */
-.rcmp-list { display: flex; flex-direction: column; gap: 5px; }
-.rcmp-grp { background: var(--surface); border-radius: 8px; overflow: hidden; }
-.rcmp-head { display: grid; grid-template-columns: 16px auto 1fr; gap: 8px; align-items: baseline; width: 100%;
-  padding: 9px 11px; background: transparent; border: 0; color: var(--text); text-align: left; cursor: pointer; font: inherit; }
-.rcmp-head.open { background: var(--surface3); }
-.rcmp-caret { color: var(--text-mute); font-size: 11px; }
+.rcmp-list { display: flex; flex-direction: column; gap: 6px; }
+.rcmp-grp .apx-sec-head.apx-cat { margin: 0; }   /* header hugs its own bars; rcmp-list gap separates groups */
 .rcmp-cat { font-weight: 700; font-size: 13.5px; }
-.rcmp-meta { color: var(--text-mute); font-size: 11px; text-align: right; }
-.rcmp-bars { display: flex; flex-direction: column; gap: 3px; padding: 4px 11px 9px; }
+.rcmp-meta { margin-left: auto; color: var(--text-mute); font-size: 11px; text-align: right; white-space: nowrap; }
+.rcmp-bars { display: flex; flex-direction: column; gap: 3px; padding: 6px 8px 4px; }
+/* compare controls: padded away from the edges, toggles + slider centred, rows kept tight */
+.rcmp-controls { flex: 0 0 auto; padding: 10px 16px; display: flex; flex-direction: column; align-items: center; gap: 6px; border-bottom: 1px solid var(--border-dim); }
+.rcmp-controls .fav-slider { width: 100%; }
+.rcmp-controls > .slot-sub { width: 100%; text-align: center; }
+.rcmp-controls .fav-rankmode { margin: 0; justify-content: center; }
 .rcmp-row { display: grid; grid-template-columns: minmax(120px, 1.1fr) 96px auto; gap: 10px; align-items: center;
   width: 100%; background: transparent; border: 0; color: var(--text); text-align: left; cursor: pointer; font: inherit;
   padding: 3px 4px; border-radius: 5px; }
@@ -986,11 +987,23 @@ button.apx-owner:hover .apx-owner-ico { border-color: var(--accent); }
 /* "n / n / n" — cards needed per tier; active tiers highlighted by the current level */
 .card-tiers { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 800; margin-top: -2px; }
 .card-tiers .ct-seg { min-width: 20px; text-align: center; padding: 1px 6px; border-radius: 5px; color: var(--text-mute); background: var(--bg2); border: 1px solid var(--border-dim); }
-.card-tiers .ct-seg.on { color: #150e26; background: var(--cardcls); border-color: var(--cardcls); }
+.card-tiers .ct-seg.on { color: #fff; background: var(--cardcls); border-color: var(--cardcls); }
+.card-tile.cls-life .card-tiers .ct-seg.on { color: #150e26; }   /* Life is light gold → keep dark text */
 .card-tiers .ct-sep { color: var(--text-mute); font-weight: 400; }
 .card-effects { display: flex; flex-direction: column; gap: 4px; }
 .card-effect { font-size: 11.5px; line-height: 1.35; padding: 5px 8px; border-radius: 6px; background: var(--bg2); display: flex; gap: 7px; align-items: flex-start; }
-.card-effect .ce-tier { flex: 0 0 auto; width: 16px; height: 16px; border-radius: 50%; background: var(--cardcls); color: #150e26; font-weight: 800; font-size: 10px; display: flex; align-items: center; justify-content: center; }
+.card-effect .ce-tier { flex: 0 0 auto; width: 16px; height: 16px; border-radius: 50%; background: var(--cardcls); color: #fff; font-weight: 800; font-size: 10px; display: flex; align-items: center; justify-content: center; }
+.card-tile.cls-life .card-effect .ce-tier { color: #150e26; }   /* Life gold → dark text */
+/* God Shops: locked centered god sprite header + per-item icons */
+.gs-detail-head { flex: 0 0 auto; display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 14px 12px; border-bottom: 1px solid var(--border-dim); }
+.gs-god-sprite { height: 120px; display: flex; align-items: center; justify-content: center; }
+.gs-god-sprite img { height: 120px; width: auto; object-fit: contain; image-rendering: pixelated; }
+.gs-god-name { font-size: 17px; font-weight: 700; letter-spacing: .2px; }
+.gs-item-ico { flex: 0 0 auto; align-self: center; width: 42px; height: 42px; display: flex; align-items: center; justify-content: center;
+  background: var(--surface2); border: 1px solid var(--border-dim); border-radius: 8px; overflow: hidden; }
+.gs-item-ico img { width: 100%; height: 100%; object-fit: contain; padding: 3px; }
+.gs-item-ico .crit-face { width: 100%; height: 100%; }
+.gs-item-ico.empty { background: none; border-color: transparent; }
 .card-effect.off { opacity: .38; }
 .card-effect.off .ce-tier { background: var(--border-dim); }
 .card-level { display: flex; align-items: center; justify-content: center; gap: 12px; margin-top: auto; padding-top: 2px; }

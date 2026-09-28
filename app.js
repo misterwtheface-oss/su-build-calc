@@ -1357,9 +1357,9 @@
     const st = ovState;
     if (st.draft) {
       const d = st.draft;
-      const frames = d.icon ? wardrobeFramesFor(d.icon) : null;
+      // static preview here — the walk animation lives in the "Choose Icon" picker (third screen), not here
       const preview = d.icon
-        ? `<div class="build-hero"${frames ? ` data-anim-frames='${JSON.stringify(frames)}'` : ""}>${spriteImg(d.icon, "px")}</div>`
+        ? `<div class="build-hero">${spriteImg(d.icon, "px")}</div>`
         : `<div class="build-hero empty"><span class="slot-empty-icon">✦</span><div class="slot-sub">Choose a sprite to preview it here</div></div>`;
       return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel">
         <div class="overlay-header"><h2>New Build</h2><button class="ovl-close" data-action="close-ovl">✕</button></div>
@@ -1377,12 +1377,13 @@
       </div></div>`;
     }
     const sel = st.sel != null ? builds.find(b => b.id === st.sel) : null;
-    const tiles = sortBuilds(builds.slice(), st.sort).map(b => `
-      <div class="lib-tile ${st.sel === b.id ? "selected" : ""} ${st.flash === b.id ? "flash" : ""}" data-action="builds-sel" data-id="${b.id}">
-        <div class="lib-icon">${b.icon ? spriteImg(b.icon, "px") : `<span class="slot-empty-icon">✦</span>`}</div>
+    const tiles = sortBuilds(builds.slice(), st.sort).map(b => {   // the SELECTED tile animates its costume
+      const selB = st.sel === b.id, bframes = selB && b.icon ? wardrobeFramesFor(b.icon) : null;
+      return `<div class="lib-tile ${selB ? "selected" : ""} ${st.flash === b.id ? "flash" : ""}" data-action="builds-sel" data-id="${b.id}">
+        <div class="lib-icon"${bframes ? ` data-anim-frames='${JSON.stringify(bframes)}'` : ""}>${b.icon ? spriteImg(b.icon, "px") : `<span class="slot-empty-icon">✦</span>`}</div>
         <div class="lib-name">${esc(b.name)}</div>
         <div class="lib-sub">${buildSummary(b.build || {})}</div>
-      </div>`).join("") || `<div class="slot-sub" style="padding:10px">No saved builds yet — save your current party.</div>`;
+      </div>`; }).join("") || `<div class="slot-sub" style="padding:10px">No saved builds yet — save your current party.</div>`;
     const sortBar = builds.length ? `<div class="ovl-filterbar"><span class="foot-info">Sort</span><div class="seg">
       <button class="seg-btn ${st.sort === "edited" ? "on" : ""}" data-action="builds-sort" data-sort="edited">Last edited</button>
       <button class="seg-btn ${st.sort === "name" ? "on" : ""}" data-action="builds-sort" data-sort="name">Name</button>
@@ -1612,10 +1613,10 @@
       const itemNameMeta = (g) => g.itemNames.length ? `<span class="anoint-spec-tag" title="Trait material${g.itemNames.length > 1 ? "s" : ""}">${esc(g.itemNames.join(", "))}</span>` : "";
       const creatureNameMeta = (g) => g.creature ? `<span class="anoint-spec-tag" title="Innate trait of ${esc(g.creature.name)}">${esc(g.creature.name)}</span>` : "";
       const matBox = (g) => { const it = g.items.find(i => i.icon); return it ? apxIcon(it.icon, "", ` title="${esc(g.itemNames.join(", "))}"`) : ""; };
-      // creature/item-only trait: material icon stacked over the creature sprite (both large, far left)
+      // creature/item-only trait: creature sprite stacked over the material icon (both large, far left)
       const traitRow = (g) => {
         const creaBox = g.creature ? apxBox(critFace(g.creature), "apx-clickable", ` data-action="apx-crea-open" data-cid="${g.creature.id}" title="${esc(g.creature.name)} — view creature"`) : "";
-        return line(apxStack(matBox(g), creaBox), g.name, itemNameMeta(g) + creatureNameMeta(g),
+        return line(apxStack(creaBox, matBox(g)), g.name, itemNameMeta(g) + creatureNameMeta(g),
           g.desc ? richText(g.desc) : "", bkBtn("traits", g.id), { ek: "trait", eid: g.id });
       };
       // boss-owned trait: material icon stacked over the boss sprite (Deity/False God) or an owner-name chip
@@ -1627,7 +1628,7 @@
                 : apxBox(spriteImg(spr), "apx-boss", ` title="${esc(g.owner || g.ownerGroup || "")}"`))
           : `<div class="apx-boss-name" title="${esc(g.ownerCategory || "Boss")}">${esc(g.owner || g.ownerGroup || "—")}</div>`;
         const meta = `<span class="anoint-spec-tag apx-boss-cat">${esc(g.ownerCategory || "Boss")}</span>${itemNameMeta(g)}`;
-        return line(apxStack(matBox(g), bossBox), g.name, meta, g.desc ? richText(g.desc) : "", bkBtn("traits", g.id), { ek: "trait", eid: g.id });
+        return line(apxStack(bossBox, matBox(g)), g.name, meta, g.desc ? richText(g.desc) : "", bkBtn("traits", g.id), { ek: "trait", eid: g.id });
       };
       const body_sections = [
         section("Traits", creatureTraitRows, traitRow),
@@ -1937,20 +1938,40 @@
     const st = ovState, gs = D.godShops || [];
     return st.view === "detail" ? renderGodShopDetail(gs.find(g => g.god === st.sel)) : renderGodShopList(gs);
   }
+  // god-shop item → its real icon. Items name a creature (Mana / Heart of X), a spell (Inscription →
+  // class-coloured gem), a trait material (Trait) or a spell-gem dust (Crafting Material).
+  let GS_NAME_MAPS = null;
+  const gsNameMaps = () => GS_NAME_MAPS || (GS_NAME_MAPS = {
+    crea: new Map(D.creatures.map(c => [c.name.toLowerCase(), c])),
+    spell: new Map((D.spells || []).map(s => [s.name.toLowerCase(), s])),
+    ti: new Map((D.traitItems || []).map(t => [(t.name || "").toLowerCase(), t])),
+    dust: new Map((D.spellProps || []).map(p => [(p.name || "").toLowerCase(), p])),
+  });
+  function shopItemIconHtml(it) {
+    const m = gsNameMaps(), nm = (it.item || "").toLowerCase();
+    let icon = null, crea = null;
+    if (it.type === "Mana") crea = m.crea.get(nm);
+    else if (it.type === "Heart") crea = m.crea.get(nm.replace(/^heart of /, ""));
+    else if (it.type === "Inscription") { const s = m.spell.get(nm); icon = s && spellIcon(s); }
+    else if (it.type === "Trait") { const t = m.ti.get(nm); icon = t && t.icon; }
+    else if (it.type === "Crafting Material") { const d = m.dust.get(nm) || m.ti.get(nm); icon = d && d.icon; }
+    if (crea) return `<span class="gs-item-ico">${critFace(crea)}</span>`;
+    if (icon) return `<span class="gs-item-ico">${spriteImg(icon, "px")}</span>`;
+    return `<span class="gs-item-ico empty"></span>`;
+  }
   function renderGodShopList(gs) {
     const st = ovState, q = st.search.trim().toLowerCase();
     const list = gs.filter(g => !q || g.god.toLowerCase().includes(q) || g.items.some(it => it.item.toLowerCase().includes(q) || (it.desc || "").toLowerCase().includes(q)));
-    const rows = list.map(g => `<button class="realm-row" data-action="gs-god" data-g="${esc(g.god)}">
-      ${g.battle ? `<span class="realm-icon">${spriteImg(g.battle, "px")}</span>` : ""}
-      <span class="realm-row-name">${esc(g.god)}</span>
-      <span class="anoint-spec-tag">${g.items.length} items</span>
-      <span class="opt-chev">›</span></button>`).join("")
+    // tiles like the creature selector — the whole tile navigates to the god's shop
+    const tiles = list.map(g => `<div class="pick-tile" data-action="gs-god" data-g="${esc(g.god)}">
+      <div class="pt-sprite">${g.battle ? spriteImg(g.battle, "px") : `<span class="spec-tile-plus">✦</span>`}</div>
+      <div class="pt-name">${esc(g.god)}</div></div>`).join("")
       || `<div class="slot-sub" style="padding:10px">No gods match.</div>`;
     return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel">
       <div class="overlay-header"><h2>God Shops</h2>
         <input class="ovl-search" placeholder="Search god / item…" value="${esc(st.search)}" data-action="gs-search">
         <button class="ovl-close" data-action="close-ovl">✕</button></div>
-      <div class="overlay-body"><div class="ovl-center"><div class="ovl-center-scroll"><div class="realm-list">${rows}</div></div></div></div>
+      <div class="overlay-body"><div class="ovl-center"><div class="ovl-center-scroll"><div class="pick-grid gs-grid">${tiles}</div></div></div></div>
       <div class="overlay-footer"><span class="foot-info"></span><button class="btn-confirm" data-action="close-ovl">Done</button></div>
     </div></div>`;
   }
@@ -1958,6 +1979,7 @@
     if (!sel) { ovState.view = "list"; return renderGodShopList(D.godShops || []); }
     const typeChip = (t) => t ? `<span class="anoint-spec-tag">${esc(t)}</span>` : "";
     const rows = sel.items.map(it => `<div class="perk-line">
+      ${shopItemIconHtml(it)}
       <div class="perk-line-body">
         <div class="perk-line-head"><b>${esc(it.item)}</b><span class="perk-line-meta">${typeChip(it.type)}${it.price != null ? `<span class="gs-price" title="Favor">${it.price} ✦</span>` : ""}</span></div>
         ${it.desc ? `<div class="perk-desc">${esc(it.desc)}</div>` : ""}</div></div>`).join("")
@@ -1965,11 +1987,10 @@
     return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel">
       <div class="overlay-header"><button class="btn-ghost" data-action="gs-back">‹ God Shops</button>
         <h2 style="flex:1">${esc(sel.god)}</h2><button class="ovl-close" data-action="close-ovl">✕</button></div>
-      <div class="overlay-body"><div class="ovl-center"><div class="ovl-center-scroll">
-        <div class="realm-detail-head">${sel.battle ? `<div class="realm-icon-lg">${spriteImg(sel.battle, "px")}</div>` : ""}
-          <div class="spell-stats" style="flex:1"><div class="ss-row"><span class="ss-k">Shop items</span><span class="ss-v">${sel.items.length}</span></div></div></div>
-        <div class="perk-list">${rows}</div>
-      </div></div></div>
+      <div class="overlay-body"><div class="ovl-center">
+        <div class="gs-detail-head">${sel.battle ? `<div class="gs-god-sprite">${spriteImg(sel.battle, "px")}</div>` : ""}<div class="gs-god-name">${esc(sel.god)}</div></div>
+        <div class="ovl-center-scroll"><div class="perk-list">${rows}</div></div>
+      </div></div>
       <div class="overlay-footer"><button class="btn-ghost" data-action="gs-back">‹ Back to gods</button>
         <button class="btn-confirm" data-action="close-ovl">Done</button></div>
     </div></div>`;
@@ -1984,29 +2005,27 @@
   function renderRiddle() {
     // normalize away punctuation so a query missing it still hits — e.g. "tmer" → T'mere M'rgo
     const nrm = (s) => String(s || "").toLowerCase().replace(/[^a-z0-9\s]/g, "");
-    const st = ovState, q = nrm(st.search).trim(), CAP = 12;
+    const st = ovState, q = nrm(st.search).trim();
     const rank = (name) => nrm(name).startsWith(q) ? 0 : 1;   // exact-prefix hits first
-    const clsAns = (cls) => `<span class="riddle-a" style="color:${clsColor(cls)}">${D.classIcons && D.classIcons[cls] ? spriteImg(D.classIcons[cls], "px") : ""}${esc(cls || "—")}</span>`;
     const row = (name, ans) => `<div class="riddle-row"><span class="riddle-q">${esc(name)}</span>${ans}</div>`;
     const section = (title, items) => items.length ? `<div class="section-label">${title}</div><div class="riddle-list">${items.join("")}</div>` : "";
     let body;
     if (q.length < 2) {
+      // The Riddle Dwarf only ever asks for the REALM (of a ruler) or the RULER (of a realm) — never class.
       body = `<div class="riddle-hint">The Riddle Dwarf gives you a name — type it to reveal the answer:
-        <ul><li><b>Class of</b> a spell or creature</li><li><b>Ruler of</b> a realm</li><li><b>Realm of</b> a ruler (god)</li></ul></div>`;
+        <ul><li><b>Ruler of</b> a realm</li><li><b>Realm of</b> a ruler (god)</li></ul></div>`;
     } else {
       const byName = (k) => (a, b) => rank(a[k]) - rank(b[k]) || a[k].localeCompare(b[k]);
-      const spells = D.spells.filter(s => nrm(s.name).includes(q)).sort(byName("name")).slice(0, CAP).map(s => row(s.name, clsAns(s.cls)));
-      const creatures = D.creatures.filter(c => nrm(c.name).includes(q)).sort(byName("name")).slice(0, CAP).map(c => row(c.name, clsAns(c.cls)));
       const realms = D.realms.filter(r => nrm(r.realm).includes(q)).sort(byName("realm")).map(r => row(r.realm, `<span class="riddle-a">${esc(r.godName)}</span>`));
       const gods = D.realms.filter(r => nrm(r.godName).includes(q) || nrm(r.god).includes(q)).sort(byName("godName")).map(r => row(r.godName, `<span class="riddle-a">${esc(r.realm)}</span>`));
-      body = section("Class of Spell", spells) + section("Class of Creature", creatures) + section("Ruler of Realm", realms) + section("Realm of Ruler", gods)
-        || `<div class="slot-sub" style="padding:10px">No spell, creature, realm or god matches “${esc(st.search)}”.</div>`;
+      body = section("Ruler of Realm", realms) + section("Realm of Ruler", gods)
+        || `<div class="slot-sub" style="padding:10px">No realm or god matches “${esc(st.search)}”.</div>`;
     }
     // compact popover anchored top-right — no full overlay, click-outside to close
     return `<div class="ovl-backdrop riddle-backdrop" data-action="backdrop"><div class="overlay-panel riddle-pop">
       <div class="riddle-pop-head">
         <span class="riddle-pop-title">Riddle Dwarf</span>
-        <input class="ovl-search" placeholder="spell / creature / realm / god…" value="${esc(st.search)}" data-action="riddle-search">
+        <input class="ovl-search" placeholder="realm / god…" value="${esc(st.search)}" data-action="riddle-search">
         <button class="ovl-close" data-action="close-ovl">✕</button></div>
       <div class="riddle-pop-body">${body}</div>
     </div></div>`;
@@ -2014,31 +2033,29 @@
 
   // ── Glossary — Buff / Debuff / Minion reference (name + prose + in-game status glyph from the game). ──
   function openGlossary() {
-    ovState = { kind: "glossary", search: "", cat: null, render: renderGlossary };
+    ovState = { kind: "glossary", search: "", collapsed: new Set(), render: renderGlossary };
     openOverlay(ovState.render()); maybeFocusSearch(OV);
   }
   const GLOSSARY_CATS = ["Buff", "Debuff", "Minion"];
   function renderGlossary() {
     const st = ovState, q = st.search.trim().toLowerCase(), all = D.conditions || [];
-    const catChip = (c) => `<button class="facet ${st.cat === c ? "on" : ""}" data-action="gloss-cat" data-c="${c}">${c}${st.cat === c ? ` <span class="facet-x" data-action="gloss-cat-clear">✕</span>` : ""}</button>`;
-    const match = (e) => (!st.cat || e.cat === st.cat) && (!q || e.name.toLowerCase().includes(q) || e.desc.toLowerCase().includes(q));
+    const match = (e) => !q || e.name.toLowerCase().includes(q) || e.desc.toLowerCase().includes(q);
     const list = all.filter(match);
-    const catCls = (c) => c === "Buff" ? "cat-roaming" : c === "Debuff" ? "cat-encounter" : "cat-godshop";
+    // collapsible category headers (same style as the Appendix) + large icon on the left of each row
     const body = GLOSSARY_CATS.map(c => {
       const items = list.filter(e => e.cat === c);
       if (!items.length) return "";
-      return `<div class="section-label">${c}s — ${items.length}</div>
-        ${items.map(e => `<div class="gloss-row apx-clickable" data-action="apx-open" data-ek="condition" data-eid="${esc(e.cat + ':' + e.key)}" title="View taxonomy"><div class="gloss-head">${e.icon ? `<img class="gloss-icon" src="${e.icon}" alt="">` : ""}<b>${esc(e.name)}</b><span class="etax-hint">tags ›</span><span class="realm-cat ${catCls(c)}">${c}</span></div>
-          <div class="perk-desc">${esc(e.desc)}</div></div>`).join("")}`;
+      const open = q ? true : !st.collapsed.has(c);
+      const rows = open ? `<div class="perk-list">${items.map(e => `<div class="perk-line apx-clickable" data-action="apx-open" data-ek="condition" data-eid="${esc(e.cat + ':' + e.key)}" title="View taxonomy">
+        <div class="apx-iconcol">${e.icon ? `<div class="apx-crea"><img src="${esc(e.icon)}" alt=""></div>` : ""}</div>
+        <div class="perk-line-body"><div class="perk-line-head"><b>${esc(e.name)}</b></div><div class="perk-desc">${esc(e.desc)}</div></div></div>`).join("")}</div>` : "";
+      return `<button class="apx-sec-head apx-cat${open ? "" : " collapsed"}" data-action="gloss-cat-toggle" data-c="${esc(c)}"><span class="apx-sec-caret">${open ? "▾" : "▸"}</span>${esc(c)}s</button>${rows}`;
     }).join("") || `<div class="slot-sub" style="padding:10px">No buff, debuff or minion matches “${esc(st.search)}”.</div>`;
     return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel">
       <div class="overlay-header"><h2>Glossary</h2>
         <input class="ovl-search" placeholder="Search buffs / debuffs / minions…" value="${esc(st.search)}" data-action="gloss-search">
         <button class="ovl-close" data-action="close-ovl">✕</button></div>
-      <div class="overlay-body"><div class="ovl-center">
-        <div class="ovl-filterbar">${GLOSSARY_CATS.map(catChip).join("")}<span class="foot-info">${list.length} of ${all.length}</span></div>
-        <div class="ovl-center-scroll">${body}</div>
-      </div></div>
+      <div class="overlay-body"><div class="ovl-center"><div class="ovl-center-scroll">${body}</div></div></div>
       <div class="overlay-footer"><span class="foot-info"></span><button class="btn-confirm" data-action="close-ovl">Done</button></div>
     </div></div>`;
   }
@@ -2124,20 +2141,20 @@
     return `<div class="art-view-toggle">
       <button class="av-tab ${mode === "list" ? "on" : ""}" data-action="realm-mode" data-v="list">Browse</button>
       <span class="av-pipe">|</span>
-      <button class="av-tab ${mode === "compare" ? "on" : ""}" data-action="realm-mode" data-v="compare">Compare outcomes</button></div>`;
+      <button class="av-tab ${mode === "compare" ? "on" : ""}" data-action="realm-mode" data-v="compare">Compare</button></div>`;
   }
   // Cross-realm comparison: one collapsible accordion per Unique Bonus column; expand to rank every realm by
   // its value at the current favor rank, on a shared bar scale. The rank slider scrubs the whole comparison.
   // rank-source control shared by Compare: same rank for all (global slider) vs each realm's tracked rank
   function rankSourceCtl() {
     const uc = ovState.useCustom;
+    // centered Same-rank | My-ranks toggle; the Customize-ranks button now lives in the footer
     return `<div class="fav-rankmode">
       <div class="art-view-toggle">
         <button class="av-tab ${!uc ? "on" : ""}" data-action="realm-usecustom" data-v="0">Same rank</button>
         <span class="av-pipe">|</span>
         <button class="av-tab ${uc ? "on" : ""}" data-action="realm-usecustom" data-v="1">My ranks</button>
-      </div>
-      <button class="btn-ghost fav-editbtn" data-action="realm-editranks">⚙ Customize ranks</button></div>`;
+      </div></div>`;
   }
   function renderRealmCompare(rs) {
     const st = ovState, q = st.search.trim().toLowerCase(), uc = st.useCustom;
@@ -2152,9 +2169,9 @@
       const open = st.cmpExpanded.has(g.col.key), top = g.rows[0];
       const bars = g.rows.map(({ r, v }) => `<button class="rcmp-row" data-action="realm-sel" data-id="${r.id}"${uc ? "" : ` data-rid="${r.id}" data-ci="${g.i}"`}>
         <span class="rcmp-realm">${esc(r.realm)}${uc ? ` <span class="rcmp-rk">r${rankFor(r)}</span>` : ""}</span>${favBar(g.col, v)}</button>`).join("");
-      return `<div class="rcmp-grp"><button class="rcmp-head ${open ? "open" : ""}" data-action="realm-cat" data-k="${g.col.key}">
-        <span class="rcmp-caret">${open ? "▾" : "▸"}</span><span class="rcmp-cat">${esc(g.col.label)}</span>
-        <span class="rcmp-meta">${g.rows.length} realm${g.rows.length === 1 ? "" : "s"} · top ${esc(top.r.realm)} ${fmtFav(g.col, top.v)}</span></button>
+      return `<div class="rcmp-grp"><button class="apx-sec-head apx-cat rcmp-head${open ? "" : " collapsed"}" data-action="realm-cat" data-k="${g.col.key}">
+        <span class="apx-sec-caret">${open ? "▾" : "▸"}</span><span class="rcmp-cat">${esc(g.col.label)}</span>
+        <span class="rcmp-meta">top ${esc(top.r.realm)} ${fmtFav(g.col, top.v)}</span></button>
         ${open ? `<div class="rcmp-bars">${bars}</div>` : ""}</div>`;
     }).join("") : `<div class="slot-sub" style="padding:12px">No unique bonuses yet${q ? ` matching “${esc(st.search)}”` : ""}.</div>`;
     const intro = uc
@@ -2164,11 +2181,13 @@
       <div class="overlay-header"><h2>Realms</h2>
         <input class="ovl-search" placeholder="Search category / realm…" value="${esc(st.search)}" data-action="realm-search">
         <button class="ovl-close" data-action="close-ovl">✕</button></div>
-      <div class="overlay-body"><div class="ovl-center">${realmModeToggle("compare")}${rankSourceCtl()}${uc ? "" : favorSlider()}
-        <div class="slot-sub" style="margin:0 0 6px">${intro}</div>
+      <div class="overlay-body"><div class="ovl-center">
+        <div class="rcmp-controls">${realmModeToggle("compare")}${rankSourceCtl()}${uc ? "" : favorSlider()}
+        <div class="slot-sub" style="margin:0">${intro}</div></div>
         <div class="ovl-center-scroll"><div class="rcmp-list">${body}</div></div>
       </div></div>
-      <div class="overlay-footer"><span class="foot-info"></span><button class="btn-confirm" data-action="close-ovl">Done</button></div>
+      <div class="overlay-footer"><button class="btn-ghost" data-action="realm-editranks">⚙ Customize ranks</button>
+        <span class="foot-info"></span><button class="btn-confirm" data-action="close-ovl">Done</button></div>
     </div></div>`;
   }
   // Customize Ranks editor — enter your current favor rank (0-100) per realm; drives the "My ranks" comparison.
@@ -2256,7 +2275,6 @@
     const combos = sel.combinations ? `<div class="section-label" style="margin-top:12px">Complex Interaction — ${esc(sel.combinations.title)}</div>
       <div class="realm-combos">${sel.combinations.rows.map(c => `<div class="rc-row"><span class="rc-combo">${esc(c.combo)}</span><span class="rc-arrow">→</span><span class="rc-result">${esc(c.result)}</span></div>`).join("")}</div>
       <div class="slot-sub" style="margin-top:4px">${esc(sel.combinations.note)}</div>` : "";
-    const shopLink = sel.hasShop ? `<button class="facet" data-action="realm-shop" data-g="${esc(sel.godName)}" style="margin-top:10px">View ${esc(sel.godName)}'s God Shop ›</button>` : "";
     return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel">
       <div class="overlay-header"><button class="btn-ghost" data-action="realm-back">‹ Realms</button>
         <h2 style="flex:1">${esc(sel.realm)}</h2><button class="ovl-close" data-action="close-ovl">✕</button></div>
@@ -2264,7 +2282,7 @@
         <div class="realm-detail-head">${(() => { const ico = ovState.sortBy === "god" ? (sel.godBattle || sel.icon) : (sel.icon || sel.godBattle);
           return ico ? `<div class="realm-icon-lg">${spriteImg(ico, "px")}</div>` : ""; })()}
           <div class="spell-stats" style="flex:1">${facts}</div></div>
-        ${shopLink}${profile}${other}${objects}${creatures}${encounters}${resources}${combos}
+        ${profile}${other}${objects}${creatures}${encounters}${resources}${combos}
       </div></div></div>
       <div class="overlay-footer"><button class="btn-ghost" data-action="realm-back">‹ Back to realms</button>
         <button class="btn-confirm" data-action="close-ovl">Done</button></div>
@@ -2700,7 +2718,9 @@
     let icon = null, name = String(v), sub = "", lines = "", open = "";
     if (type === "stat" || type === "trick") {
       const mat = MAT_BY_PROP.get(v), g = propGroups.get(v);
-      icon = mat && mat.icon; name = mat ? mat.name : v; sub = v;
+      // main label = the MATERIAL name (e.g. "Red Amber"); the stat itself shows in the effect lines below,
+      // so don't repeat it in the sub-label.
+      icon = mat && mat.icon; name = mat ? mat.name : v; sub = "";
       lines = g ? g.entries.map(e => `<div class="art-pv-line">${PROP_STAT[e.stat] ? `<b>+${e.perRank[rank]}%</b> ${esc(e.stat)}` : `<b>${e.perRank[rank]}</b> ${esc(e.stat)}`}</div>`).join("") : "";
     } else if (type === "trait") {
       const t = TRAITITEM.get(v), tr = t && t.traitId != null ? TRAIT[t.traitId] : null;
@@ -3150,7 +3170,7 @@
       }).join("");
       // "n / n / n" summary — how many cards are needed for each tier, active tiers highlighted by level
       const tierSummary = tiers.map((n, i) => `<span class="ct-seg ${i < lv ? "on" : "off"}">${n}</span>`).join(`<span class="ct-sep">/</span>`);
-      return `<div class="card-tile lv${lv} ${applyAll ? "locked" : ""}" style="--cardcls:${clsColor(c.cls)}">
+      return `<div class="card-tile lv${lv} ${applyAll ? "locked" : ""} ${c.cls === "Life" ? "cls-life" : ""}" style="--cardcls:${clsColor(c.cls)}">
         <div class="card-head">
           <div class="card-art">${bg ? `<img class="card-bg" src="${esc(bg)}" alt="">` : ""}${c.sprite ? spriteImg(c.sprite, "card-crit") : ""}</div>
           <div class="card-title"><b>${esc(c.family)}</b><span class="cls-chip" style="color:${clsColor(c.cls)}">${esc(c.cls || "—")}</span></div>
@@ -3588,8 +3608,7 @@
       case "riddle-search": break;   // handled in onInput
       case "open-glossary": openGlossary(); break;
       case "gloss-search": break;    // handled in onInput
-      case "gloss-cat": ovState.cat = t.dataset.c; refreshOverlay(); break;
-      case "gloss-cat-clear": e.stopPropagation(); ovState.cat = null; refreshOverlay(); break;
+      case "gloss-cat-toggle": { const c = t.dataset.c; ovState.collapsed.has(c) ? ovState.collapsed.delete(c) : ovState.collapsed.add(c); refreshOverlay(); break; }
       case "realm-sel": ovState.sel = +t.dataset.id; ovState.view = "detail"; refreshOverlay(); break;
       case "realm-back": ovState.view = "list"; refreshOverlay(); maybeFocusSearch(OV); break;
       case "realm-sort": ovState.sortBy = t.dataset.v; refreshOverlay(); break;
