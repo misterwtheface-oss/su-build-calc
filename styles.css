@@ -273,6 +273,7 @@ h1, h2, h3 { margin: 0; }
   border: 1px solid var(--border-dim); border-radius: 9px; padding: 8px 14px; font-size: 14px;
 }
 .btn-ghost:disabled { opacity: .4; cursor: default; }
+.btn-ghost.on { color: var(--cap); border-color: var(--cap); background: rgba(201,162,75,.16); }   /* active toggle (e.g. Appendix bookmark filter) */
 .btn-ghost.danger { color: var(--bad); border-color: #6b2f2f; }
 .btn-ghost.danger:disabled { color: var(--text-mute); border-color: var(--border-dim); }
 .btn-ghost.armed { background: var(--bad); color: #1a1230; border-color: var(--bad); }   /* tap again to confirm */
@@ -605,7 +606,8 @@ h1, h2, h3 { margin: 0; }
 .apx-icons { flex: 0 0 55px; display: flex; gap: 3px; align-items: center; }
 .apx-ico { width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; }
 .apx-ico img { width: 100%; height: 100%; object-fit: contain; }
-/* appendix trait row: creature in its own square container (creature-container ratio), on the right */
+/* appendix result rows: a left icon column of large boxes (object icon over owner icon), centred */
+.apx-iconcol { flex: 0 0 auto; align-self: center; display: flex; flex-direction: column; gap: 4px; align-items: center; }
 .apx-crea { flex: 0 0 auto; align-self: center; width: 48px; height: 48px; display: flex; align-items: center; justify-content: center;
   background: var(--surface); border: 1px solid var(--border-dim); border-radius: 8px; overflow: hidden; }
 .apx-crea img { width: 100%; height: 100%; object-fit: contain; padding: 4px; }
