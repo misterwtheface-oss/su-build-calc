@@ -691,31 +691,32 @@
   }
   const SCROLLERS = [".ovl-center-scroll", ".ovl-left", ".ovl-right", ".art-side-list", ".xref-wrap"];
 
-  // ── Back-button handling (Android/browser) ────────────────────────────────
-  //    A single synthetic history entry is "parked" whenever Back should be
-  //    intercepted: while any overlay is open (both modes), and always when the
-  //    app runs installed/standalone (so the exit guard can fire). It is NOT
-  //    parked in a plain browser tab with nothing open, so Back leaves the site
-  //    naturally (never traps a fresh tab with no prior history). A Back press
-  //    consumes the parked entry, and we decide what it meant:
-  //      • overlay open        → close the top layer (detail before selector)
-  //      • nothing open + PWA   → "press Back again to exit" (re-park + toast);
-  //                               a second press within 2s actually exits
-  //    Parking is reconciled on open/close via a microtask, so a synchronous
-  //    close→open transition nets to one final state with no history churn.
-  const anyOverlayOpen = () => !OV.classList.contains("hidden") || !DOV.classList.contains("hidden");
+  // ── Back-button handling (Android/browser) — LAYER-AWARE ───────────────────
+  //    History depth mirrors the overlay STACK: one synthetic entry per open
+  //    layer (selector, and detail stacked above it), plus one "exit sentinel"
+  //    when the app runs installed/standalone. So Back closes exactly one layer
+  //    at a time (detail before selector), and ONLY from the bare planner (when
+  //    installed) does it engage the "press Back again to exit" guard. A plain
+  //    browser tab with nothing open keeps zero synthetic entries, so Back leaves
+  //    the site naturally and never traps a fresh tab. Reconciliation is coalesced
+  //    on a microtask so synchronous open/close transitions settle to one final
+  //    depth with no churn; UI closes are unwound one entry at a time.
+  const overlayLayers = () => (OV.classList.contains("hidden") ? 0 : 1) + (DOV.classList.contains("hidden") ? 0 : 1);
+  const anyOverlayOpen = () => overlayLayers() > 0;
   const isStandalone = window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true;
-  let synthParked = false, ignorePop = false, reconcileQueued = false, armExit = false, exitTimer = null;
-  const wantPark = () => isStandalone || anyOverlayOpen();
-  function reconcilePark() {
+  const targetDepth = () => overlayLayers() + (isStandalone ? 1 : 0);
+  let synthDepth = 0, pendingPop = 0, ignorePop = false, reconcileQueued = false, armExit = false, exitTimer = null;
+  function reconcileHistory() {
     if (reconcileQueued) return;
     reconcileQueued = true;
     Promise.resolve().then(() => {
       reconcileQueued = false;
-      if (wantPark() && !synthParked) { synthParked = true; history.pushState({ syn: 1 }, ""); }
-      else if (!wantPark() && synthParked) { synthParked = false; ignorePop = true; history.back(); }
+      const t = targetDepth();
+      while (synthDepth < t) { history.pushState({ syn: 1 }, ""); synthDepth++; }
+      if (synthDepth > t) { pendingPop += synthDepth - t; synthDepth = t; drainPops(); }
     });
   }
+  function drainPops() { if (pendingPop > 0 && !ignorePop) { ignorePop = true; history.back(); } }
 
   let exitToastEl = null;
   function showExitToast() {
@@ -725,31 +726,36 @@
   function hideExitToast() { if (exitToastEl) exitToastEl.classList.remove("show"); }
 
   window.addEventListener("popstate", () => {
-    if (ignorePop) { ignorePop = false; return; }   // our own synthetic unpark — ignore
-    synthParked = false;                             // the parked entry was consumed by this Back
-    if (anyOverlayOpen()) {
-      if (!DOV.classList.contains("hidden")) closeDetailReal(); else closeOverlayReal();
-      reconcilePark();                               // re-park if still wanted (lower layer / standalone)
+    if (ignorePop) {                       // our own synthetic unwind of a UI close
+      ignorePop = false;
+      if (pendingPop > 0) pendingPop--;
+      if (pendingPop > 0) drainPops();
       return;
     }
-    if (!isStandalone) return;                       // browser tab, nothing open → let Back leave
-    if (armExit) {                                   // second press within the window → exit
+    if (synthDepth > 0) synthDepth--;      // a real Back consumed one entry
+    if (anyOverlayOpen()) {                 // close the TOP layer (detail before selector)
+      if (!DOV.classList.contains("hidden")) closeDetailReal(); else closeOverlayReal();
+      reconcileHistory();
+      return;
+    }
+    if (!isStandalone) return;             // browser tab, planner → let Back leave the site
+    if (armExit) {                          // second press within the window → exit for real
       if (exitTimer) { clearTimeout(exitTimer); exitTimer = null; }
       armExit = false; history.back(); return;
     }
-    armExit = true; showExitToast(); reconcilePark();  // first press → warn and stay in-app
+    armExit = true; showExitToast(); reconcileHistory();   // first press → restore sentinel + warn
     exitTimer = setTimeout(() => { armExit = false; hideExitToast(); exitTimer = null; }, 2000);
   });
-  reconcilePark();   // establish the initial parked entry when standalone
+  reconcileHistory();   // establish the initial depth (exit sentinel when standalone)
 
   // DOM-only closes; the Back handler above and the UI wrappers both use these.
   function closeOverlayReal() { if (specAnimTimer) { clearInterval(specAnimTimer); specAnimTimer = null; } OV.classList.add("hidden"); OV.innerHTML = ""; ovState = null; }
   function closeDetailReal() { if (specAnimTimer) { clearInterval(specAnimTimer); specAnimTimer = null; } DOV.classList.add("hidden"); DOV.innerHTML = ""; dovState = null; }
 
-  function openOverlay(html) { OV.innerHTML = html; OV.classList.remove("hidden"); reconcilePark(); }
-  function closeOverlay() { closeOverlayReal(); reconcilePark(); }
-  function openDetail(html) { if (specAnimTimer) { clearInterval(specAnimTimer); specAnimTimer = null; } DOV.innerHTML = html; DOV.classList.remove("hidden"); reconcilePark(); }
-  function closeDetail() { closeDetailReal(); reconcilePark(); }
+  function openOverlay(html) { OV.innerHTML = html; OV.classList.remove("hidden"); reconcileHistory(); }
+  function closeOverlay() { closeOverlayReal(); reconcileHistory(); }
+  function openDetail(html) { if (specAnimTimer) { clearInterval(specAnimTimer); specAnimTimer = null; } DOV.innerHTML = html; DOV.classList.remove("hidden"); reconcileHistory(); }
+  function closeDetail() { closeDetailReal(); reconcileHistory(); }
 
   function refreshOverlay() {
     if (!ovState) return;
