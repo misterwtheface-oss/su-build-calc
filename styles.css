@@ -75,8 +75,11 @@ h1, h2, h3 { margin: 0; }
    free to wrap onto multiple lines (buttons stay to its right) instead of being clipped or bumped down */
 .topbar-title { flex: 1 1 auto; min-width: 0; }
 .topbar-title h1 { font-size: clamp(14px, 2.6vw, 18px); letter-spacing: .3px; color: var(--text);
-  text-align: left; line-height: 1.15; overflow-wrap: anywhere; }
-.topbar-title h1 span { color: var(--accent); font-weight: 500; }
+  text-align: left; line-height: 1.15; }
+/* each phrase is its own non-breaking unit, so the title stays on one line when it fits and otherwise
+   breaks ONLY between them → "Siralim Ultimate" / "Build Calculator" (never mid-phrase) */
+.topbar-title h1 span { display: inline-block; white-space: nowrap; }
+.topbar-title h1 .tt-sub { color: var(--accent); font-weight: 500; }
 .topbar-actions { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; flex-shrink: 0; }
 .tb-btn {
   background: var(--surface2); color: var(--text); border: 1px solid var(--border-dim);
