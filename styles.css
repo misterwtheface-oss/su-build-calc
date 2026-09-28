@@ -123,6 +123,14 @@ h1, h2, h3 { margin: 0; }
 .apx-sec-head:hover { color: var(--text); }
 .apx-sec-head .apx-sec-caret { flex: 0 0 auto; font-size: 11px; opacity: .6; }
 .apx-sec-head .apx-sec-n { margin-left: auto; font-weight: 800; color: var(--cap); }
+/* Appendix browse: sub-category value rows with a result-count, nested under a category header */
+.apx-vals { margin: 0 0 8px 12px; }
+.opt-row .apx-val-n { margin-left: auto; font-weight: 800; color: var(--cap); font-size: 12px; }
+/* bookmark-scope chips in the Appendix filter bar */
+.apx-bkbar { display: inline-flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.facet.bk { background: rgba(201,162,75,.12); }
+.facet.bk.on { color: var(--text); border-color: var(--cap); background: rgba(201,162,75,.22); }
+.facet .facet-n { font-weight: 800; opacity: .8; }
 .party-grid {
   display: grid; gap: var(--gap);
   grid-template-columns: repeat(2, 1fr);
