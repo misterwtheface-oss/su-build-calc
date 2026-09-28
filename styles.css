@@ -71,12 +71,13 @@ h1, h2, h3 { margin: 0; }
   border-bottom: 2px solid var(--border);
   box-shadow: 0 2px 10px rgba(0,0,0,.5);
 }
-/* title shares the row with the actions and truncates rather than wrapping */
-.topbar-title { flex: 1; min-width: 0; }
+/* title (left) and nav buttons (right) are independent containers, each centring its own content;
+   the title is free to wrap onto multiple lines instead of being clipped with an ellipsis */
+.topbar-title { flex: 1 1 auto; min-width: 0; }
 .topbar-title h1 { font-size: clamp(14px, 2.6vw, 18px); letter-spacing: .3px; color: var(--text);
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  text-align: center; line-height: 1.15; overflow-wrap: anywhere; }
 .topbar-title h1 span { color: var(--accent); font-weight: 500; }
-.topbar-actions { display: flex; gap: 6px; flex-wrap: nowrap; flex-shrink: 0; }
+.topbar-actions { display: flex; align-items: center; justify-content: center; gap: 6px; flex-wrap: wrap; flex-shrink: 0; }
 .tb-btn {
   background: var(--surface2); color: var(--text); border: 1px solid var(--border-dim);
   border-radius: 8px; padding: 5px 10px; font-size: 13px;
@@ -525,7 +526,7 @@ h1, h2, h3 { margin: 0; }
      action buttons; actions wrap onto the next row and stay fully in view */
   .topbar { flex-wrap: wrap; row-gap: 6px; }
   .topbar-title { flex: 1 0 100%; }
-  .topbar-actions { width: 100%; justify-content: flex-end; }
+  .topbar-actions { width: 100%; justify-content: center; }
   .overlay-panel, .overlay-panel.detail {
     /* dvh = full current viewport incl. behind the system nav bar (viewport-fit=cover),
        so the panel reaches the physical bottom edge in a standalone/installed PWA.
