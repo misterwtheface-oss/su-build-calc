@@ -71,13 +71,13 @@ h1, h2, h3 { margin: 0; }
   border-bottom: 2px solid var(--border);
   box-shadow: 0 2px 10px rgba(0,0,0,.5);
 }
-/* title (left) and nav buttons (right) are independent containers, each centring its own content;
-   the title is free to wrap onto multiple lines instead of being clipped with an ellipsis */
+/* title (left, left-aligned) and nav buttons (right) share one vertically-centred row; the title is
+   free to wrap onto multiple lines (buttons stay to its right) instead of being clipped or bumped down */
 .topbar-title { flex: 1 1 auto; min-width: 0; }
 .topbar-title h1 { font-size: clamp(14px, 2.6vw, 18px); letter-spacing: .3px; color: var(--text);
-  text-align: center; line-height: 1.15; overflow-wrap: anywhere; }
+  text-align: left; line-height: 1.15; overflow-wrap: anywhere; }
 .topbar-title h1 span { color: var(--accent); font-weight: 500; }
-.topbar-actions { display: flex; align-items: center; justify-content: center; gap: 6px; flex-wrap: wrap; flex-shrink: 0; }
+.topbar-actions { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; flex-shrink: 0; }
 .tb-btn {
   background: var(--surface2); color: var(--text); border: 1px solid var(--border-dim);
   border-radius: 8px; padding: 5px 10px; font-size: 13px;
@@ -522,11 +522,11 @@ h1, h2, h3 { margin: 0; }
   .ovl-left, .ovl-right { width: 260px; }   /* narrower on tablets so the grid keeps its room */
 }
 @media (max-width: 600px) {
-  /* header: let the title take its own full-width row so it isn't crushed by the
-     action buttons; actions wrap onto the next row and stay fully in view */
-  .topbar { flex-wrap: wrap; row-gap: 6px; }
-  .topbar-title { flex: 1 0 100%; }
-  .topbar-actions { width: 100%; justify-content: center; }
+  /* header: compact the nav buttons so the left-aligned title keeps enough room to wrap to ~2 lines
+     (Siralim Ultimate / Build Calculator) with the buttons beside it, rather than 3–4 skinny lines */
+  .topbar { padding: 5px 8px; gap: 8px; }
+  .topbar-actions { gap: 5px; }
+  .topbar-actions .tb-btn { padding: 5px 7px; font-size: 12px; }
   .overlay-panel, .overlay-panel.detail {
     /* dvh = full current viewport incl. behind the system nav bar (viewport-fit=cover),
        so the panel reaches the physical bottom edge in a standalone/installed PWA.
