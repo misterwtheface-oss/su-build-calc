@@ -515,9 +515,12 @@ h1, h2, h3 { margin: 0; }
   .topbar-title { flex: 1 0 100%; }
   .topbar-actions { width: 100%; justify-content: flex-end; }
   .overlay-panel, .overlay-panel.detail {
-    /* svh = the SMALL viewport height: it does NOT change as the mobile URL bar shows/hides,
-       so the pinned header/search never expands & contracts while scrolling */
-    width: 100vw; height: 100svh; max-height: 100svh; border-radius: 0; border-width: 0 0 2px 0;
+    /* dvh = full current viewport incl. behind the system nav bar (viewport-fit=cover),
+       so the panel reaches the physical bottom edge in a standalone/installed PWA.
+       The flex column keeps the header pinned at the top regardless, so growing the
+       body when the URL bar hides doesn't jitter the header. Gold bottom border
+       removed — it read as a "bar" floating above the Android nav buttons. */
+    width: 100vw; height: 100dvh; max-height: 100dvh; border-radius: 0; border-width: 0;
   }
   .ovl-backdrop { padding: 0; align-items: flex-start; }   /* pin the panel to the top */
   .overlay-body { flex-direction: column; }
@@ -535,7 +538,9 @@ h1, h2, h3 { margin: 0; }
   .pick-grid { grid-template-columns: repeat(4, 1fr); gap: 6px; }
   /* tighter overlay chrome so the grid isn't squeezed */
   .overlay-header { padding: 8px 12px; }
-  .overlay-footer { padding: 7px 12px; }
+  /* extend the footer's background through the nav-bar inset so it sits flush with
+     the screen bottom, while the buttons stay above the Android nav buttons */
+  .overlay-footer { padding: 7px 12px calc(7px + env(safe-area-inset-bottom, 0px)); }
   .party-summary .stat-header, .party-summary .stat-row { grid-template-columns: 1fr 52px 52px 60px; }
   /* compact the 6-column breakdown on phones so it doesn't overflow */
   .stat-grid.detailed .stat-header, .stat-grid.detailed .stat-row { grid-template-columns: 1fr 32px 36px 42px 42px 46px; padding: 4px 5px; gap: 2px; }

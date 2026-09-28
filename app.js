@@ -691,10 +691,42 @@
   }
   const SCROLLERS = [".ovl-center-scroll", ".ovl-left", ".ovl-right", ".art-side-list", ".xref-wrap"];
 
-  function openOverlay(html) { OV.innerHTML = html; OV.classList.remove("hidden"); }
-  function closeOverlay() { if (specAnimTimer) { clearInterval(specAnimTimer); specAnimTimer = null; } OV.classList.add("hidden"); OV.innerHTML = ""; ovState = null; }
-  function openDetail(html) { if (specAnimTimer) { clearInterval(specAnimTimer); specAnimTimer = null; } DOV.innerHTML = html; DOV.classList.remove("hidden"); }
-  function closeDetail() { if (specAnimTimer) { clearInterval(specAnimTimer); specAnimTimer = null; } DOV.classList.add("hidden"); DOV.innerHTML = ""; dovState = null; }
+  // ── overlay history: the Android/browser Back button closes the top overlay
+  //    (detail before selector) instead of exiting the app. One "guard" history
+  //    entry is parked whenever any overlay is open; Back pops it and we close the
+  //    top layer. Reconciliation is deferred to a microtask so a synchronous
+  //    close→open transition nets to one final state with no history churn.
+  let ovlGuard = false, ovlIgnorePop = false, ovlReconcileQueued = false;
+  const anyOverlayOpen = () => !OV.classList.contains("hidden") || !DOV.classList.contains("hidden");
+  function reconcileOverlayHistory() {
+    if (ovlReconcileQueued) return;
+    ovlReconcileQueued = true;
+    Promise.resolve().then(() => {
+      ovlReconcileQueued = false;
+      if (anyOverlayOpen()) {
+        if (!ovlGuard) { ovlGuard = true; history.pushState({ ovlGuard: true }, ""); }
+      } else if (ovlGuard) {
+        ovlGuard = false; ovlIgnorePop = true; history.back();   // remove our parked entry
+      }
+    });
+  }
+  window.addEventListener("popstate", () => {
+    if (ovlIgnorePop) { ovlIgnorePop = false; return; }   // our own synthetic unwind — ignore
+    ovlGuard = false;                                      // the parked guard was consumed by Back
+    if (anyOverlayOpen()) {
+      if (!DOV.classList.contains("hidden")) closeDetailReal(); else closeOverlayReal();
+      reconcileOverlayHistory();                           // re-park if a lower layer remains open
+    }
+  });
+
+  // DOM-only closes (no history side effects) — used by the Back handler above.
+  function closeOverlayReal() { if (specAnimTimer) { clearInterval(specAnimTimer); specAnimTimer = null; } OV.classList.add("hidden"); OV.innerHTML = ""; ovState = null; }
+  function closeDetailReal() { if (specAnimTimer) { clearInterval(specAnimTimer); specAnimTimer = null; } DOV.classList.add("hidden"); DOV.innerHTML = ""; dovState = null; }
+
+  function openOverlay(html) { OV.innerHTML = html; OV.classList.remove("hidden"); reconcileOverlayHistory(); }
+  function closeOverlay() { closeOverlayReal(); reconcileOverlayHistory(); }
+  function openDetail(html) { if (specAnimTimer) { clearInterval(specAnimTimer); specAnimTimer = null; } DOV.innerHTML = html; DOV.classList.remove("hidden"); reconcileOverlayHistory(); }
+  function closeDetail() { closeDetailReal(); reconcileOverlayHistory(); }
 
   function refreshOverlay() {
     if (!ovState) return;

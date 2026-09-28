@@ -2049,6 +2049,26 @@ console.log(`✓ wrote data.js (${(fs.statSync(path.join(ROOT, 'data.js')).size 
     fs.writeFileSync(swPath, sw);
   }
   console.log('  cache-bust: stamped index.html (?v=<hash>) + rotated sw.js BUILD token');
+
+  // ── precache manifest: enumerate every shipped asset so the service worker can
+  // background-download the full sprite set on install → complete offline (airplane
+  // mode) instead of only art the user happened to view online. Versioned by a hash
+  // of the sorted path list, so the SW re-precaches only when the asset set changes.
+  const ASSETS_DIR = path.join(ROOT, 'assets');
+  if (fs.existsSync(ASSETS_DIR)) {
+    const urls = [];
+    (function walk(dir) {
+      for (const ent of fs.readdirSync(dir, { withFileTypes: true })) {
+        const full = path.join(dir, ent.name);
+        if (ent.isDirectory()) walk(full);
+        else urls.push(path.relative(ROOT, full).split(path.sep).join('/'));
+      }
+    })(ASSETS_DIR);
+    urls.sort();
+    const v = crypto.createHash('md5').update(urls.join('\n')).digest('hex').slice(0, 8);
+    fs.writeFileSync(path.join(ROOT, 'precache-list.json'), JSON.stringify({ v, urls }));
+    console.log(`  precache-list.json: ${urls.length} assets (v=${v}) for offline precache`);
+  }
 }
 console.log(`  creatures ${creatures.length} · specs ${specs.length} · traits ${Object.keys(traits).length} · trait-items ${traitItems.length} · relics ${relics.length} · cards ${cards.length}`);
 console.log(`  innate-trait coverage: ${creatures.length - traitUnresolved.length}/${creatures.length} resolved` +
