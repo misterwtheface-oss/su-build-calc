@@ -2033,7 +2033,22 @@ console.log(`✓ wrote data.js (${(fs.statSync(path.join(ROOT, 'data.js')).size 
     idx = idx.replace(new RegExp(`((?:src|href)=")((?:\\./)?${esc})(?:\\?v=[a-f0-9]+)?(")`, 'g'), `$1$2?v=${v}$3`);
   }
   fs.writeFileSync(idxPath, idx);
-  console.log('  cache-bust: stamped index.html (data.js/app.js/styles.css ?v=<hash>)');
+  // Rotate the service worker's cache token from the combined bundle content, so any
+  // change to a shipped file gives sw.js a new cache name (old caches purged on activate).
+  // This is the Tier-1 SW half of cache correctness: ?v= keeps sub-resources fresh,
+  // network-first navigations (in sw.js) keep index.html fresh, and this rotation
+  // guarantees a deploy never leaves an orphaned cache behind.
+  const swPath = path.join(ROOT, 'sw.js');
+  if (fs.existsSync(swPath)) {
+    const combined = Buffer.concat(
+      ['data.js', 'app.js', 'styles.css'].map((f) => fs.readFileSync(path.join(ROOT, f)))
+    );
+    const build = crypto.createHash('md5').update(combined).digest('hex').slice(0, 8);
+    let sw = fs.readFileSync(swPath, 'utf8');
+    sw = sw.replace(/const BUILD = "[^"]*";/, `const BUILD = "${build}";`);
+    fs.writeFileSync(swPath, sw);
+  }
+  console.log('  cache-bust: stamped index.html (?v=<hash>) + rotated sw.js BUILD token');
 }
 console.log(`  creatures ${creatures.length} · specs ${specs.length} · traits ${Object.keys(traits).length} · trait-items ${traitItems.length} · relics ${relics.length} · cards ${cards.length}`);
 console.log(`  innate-trait coverage: ${creatures.length - traitUnresolved.length}/${creatures.length} resolved` +

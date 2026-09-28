@@ -1,0 +1,17 @@
+{
+  "//": "TIER 2 — installability. INERT until shipping to the user base. To enable: uncomment the <link rel=manifest> + theme-color in index.html, add real icons to assets/, and adjust colors to the SU palette. Until then the tool is a plain (self-updating, offline-capable) website via the Tier 1 service worker.",
+  "name": "Siralim Ultimate Build Calculator",
+  "short_name": "SU Build Calc",
+  "description": "Theorycraft Siralim Ultimate parties — creatures, fusion, artifacts, relics, nether stones and realm cards.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#1a1024",
+  "theme_color": "#1a1024",
+  "icons": [
+    { "src": "assets/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "assets/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "assets/icon-512-maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
