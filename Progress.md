@@ -6,6 +6,26 @@ Pages on `master`/root, Cloudflare analytics active with the shared github.io to
 No verify-before-push ceremony (no real users yet) — but every change is checked with the jsdom smoke suite
 (scratchpad `smoke.mjs`, ~84 assertions across all flows) before commit.
 
+## 2026-09-28 — UI pass 3 (appendix/riddle/glossary/god-shops/realms/artifact/cards/builds)
+1. Appendix trait rows now stack the **creature sprite over the trait material** (apxStack order swapped).
+2. **Riddle Dwarf** dropped the Class-of-spell/creature answers — only realm↔ruler lookups (it never asks class).
+3. **Glossary** rebuilt with the Appendix **apx-cat collapsible headers** + large left icon column; removed the
+   "tags ›" hint, per-row category badge and the "n of n" count.
+4. **God Shops**: list → creature-selector **tiles** (nav on the tile); detail has a **locked centred god
+   sprite header**; every item shows its real icon (creature / class-coloured spell gem / trait material /
+   dust — `shopItemIconHtml` via name maps); removed the items count.
+5. **Realms Compare**: `.rcmp-controls` wrapper (padded, centred toggles, tighter rows), **Customize ranks
+   moved to the footer**, outcome headers use apx-cat bars, "Compare outcomes" → **"Compare"**, God-Shop link
+   removed from realm detail. ⚠ **Surathli (Azure Dream) + Shallan (Fae Lands) have all Unique-Bonus columns
+   blank in the exported `Favor_MTX.csv`** — a source-data gap (2/30 realms); NOT fabricated — needs the real
+   values re-exported from the Player-Resource sheet.
+6. **Artifact** stat-item preview shows the **material name** (e.g. "Red Amber") as the label; the stat shows
+   only in the effect line (dropped the duplicate sub).
+7. **Realm Cards**: white text on class-coloured tier badges (`.ct-seg.on`/`.ce-tier`); Life keeps dark text
+   (`.card-tile.cls-life`).
+8. **Builds**: the **selected saved-build tile animates** its costume (`data-anim-frames` on `.lib-icon`); the
+   save-form preview is **static** now — the walk animation lives in the Choose-Icon picker (3rd screen).
+
 ## 2026-09-28 — SW cache fix + UI pass 2 (build creation, sorts, synergy, threats, riddle, perk filter)
 - **SW deploy fix (why fresh deploys "didn't show"):** GitHub Pages serves index.html `max-age=600`; the SW's
   network-first navigation used a plain `fetch()` that revalidated against that stale HTTP-cached copy (old
