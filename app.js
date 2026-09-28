@@ -1357,10 +1357,7 @@
     const st = ovState;
     if (st.draft) {
       const d = st.draft;
-      // static preview here — the walk animation lives in the "Choose Icon" picker (third screen), not here
-      const preview = d.icon
-        ? `<div class="build-hero">${spriteImg(d.icon, "px")}</div>`
-        : `<div class="build-hero empty"><span class="slot-empty-icon">✦</span><div class="slot-sub">Choose a sprite to preview it here</div></div>`;
+      // No info panel here — the big dotted box IS the control; the animated preview lives in Choose Icon.
       return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel">
         <div class="overlay-header"><h2>New Build</h2><button class="ovl-close" data-action="close-ovl">✕</button></div>
         <div class="overlay-body">
@@ -1369,7 +1366,6 @@
               ${d.icon ? spriteImg(d.icon, "px") : `<span class="slot-empty-icon">＋</span>`}</button>
             <input class="ovl-search build-name" placeholder="Name this build" value="${esc(d.name)}" data-action="builds-name">
           </div></div>
-          <div class="ovl-right build-preview">${preview}</div>
         </div>
         <div class="overlay-footer"><button class="btn-ghost" data-action="builds-cancel">Cancel</button>
           <span class="foot-info"></span>
@@ -1420,11 +1416,16 @@
     const catChips = WARDROBE_CATS.map(c =>
       `<button class="facet ${st.cat === c ? "on" : ""}" data-action="iconpick-cat" data-c="${c}">${c[0].toUpperCase() + c.slice(1)}</button>`).join("")
       + (st.cat ? `<button class="facet tag" data-action="iconpick-cat-clear">Clear ✕</button>` : "");
-    // tap a tile to select it (it animates its 2-frame walk); tap again or "Use this icon" to commit
-    const tiles = list.slice(0, 600).map(w => { const sel = st.sel === w.sprite;
-      return `<div class="pick-tile ${sel ? "selected" : ""}" data-action="iconpick-sel" data-k="${esc(w.sprite)}">
-        <div class="pt-sprite"${sel && Array.isArray(w.frames) ? ` data-anim-frames='${JSON.stringify(w.frames)}'` : ""}>${spriteImg(w.img, "px")}</div><div class="pt-name">${esc(w.name)}</div></div>`; }).join("")
+    // tap a tile to select it; the animated preview shows in the right info panel. Tap again / "Use" commits.
+    const tiles = list.slice(0, 600).map(w =>
+      `<div class="pick-tile ${st.sel === w.sprite ? "selected" : ""}" data-action="iconpick-sel" data-k="${esc(w.sprite)}">
+        <div class="pt-sprite">${spriteImg(w.img, "px")}</div><div class="pt-name">${esc(w.name)}</div></div>`).join("")
       || `<div class="slot-sub" style="padding:10px">No sprites match.</div>`;
+    // info panel — only when a sprite is selected: show it large + animated (its 2-frame walk)
+    const selW = st.sel ? (D.wardrobe || []).find(w => w.sprite === st.sel) : null;
+    const infoPanel = selW ? `<div class="ovl-right build-preview">
+        <div class="build-hero"${Array.isArray(selW.frames) ? ` data-anim-frames='${JSON.stringify(selW.frames)}'` : ""}>${spriteImg(selW.img, "px")}</div>
+        <div class="ip-name">${esc(selW.name)}</div></div>` : "";
     return `<div class="ovl-backdrop" data-action="facet-backdrop"><div class="overlay-panel detail">
       <div class="overlay-header"><h2>Choose Icon</h2>
         <input class="ovl-search" placeholder="Search sprites…" value="${esc(st.search)}" data-action="iconpick-search">
@@ -1433,7 +1434,7 @@
         <div class="ovl-filterbar">${catChips}</div>
         <div class="ovl-center-scroll"><div class="pick-grid">${tiles}</div>
         ${list.length > 600 ? `<div class="slot-sub" style="padding:6px">Showing 600 of ${list.length}.</div>` : ""}</div>
-      </div></div>
+      </div>${infoPanel}</div>
       <div class="overlay-footer"><span class="foot-info"></span>
         <button class="btn-confirm" data-action="iconpick-use" ${st.sel ? "" : "disabled"}>Use this icon</button></div>
     </div></div>`;
