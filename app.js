@@ -1424,8 +1424,7 @@
     // info panel — only when a sprite is selected: show it large + animated (its 2-frame walk)
     const selW = st.sel ? (D.wardrobe || []).find(w => w.sprite === st.sel) : null;
     const infoPanel = selW ? `<div class="ovl-right build-preview">
-        <div class="build-hero"${Array.isArray(selW.frames) ? ` data-anim-frames='${JSON.stringify(selW.frames)}'` : ""}>${spriteImg(selW.img, "px")}</div>
-        <div class="ip-name">${esc(selW.name)}</div></div>` : "";
+        <div class="build-hero"${Array.isArray(selW.frames) ? ` data-anim-frames='${JSON.stringify(selW.frames)}'` : ""}>${spriteImg(selW.img, "px")}</div></div>` : "";
     return `<div class="ovl-backdrop" data-action="facet-backdrop"><div class="overlay-panel detail">
       <div class="overlay-header"><h2>Choose Icon</h2>
         <input class="ovl-search" placeholder="Search sprites…" value="${esc(st.search)}" data-action="iconpick-search">
