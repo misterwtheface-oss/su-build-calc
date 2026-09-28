@@ -6,6 +6,24 @@ Pages on `master`/root, Cloudflare analytics active with the shared github.io to
 No verify-before-push ceremony (no real users yet) — but every change is checked with the jsdom smoke suite
 (scratchpad `smoke.mjs`, ~84 assertions across all flows) before commit.
 
+## 2026-09-28 — SW cache fix + UI pass 2 (build creation, sorts, synergy, threats, riddle, perk filter)
+- **SW deploy fix (why fresh deploys "didn't show"):** GitHub Pages serves index.html `max-age=600`; the SW's
+  network-first navigation used a plain `fetch()` that revalidated against that stale HTTP-cached copy (old
+  `?v=` tokens) for up to 10 min. Now `fetch(request, {cache:"reload"})` bypasses it → deploys show on next
+  load once this SW installs. (Tokens WERE being bumped correctly; this was the delivery gap.)
+1. **Build creation redesigned** (`renderBuilds` draft): big centred "Choose Sprite" box + name field (no
+   Icon/Name labels or instructional line) + right info panel showing the sprite LARGE and animated. Generic
+   `syncWardrobeAnims` (scans `[data-anim-frames]`) drives both the icon-picker selected tile and this panel.
+2. **Sort bars vertically centred** — `align-items:center` on `.ovl-filterbar` (fixes creature + builds sorts).
+3. **Synergy matrix**: taller rows (td/th padding 3→8px) + first column right-aligned (fixed specificity bug —
+   `.xref-table th` was overriding `.xref-rowhead`; added `.xref-table th.xref-rowhead/.xref-corner`).
+4. **Synergy list**: jump-chip row → Collapse-all button + quick-nav `<select>` (`syn-nav` change handler).
+5. **Threats**: theme chip toggles → single dropdown (Auto-detected / explore one theme); `themeSel` state
+   replaces `themeMode`/`manual`.
+6. **Riddle X** styled — `.ovl-close` was only scoped to `.overlay-header`; added `.riddle-pop-head .ovl-close`.
+7. **Spec Customize perk filter** → standard Category→Value opt-row drill-down (matches ＋ Filter elsewhere),
+   replacing the inline chip drill.
+
 ## 2026-09-28 — UI pass (sortbar, info panels, category bars, anoint gaps, animated wardrobe)
 1. Creature-selector **Sort bar** vertically centres its label + segments (`.crea-sortbar align-items:center`), still left-aligned.
 2. **Info panels ~15% wider** (340→390 / tablet 260→300) and **user-resizable**: a left-edge grip on `.ovl-right`
