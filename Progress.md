@@ -865,6 +865,25 @@ What works end-to-end:
 - Nether Stones → add/edit/delete user stones (name/rarity/property lines), stored in `subc.nether`, socketable.
 - Realm Cards → owned + on/off toggles per family, stored in `subc.cards`.
 
+## 2026-09-28 — Appendix: collapsible category filters + bookmark scope
+Reworked the Appendix filter UX (all 5 user requirements; verified live in headless Chrome, 0 runtime errors):
+- **Collapsible category headers replace the drill-in Category→Value menu navigation.** All 24 taxonomy
+  categories render as `apx-sec-head` collapsibles (collapse-all by default via `st.expanded` Set); each
+  expands to its sub-category value rows. Dropped `st.cat` + the `appendix-cat`/`appendix-cat-back`
+  two-level drill; new handler `appendix-cat-toggle`. A name query filters both levels and auto-expands.
+- **Per-sub-category `n` = result count** (`.apx-val-n`): how many results applying that value yields.
+  Category header `apx-sec-n` = number of available sub-tags.
+- **Live narrowing:** `appendixBrowseIndex(tags)` keeps only values that co-occur with the applied tags
+  (n>0) and recomputes every `n` off the current AND-filtered universe. Confirmed 24→22 categories,
+  23→19 count as a tag is applied.
+- **Bookmark-scope filter (req 2):** chips `★ Bookmarked` + `Creature-innate / Item-only / Perk / Spell`
+  (shown when the build has bookmarks). `ovState.bkScope` restricts the whole Appendix universe via
+  `appendixUniverse()` (relics/cards excluded — not bookmarkable). Spells included per user. A trait is
+  creature-innate if a creature has it innately (`bkTraitClass` via `traitSources`), else item-only.
+  `appendixBkCounts()` drives the chip counts. Clearing bookmarks resets `bkScope`.
+- **Instructional chrome removed (req 1):** dropped the foot-info hint sentences; results view shows only
+  an "N results" label. `appendixResults` now flows through `appendixUniverse` (scope-aware).
+
 ## 2026-09-24 — Extract reconciliation program (creatures + two-form owner model)
 Deepened the trait owner model into a full **two-form** model and did a **creature census**, all
 extract-grounded with provenance (user directive: reconcile everything from the extract; wiki OK for
