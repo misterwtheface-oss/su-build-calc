@@ -865,6 +865,30 @@ What works end-to-end:
 - Nether Stones → add/edit/delete user stones (name/rarity/property lines), stored in `subc.nether`, socketable.
 - Realm Cards → owned + on/off toggles per family, stored in `subc.cards`.
 
+## 2026-09-28 — LLM-taxonomy audit + canon-status validation + fusion-step delta bars
+User flagged two mis-tags (Mantra "gains a spell" tagged as a Buff; Extension "minions gain 1 stack"
+tagged Related Minion::Random Minion) and asked for a broader audit of the LLM-assigned tags.
+- **Audit finding (durable):** LLM buff/debuff/minion tags are **~99% sound**. Early "systemic" counts
+  were a false alarm — (a) shell `\b`→backspace mangling broke the matcher, and (b) descriptions name
+  statuses either as plain words (traits: "Burned") OR as `{CONDNAME_BUFF_/DEBUFF_/MINION_X}` markup
+  (spells/perks) which a plain-word regex can't see into (the `_` blocks the word boundary). Once the
+  matcher was markup-aware, only **~20 genuine errors** across 3402 entities remained, in tight buckets:
+  spell-gain-read-as-buff, Random-Minion-for-count/extend, and permanent-minion-filed-under-buff/debuff.
+- **Fix = deterministic canon-status validation in `build-data.mjs correctTaxo`** (joins the existing
+  Innate-Trait/Animatus/Persist corrections; reproducible). Drops buff/debuff RELATIONAL assertions the
+  desc doesn't ground against the canonical Buff/Debuff status list (matches plain words + `{CONDNAME_}`
+  markup + a small buff-family allowlist e.g. "alcohol"); drops `Related Minion::Random Minion` without a
+  summon/grant context; adds `Affect on Spells::Extra/Gain a Spell Gem` to `gain/grant [icons,N] <Spell>`
+  effects. **Token-src tags (exact game markup) are never touched.** Simulated the exact drop/add set
+  over the full dataset before shipping (23 entities: 19 dropped + 11 added); verified in-browser
+  (Mantra/Extension correct, Zantai's Call keeps its Random Minion, 0 runtime errors). Rerun via
+  `node build-data.mjs`; a future game update needs no re-mine, just refreshed taxonomy inputs.
+  A full semantic re-classification of the remaining long tail (LLM pass) is a possible follow-up.
+- **Fusion step magnitude bars (`renderWizardPreview`):** the stat grid regained the `value/roster-max`
+  bars, now with a **diverging fusion-delta segment** — green where fusing the selected partner RAISES a
+  stat, red where it LOWERS it (vs the primary alone, computed from a second `finalStats` with no fusion)
+  — plus the numeric ±delta beside each value. New CSS `.stat-mag .delta.up/.down` + `.stat-delta`.
+
 ## 2026-09-28 — Appendix: collapsible category filters + bookmark scope
 Reworked the Appendix filter UX (all 5 user requirements; verified live in headless Chrome, 0 runtime errors):
 - **Collapsible category headers replace the drill-in Category→Value menu navigation.** All 24 taxonomy
