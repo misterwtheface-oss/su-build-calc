@@ -865,6 +865,20 @@ What works end-to-end:
 - Nether Stones → add/edit/delete user stones (name/rarity/property lines), stored in `subc.nether`, socketable.
 - Realm Cards → owned + on/off toggles per family, stored in `subc.cards`.
 
+## 2026-09-28 — Appendix polish: bookmark button, left icon columns, item-only section
+- **Bookmark filter → one footer button** ("★ N Bookmarked", toggles the all-bookmarks scope with an
+  active `.btn-ghost.on` state). Removed the 5-chip row; `appendixBkCounts`/`appendixUniverse`
+  creature-innate/item-only scope logic stays wired for the new section + future use.
+- **Removed the sub-count n from browse category headers** (n now only on the sub-category value rows
+  and the result-section headers — i.e. object counts, not sub-category counts).
+- **Left icon columns**: every result row leads with `.apx-iconcol` — a vertical stack of large
+  (48px `.apx-crea`) boxes, centred: traits = material icon over creature/boss sprite; perks = perk icon
+  over spec emblem; spells/relics/cards = their single large icon. Replaced the old small-left-icon +
+  right-side-square layout. `apxBox`/`apxIcon`/`apxStack` helpers + a simplified `line()`.
+- **Creature name chip** shown next to the material-name chip on creature-innate trait rows.
+- **Item-only Traits** is now its own collapsible section between Traits (creature-innate) and Boss Traits.
+- Verified in headless Chrome (all 6 changes, 0 runtime errors).
+
 ## 2026-09-28 — Spell Gems: Opal class-swap, same-class equip rule, wizard/library UX
 - **Click-to-deselect** (`lib-deselect` on `.ovl-center`): clicking empty space in the Spell Gem /
   Artifact library clears the selection (was: only re-clicking the same tile).
