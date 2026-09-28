@@ -7,6 +7,11 @@
   <meta name="description" content="Theorycraft Siralim Ultimate parties: 6 creature slots, fusion, artifacts, relics, nether stones and realm cards.">
   <link rel="stylesheet" href="styles.css?v=0474a472">
 
+  <!-- Tier 2 PWA: installability (home-screen icon, standalone chrome). -->
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="theme-color" content="#1a1024">
+  <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+
   <!-- Cloudflare Web Analytics (live — shared github.io token) -->
   <script defer src="https://static.cloudflareinsights.com/beacon.min.js"
           data-cf-beacon='{"token": "b5abb0125b524ee8a96efbe9899114a4"}'></script>
@@ -48,7 +53,7 @@
   <div id="overlay-root" class="hidden"></div>
   <div id="detail-overlay-root" class="hidden"></div>
 
-  <script src="data.js?v=9de0a66e"></script>
+  <script src="data.js?v=e78f123e"></script>
   <script src="app.js?v=65c2aa05" defer></script>
 
   <!-- Tier 1 PWA: service worker for cache correctness. Registered only on https
@@ -68,11 +73,5 @@
     }
   </script>
 
-  <!-- Tier 2 PWA: installability (home-screen icon). INERT until shipping to the
-       user base. To enable: uncomment below, fill manifest.webmanifest, add real
-       icons to assets/.
-  <link rel="manifest" href="manifest.webmanifest" />
-  <meta name="theme-color" content="#1a1024" />
-  -->
 </body>
 </html>

@@ -20,7 +20,7 @@
   Tier 1 is invisible (no install prompt, no manifest). Tier 2 (installability) is
   the separate manifest.webmanifest — inert until shipping to the user base.
 */
-const BUILD = "1f1b22b1"; // build-data.mjs stamps a content hash here on each build
+const BUILD = "9dd5de37"; // build-data.mjs stamps a content hash here on each build
 const CACHE = `su-bc-${BUILD}`;
 
 self.addEventListener("install", () => {

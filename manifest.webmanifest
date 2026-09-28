@@ -1,5 +1,5 @@
 {
-  "//": "TIER 2 — installability. INERT until shipping to the user base. To enable: uncomment the <link rel=manifest> + theme-color in index.html, add real icons to assets/, and adjust colors to the SU palette. Until then the tool is a plain (self-updating, offline-capable) website via the Tier 1 service worker.",
+  "//": "TIER 2 — installability, ACTIVE. Linked from index.html (manifest + theme-color + apple-touch-icon). Icons live in assets/ (icon-192, icon-512, icon-512-maskable, apple-touch-icon), generated nearest-neighbor from the Riddle Dwarf tile on the SU purple field.",
   "name": "Siralim Ultimate Build Calculator",
   "short_name": "SU Build Calc",
   "description": "Theorycraft Siralim Ultimate parties — creatures, fusion, artifacts, relics, nether stones and realm cards.",
