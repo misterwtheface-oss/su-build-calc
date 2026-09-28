@@ -27,7 +27,7 @@
 
   BUILD below is stamped by build-data.mjs each build.
 */
-const BUILD = "08ff6fd9";
+const BUILD = "5074d589";
 const SHELL = `su-shell-${BUILD}`;
 const ASSETS = "su-assets"; // stable across deploys; versioned internally by the list
 const KEEP = new Set([SHELL, ASSETS]);
@@ -74,7 +74,10 @@ self.addEventListener("fetch", (e) => {
     e.respondWith(
       (async () => {
         try {
-          const fresh = await fetch(request);
+          // cache:"reload" bypasses the HTTP cache so we get index.html straight from the network —
+          // GitHub Pages serves it max-age=600, and a plain fetch() would revalidate against that stale
+          // copy (old ?v= tokens) for up to 10 min, defeating the point of network-first navigations.
+          const fresh = await fetch(request, { cache: "reload" });
           (await caches.open(SHELL)).put(request, fresh.clone());
           return fresh;
         } catch {

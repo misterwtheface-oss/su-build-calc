@@ -668,7 +668,7 @@
 
   // ── overlay plumbing ───────────────────────────────────────────────────────
   const OV = el("overlay-root"), DOV = el("detail-overlay-root");
-  let ovState = null, dovState = null, specAnimTimer = null, iconAnimTimer = null;
+  let ovState = null, dovState = null, specAnimTimer = null, wardrobeTimers = [];
 
   // Animate the spec info-panel costume: front-facing 2-frame walk, alternate 8× then advance a tier (cycles).
   // animate the #specCostume in a given overlay root: front-facing 2-frame walk, 8× then advance a tier
@@ -689,17 +689,27 @@
     if (ovState && ovState.kind === "spec" && ovState.sel != null) animateCostume(OV, SPEC.get(ovState.sel));
     else if (dovState && dovState.kind === "spec-detail" && dovState.specId != null) animateCostume(DOV, SPEC.get(dovState.specId));
   }
-  // Wardrobe icon picker: only the SELECTED tile animates its 2-frame walk; the rest stay still.
-  function syncIconAnim() {
-    if (iconAnimTimer) { clearInterval(iconAnimTimer); iconAnimTimer = null; }
-    if (!dovState || dovState.kind !== "iconpick" || !dovState.sel) return;
-    const w = (D.wardrobe || []).find(x => x.sprite === dovState.sel);
-    const frames = w && Array.isArray(w.frames) && w.frames.length >= 2 ? w.frames : null;
-    const img = DOV.querySelector(".pick-tile.selected .pt-sprite img");
-    if (!frames || !img) return;
-    let fr = 0;
-    iconAnimTimer = setInterval(() => { fr ^= 1; img.src = frames[fr]; }, 300);
+  // Generic wardrobe animation: any element carrying data-anim-frames='["f0","f1",…]' cycles its <img>
+  // through those frames (300ms). Used by the icon-picker selected tile + the build save-form info panel.
+  const stopWardrobeAnims = () => { wardrobeTimers.forEach(clearInterval); wardrobeTimers = []; };
+  function syncWardrobeAnims() {
+    stopWardrobeAnims();
+    for (const root of [OV, DOV]) {
+      if (!root || root.classList.contains("hidden")) continue;
+      root.querySelectorAll("[data-anim-frames]").forEach(el => {
+        let frames; try { frames = JSON.parse(el.getAttribute("data-anim-frames")); } catch { return; }
+        if (!Array.isArray(frames) || frames.length < 2) return;
+        const img = el.tagName === "IMG" ? el : el.querySelector("img");
+        if (!img) return;
+        let fr = 0;
+        wardrobeTimers.push(setInterval(() => { fr ^= 1; img.src = frames[fr]; }, 300));
+      });
+    }
   }
+  const wardrobeFramesFor = (imgOrSprite) => {   // resolve a wardrobe entry's [f0,f1] from its img path or sprite key
+    const w = (D.wardrobe || []).find(x => x.img === imgOrSprite || x.sprite === imgOrSprite);
+    return w && Array.isArray(w.frames) && w.frames.length >= 2 ? w.frames : null;
+  };
   const SCROLLERS = [".ovl-center-scroll", ".ovl-left", ".ovl-right", ".art-side-list", ".xref-wrap"];
 
   // ── Back-button handling (Android/browser) — LAYER-AWARE ───────────────────
@@ -760,8 +770,8 @@
   reconcileHistory();   // establish the initial depth (exit sentinel when standalone)
 
   // DOM-only closes; the Back handler above and the UI wrappers both use these.
-  function closeOverlayReal() { if (specAnimTimer) { clearInterval(specAnimTimer); specAnimTimer = null; } OV.classList.add("hidden"); OV.innerHTML = ""; ovState = null; }
-  function closeDetailReal() { if (specAnimTimer) { clearInterval(specAnimTimer); specAnimTimer = null; } if (iconAnimTimer) { clearInterval(iconAnimTimer); iconAnimTimer = null; } DOV.classList.add("hidden"); DOV.innerHTML = ""; dovState = null; }
+  function closeOverlayReal() { if (specAnimTimer) { clearInterval(specAnimTimer); specAnimTimer = null; } stopWardrobeAnims(); OV.classList.add("hidden"); OV.innerHTML = ""; ovState = null; }
+  function closeDetailReal() { if (specAnimTimer) { clearInterval(specAnimTimer); specAnimTimer = null; } stopWardrobeAnims(); DOV.classList.add("hidden"); DOV.innerHTML = ""; dovState = null; }
 
   function openOverlay(html) { OV.innerHTML = html; OV.classList.remove("hidden"); reconcileHistory(); }
   function closeOverlay() { closeOverlayReal(); reconcileHistory(); }
@@ -776,7 +786,7 @@
     const p2 = OV.querySelector(".overlay-panel");
     SCROLLERS.forEach((sel, k) => { const e = p2 && p2.querySelector(sel); if (e) e.scrollTop = saved[k]; });
     maybeFocusSearch(OV);
-    syncSpecAnim();
+    syncSpecAnim(); syncWardrobeAnims();
   }
   function refreshDetail() {
     if (!dovState) return;
@@ -785,7 +795,7 @@
     panel.outerHTML = dovState.render();
     const p2 = DOV.querySelector(".overlay-panel");
     SCROLLERS.forEach((sel, k) => { const e = p2 && p2.querySelector(sel); if (e) e.scrollTop = saved[k]; });
-    syncSpecAnim(); syncIconAnim();
+    syncSpecAnim(); syncWardrobeAnims();
   }
   function maybeFocusSearch(root) {
     const input = root.querySelector(".ovl-search");
@@ -1274,13 +1284,18 @@
     for (const p of spec.perks) for (const k of (p.taxo || [])) {
       const c = taxoCatName(k); if (!valsByCat.has(c)) valsByCat.set(c, new Set()); valsByCat.get(c).add(k);
     }
-    let taxobar;
+    // taxonomy filter — mirrors the standard facet-picker drill-down (Category → Value as opt-rows,
+    // not inline chips) so it matches the ＋ Filter used across the creature selector / artifact builder.
+    const perkBrowsing = st.perkBrowse || !!st.perkCat;
+    let taxobar, browseBody = "";
     if (st.perkTaxo) taxobar = `<button class="facet on tag" data-action="perk-taxo-clear">${esc(taxoCatName(st.perkTaxo))}: <b>${esc(taxoValName(st.perkTaxo))}</b> <span class="facet-x">✕</span></button>`;
-    else if (st.perkCat) taxobar = `<button class="facet" data-action="perk-taxo-back">‹</button>` +
-      [...valsByCat.get(st.perkCat) || []].sort().map(k => `<button class="facet" data-action="perk-taxo-val" data-v="${esc(k)}">${esc(taxoValName(k))}</button>`).join("");
-    else if (st.perkBrowse) taxobar = `<button class="facet" data-action="perk-taxo-back">‹</button>` +
-      [...valsByCat.keys()].sort().map(c => `<button class="facet" data-action="perk-taxo-cat" data-c="${esc(c)}">${esc(c)} ›</button>`).join("");
+    else if (st.perkCat) taxobar = `<button class="facet" data-action="perk-taxo-back">‹ Categories</button><span class="facet on">${esc(st.perkCat)}</span>`;
+    else if (st.perkBrowse) taxobar = `<button class="facet" data-action="perk-taxo-back">‹ Perks</button><span class="facet on">Filter by mechanic</span>`;
     else taxobar = `<button class="facet add" data-action="perk-taxo-open">＋ Filter</button>`;
+    if (st.perkCat) browseBody = `<div class="opt-list">${[...valsByCat.get(st.perkCat) || []].sort((a, b) => taxoValName(a).localeCompare(taxoValName(b))).map(k =>
+      `<button class="opt-row" data-action="perk-taxo-val" data-v="${esc(k)}"><span>${esc(taxoValName(k))}</span></button>`).join("")}</div>`;
+    else if (st.perkBrowse) browseBody = `<div class="opt-list">${[...valsByCat.keys()].sort().map(c =>
+      `<button class="opt-row" data-action="perk-taxo-cat" data-c="${esc(c)}"><span>${esc(c)}</span><span class="opt-chev">›</span></button>`).join("")}</div>`;
     const allocCount = allocatedPerks(spec).length, pts = specPoints(spec);
     const rows = list.map(p => {
       const r = perkRank(spec, p), mx = perkMax(p), on = r > 0;
@@ -1306,7 +1321,7 @@
         <button class="ovl-close" data-action="close-detail">✕</button></div>
       <div class="overlay-body"><div class="ovl-center">
         <div class="ovl-filterbar"><button class="chip" data-action="perk-all">Max all</button><button class="chip" data-action="perk-none">Clear all</button>${taxobar}</div>
-        <div class="ovl-center-scroll"><div class="perk-picker">${rows}</div></div>
+        <div class="ovl-center-scroll">${perkBrowsing ? browseBody : `<div class="perk-picker">${rows}</div>`}</div>
       </div></div>
       <div class="overlay-footer"><span class="foot-info">${allocCount}/${spec.perks.length} allocated · ${pts} pts</span>
         <button class="btn-confirm" data-action="close-detail">Done</button></div>
@@ -1342,20 +1357,23 @@
     const st = ovState;
     if (st.draft) {
       const d = st.draft;
+      const frames = d.icon ? wardrobeFramesFor(d.icon) : null;
+      const preview = d.icon
+        ? `<div class="build-hero"${frames ? ` data-anim-frames='${JSON.stringify(frames)}'` : ""}>${spriteImg(d.icon, "px")}</div>`
+        : `<div class="build-hero empty"><span class="slot-empty-icon">✦</span><div class="slot-sub">Choose a sprite to preview it here</div></div>`;
       return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel">
-        <div class="overlay-header"><h2>Save Build</h2><button class="ovl-close" data-action="close-ovl">✕</button></div>
-        <div class="overlay-body"><div class="ovl-center"><div class="ovl-center-scroll">
-          <div class="build-section"><h3>Icon</h3>
-            <button class="build-icon-pick" data-action="builds-pick-icon" title="Choose a sprite">
-              ${d.icon ? spriteImg(d.icon, "px") : `<span class="slot-empty-icon">＋</span>`}
-              <span>Choose sprite…</span></button></div>
-          <div class="build-section"><h3>Name</h3>
-            <input class="ovl-search name-field" style="max-width:none;flex:1" placeholder="Build name" value="${esc(d.name)}" data-action="builds-name"></div>
-          <div class="slot-sub" style="padding:0 2px">Saves the current party, specialization, perks and anointments.</div>
-        </div></div></div>
-        <div class="overlay-footer"><span class="foot-info"></span>
-          <div><button class="btn-ghost" data-action="builds-cancel">Cancel</button>
-          <button class="btn-confirm" data-action="builds-save">Save</button></div></div>
+        <div class="overlay-header"><h2>New Build</h2><button class="ovl-close" data-action="close-ovl">✕</button></div>
+        <div class="overlay-body">
+          <div class="ovl-center"><div class="ovl-center-scroll build-create">
+            <button class="build-sprite-box" data-action="builds-pick-icon" title="Choose a sprite">
+              ${d.icon ? spriteImg(d.icon, "px") : `<span class="slot-empty-icon">＋</span>`}</button>
+            <input class="ovl-search build-name" placeholder="Name this build" value="${esc(d.name)}" data-action="builds-name">
+          </div></div>
+          <div class="ovl-right build-preview">${preview}</div>
+        </div>
+        <div class="overlay-footer"><button class="btn-ghost" data-action="builds-cancel">Cancel</button>
+          <span class="foot-info"></span>
+          <button class="btn-confirm" data-action="builds-save">Save build</button></div>
       </div></div>`;
     }
     const sel = st.sel != null ? builds.find(b => b.id === st.sel) : null;
@@ -1402,9 +1420,9 @@
       `<button class="facet ${st.cat === c ? "on" : ""}" data-action="iconpick-cat" data-c="${c}">${c[0].toUpperCase() + c.slice(1)}</button>`).join("")
       + (st.cat ? `<button class="facet tag" data-action="iconpick-cat-clear">Clear ✕</button>` : "");
     // tap a tile to select it (it animates its 2-frame walk); tap again or "Use this icon" to commit
-    const tiles = list.slice(0, 600).map(w => `
-      <div class="pick-tile ${st.sel === w.sprite ? "selected" : ""}" data-action="iconpick-sel" data-k="${esc(w.sprite)}">
-        <div class="pt-sprite">${spriteImg(w.img, "px")}</div><div class="pt-name">${esc(w.name)}</div></div>`).join("")
+    const tiles = list.slice(0, 600).map(w => { const sel = st.sel === w.sprite;
+      return `<div class="pick-tile ${sel ? "selected" : ""}" data-action="iconpick-sel" data-k="${esc(w.sprite)}">
+        <div class="pt-sprite"${sel && Array.isArray(w.frames) ? ` data-anim-frames='${JSON.stringify(w.frames)}'` : ""}>${spriteImg(w.img, "px")}</div><div class="pt-name">${esc(w.name)}</div></div>`; }).join("")
       || `<div class="slot-sub" style="padding:10px">No sprites match.</div>`;
     return `<div class="ovl-backdrop" data-action="facet-backdrop"><div class="overlay-panel detail">
       <div class="overlay-header"><h2>Choose Icon</h2>
@@ -1832,11 +1850,8 @@
     return Object.keys(cnt).filter(k => cnt[k] >= 2);
   }
   function activeThemes() {
-    if (ovState.themeMode === "manual") return [...ovState.manual];
-    const w = ovState.weights;
-    let det = Object.keys(w).filter(k => w[k] >= 2);           // ≥2 effects = a real theme, not incidental
-    if (!det.length) { const top = Object.entries(w).sort((a, b) => b[1] - a[1])[0]; if (top) det = [top[0]]; }
-    return det;
+    if (ovState.themeSel) return [ovState.themeSel];           // a specific theme chosen from the dropdown
+    return detectedThemeKeys();                                // else auto-detected from the build
   }
   // modifiers (realm props + runes) that counter the active themes / leaned-on classes
   function threatCounters(active, heavy) {
@@ -1851,9 +1866,16 @@
     return out.sort((a, b) => (b.hitThemes.length + (b.hitClass ? 1 : 0)) - (a.hitThemes.length + (a.hitClass ? 1 : 0)) || a.name.localeCompare(b.name));
   }
   function openThreats() {
-    ovState = { kind: "threats", themeMode: "auto", manual: new Set(), showGeneral: false,
-      srcView: "realm", weights: detectBuildThemes(), render: renderThreats };   // "realm" = Realm Props · "fgod" = False God runes
+    ovState = { kind: "threats", themeSel: null, showGeneral: false,
+      srcView: "realm", weights: detectBuildThemes(), render: renderThreats };   // themeSel null = auto-detected · "realm" = Realm Props / "fgod" = runes
     openOverlay(ovState.render());
+  }
+  // the auto-detected theme keys (≥2 effects; else the single strongest), for the "Auto" dropdown label
+  function detectedThemeKeys() {
+    const w = ovState.weights || {};
+    let d = Object.keys(w).filter(k => w[k] >= 2);
+    if (!d.length) { const top = Object.entries(w).sort((a, b) => b[1] - a[1])[0]; if (top) d = [top[0]]; }
+    return d;
   }
   function threatRow(m) {
     const chips = [
@@ -1867,13 +1889,12 @@
   }
   function renderThreats() {
     const st = ovState, w = st.weights, heavy = heavyPartyClasses(), active = activeThemes();
-    // theme chip bar — every theme is a toggle; detected ones carry a weight
-    const chipbar = THEMES.map(t => {
-      const on = active.includes(t.key), det = (w[t.key] || 0) > 0;
-      return `<button class="thr-theme ${on ? "on" : ""} ${det ? "det" : ""}" data-action="threat-theme" data-k="${t.key}">${esc(t.label)}${det ? `<span class="thr-w">${w[t.key]}</span>` : ""}</button>`;
-    }).join("");
-    const modeReset = st.themeMode === "manual"
-      ? `<button class="chip" data-action="threat-auto">↺ Detected</button>` : "";
+    // theme selector — a single dropdown (Auto-detected, or explore one theme) replaces the chip toggles
+    const det = detectedThemeKeys();
+    const themeSelect = `<select class="app-select" data-action="threat-navsel">
+      <option value=""${st.themeSel ? "" : " selected"}>Auto — ${det.length ? det.map(themeLabel).join(", ") : "no theme detected"}</option>
+      ${THEMES.map(t => `<option value="${t.key}"${st.themeSel === t.key ? " selected" : ""}>${esc(t.label)}${(w[t.key] || 0) > 0 ? ` · ${w[t.key]} in build` : ""}</option>`).join("")}
+    </select>`;
     // source toggle: Realm Props (source "Realm") ⇆ False God runes (source "Rune")
     const srcView = st.srcView === "fgod" ? "fgod" : "realm";
     const wantSrc = srcView === "fgod" ? "Rune" : "Realm";
@@ -1894,8 +1915,8 @@
     return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel">
       <div class="overlay-header"><h2>Threats</h2><button class="ovl-close" data-action="close-ovl">✕</button></div>
       <div class="overlay-body"><div class="ovl-center"><div class="ovl-center-scroll">
-        <div class="thr-intro">${st.themeMode === "manual" ? "Themes you picked" : "Detected build theme"}${active.length ? " — reroll realm properties and skip runes that counter it." : "."}</div>
-        <div class="thr-themebar">${chipbar}${modeReset}</div>
+        <div class="thr-intro">${st.themeSel ? "Exploring one theme" : "Detected build theme"}${active.length ? " — reroll realm properties and skip runes that counter it." : "."}</div>
+        <div class="thr-themebar">${themeSelect}</div>
         ${srcToggle}
         <div class="section-label">Counters your build</div>
         <div class="thr-list">${countersBody}</div>
@@ -2322,9 +2343,12 @@
     }
     const kindCls = { Perk: "k-spec", Anointment: "k-anoint", Trait: "k-crea", Spell: "k-spell", Relic: "k-crea" };
     const allCollapsed = shared.every(([k]) => st.listCollapsed.has(k));
-    const jumpbar = `<div class="syn-jumpbar">
-      <button class="syn-chip syn-chip-all" data-action="syn-collapse-all">${allCollapsed ? "Expand all" : "Collapse all"}</button>
-      ${shared.map(([k, es]) => `<button class="syn-chip" data-action="syn-jump" data-key="${esc(k)}" title="${esc(taxoCatName(k))}">${esc(taxoValName(k))} <span class="syn-chip-n">${es.length}</span></button>`).join("")}
+    const jumpbar = `<div class="syn-navbar">
+      <button class="btn-ghost" data-action="syn-collapse-all">${allCollapsed ? "Expand all" : "Collapse all"}</button>
+      <select class="syn-nav" data-action="syn-nav" title="Jump to a shared tag">
+        <option value="">Jump to tag…</option>
+        ${shared.map(([k, es]) => `<option value="${esc(k)}">${esc(taxoValName(k))} · ${esc(taxoCatName(k))} (${es.length})</option>`).join("")}
+      </select>
     </div>`;
     const groups = shared.map(([k, es]) => {
       const collapsed = st.listCollapsed.has(k);
@@ -3584,13 +3608,6 @@
       case "open-threats": openThreats(); break;
       case "open-macros": openMacros(); break;
       case "macro-crea": ovState.sel = +t.dataset.slot; refreshOverlay(); break;
-      case "threat-theme": {
-        const k = t.dataset.k;
-        if (ovState.themeMode !== "manual") { ovState.manual = new Set(activeThemes()); ovState.themeMode = "manual"; }
-        ovState.manual.has(k) ? ovState.manual.delete(k) : ovState.manual.add(k);
-        refreshOverlay(); break;
-      }
-      case "threat-auto": ovState.themeMode = "auto"; ovState.manual = new Set(); refreshOverlay(); break;
       case "threat-general": ovState.showGeneral = !ovState.showGeneral; refreshOverlay(); break;
       case "threat-src": ovState.srcView = t.dataset.v; refreshOverlay(); break;
       case "open-synergy": openSynergy(); break;
@@ -4004,6 +4021,12 @@
       const id = +t.dataset.id, cur = favorPrefs.ranks[id];
       t.value = cur != null ? cur : "";
     }
+    else if (A === "syn-nav") {          // Synergy list quick-nav dropdown → expand + scroll to that tag group
+      const k = t.value; if (!k) return;
+      ovState.listCollapsed.delete(k); refreshOverlay();
+      for (const g of OV.querySelectorAll(".syn-group")) if (g.dataset.key === k) { g.scrollIntoView({ block: "start" }); break; }
+    }
+    else if (A === "threat-navsel") { ovState.themeSel = t.value || null; refreshOverlay(); }
   });
   document.addEventListener("keydown", (e) => {
     if (e.key === "Escape") { if (!DOV.classList.contains("hidden")) closeDetail(); else if (!OV.classList.contains("hidden")) closeOverlay(); }

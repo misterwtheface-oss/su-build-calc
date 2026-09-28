@@ -259,11 +259,12 @@ h1, h2, h3 { margin: 0; }
   background: linear-gradient(#241a48, #1c1338);
 }
 .overlay-header h2 { font-size: clamp(14px, 2vw, 17px); flex: 1; }
-.overlay-header .ovl-close {
+.overlay-header .ovl-close, .riddle-pop-head .ovl-close {
   background: var(--surface2); border: 1px solid var(--border-dim); color: var(--text);
-  border-radius: 8px; width: 30px; height: 30px; font-size: 16px;
+  border-radius: 8px; width: 30px; height: 30px; font-size: 16px; flex: 0 0 auto; cursor: pointer;
   display: flex; align-items: center; justify-content: center; padding: 0; line-height: 1;
 }
+.overlay-header .ovl-close:hover, .riddle-pop-head .ovl-close:hover { border-color: var(--accent2); color: var(--text); }
 .ovl-search {
   flex: 1; min-width: 120px; max-width: 340px;
   background: var(--bg); border: 1px solid var(--border-dim); color: var(--text);
@@ -324,7 +325,7 @@ body.resizing-ovl .ovl-right::before { opacity: .6; }
   background: var(--surface2); color: var(--accent2); border: 1px solid var(--border-dim); }
 .cd-info-btn:hover { background: var(--surface3); border-color: var(--accent2); }
 .ovl-center { flex: 1; display: flex; flex-direction: column; min-width: 0; min-height: 0; }
-.ovl-filterbar { flex-shrink: 0; padding: 6px 10px; border-bottom: 1px solid var(--border-dim); display: flex; gap: 6px; flex-wrap: wrap; }
+.ovl-filterbar { flex-shrink: 0; padding: 6px 10px; border-bottom: 1px solid var(--border-dim); display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 .ovl-center-scroll { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 12px; }
 
 /* selection grid of sprite tiles */
@@ -493,7 +494,9 @@ body.resizing-ovl .ovl-right::before { opacity: .6; }
 /* ── Synergy Matrix — carriers × effect-tags grid (complement to Tag Synergy) ── */
 .xref-wrap { flex: 1; min-height: 0; overflow: auto; padding: 12px; }
 .xref-table { border-collapse: separate; border-spacing: 0; font-size: 11px; }
-.xref-table th, .xref-table td { border: 1px solid var(--border-dim); padding: 3px 5px; text-align: center; }
+.xref-table th, .xref-table td { border: 1px solid var(--border-dim); padding: 8px 9px; text-align: center; }
+/* first column (member names) right-aligned — needs to beat the `.xref-table th` center above */
+.xref-table th.xref-rowhead, .xref-table th.xref-corner { text-align: right; }
 .xref-corner  { position: sticky; left: 0; top: 0; z-index: 4; background: var(--surface3); text-align: right; font-size: 10px; color: var(--text-mute); }
 .xref-table thead th { position: sticky; top: 0; z-index: 2; background: var(--surface2); vertical-align: bottom; }
 .xref-rowhead { position: sticky; left: 0; z-index: 1; background: var(--surface2); text-align: right; white-space: nowrap; }
@@ -1064,11 +1067,15 @@ button.apx-owner:hover .apx-owner-ico { border-color: var(--accent); }
 .syn-tag .opt-chev { margin-left: auto; opacity: .55; font-size: 12px; }
 .syn-tag .syn-caret { flex: 0 0 auto; opacity: .55; font-size: 11px; margin-left: 4px; }
 /* jump-link bar — click a chip to expand + scroll to that tag group */
-.syn-jumpbar { flex: 0 0 auto; display: flex; flex-wrap: wrap; gap: 5px; padding: 8px 12px; border-bottom: 1px solid var(--border-dim); max-height: 92px; overflow-y: auto; }
-.syn-chip { font-size: 11px; padding: 2px 9px; border: 1px solid var(--border-dim); border-radius: 999px; background: var(--surface); color: var(--text-dim); cursor: pointer; white-space: nowrap; }
-.syn-chip:hover { color: var(--text); border-color: var(--accent2); }
-.syn-chip .syn-chip-n { color: var(--cap); font-weight: 700; margin-left: 3px; }
-.syn-chip-all { border-color: var(--accent2); color: var(--text); font-weight: 600; }
+/* synergy list: a sleek Collapse-all + quick-nav dropdown (replaces the old jump-chip row) */
+.syn-navbar { flex: 0 0 auto; display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-bottom: 1px solid var(--border-dim); }
+.syn-nav { flex: 1; min-width: 0; background: var(--surface); border: 1px solid var(--border-dim); color: var(--text);
+  border-radius: 8px; padding: 6px 10px; font-size: 13px; cursor: pointer; font-family: inherit; }
+.syn-nav:hover { border-color: var(--accent2); }
+/* shared select styling for native quick-nav dropdowns (synergy + threats) */
+select.app-select { background: var(--surface); border: 1px solid var(--border-dim); color: var(--text);
+  border-radius: 8px; padding: 6px 10px; font-size: 13px; cursor: pointer; font-family: inherit; }
+select.app-select:hover { border-color: var(--accent2); }
 .syn-effs { display: flex; flex-direction: column; }
 .syn-eff { padding: 7px 10px; border-top: 1px solid var(--border-dim); text-align: left; }
 .syn-eff:first-child { border-top: 0; }
@@ -1118,6 +1125,18 @@ button.apx-owner:hover .apx-owner-ico { border-color: var(--accent); }
 .build-icon-pick:hover { border-color: var(--accent2); }
 .build-icon-pick > img, .build-icon-pick > .slot-empty-icon { width: 48px; height: 48px; object-fit: contain; }
 .build-icon-pick .slot-empty-icon { font-size: 26px; }
+/* build creation (save form): a big centred sprite box + name, with a large animated preview panel */
+.build-create { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px; padding: 32px 16px; min-height: 100%; }
+.build-sprite-box { width: 168px; height: 168px; flex: 0 0 auto; display: flex; align-items: center; justify-content: center;
+  background: var(--surface); border: 2px dashed var(--border); border-radius: 18px; cursor: pointer; transition: border-color .12s; }
+.build-sprite-box:hover { border-color: var(--accent2); background: var(--surface2); }
+.build-sprite-box > img { width: 128px; height: 128px; object-fit: contain; image-rendering: pixelated; }
+.build-sprite-box .slot-empty-icon { font-size: 60px; color: var(--accent2); }
+.build-name { flex: 0 0 auto; max-width: 340px; width: 100%; text-align: center; font-weight: 700; font-size: 15px; }
+.build-preview { display: flex; align-items: center; justify-content: center; }
+.build-hero { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; text-align: center; }
+.build-hero > img { width: 208px; height: 208px; object-fit: contain; image-rendering: pixelated; }
+.build-hero.empty .slot-empty-icon { font-size: 72px; color: var(--border); }
 
 /* artifact builder wizard — step 1 has EXACTLY 5 primary types, so they fill the step.
    mobile: full-width horizontal rows. web: a centered row of large containers with breathing room. */
