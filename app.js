@@ -231,7 +231,7 @@
   const SCROLL_MAX = D.scrollMax || 15;                                  // total stat scrolls per creature (each +1 base)
 
   // ── persistence (schema 2) ─────────────────────────────────────────────────
-  const LS = { build: "subc.build", cards: "subc.cards", nether: "subc.nether", artifacts: "subc.artifacts", spellgems: "subc.spellgems", builds: "subc.builds", bookmarks: "subc.bookmarks", favorRanks: "subc.favorRanks" };
+  const LS = { build: "subc.build", cards: "subc.cards", nether: "subc.nether", artifacts: "subc.artifacts", spellgems: "subc.spellgems", builds: "subc.builds", bookmarks: "subc.bookmarks", favorRanks: "subc.favorRanks", ovlW: "subc.ovlW" };
   const jload = (k, dflt) => { try { const v = JSON.parse(localStorage.getItem(k)); return v == null ? dflt : v; } catch { return dflt; } };
   const jsave = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} };
 
@@ -668,7 +668,7 @@
 
   // ── overlay plumbing ───────────────────────────────────────────────────────
   const OV = el("overlay-root"), DOV = el("detail-overlay-root");
-  let ovState = null, dovState = null, specAnimTimer = null;
+  let ovState = null, dovState = null, specAnimTimer = null, iconAnimTimer = null;
 
   // Animate the spec info-panel costume: front-facing 2-frame walk, alternate 8× then advance a tier (cycles).
   // animate the #specCostume in a given overlay root: front-facing 2-frame walk, 8× then advance a tier
@@ -688,6 +688,17 @@
     if (specAnimTimer) { clearInterval(specAnimTimer); specAnimTimer = null; }
     if (ovState && ovState.kind === "spec" && ovState.sel != null) animateCostume(OV, SPEC.get(ovState.sel));
     else if (dovState && dovState.kind === "spec-detail" && dovState.specId != null) animateCostume(DOV, SPEC.get(dovState.specId));
+  }
+  // Wardrobe icon picker: only the SELECTED tile animates its 2-frame walk; the rest stay still.
+  function syncIconAnim() {
+    if (iconAnimTimer) { clearInterval(iconAnimTimer); iconAnimTimer = null; }
+    if (!dovState || dovState.kind !== "iconpick" || !dovState.sel) return;
+    const w = (D.wardrobe || []).find(x => x.sprite === dovState.sel);
+    const frames = w && Array.isArray(w.frames) && w.frames.length >= 2 ? w.frames : null;
+    const img = DOV.querySelector(".pick-tile.selected .pt-sprite img");
+    if (!frames || !img) return;
+    let fr = 0;
+    iconAnimTimer = setInterval(() => { fr ^= 1; img.src = frames[fr]; }, 300);
   }
   const SCROLLERS = [".ovl-center-scroll", ".ovl-left", ".ovl-right", ".art-side-list", ".xref-wrap"];
 
@@ -750,7 +761,7 @@
 
   // DOM-only closes; the Back handler above and the UI wrappers both use these.
   function closeOverlayReal() { if (specAnimTimer) { clearInterval(specAnimTimer); specAnimTimer = null; } OV.classList.add("hidden"); OV.innerHTML = ""; ovState = null; }
-  function closeDetailReal() { if (specAnimTimer) { clearInterval(specAnimTimer); specAnimTimer = null; } DOV.classList.add("hidden"); DOV.innerHTML = ""; dovState = null; }
+  function closeDetailReal() { if (specAnimTimer) { clearInterval(specAnimTimer); specAnimTimer = null; } if (iconAnimTimer) { clearInterval(iconAnimTimer); iconAnimTimer = null; } DOV.classList.add("hidden"); DOV.innerHTML = ""; dovState = null; }
 
   function openOverlay(html) { OV.innerHTML = html; OV.classList.remove("hidden"); reconcileHistory(); }
   function closeOverlay() { closeOverlayReal(); reconcileHistory(); }
@@ -774,7 +785,7 @@
     panel.outerHTML = dovState.render();
     const p2 = DOV.querySelector(".overlay-panel");
     SCROLLERS.forEach((sel, k) => { const e = p2 && p2.querySelector(sel); if (e) e.scrollTop = saved[k]; });
-    syncSpecAnim();
+    syncSpecAnim(); syncIconAnim();
   }
   function maybeFocusSearch(root) {
     const input = root.querySelector(".ovl-search");
@@ -1390,8 +1401,9 @@
     const catChips = WARDROBE_CATS.map(c =>
       `<button class="facet ${st.cat === c ? "on" : ""}" data-action="iconpick-cat" data-c="${c}">${c[0].toUpperCase() + c.slice(1)}</button>`).join("")
       + (st.cat ? `<button class="facet tag" data-action="iconpick-cat-clear">Clear ✕</button>` : "");
+    // tap a tile to select it (it animates its 2-frame walk); tap again or "Use this icon" to commit
     const tiles = list.slice(0, 600).map(w => `
-      <div class="pick-tile" data-action="iconpick-pick" data-k="${esc(w.sprite)}">
+      <div class="pick-tile ${st.sel === w.sprite ? "selected" : ""}" data-action="iconpick-sel" data-k="${esc(w.sprite)}">
         <div class="pt-sprite">${spriteImg(w.img, "px")}</div><div class="pt-name">${esc(w.name)}</div></div>`).join("")
       || `<div class="slot-sub" style="padding:10px">No sprites match.</div>`;
     return `<div class="ovl-backdrop" data-action="facet-backdrop"><div class="overlay-panel detail">
@@ -1403,6 +1415,8 @@
         <div class="ovl-center-scroll"><div class="pick-grid">${tiles}</div>
         ${list.length > 600 ? `<div class="slot-sub" style="padding:6px">Showing 600 of ${list.length}.</div>` : ""}</div>
       </div></div>
+      <div class="overlay-footer"><span class="foot-info"></span>
+        <button class="btn-confirm" data-action="iconpick-use" ${st.sel ? "" : "disabled"}>Use this icon</button></div>
     </div></div>`;
   }
 
@@ -1526,7 +1540,7 @@
         const open = q ? true : st.expanded.has(cat);
         const rows = open ? `<div class="opt-list apx-vals">${vals.slice().sort((a, b) => a.val.localeCompare(b.val)).map(v =>
           `<button class="opt-row" data-action="appendix-tag" data-k="${esc(v.key)}"><span>${esc(v.val)}</span><span class="apx-val-n">${v.n}</span></button>`).join("")}</div>` : "";
-        parts.push(`<button class="apx-sec-head${open ? "" : " collapsed"}" data-action="appendix-cat-toggle" data-c="${esc(cat)}">
+        parts.push(`<button class="apx-sec-head apx-cat${open ? "" : " collapsed"}" data-action="appendix-cat-toggle" data-c="${esc(cat)}">
             <span class="apx-sec-caret">${open ? "▾" : "▸"}</span>${esc(cat)}</button>${rows}`);
       }
       placeholder = "Search categories & tags…";
@@ -3539,7 +3553,10 @@
       case "builds-del": armOrDo(t, () => { const id = +t.dataset.id; builds = builds.filter(b => b.id !== id); if (ovState.sel === id) ovState.sel = null; persistBuilds(); refreshOverlay(); }); break;
       case "iconpick-cat": dovState.cat = t.dataset.c; refreshDetail(); break;
       case "iconpick-cat-clear": e.stopPropagation(); dovState.cat = null; refreshDetail(); break;
-      case "iconpick-pick": { const w = (D.wardrobe || []).find(x => x.sprite === t.dataset.k); if (w && dovState.onPick) dovState.onPick(w); closeDetail(); refreshOverlay(); break; }
+      case "iconpick-sel": { const k = t.dataset.k;   // first tap selects (+animates); tapping the selected tile again commits
+        if (dovState.sel === k) { const w = (D.wardrobe || []).find(x => x.sprite === k); if (w && dovState.onPick) dovState.onPick(w); closeDetail(); refreshOverlay(); }
+        else { dovState.sel = k; refreshDetail(); } break; }
+      case "iconpick-use": { const w = (D.wardrobe || []).find(x => x.sprite === dovState.sel); if (w && dovState.onPick) { dovState.onPick(w); closeDetail(); refreshOverlay(); } break; }
       case "open-appendix": openAppendix(); break;
       case "open-realms": openRealms(); break;
       case "open-godshops": openGodShops(); break;
@@ -3941,6 +3958,30 @@
   }
 
   document.addEventListener("click", onClick);
+
+  // ── info-panel resize (desktop): grab the left-edge grip of an .ovl-right and drag to resize.
+  // Width lives in a persisted CSS var (--ovl-w); the 9px grip strip makes accidental resizing unlikely.
+  { const w = localStorage.getItem(LS.ovlW); if (w && /^\d+px$/.test(w)) document.documentElement.style.setProperty("--ovl-w", w); }
+  document.addEventListener("pointerdown", (e) => {
+    if (e.button !== 0 || window.innerWidth <= 820) return;         // left button, desktop only
+    const panel = e.target.closest(".ovl-right"); if (!panel) return;
+    const rect = panel.getBoundingClientRect();
+    if (e.clientX - rect.left > 10) return;                          // only the left-edge grip zone
+    e.preventDefault();
+    const startX = e.clientX, startW = rect.width;
+    document.body.classList.add("resizing-ovl");
+    const move = (ev) => {
+      const w = Math.max(300, Math.min(680, Math.round(startW - (ev.clientX - startX))));
+      document.documentElement.style.setProperty("--ovl-w", w + "px");
+    };
+    const up = () => {
+      document.removeEventListener("pointermove", move); document.removeEventListener("pointerup", up);
+      document.body.classList.remove("resizing-ovl");
+      localStorage.setItem(LS.ovlW, getComputedStyle(document.documentElement).getPropertyValue("--ovl-w").trim());
+    };
+    document.addEventListener("pointermove", move); document.addEventListener("pointerup", up);
+  });
+
   // right-click a creature tile to (re)open the creature / fusion selector
   document.addEventListener("contextmenu", (e) => {
     const slotEl = e.target.closest(".slot[data-slot]");

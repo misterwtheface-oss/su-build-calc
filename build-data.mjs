@@ -1695,17 +1695,23 @@ console.log(`  conditions glossary: ${conditions.length} (${['Buff', 'Debuff', '
 fs.rmSync(OUT_WARDROBE, { recursive: true, force: true });
 fs.mkdirSync(OUT_WARDROBE, { recursive: true });
 const wardrobeRecs = readJSON(path.join(MODEL, 'wardrobe.json')).records;
-let wardrobeCopied = 0, wardrobeMissing = 0;
+let wardrobeCopied = 0, wardrobeMissing = 0, wardrobeAnim = 0;
 const nameSrc = { class_vocab: 0, L_WD: 0, derived: 0 };
 const wardrobe = [];
 for (const w of wardrobeRecs) {
   const ok = copyNamedSprite(w.sprite, OUT_WARDROBE, `${w.sprite}.png`);
   if (ok) wardrobeCopied++; else { wardrobeMissing++; warn(`wardrobe costume "${w.sprite}" has no PNG`); }
+  const img = ok ? `assets/wardrobe/${w.sprite}.png` : null;
+  // second front-facing frame → the 2-frame idle/walk animation (same mechanism spec costumes use).
+  // img is frame 0 (copyNamedSprite prefers <sprite>_0.png); frame 1 is <sprite>_1.png. `frames` = [f0,f1]
+  // when both exist, else null (no animation). Renamed the old numeric sheet-frame count to `frameCount`.
+  const has1 = ok && copySpriteFrame(w.sprite, 1, OUT_WARDROBE, `${w.sprite}_1.png`);
+  const frames = has1 ? [img, `assets/wardrobe/${w.sprite}_1.png`] : null;
+  if (frames) wardrobeAnim++;
   nameSrc[w.name_source] = (nameSrc[w.name_source] || 0) + 1;
   wardrobe.push({ sprite: w.sprite, key: w.sprite, name: w.name, name_source: w.name_source,
                   spec: w.spec, stem: w.stem, tier: w.tier, variant: w.variant,
-                  category: w.category, frames: w.frames, order: w.order,
-                  img: ok ? `assets/wardrobe/${w.sprite}.png` : null });
+                  category: w.category, frameCount: w.frames, frames, order: w.order, img });
 }
 // group the THREE canonical tier costumes per specialization (Grovetender -> herbalist tiers, etc.).
 // The info panel animates one costume per tier, so the set must be exactly tiers 1/2/3 — NOT the extra
@@ -1797,7 +1803,7 @@ console.log(`  spec sprites: ${specSkins} real skins + ${specs.filter(s => s.spr
   console.log(`  perk icons: ${perkIconsCopied} copied (code-certain from perk_icons.json)${perkIconsMissing ? ` · ${perkIconsMissing} missing` : ' · 100%'}`);
   console.log(`  perk flags (Perk_REF.csv): ${anointFlagged} anointments${perkRefMisses ? ` · ${perkRefMisses} perks not in CSV` : ' · all matched'}`);
   console.log(`  False Gods: ${falseGods.length} with specs · ${specs.length - specGodMisses}/${specs.length} specs mapped${fgodImgMisses ? ` · ${fgodImgMisses} composites MISSING (run tools/build_falsegods.py)` : ' · composites ✓'}`);
-  console.log(`  wardrobe: ${wardrobeCopied} player costumes copied (code-certain)${wardrobeMissing ? ` · ${wardrobeMissing} missing` : ''} · ${specCostumes}/${specs.length} specs linked (all tiers) · ${specCostumeOverrides} costume overrides`);
+  console.log(`  wardrobe: ${wardrobeCopied} player costumes copied (code-certain)${wardrobeMissing ? ` · ${wardrobeMissing} missing` : ''} · ${wardrobeAnim} with a 2-frame animation · ${specCostumes}/${specs.length} specs linked (all tiers) · ${specCostumeOverrides} costume overrides`);
   console.log(`  wardrobe names: ${nameSrc.class_vocab} class-vocab + ${nameSrc.L_WD} L_WD + ${nameSrc.derived} derived (of ${wardrobe.length})`);
   console.log(`  trait-item icons: ${matIconCopied} copied (code-certain from material_icons.json)${matIconMissing ? ` · ${matIconMissing} missing` : ''}`);
 
