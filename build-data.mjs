@@ -1144,6 +1144,7 @@ for (const r of readJSON(path.join(REF, 'god_shop_ref.json')).records) {
   if ((r.type || '').toLowerCase() === 'crafting material' && /property to a Spell Gem/i.test(r.description || ''))
     gemGod.set((r.item || '').toUpperCase(), r.god);
 }
+const SPELL_CLASS_LIST = ['Nature', 'Chaos', 'Sorcery', 'Death', 'Life'];
 const spellProps = [];
 let propGemIcons = 0, propGemGods = 0;
 {
@@ -1158,7 +1159,14 @@ let propGemIcons = 0, propGemGods = 0;
     if (copyPropGem(gem, `${gem}.png`)) { icon = `assets/propgems/${gem}.png`; propGemIcons++; }
     const god = gemGod.get(gem) || null;
     if (god) propGemGods++;
-    spellProps.push({ id: idx++, key: gem, name, effect, icon, god });
+    // Opal's "Class Swap" lets you choose a target class in-game → expand into one variant per class,
+    // each carrying swapClass so a gem's identity (equip class + coloured icon) actually changes. The
+    // same-class option is filtered out per-spell in the wizard (only the 4 other classes are valid).
+    if (gem === 'OPAL') {
+      for (const cl of SPELL_CLASS_LIST) spellProps.push({ id: idx++, key: 'OPAL_' + cl.toUpperCase(), name, effect: 'Class Swap: ' + cl, icon, god, swapClass: cl });
+    } else {
+      spellProps.push({ id: idx++, key: gem, name, effect, icon, god });
+    }
   }
   warn(`spell-gem property icons: ${propGemIcons}/${spellProps.length} captured (rest use generic dust pile)`);
   warn(`spell-gem property gods: ${propGemGods}/${spellProps.length} mapped from god_shop_ref`);

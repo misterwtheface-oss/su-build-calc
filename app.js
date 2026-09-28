@@ -189,9 +189,14 @@
   const spellIcon = (s) => s && s.cls ? SPELLGEM[s.cls] : null;
   const SPELLPROP = new Map((D.spellProps || []).map(p => [p.id, p]));   // spell-gem property items (Slates/Curios)
   const SPELLGEM_MAX_PROPS = 3;                             // each spell gem holds up to 3 property items
+  const SPELL_CLASSES = ["Nature", "Chaos", "Sorcery", "Death", "Life"];
   // built spell-gem helpers (a gem = {id,name,spellId,propIds[]})
   const gemSpell = (g) => g ? SPELL.get(g.spellId) : null;
-  const gemIcon = (g) => spellIcon(gemSpell(g));
+  // Opal "Class Swap: <Class>" reclasses the gem — the swapped class overrides the spell's own class,
+  // driving both the equip check and the class-coloured icon. Returns null if no Class-Swap prop is set.
+  const gemSwapClass = (g) => { for (const pid of (g && g.propIds || [])) { const p = SPELLPROP.get(pid); if (p && p.swapClass) return p.swapClass; } return null; };
+  const gemClass = (g) => { const s = gemSpell(g); return gemSwapClass(g) || (s ? s.cls : null); };
+  const gemIcon = (g) => { const cls = gemClass(g); return cls ? SPELLGEM[cls] : null; };
   const gemName = (g) => g ? (g.name || (gemSpell(g) ? gemSpell(g).name : "Spell Gem")) : "";
   const gemSummary = (g) => { const s = gemSpell(g); const np = (g.propIds || []).length;
     return (s ? s.name : "—") + (np ? ` · ${np} propert${np === 1 ? "y" : "ies"}` : ""); };
@@ -558,6 +563,30 @@
     }
     return max;
   }
+  // A creature can only equip Spell Gems whose (effective) class matches its own — unless a trait/perk
+  // permits otherwise, or an Opal has re-classed the gem (handled by gemClass). Returns null when ANY
+  // class is allowed (a full cross-class grant), otherwise the Set of allowed class names.
+  const traitDescs = (slot) => slotTraitIds(slot).map(id => (TRAIT[id] || {}).desc || "");
+  const ANYCLASS_RE = /equip (all |spell gems from any class|.*from any class)|regardless of (their|its) class/i;
+  // party-wide grants apply to every creature ("Your creatures can equip …"); self grants only the bearer
+  function allocatedPerkDescs() {                            // spec perks (ranked) + equipped anointments
+    const out = []; const spec = SPEC.get(build.specId);
+    if (spec) for (const p of spec.perks) if (perkRank(spec, p) > 0) out.push(p.desc || "");
+    for (const a of (build.anoints || [])) { const s = SPEC.get(a.specId); const p = s && s.perks.find(x => x.key === a.key); if (p) out.push(p.desc || ""); }
+    return out;
+  }
+  function spellEquipClasses(slot) {
+    const base = baseStats(slot); const own = base && base.cls ? base.cls : null;
+    const set = new Set(own ? [own] : []);
+    // self any-class trait on this creature
+    if (traitDescs(slot).some(d => /this creature can (only )?equip.*(any class|from any class)/i.test(d) || (ANYCLASS_RE.test(d) && /this creature/i.test(d)))) return null;
+    // party-wide any-class trait on ANY party member (e.g. Pandora)
+    if (build.slots.some(s => traitDescs(s).some(d => /your creatures can equip all spell gems/i.test(d) || (/your creatures/i.test(d) && ANYCLASS_RE.test(d) && !/\{class_/i.test(d))))) return null;
+    // per-class party grants: "Your creatures can equip {CLASS_X} Spell Gems, regardless of their class" (Evoker)
+    for (const d of allocatedPerkDescs()) { const m = d.match(/\{CLASS_(\w+)\}\s*spell gems,\s*regardless of (their|its) class/i); if (m) { const cl = SPELL_CLASSES.find(c => c.toLowerCase() === m[1].toLowerCase()); if (cl) set.add(cl); } }
+    return set;
+  }
+  const canEquipGemOn = (slot, g) => { const allowed = spellEquipClasses(slot); if (allowed === null) return true; const cls = gemClass(g); return !cls || allowed.has(cls); };
 
   function traitBanner(tid, opts = {}) {
     const t = TRAIT[tid]; if (!t) return "";
@@ -2490,7 +2519,7 @@
       const viewBody = view === "sockets" ? `<div class="prop-list">${artContentRows(sel)}</div>` : artifactBonusView(sel);
       info = `<div class="ns-info-head"><span class="ns-info-icon">${spriteImg(artIcon(sel), "px")}</span><h3>${esc(sel.name)}</h3></div>
         ${toggle}${viewBody}`;
-    } else info = `<div class="slot-sub" style="padding:12px">Select an artifact.</div>`;
+    }
     // footer selector bar (mirrors Builds): Edit/Delete act on the selection; the confirm button
     // switches between Equip (artifact selected, equip mode) and ＋ Build new artifact (none selected).
     const canEquip = !manage && sel;
@@ -2501,8 +2530,8 @@
     return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel">
       <div class="overlay-header"><h2>Artifacts${manage ? "" : " — " + esc(c ? c.name : "")}</h2><button class="ovl-close" data-action="close-ovl">✕</button></div>
       <div class="overlay-body">
-        <div class="ovl-center"><div class="ovl-center-scroll"><div class="pick-grid equip-grid">${tiles}</div></div></div>
-        <div class="ovl-right lib-info">${info}</div>
+        <div class="ovl-center" data-action="lib-deselect"><div class="ovl-center-scroll"><div class="pick-grid equip-grid">${tiles}</div></div></div>
+        ${sel ? `<div class="ovl-right lib-info">${info}</div>` : ""}
       </div>
       <div class="overlay-footer"><button class="facet ${st.hideEquipped ? "on" : ""}" data-action="artlib-hide-equipped">Hide equipped</button>
         <div>
@@ -3252,17 +3281,25 @@
     let list = spellGems;
     if (st.hideEquipped) list = list.filter(g => !spellGemEquippedInBuild(g.id) || (equipped && equipped.has(g.id)));
     const sel = st.sel != null ? spellGems.find(g => g.id === st.sel) : null;
+    // when equipping onto a creature, gems of a class the creature can't use are blocked (unless a
+    // trait/perk permits cross-class or an Opal has re-classed the gem) — matches the in-game rule.
+    const creatureSlot = ctx && ctx.kind === "creature" ? build.slots[ctx.slotIdx] : null;
+    const creatureCls = creatureSlot ? (baseStats(creatureSlot) || {}).cls : null;
+    const allowedCls = creatureSlot ? spellEquipClasses(creatureSlot) : null;   // null = any class permitted
+    const gemAllowed = (g) => !creatureSlot || allowedCls === null || allowedCls.has(gemClass(g));
     // tile equip-state highlight: purple = equipped on THIS creature, gold = equipped on another
     // (in manage/Menu mode every equipped gem is "another")
     const tiles = list.map(g => {
       const eqHere = !!ctx && equipped.has(g.id);
       const eqOther = !eqHere && spellGemEquippedInBuild(g.id);
+      const wrongClass = creatureSlot && !eqHere && !gemAllowed(g);
+      const gcls = gemClass(g);
       return `
-      <div class="pick-tile ${st.sel === g.id ? "selected" : ""}${eqHere ? " eq-here" : ""}${eqOther ? " eq-other" : ""}" data-action="sg-sel" data-id="${g.id}"${eqHere ? ` title="Equipped on this creature"` : eqOther ? ` title="Equipped on another creature"` : ""}>
+      <div class="pick-tile ${st.sel === g.id ? "selected" : ""}${eqHere ? " eq-here" : ""}${eqOther ? " eq-other" : ""}${wrongClass ? " disabled" : ""}" data-action="sg-sel" data-id="${g.id}"${wrongClass ? ` title="${esc(gcls || "This")} spell — can't equip on a ${esc(creatureCls || "different")}-class creature"` : eqHere ? ` title="Equipped on this creature"` : eqOther ? ` title="Equipped on another creature"` : ""}>
         <div class="pt-sprite">${spriteImg(gemIcon(g), "px")}</div>
         <div class="pt-name">${esc(gemName(g))}</div></div>`; }).join("")
       || `<div class="slot-sub" style="padding:10px">No spell gems${st.hideEquipped ? " match" : " yet — build one"}.</div>`;
-    let info;
+    let info = "";
     if (sel) {
       const sp = gemSpell(sel);
       const propRows = (sel.propIds || []).map(pid => { const p = SPELLPROP.get(pid);
@@ -3274,25 +3311,33 @@
                ${sp.desc ? `<div class="prop-sub">${perkText(sp.desc)}</div>` : ""}</div></div>
            ${spellStatsHtml(sp)}`
         : `<div class="slot-sub" style="padding:6px">No spell chosen.</div>`;
+      const gcls = gemClass(sel);
+      const clsNote = creatureSlot && !equipped.has(sel.id) && !gemAllowed(sel)
+        ? `<div class="slot-sub sg-clsnote" style="padding:8px 0">${esc(gcls || "This")}-class spell — a ${esc(creatureCls || "different")}-class creature can't equip it (an Opal or the right trait is needed).</div>` : "";
       info = `<div class="ns-info-head"><span class="ns-info-icon">${spriteImg(gemIcon(sel), "px")}</span><h3>${esc(gemName(sel))}</h3></div>
-        ${spellBlock}
+        ${clsNote}${spellBlock}
         ${propRows ? `<div class="section-label">Enchants</div><div class="prop-list">${propRows}</div>` : ""}`;
-    } else info = `<div class="slot-sub" style="padding:12px">Select a spell gem.</div>`;
+    }
     // footer selector bar (mirrors Artifacts/Builds): Edit/Delete act on the selection; the confirm
     // switches between Equip (equip context + selection) and ＋ Build new (manage mode / no selection).
-    const canEquip = !!ctx && !!sel;
-    const on = canEquip ? equipped.has(sel.id) : false;
+    const on = ctx && sel ? equipped.has(sel.id) : false;
+    const selBlocked = creatureSlot && sel && !on && !gemAllowed(sel);   // wrong-class, no permission
+    const canEquip = !!ctx && !!sel && !selBlocked;
+    // only render the info panel when there's something selected (no empty placeholder panel)
+    const infoPanel = sel ? `<div class="ovl-right lib-info">${info}</div>` : "";
     return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel">
       <div class="overlay-header"><h2>Spell Gems${ctx ? " — equip" : ""}</h2><button class="ovl-close" data-action="close-ovl">✕</button></div>
       <div class="overlay-body">
-        <div class="ovl-center"><div class="ovl-center-scroll"><div class="pick-grid equip-grid">${tiles}</div></div></div>
-        <div class="ovl-right lib-info">${info}</div>
+        <div class="ovl-center" data-action="lib-deselect"><div class="ovl-center-scroll"><div class="pick-grid equip-grid">${tiles}</div></div></div>
+        ${infoPanel}
       </div>
       <div class="overlay-footer"><button class="facet ${st.hideEquipped ? "on" : ""}" data-action="sg-hide-equipped">Hide equipped</button>
         <div>
           <button class="btn-ghost" data-action="sg-edit" data-id="${sel ? sel.id : ""}" ${sel ? "" : "disabled"}>Edit</button>
           <button class="btn-ghost danger" data-action="sg-del" data-id="${sel ? sel.id : ""}" ${sel ? "" : "disabled"}>Delete</button>
-          <button class="btn-confirm" style="min-width:96px" data-action="${canEquip ? "sg-equip" : "sg-new"}" ${canEquip ? `data-id="${sel.id}"` : ""}>${canEquip ? (on ? "Unequip" : "Equip") : "＋ Build new"}</button>
+          ${ctx && selBlocked
+            ? `<button class="btn-confirm" style="min-width:96px" disabled title="Wrong class for this creature">Can't equip</button>`
+            : `<button class="btn-confirm" style="min-width:96px" data-action="${canEquip ? "sg-equip" : "sg-new"}" ${canEquip ? `data-id="${sel.id}"` : ""}>${canEquip ? (on ? "Unequip" : "Equip") : "＋ Build new"}</button>`}
         </div></div>
     </div></div>`;
   }
@@ -3317,43 +3362,52 @@
         ? `<button class="facet on tag" data-action="sg-taxofilter-clear">${esc(taxoCatName(st.spellTaxo))}: <b>${esc(taxoValName(st.spellTaxo))}</b> <span class="facet-x">✕</span></button>`
         : `<button class="facet add" data-action="sg-taxofilter">＋ Filter</button>`;
       // right info panel — preview the highlighted spell's full effect + stats before committing to it
+      // (only shown once a spell is chosen; no empty placeholder panel)
       const chosen = g.spellId != null ? SPELL.get(g.spellId) : null;
       const info = chosen
         ? `<div class="ns-info-head"><span class="ns-info-icon">${spellIcon(chosen) ? spriteImg(spellIcon(chosen), "px") : ""}</span><h3>${esc(chosen.name)}</h3></div>
            ${chosen.desc ? `<div class="prop-sub" style="margin-bottom:4px">${perkText(chosen.desc)}</div>` : ""}
            ${spellStatsHtml(chosen)}`
-        : `<div class="slot-sub" style="padding:12px">Tap a spell to preview its effect, charges and potency.</div>`;
+        : "";
       body = `<div class="ovl-center">
         <div class="ovl-filterbar"><input class="ovl-search" placeholder="Search spells…" value="${esc(st.search)}" data-action="sg-search">${sTaxo}${bookmarks.spells.length ? `<button class="facet ${st.bkOnly ? "on" : ""}" data-action="sgb-bkonly" title="Show only bookmarked spells">★ Bookmarked</button>` : ""}</div>
         <div class="ovl-center-scroll">${rows}</div></div>
-        <div class="ovl-right lib-info">${info}</div>`;
+        ${chosen ? `<div class="ovl-right lib-info">${info}</div>` : ""}`;
       footer = `<button class="btn-ghost" data-action="sg-cancel">Cancel</button>
         <button class="btn-confirm" data-action="sgb-next" ${g.spellId != null ? "" : "disabled"}>Next: Properties ›</button>`;
     } else {
+      const propLabel = (p) => p ? (p.swapClass ? p.effect : (p.effect || "").split(":")[0]) : "";
       const boxes = [];
       for (let i = 0; i < SPELLGEM_MAX_PROPS; i++) {
         const pid = g.propIds[i];
         if (pid !== undefined) { const p = SPELLPROP.get(pid);
           boxes.push(`<div class="art-slot"><button class="as-rm" data-action="sg-prop-rm" data-i="${i}">✕</button>
             <div class="as-ico">${p && p.icon ? spriteImg(p.icon, "px") : "◆"}</div><div class="as-lab">${esc(p ? p.name : pid)}</div>
-            <div class="as-sub">${esc(p ? (p.effect || "").split(":")[0].slice(0, 24) : "")}</div></div>`); }
+            <div class="as-sub">${esc(propLabel(p).slice(0, 24))}</div></div>`); }
         else boxes.push(`<div class="art-slot add ${st.picking ? "picking" : ""}" data-action="sg-addprop"><div class="as-ico glyph">＋</div><div class="as-lab">Property</div></div>`);
       }
       let picker = "";
       if (st.picking) {
-        const pr = D.spellProps.filter(p => !q || p.name.toLowerCase().includes(q) || (p.effect || "").toLowerCase().includes(q)).map(p =>
+        // Opal's "Class Swap: <Class>" variants can't target the spell's own class → hide that one.
+        const spellCls = gemSpell(g) ? gemSpell(g).cls : null;
+        const pr = D.spellProps.filter(p => {
+          if (p.swapClass && p.swapClass === spellCls) return false;
+          return !q || p.name.toLowerCase().includes(q) || (p.effect || "").toLowerCase().includes(q);
+        }).map(p =>
           `<div class="prop-row ${g.propIds.includes(p.id) ? "chosen" : ""}" data-action="sg-pickprop" data-id="${p.id}">
             <span class="prop-ico">${p.icon ? spriteImg(p.icon, "px") : ""}</span><span class="prop-name">${esc(p.name)}</span><span class="prop-stat">${esc(p.effect || "")}</span></div>`).join("");
-        picker = `<div class="art-picker">
+        picker = `<div class="sgb-picker">
           <div class="ovl-filterbar"><button class="chip" data-action="sg-closepick">‹ Done</button>
             <input class="ovl-search" placeholder="Search gemstone enchantments…" value="${esc(st.search)}" data-action="sg-search"></div>
-          <div class="art-pick-scroll">${pr}</div></div>`;
+          <div class="sgb-pick-scroll">${pr}</div></div>`;
       }
-      body = `<div class="ovl-center"><div class="ovl-center-scroll">
-        <div class="build-section"><h3>Name</h3>
-          <input class="ovl-search name-field" placeholder="${esc(gemSpell(g) ? gemSpell(g).name : "Spell gem name")}" value="${esc(g.name)}" data-action="sg-name" style="max-width:320px"></div>
-        <div class="art-slot-group"><div class="section-label">Property items</div><div class="art-slot-grid">${boxes.join("")}</div></div>
-        ${picker}</div></div>`;
+      body = `<div class="ovl-center">
+        <div class="sgb-top">
+          <div class="build-section"><h3>Name</h3>
+            <input class="ovl-search name-field" placeholder="${esc(gemSpell(g) ? gemSpell(g).name : "Spell gem name")}" value="${esc(g.name)}" data-action="sg-name" style="max-width:320px"></div>
+          <div class="art-slot-group"><div class="section-label">Property items</div><div class="art-slot-grid">${boxes.join("")}</div></div>
+        </div>
+        ${picker}</div>`;
       footer = `<button class="btn-ghost" data-action="sgb-back">‹ Back</button>
         <button class="btn-confirm" data-action="sg-save">Save Spell Gem</button>`;
     }
@@ -3740,8 +3794,14 @@
       case "sgb-back": ovState.step = "spell"; ovState.picking = false; ovState.search = ""; refreshOverlay(); break;
       case "sg-addprop": ovState.picking = true; ovState.search = ""; refreshOverlay(); break;
       case "sg-closepick": ovState.picking = false; refreshOverlay(); break;
-      case "sg-pickprop": { const id = +t.dataset.id, arr = ovState.draft.propIds;
-        const i = arr.indexOf(id); if (i >= 0) arr.splice(i, 1); else if (arr.length < SPELLGEM_MAX_PROPS) arr.push(id);
+      case "sg-pickprop": { const id = +t.dataset.id, arr = ovState.draft.propIds, picked = SPELLPROP.get(id);
+        const i = arr.indexOf(id);
+        if (i >= 0) arr.splice(i, 1);
+        else {
+          if (picked && picked.swapClass)   // only one Opal Class Swap per gem — replace any existing swap
+            for (let j = arr.length - 1; j >= 0; j--) { const pp = SPELLPROP.get(arr[j]); if (pp && pp.swapClass) arr.splice(j, 1); }
+          if (arr.length < SPELLGEM_MAX_PROPS) arr.push(id);
+        }
         if (arr.length >= SPELLGEM_MAX_PROPS) ovState.picking = false; refreshOverlay(); break; }
       case "sg-prop-rm": ovState.draft.propIds.splice(+t.dataset.i, 1); refreshOverlay(); break;
       case "sg-save": {
@@ -3755,11 +3815,16 @@
       case "sg-equip": {
         const id = +t.dataset.id, ctx = ovState.equipCtx; if (!ctx) break;
         const arr = ctx.equipped(); const i = arr.indexOf(id);
-        if (i >= 0) arr.splice(i, 1);
-        else if (arr.length < ctx.max) arr.push(id);
-        else if (ctx.max === 1) arr[0] = id;
+        if (i >= 0) arr.splice(i, 1);                          // unequip is always allowed
+        else {                                                 // equip — enforce the creature's class rule
+          const g = spellGems.find(x => x.id === id);
+          if (ctx.kind === "creature" && g && !canEquipGemOn(build.slots[ctx.slotIdx], g)) break;
+          if (arr.length < ctx.max) arr.push(id);
+          else if (ctx.max === 1) arr[0] = id;
+        }
         persistBuild(); persistArtifacts(); refreshOverlay(); break;
       }
+      case "lib-deselect": if (ovState && ovState.sel != null) { ovState.sel = null; refreshOverlay(); } break;
 
       // entity taxonomy detail (trait / spell / perk / relic / card)
       case "nav-trait": openEntityDetail("trait", +t.dataset.tid); break;

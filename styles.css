@@ -1123,6 +1123,11 @@ button.apx-owner:hover .apx-owner-ico { border-color: var(--accent); }
 .art-picker { margin-top: 12px; border-top: 1px solid var(--border-dim); padding-top: 8px; }
 /* bounded, self-contained scroll for the inline slot pickers (fixes nested-scroll collapse) */
 .art-pick-scroll { height: 44vh; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }   /* fixed so the builder picker doesn't resize with content */
+/* spell-gem builder props step: name + boxes sit at natural height, the property picker fills the
+   rest of the screen so the enchantment list uses the full column instead of a fixed sliver */
+.sgb-top { flex: 0 0 auto; padding: 12px; overflow-y: auto; max-height: 55%; }
+.sgb-picker { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; border-top: 1px solid var(--border-dim); }
+.sgb-pick-scroll { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; padding: 8px 12px; }
 .art-picker .prop-ico { width: 20px; height: 20px; flex: 0 0 auto; }
 .art-picker .prop-ico img { width: 100%; height: 100%; object-fit: contain; }
 
