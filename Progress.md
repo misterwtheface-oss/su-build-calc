@@ -6,6 +6,18 @@ Pages on `master`/root, Cloudflare analytics active with the shared github.io to
 No verify-before-push ceremony (no real users yet) — but every change is checked with the jsdom smoke suite
 (scratchpad `smoke.mjs`, ~84 assertions across all flows) before commit.
 
+## 2026-09-28 — UI pass (sortbar, info panels, category bars, anoint gaps, animated wardrobe)
+1. Creature-selector **Sort bar** vertically centres its label + segments (`.crea-sortbar align-items:center`), still left-aligned.
+2. **Info panels ~15% wider** (340→390 / tablet 260→300) and **user-resizable**: a left-edge grip on `.ovl-right`
+   drags to set `--ovl-w` (300–680px, persisted `subc.ovlW`); 9px grip strip + desktop-only guard avoid accidental resize.
+3. **Appendix category rows** restyled as bars that pop (`.apx-sec-head.apx-cat`: surface bg, accent-purple left rail,
+   chevron, rounded) instead of the flat section-label look.
+4. **Anointments**: `.fgod-group` gap 16→8px between False-God sections.
+5. **Animated wardrobe sprites**: build-data now exports frame 1 for all 820 costumes (`frames:[f0,f1]`; the old numeric
+   sheet count is `frameCount`). The **icon picker is select-to-preview** — tap a tile → it selects + animates its
+   2-frame front walk (others stay still), "Use this icon"/tap-again commits (`syncIconAnim`, mirrors the spec-costume
+   animation). +693 `<sprite>_1.png` frames shipped; precache 6364→7057.
+
 ### ⚠ Cache-bust is ENFORCED by a git pre-commit hook (do not bypass)
 The service worker serves `app.js`/`styles.css`/`data.js` **cache-first**, keyed by their `?v=` token
 (only `index.html` is network-first). So editing a sub-resource without re-stamping its `?v=` ships a
