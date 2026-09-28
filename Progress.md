@@ -865,6 +865,28 @@ What works end-to-end:
 - Nether Stones → add/edit/delete user stones (name/rarity/property lines), stored in `subc.nether`, socketable.
 - Realm Cards → owned + on/off toggles per family, stored in `subc.cards`.
 
+## 2026-09-28 — Spell Gems: Opal class-swap, same-class equip rule, wizard/library UX
+- **Click-to-deselect** (`lib-deselect` on `.ovl-center`): clicking empty space in the Spell Gem /
+  Artifact library clears the selection (was: only re-clicking the same tile).
+- **No empty info panels**: the Spell Gem library, the builder's spell step, and the Artifact library
+  render the right-hand `.ovl-right` panel only when something is selected (center goes full-width).
+- **Builder Properties step full height**: restructured to `.sgb-top` (name + property boxes, natural
+  height) + `.sgb-picker`/`.sgb-pick-scroll` (flex:1) so the enchantment list fills the column instead
+  of a fixed ~44vh sliver.
+- **Same-class equip rule** (`spellEquipClasses`/`canEquipGemOn`/`gemAllowed`): a creature can only equip
+  a gem whose **effective class** matches its own, unless (a) a trait permits cross-class — Pandora
+  party-wide (`your creatures … all Spell Gems`), Purrr/Prismagic/etc. self (`this creature … any class`)
+  — or (b) an allocated/anointed **Evoker Mastery** perk grants that class (`{CLASS_X} … regardless of
+  class`), or (c) an Opal re-classed the gem. Wrong-class gems are greyed + un-equippable (UI + handler).
+- **Opal Class Swap variants** (build-data): the single "Class Swap" dust is expanded into **5
+  `Class Swap: <Class>` variants** carrying `swapClass`. New app helpers `gemSwapClass`/`gemClass`
+  (effective class = swap or spell class) drive `gemIcon` (so the gem recolours to the new class) and
+  the equip rule. Wizard shows only the **4 variants ≠ the spell's own class**; picking one is mutually
+  exclusive. Verified in headless Chrome (chaos-spell gem → Opal→Nature recolours the icon; Chaos creature
+  blocks a Nature gem but accepts Nature+Opal→Chaos; 0 runtime errors).
+- ⚠ Expanding Opal shifts dust-property ids after it in `spellProps`; saved gems referencing old ids may
+  remap (acceptable — no real users).
+
 ## 2026-09-28 — LLM-taxonomy audit + canon-status validation + fusion-step delta bars
 User flagged two mis-tags (Mantra "gains a spell" tagged as a Buff; Extension "minions gain 1 stack"
 tagged Related Minion::Random Minion) and asked for a broader audit of the LLM-assigned tags.
