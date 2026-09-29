@@ -688,10 +688,10 @@ button.apx-owner:hover .apx-owner-ico { border-color: var(--accent); }
 .perk-line.equipped { background: rgba(154,123,214,.12); box-shadow: inset 0 0 0 1px var(--accent2); }
 .perk-line .anoint-eq { flex: 0 0 auto; align-self: center; white-space: nowrap; min-width: 74px; }
 .perk-line .anoint-eq:disabled { opacity: .35; cursor: not-allowed; }
-.perk-line-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.perk-line-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; align-self: stretch; }
 .perk-line-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
 .perk-line-head > b { min-width: 0; margin-right: auto; }
-.perk-line-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; margin-top: 1px; }
+.perk-line-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; margin-top: auto; padding-top: 4px; }
 /* Appendix bookmark star — toggles a trait/spell into the selector filter set. Hollow=off, gold=on. */
 .apx-bk { flex: 0 0 auto; align-self: center; background: none; border: none; cursor: pointer; padding: 0 2px; line-height: 1; font-size: 15px; color: var(--text-mute); }
 .apx-bk:hover { color: var(--accent); }
