@@ -7,6 +7,12 @@
   <meta name="description" content="Theorycraft Siralim Ultimate parties: 6 creature slots, fusion, artifacts, relics, nether stones and realm cards.">
   <link rel="stylesheet" href="styles.css?v=44425959">
 
+  <!-- Favicon: desktop Chrome/Firefox tabs need an explicit rel="icon" (they don't fall back to the
+       manifest icons the way mobile/installed does). Without this they request /favicon.ico at the
+       ORIGIN root, which 404s on a GitHub Pages project site → default globe. Point it at the Riddle Dwarf. -->
+  <link rel="icon" type="image/png" sizes="192x192" href="assets/icon-192.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="assets/icon-512.png">
+
   <!-- Tier 2 PWA: installability (home-screen icon, standalone chrome). -->
   <link rel="manifest" href="manifest.webmanifest">
   <meta name="theme-color" content="#1a1024">
