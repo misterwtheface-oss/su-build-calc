@@ -285,7 +285,6 @@ h1, h2, h3 { margin: 0; }
 .roster-actions .slot-mini { flex: 1 1 auto; min-width: 44px; }
 
 .roster-traits { min-width: 0; display: flex; flex-direction: column; gap: 8px; }
-.roster-traits .section-label { margin: 0 0 2px; }
 .roster-traits.empty { align-items: flex-start; justify-content: center; }
 .roster-empty { color: var(--text-mute); font-size: 13px; }
 

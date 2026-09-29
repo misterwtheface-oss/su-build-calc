@@ -677,8 +677,6 @@
     const raceIco = c.race && D.raceIcons && D.raceIcons[c.race]
       ? `<span class="tile-badge" title="${esc(c.race)}">${spriteImg(D.raceIcons[c.race], "px")}</span>` : "";
     const traitIds = slotTraitIds(slot);
-    const innateN = new Set([c.traitId, f ? f.traitId : null].filter(x => x != null)).size;
-    const hasArtifactTrait = traitIds.length > innateN;
     const traitHtml = traitIds.length
       ? traitIds.map(tid => `<div class="primary-traits">${traitBanner(tid)}<div class="trait-desc">${richText((TRAIT[tid] || {}).desc || "")}</div></div>`).join("")
       : `<div class="slot-sub" style="text-align:left">No traits.</div>`;
@@ -700,7 +698,6 @@
         </div>
       </div>
       <div class="roster-traits">
-        <div class="section-label">Traits (innate${f ? " + fusion" : ""}${hasArtifactTrait ? " + artifact" : ""})</div>
         ${traitHtml}
       </div>
     </div>`;
