@@ -917,6 +917,8 @@
   }
   function renderCreaturePicker() {
     const st = ovState;
+    // dropping the last bookmark hides the "★ Bookmarked" facet — clear the filter so the grid isn't stuck empty
+    if (st.bkOnly && !bookmarks.traits.length) st.bkOnly = false;
     // step 3 — customization on its own screen: controls lead (center), live preview follows (right).
     // On phones the center panel sits on top, so Personality / Scrolls / Skin are the first thing seen.
     if (st.step === "customize") {
@@ -1009,7 +1011,12 @@
   // creature info panel: trait leads, stat table follows (per house layout). `opts.infoCid` adds an "i"
   // button (shown in the selector panel, not the detail page itself) that opens the full-screen detail.
   function renderCreatureIdentity(c, opts) {
-    return `${opts && opts.infoCid != null ? `<button class="cd-info-btn" data-action="crea-info" data-cid="${opts.infoCid}" title="Open full details" aria-label="Open full creature details">i</button>` : ""}
+    // in the selector, a bookmarked creature (its innate trait is bookmarked) shows a filled star next to
+    // the "i" so it can be dropped from Bookmarks right here (reuses the apx-bookmark trait toggle).
+    const bkStar = opts && opts.infoCid != null && c.traitId != null && isBk("traits", c.traitId)
+      ? `<button class="cd-bk-btn on" data-action="apx-bookmark" data-kind="traits" data-id="${c.traitId}" title="Remove “${esc((TRAIT[c.traitId] || {}).name || "trait")}” from Bookmarks" aria-label="Remove from bookmarks">★</button>`
+      : "";
+    return `${opts && opts.infoCid != null ? `<button class="cd-info-btn" data-action="crea-info" data-cid="${opts.infoCid}" title="Open full details" aria-label="Open full creature details">i</button>` : ""}${bkStar}
       <div class="cd-sprite">${critFace(c)}</div>
       <h3 style="text-align:center;margin:6px 0">${esc(c.name)}</h3>
       <div class="slot-sub" style="margin-bottom:10px"><span style="color:${clsColor(c.cls)};font-weight:700">${esc(c.cls || "—")}</span>${c.race ? " · " + esc(c.race) : ""}</div>
