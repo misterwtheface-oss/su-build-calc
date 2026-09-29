@@ -2829,7 +2829,9 @@
     } else if (type === "trait") {
       const t = TRAITITEM.get(v), tr = t && t.traitId != null ? TRAIT[t.traitId] : null;
       icon = t && t.icon; name = t ? t.name : v; sub = t ? `grants ${t.traitName}` : "";
-      lines = tr ? `<div class="trait-desc">${perkText(tr.desc || "")}</div>` : `<div class="slot-sub">${esc(t ? t.traitName : "")}</div>`;
+      // full trait-container style (banner + description), same as a creature's innate trait
+      lines = tr ? `<div class="primary-traits">${traitBanner(t.traitId)}<div class="trait-desc">${richText(tr.desc || "")}</div></div>`
+        : `<div class="slot-sub">${esc(t ? t.traitName : "")}</div>`;
       if (tr) open = ` data-action="apx-open" data-ek="trait" data-eid="${t.traitId}"`;
     } else if (type === "spell") {
       const sp = SPELL.get(v);
