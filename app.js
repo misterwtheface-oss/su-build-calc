@@ -2673,10 +2673,15 @@
       <span class="stat-val art">+${value}${unit === "%" ? "%" : ""}</span></div>`).join("");
     return `<div class="stat-grid single">${coreRows}${extraRows}</div>`;
   }
-  // trait containers mirroring the creature detail (trait banner + description, clickable to taxonomy)
+  // trait containers mirroring the creature detail (trait banner + description, clickable to taxonomy).
+  // Covers trait materials AND traits carried by socketed nether stones, deduped by trait id.
   function artifactTraitContainers(a) {
-    return (a.traits || []).map(id => { const ti = TRAITITEM.get(id), tid = ti ? ti.traitId : null; if (tid == null) return "";
-      return `<div class="primary-traits" style="margin-bottom:6px">${traitBanner(tid)}<div class="trait-desc">${richText((TRAIT[tid] || {}).desc || "")}</div></div>`; }).join("");
+    const ids = (a.traits || []).map(id => { const ti = TRAITITEM.get(id); return ti ? ti.traitId : null; });
+    for (const nid of a.netherIds || []) { const n = nether.find(x => x.id === nid); if (!n) continue;
+      for (const pr of n.props || []) if (pr.cat === "trait") { const ti = TRAITITEM.get(pr.key); if (ti) ids.push(ti.traitId); } }
+    const seen = new Set();
+    return ids.filter(tid => tid != null && !seen.has(tid) && seen.add(tid))
+      .map(tid => `<div class="primary-traits" style="margin-bottom:6px">${traitBanner(tid)}<div class="trait-desc">${richText((TRAIT[tid] || {}).desc || "")}</div></div>`).join("");
   }
   // one spell-gem container: name + trigger + description (clickable to the spell's taxonomy)
   const spellGemCard = (sp, trigger, src) => `<div class="art-spellcard apx-clickable" data-action="apx-open" data-ek="spell" data-eid="${sp.id}" title="View taxonomy">
@@ -2853,11 +2858,16 @@
         <button class="btn-confirm ${equipped ? "danger-confirm" : ""}" data-action="art-confirm-add" data-t="${type}" data-v="${esc(String(v))}" ${full ? "disabled" : ""}>${equipped ? "Remove from artifact" : full ? "Slots full" : "Add to artifact"}</button>
       </div>`;
   }
-  function renderArtLiveBonus(a, rank, pct) {
+  function renderArtLiveBonus(a, rank) {
+    // full live view: trait containers (trait materials + nether-stone traits) and spell-gem containers
+    // (spell slot + nether-stone spells), then the resolved stat table — not just the stat percentages.
+    const { core, extra } = artifactBonusRows(a);
+    const traits = artifactTraitContainers(a), spells = artifactSpellContainers(a);
     return `<div class="section-label">Live bonus · rank ${rank}</div>
-      <div class="stat-grid single">
-        ${STAT_KEYS.map(k => `<div class="stat-row ${pct[k] ? "hl-med" : ""}"><span class="stat-name">${STAT_LABEL[k]}</span>
-          <span class="stat-val art">${pct[k] ? "+" + pct[k] + "%" : "—"}</span></div>`).join("")}</div>`;
+      ${traits ? `<div class="section-label" style="margin-top:8px">Traits</div>${traits}` : ""}
+      ${spells ? `<div class="section-label" style="margin-top:12px">Spell Gems</div><div class="art-spellcards">${spells}</div>` : ""}
+      <div class="section-label" style="margin-top:${traits || spells ? 12 : 8}px">Stat bonuses</div>
+      ${bonusTableHtml(core, extra)}`;
   }
   function renderArtifactBuilder() {
     const st = ovState, a = st.draft, rank = a.rank;
@@ -2913,7 +2923,7 @@
         side = renderArtPreview(st.preview.type, st.preview.value, rank, { equipped, full });
       }
       else if (st.pickType) side = renderArtPicker(st, a, rank);
-      else side = renderArtLiveBonus(a, rank, preview);
+      else side = renderArtLiveBonus(a, rank);
       body = `<div class="ovl-center"><div class="ovl-center-scroll">${groupsHtml}</div></div>
         <div class="ovl-right art-side">${side}</div>`;
       footer = `<button class="btn-ghost" data-action="artb-back">‹ Back</button>
