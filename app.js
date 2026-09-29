@@ -2839,7 +2839,9 @@
     } else {
       const n = nether.find(x => x.id === v);
       icon = gemSrc(n); name = n ? n.name : v; sub = "nether stone";
-      lines = n ? `<div class="trait-desc">${esc(netherSummary(n))}</div>` : "";
+      // reuse the Nether Stone info panel's Bonuses view (resolved stat table + trait & spell-gem
+      // containers) instead of a flat summary string, so the preview reads the same everywhere.
+      lines = n ? netherBonusView(n) : "";
     }
     return `<div class="art-side-head"><button class="chip" data-action="art-preview-back">‹ Back</button></div>
       <div class="art-pv">
