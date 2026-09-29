@@ -1302,11 +1302,14 @@ select.app-select:hover { border-color: var(--accent2); }
 .art-side-list { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
 .art-side .prop-row .prop-ico { width: 20px; height: 20px; flex: 0 0 auto; }
 .art-side .prop-row .prop-ico img { width: 100%; height: 100%; object-fit: contain; }
-.art-pv { display: flex; flex-direction: column; }
-.art-pv-top { display: flex; gap: 10px; align-items: center; margin-bottom: 10px; }
+/* fill the side panel's height so a long preview (e.g. a nether stone's full Bonuses view)
+   scrolls inside .art-pv-body instead of being clipped, with the header + confirm pinned. */
+.art-pv { display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0; }
+.art-pv-top { display: flex; gap: 10px; align-items: center; margin-bottom: 10px; flex: 0 0 auto; }
 .art-pv-top .as-ico { width: 40px; height: 40px; }
 .art-pv-name { font-weight: 700; font-size: 15px; line-height: 1.15; }
-.art-pv-body { margin-bottom: 12px; }
+.art-pv-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; margin-bottom: 12px; }
+.art-pv .btn-confirm { flex: 0 0 auto; }
 .art-pv-line { font-size: 13px; padding: 2px 0; }
 .art-pv-line b { color: #9fd0ff; }
 .art-pv .btn-confirm { width: 100%; }

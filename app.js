@@ -780,7 +780,7 @@
     const w = (D.wardrobe || []).find(x => x.img === imgOrSprite || x.sprite === imgOrSprite);
     return w && Array.isArray(w.frames) && w.frames.length >= 2 ? w.frames : null;
   };
-  const SCROLLERS = [".ovl-center-scroll", ".ovl-left", ".ovl-right", ".art-side-list", ".xref-wrap"];
+  const SCROLLERS = [".ovl-center-scroll", ".ovl-left", ".ovl-right", ".art-side-list", ".art-pv-body", ".xref-wrap"];
 
   // ── Back-button handling (Android/browser) — LAYER-AWARE ───────────────────
   //    History depth mirrors the overlay STACK: one synthetic entry per open
