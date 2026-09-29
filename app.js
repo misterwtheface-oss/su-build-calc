@@ -665,7 +665,7 @@
         <div class="roster-identity">
           <div class="roster-sprite" data-action="pick-creature" data-slot="${i}"><div class="slot-empty-icon">＋</div></div>
         </div>
-        <div class="roster-traits empty"><button class="roster-add" data-action="pick-creature" data-slot="${i}">＋ Add a creature</button></div></div>`;
+        <div class="roster-traits empty"></div></div>`;
     }
     const b = baseStats(slot);
     const f = slot.fusion != null ? CREA.get(slot.fusion) : null;

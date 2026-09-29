@@ -288,11 +288,6 @@ h1, h2, h3 { margin: 0; }
 .roster-traits .section-label { margin: 0 0 2px; }
 .roster-traits.empty { align-items: flex-start; justify-content: center; }
 .roster-empty { color: var(--text-mute); font-size: 13px; }
-.roster-add {
-  background: var(--surface2); border: 1px dashed var(--border-dim); color: var(--accent2);
-  border-radius: 8px; padding: 10px 16px; font-size: 13px; font-weight: 600;
-}
-.roster-add:hover { border-color: var(--accent2); color: var(--text); }
 
 /* phones: stack the identity block above its traits so the sprite still leads the row */
 @media (max-width: 560px) {
