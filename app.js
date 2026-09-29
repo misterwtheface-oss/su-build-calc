@@ -779,23 +779,25 @@
   function openDetail(html) { if (specAnimTimer) { clearInterval(specAnimTimer); specAnimTimer = null; } DOV.innerHTML = html; DOV.classList.remove("hidden"); reconcileHistory(); }
   function closeDetail() { closeDetailReal(); reconcileHistory(); }
 
-  function refreshOverlay() {
+  // resetTop=true when this refresh is a navigation to a NEW page/view (list→detail, tab swap):
+  // the new page should start at the top instead of inheriting the previous page's scroll.
+  function refreshOverlay(resetTop) {
     if (!ovState) return;
     const panel = OV.querySelector(".overlay-panel"); if (!panel) return;
     const saved = SCROLLERS.map(sel => { const e = panel.querySelector(sel); return e ? e.scrollTop : 0; });
     panel.outerHTML = ovState.render();
     const p2 = OV.querySelector(".overlay-panel");
-    SCROLLERS.forEach((sel, k) => { const e = p2 && p2.querySelector(sel); if (e) e.scrollTop = saved[k]; });
+    if (!resetTop) SCROLLERS.forEach((sel, k) => { const e = p2 && p2.querySelector(sel); if (e) e.scrollTop = saved[k]; });
     maybeFocusSearch(OV);
     syncSpecAnim(); syncWardrobeAnims();
   }
-  function refreshDetail() {
+  function refreshDetail(resetTop) {
     if (!dovState) return;
     const panel = DOV.querySelector(".overlay-panel"); if (!panel) return;
     const saved = SCROLLERS.map(sel => { const e = panel.querySelector(sel); return e ? e.scrollTop : 0; });
     panel.outerHTML = dovState.render();
     const p2 = DOV.querySelector(".overlay-panel");
-    SCROLLERS.forEach((sel, k) => { const e = p2 && p2.querySelector(sel); if (e) e.scrollTop = saved[k]; });
+    if (!resetTop) SCROLLERS.forEach((sel, k) => { const e = p2 && p2.querySelector(sel); if (e) e.scrollTop = saved[k]; });
     syncSpecAnim(); syncWardrobeAnims();
   }
   function maybeFocusSearch(root) {
@@ -1778,7 +1780,6 @@
         ${st.ekind === "trait" ? `<div class="section-label">Source</div>${traitDetailSections(e)}` : ""}
         <div class="section-label">Taxonomy — ${n} tag${n === 1 ? "" : "s"}</div>
         ${entityTaxHtml(e)}
-        <div class="etax-legend">Provenance: <b>token</b> = game markup · <b>keyword</b> · <b>llm</b> = per-description · <b>phrase</b> · <b>field</b> · <b>correction</b>. Tap a tag to filter the Appendix by it.</div>
       </div></div></div>
       <div class="overlay-footer"><span class="foot-info"></span><button class="btn-confirm" data-action="close-entity">Done</button></div>
     </div></div>`;
@@ -1937,7 +1938,6 @@
     return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel">
       <div class="overlay-header"><h2>Threats</h2><button class="ovl-close" data-action="close-ovl">✕</button></div>
       <div class="overlay-body"><div class="ovl-center"><div class="ovl-center-scroll">
-        <div class="thr-intro">${st.themeSel ? "Exploring one theme" : "Detected build theme"}${active.length ? " — reroll realm properties and skip runes that counter it." : "."}</div>
         <div class="thr-themebar">${themeSelect}</div>
         ${srcToggle}
         <div class="section-label">Counters your build</div>
@@ -3634,10 +3634,10 @@
       case "open-glossary": openGlossary(); break;
       case "gloss-search": break;    // handled in onInput
       case "gloss-cat-toggle": { const c = t.dataset.c; ovState.collapsed.has(c) ? ovState.collapsed.delete(c) : ovState.collapsed.add(c); refreshOverlay(); break; }
-      case "realm-sel": ovState.sel = +t.dataset.id; ovState.view = "detail"; refreshOverlay(); break;
-      case "realm-back": ovState.view = "list"; refreshOverlay(); maybeFocusSearch(OV); break;
+      case "realm-sel": ovState.sel = +t.dataset.id; ovState.view = "detail"; refreshOverlay(true); break;
+      case "realm-back": ovState.view = "list"; refreshOverlay(true); maybeFocusSearch(OV); break;
       case "realm-sort": ovState.sortBy = t.dataset.v; refreshOverlay(); break;
-      case "realm-mode": ovState.mode = t.dataset.v; ovState.search = ""; refreshOverlay(); maybeFocusSearch(OV); break;
+      case "realm-mode": ovState.mode = t.dataset.v; ovState.search = ""; refreshOverlay(true); maybeFocusSearch(OV); break;
       case "realm-favview": ovState.favorView = t.dataset.v; refreshOverlay(); break;
       case "realm-usecustom": ovState.useCustom = t.dataset.v === "1"; favorPrefs.use = ovState.useCustom; persistFavorPrefs(); refreshOverlay(); break;
       case "realm-editranks": ovState.editingRanks = true; ovState.search = ""; refreshOverlay(); maybeFocusSearch(OV); break;
@@ -3646,8 +3646,8 @@
       case "realm-cat": { const k = t.dataset.k; ovState.cmpExpanded.has(k) ? ovState.cmpExpanded.delete(k) : ovState.cmpExpanded.add(k); refreshOverlay(); break; }
       case "realm-search": break;   // handled in onInput
       case "realm-shop": openGodShops(t.dataset.g); break;
-      case "gs-god": ovState.sel = t.dataset.g; ovState.view = "detail"; refreshOverlay(); break;
-      case "gs-back": ovState.view = "list"; refreshOverlay(); maybeFocusSearch(OV); break;
+      case "gs-god": ovState.sel = t.dataset.g; ovState.view = "detail"; refreshOverlay(true); break;
+      case "gs-back": ovState.view = "list"; refreshOverlay(true); maybeFocusSearch(OV); break;
       case "gs-search": break;      // handled in onInput
       case "open-threats": openThreats(); break;
       case "open-macros": if (FEATURES.macros) openMacros(); break;
@@ -3655,7 +3655,7 @@
       case "threat-general": ovState.showGeneral = !ovState.showGeneral; refreshOverlay(); break;
       case "threat-src": ovState.srcView = t.dataset.v; refreshOverlay(); break;
       case "open-synergy": openSynergy(); break;
-      case "synergy-view": if (ovState && ovState.view !== t.dataset.view) { ovState.view = t.dataset.view; refreshOverlay(); } break;
+      case "synergy-view": if (ovState && ovState.view !== t.dataset.view) { ovState.view = t.dataset.view; refreshOverlay(true); } break;
       case "toggle-matrix-shared": ovState.sharedOnly = !ovState.sharedOnly; refreshOverlay(); break;
       case "matrix-expand-row": { const id = t.dataset.id; ovState.expanded.has(id) ? ovState.expanded.delete(id) : ovState.expanded.add(id); refreshOverlay(); break; }
       case "syn-toggle": { const k = t.dataset.key; ovState.listCollapsed.has(k) ? ovState.listCollapsed.delete(k) : ovState.listCollapsed.add(k); refreshOverlay(); break; }
@@ -3803,9 +3803,9 @@
       case "art-new": openArtifactBuilder(null, ovState.slotIdx); break;
       case "art-edit": openArtifactBuilder(+t.dataset.id, ovState.slotIdx); break;
       case "art-del": armOrDo(t, () => { const id = +t.dataset.id; artifacts = artifacts.filter(a => a.id !== id); build.slots.forEach(s => { if (s.artifactId === id) s.artifactId = null; }); if (ovState.sel === id) ovState.sel = artifacts[0] ? artifacts[0].id : null; persistArtifacts(); persistBuild(); refreshOverlay(); }); break;
-      case "artb-next": ovState.step = ovState.step === "type" ? "slots" : "name"; ovState.pickType = null; ovState.preview = null; ovState.search = ""; refreshOverlay(); break;
-      case "artb-back": ovState.step = ovState.step === "name" ? "slots" : "type"; ovState.pickType = null; ovState.preview = null; ovState.search = ""; refreshOverlay(); break;
-      case "artb-closecat": ovState.pickType = null; ovState.preview = null; ovState.search = ""; ovState.bkOnly = false; refreshOverlay(); break;
+      case "artb-next": ovState.step = ovState.step === "type" ? "slots" : "name"; ovState.pickType = null; ovState.preview = null; ovState.search = ""; refreshOverlay(true); break;
+      case "artb-back": ovState.step = ovState.step === "name" ? "slots" : "type"; ovState.pickType = null; ovState.preview = null; ovState.search = ""; refreshOverlay(true); break;
+      case "artb-closecat": ovState.pickType = null; ovState.preview = null; ovState.search = ""; ovState.bkOnly = false; refreshOverlay(true); break;
       case "artb-traitfilter": openFacetPicker("taxo-cat", {
         idx: taxoIndexFor("titem", D.traitItems, ti => ti.taxo || []),
         onPick: (v) => { ovState.traitTaxo = v; } }); break;
@@ -3824,14 +3824,14 @@
       case "perk-taxo-clear": dovState.perkTaxo = null; dovState.perkCat = null; dovState.perkBrowse = false; refreshDetail(); break;
       case "perk-taxo-back": if (dovState.perkCat) dovState.perkCat = null; else dovState.perkBrowse = false; refreshDetail(); break;
       case "art-primary": ovState.draft.primary = ovState.draft.primary === t.dataset.p ? null : t.dataset.p; refreshOverlay(); break;
-      case "art-slot": ovState.pickType = t.dataset.t; ovState.preview = null; ovState.search = ""; ovState.bkOnly = false; refreshOverlay(); break;
+      case "art-slot": ovState.pickType = t.dataset.t; ovState.preview = null; ovState.search = ""; ovState.bkOnly = false; refreshOverlay(true); break;
       // socketing is a two-step: preview the item's effect, then confirm (never applies silently)
       case "art-preview": {
         const type = t.dataset.t;
         ovState.preview = { type, value: (type === "stat" || type === "trick") ? t.dataset.v : +t.dataset.v };
-        refreshOverlay(); break;
+        refreshOverlay(true); break;
       }
-      case "art-preview-back": ovState.preview = null; refreshOverlay(); break;
+      case "art-preview-back": ovState.preview = null; refreshOverlay(true); break;
       case "art-confirm-add": {
         const type = t.dataset.t, sl = ART_SLOTS.find(s => s.pick === type), arr = ovState.draft[sl.key];
         const v = (type === "stat" || type === "trick") ? t.dataset.v : +t.dataset.v;
@@ -3919,10 +3919,10 @@
         persistSpellGems(); persistArtifacts(); persistBuild(); refreshOverlay(); }); break;
       case "sg-cancel": openSpellGems(); break;
       case "sg-spell": ovState.draft.spellId = ovState.draft.spellId === +t.dataset.id ? null : +t.dataset.id; refreshOverlay(); break;
-      case "sgb-next": ovState.step = "props"; ovState.picking = false; ovState.search = ""; refreshOverlay(); break;
-      case "sgb-back": ovState.step = "spell"; ovState.picking = false; ovState.search = ""; refreshOverlay(); break;
-      case "sg-addprop": ovState.picking = true; ovState.search = ""; refreshOverlay(); break;
-      case "sg-closepick": ovState.picking = false; refreshOverlay(); break;
+      case "sgb-next": ovState.step = "props"; ovState.picking = false; ovState.search = ""; refreshOverlay(true); break;
+      case "sgb-back": ovState.step = "spell"; ovState.picking = false; ovState.search = ""; refreshOverlay(true); break;
+      case "sg-addprop": ovState.picking = true; ovState.search = ""; refreshOverlay(true); break;
+      case "sg-closepick": ovState.picking = false; refreshOverlay(true); break;
       case "sg-pickprop": { const id = +t.dataset.id, arr = ovState.draft.propIds, picked = SPELLPROP.get(id);
         const i = arr.indexOf(id);
         if (i >= 0) arr.splice(i, 1);
