@@ -2150,7 +2150,7 @@
     // carry that source's emblem (spec emblem, creature sprite, or class gem). `show:false` keeps the
     // record but withholds the badge (Guardian of Surathli — no emblem art yet).
     const exclBox = (e) => (e.exclusive && e.exclusive.show && e.exclusive.icon)
-      ? `<div class="apx-crea apx-excl${e.exclusive.kind === "spec" ? " apx-spec" : ""}" title="Exclusive to ${esc(e.exclusive.source)}">${spriteImg(e.exclusive.icon, "px")}</div>`
+      ? `<div class="apx-crea apx-excl" title="Exclusive to ${esc(e.exclusive.source)}">${spriteImg(e.exclusive.icon, "px")}</div>`
       : "";
     // collapsible category headers (same style as the Appendix) + large icon on the left of each row
     const body = GLOSSARY_CATS.map(c => {
