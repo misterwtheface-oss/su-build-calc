@@ -642,8 +642,7 @@
         <div class="slot-sprite-wrap"><div class="slot-empty-icon">🔒</div></div>
         <div class="slot-name">Locked</div><div class="slot-sub">Pariah — 3 creatures max</div></div>`;
       return `<div class="slot" data-slot="${i}">
-        <div class="slot-sprite-wrap" data-action="pick-creature" data-slot="${i}"><div class="slot-empty-icon">＋</div></div>
-        <div class="slot-name">Empty</div><div class="slot-sub">Tap to add a creature</div></div>`;
+        <div class="slot-sprite-wrap" data-action="pick-creature" data-slot="${i}"><div class="slot-empty-icon">＋</div></div></div>`;
     }
     const b = baseStats(slot);
     const f = slot.fusion != null ? CREA.get(slot.fusion) : null;
@@ -1353,6 +1352,20 @@
     ovState.flash = id; refreshOverlay();
     setTimeout(() => { if (ovState && ovState.kind === "builds") { ovState.flash = null; refreshOverlay(); } }, 1200);
   }
+  // selected-build preview: spec emblem + equipped anointment perk icons, then the party as a 2×3 grid
+  function renderBuildPreview(b) {
+    const bd = b.build || {};
+    const spec = bd.specId != null ? SPEC.get(bd.specId) : null;
+    const emblem = spec ? `<div class="bi-emblem" title="${esc(spec.label)}">${spriteImg(spec.emblem || spec.sprite, "px")}</div>` : "";
+    const anoints = (bd.anoints || []).map(a => { const s = SPEC.get(a.specId); return s && s.perks.find(x => x.key === a.key); }).filter(Boolean);
+    const anointRow = anoints.length ? `<div class="bi-anoints">${anoints.map(p => `<span class="bi-anoint" title="${esc(p.name)}">${p.icon ? spriteImg(p.icon, "px") : "✦"}</span>`).join("")}</div>` : "";
+    const slots = bd.slots || [];
+    const crits = `<div class="bi-crits">${Array.from({ length: 6 }, (_, i) => {
+      const s = slots[i], c = s && s.cid != null ? CREA.get(s.cid) : null;
+      return `<div class="bi-crit${c ? "" : " empty"}"${c ? ` title="${esc(c.name)}"` : ""}>${c ? critFace(c) : ""}</div>`; }).join("")}</div>`;
+    return `<div class="section-label" style="text-align:center">${esc(b.name)}</div>
+      <div class="bi-head">${emblem}${anointRow}</div>${crits}`;
+  }
   function renderBuilds() {
     const st = ovState;
     if (st.draft) {
@@ -1385,10 +1398,12 @@
       <button class="seg-btn ${st.sort === "name" ? "on" : ""}" data-action="builds-sort" data-sort="name">Name</button>
       <button class="seg-btn ${st.sort === "spec" ? "on" : ""}" data-action="builds-sort" data-sort="spec">Spec</button>
     </div></div>` : "";
+    // right info panel: preview the selected build — spec emblem + equipped anointment icons, then a 2×3 creature grid
+    const infoPanel = sel ? `<div class="ovl-right build-info">${renderBuildPreview(sel)}</div>` : "";
     return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel">
       <div class="overlay-header"><h2>Builds</h2><button class="ovl-close" data-action="close-ovl">✕</button></div>
       <div class="overlay-body"><div class="ovl-center">${sortBar}<div class="ovl-center-scroll">
-        <div class="lib-grid">${tiles}</div></div></div></div>
+        <div class="lib-grid">${tiles}</div></div></div>${infoPanel}</div>
       <div class="overlay-footer">
         <button class="btn-ghost danger" data-action="builds-del" data-id="${sel ? sel.id : ""}" ${sel ? "" : "disabled"}>Delete</button>
         <span class="foot-info">${st.flash ? "Saved ✓" : ""}</span>
