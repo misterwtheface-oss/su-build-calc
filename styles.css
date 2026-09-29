@@ -299,6 +299,8 @@ h1, h2, h3 { margin: 0; }
   .roster-name, .roster-identity .slot-sub { text-align: left; }
   .roster-stats { justify-content: flex-start; flex-basis: 100%; }
   .roster-actions { justify-content: flex-start; }
+  /* empty (pickable) row: center the ＋ across the full width of the row */
+  .roster-row:not(.filled):not(.locked) .roster-identity { justify-content: center; }
 }
 
 /* ── overlay system ─────────────────────────────────────────────────────── */

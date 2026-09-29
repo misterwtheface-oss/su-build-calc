@@ -328,7 +328,7 @@
   const persistBuild = () => jsave(LS.build, build);
   // home party layout: "grid" (editable tiles) or "roster" (at-a-glance column — sprites stacked with
   // their traits in one shared container). A UI pref, not part of a build, so it lives on its own key.
-  let homeView = jload(LS.homeView, "grid");
+  let homeView = jload(LS.homeView, "roster");
   if (homeView !== "grid" && homeView !== "roster") homeView = "grid";
   const persistHomeView = () => jsave(LS.homeView, homeView);
   // bookmarks — a scratch set of trait / spell ids marked from the Appendix so the selectors can filter
