@@ -232,6 +232,8 @@
 
   // ── persistence (schema 2) ─────────────────────────────────────────────────
   const LS = { build: "subc.build", cards: "subc.cards", nether: "subc.nether", artifacts: "subc.artifacts", spellgems: "subc.spellgems", builds: "subc.builds", bookmarks: "subc.bookmarks", favorRanks: "subc.favorRanks" };
+  // Feature flags — flip to true to re-enable. Macros (battle-AI proposal) is WIP: hidden for now.
+  const FEATURES = { macros: false };
   const jload = (k, dflt) => { try { const v = JSON.parse(localStorage.getItem(k)); return v == null ? dflt : v; } catch { return dflt; } };
   const jsave = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} };
 
@@ -3648,7 +3650,7 @@
       case "gs-back": ovState.view = "list"; refreshOverlay(); maybeFocusSearch(OV); break;
       case "gs-search": break;      // handled in onInput
       case "open-threats": openThreats(); break;
-      case "open-macros": openMacros(); break;
+      case "open-macros": if (FEATURES.macros) openMacros(); break;
       case "macro-crea": ovState.sel = +t.dataset.slot; refreshOverlay(); break;
       case "threat-general": ovState.showGeneral = !ovState.showGeneral; refreshOverlay(); break;
       case "threat-src": ovState.srcView = t.dataset.v; refreshOverlay(); break;
@@ -4051,6 +4053,9 @@
   document.addEventListener("keydown", (e) => {
     if (e.key === "Escape") { if (!DOV.classList.contains("hidden")) closeDetail(); else if (!OV.classList.contains("hidden")) closeOverlay(); }
   });
+
+  // Feature-flag gate: strip disabled entries from the menu so they're unreachable.
+  if (!FEATURES.macros) document.querySelector('[data-action="open-macros"]')?.remove();
 
   render();
 })();
