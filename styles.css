@@ -289,18 +289,18 @@ h1, h2, h3 { margin: 0; }
 .roster-traits.empty { align-items: flex-start; justify-content: center; }
 .roster-empty { color: var(--text-mute); font-size: 13px; }
 
-/* phones: stack the identity block above its traits so the sprite still leads the row */
+/* phones: stack the identity block above its traits, all centered in the row, with the
+   name · class · race header lifted ABOVE the sprite / icons / stats (via flex order). */
 @media (max-width: 560px) {
   .roster-row { grid-template-columns: 1fr; gap: 10px; }
-  .roster-identity { flex-direction: row; flex-wrap: wrap; align-items: center; justify-content: flex-start; gap: 8px 12px; }
-  .roster-identity .tile-badges { position: static; }
+  .roster-identity { align-items: center; }              /* column by default; center horizontally */
   .roster-identity .slot-remove { position: absolute; top: 6px; right: 6px; }
-  .roster-sprite { width: 72px; height: 72px; }
-  .roster-name, .roster-identity .slot-sub { text-align: left; }
-  .roster-stats { justify-content: flex-start; flex-basis: 100%; }
-  .roster-actions { justify-content: flex-start; }
-  /* empty (pickable) row: center the ＋ across the full width of the row */
-  .roster-row:not(.filled):not(.locked) .roster-identity { justify-content: center; }
+  .roster-name { order: 1; }                             /* creature name — top */
+  .roster-identity .slot-sub { order: 2; }               /* class · race (+ any Ignored note) */
+  .roster-sprite { order: 3; width: 72px; height: 72px; }
+  .roster-identity .tile-badges { position: static; order: 4; }   /* class/race icons below the sprite */
+  .roster-stats { order: 5; }
+  .roster-actions { order: 6; }
 }
 
 /* ── overlay system ─────────────────────────────────────────────────────── */
