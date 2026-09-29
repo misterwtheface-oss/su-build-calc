@@ -231,7 +231,7 @@
   const SCROLL_MAX = D.scrollMax || 15;                                  // total stat scrolls per creature (each +1 base)
 
   // ── persistence (schema 2) ─────────────────────────────────────────────────
-  const LS = { build: "subc.build", cards: "subc.cards", nether: "subc.nether", artifacts: "subc.artifacts", spellgems: "subc.spellgems", builds: "subc.builds", bookmarks: "subc.bookmarks", favorRanks: "subc.favorRanks", ovlH: "subc.ovlH" };
+  const LS = { build: "subc.build", cards: "subc.cards", nether: "subc.nether", artifacts: "subc.artifacts", spellgems: "subc.spellgems", builds: "subc.builds", bookmarks: "subc.bookmarks", favorRanks: "subc.favorRanks" };
   const jload = (k, dflt) => { try { const v = JSON.parse(localStorage.getItem(k)); return v == null ? dflt : v; } catch { return dflt; } };
   const jsave = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} };
 
@@ -3997,30 +3997,6 @@
   }
 
   document.addEventListener("click", onClick);
-
-  // ── info-panel resize (MOBILE only): the info panel is a bottom sheet; drag its top-left grip up/down
-  // to resize its HEIGHT. Persisted in --ovl-h. No resize on desktop (fixed-width side panel there).
-  { const h = localStorage.getItem(LS.ovlH); if (h && /^\d+px$/.test(h)) document.documentElement.style.setProperty("--ovl-h", h); }
-  document.addEventListener("pointerdown", (e) => {
-    if (window.innerWidth > 600) return;                             // mobile only
-    const panel = e.target.closest(".ovl-right"); if (!panel) return;
-    const rect = panel.getBoundingClientRect();
-    if (e.clientY - rect.top > 18) return;                           // only the top grip strip
-    e.preventDefault();
-    try { panel.setPointerCapture(e.pointerId); } catch {}
-    const startY = e.clientY, startH = rect.height, maxH = Math.round(window.innerHeight * 0.82);
-    document.body.classList.add("resizing-ovl");
-    const move = (ev) => {
-      const h = Math.max(120, Math.min(maxH, Math.round(startH - (ev.clientY - startY))));   // drag up = taller
-      document.documentElement.style.setProperty("--ovl-h", h + "px");
-    };
-    const up = () => {
-      document.removeEventListener("pointermove", move); document.removeEventListener("pointerup", up);
-      document.body.classList.remove("resizing-ovl");
-      localStorage.setItem(LS.ovlH, getComputedStyle(document.documentElement).getPropertyValue("--ovl-h").trim());
-    };
-    document.addEventListener("pointermove", move); document.addEventListener("pointerup", up);
-  });
 
   // right-click a creature tile to (re)open the creature / fusion selector
   document.addEventListener("contextmenu", (e) => {

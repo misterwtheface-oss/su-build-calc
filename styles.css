@@ -313,7 +313,6 @@ h1, h2, h3 { margin: 0; }
 /* info panel: ~15% wider than before. Fixed width on desktop (no resize there); on phones it's a
    bottom sheet whose HEIGHT is user-resizable via a discreet top-left grip — see the ≤600px block. */
 .ovl-right { width: 390px; border-left: 1px solid var(--border-dim); position: relative; }
-body.resizing-ovl { user-select: none; }
 /* "i" button in the creature selector info panel → opens the full-screen creature detail. Mobile-only:
    on desktop the side info panel is already fully visible, so the button is hidden (shown ≤600px below). */
 .cd-info-btn { display: none; position: absolute; top: 8px; right: 8px; z-index: 2; width: 30px; height: 30px; border-radius: 50%;
@@ -557,21 +556,10 @@ body.resizing-ovl { user-select: none; }
   /* exactly two scroll regions on phones: grid on top (flexes to fill, scrolls),
      one info scroller below (capped so it can't eat the grid) */
   .ovl-left, .ovl-right {
-    width: auto; flex: 0 0 auto; min-height: 0;
-    height: var(--ovl-h, 30vh); max-height: 82vh;   /* bottom sheet — height is user-resizable (--ovl-h) */
+    width: auto; flex: 0 1 auto; min-height: 0; max-height: 45vh;   /* roomier info panel — covers more of the screen */
     border: none; border-top: 1px solid var(--border-dim);
     -webkit-overflow-scrolling: touch;
   }
-  /* discreet resize widget: a small sticky grab-bar at the info panel's top-left. Drag it up/down to
-     resize the sheet's height. Sticky so it stays put as the panel scrolls; touch-only (hidden on web). */
-  .ovl-right::before {
-    content: ""; display: block; position: sticky; top: 0; z-index: 6; touch-action: none;
-    height: 15px; margin: -12px -12px 6px; border-bottom: 1px solid var(--border-dim);
-    background-color: var(--surface3);
-    background-image: linear-gradient(var(--text-mute), var(--text-mute));
-    background-repeat: no-repeat; background-position: 12px center; background-size: 30px 4px;
-  }
-  body.resizing-ovl .ovl-right::before { background-image: linear-gradient(var(--accent2), var(--accent2)); }
   .ovl-center-scroll { -webkit-overflow-scrolling: touch; }
   .cd-info-btn { display: flex; }   /* full-screen detail shortcut — the side panel is a cramped strip here */
   .crea-grid { grid-template-columns: repeat(4, 1fr); gap: 6px; }   /* 4 creatures per row on phones */
@@ -1255,7 +1243,7 @@ select.app-select:hover { border-color: var(--accent2); }
   .cd-left { width: auto; }   /* full-width when stacked on top so the sprite centers */
   .cd-chev.flank { display: block; }   /* flank the sprite on mobile */
   .cd-nav-below { display: none; }      /* … and drop the below-sprite nav */
-  .lib-info { flex: 0 0 auto; height: var(--ovl-h, 34vh); max-height: 82vh; }   /* bottom panel; height user-resizable */
+  .lib-info { flex: 0 0 45vh; height: 45vh; max-height: 45vh; }   /* roomier bottom info panel */
   .spec-grid { grid-template-columns: repeat(5, 1fr); gap: 6px; }        /* ≥5 per row */
   .spec-pick .pt-name { font-size: 9px; line-height: 1.05; }
   .spec-right, .nether-form { width: auto; }
@@ -1274,5 +1262,5 @@ select.app-select:hover { border-color: var(--accent2); }
   .att-ico { width: 46px; height: 46px; }
   .att-name { font-size: 15px; }
   .art-pick-scroll { height: 38vh; }
-  .ovl-right.art-side { flex: 0 0 auto; height: var(--ovl-h, 42vh); max-height: 82vh; }   /* artifact side panel; height user-resizable */
+  .ovl-right.art-side { flex: 0 0 50vh; height: 50vh; max-height: 50vh; }   /* roomier artifact side panel */
 }
