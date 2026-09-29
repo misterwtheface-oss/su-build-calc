@@ -1418,8 +1418,9 @@
 
   // wardrobe icon picker (detail overlay) — full 820 costumes, front-facing frame, search + category
   const WARDROBE_CATS = ["specialization", "npc", "master", "creature", "animal"];
+  const ICON_PAGE = 120;   // wardrobe sprites rendered per page; "Load more" adds another page
   function openIconPicker(onPick) {
-    dovState = { kind: "iconpick", search: "", cat: null, onPick, render: renderIconPicker };
+    dovState = { kind: "iconpick", search: "", cat: null, limit: ICON_PAGE, onPick, render: renderIconPicker };
     openDetail(dovState.render()); maybeFocusSearch(DOV);
   }
   function renderIconPicker() {
@@ -1428,11 +1429,12 @@
       && (!st.cat || w.category === st.cat)
       && (!q || (w.name || "").toLowerCase().includes(q)));
     list = list.slice().sort((a, b) => (a.name || "").localeCompare(b.name || ""));
+    const limit = st.limit || ICON_PAGE, shown = list.slice(0, limit);
     const catChips = WARDROBE_CATS.map(c =>
       `<button class="facet ${st.cat === c ? "on" : ""}" data-action="iconpick-cat" data-c="${c}">${c[0].toUpperCase() + c.slice(1)}</button>`).join("")
       + (st.cat ? `<button class="facet tag" data-action="iconpick-cat-clear">Clear ✕</button>` : "");
     // tap a tile to select it; the animated preview shows in the right info panel. Tap again / "Use" commits.
-    const tiles = list.slice(0, 600).map(w =>
+    const tiles = shown.map(w =>
       `<div class="pick-tile ${st.sel === w.sprite ? "selected" : ""}" data-action="iconpick-sel" data-k="${esc(w.sprite)}">
         <div class="pt-sprite">${spriteImg(w.img, "px")}</div><div class="pt-name">${esc(w.name)}</div></div>`).join("")
       || `<div class="slot-sub" style="padding:10px">No sprites match.</div>`;
@@ -1447,7 +1449,9 @@
       <div class="overlay-body"><div class="ovl-center">
         <div class="ovl-filterbar">${catChips}</div>
         <div class="ovl-center-scroll"><div class="pick-grid">${tiles}</div>
-        ${list.length > 600 ? `<div class="slot-sub" style="padding:6px">Showing 600 of ${list.length}.</div>` : ""}</div>
+        ${list.length > shown.length
+          ? `<div class="crea-loadmore"><button class="btn-ghost" data-action="iconpick-more">Load more (${shown.length} of ${list.length})</button></div>`
+          : list.length > ICON_PAGE ? `<div class="slot-sub" style="margin-top:10px;text-align:center">All ${list.length} shown</div>` : ""}</div>
       </div>${infoPanel}</div>
       <div class="overlay-footer"><span class="foot-info"></span>
         <button class="btn-confirm" data-action="iconpick-use" ${st.sel ? "" : "disabled"}>Use this icon</button></div>
@@ -3613,8 +3617,9 @@
       }
       case "builds-overwrite": { const b = builds.find(x => x.id === +t.dataset.id); if (b) { b.build = JSON.parse(JSON.stringify(build)); b.ts = Date.now(); persistBuilds(); ovState.sel = b.id; flashBuild(b.id); } break; }
       case "builds-del": armOrDo(t, () => { const id = +t.dataset.id; builds = builds.filter(b => b.id !== id); if (ovState.sel === id) ovState.sel = null; persistBuilds(); refreshOverlay(); }); break;
-      case "iconpick-cat": dovState.cat = t.dataset.c; refreshDetail(); break;
-      case "iconpick-cat-clear": e.stopPropagation(); dovState.cat = null; refreshDetail(); break;
+      case "iconpick-cat": dovState.cat = t.dataset.c; dovState.limit = ICON_PAGE; refreshDetail(); break;
+      case "iconpick-cat-clear": e.stopPropagation(); dovState.cat = null; dovState.limit = ICON_PAGE; refreshDetail(); break;
+      case "iconpick-more": dovState.limit = (dovState.limit || ICON_PAGE) + ICON_PAGE; refreshDetail(); break;
       case "iconpick-sel": { const k = t.dataset.k;   // first tap selects (+animates); tapping the selected tile again commits
         if (dovState.sel === k) { const w = (D.wardrobe || []).find(x => x.sprite === k); if (w && dovState.onPick) dovState.onPick(w); closeDetail(); refreshOverlay(); }
         else { dovState.sel = k; refreshDetail(); } break; }
@@ -4000,6 +4005,7 @@
     if (searchMap[A]) {
       const [root, state] = searchMap[A]; state.search = v;
       if (A === "crea-search") resetCreaPage();   // new query → back to page 1
+      if (A === "iconpick-search") state.limit = ICON_PAGE;
       const panel = root.querySelector(".overlay-panel");
       const saved = SCROLLERS.map(sel => { const e = panel && panel.querySelector(sel); return e ? e.scrollTop : 0; });
       const caret = t.selectionStart;
