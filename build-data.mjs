@@ -257,11 +257,12 @@ const hasMinionSummon = (d) => /\bsummon|\bconjure|\bcreate|army of minions?|ran
 // (with an optional plural) so short ones can't bleed into other words ("war"≠"ward", "death"≠…).
 const MINION_STEMS = [
   'minion', 'amalgamation', 'animated gem', 'animated weapon',
+  'demon',                                               // Greater/Lesser/Inner Demon (+ the named sins below)
   'asmodeus', 'beelzebub', 'belphegor', 'lucifer', 'mammon', 'satanachia', 'leviathan',
   'brim ?fiend', 'chaos ?satyr', 'fire ?imp',            // Lesser Demons
   'war', 'death', 'conquest', 'famine',                  // Four Horsemen
   'dire ?wolf', 'doppelganger', 'guardian of surathli', 'illusion',
-  'torun', 'microbot', 'spiderling', 'unstable horror', 'shambling horror', 'writheling', 'zombie',
+  'torun', 'littletorun', 'microbot', 'spiderling', 'unstable horror', 'shambling horror', 'writheling', 'zombie',
 ];
 const minionNameRe = new RegExp('\\b(' + MINION_STEMS.join('|') + ')s?\\b', 'i');
 const hasMinionRef = (d) => /\{condname_minion_/i.test(d) || minionNameRe.test(d) || hasMinionSummon(d);
