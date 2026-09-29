@@ -497,6 +497,10 @@ h1, h2, h3 { margin: 0; }
 .stat-mag .delta { position: absolute; top: 0; height: 100%; border-radius: 2px; }
 .stat-mag .delta.up { background: var(--good); opacity: .9; }
 .stat-mag .delta.down { background: var(--bad); opacity: .9; }
+/* over-cap wrap: the bar fills solid (accent) then the excess restarts from the left in blue,
+   so a stat pushed past the roster max by personality/scrolls reads as "full + wrapped". */
+.stat-mag.over > i { opacity: .75; }
+.stat-mag .wrap { position: absolute; top: 0; left: 0; height: 100%; border-radius: 2px; background: #4aa3ff; opacity: .95; }
 .stat-delta { font-size: 10px; font-weight: 800; margin-left: 3px; }
 .stat-delta.up { color: var(--good); }
 .stat-delta.down { color: var(--bad); }

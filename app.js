@@ -1095,12 +1095,20 @@
       if (pers.lower === k) return ` <span class="growth down" title="Personality −33%">↓</span>`; return ""; };
     // magnitude bar (value / roster-max) with a diverging fusion delta segment vs the primary alone
     const magRow = (k, label, curr, base0, rowCls) => {
-      const M = STAT_MAX[k] || 1, pc = (v) => Math.max(0, Math.min(100, (v || 0) / M * 100));
+      const M = STAT_MAX[k] || 1, rawPc = (v) => (v || 0) / M * 100, pc = (v) => Math.max(0, Math.min(100, rawPc(v)));
       const cW = pc(curr), bW = pc(base0), solid = Math.min(cW, bW), seg = Math.abs(cW - bW);
       const d = curr - base0, dcls = d >= 0 ? "up" : "down";
-      const title = secondary && d !== 0 ? `Fusion ${d > 0 ? "+" : ""}${d} vs ${esc(primary.name)} alone` : `${Math.round(cW)}% of the roster max`;
+      // personality/scrolls can push a stat past the roster max (the usual end of the bar). Rather than
+      // clamp+lose that info, the bar fills solid then WRAPS: the excess restarts from the low end in blue.
+      const over = rawPc(curr) - 100, overW = Math.max(0, Math.min(100, over));
+      const title = over > 0
+        ? `${Math.round(rawPc(curr))}% of the roster max — ${curr} exceeds the usual cap of ${M} by ${curr - M}`
+        : (secondary && d !== 0 ? `Fusion ${d > 0 ? "+" : ""}${d} vs ${esc(primary.name)} alone` : `${Math.round(cW)}% of the roster max`);
+      const fill = over > 0
+        ? `<i style="width:100%"></i><b class="wrap" style="width:${overW}%"></b>`
+        : `<i style="width:${solid}%"></i>${seg > 0.5 ? `<b class="delta ${dcls}" style="left:${solid}%;width:${seg}%"></b>` : ""}`;
       return `<div class="stat-row${rowCls || ""}"><span class="stat-name">${label}${mark(k)}</span>
-        <span class="stat-mag" title="${title}"><i style="width:${solid}%"></i>${seg > 0.5 ? `<b class="delta ${dcls}" style="left:${solid}%;width:${seg}%"></b>` : ""}</span>
+        <span class="stat-mag${over > 0 ? " over" : ""}" title="${title}">${fill}</span>
         <span class="stat-val total">${curr}${secondary && d !== 0 ? ` <span class="stat-delta ${dcls}">${d > 0 ? "+" : ""}${d}</span>` : ""}</span></div>`;
     };
     const traitIds = [primary.traitId, secondary ? secondary.traitId : null].filter(x => x != null);
