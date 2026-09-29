@@ -687,8 +687,10 @@
         <div class="tile-badges">${clsIco}${raceIco}</div>
         <button class="slot-remove" data-action="remove-creature" data-slot="${i}" title="Remove">✕</button>
         <div class="roster-sprite" data-action="creature-detail" data-slot="${i}">${critFaceSkinned(c, slot.skinId)}</div>
-        <div class="roster-name">${esc(c.name)}${f ? ` <span style="color:var(--accent2)">⚭</span>` : ""}</div>
-        <div class="slot-sub"><span style="color:${clsColor(cls)};font-weight:700">${esc(cls || "—")}</span>${c.race ? " · " + esc(c.race) : ""}</div>
+        <div class="roster-head">
+          <div class="roster-name">${esc(c.name)}${f ? ` <span style="color:var(--accent2)">⚭</span>` : ""}</div>
+          <div class="slot-sub roster-clsrace"><span style="color:${clsColor(cls)};font-weight:700">${esc(cls || "—")}</span>${c.race ? " · " + esc(c.race) : ""}</div>
+        </div>
         ${locked ? `<div class="slot-sub" style="color:var(--bad);font-weight:700">Ignored (Pariah)</div>` : ""}
         <div class="roster-stats">${statLine}</div>
         <div class="roster-actions">

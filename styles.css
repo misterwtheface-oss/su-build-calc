@@ -269,6 +269,7 @@ h1, h2, h3 { margin: 0; }
 }
 .roster-sprite img { width: 82%; height: 82%; object-fit: contain; }
 .roster-sprite .slot-empty-icon { font-size: 30px; }
+.roster-head { display: flex; flex-direction: column; align-items: center; gap: 2px; min-width: 0; max-width: 100%; }
 .roster-name {
   font-size: 13px; font-weight: 600; text-align: center; line-height: 1.15;
   max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
@@ -294,8 +295,11 @@ h1, h2, h3 { margin: 0; }
   .roster-row { grid-template-columns: 1fr; gap: 10px; }
   .roster-identity { align-items: center; }              /* column by default; center horizontally */
   .roster-identity .slot-remove { position: absolute; top: 6px; right: 6px; }
-  .roster-name { order: 1; }                             /* creature name — top */
-  .roster-identity .slot-sub { order: 2; }               /* class · race (+ any Ignored note) */
+  /* header — name · class · race all on one centered line (there's room) */
+  .roster-head { order: 1; flex-direction: row; flex-wrap: nowrap; align-items: baseline; justify-content: center; gap: 0; }
+  .roster-head .roster-name { max-width: none; }
+  .roster-head .roster-clsrace::before { content: "·"; margin: 0 7px; color: var(--text-mute); }
+  .roster-identity > .slot-sub { order: 2; }             /* standalone note (e.g. "Ignored (Pariah)") */
   .roster-sprite { order: 3; width: 72px; height: 72px; }
   .roster-identity .tile-badges { position: static; order: 4; }   /* class/race icons below the sprite */
   .roster-stats { order: 5; }
