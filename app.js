@@ -231,7 +231,7 @@
   const SCROLL_MAX = D.scrollMax || 15;                                  // total stat scrolls per creature (each +1 base)
 
   // ── persistence (schema 2) ─────────────────────────────────────────────────
-  const LS = { build: "subc.build", cards: "subc.cards", nether: "subc.nether", artifacts: "subc.artifacts", spellgems: "subc.spellgems", builds: "subc.builds", bookmarks: "subc.bookmarks", favorRanks: "subc.favorRanks" };
+  const LS = { build: "subc.build", cards: "subc.cards", nether: "subc.nether", artifacts: "subc.artifacts", spellgems: "subc.spellgems", builds: "subc.builds", bookmarks: "subc.bookmarks", favorRanks: "subc.favorRanks", homeView: "subc.homeView" };
   // Feature flags — flip to true to re-enable. Macros (battle-AI proposal) is WIP: hidden for now.
   const FEATURES = { macros: false };
   const jload = (k, dflt) => { try { const v = JSON.parse(localStorage.getItem(k)); return v == null ? dflt : v; } catch { return dflt; } };
@@ -326,6 +326,11 @@
   };
 
   const persistBuild = () => jsave(LS.build, build);
+  // home party layout: "grid" (editable tiles) or "roster" (at-a-glance column — sprites stacked with
+  // their traits in one shared container). A UI pref, not part of a build, so it lives on its own key.
+  let homeView = jload(LS.homeView, "grid");
+  if (homeView !== "grid" && homeView !== "roster") homeView = "grid";
+  const persistHomeView = () => jsave(LS.homeView, homeView);
   // bookmarks — a scratch set of trait / spell ids marked from the Appendix so the selectors can filter
   // to them. Belongs to the ACTIVE build only: cleared whenever the party is reset or another build loaded.
   let bookmarks = jload(LS.bookmarks, null);
@@ -629,11 +634,76 @@
         ${build.anoints.length ? `<div class="spec-tile-sub">${build.anoints.length}/${anointMax()} equipped</div>` : ""}
       </div>`;
 
-    const slots = build.slots.map((s, i) => renderSlot(s, i)).join("");
+    const body = homeView === "roster"
+      ? `<div class="party-roster">${build.slots.map((s, i) => renderRosterRow(s, i)).join("")}</div>`
+      : `<div class="party-grid">${build.slots.map((s, i) => renderSlot(s, i)).join("")}</div>`;
     return `
       <div class="home-top">${specTile}${anointTile}</div>
-      <div class="party-grid">${slots}</div>
+      ${body}
     `;
+  }
+
+  // The Grid/Roster switch lives in the header Menu (outside #app), so render() doesn't touch it —
+  // reflect the active layout on its seg buttons whenever the menu opens / the layout changes.
+  function syncLayoutMenu() {
+    document.querySelectorAll('#main-menu [data-action="home-view"]').forEach(b =>
+      b.classList.toggle("on", b.dataset.view === homeView));
+  }
+
+  // Party "at a glance" roster row: sprite (+ identity/stats/equip) on the left, all resolved traits
+  // (innate + fusion + artifact/nether) stacked to the right, every row sharing one container. Mirrors
+  // renderSlot's data-actions so editing (pick / remove / artifact / relic / spells / detail) still works.
+  function renderRosterRow(slot, i) {
+    const c = CREA.get(slot.cid);
+    const locked = i >= creatureCap();   // Pariah caps the party at 3 creatures
+    if (!c) {
+      if (locked) return `<div class="roster-row locked" data-slot="${i}">
+        <div class="roster-identity"><div class="roster-sprite"><div class="slot-empty-icon">🔒</div></div>
+          <div class="roster-name">Locked</div><div class="slot-sub">Pariah — 3 max</div></div>
+        <div class="roster-traits empty"><span class="roster-empty">Party capped at 3 creatures.</span></div></div>`;
+      return `<div class="roster-row" data-slot="${i}">
+        <div class="roster-identity">
+          <div class="roster-sprite" data-action="pick-creature" data-slot="${i}"><div class="slot-empty-icon">＋</div></div>
+        </div>
+        <div class="roster-traits empty"><button class="roster-add" data-action="pick-creature" data-slot="${i}">＋ Add a creature</button></div></div>`;
+    }
+    const b = baseStats(slot);
+    const f = slot.fusion != null ? CREA.get(slot.fusion) : null;
+    const a = resolveArtifact(slot);
+    const fs = finalStats(slot);
+    const cls = b.cls;
+    const clsIco = cls && D.classIcons && D.classIcons[cls]
+      ? `<span class="tile-badge" title="${esc(cls)}">${spriteImg(D.classIcons[cls], "px")}</span>` : "";
+    const raceIco = c.race && D.raceIcons && D.raceIcons[c.race]
+      ? `<span class="tile-badge" title="${esc(c.race)}">${spriteImg(D.raceIcons[c.race], "px")}</span>` : "";
+    const traitIds = slotTraitIds(slot);
+    const innateN = new Set([c.traitId, f ? f.traitId : null].filter(x => x != null)).size;
+    const hasArtifactTrait = traitIds.length > innateN;
+    const traitHtml = traitIds.length
+      ? traitIds.map(tid => `<div class="primary-traits">${traitBanner(tid)}<div class="trait-desc">${richText((TRAIT[tid] || {}).desc || "")}</div></div>`).join("")
+      : `<div class="slot-sub" style="text-align:left">No traits.</div>`;
+    const statLine = STAT_KEYS.map(k => `<span class="rstat"><i>${STAT_LABEL[k].slice(0, 3)}</i>${fs.final[k]}</span>`).join("")
+      + `<span class="rstat total"><i>Total</i>${fs.total}</span>`;
+    return `<div class="roster-row filled ${locked ? "locked" : ""}" data-slot="${i}" title="Right-click to change creature / fusion">
+      <div class="roster-identity">
+        <div class="tile-badges">${clsIco}${raceIco}</div>
+        <button class="slot-remove" data-action="remove-creature" data-slot="${i}" title="Remove">✕</button>
+        <div class="roster-sprite" data-action="creature-detail" data-slot="${i}">${critFaceSkinned(c, slot.skinId)}</div>
+        <div class="roster-name">${esc(c.name)}${f ? ` <span style="color:var(--accent2)">⚭</span>` : ""}</div>
+        <div class="slot-sub"><span style="color:${clsColor(cls)};font-weight:700">${esc(cls || "—")}</span>${c.race ? " · " + esc(c.race) : ""}</div>
+        ${locked ? `<div class="slot-sub" style="color:var(--bad);font-weight:700">Ignored (Pariah)</div>` : ""}
+        <div class="roster-stats">${statLine}</div>
+        <div class="roster-actions">
+          <button class="slot-mini ${a ? "on" : ""}" data-action="equip-artifact" data-slot="${i}" title="Artifact">Artifact</button>
+          <button class="slot-mini ${slot.relic ? "on" : ""}" data-action="build-relic" data-slot="${i}" title="Relic">Relic</button>
+          <button class="slot-mini ${(slot.spellGemIds || []).length ? "on" : ""}" data-action="creature-spells" data-slot="${i}" title="Spell gems">Spells${(slot.spellGemIds || []).length ? ` ${slot.spellGemIds.length}/${creatureSlotMax(slot)}` : ""}</button>
+        </div>
+      </div>
+      <div class="roster-traits">
+        <div class="section-label">Traits (innate${f ? " + fusion" : ""}${hasArtifactTrait ? " + artifact" : ""})</div>
+        ${traitHtml}
+      </div>
+    </div>`;
   }
 
   function renderSlot(slot, i) {
@@ -3602,8 +3672,9 @@
       case "remove-creature": armOrDo(t, () => { build.slots[+t.dataset.slot] = emptySlot(); persistBuild(); render(); }); break;
       case "clear-spec": e.stopPropagation(); build.specId = null; persistBuild(); render(); break;
       case "clear-party": armOrDo(t, () => { build = freshBuild(); clearBookmarks(); persistBuild(); render(); }); break;
+      case "home-view": { const v = t.dataset.view; if (v === homeView) break; homeView = v; persistHomeView(); syncLayoutMenu(); render(); break; }
       case "open-artifacts": openArtifactLibrary(null); break;
-      case "toggle-menu": e.stopPropagation(); el("main-menu").classList.toggle("hidden"); break;
+      case "toggle-menu": e.stopPropagation(); syncLayoutMenu(); el("main-menu").classList.toggle("hidden"); break;
       case "open-builds": openBuilds(); break;
       case "builds-save-new": ovState.draft = { name: `Build ${builds.length + 1}`, icon: buildDefaultIcon() }; refreshOverlay(); break;
       case "builds-cancel": ovState.draft = null; refreshOverlay(); break;
@@ -4060,5 +4131,6 @@
   // Feature-flag gate: strip disabled entries from the menu so they're unreachable.
   if (!FEATURES.macros) document.querySelector('[data-action="open-macros"]')?.remove();
 
+  syncLayoutMenu();
   render();
 })();

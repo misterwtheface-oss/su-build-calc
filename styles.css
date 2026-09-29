@@ -233,6 +233,79 @@ h1, h2, h3 { margin: 0; }
 /* mini stat readout under the party */
 .party-summary { margin-top: 16px; }
 
+/* ── party layout toggle (Grid / Roster) — lives at the bottom of the header Menu ── */
+.menu-section-label {
+  font-size: 11px; letter-spacing: 1.2px; text-transform: uppercase;
+  color: var(--text-mute); padding: 2px 10px 6px;
+}
+.menu-layout-seg { margin: 0 6px 4px; align-self: stretch; }
+.menu-layout-seg .seg-btn { flex: 1 1 0; text-align: center; }
+
+/* ── party ROSTER (at-a-glance): sprites stacked in a column, traits to the right,
+      every row sharing one bordered container ───────────────────────────────── */
+.party-roster {
+  display: flex; flex-direction: column;
+  border: 1px solid var(--border); border-radius: var(--radius);
+  background: linear-gradient(var(--surface), var(--bg2));
+  overflow: hidden;
+}
+.roster-row {
+  display: grid; grid-template-columns: 150px 1fr; gap: 14px;
+  padding: 12px; position: relative;
+}
+.roster-row + .roster-row { border-top: 1px solid var(--border-dim); }
+.roster-row.filled:hover { background: rgba(154,123,214,.05); }
+.roster-row.locked { opacity: .55; }
+
+.roster-identity {
+  position: relative; display: flex; flex-direction: column; align-items: center; gap: 4px;
+}
+.roster-identity .tile-badges { position: absolute; top: -2px; left: 0; }
+.roster-row.filled .slot-remove { display: flex; top: -4px; right: -2px; }
+.roster-sprite {
+  width: 92px; height: 92px; display: flex; align-items: center; justify-content: center;
+  background: radial-gradient(circle at 50% 40%, rgba(154,123,214,.12), transparent 70%);
+  border-radius: 8px; cursor: pointer; overflow: hidden;
+}
+.roster-sprite img { width: 82%; height: 82%; object-fit: contain; }
+.roster-sprite .slot-empty-icon { font-size: 30px; }
+.roster-name {
+  font-size: 13px; font-weight: 600; text-align: center; line-height: 1.15;
+  max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+/* 3 columns → Hea/Att/Def on row 1, Int/Spe/Total together on row 2 */
+.roster-stats {
+  display: grid; grid-template-columns: repeat(3, auto); gap: 3px 10px;
+  justify-content: center; margin: 2px 0; font-variant-numeric: tabular-nums;
+}
+.roster-stats .rstat { font-size: 11px; color: var(--text); }
+.roster-stats .rstat i { color: var(--text-mute); font-style: normal; margin-right: 3px; }
+.roster-stats .rstat.total { color: var(--cap); font-weight: 700; }
+.roster-actions { display: flex; flex-wrap: wrap; gap: 4px; justify-content: center; width: 100%; }
+.roster-actions .slot-mini { flex: 1 1 auto; min-width: 44px; }
+
+.roster-traits { min-width: 0; display: flex; flex-direction: column; gap: 8px; }
+.roster-traits .section-label { margin: 0 0 2px; }
+.roster-traits.empty { align-items: flex-start; justify-content: center; }
+.roster-empty { color: var(--text-mute); font-size: 13px; }
+.roster-add {
+  background: var(--surface2); border: 1px dashed var(--border-dim); color: var(--accent2);
+  border-radius: 8px; padding: 10px 16px; font-size: 13px; font-weight: 600;
+}
+.roster-add:hover { border-color: var(--accent2); color: var(--text); }
+
+/* phones: stack the identity block above its traits so the sprite still leads the row */
+@media (max-width: 560px) {
+  .roster-row { grid-template-columns: 1fr; gap: 10px; }
+  .roster-identity { flex-direction: row; flex-wrap: wrap; align-items: center; justify-content: flex-start; gap: 8px 12px; }
+  .roster-identity .tile-badges { position: static; }
+  .roster-identity .slot-remove { position: absolute; top: 6px; right: 6px; }
+  .roster-sprite { width: 72px; height: 72px; }
+  .roster-name, .roster-identity .slot-sub { text-align: left; }
+  .roster-stats { justify-content: flex-start; flex-basis: 100%; }
+  .roster-actions { justify-content: flex-start; }
+}
+
 /* ── overlay system ─────────────────────────────────────────────────────── */
 #overlay-root        { position: fixed; inset: 0; z-index: 100; overscroll-behavior: none; }
 #detail-overlay-root { position: fixed; inset: 0; z-index: 200; overscroll-behavior: none; }
