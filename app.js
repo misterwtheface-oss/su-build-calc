@@ -231,7 +231,7 @@
   const SCROLL_MAX = D.scrollMax || 15;                                  // total stat scrolls per creature (each +1 base)
 
   // ── persistence (schema 2) ─────────────────────────────────────────────────
-  const LS = { build: "subc.build", cards: "subc.cards", nether: "subc.nether", artifacts: "subc.artifacts", spellgems: "subc.spellgems", builds: "subc.builds", bookmarks: "subc.bookmarks", favorRanks: "subc.favorRanks", ovlW: "subc.ovlW" };
+  const LS = { build: "subc.build", cards: "subc.cards", nether: "subc.nether", artifacts: "subc.artifacts", spellgems: "subc.spellgems", builds: "subc.builds", bookmarks: "subc.bookmarks", favorRanks: "subc.favorRanks", ovlH: "subc.ovlH" };
   const jload = (k, dflt) => { try { const v = JSON.parse(localStorage.getItem(k)); return v == null ? dflt : v; } catch { return dflt; } };
   const jsave = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} };
 
@@ -3998,25 +3998,26 @@
 
   document.addEventListener("click", onClick);
 
-  // ── info-panel resize (desktop): grab the left-edge grip of an .ovl-right and drag to resize.
-  // Width lives in a persisted CSS var (--ovl-w); the 9px grip strip makes accidental resizing unlikely.
-  { const w = localStorage.getItem(LS.ovlW); if (w && /^\d+px$/.test(w)) document.documentElement.style.setProperty("--ovl-w", w); }
+  // ── info-panel resize (MOBILE only): the info panel is a bottom sheet; drag its top-left grip up/down
+  // to resize its HEIGHT. Persisted in --ovl-h. No resize on desktop (fixed-width side panel there).
+  { const h = localStorage.getItem(LS.ovlH); if (h && /^\d+px$/.test(h)) document.documentElement.style.setProperty("--ovl-h", h); }
   document.addEventListener("pointerdown", (e) => {
-    if (e.button !== 0 || window.innerWidth <= 820) return;         // left button, desktop only
+    if (window.innerWidth > 600) return;                             // mobile only
     const panel = e.target.closest(".ovl-right"); if (!panel) return;
     const rect = panel.getBoundingClientRect();
-    if (e.clientX - rect.left > 10) return;                          // only the left-edge grip zone
+    if (e.clientY - rect.top > 18) return;                           // only the top grip strip
     e.preventDefault();
-    const startX = e.clientX, startW = rect.width;
+    try { panel.setPointerCapture(e.pointerId); } catch {}
+    const startY = e.clientY, startH = rect.height, maxH = Math.round(window.innerHeight * 0.82);
     document.body.classList.add("resizing-ovl");
     const move = (ev) => {
-      const w = Math.max(300, Math.min(680, Math.round(startW - (ev.clientX - startX))));
-      document.documentElement.style.setProperty("--ovl-w", w + "px");
+      const h = Math.max(120, Math.min(maxH, Math.round(startH - (ev.clientY - startY))));   // drag up = taller
+      document.documentElement.style.setProperty("--ovl-h", h + "px");
     };
     const up = () => {
       document.removeEventListener("pointermove", move); document.removeEventListener("pointerup", up);
       document.body.classList.remove("resizing-ovl");
-      localStorage.setItem(LS.ovlW, getComputedStyle(document.documentElement).getPropertyValue("--ovl-w").trim());
+      localStorage.setItem(LS.ovlH, getComputedStyle(document.documentElement).getPropertyValue("--ovl-h").trim());
     };
     document.addEventListener("pointermove", move); document.addEventListener("pointerup", up);
   });
