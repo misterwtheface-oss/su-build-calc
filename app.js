@@ -1857,6 +1857,7 @@
         <button class="ovl-close" data-action="close-entity">✕</button></div>
       <div class="overlay-body"><div class="ovl-center"><div class="ovl-center-scroll">
         ${r.descHtml ? `<div class="perk-desc" style="margin-bottom:12px">${r.descHtml}</div>` : ""}
+        ${st.ekind === "condition" && e.exclusive && e.exclusive.show ? `<div class="excl-note">${e.exclusive.icon ? spriteImg(e.exclusive.icon, "px") : ""}<span>Exclusive to <b>${esc(e.exclusive.source)}</b></span></div>` : ""}
         ${st.ekind === "trait" ? `<div class="section-label">Source</div>${traitDetailSections(e)}` : ""}
         <div class="section-label">Taxonomy — ${n} tag${n === 1 ? "" : "s"}</div>
         ${entityTaxHtml(e)}
@@ -2145,13 +2146,19 @@
     const st = ovState, q = st.search.trim().toLowerCase(), all = D.conditions || [];
     const match = (e) => !q || e.name.toLowerCase().includes(q) || e.desc.toLowerCase().includes(q);
     const list = all.filter(match);
+    // exclusivity glyph stacked below the status icon: minions summoned by only one spec/spell/creature
+    // carry that source's emblem (spec emblem, creature sprite, or class gem). `show:false` keeps the
+    // record but withholds the badge (Guardian of Surathli — no emblem art yet).
+    const exclBox = (e) => (e.exclusive && e.exclusive.show && e.exclusive.icon)
+      ? `<div class="apx-crea apx-excl${e.exclusive.kind === "spec" ? " apx-spec" : ""}" title="Exclusive to ${esc(e.exclusive.source)}">${spriteImg(e.exclusive.icon, "px")}</div>`
+      : "";
     // collapsible category headers (same style as the Appendix) + large icon on the left of each row
     const body = GLOSSARY_CATS.map(c => {
       const items = list.filter(e => e.cat === c);
       if (!items.length) return "";
       const open = q ? true : !st.collapsed.has(c);
       const rows = open ? `<div class="perk-list">${items.map(e => `<div class="perk-line apx-clickable" data-action="apx-open" data-ek="condition" data-eid="${esc(e.cat + ':' + e.key)}" title="View taxonomy">
-        <div class="apx-iconcol">${e.icon ? `<div class="apx-crea"><img src="${esc(e.icon)}" alt=""></div>` : ""}</div>
+        <div class="apx-iconcol">${e.icon ? `<div class="apx-crea"><img src="${esc(e.icon)}" alt=""></div>` : ""}${exclBox(e)}</div>
         <div class="perk-line-body"><div class="perk-line-head"><b>${esc(e.name)}</b></div><div class="perk-desc">${esc(e.desc)}</div></div></div>`).join("")}</div>` : "";
       return `<button class="apx-sec-head apx-cat${open ? "" : " collapsed"}" data-action="gloss-cat-toggle" data-c="${esc(c)}"><span class="apx-sec-caret">${open ? "▾" : "▸"}</span>${esc(c)}s</button>${rows}`;
     }).join("") || `<div class="slot-sub" style="padding:10px">No buff, debuff or minion matches “${esc(st.search)}”.</div>`;

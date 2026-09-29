@@ -744,6 +744,15 @@ h1, h2, h3 { margin: 0; }
 /* perk spec emblem square (mirrors the trait row's creature square) */
 .apx-crea.apx-spec { padding: 3px; background: var(--surface2); }
 .apx-crea.apx-spec img { padding: 2px; }
+/* exclusivity badge stacked below a minion's status glyph (glossary) — smaller, accented */
+.apx-crea.apx-excl { width: 34px; height: 34px; border-color: var(--accent); }
+.apx-crea.apx-excl img { padding: 3px; image-rendering: pixelated; }
+/* "Exclusive to X" note on the minion taxonomy detail page */
+.excl-note { display: flex; align-items: center; gap: 8px; margin: -4px 0 12px; padding: 6px 10px;
+  background: rgba(154,123,214,.10); border: 1px solid var(--accent); border-radius: 8px;
+  color: var(--text); font-size: 12.5px; }
+.excl-note img { width: 26px; height: 26px; object-fit: contain; image-rendering: pixelated; flex: 0 0 auto; }
+.excl-note b { color: var(--accent); }
 /* taxonomy detail — Source facts (material / item source / owner) */
 .apx-fact { color: var(--text); font-size: 13px; padding: 2px 2px 8px; }
 .apx-none { color: var(--text-mute); font-style: italic; }

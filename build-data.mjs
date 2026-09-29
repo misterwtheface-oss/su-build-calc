@@ -1688,7 +1688,30 @@ for (const c of conditions) {
   c.taxoSrc = tags.map(t => t.src);
   if (tags.length) condTagged++;
 }
-console.log(`  conditions glossary: ${conditions.length} (${['Buff', 'Debuff', 'Minion'].map(c => c + ' ' + conditions.filter(x => x.cat === c).length).join(' · ')}) · icons ${condIconHits}/${conditions.length} · taxo ${condTagged}/${conditions.length}`);
+
+// Minion exclusivity — a handful of minion statuses are summoned only by one specialization, spell, or
+// creature. Tag each with its source + a small emblem/sprite icon (spec emblem, creature sprite, or class
+// gem), mirroring the Appendix stacking glyphs. `show:false` withholds the icon+prose from the UI while
+// keeping the record in the JSON (Guardian of Surathli has no emblem art yet — a feature toggle, not a drop).
+const specEmblem = (label) => { const s = specs.find(x => x.label === label); return s ? s.emblem : null; };
+const creatureSprite = (name) => { const c = creatures.find(x => x.name === name); return c ? c.sprite : null; };
+// Greater + Lesser Demons: the Demonologist's summoned Inner Demons (desc: "This minion is a … Demon").
+const DEMON_KEYS = ['asmodeus', 'beelzebub', 'belphegor', 'lucifer', 'mammon', 'satanachia', 'leviathan', 'brimfiend', 'chaossatyr', 'fireimp'];
+const EXCLUSIVE = {};
+for (const k of DEMON_KEYS) EXCLUSIVE[k] = { source: 'Demonologist', kind: 'spec', icon: specEmblem('Demonologist'), show: true };
+EXCLUSIVE.microbot           = { source: 'Engineer',         kind: 'spec',     icon: specEmblem('Engineer'),      show: true };
+EXCLUSIVE.amalgamation       = { source: 'Necromancer',      kind: 'spec',     icon: specEmblem('Necromancer'),   show: true };
+EXCLUSIVE.illusion           = { source: 'Yseros',           kind: 'creature', icon: creatureSprite('Yseros'),    show: true };
+EXCLUSIVE.littletorun        = { source: 'Torun Attunement', kind: 'gem',      icon: spellGems.Nature,            show: true };
+EXCLUSIVE.guardianofsurathli = { source: 'Surathli',         kind: 'spec',     icon: null,                        show: false };
+let exclusiveTagged = 0;
+for (const c of conditions) {
+  const ex = EXCLUSIVE[c.key];
+  if (!ex) continue;
+  if (ex.show && !ex.icon) err(`exclusive minion "${c.key}" has no source icon`);
+  c.exclusive = ex; exclusiveTagged++;
+}
+console.log(`  conditions glossary: ${conditions.length} (${['Buff', 'Debuff', 'Minion'].map(c => c + ' ' + conditions.filter(x => x.cat === c).length).join(' · ')}) · icons ${condIconHits}/${conditions.length} · taxo ${condTagged}/${conditions.length} · exclusive ${exclusiveTagged}`);
 
 // ── player wardrobe (every equippable player costume; names/tiers pre-resolved in wardrobe.json) ──
 // Pull EVERY costume sprite into assets/wardrobe/<sprite>.png; consume the enriched extract artifact.
