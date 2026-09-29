@@ -691,7 +691,7 @@ button.apx-owner:hover .apx-owner-ico { border-color: var(--accent); }
 .perk-line-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
 .perk-line-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
 .perk-line-head > b { min-width: 0; margin-right: auto; }
-.perk-line-meta { flex: 0 0 auto; display: inline-flex; align-items: center; gap: 5px; }
+.perk-line-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; margin-top: 1px; }
 /* Appendix bookmark star — toggles a trait/spell into the selector filter set. Hollow=off, gold=on. */
 .apx-bk { flex: 0 0 auto; align-self: center; background: none; border: none; cursor: pointer; padding: 0 2px; line-height: 1; font-size: 15px; color: var(--text-mute); }
 .apx-bk:hover { color: var(--accent); }

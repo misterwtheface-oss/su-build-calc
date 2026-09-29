@@ -1607,11 +1607,14 @@
       const apxBox = (inner, cls, attrs) => inner ? `<div class="apx-crea ${cls || ""}"${attrs || ""}>${inner}</div>` : "";
       const apxIcon = (icon, cls, attrs) => apxBox(icon ? spriteImg(icon, "px") : "", cls, attrs);
       const apxStack = (...boxes) => { const b = boxes.filter(Boolean); return b.length ? `<div class="apx-iconcol">${b.join("")}</div>` : ""; };
+      // meta chips (material / creature / class name labels) render at the BOTTOM-LEFT of the row,
+      // not beside the title — long names (e.g. a creature name) used to push the title into a wrap.
       const line = (iconCol, name, meta, desc, bk, open) => `<div class="perk-line${open ? " apx-clickable" : ""}"${open ? ` data-action="apx-open" data-ek="${open.ek}" data-eid="${esc(String(open.eid))}"` : ""}>
         ${iconCol}
         <div class="perk-line-body">
-          <div class="perk-line-head"><b>${esc(name)}</b>${meta ? `<span class="perk-line-meta">${meta}</span>` : ""}${bk || ""}</div>
+          <div class="perk-line-head"><b>${esc(name)}</b>${bk || ""}</div>
           ${desc ? `<div class="perk-desc">${desc}</div>` : ""}
+          ${meta ? `<div class="perk-line-meta">${meta}</div>` : ""}
         </div></div>`;
       // one row per trait, folding in the creature that has it + the items that grant it.
       // _search covers trait / creature / boss-owner / item names so name search hits any of them.
