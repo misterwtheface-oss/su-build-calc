@@ -285,12 +285,18 @@ const mhThresh = /than \d|health (is|falls|drops|below|above|reaches)/i;
 const mhKeep  = /% of its stats|base stats|% stats|% more stats|equal to \d+% of its health|attack, intelligence, defense, speed, and health|, or health|gain \d+% health|have \d+% more health|defense, health|health, attack|added to its health|converted into health|maximum health|% more health for|, and health,/i;
 const mhMoreLess = /\d+% (more|less) (maximum )?health\b/i;
 const keepMaxHealth = (d) => mhOmit.test(d) ? false : (mhKeep.test(d) || (mhMoreLess.test(d) && !mhHeal.test(d) && !mhThresh.test(d)));
+// Action/Mechanic::Creature Class = an effect that uses a creature's CLASS as a mechanic (same/different
+// class, change class, class strength, "class as the target", "enemy's class"). The class NAMES double as
+// spell-classes and gem-classes, so a bare-name match over-tags "casts a Death spell" / "Death Spell Gem".
+// Anchor on the WORD "class" in a creature context (per the user's Trait_MTX heuristic) — "your Nature
+// creatures" is Related Types::Nature Creature, not a class mechanic.
+const keepCreatureClass = (d) => /creature'?s?'? class|\btheir class\b|\bits own class\b|\bown class\b|class among your creatures|class as the target|enem(y'?s?|ies'?) class|class strength|\bcreature class\b|creatures?( in your party)? that (is a|belongs? to|are set)[^.]{0,28}class|creatures? of (the )?(same|a different|this|that) class|set to the same class|change[sd]? (its |their )?class|become[s]? (a )?(nature|chaos|death|life|sorcery) creature/i.test(d);
 // "gain/grant [icons,N] <Spell>" — the icon token immediately after the verb flags a SPELL grant, not a buff
 const spellGainRe = /\b(gain|gains|grant|grants|give|gives)\s+\[icons?,\s*\d+\]/i;
 const BUFF_ASSERT = new Set(['Action/Mechanic::Buff','Affect on Status::Apply/Gain a Buff','Affect on Status::More Powerful Buff','Affect on Status::Remove Buff','Affect on Status::Share/Gain Copy of Buff','Affect on Status::Buffs Persist','Affect on Status::Limit/Prevent Buff Gain','Related Buff::Random Buff']);
 const DEBUFF_ASSERT = new Set(['Action/Mechanic::Debuff','Affect on Status::Afflict with/Gain a Debuff','Affect on Status::Increase Debuff Potency','Affect on Status::Remove Debuff','Affect on Status::Resistant to Debuff','Affect on Status::Avoid/Immune to Debuff','Affect on Status::Debuffs Persist','Related Debuff::Random Debuff']);
 // shared per-effect taxonomy corrections (traits / perks / spells all pass through this)
-let animatusRetagged = 0, innateTagStripped = 0, persistRetagged = 0, statusUngrounded = 0, randomMinionStripped = 0, spellGainTagged = 0, spellGemUngrounded = 0, maxHealthUngrounded = 0;
+let animatusRetagged = 0, innateTagStripped = 0, persistRetagged = 0, statusUngrounded = 0, randomMinionStripped = 0, spellGainTagged = 0, spellGemUngrounded = 0, maxHealthUngrounded = 0, creatureClassUngrounded = 0;
 function correctTaxo(taxo, desc) {
   let out = taxo;
   desc = expandStatTokens(desc);   // spell/perk descriptions carry raw {STAT_*}; expand so text rules match
@@ -323,6 +329,8 @@ function correctTaxo(taxo, desc) {
     if (k === 'Action/Mechanic::Spell Gems' && !gemManipRe.test(desc || '')) { spellGemUngrounded++; return false; }
     // Related Stat::Maximum Health = the max-HP stat, not healing / current-HP / thresholds / resource %
     if (k === 'Related Stat::Maximum Health' && !keepMaxHealth(desc || '')) { maxHealthUngrounded++; return false; }
+    // Creature Class = a class MECHANIC, not a spell-class / gem-class reference
+    if (k === 'Action/Mechanic::Creature Class' && !keepCreatureClass(desc || '')) { creatureClassUngrounded++; return false; }
     return true;
   });
   // a "gain [icons,N] <Spell>" that isn't a status → tag it as gaining a spell (the LLM missed this)
@@ -847,7 +855,7 @@ const spells = spellArr.map((s, i) => {
 }).filter(s => s.name);
 console.log(`  spells: ${spells.length} · charges ${spells.filter(s => s.chargesSrc === 'code').length} code + ${spells.filter(s => s.chargesSrc === 'community').length} community · ${spells.filter(s => s.potency).length} w/ potency · potency/target/source from Spell_REF.csv`);
 console.log(`  taxonomy fixes: Innate-Trait stripped ${innateTagStripped} · Animatus retagged ${animatusRetagged} · Persist→Extend-Duration retagged ${persistRetagged} (duration, not death)`);
-console.log(`  canon-status validation: ${statusUngrounded} ungrounded buff/debuff tags dropped · ${randomMinionStripped} ungrounded Minion tags dropped · ${spellGemUngrounded} non-gem Spell-Gem tags dropped · ${maxHealthUngrounded} non-stat Max-Health tags dropped · ${spellGainTagged} spell-gain tags added`);
+console.log(`  canon-status validation: ${statusUngrounded} ungrounded buff/debuff tags dropped · ${randomMinionStripped} ungrounded Minion tags dropped · ${spellGemUngrounded} non-gem Spell-Gem tags dropped · ${maxHealthUngrounded} non-stat Max-Health tags dropped · ${creatureClassUngrounded} non-class Creature-Class tags dropped · ${spellGainTagged} spell-gain tags added`);
 
 // ── trait items (slottable into artifact trait slots) — with material icons ──
 const matStats = readJSON(path.join(MODEL, 'material_stats.json'));
