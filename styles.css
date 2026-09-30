@@ -466,6 +466,8 @@ h1, h2, h3 { margin: 0; }
 .trait-banner.has-avail .trait-banner-label { flex: 1; min-width: 0; }
 .trait-banner .avail-tags { flex: 0 0 auto; }
 .trait-banner .avail-tag { color: var(--aff-text); opacity: .82; }   /* readable on the coloured pill, de-emphasised */
+/* light chip bg (e.g. Life gold): the faded thin label washes out → force solid black */
+.trait-banner.on-light .avail-tag { color: #000; opacity: 1; }
 /* low-key availability labels (RD / Favor / Rep) — plain muted unbolded text */
 .avail-tags { display: inline-flex; align-items: baseline; gap: 8px; flex: 0 0 auto; }
 .avail-tag { font-size: 11px; font-weight: 400; color: var(--text-mute); white-space: nowrap; }

@@ -632,11 +632,12 @@
   function traitBanner(tid, opts = {}) {
     const t = TRAIT[tid]; if (!t) return "";
     const color = clsColor(t.cls);
+    const txt = textOn(color === "var(--border-dim)" ? "#6d5a2e" : color);   // dark text ⇒ light chip bg (Life)
     const label = opts.label || t.name;
     // the class-coloured name pill; availability labels sit INSIDE the pill, right-aligned (pill keeps full width)
     const avail = opts.noAvail ? "" : availTagsHtml(t);
-    return `<span class="trait-banner${avail ? " has-avail" : ""}"${opts.noNav ? "" : ` data-action="nav-trait" data-tid="${tid}"`}
-      style="--aff-color:${color};--aff-text:${textOn(color === "var(--border-dim)" ? "#6d5a2e" : color)}" title="${esc(t.name)}">
+    return `<span class="trait-banner${avail ? " has-avail" : ""}${txt === "#150e26" ? " on-light" : ""}"${opts.noNav ? "" : ` data-action="nav-trait" data-tid="${tid}"`}
+      style="--aff-color:${color};--aff-text:${txt}" title="${esc(t.name)}">
       <span class="trait-banner-label">${esc(label)}</span>${avail}</span>`;
   }
   const artIcon = (a) => a && a.primary ? PRIMARY_ICON[a.primary] : null;
