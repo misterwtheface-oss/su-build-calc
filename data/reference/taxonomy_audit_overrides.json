@@ -226,7 +226,8 @@
  },
  "perk:29:TITANICRAGE": {
   "add": [
-   "Active If::Defending"
+   "Active If::Defending",
+   "Action/Mechanic::Attack"
   ],
   "remove": [
    "Active If::Provoking"
@@ -394,7 +395,8 @@
    "Action/Mechanic::Relic",
    "Action/Mechanic::Debuff",
    "Affect on Status::Afflict with/Gain a Debuff",
-   "Affect on Status::Debuffs Persist"
+   "Affect on Status::Debuffs Persist",
+   "Affect on Status::Extend Duration (Status)"
   ],
   "remove": []
  },
@@ -555,7 +557,9 @@
   "add": [
    "Related Spells::Multi-Target Spells"
   ],
-  "remove": []
+  "remove": [
+   "Related Stat::Maximum Health"
+  ]
  },
  "spell:620": {
   "add": [],
@@ -864,7 +868,8 @@
  "trait:1989": {
   "add": [],
   "remove": [
-   "Affect on Timeline::Additional Turn"
+   "Affect on Timeline::Additional Turn",
+   "Action/Mechanic::Timeline"
   ]
  },
  "trait:1995": {
@@ -940,7 +945,9 @@
   "add": [
    "Related Spells::Single-Target Spells"
   ],
-  "remove": []
+  "remove": [
+   "Action/Mechanic::Cast"
+  ]
  },
  "trait:23": {
   "add": [],
@@ -978,7 +985,8 @@
  "trait:413": {
   "add": [],
   "remove": [
-   "Action/Mechanic::Cast"
+   "Action/Mechanic::Cast",
+   "Active If::Health is X%"
   ]
  },
  "trait:424": {
@@ -1045,7 +1053,8 @@
  },
  "trait:66": {
   "add": [
-   "Action/Mechanic::Intercept"
+   "Action/Mechanic::Intercept",
+   "Affect on Damage::Take Less Damage"
   ],
   "remove": [
    "Affect on Mitigation::Survive with X Health"
@@ -1098,7 +1107,9 @@
   "add": [
    "Multiplied by::Amount of X Stat"
   ],
-  "remove": []
+  "remove": [
+   "Multiplied by::Current/Missing Health %"
+  ]
  },
  "trait:117": {
   "add": [],
@@ -1678,7 +1689,9 @@
   "add": [
    "Action/Mechanic::Turn Counter"
   ],
-  "remove": []
+  "remove": [
+   "Action/Mechanic::Timeline"
+  ]
  },
  "trait:1842": {
   "add": [],
@@ -1718,7 +1731,8 @@
  },
  "trait:1968": {
   "add": [
-   "Action/Mechanic::Creature Class"
+   "Action/Mechanic::Creature Class",
+   "Related Buff::Random Buff"
   ],
   "remove": []
  },
@@ -1798,7 +1812,9 @@
   "add": [
    "Affect on Spells::Extra/Gain a Spell Gem"
   ],
-  "remove": []
+  "remove": [
+   "Affect on Spells::Modify Spell Gem Property"
+  ]
  },
  "trait:2095": {
   "add": [
@@ -1980,7 +1996,8 @@
  },
  "spell:453": {
   "add": [
-   "Multiplied by::Amount of Stat Change"
+   "Multiplied by::Amount of Stat Change",
+   "Related Spells::Damaging Spells"
   ],
   "remove": [
    "Multiplied by::Amount of X Stat"
@@ -2012,7 +2029,8 @@
    "Related Stat::Attack (Stat)",
    "Related Stat::Defense",
    "Related Stat::Intelligence",
-   "Affect on Stats::Stat is Decreased"
+   "Affect on Stats::Stat is Decreased",
+   "Related Stat::Speed"
   ],
   "remove": []
  },
@@ -2027,7 +2045,10 @@
   "add": [
    "Related Spells::Damaging Spells"
   ],
-  "remove": []
+  "remove": [
+   "Multiplied by::Amount of X Stat",
+   "Affect on Stats::Stat is Decreased"
+  ]
  },
  "spell:586": {
   "add": [
@@ -2323,25 +2344,29 @@
  },
  "perk:22:LUA": {
   "add": [
-   "Related Types::Life Creature"
+   "Related Types::Life Creature",
+   "Action/Mechanic::Creature Class"
   ],
   "remove": []
  },
  "perk:22:COR": {
   "add": [
-   "Related Types::Chaos Creature"
+   "Related Types::Chaos Creature",
+   "Action/Mechanic::Creature Class"
   ],
   "remove": []
  },
  "perk:22:DUN": {
   "add": [
-   "Related Types::Death Creature"
+   "Related Types::Death Creature",
+   "Action/Mechanic::Creature Class"
   ],
   "remove": []
  },
  "perk:22:NAX": {
   "add": [
-   "Related Types::Nature Creature"
+   "Related Types::Nature Creature",
+   "Action/Mechanic::Creature Class"
   ],
   "remove": []
  },
@@ -2604,7 +2629,9 @@
   "add": [
    "Affect on Life::Creature is Killed"
   ],
-  "remove": []
+  "remove": [
+   "Action/Mechanic::Stats"
+  ]
  },
  "trait:373": {
   "add": [],
@@ -2664,7 +2691,8 @@
  },
  "trait:529": {
   "add": [
-   "Related Spells::Damaging Spells"
+   "Related Spells::Damaging Spells",
+   "Related Spells::Healing Spells"
   ],
   "remove": []
  },
@@ -2854,7 +2882,8 @@
  },
  "trait:1352": {
   "add": [
-   "Action/Mechanic::Indirect Damage"
+   "Action/Mechanic::Indirect Damage",
+   "Affect on Timeline::Send to Top"
   ],
   "remove": []
  },
@@ -3198,7 +3227,8 @@
  },
  "spell:516": {
   "add": [
-   "Multiplied by::Amount of Stat Change"
+   "Multiplied by::Amount of Stat Change",
+   "Related Spells::Damaging Spells"
   ],
   "remove": [
    "Multiplied by::Amount of X Stat"
@@ -3207,7 +3237,8 @@
  "spell:531": {
   "add": [],
   "remove": [
-   "Action/Mechanic::Creature Class"
+   "Action/Mechanic::Creature Class",
+   "Related Spells::Sorcery Spells"
   ]
  },
  "spell:618": {
@@ -3345,31 +3376,36 @@
  },
  "perk:35:SUMMONASMODEUS": {
   "add": [
-   "Related Types::Chaos Creature"
+   "Related Types::Chaos Creature",
+   "Action/Mechanic::Creature Class"
   ],
   "remove": []
  },
  "perk:35:SUMMONBEELZEBUB": {
   "add": [
-   "Related Types::Death Creature"
+   "Related Types::Death Creature",
+   "Action/Mechanic::Creature Class"
   ],
   "remove": []
  },
  "perk:35:SUMMONBELPHEGOR": {
   "add": [
-   "Related Types::Sorcery Creature"
+   "Related Types::Sorcery Creature",
+   "Action/Mechanic::Creature Class"
   ],
   "remove": []
  },
  "perk:35:SUMMONLEVIATHAN": {
   "add": [
-   "Related Types::Nature Creature"
+   "Related Types::Nature Creature",
+   "Action/Mechanic::Creature Class"
   ],
   "remove": []
  },
  "perk:35:SUMMONMAMMON": {
   "add": [
-   "Related Types::Life Creature"
+   "Related Types::Life Creature",
+   "Action/Mechanic::Creature Class"
   ],
   "remove": []
  },
@@ -3473,6 +3509,291 @@
  "trait:67": {
   "add": [
    "Action/Mechanic::Indirect Damage"
+  ],
+  "remove": []
+ },
+ "trait:172": {
+  "add": [
+   "Related Stat::Highest Stat"
+  ],
+  "remove": []
+ },
+ "trait:306": {
+  "add": [
+   "Multiplied by::Spell Gem/Charge Count"
+  ],
+  "remove": []
+ },
+ "trait:697": {
+  "add": [],
+  "remove": [
+   "Action/Mechanic::Stats"
+  ]
+ },
+ "trait:991": {
+  "add": [
+   "Action/Mechanic::Creature Class"
+  ],
+  "remove": []
+ },
+ "trait:1545": {
+  "add": [
+   "Multiplied by::Buff Count",
+   "Multiplied by::Debuff Count"
+  ],
+  "remove": []
+ },
+ "trait:1627": {
+  "add": [],
+  "remove": [
+   "Action/Mechanic::Provoke"
+  ]
+ },
+ "trait:1629": {
+  "add": [],
+  "remove": [
+   "Action/Mechanic::Provoke"
+  ]
+ },
+ "trait:1812": {
+  "add": [
+   "Affect on Life::Creature is Damaged"
+  ],
+  "remove": []
+ },
+ "trait:2183": {
+  "add": [],
+  "remove": [
+   "Affect on Traits::Share Trait"
+  ]
+ },
+ "spell:2": {
+  "add": [],
+  "remove": [
+   "Affect on Stats::Stat is Increased"
+  ]
+ },
+ "spell:116": {
+  "add": [],
+  "remove": [
+   "Affect on Stats::Stat is Increased",
+   "Affect on Stats::Stat is Decreased"
+  ]
+ },
+ "spell:347": {
+  "add": [
+   "Related Spells::Single-Target Spells",
+   "Action/Mechanic::Creature Class"
+  ],
+  "remove": []
+ },
+ "spell:348": {
+  "add": [
+   "Related Spells::Single-Target Spells",
+   "Action/Mechanic::Creature Class"
+  ],
+  "remove": []
+ },
+ "spell:349": {
+  "add": [
+   "Related Spells::Single-Target Spells",
+   "Action/Mechanic::Creature Class"
+  ],
+  "remove": []
+ },
+ "spell:350": {
+  "add": [
+   "Related Spells::Single-Target Spells",
+   "Action/Mechanic::Creature Class"
+  ],
+  "remove": []
+ },
+ "spell:351": {
+  "add": [
+   "Related Spells::Single-Target Spells",
+   "Action/Mechanic::Creature Class"
+  ],
+  "remove": []
+ },
+ "spell:389": {
+  "add": [],
+  "remove": [
+   "Active If::Debuffed with X"
+  ]
+ },
+ "perk:8:TRANSFORMATION": {
+  "add": [],
+  "remove": [
+   "Action/Mechanic::Spell Gems"
+  ]
+ },
+ "perk:9:CHAOSMASTERY": {
+  "add": [],
+  "remove": [
+   "Related Spells::Chaos Spells"
+  ]
+ },
+ "perk:9:DEATHMASTERY": {
+  "add": [],
+  "remove": [
+   "Related Spells::Death Spells"
+  ]
+ },
+ "perk:9:LIFEMASTERY": {
+  "add": [],
+  "remove": [
+   "Related Spells::Life Spells"
+  ]
+ },
+ "perk:9:NATUREMASTERY": {
+  "add": [],
+  "remove": [
+   "Related Spells::Nature Spells"
+  ]
+ },
+ "perk:9:SORCERYMASTERY": {
+  "add": [],
+  "remove": [
+   "Related Spells::Sorcery Spells"
+  ]
+ },
+ "perk:17:CONFLAGRATION": {
+  "add": [
+   "Affect on Life::Creature is Healed"
+  ],
+  "remove": []
+ },
+ "perk:26:MALEDICT": {
+  "add": [
+   "Affect on Damage::Take More Damage"
+  ],
+  "remove": []
+ },
+ "relic:19": {
+  "add": [
+   "Affect on Spells::Modify Spell Calculation"
+  ],
+  "remove": []
+ },
+ "trait:583": {
+  "add": [
+   "Active If::Creature is X Type"
+  ],
+  "remove": []
+ },
+ "trait:778": {
+  "add": [],
+  "remove": [
+   "Active If::Health is X%"
+  ]
+ },
+ "trait:897": {
+  "add": [
+   "Action/Mechanic::Attack"
+  ],
+  "remove": []
+ },
+ "trait:933": {
+  "add": [],
+  "remove": [
+   "Action/Mechanic::Stats"
+  ]
+ },
+ "trait:1275": {
+  "add": [
+   "Action/Mechanic::Creature Race"
+  ],
+  "remove": []
+ },
+ "trait:1353": {
+  "add": [
+   "Affect on Timeline::Send to Top"
+  ],
+  "remove": []
+ },
+ "trait:1354": {
+  "add": [
+   "Affect on Timeline::Send to Top"
+  ],
+  "remove": []
+ },
+ "trait:1656": {
+  "add": [],
+  "remove": [
+   "Affect on Stats::Stat is Increased",
+   "Action/Mechanic::Stats"
+  ]
+ },
+ "trait:1805": {
+  "add": [],
+  "remove": [
+   "Action/Mechanic::Timeline"
+  ]
+ },
+ "trait:1883": {
+  "add": [
+   "Affect on Spells::More Spell Potency"
+  ],
+  "remove": []
+ },
+ "spell:62": {
+  "add": [
+   "Related Spells::Firestorm"
+  ],
+  "remove": []
+ },
+ "spell:262": {
+  "add": [
+   "Activates When::Ally Dies"
+  ],
+  "remove": []
+ },
+ "spell:304": {
+  "add": [
+   "Affect on Spells::Redirect Spell"
+  ],
+  "remove": []
+ },
+ "spell:336": {
+  "add": [
+   "Affect on Spells::Modify Charges/Behavior"
+  ],
+  "remove": []
+ },
+ "spell:380": {
+  "add": [],
+  "remove": [
+   "Active If::Debuffed with X"
+  ]
+ },
+ "spell:436": {
+  "add": [
+   "Affect on Damage::Deal More Damage"
+  ],
+  "remove": []
+ },
+ "spell:532": {
+  "add": [
+   "Affect on Spells::Redirect Spell"
+  ],
+  "remove": []
+ },
+ "spell:536": {
+  "add": [
+   "Affect on Spells::Redirect Spell",
+   "Related Spells::Healing Spells"
+  ],
+  "remove": []
+ },
+ "spell:554": {
+  "add": [
+   "Related Spells::Damaging Spells"
+  ],
+  "remove": []
+ },
+ "perk:34:UNNATURALCAUSES": {
+  "add": [
+   "Affect on Status::Avoid/Immune to Debuff"
   ],
   "remove": []
  }
