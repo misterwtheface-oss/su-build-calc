@@ -538,6 +538,15 @@ const canonFrame = (f) => {
   return (r && !r.keep && r.canonical_frame != null) ? r.canonical_frame : f;
 };
 
+// Secondary availability gate (beyond Realm Depth): some creatures also require a God Favor rank or a
+// Guild Reputation rank. The primary depth only says the god's realm / the guilds are AVAILABLE; this
+// rank is the real requirement. Favor rank is buried in the acquisition source prose; guild rank is
+// wiki-sourced. gate = {type:'favor'|'guild', name:<god|guild>, rank:N}. Propagated to traits/materials.
+const guildGateByName = new Map();
+for (const r of readJSON(path.join(REF, 'guild_creature_ranks.json')).ranks)
+  guildGateByName.set(norm(r.creature), { type: 'guild', name: r.guild, rank: r.rank });
+const FAVOR_RE = /([A-Za-z0-9'’ ]+?)\s+God Shop\s*\(Favor Rank\s*(\d+)\)/;   // name allows digits (god "4080")
+
 const creatures = [];
 let spriteCopied = 0, codeStats = 0, spriteOverrides = 0;
 const statFilled = [];   // creatures whose null base stat was filled from Creature_REF.csv
@@ -603,12 +612,18 @@ creaturesRef.forEach((r, i) => {
   const acq = r.acquisition || {};
   const depth = typeof acq.depth === 'number' ? acq.depth : null;
   const source = (acq.source && String(acq.source).trim()) || null;
+  // secondary gate: God Favor rank (from source prose) or Guild Reputation rank (wiki); disjoint in practice
+  let gate = null;
+  const fm = source && source.match(FAVOR_RE);
+  if (fm) gate = { type: 'favor', name: fm[1].trim(), rank: +fm[2] };
+  else if (guildGateByName.has(norm(r.name))) gate = guildGateByName.get(norm(r.name));
   creatures.push({
     id, name: r.name, race: r.race || null, cls,
     hp: stats.hp, atk: stats.atk, def: stats.def, int: stats.int, spd: stats.spd, total,
     statSource: (cd ? 'code' : cs ? 'code-legacy' : 'community') + (statPatched.length ? '+ref' : ''),
     traitId, traitName,
     depth, source,
+    ...(gate ? { gate } : {}),
     sprite,
   });
 });
@@ -626,10 +641,11 @@ for (const [tid, cs] of traitOwners) if (cs.length > 1)
 //   • player-farmable Nether Boss trait material → the wiki depth table (data/reference/nether_boss_trait_depths.json)
 // Boss-only (encounter) traits get NO depth (per design — only player-available content is tagged).
 const traitDepth = new Map();   // traitId → Realm Depth (consumed here for traits and below for trait-items)
+const traitGate = new Map();    // traitId → secondary gate {type,name,rank} (parallel to traitDepth)
 for (const c of creatures) {    // innate: 1:1 owner, but take the min defensively
-  if (c.traitId == null || typeof c.depth !== 'number') continue;
-  const cur = traitDepth.get(c.traitId);
-  if (cur == null || c.depth < cur) traitDepth.set(c.traitId, c.depth);
+  if (c.traitId == null) continue;
+  if (typeof c.depth === 'number') { const cur = traitDepth.get(c.traitId); if (cur == null || c.depth < cur) traitDepth.set(c.traitId, c.depth); }
+  if (c.gate && !traitGate.has(c.traitId)) traitGate.set(c.traitId, c.gate);
 }
 {
   const normTN = (s) => String(s || '').toLowerCase().replace(/[’']/g, '').replace(/\bs\b/g, '').replace(/[^a-z0-9]+/g, '');
@@ -639,9 +655,15 @@ for (const c of creatures) {    // innate: 1:1 owner, but take the min defensive
   let nbHit = 0; const nbMiss = [];
   for (const r of nb) { const id = traitIdByNormName.get(normTN(r.trait)); if (id != null) { traitDepth.set(id, r.depth); nbHit++; } else nbMiss.push(r.trait); }
   if (nbMiss.length) warn(`nether boss depth: ${nbMiss.length}/${nb.length} wiki traits did not match a shipped trait (fix spelling in nether_boss_trait_depths.json): ${nbMiss.join(', ')}`);
-  let traitTagged = 0;
-  for (const id in traits) { const d = traitDepth.get(+id); if (d != null) { traits[id].depth = d; traitTagged++; } }
+  let traitTagged = 0, traitGated = 0;
+  for (const id in traits) {
+    const d = traitDepth.get(+id); if (d != null) { traits[id].depth = d; traitTagged++; }
+    const g = traitGate.get(+id); if (g) { traits[id].gate = g; traitGated++; }
+  }
+  const favN = creatures.filter(c => c.gate && c.gate.type === 'favor').length;
+  const guildN = creatures.filter(c => c.gate && c.gate.type === 'guild').length;
   console.log(`  realm depth: ${creatures.filter(c => typeof c.depth === 'number').length}/${creatures.length} creatures · ${traitTagged} traits tagged (${nbHit}/${nb.length} nether-boss materials)`);
+  console.log(`  secondary gate: ${favN} favor + ${guildN} guild creatures · ${traitGated} traits gated`);
 }
 
 // ── specializations (player slot) — prefer the 32×32 character SKIN, else the 16×16 emblem icon ──
@@ -1092,6 +1114,7 @@ for (const m of matRecs) {
   traitItems.push({ id: m.index, name: m.name, traitId: tid,
     traitName: traits[tid].name, icon: matIcon(m),
     depth: traitDepth.get(tid) ?? null,                    // Realm Depth availability, inherited from its granted trait
+    ...(traitGate.get(tid) ? { gate: traitGate.get(tid) } : {}),   // secondary favor/guild gate, inherited likewise
     taxo: traits[tid].taxo || [],                          // inherits its granted trait's taxonomy tags
     taxoSrc: traits[tid].taxoSrc || [] });                 // …and its provenance (parallel to taxo)
 }
