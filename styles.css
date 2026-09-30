@@ -702,6 +702,9 @@ h1, h2, h3 { margin: 0; }
 .spec-info-name { font-size: 22px; margin-bottom: 8px; }
 .spec-play { text-align: left; }
 .spec-grid { grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); }
+/* Relic picker: fixed 3-wide grid per stat section (3×2 for a full 6-relic stat) */
+.relic-grid { grid-template-columns: repeat(3, 1fr); margin-bottom: 14px; }
+.relic-grid + .section-label { margin-top: 4px; }
 /* False God grouping — each group headed by the combined 6-part battle portrait */
 .fgod-group { margin-bottom: 8px; }
 .fgod-head {

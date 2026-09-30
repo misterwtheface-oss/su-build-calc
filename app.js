@@ -2966,38 +2966,67 @@
   }
 
   // ── relic builder ──────────────────────────────────────────────────────────
+  // Relic name = "<Name>, <Item> of <God>" — the tile shows just the recognizable name (pre-comma).
+  const relicShortName = (r) => String(r.name || "").split(",")[0].trim();
   function openRelicBuilder(slotIdx) {
-    const slot = build.slots[slotIdx];
-    ovState = { kind: "relic", slotIdx, sel: slot.relic ? slot.relic.id : null, rank: slot.relic ? slot.relic.rank : 50, search: "", taxoFilters: [], render: renderRelicBuilder };
+    ovState = { kind: "relic", slotIdx, search: "", taxoFilters: [], render: renderRelicBuilder };
     openOverlay(ovState.render());
   }
+  // List overlay: a tile grid like the God Shop / creature selector, sectioned by the stat each relic boosts.
   function renderRelicBuilder() {
     const st = ovState, c = CREA.get(build.slots[st.slotIdx].cid);
+    const equipped = build.slots[st.slotIdx].relic;
     const q = st.search.trim().toLowerCase();
     const list = D.relics.filter(r => (!q || r.name.toLowerCase().includes(q) || (r.statBonus || "").toLowerCase().includes(q)) && taxoMatch(st, r));
-    const sel = st.sel != null ? RELIC.get(st.sel) : null;
-    const rows = list.map(r => `<div class="prop-row ${st.sel === r.id ? "chosen" : ""}" data-action="relic-pick" data-id="${r.id}">
-      <span class="prop-ico">${r.icon ? spriteImg(r.icon, "px") : ""}</span>
-      <span class="prop-name">${esc(r.name)}</span><span class="prop-stat">${esc(r.statBonus || "")}</span></div>`).join("");
-    const detail = sel ? `<div class="ns-info-head apx-clickable" data-action="apx-open" data-ek="relic" data-eid="${sel.id}" title="View taxonomy"><span class="ns-info-icon">${sel.icon ? spriteImg(sel.icon, "px") : ""}</span><h3>${esc(sel.name)} <span class="etax-hint">tags ›</span></h3></div>
-      <div class="slot-sub" style="margin-bottom:10px">Boosts ${esc(sel.statBonus || "—")}</div>
-      ${sel.ranks.map(rk => `<div class="prop-row ${st.rank >= rk.rank ? "chosen" : ""}">
-        <span class="prop-name" style="flex:0 0 44px;color:var(--accent)">R${rk.rank}</span>
-        <span class="prop-stat" style="flex:1;text-align:left">${richText(rk.desc)}</span></div>`).join("")}`
-      : "";
-    return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel detail">
+    // one section per stat, in the app's canonical stat order; picking a tile opens the rank overlay
+    const sections = STAT_KEYS.map(k => {
+      const label = STAT_LABEL[k];
+      const rels = list.filter(r => r.statBonus === label);
+      if (!rels.length) return "";
+      const tiles = rels.map(r => `<div class="pick-tile ${equipped && equipped.id === r.id ? "selected" : ""}" data-action="relic-pick" data-id="${r.id}">
+        <div class="pt-sprite">${r.icon ? spriteImg(r.icon, "px") : `<span class="spec-tile-plus">✦</span>`}</div>
+        <div class="pt-name">${esc(relicShortName(r))}</div></div>`).join("");
+      return `<div class="section-label">${esc(label)}</div><div class="pick-grid relic-grid">${tiles}</div>`;
+    }).join("");
+    return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel">
       <div class="overlay-header"><h2>Relic — ${esc(c ? c.name : "")}</h2>
         <input class="ovl-search" placeholder="Search relic / stat…" value="${esc(st.search)}" data-action="relic-search">
         <button class="ovl-close" data-action="close-ovl">✕</button></div>
       <div class="overlay-body"><div class="ovl-center"><div class="ovl-filterbar">${taxoFilterBar(st)}</div>
-        <div class="ovl-center-scroll">${rows || `<div class="slot-sub" style="padding:10px">No relics match.</div>`}</div></div>
-        <div class="ovl-right">
-          ${sel ? `<div class="rank-picker"><span class="slot-sub">Rank</span>
-            <input type="range" min="10" max="${Math.max(...sel.ranks.map(r => r.rank), 10)}" step="10" value="${st.rank}" data-action="relic-rank"><span class="rank-badge">${st.rank}</span></div>` : ""}
-          ${detail}</div></div>
+        <div class="ovl-center-scroll">${sections || `<div class="slot-sub" style="padding:10px">No relics match.</div>`}</div></div></div>
       <div class="overlay-footer"><span class="foot-info"></span>
-        <div><button class="btn-ghost" data-action="relic-clear">Clear</button>
-        <button class="btn-confirm" data-action="relic-confirm" ${st.sel == null ? "disabled" : ""}>Save Relic</button></div></div>
+        <div>${equipped ? `<button class="btn-ghost" data-action="relic-clear">Clear equipped</button>` : ""}
+        <button class="btn-confirm" data-action="close-ovl">Done</button></div></div>
+    </div></div>`;
+  }
+  // Second full-screen overlay: rank slider + per-rank effects for the picked relic.
+  function openRelicDetail(relicId) {
+    const equipped = build.slots[ovState.slotIdx].relic;
+    const rank = equipped && equipped.id === relicId ? equipped.rank : 50;
+    dovState = { kind: "relic-detail", slotIdx: ovState.slotIdx, sel: relicId, rank, render: renderRelicDetail };
+    openDetail(dovState.render());
+  }
+  function renderRelicDetail() {
+    const st = dovState, sel = RELIC.get(st.sel);
+    if (!sel) { closeDetail(); return ""; }
+    const maxRank = Math.max(...sel.ranks.map(r => r.rank), 10);
+    const ranks = sel.ranks.map(rk => `<div class="prop-row ${st.rank >= rk.rank ? "chosen" : ""}">
+      <span class="prop-name" style="flex:0 0 44px;color:var(--accent)">R${rk.rank}</span>
+      <span class="prop-stat" style="flex:1;text-align:left">${richText(rk.desc)}</span></div>`).join("");
+    return `<div class="ovl-backdrop" data-action="detail-backdrop"><div class="overlay-panel detail">
+      <div class="overlay-header"><button class="btn-ghost" data-action="relic-back">‹ Relics</button>
+        <h2 style="flex:1">${esc(sel.name)}</h2><button class="ovl-close" data-action="close-detail">✕</button></div>
+      <div class="overlay-body"><div class="ovl-center">
+        <div class="gs-detail-head apx-clickable" data-action="apx-open" data-ek="relic" data-eid="${sel.id}" title="View taxonomy">
+          ${sel.icon ? `<div class="gs-god-sprite">${spriteImg(sel.icon, "px")}</div>` : ""}
+          <div class="gs-god-name">${esc(sel.name)} <span class="etax-hint">tags ›</span></div>
+          <div class="slot-sub">Boosts ${esc(sel.statBonus || "—")}</div></div>
+        <div class="ovl-filterbar rank-picker"><span class="slot-sub">Rank</span>
+          <input type="range" min="10" max="${maxRank}" step="10" value="${st.rank}" data-action="relic-rank"><span class="rank-badge">${st.rank}</span></div>
+        <div class="ovl-center-scroll">${ranks}</div>
+      </div></div>
+      <div class="overlay-footer"><button class="btn-ghost" data-action="relic-back">‹ Back</button>
+        <button class="btn-confirm" data-action="relic-confirm">Save Relic</button></div>
     </div></div>`;
   }
 
@@ -3968,9 +3997,10 @@
       }
 
       // relic
-      case "relic-pick": ovState.sel = ovState.sel === +t.dataset.id ? null : +t.dataset.id; refreshOverlay(); break;
+      case "relic-pick": openRelicDetail(+t.dataset.id); break;
+      case "relic-back": closeDetail(); break;
       case "relic-clear": build.slots[ovState.slotIdx].relic = null; persistBuild(); closeOverlay(); render(); break;
-      case "relic-confirm": build.slots[ovState.slotIdx].relic = { id: ovState.sel, rank: ovState.rank }; persistBuild(); closeOverlay(); render(); break;
+      case "relic-confirm": build.slots[dovState.slotIdx].relic = { id: dovState.sel, rank: dovState.rank }; persistBuild(); closeDetail(); closeOverlay(); render(); break;
 
       // cards
       case "cards-all-on": if (!cards.applyAll) { for (const c of D.cards) cards.levels[c.id] = c.effects.length; persistCards(); refreshOverlay(); } break;
@@ -4086,7 +4116,7 @@
     const A = t.dataset.action, v = t.value;
     // range sliders / selects
     if (A === "artb-rank") { ovState.draft.rank = +v; refreshOverlay(); return; }
-    if (A === "relic-rank") { ovState.rank = +v; refreshOverlay(); return; }
+    if (A === "relic-rank") { dovState.rank = +v; refreshDetail(); return; }
     // favor rank slider: live in-place update while dragging (no re-render → smooth); 'change' re-sorts (below).
     // In "My ranks" mode the detail slider edits THIS realm's tracked rank (persisted); otherwise the global rank.
     if (A === "realm-rank") {
