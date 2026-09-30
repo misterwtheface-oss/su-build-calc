@@ -597,11 +597,18 @@ creaturesRef.forEach((r, i) => {
   }
   if (!sprite) warn(`creature "${r.name}" has no battle sprite (frame ${frame})`);
 
+  // Realm Depth availability (creatures_ref acquisition): depth = the Realm Depth at which the creature
+  // first becomes obtainable; source = the acquisition text (realms / method). 3 special encounters
+  // (Pandemonium King/Queen, Treasure Golem) carry "N/A" → null depth. Propagated to traits/materials below.
+  const acq = r.acquisition || {};
+  const depth = typeof acq.depth === 'number' ? acq.depth : null;
+  const source = (acq.source && String(acq.source).trim()) || null;
   creatures.push({
     id, name: r.name, race: r.race || null, cls,
     hp: stats.hp, atk: stats.atk, def: stats.def, int: stats.int, spd: stats.spd, total,
     statSource: (cd ? 'code' : cs ? 'code-legacy' : 'community') + (statPatched.length ? '+ref' : ''),
     traitId, traitName,
+    depth, source,
     sprite,
   });
 });
@@ -612,6 +619,30 @@ const traitOwners = new Map();
 for (const c of creatures) if (c.traitId != null) (traitOwners.get(c.traitId) || traitOwners.set(c.traitId, []).get(c.traitId)).push(c.name);
 for (const [tid, cs] of traitOwners) if (cs.length > 1)
   warn(`trait id ${tid} is the innate of ${cs.length} creatures (should be exactly one): ${cs.join(', ')}`);
+
+// ── Realm Depth propagation → traits (+ later trait-materials) ───────────────────────────────────
+// A trait's availability depth comes from ONE of two sources, disjoint in practice:
+//   • creature-innate trait → the owning creature's depth (creatures_ref acquisition)
+//   • player-farmable Nether Boss trait material → the wiki depth table (data/reference/nether_boss_trait_depths.json)
+// Boss-only (encounter) traits get NO depth (per design — only player-available content is tagged).
+const traitDepth = new Map();   // traitId → Realm Depth (consumed here for traits and below for trait-items)
+for (const c of creatures) {    // innate: 1:1 owner, but take the min defensively
+  if (c.traitId == null || typeof c.depth !== 'number') continue;
+  const cur = traitDepth.get(c.traitId);
+  if (cur == null || c.depth < cur) traitDepth.set(c.traitId, c.depth);
+}
+{
+  const normTN = (s) => String(s || '').toLowerCase().replace(/[’']/g, '').replace(/\bs\b/g, '').replace(/[^a-z0-9]+/g, '');
+  const traitIdByNormName = new Map();
+  for (const id in traits) { const k = normTN(traits[id].name); if (k && !traitIdByNormName.has(k)) traitIdByNormName.set(k, +id); }
+  const nb = readJSON(path.join(REF, 'nether_boss_trait_depths.json')).traits;
+  let nbHit = 0; const nbMiss = [];
+  for (const r of nb) { const id = traitIdByNormName.get(normTN(r.trait)); if (id != null) { traitDepth.set(id, r.depth); nbHit++; } else nbMiss.push(r.trait); }
+  if (nbMiss.length) warn(`nether boss depth: ${nbMiss.length}/${nb.length} wiki traits did not match a shipped trait (fix spelling in nether_boss_trait_depths.json): ${nbMiss.join(', ')}`);
+  let traitTagged = 0;
+  for (const id in traits) { const d = traitDepth.get(+id); if (d != null) { traits[id].depth = d; traitTagged++; } }
+  console.log(`  realm depth: ${creatures.filter(c => typeof c.depth === 'number').length}/${creatures.length} creatures · ${traitTagged} traits tagged (${nbHit}/${nb.length} nether-boss materials)`);
+}
 
 // ── specializations (player slot) — prefer the 32×32 character SKIN, else the 16×16 emblem icon ──
 // The `spec_<key>` sprites are tiny 16×16 emblems. The real skins are the 32×32 player-costume sprites
@@ -1060,6 +1091,7 @@ for (const m of matRecs) {
   if (!traits[tid]) { warn(`trait item "${m.name}" grants trait ${tid} not in traits table`); continue; }
   traitItems.push({ id: m.index, name: m.name, traitId: tid,
     traitName: traits[tid].name, icon: matIcon(m),
+    depth: traitDepth.get(tid) ?? null,                    // Realm Depth availability, inherited from its granted trait
     taxo: traits[tid].taxo || [],                          // inherits its granted trait's taxonomy tags
     taxoSrc: traits[tid].taxoSrc || [] });                 // …and its provenance (parallel to taxo)
 }
