@@ -461,9 +461,11 @@ h1, h2, h3 { margin: 0; }
 .trait-banner-icon { display: inline-flex; width: 14px; height: 14px; }
 .trait-banner-icon img { width: 100%; height: 100%; }
 .trait-banner-label { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-/* class-coloured name pill + its availability labels share one line (labels unbolded, to the right) */
-.trait-banner-row { display: flex; align-items: center; gap: 8px; min-width: 0; }
-.trait-banner-row .trait-banner { flex: 0 1 auto; }
+/* when a chip carries availability labels it spans full width and right-aligns them INSIDE the pill */
+.trait-banner.has-avail { display: flex; width: 100%; justify-content: space-between; }
+.trait-banner.has-avail .trait-banner-label { flex: 1; min-width: 0; }
+.trait-banner .avail-tags { flex: 0 0 auto; }
+.trait-banner .avail-tag { color: var(--aff-text); opacity: .82; }   /* readable on the coloured pill, de-emphasised */
 /* low-key availability labels (RD / Favor / Rep) — plain muted unbolded text */
 .avail-tags { display: inline-flex; align-items: baseline; gap: 8px; flex: 0 0 auto; }
 .avail-tag { font-size: 11px; font-weight: 400; color: var(--text-mute); white-space: nowrap; }
