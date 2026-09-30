@@ -291,13 +291,22 @@ const keepMaxHealth = (d) => mhOmit.test(d) ? false : (mhKeep.test(d) || (mhMore
 // Anchor on the WORD "class" in a creature context (per the user's Trait_MTX heuristic) — "your Nature
 // creatures" is Related Types::Nature Creature, not a class mechanic.
 const keepCreatureClass = (d) => /creature'?s?'? class|\btheir class\b|\bits own class\b|\bown class\b|class among your creatures|class as the target|enem(y'?s?|ies'?) class|class strength|\bcreature class\b|creatures?( in your party)? that (is a|belongs? to|are set)[^.]{0,28}class|creatures? of (the )?(same|a different|this|that) class|set to the same class|change[sd]? (its |their )?class|become[s]? (a )?(nature|chaos|death|life|sorcery) creature/i.test(d);
+// Turn Counter = an effect keyed to TURNS TAKEN (turn count), not a generic "number of times X happened"
+// (times damaged, casts, traits gained). Keep only turn-taken phrasing.
+const turnCounterRe = /turns?\b[^.]{0,24}\btaken|taken\b[^.]{0,16}\bturns?\b|for each turn|each turn (it|they|this|your|since)|number of turns|per turn\b|every turn|\d+(st|nd|rd|th) turn|at least \d+ turns?|turn counter|turns? (this|in) (battle|the current battle)/i;
+// Damaging Spells (traits/perks/relics/cards) = an explicit "damaging spell(s)" reference. (For SPELLS the
+// tag is re-derived from the Spell_REF potency+damage fields in the spell map, not here.)
+const damagingSpellLit = /damaging spell/i;
+// Indirect Damage — a proc that deals damage to a target as a side effect (not the manual attack/cast, and
+// not the spell's own damage). Combined with the LLM's status/DoT tagging; used to ADD, never to strip.
+const procDamageRe = /deals? (\d+%? )?damage to [^.]{0,45}(equal to|% of|\d+%)/i;
 // "gain/grant [icons,N] <Spell>" — the icon token immediately after the verb flags a SPELL grant, not a buff
 const spellGainRe = /\b(gain|gains|grant|grants|give|gives)\s+\[icons?,\s*\d+\]/i;
 const BUFF_ASSERT = new Set(['Action/Mechanic::Buff','Affect on Status::Apply/Gain a Buff','Affect on Status::More Powerful Buff','Affect on Status::Remove Buff','Affect on Status::Share/Gain Copy of Buff','Affect on Status::Buffs Persist','Affect on Status::Limit/Prevent Buff Gain','Related Buff::Random Buff']);
 const DEBUFF_ASSERT = new Set(['Action/Mechanic::Debuff','Affect on Status::Afflict with/Gain a Debuff','Affect on Status::Increase Debuff Potency','Affect on Status::Remove Debuff','Affect on Status::Resistant to Debuff','Affect on Status::Avoid/Immune to Debuff','Affect on Status::Debuffs Persist','Related Debuff::Random Debuff']);
 // shared per-effect taxonomy corrections (traits / perks / spells all pass through this)
-let animatusRetagged = 0, innateTagStripped = 0, persistRetagged = 0, statusUngrounded = 0, randomMinionStripped = 0, spellGainTagged = 0, spellGemUngrounded = 0, maxHealthUngrounded = 0, creatureClassUngrounded = 0;
-function correctTaxo(taxo, desc) {
+let animatusRetagged = 0, innateTagStripped = 0, persistRetagged = 0, statusUngrounded = 0, randomMinionStripped = 0, spellGainTagged = 0, spellGemUngrounded = 0, maxHealthUngrounded = 0, creatureClassUngrounded = 0, turnCounterUngrounded = 0, damagingSpellUngrounded = 0, indirectDamageAdded = 0;
+function correctTaxo(taxo, desc, kind) {
   let out = taxo;
   desc = expandStatTokens(desc);   // spell/perk descriptions carry raw {STAT_*}; expand so text rules match
   if (out.includes('Related Types::Animation') && /animatus/i.test(desc) && !/\banimation\b/i.test(desc)) {
@@ -331,8 +340,17 @@ function correctTaxo(taxo, desc) {
     if (k === 'Related Stat::Maximum Health' && !keepMaxHealth(desc || '')) { maxHealthUngrounded++; return false; }
     // Creature Class = a class MECHANIC, not a spell-class / gem-class reference
     if (k === 'Action/Mechanic::Creature Class' && !keepCreatureClass(desc || '')) { creatureClassUngrounded++; return false; }
+    // Turn Counter = turns taken, not a generic occurrence count
+    if (k === 'Action/Mechanic::Turn Counter' && !turnCounterRe.test(desc || '')) { turnCounterUngrounded++; return false; }
+    // Damaging Spells on a non-spell = explicit "damaging spell" reference (spells re-derive from fields)
+    if (k === 'Related Spells::Damaging Spells' && kind !== 'spell' && !damagingSpellLit.test(desc || '')) { damagingSpellUngrounded++; return false; }
     return true;
   });
+  // Indirect Damage — ADD (never strip) proc damage on non-spell effects, to combine with the LLM's
+  // status/DoT tagging (a trait that "deals damage to X equal to Y%" deals indirect, non-attack damage).
+  if (kind !== 'spell' && !out.includes('Action/Mechanic::Indirect Damage') && procDamageRe.test(desc || '')) {
+    out.push('Action/Mechanic::Indirect Damage'); indirectDamageAdded++;
+  }
   // a "gain [icons,N] <Spell>" that isn't a status → tag it as gaining a spell (the LLM missed this)
   if (spellGainRe.test(desc || '') && !b && !db && !out.includes('Affect on Spells::Extra/Gain a Spell Gem')) {
     out.push('Affect on Spells::Extra/Gain a Spell Gem'); spellGainTagged++;
@@ -368,7 +386,7 @@ for (const t of consolidated) {
   const cls = (t.source_creature && CLASS_SET.has(t.source_creature.class)) ? t.source_creature.class : null;
   const desc = t.desc || t.effect_prose || '';
   const srcArr = taxoTags[String(t.id)] || [];
-  const taxo = correctTaxo(srcArr.map(a => a.cat + '::' + a.val), desc);
+  const taxo = correctTaxo(srcArr.map(a => a.cat + '::' + a.val), desc, 'trait');
   const rec = reconById.get(t.id) || {};
   traits[t.id] = {
     id: t.id,
@@ -700,7 +718,7 @@ for (const s of specRecs) {
     if (fl && (fl.anoint || fl.asc != null)) { if (fl.anoint) anointFlagged++; } else if (p.fromCode) perkRefMisses++;
     const pdesc = perkDescByKey.get(p.key) || p.desc || '';
     const name = perkNameByKey.get(p.key) || p.name;
-    const pTaxo = correctTaxo(taxoStrs(perkTaxoByKey[p.key]), pdesc);
+    const pTaxo = correctTaxo(taxoStrs(perkTaxoByKey[p.key]), pdesc, 'perk');
     return { key: p.key, name, desc: pdesc,
              cost: st ? st.cost : (p.cost ?? null), ranks: st ? st.ranks : (p.ranks || 1), icon,
              anointment: fl ? !!fl.anoint : false, ascension: fl ? !!fl.asc : false,
@@ -840,6 +858,7 @@ for (const [cls, base] of Object.entries(GEM_SRC)) {
 let spellNoClass = 0;
 let spellCharged = 0;
 let spellTargetGrounded = 0;
+let spellDamagingGrounded = 0;
 // Single/Multi-Target for a SPELL is derived code-grounded from the authoritative Spell_REF `target` field
 // (not the LLM): Target = single; Enemies / All Creatures / Your Creatures = multi; self/"-" = neither.
 const SPELL_SINGLE = 'Related Spells::Single-Target Spells', SPELL_MULTI = 'Related Spells::Multi-Target Spells';
@@ -853,20 +872,26 @@ const spells = spellArr.map((s, i) => {
   const charges = codeCharge != null ? codeCharge : (ref.charges != null ? ref.charges : null);
   const chargesSrc = codeCharge != null ? 'code' : (ref.charges != null ? 'community' : null);
   if (charges != null) spellCharged++;
-  let sTaxo = correctTaxo(taxoStrs(spellTaxo[String(i)]), s.desc || '');
+  let sTaxo = correctTaxo(taxoStrs(spellTaxo[String(i)]), s.desc || '', 'spell');
   // strip the LLM's target guess, re-derive from the structured field
   sTaxo = sTaxo.filter(k => k !== SPELL_SINGLE && k !== SPELL_MULTI);
   const targetTag = ref.target === 'Target' ? SPELL_SINGLE : (MULTI_TARGETS.has(ref.target) ? SPELL_MULTI : null);
   if (targetTag) { sTaxo.push(targetTag); spellTargetGrounded++; }
+  // Damaging Spells for a spell: derive from Spell_REF potency + a damage reference (or explicit literal).
+  const SPELL_DMG = 'Related Spells::Damaging Spells';
+  sTaxo = sTaxo.filter(k => k !== SPELL_DMG);
+  const isDamaging = (ref.potency && /\bdamage\b/i.test(expandStatTokens(s.desc || ''))) || damagingSpellLit.test(s.desc || '');
+  if (isDamaging) { sTaxo.push(SPELL_DMG); spellDamagingGrounded++; }
   const srcArr = taxoSrcArr(spellTaxo[String(i)], sTaxo);
   if (targetTag) { const idx = sTaxo.indexOf(targetTag); if (idx >= 0) srcArr[idx] = 'field'; }
+  if (isDamaging) { const idx = sTaxo.indexOf(SPELL_DMG); if (idx >= 0) srcArr[idx] = 'field'; }
   return { id: i, key: s.key, name: s.name, desc: s.desc || '', cls,
     charges, chargesSrc, potency: ref.potency || null, target: ref.target || null, source: ref.source || null,
     taxo: sTaxo, taxoSrc: srcArr };
 }).filter(s => s.name);
 console.log(`  spells: ${spells.length} · charges ${spells.filter(s => s.chargesSrc === 'code').length} code + ${spells.filter(s => s.chargesSrc === 'community').length} community · ${spells.filter(s => s.potency).length} w/ potency · ${spellTargetGrounded} single/multi-target from Spell_REF field · potency/target/source from Spell_REF.csv`);
 console.log(`  taxonomy fixes: Innate-Trait stripped ${innateTagStripped} · Animatus retagged ${animatusRetagged} · Persist→Extend-Duration retagged ${persistRetagged} (duration, not death)`);
-console.log(`  canon-status validation: ${statusUngrounded} ungrounded buff/debuff tags dropped · ${randomMinionStripped} ungrounded Minion tags dropped · ${spellGemUngrounded} non-gem Spell-Gem tags dropped · ${maxHealthUngrounded} non-stat Max-Health tags dropped · ${creatureClassUngrounded} non-class Creature-Class tags dropped · ${spellGainTagged} spell-gain tags added`);
+console.log(`  canon-status validation: ${statusUngrounded} ungrounded buff/debuff tags dropped · ${randomMinionStripped} ungrounded Minion tags dropped · ${spellGemUngrounded} non-gem Spell-Gem tags dropped · ${maxHealthUngrounded} non-stat Max-Health tags dropped · ${creatureClassUngrounded} non-class Creature-Class tags dropped · ${turnCounterUngrounded} non-turn Turn-Counter dropped · ${damagingSpellUngrounded} non-literal Damaging-Spell (non-spell) dropped · ${indirectDamageAdded} Indirect-Damage proc tags added · ${spellGainTagged} spell-gain tags added`);
 
 // ── trait items (slottable into artifact trait slots) — with material icons ──
 const matStats = readJSON(path.join(MODEL, 'material_stats.json'));
@@ -1251,7 +1276,7 @@ const relics = relicRef.map((r, i) => {
   if (!base) { const rn = norm(r.relic); base = relicSpriteBases.find(b => b.replace(/^relicW_/, '').split('_').some(p => p.length >= 4 && rn.includes(p))); }
   let icon = null;
   if (base && copySpriteFrame(base, 0, OUT_RELIC, `${i}.png`)) { icon = `assets/relics/${i}.png`; relicIconCopied++; }
-  const rTaxo = correctTaxo(taxoStrs(relicTaxo[String(i)]), (r.ranks || []).map(x => x.description || '').join(' '));
+  const rTaxo = correctTaxo(taxoStrs(relicTaxo[String(i)]), (r.ranks || []).map(x => x.description || '').join(' '), 'relic');
   return {
     id: i,
     name: r.relic,
@@ -1274,7 +1299,7 @@ const cards = cardRef.map((c, i) => {
   const rep = critByRace.get(norm(c.family));
   if (rep) cardArt++; else warn(`card family "${c.family}" has no matching creature race for art`);
   const cEffects = [c.unlock_1, c.unlock_2, c.unlock_3].filter(Boolean);
-  const cTaxo = correctTaxo(taxoStrs(cardTaxo[String(i)]), cEffects.join(' '));
+  const cTaxo = correctTaxo(taxoStrs(cardTaxo[String(i)]), cEffects.join(' '), 'card');
   return {
     id: i,
     family: c.family,
