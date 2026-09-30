@@ -647,6 +647,15 @@ for (const c of creatures) {    // innate: 1:1 owner, but take the min defensive
   if (typeof c.depth === 'number') { const cur = traitDepth.get(c.traitId); if (cur == null || c.depth < cur) traitDepth.set(c.traitId, c.depth); }
   if (c.gate && !traitGate.has(c.traitId)) traitGate.set(c.traitId, c.gate);
 }
+// derive god realm depth + guild-intro depth from creatures — reused to give god-shop / guild SPELLS the same
+// primary depth (spells have no depth column of their own; only their Source names the god / guild).
+const godRealmDepth = new Map();   // norm(god) → first depth that god's realm is reachable
+let guildIntroDepth = null;        // depth at which Guilds become available (all guild creatures share it)
+for (const c of creatures) {
+  if (!c.gate || typeof c.depth !== 'number') continue;
+  if (c.gate.type === 'favor') { const k = norm(c.gate.name); const cur = godRealmDepth.get(k); if (cur == null || c.depth < cur) godRealmDepth.set(k, c.depth); }
+  else if (c.gate.type === 'guild') guildIntroDepth = guildIntroDepth == null ? c.depth : Math.min(guildIntroDepth, c.depth);
+}
 {
   const normTN = (s) => String(s || '').toLowerCase().replace(/[’']/g, '').replace(/\bs\b/g, '').replace(/[^a-z0-9]+/g, '');
   const traitIdByNormName = new Map();
@@ -963,6 +972,12 @@ for (const [cls, base] of Object.entries(GEM_SRC)) {
   if (copyNamedSprite(base, OUT_SPELLGEM, dest)) spellGems[cls] = `assets/spellgems/${dest}`;
   else warn(`spell-gem icon missing for class ${cls}`);
 }
+// secondary gate for guild-reward spells (wiki) — spell name → {type:'guild', name, rank}
+const guildSpellGateByName = new Map();
+for (const r of readJSON(path.join(REF, 'guild_spell_ranks.json')).ranks)
+  guildSpellGateByName.set(norm(r.spell), { type: 'guild', name: r.guild, rank: r.rank });
+const SPELL_FAVOR_RE = /([A-Za-z0-9'’ ]+?)\s+Shop\s*\(Favor Rank\s*(\d+)\)/;   // "4080 Shop (Favor Rank 25)"
+let spellFavor = 0, spellGuild = 0;
 let spellNoClass = 0;
 let spellCharged = 0;
 let spellTargetGrounded = 0;
@@ -996,10 +1011,18 @@ const spells = spellArr.map((s, i) => {
   const srcArr = taxoSrcArr(spellTaxo[String(i)], sTaxo);
   if (targetTag) { const idx = sTaxo.indexOf(targetTag); if (idx >= 0) srcArr[idx] = 'field'; }
   if (isDamaging) { const idx = sTaxo.indexOf(SPELL_DMG); if (idx >= 0) srcArr[idx] = 'field'; }
+  // availability (from the Source column): favor spells carry the god's realm depth + favor gate; guild spells
+  // carry the guild-intro depth + the wiki rep-rank gate. Standard/Starter/False-God/Avatar spells carry neither.
+  let sDepth = null, sGate = null;
+  const fm = (ref.source || '').match(SPELL_FAVOR_RE);
+  if (fm) { const g = fm[1].trim(); sGate = { type: 'favor', name: g, rank: +fm[2] }; sDepth = godRealmDepth.get(norm(g)) ?? null; spellFavor++; }
+  else if (guildSpellGateByName.has(norm(s.name))) { sGate = guildSpellGateByName.get(norm(s.name)); sDepth = guildIntroDepth; spellGuild++; }
   return { id: i, key: s.key, name: s.name, desc: s.desc || '', cls,
     charges, chargesSrc, potency: ref.potency || null, target: ref.target || null, source: ref.source || null,
+    depth: sDepth, ...(sGate ? { gate: sGate } : {}),
     taxo: sTaxo, taxoSrc: srcArr };
 }).filter(s => s.name);
+console.log(`  spell availability: ${spellFavor} favor + ${spellGuild} guild spells carry depth+gate (rest = Standard/Starter/False God — none)`);
 console.log(`  spells: ${spells.length} · charges ${spells.filter(s => s.chargesSrc === 'code').length} code + ${spells.filter(s => s.chargesSrc === 'community').length} community · ${spells.filter(s => s.potency).length} w/ potency · ${spellTargetGrounded} single/multi-target from Spell_REF field · potency/target/source from Spell_REF.csv`);
 console.log(`  taxonomy fixes: Innate-Trait stripped ${innateTagStripped} · Animatus retagged ${animatusRetagged} · Persist→Extend-Duration retagged ${persistRetagged} (duration, not death)`);
 console.log(`  canon-status validation: ${statusUngrounded} ungrounded buff/debuff tags dropped · ${randomMinionStripped} ungrounded Minion tags dropped · ${spellGemUngrounded} non-gem Spell-Gem tags dropped · ${maxHealthUngrounded} non-stat Max-Health tags dropped · ${creatureClassUngrounded} non-class Creature-Class tags dropped · ${turnCounterUngrounded} non-turn Turn-Counter dropped · ${damagingSpellUngrounded} non-literal Damaging-Spell (non-spell) dropped · ${indirectDamageAdded} Indirect-Damage proc tags added · ${effectLimKilled} Effect-Limitation tags killed · ${redirectUngrounded} non-retarget Redirect-Spell dropped · ${classCreatureUngrounded} non-creature Class-Creature type dropped · ${killedValueCount} killed-value tags dropped · ${buffedWithUngrounded} non-gated Buffed-With dropped · ${attackCalcUngrounded} non-calc Attack-Calc dropped · ${autoDefendUngrounded} non-defend Auto-Defend dropped · ${autoProvokeUngrounded} non-provoke Auto-Provoke dropped · ${spellGainTagged} spell-gain tags added · ${statBundleAdded} all-stats Related-Stat tags added · ${innateTraitAdded} Innate-Trait tags added`);
