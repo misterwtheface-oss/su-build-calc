@@ -300,15 +300,19 @@ const damagingSpellLit = /damaging spell/i;
 // Indirect Damage — a proc that deals damage to a target as a side effect (not the manual attack/cast, and
 // not the spell's own damage). Combined with the LLM's status/DoT tagging; used to ADD, never to strip.
 const procDamageRe = /deals? (\d+%? )?damage to [^.]{0,45}(equal to|% of|\d+%)/i;
+// Redirect Spell = a spell's TARGET or CASTER is changed/bounced/retargeted (not a spell grant/copy/behavior).
+const redirectSpellRe = /\bbounce|\breflect|\bredirect|targets? (themselves|are reversed|all |provoking|a different|a random|another)|now targets?|(also )?(be )?cast on all|cast the spell on (a |all|another)|chance to target|instead targets?|spell targets all|targets? (of the spell )?are (reversed|chosen)/i;
 // "gain/grant [icons,N] <Spell>" — the icon token immediately after the verb flags a SPELL grant, not a buff
 const spellGainRe = /\b(gain|gains|grant|grants|give|gives)\s+\[icons?,\s*\d+\]/i;
 const BUFF_ASSERT = new Set(['Action/Mechanic::Buff','Affect on Status::Apply/Gain a Buff','Affect on Status::More Powerful Buff','Affect on Status::Remove Buff','Affect on Status::Share/Gain Copy of Buff','Affect on Status::Buffs Persist','Affect on Status::Limit/Prevent Buff Gain','Related Buff::Random Buff']);
 const DEBUFF_ASSERT = new Set(['Action/Mechanic::Debuff','Affect on Status::Afflict with/Gain a Debuff','Affect on Status::Increase Debuff Potency','Affect on Status::Remove Debuff','Affect on Status::Resistant to Debuff','Affect on Status::Avoid/Immune to Debuff','Affect on Status::Debuffs Persist','Related Debuff::Random Debuff']);
 // shared per-effect taxonomy corrections (traits / perks / spells all pass through this)
-let animatusRetagged = 0, innateTagStripped = 0, persistRetagged = 0, statusUngrounded = 0, randomMinionStripped = 0, spellGainTagged = 0, spellGemUngrounded = 0, maxHealthUngrounded = 0, creatureClassUngrounded = 0, turnCounterUngrounded = 0, damagingSpellUngrounded = 0, indirectDamageAdded = 0;
+let animatusRetagged = 0, innateTagStripped = 0, persistRetagged = 0, statusUngrounded = 0, randomMinionStripped = 0, spellGainTagged = 0, spellGemUngrounded = 0, maxHealthUngrounded = 0, creatureClassUngrounded = 0, turnCounterUngrounded = 0, damagingSpellUngrounded = 0, indirectDamageAdded = 0, effectLimKilled = 0, redirectUngrounded = 0;
 function correctTaxo(taxo, desc, kind) {
   let out = taxo;
   desc = expandStatTokens(desc);   // spell/perk descriptions carry raw {STAT_*}; expand so text rules match
+  // Effect Limitation — dropped entirely (user directive: no tracking value). Strip the whole category.
+  out = out.filter(k => { if (k.startsWith('Effect Limitation::')) { effectLimKilled++; return false; } return true; });
   if (out.includes('Related Types::Animation') && /animatus/i.test(desc) && !/\banimation\b/i.test(desc)) {
     out = out.map(k => k === 'Related Types::Animation' ? 'Related Types::Animatus' : k); animatusRetagged++;
   }
@@ -344,6 +348,8 @@ function correctTaxo(taxo, desc, kind) {
     if (k === 'Action/Mechanic::Turn Counter' && !turnCounterRe.test(desc || '')) { turnCounterUngrounded++; return false; }
     // Damaging Spells on a non-spell = explicit "damaging spell" reference (spells re-derive from fields)
     if (k === 'Related Spells::Damaging Spells' && kind !== 'spell' && !damagingSpellLit.test(desc || '')) { damagingSpellUngrounded++; return false; }
+    // Redirect Spell = spell target/caster changed, not a grant/copy/behavior effect
+    if (k === 'Affect on Spells::Redirect Spell' && !redirectSpellRe.test(desc || '')) { redirectUngrounded++; return false; }
     return true;
   });
   // Indirect Damage — ADD (never strip) proc damage on non-spell effects, to combine with the LLM's
@@ -891,7 +897,7 @@ const spells = spellArr.map((s, i) => {
 }).filter(s => s.name);
 console.log(`  spells: ${spells.length} · charges ${spells.filter(s => s.chargesSrc === 'code').length} code + ${spells.filter(s => s.chargesSrc === 'community').length} community · ${spells.filter(s => s.potency).length} w/ potency · ${spellTargetGrounded} single/multi-target from Spell_REF field · potency/target/source from Spell_REF.csv`);
 console.log(`  taxonomy fixes: Innate-Trait stripped ${innateTagStripped} · Animatus retagged ${animatusRetagged} · Persist→Extend-Duration retagged ${persistRetagged} (duration, not death)`);
-console.log(`  canon-status validation: ${statusUngrounded} ungrounded buff/debuff tags dropped · ${randomMinionStripped} ungrounded Minion tags dropped · ${spellGemUngrounded} non-gem Spell-Gem tags dropped · ${maxHealthUngrounded} non-stat Max-Health tags dropped · ${creatureClassUngrounded} non-class Creature-Class tags dropped · ${turnCounterUngrounded} non-turn Turn-Counter dropped · ${damagingSpellUngrounded} non-literal Damaging-Spell (non-spell) dropped · ${indirectDamageAdded} Indirect-Damage proc tags added · ${spellGainTagged} spell-gain tags added`);
+console.log(`  canon-status validation: ${statusUngrounded} ungrounded buff/debuff tags dropped · ${randomMinionStripped} ungrounded Minion tags dropped · ${spellGemUngrounded} non-gem Spell-Gem tags dropped · ${maxHealthUngrounded} non-stat Max-Health tags dropped · ${creatureClassUngrounded} non-class Creature-Class tags dropped · ${turnCounterUngrounded} non-turn Turn-Counter dropped · ${damagingSpellUngrounded} non-literal Damaging-Spell (non-spell) dropped · ${indirectDamageAdded} Indirect-Damage proc tags added · ${effectLimKilled} Effect-Limitation tags killed · ${redirectUngrounded} non-retarget Redirect-Spell dropped · ${spellGainTagged} spell-gain tags added`);
 
 // ── trait items (slottable into artifact trait slots) — with material icons ──
 const matStats = readJSON(path.join(MODEL, 'material_stats.json'));
@@ -2103,7 +2109,7 @@ const SU_DATA = {
   spellSlotGrants,
   traits,
   tagLabels,
-  taxonomy: { categories: taxonomy.categories, status: taxonomy.status },
+  taxonomy: { categories: taxonomy.categories.filter(c => c.category !== 'Effect Limitation'), status: taxonomy.status },
   artifact: artGroup,
   traitItems,
   statMats,
