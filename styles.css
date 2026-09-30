@@ -642,11 +642,9 @@ h1, h2, h3 { margin: 0; }
     border: none; border-top: 1px solid var(--border-dim);
     -webkit-overflow-scrolling: touch;
   }
-  /* Builds preview: opt out of the shared 35vh cap so the whole build (name + emblem/anoints
-     + 2×3 party) is always visible without scrolling. The party grid is pinned to a fixed
-     width so the panel is the SAME size on every phone regardless of viewport width. */
-  .ovl-right.build-info { flex: 0 0 auto; height: auto; max-height: none; overflow: hidden; }
-  .build-info .bi-crits { max-width: 240px; margin: 0 auto; }
+  /* Builds preview: raise the shared 35vh cap so the full-width 2×3 party (bigger sprites)
+     fits without scrolling. Tiles stay full width — the taller cap is what makes room. */
+  .ovl-right.build-info { max-height: 55vh; }
   .ovl-center-scroll { -webkit-overflow-scrolling: touch; }
   .cd-info-btn { display: flex; }   /* full-screen detail shortcut — the side panel is a cramped strip here */
   .cd-bk-btn { right: 44px; }       /* sit beside the "i" once it appears on phones */
