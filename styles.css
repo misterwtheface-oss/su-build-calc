@@ -1351,6 +1351,8 @@ select.app-select:hover { border-color: var(--accent2); }
 
 /* artifact builder info panel (right) — picker list / item preview / live bonus */
 .ovl-right.art-side { display: flex; flex-direction: column; overflow: hidden; }
+/* Live-bonus view has no fixed head → it gets its own scroller (the panel itself stays overflow:hidden) */
+.art-side .art-side-scroll { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
 .art-side-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; flex: 0 0 auto; }
 .art-side-head b { font-size: 13px; }
 /* the side-panel search must NOT inherit .ovl-search's flex:1 (in this column-flex panel that stretched it vertically) */

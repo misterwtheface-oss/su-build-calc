@@ -817,7 +817,7 @@
     const w = (D.wardrobe || []).find(x => x.img === imgOrSprite || x.sprite === imgOrSprite);
     return w && Array.isArray(w.frames) && w.frames.length >= 2 ? w.frames : null;
   };
-  const SCROLLERS = [".ovl-center-scroll", ".ovl-left", ".ovl-right", ".art-side-list", ".art-pv-body", ".xref-wrap"];
+  const SCROLLERS = [".ovl-center-scroll", ".ovl-left", ".ovl-right", ".art-side-list", ".art-side-scroll", ".art-pv-body", ".xref-wrap"];
 
   // ── Back-button handling (Android/browser) — LAYER-AWARE ───────────────────
   //    History depth mirrors the overlay STACK: one synthetic entry per open
@@ -3016,11 +3016,14 @@
     // (spell slot + nether-stone spells), then the resolved stat table — not just the stat percentages.
     const { core, extra } = artifactBonusRows(a);
     const traits = artifactTraitContainers(a), spells = artifactSpellContainers(a);
-    return `<div class="section-label">Live bonus · rank ${rank}</div>
+    // own scroll container: .art-side is overflow:hidden (for the picker's fixed head), so this flat
+    // view needs its own scroller or it clips when the trait/spell/stat content is taller than the panel.
+    return `<div class="art-side-scroll">
+      <div class="section-label">Live bonus · rank ${rank}</div>
       ${traits ? `<div class="section-label" style="margin-top:8px">Traits</div>${traits}` : ""}
       ${spells ? `<div class="section-label" style="margin-top:12px">Spell Gems</div><div class="art-spellcards">${spells}</div>` : ""}
       <div class="section-label" style="margin-top:${traits || spells ? 12 : 8}px">Stat bonuses</div>
-      ${bonusTableHtml(core, extra)}`;
+      ${bonusTableHtml(core, extra)}</div>`;
   }
   function renderArtifactBuilder() {
     const st = ovState, a = st.draft, rank = a.rank;
