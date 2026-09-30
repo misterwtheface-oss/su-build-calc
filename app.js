@@ -624,7 +624,8 @@
   const availLabels = (e) => {
     const out = [];
     if (e && typeof e.depth === "number") out.push(`RD ${e.depth}`);
-    if (e && e.gate) out.push(e.gate.type === "favor" ? `Favor ${e.gate.rank}` : `Rep ${e.gate.rank}`);
+    // favor gate names the god (self-describing); guild gate keeps the short "Rep" tag
+    if (e && e.gate) out.push(e.gate.type === "favor" ? `${e.gate.name} ${e.gate.rank}` : `Rep ${e.gate.rank}`);
     return out;
   };
   const availTagsHtml = (e) => { const l = availLabels(e); return l.length ? `<span class="avail-tags">${l.map(x => `<span class="avail-tag">${esc(x)}</span>`).join("")}</span>` : ""; };
