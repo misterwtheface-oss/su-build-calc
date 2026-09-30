@@ -183,6 +183,15 @@
   const TRICKMAT = D.trickMats || [];
   const MAT_BY_PROP = new Map();                                         // property name -> material {name,icon,property}
   for (const m of [...STATMAT, ...TRICKMAT]) MAT_BY_PROP.set(m.property, m);
+  // normalized effect text for a stat/trick property at a rank (the % comes from the entry's unit, not
+  // just the 5 core stats): "+59% Attack", dual "+36% Attack / +36% Defense", trick "+83% Attack Damage",
+  // "+19% Bleeding on Damage", flat "+3 Spell Gem Slots".
+  const propEffectText = (g, rank) => {
+    if (!g) return "";
+    const fmt = (e) => `+${e.perRank[rank]}${e.unit === "%" ? "%" : ""}`;
+    if (g.group === "trick") { const e = g.entries[0]; return `${fmt(e)} ${g.name.replace(/ On Damage$/, " on Damage")}`; }
+    return g.entries.map(e => `${fmt(e)} ${e.stat}`).join(" / ");
+  };
   const TRAITITEM = new Map(D.traitItems.map(t => [t.id, t]));
   const SPELL = new Map((D.spells || []).map(s => [s.id, s]));
   // name → spell, plus names sorted longest-first for greedy matching ("Major Healing" before "Healing")
@@ -2827,8 +2836,8 @@
       const pool = type === "stat" ? STATMAT : TRICKMAT;
       rows = pool.filter(m => !q || m.name.toLowerCase().includes(q) || m.property.toLowerCase().includes(q)).map(m => {
         const g = propGroups.get(m.property);
-        const val = g ? g.entries.map(e => `${e.stat} ${PROP_STAT[e.stat] ? `+${e.perRank[rank]}%` : e.perRank[rank]}`).join(" / ") : esc(m.property);
-        return `<div class="prop-row ${has(m.property) ? "chosen" : ""}" data-action="art-preview" data-t="${type}" data-v="${esc(m.property)}">
+        const val = g ? propEffectText(g, rank) : esc(m.property);   // adds on click — no drill-in/confirm
+        return `<div class="prop-row ${has(m.property) ? "chosen" : ""}" data-action="art-confirm-add" data-t="${type}" data-v="${esc(m.property)}">
           <span class="prop-ico">${m.icon ? spriteImg(m.icon, "px") : ""}</span>
           <span class="prop-name">${esc(m.name)}</span><span class="prop-stat">${esc(val)}</span></div>`;
       }).join("");
@@ -2872,7 +2881,7 @@
       // main label = the MATERIAL name (e.g. "Red Amber"); the stat itself shows in the effect lines below,
       // so don't repeat it in the sub-label.
       icon = mat && mat.icon; name = mat ? mat.name : v; sub = "";
-      lines = g ? g.entries.map(e => `<div class="art-pv-line">${PROP_STAT[e.stat] ? `<b>+${e.perRank[rank]}%</b> ${esc(e.stat)}` : `<b>${e.perRank[rank]}</b> ${esc(e.stat)}`}</div>`).join("") : "";
+      lines = g ? `<div class="art-pv-line">${esc(propEffectText(g, rank))}</div>` : "";
     } else if (type === "trait") {
       const t = TRAITITEM.get(v), tr = t && t.traitId != null ? TRAIT[t.traitId] : null;
       icon = t && t.icon; name = t ? t.name : v; sub = t ? `grants ${t.traitName}` : "";
@@ -2937,7 +2946,7 @@
         if (type === "stat" || type === "trick") { const mat = MAT_BY_PROP.get(v), g = propGroups.get(v);
           ico = `<div class="as-ico">${mat && mat.icon ? spriteImg(mat.icon, "px") : "◆"}</div>`;
           lab = mat ? mat.name : v;
-          sub = g ? g.entries.map(e => `${e.stat} ${PROP_STAT[e.stat] ? `+${e.perRank[rank]}%` : e.perRank[rank]}`).join(" / ") : esc(v); }
+          sub = g ? propEffectText(g, rank) : esc(v); }
         else if (type === "trait") { const t = TRAITITEM.get(v); ico = `<div class="as-ico">${t && t.icon ? spriteImg(t.icon, "px") : "✦"}</div>`; lab = t ? t.name : v; sub = t ? t.traitName : ""; }
         else if (type === "spell") { const sp = SPELL.get(v); const gi = spellIcon(sp); ico = `<div class="as-ico">${gi ? spriteImg(gi, "px") : "✷"}</div>`; lab = sp ? sp.name : v; sub = sp ? (sp.cls || "spell") : "spell"; }
         else if (type === "nether") { const n = nether.find(x => x.id === v); ico = `<div class="as-ico">${spriteImg(gemSrc(n), "px")}</div>`; lab = n ? n.name : v; sub = "nether"; }
