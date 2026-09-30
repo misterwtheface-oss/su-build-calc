@@ -2860,13 +2860,17 @@
     let list = artifacts;
     if (st.hideEquipped) list = list.filter(a => !artifactEquippedInBuild(a.id) || a.id === equippedId);
     const sel = st.sel != null ? artifacts.find(a => a.id === st.sel) : null;
-    // tile equip-state highlight: purple = equipped by THIS creature, gold = equipped by another
-    // (in manage/Menu mode every equipped artifact is "another")
+    // tile equip-state: purple = equipped by THIS creature. Equipped by ANOTHER creature is dimmed +
+    // not equippable in the equip wizard (mirrors an off-class spell); in manage/Menu mode it keeps the
+    // neutral "equipped somewhere" marker so you can still edit/delete it.
     const tiles = list.map(a => {
       const eqHere = !manage && a.id === equippedId;
-      const eqOther = !eqHere && artifactEquippedInBuild(a.id);
+      const eqOtherRaw = !eqHere && artifactEquippedInBuild(a.id);
+      const blocked = !manage && eqOtherRaw;    // equip wizard: on another creature → can't equip here
+      const eqOther = manage && eqOtherRaw;     // library marker only
+      const title = eqHere ? "Equipped by this creature" : blocked ? "Equipped by another creature — not available" : eqOther ? "Equipped by another creature" : "";
       return `
-      <div class="pick-tile ${st.sel === a.id ? "selected" : ""}${eqHere ? " eq-here" : ""}${eqOther ? " eq-other" : ""}" data-action="artlib-sel" data-id="${a.id}"${eqHere ? ` title="Equipped by this creature"` : eqOther ? ` title="Equipped by another creature"` : ""}>
+      <div class="pick-tile ${st.sel === a.id ? "selected" : ""}${eqHere ? " eq-here" : ""}${blocked ? " disabled" : ""}${eqOther ? " eq-other" : ""}" data-action="artlib-sel" data-id="${a.id}"${title ? ` title="${esc(title)}"` : ""}>
         <div class="pt-sprite">${spriteImg(artIcon(a), "px")}</div>
         <div class="pt-name">${esc(a.name)}</div></div>`; }).join("")
       || `<div class="slot-sub" style="padding:10px">No artifacts${st.hideEquipped ? " match" : " yet — build one"}.</div>`;
@@ -2880,12 +2884,15 @@
         <span class="av-pipe">|</span>
         <button class="av-tab ${view === "sockets" ? "on" : ""}" data-action="art-view" data-v="sockets">Sockets</button></div>`;
       const viewBody = view === "sockets" ? `<div class="prop-list">${artContentRows(sel)}</div>` : artifactBonusView(sel);
+      const otherNote = !manage && !equippedHere && artifactEquippedInBuild(sel.id)
+        ? `<div class="slot-sub sg-clsnote" style="padding:8px 0">Equipped by another creature — unequip it there first to use it here.</div>` : "";
       info = `<div class="ns-info-head"><span class="ns-info-icon">${spriteImg(artIcon(sel), "px")}</span><h3>${esc(sel.name)}</h3></div>
-        ${toggle}${viewBody}`;
+        ${otherNote}${toggle}${viewBody}`;
     }
     // footer selector bar (mirrors Builds): Edit/Delete act on the selection; the confirm button
     // switches between Equip (artifact selected, equip mode) and ＋ Build new artifact (none selected).
-    const canEquip = !manage && sel;
+    const selBlocked = !manage && sel && !equippedHere && artifactEquippedInBuild(sel.id);   // on another creature
+    const canEquip = !manage && sel && !selBlocked;
     // single context-aware primary button: Unequip (this one is equipped) / Equip (a different selection) /
     // Build (manage mode, or nothing selected to equip).
     const confAction = !canEquip ? "art-new" : equippedHere ? "art-unequip" : "art-equip";
@@ -2900,7 +2907,9 @@
         <div>
           <button class="btn-ghost" data-action="art-edit" data-id="${sel ? sel.id : ""}" ${sel ? "" : "disabled"}>Edit</button>
           <button class="btn-ghost danger" data-action="art-del" data-id="${sel ? sel.id : ""}" ${sel ? "" : "disabled"}>Delete</button>
-          <button class="btn-confirm" style="min-width:96px" data-action="${confAction}"${confAction === "art-equip" ? ` data-id="${sel.id}"` : ""}>${confLabel}</button>
+          ${selBlocked
+            ? `<button class="btn-confirm" style="min-width:96px" disabled title="Equipped by another creature">Can't equip</button>`
+            : `<button class="btn-confirm" style="min-width:96px" data-action="${confAction}"${confAction === "art-equip" ? ` data-id="${sel.id}"` : ""}>${confLabel}</button>`}
         </div></div>
     </div></div>`;
   }
@@ -3696,9 +3705,15 @@
       const eqHere = !!ctx && equipped.has(g.id);
       const eqOther = !eqHere && spellGemEquippedInBuild(g.id);
       const wrongClass = creatureSlot && !eqHere && !gemAllowed(g);
+      const blockOther = !!ctx && eqOther;        // equip wizard: on another creature → not equippable
+      const blocked = wrongClass || blockOther;
+      const eqOtherMarker = !ctx && eqOther;      // manage library marker only
       const gcls = gemClass(g);
+      const title = wrongClass ? `${gcls || "This"} spell — can't equip on a ${creatureCls || "different"}-class creature`
+        : blockOther ? "Equipped on another creature — not available"
+        : eqHere ? "Equipped on this creature" : eqOtherMarker ? "Equipped on another creature" : "";
       return `
-      <div class="pick-tile ${st.sel === g.id ? "selected" : ""}${eqHere ? " eq-here" : ""}${eqOther ? " eq-other" : ""}${wrongClass ? " disabled" : ""}" data-action="sg-sel" data-id="${g.id}"${wrongClass ? ` title="${esc(gcls || "This")} spell — can't equip on a ${esc(creatureCls || "different")}-class creature"` : eqHere ? ` title="Equipped on this creature"` : eqOther ? ` title="Equipped on another creature"` : ""}>
+      <div class="pick-tile ${st.sel === g.id ? "selected" : ""}${eqHere ? " eq-here" : ""}${blocked ? " disabled" : ""}${eqOtherMarker ? " eq-other" : ""}" data-action="sg-sel" data-id="${g.id}"${title ? ` title="${esc(title)}"` : ""}>
         <div class="pt-sprite">${spriteImg(gemIcon(g), "px")}</div>
         <div class="pt-name">${esc(gemName(g))}</div></div>`; }).join("")
       || `<div class="slot-sub" style="padding:10px">No spell gems${st.hideEquipped ? " match" : " yet — build one"}.</div>`;
@@ -3716,7 +3731,9 @@
         : `<div class="slot-sub" style="padding:6px">No spell chosen.</div>`;
       const gcls = gemClass(sel);
       const clsNote = creatureSlot && !equipped.has(sel.id) && !gemAllowed(sel)
-        ? `<div class="slot-sub sg-clsnote" style="padding:8px 0">${esc(gcls || "This")}-class spell — a ${esc(creatureCls || "different")}-class creature can't equip it (an Opal or the right trait is needed).</div>` : "";
+        ? `<div class="slot-sub sg-clsnote" style="padding:8px 0">${esc(gcls || "This")}-class spell — a ${esc(creatureCls || "different")}-class creature can't equip it (an Opal or the right trait is needed).</div>`
+        : (ctx && !equipped.has(sel.id) && spellGemEquippedInBuild(sel.id)
+          ? `<div class="slot-sub sg-clsnote" style="padding:8px 0">Equipped on another creature — unequip it there first to use it here.</div>` : "");
       info = `<div class="ns-info-head"><span class="ns-info-icon">${spriteImg(gemIcon(sel), "px")}</span><h3>${esc(gemName(sel))}</h3></div>
         ${clsNote}${spellBlock}
         ${propRows ? `<div class="section-label">Enchants</div><div class="prop-list">${propRows}</div>` : ""}`;
@@ -3724,7 +3741,9 @@
     // footer selector bar (mirrors Artifacts/Builds): Edit/Delete act on the selection; the confirm
     // switches between Equip (equip context + selection) and ＋ Build new (manage mode / no selection).
     const on = ctx && sel ? equipped.has(sel.id) : false;
-    const selBlocked = creatureSlot && sel && !on && !gemAllowed(sel);   // wrong-class, no permission
+    const selWrongClass = creatureSlot && sel && !on && !gemAllowed(sel);       // wrong-class, no permission
+    const selOnOther = !!ctx && sel && !on && spellGemEquippedInBuild(sel.id);  // already on another creature
+    const selBlocked = selWrongClass || selOnOther;
     const canEquip = !!ctx && !!sel && !selBlocked;
     // only render the info panel when there's something selected (no empty placeholder panel)
     const infoPanel = sel ? `<div class="ovl-right lib-info">${info}</div>` : "";
@@ -3739,7 +3758,7 @@
           <button class="btn-ghost" data-action="sg-edit" data-id="${sel ? sel.id : ""}" ${sel ? "" : "disabled"}>Edit</button>
           <button class="btn-ghost danger" data-action="sg-del" data-id="${sel ? sel.id : ""}" ${sel ? "" : "disabled"}>Delete</button>
           ${ctx && selBlocked
-            ? `<button class="btn-confirm" style="min-width:96px" disabled title="Wrong class for this creature">Can't equip</button>`
+            ? `<button class="btn-confirm" style="min-width:96px" disabled title="${selOnOther ? "Equipped on another creature" : "Wrong class for this creature"}">Can't equip</button>`
             : `<button class="btn-confirm" style="min-width:96px" data-action="${canEquip ? "sg-equip" : "sg-new"}" ${canEquip ? `data-id="${sel.id}"` : ""}>${canEquip ? (on ? "Unequip" : "Equip") : "＋ Build new"}</button>`}
         </div></div>
     </div></div>`;
@@ -4075,7 +4094,8 @@
       case "artlib-sel": { const id = +t.dataset.id; ovState.sel = ovState.sel === id ? null : id; refreshOverlay(); break; }
       case "art-view": ovState.artView = t.dataset.v; refreshOverlay(); break;
       case "artlib-hide-equipped": e.stopPropagation(); ovState.hideEquipped = !ovState.hideEquipped; refreshOverlay(); break;
-      case "art-equip": build.slots[ovState.slotIdx].artifactId = +t.dataset.id; persistBuild(); closeOverlay(); render(); break;
+      case "art-equip": { const id = +t.dataset.id; if (artifactEquippedInBuild(id)) break;   // exclusive: already on another creature
+        build.slots[ovState.slotIdx].artifactId = id; persistBuild(); closeOverlay(); render(); break; }
       case "art-unequip": build.slots[ovState.slotIdx].artifactId = null; persistBuild(); closeOverlay(); render(); break;
       case "art-new": openArtifactBuilder(null, ovState.slotIdx); break;
       case "art-edit": openArtifactBuilder(+t.dataset.id, ovState.slotIdx); break;
@@ -4226,6 +4246,7 @@
         else {                                                 // equip — enforce the creature's class rule
           const g = spellGems.find(x => x.id === id);
           if (ctx.kind === "creature" && g && !canEquipGemOn(build.slots[ctx.slotIdx], g)) break;
+          if (spellGemEquippedInBuild(id)) break;   // exclusive: already on another creature
           if (arr.length < ctx.max) arr.push(id);
           else if (ctx.max === 1) arr[0] = id;
         }
