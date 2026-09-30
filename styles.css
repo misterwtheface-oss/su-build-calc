@@ -470,6 +470,13 @@ h1, h2, h3 { margin: 0; }
 .avail-tags { display: inline-flex; align-items: baseline; gap: 8px; flex: 0 0 auto; }
 .avail-tag { font-size: 11px; font-weight: 400; color: var(--text-mute); white-space: nowrap; }
 .perk-line-head .avail-tags, .overlay-header .avail-tags { align-self: center; }
+/* creature picker "Show Traits" list — innate-trait containers, whole row selects */
+.crea-trait-list { display: flex; flex-direction: column; gap: 8px; }
+.crea-trait-row { cursor: pointer; transition: border-color .1s; }
+.crea-trait-row.selected { border-color: var(--accent2); box-shadow: inset 0 0 0 2px var(--accent2); background: rgba(154,123,214,.12); }
+.crea-trait-row.disabled { opacity: .4; cursor: not-allowed; filter: grayscale(.5); }
+.crea-trait-row.nofuse { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border: 1px solid var(--border-dim); border-radius: 9px; color: var(--text-mute); }
+.crea-trait-row.nofuse.selected { color: var(--text); }
 
 /* trait containers — one base box; ghost keeps geometry */
 .primary-traits {

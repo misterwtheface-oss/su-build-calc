@@ -634,7 +634,7 @@
     const label = opts.label || t.name;
     // the class-coloured name pill; availability labels sit INSIDE the pill, right-aligned (pill keeps full width)
     const avail = opts.noAvail ? "" : availTagsHtml(t);
-    return `<span class="trait-banner${avail ? " has-avail" : ""}" data-action="nav-trait" data-tid="${tid}"
+    return `<span class="trait-banner${avail ? " has-avail" : ""}"${opts.noNav ? "" : ` data-action="nav-trait" data-tid="${tid}"`}
       style="--aff-color:${color};--aff-text:${textOn(color === "var(--border-dim)" ? "#6d5a2e" : color)}" title="${esc(t.name)}">
       <span class="trait-banner-label">${esc(label)}</span>${avail}</span>`;
   }
@@ -929,7 +929,7 @@
       kind: "creature", slotIdx, step: "primary",
       primaryId: slot.cid, fusionId: slot.fusion, skinId: slot.skinId != null ? slot.skinId : null,
       personality: slot.personality || null, scrolls: { ...(slot.scrolls || {}) },
-      search: "", clsFilter: null, raceFilter: null, taxoFilters: [], limit: CREA_PAGE, sort: null,
+      search: "", clsFilter: null, raceFilter: null, taxoFilters: [], limit: CREA_PAGE, sort: null, view: "grid",
       render: renderCreaturePicker,
     };
     openOverlay(ovState.render()); maybeFocusSearch(OV);
@@ -987,6 +987,7 @@
       ${taxoChips}
       <button class="facet add" data-action="facet-taxo">＋ Filter</button>
       ${bookmarks.traits.length ? `<button class="facet ${st.bkOnly ? "on" : ""}" data-action="crea-bkonly" title="Show only creatures whose trait you bookmarked">★ Bookmarked</button>` : ""}
+      <button class="facet ${st.view === "traits" ? "on" : ""}" data-action="crea-view" title="Browse by innate trait">Show Traits</button>
     </div>`;
     // stat sort — highest first; picking a stat draws a magnitude bar (value / roster max) on each tile
     const sortbar = `<div class="ovl-filterbar crea-sortbar"><span class="foot-info">Sort</span><div class="seg">
@@ -1015,6 +1016,16 @@
         <div class="pt-name">${esc(c.name)}</div>
       </div>`; }).join("");
 
+    // "Show Traits" view: same ordered/filtered list, rendered as innate-trait containers (no info panel).
+    // The whole row selects the creature; the chip's nav is suppressed so one click = pick.
+    const traitsView = st.view === "traits";
+    const traitList = traitsView ? `<div class="crea-trait-list">
+      ${fusion ? `<div class="crea-trait-row nofuse ${st.fusionId == null ? "selected" : ""}" data-action="crea-nofuse"><span class="nofuse-glyph">∅</span> No fusion</div>` : ""}
+      ${shown.map(c => { const blk = avBlocked(c); const tr = c.traitId != null ? TRAIT[c.traitId] : null;
+        return `<div class="crea-trait-row primary-traits ${sel === c.id ? "selected" : ""} ${blk ? "disabled" : ""}"${blk ? "" : ` data-action="crea-pick" data-id="${c.id}"`}>
+          ${traitBanner(c.traitId, { noNav: true })}<div class="trait-desc">${richText(tr ? tr.desc || "" : "")}</div></div>`; }).join("")}
+    </div>` : "";
+
     const title = fusion ? "Fusion partner" : "Choose creature";
     const footer = fusion
       ? `<button class="btn-ghost" data-action="crea-back">‹ Back</button>
@@ -1033,12 +1044,12 @@
         <button class="ovl-close" data-action="close-ovl">✕</button></div>
       <div class="overlay-body">
         <div class="ovl-center">${filterbar}${sortbar}
-          <div class="ovl-center-scroll"><div class="pick-grid crea-grid">${tiles}</div>
+          <div class="ovl-center-scroll">${traitsView ? traitList : `<div class="pick-grid crea-grid">${tiles}</div>`}
             ${list.length > shown.length
               ? `<div class="crea-loadmore"><button class="btn-ghost" data-action="crea-more">Load more (${shown.length} of ${list.length})</button></div>`
               : list.length > CREA_PAGE ? `<div class="slot-sub" style="margin-top:10px;text-align:center">All ${list.length} shown</div>` : ""}</div>
         </div>
-        <div class="ovl-right">${side}</div>
+        ${traitsView ? "" : `<div class="ovl-right">${side}</div>`}
       </div>
       <div class="overlay-footer"><span class="foot-info"></span><div>${footer}</div></div>
     </div></div>`;
@@ -2138,6 +2149,56 @@
         <div class="ovl-center-scroll"><div class="perk-list">${rows}</div></div>
       </div></div>
       <div class="overlay-footer"><button class="btn-ghost" data-action="gs-back">‹ Back to gods</button>
+        <button class="btn-confirm" data-action="close-ovl">Done</button></div>
+    </div></div>`;
+  }
+
+  // ── Guild Shops reference (mirrors God Shops) — per-guild reputation-rank rewards ────────────
+  function openGuildShops(guildName) {
+    ovState = { kind: "guildshops", search: "", view: guildName ? "detail" : "list", sel: guildName || null, render: renderGuildShops };
+    openOverlay(ovState.render()); maybeFocusSearch(OV);
+  }
+  function renderGuildShops() {
+    const st = ovState, gs = D.guildShops || [];
+    return st.view === "detail" ? renderGuildShopDetail(gs.find(g => g.guild === st.sel)) : renderGuildShopList(gs);
+  }
+  function guildItemIcon(it) {
+    const m = gsNameMaps(), nm = (it.item || "").toLowerCase();
+    if (it.type === "Creature") { const c = m.crea.get(nm); if (c) return `<span class="gs-item-ico">${critFace(c)}</span>`; }
+    else if (it.type === "Spell") { const s = m.spell.get(nm), ic = s && spellIcon(s); if (ic) return `<span class="gs-item-ico">${spriteImg(ic, "px")}</span>`; }
+    return `<span class="gs-item-ico empty"></span>`;
+  }
+  function renderGuildShopList(gs) {
+    const st = ovState, q = st.search.trim().toLowerCase();
+    const list = gs.filter(g => !q || g.guild.toLowerCase().includes(q) || g.items.some(it => it.item.toLowerCase().includes(q)));
+    const tiles = list.map(g => `<div class="pick-tile" data-action="guild-pick" data-g="${esc(g.guild)}">
+      <div class="pt-sprite">${g.banner ? spriteImg(g.banner, "px") : `<span class="spec-tile-plus">✦</span>`}</div>
+      <div class="pt-name">${esc(g.guild)}</div></div>`).join("")
+      || `<div class="slot-sub" style="padding:10px">No guilds match.</div>`;
+    return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel">
+      <div class="overlay-header"><h2>Guild Shops</h2>
+        <input class="ovl-search" placeholder="Search guild / item…" value="${esc(st.search)}" data-action="guild-search">
+        <button class="ovl-close" data-action="close-ovl">✕</button></div>
+      <div class="overlay-body"><div class="ovl-center"><div class="ovl-center-scroll"><div class="pick-grid gs-grid">${tiles}</div></div></div></div>
+      <div class="overlay-footer"><span class="foot-info"></span><button class="btn-confirm" data-action="close-ovl">Done</button></div>
+    </div></div>`;
+  }
+  function renderGuildShopDetail(sel) {
+    if (!sel) { ovState.view = "list"; return renderGuildShopList(D.guildShops || []); }
+    const rows = sel.items.map(it => `<div class="perk-line">
+      ${guildItemIcon(it)}
+      <div class="perk-line-body">
+        <div class="perk-line-head"><b>${esc(it.item)}</b><span class="perk-line-meta"><span class="anoint-spec-tag">${esc(it.type)}</span><span class="gs-price" title="Guild Reputation rank">Rep ${it.rank}</span></span></div>
+      </div></div>`).join("")
+      || `<div class="slot-sub" style="padding:10px">No items.</div>`;
+    return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel">
+      <div class="overlay-header"><button class="btn-ghost" data-action="guild-back">‹ Guild Shops</button>
+        <h2 style="flex:1">${esc(sel.guild)} Guild</h2><button class="ovl-close" data-action="close-ovl">✕</button></div>
+      <div class="overlay-body"><div class="ovl-center">
+        <div class="gs-detail-head">${sel.banner ? `<div class="gs-god-sprite">${spriteImg(sel.banner, "px")}</div>` : ""}<div class="gs-god-name">${esc(sel.guild)} Guild</div>${sel.currency ? `<div class="slot-sub">Currency: ${esc(sel.currency)}</div>` : ""}</div>
+        <div class="ovl-center-scroll"><div class="perk-list">${rows}</div></div>
+      </div></div>
+      <div class="overlay-footer"><button class="btn-ghost" data-action="guild-back">‹ Back to guilds</button>
         <button class="btn-confirm" data-action="close-ovl">Done</button></div>
     </div></div>`;
   }
@@ -3845,6 +3906,10 @@
       case "gs-god": ovState.sel = t.dataset.g; ovState.view = "detail"; refreshOverlay(true); break;
       case "gs-back": ovState.view = "list"; refreshOverlay(true); maybeFocusSearch(OV); break;
       case "gs-search": break;      // handled in onInput
+      case "open-guildshops": openGuildShops(); break;
+      case "guild-pick": ovState.sel = t.dataset.g; ovState.view = "detail"; refreshOverlay(true); break;
+      case "guild-back": ovState.view = "list"; refreshOverlay(true); maybeFocusSearch(OV); break;
+      case "guild-search": break;   // handled in onInput
       case "open-threats": openThreats(); break;
       case "open-macros": if (FEATURES.macros) openMacros(); break;
       case "macro-crea": ovState.sel = +t.dataset.slot; refreshOverlay(); break;
@@ -3918,6 +3983,7 @@
         ovState.step = ovState.step === "customize" ? "fusion" : "primary";
         ovState.search = ""; ovState.limit = CREA_PAGE; refreshOverlay(); break;
       case "crea-more": ovState.limit = (ovState.limit || CREA_PAGE) + CREA_PAGE; refreshOverlay(); break;
+      case "crea-view": ovState.view = ovState.view === "traits" ? "grid" : "traits"; refreshOverlay(true); break;
       case "crea-bkonly": ovState.bkOnly = !ovState.bkOnly; resetCreaPage(); refreshOverlay(); break;
       case "crea-sort": ovState.sort = t.dataset.k || null; resetCreaPage(); refreshOverlay(); break;
       case "crea-confirm": {
@@ -4200,7 +4266,7 @@
     if (A === "builds-name") { ovState.draft.name = v; return; }
     // search fields — live filter without losing caret
     const searchMap = { "crea-search": [OV, ovState], "spec-search": [OV, ovState], "artb-search": [OV, ovState],
-      "relic-search": [OV, ovState], "cards-search": [OV, ovState], "anoint-search": [OV, ovState], "nether-search": [OV, ovState], "sg-search": [OV, ovState], "appendix-search": [OV, ovState], "gs-search": [OV, ovState], "realm-search": [OV, ovState], "riddle-search": [OV, ovState], "gloss-search": [OV, ovState], "facet-search": [DOV, dovState], "perk-search": [DOV, dovState], "pers-search": [DOV, dovState], "iconpick-search": [DOV, dovState], "skin-search": [DOV, dovState] };
+      "relic-search": [OV, ovState], "cards-search": [OV, ovState], "anoint-search": [OV, ovState], "nether-search": [OV, ovState], "sg-search": [OV, ovState], "appendix-search": [OV, ovState], "gs-search": [OV, ovState], "guild-search": [OV, ovState], "realm-search": [OV, ovState], "riddle-search": [OV, ovState], "gloss-search": [OV, ovState], "facet-search": [DOV, dovState], "perk-search": [DOV, dovState], "pers-search": [DOV, dovState], "iconpick-search": [DOV, dovState], "skin-search": [DOV, dovState] };
     if (searchMap[A]) {
       const [root, state] = searchMap[A]; state.search = v;
       if (A === "crea-search") resetCreaPage();   // new query → back to page 1

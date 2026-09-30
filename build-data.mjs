@@ -805,6 +805,9 @@ for (const g of FALSE_GODS) for (const sp of g.specs) godBySpec.set(norm(sp), g.
 const specs = [];
 let specSkins = 0, perkIconsCopied = 0, perkIconsMissing = 0, emblemCount = 0, anointFlagged = 0, perkRefMisses = 0;
 let specGodMisses = 0;
+// Antiquarian is absent from Perk_REF.csv; user-confirmed in-game: EVERY Antiquarian perk is anointable
+// except these two. (Other specs take their anoint flag from the CSV / code as before.)
+const ANTIQ_NON_ANOINT = new Set(['Derelict Blockade', 'Last of the Ancients'].map(norm));
 for (const s of specRecs) {
   const slug = norm(s.key || s.label);
   const found = findSpecSprite(s.label);
@@ -832,16 +835,16 @@ for (const s of specRecs) {
     else { perkIconsMissing++; }
     // flags: CSV membership carries them directly; code-fallback rows resolve via perkFlags()
     const fl = p.fromCode ? perkFlags(p.name, s.label) : { anoint: p.anoint, asc: p.asc };
-    if (fl && (fl.anoint || fl.asc != null)) { if (fl.anoint) anointFlagged++; } else if (p.fromCode) perkRefMisses++;
+    if (p.fromCode && !(fl && (fl.anoint || fl.asc != null)) && !/antiquarian/i.test(s.label)) perkRefMisses++;
     const pdesc = perkDescByKey.get(p.key) || p.desc || '';
     const name = perkNameByKey.get(p.key) || p.name;
+    // Antiquarian: anointable except the two exclusions; every other spec keeps its CSV/code flag
+    const anointment = /antiquarian/i.test(s.label) ? !ANTIQ_NON_ANOINT.has(norm(name)) : (fl ? !!fl.anoint : false);
+    if (anointment) anointFlagged++;
     const pTaxo = correctTaxo(taxoStrs(perkTaxoByKey[p.key]), pdesc, 'perk');
     return { key: p.key, name, desc: pdesc,
              cost: st ? st.cost : (p.cost ?? null), ranks: st ? st.ranks : (p.ranks || 1), icon,
-             anointment: fl ? !!fl.anoint : false, ascension: fl ? !!fl.asc : false,
-             // Antiquarian isn't in Perk_REF.csv → all its perks default to anointment:false, but some are
-             // likely anointable in-game. Flag them for validation (Progress.md backlog) so we can revisit.
-             anointValidate: /antiquarian/i.test(s.label) || undefined,
+             anointment, ascension: fl ? !!fl.asc : false,
              taxo: pTaxo, taxoSrc: taxoSrcArr(perkTaxoByKey[p.key], pTaxo) };
   });
   const falseGod = godBySpec.get(norm(s.label)) || null;
@@ -1498,6 +1501,28 @@ function godBattleFor(godName) {
 const godShops = [...godShopMap.entries()].sort((a, b) => a[0].localeCompare(b[0]))
   .map(([god, items]) => ({ god, battle: godBattleFor(god), items: items.sort((a, b) => a.tier - b.tier || a.item.localeCompare(b.item)) }));
 console.log(`  god shops: ${godShops.length} gods · ${godShopArr.length} items`);
+
+// ── Guild Shops (per-guild reputation-rank rewards) — mirrors God Shops ───────────
+// Items = the build-relevant guild rewards (creatures + spells) from the wiki rank tables, ordered by the
+// Reputation rank that unlocks them (decorations / treasure chests are cosmetic → omitted). Banner = the
+// guild's seal crest; currency = the guild's bounty resource.
+const OUT_GUILDBANNER = path.join(OUT_ASSETS, 'guildbanner');
+fs.rmSync(OUT_GUILDBANNER, { recursive: true, force: true });
+const GUILD_CURRENCY = { Chaos: 'Brimstone', Death: 'Granite', Life: 'Power', Nature: 'Crystal', Sorcery: 'Essence' };
+const GUILD_ORDER = ['Nature', 'Chaos', 'Sorcery', 'Death', 'Life'];
+const guildItems = new Map(GUILD_ORDER.map(g => [g, []]));
+for (const r of readJSON(path.join(REF, 'guild_creature_ranks.json')).ranks) (guildItems.get(r.guild) || []).push({ rank: r.rank, item: r.creature, type: 'Creature' });
+for (const r of readJSON(path.join(REF, 'guild_spell_ranks.json')).ranks) (guildItems.get(r.guild) || []).push({ rank: r.rank, item: r.spell, type: 'Spell' });
+let guildBannerHits = 0;
+const guildShops = GUILD_ORDER.map(guild => {
+  const slug = guild.toLowerCase();
+  let banner = null;
+  if (copyNamedSprite(`project_guild_${slug}seal`, OUT_GUILDBANNER, `${slug}.png`)) { banner = `assets/guildbanner/${slug}.png`; guildBannerHits++; }
+  else warn(`guild banner seal missing for ${guild}`);
+  const items = (guildItems.get(guild) || []).sort((a, b) => a.rank - b.rank || a.type.localeCompare(b.type));
+  return { guild, banner, currency: GUILD_CURRENCY[guild] || null, items };
+});
+console.log(`  guild shops: ${guildShops.length} guilds · ${guildShops.reduce((n, g) => n + g.items.length, 0)} items · ${guildBannerHits} banners`);
 
 // ── boss battle sprites (Appendix boss-trait rows) ────────────────────────────
 // DEITY bosses use bspr_god_* (incl. Caliban). NETHER/SPECIAL bosses use spr_crits_battle_<frame> — the
@@ -2283,6 +2308,7 @@ const SU_DATA = {
   runes,                    // False God difficulty runes (18) + authored theme counters
   realmProps,               // Realm-Instability realm properties (56) + authored theme/class counters
   godShops,                 // per-god favor shops (22 gods) — reference
+  guildShops,               // per-guild reputation shops (5 guilds: creatures + spells) — reference
   realms,                   // 30 realms: denizens/resources + Realm Objects (w/ rank-0 base); each carries a
                             //   `favor` matrix { rank(0..100) → [value per favorAllCols] } from Favor_MTX
   favorCols,                // { unique:[{key,col,label,unit}], generic:[...] } — the Favor_MTX column groups
