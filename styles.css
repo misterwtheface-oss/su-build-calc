@@ -973,6 +973,8 @@ button.apx-owner:hover .apx-owner-ico { border-color: var(--accent); }
 .realm-icon-lg { flex: 0 0 auto; width: 72px; height: 72px; display: flex; align-items: center; justify-content: center;
   background: rgba(0,0,0,.2); border: 1px solid var(--border-dim); border-radius: 10px; }
 .realm-icon-lg img { width: 64px; height: 64px; object-fit: contain; image-rendering: pixelated; }
+.realm-icon-lg.swap { cursor: pointer; transition: border-color .1s, background .1s; }
+.realm-icon-lg.swap:hover { border-color: var(--accent2); background: rgba(154,123,214,.12); }
 /* Riddle Dwarf — fast trivia lookup */
 .riddle-list { display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px; }
 .riddle-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 7px 12px;

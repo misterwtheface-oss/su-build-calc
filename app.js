@@ -2206,7 +2206,7 @@
   function openRealms(realmId) {
     ovState = { kind: "realms", search: "", sortBy: "realm", mode: "list", cmpExpanded: new Set(),
       favorRank: 100, showCommon: false, favorView: "bars", useCustom: favorPrefs.use, editingRanks: false,
-      view: realmId != null ? "detail" : "list", sel: realmId != null ? realmId : null, render: renderRealms };
+      view: realmId != null ? "detail" : "list", sel: realmId != null ? realmId : null, detailIco: "realm", render: renderRealms };
     openOverlay(ovState.render()); maybeFocusSearch(OV);
   }
   function renderRealms() {
@@ -2421,8 +2421,12 @@
       <div class="overlay-header"><button class="btn-ghost" data-action="realm-back">‹ Realms</button>
         <h2 style="flex:1">${esc(sel.realm)}</h2><button class="ovl-close" data-action="close-ovl">✕</button></div>
       <div class="overlay-body"><div class="ovl-center"><div class="ovl-center-scroll">
-        <div class="realm-detail-head">${(() => { const ico = ovState.sortBy === "god" ? (sel.godBattle || sel.icon) : (sel.icon || sel.godBattle);
-          return ico ? `<div class="realm-icon-lg">${spriteImg(ico, "px")}</div>` : ""; })()}
+        <div class="realm-detail-head">${(() => {
+          // icon defaults to the Realm|God toggle at selection time; tap to swap (aesthetic) when both exist
+          const canSwap = !!(sel.icon && sel.godBattle);
+          const useGod = (ovState.detailIco || (ovState.sortBy === "god" ? "god" : "realm")) === "god";
+          const ico = useGod ? (sel.godBattle || sel.icon) : (sel.icon || sel.godBattle);
+          return ico ? `<div class="realm-icon-lg${canSwap ? " swap" : ""}"${canSwap ? ` data-action="realm-swapico" title="Tap to swap icon"` : ""}>${spriteImg(ico, "px")}</div>` : ""; })()}
           <div class="spell-stats" style="flex:1">${facts}</div></div>
         ${profile}${other}${objects}${creatures}${encounters}${resources}${combos}
       </div></div></div>
@@ -3812,7 +3816,8 @@
       case "open-glossary": openGlossary(); break;
       case "gloss-search": break;    // handled in onInput
       case "gloss-cat-toggle": { const c = t.dataset.c; ovState.collapsed.has(c) ? ovState.collapsed.delete(c) : ovState.collapsed.add(c); refreshOverlay(); break; }
-      case "realm-sel": ovState.sel = +t.dataset.id; ovState.view = "detail"; refreshOverlay(true); break;
+      case "realm-sel": ovState.sel = +t.dataset.id; ovState.view = "detail"; ovState.detailIco = ovState.sortBy === "god" ? "god" : "realm"; refreshOverlay(true); break;
+      case "realm-swapico": ovState.detailIco = (ovState.detailIco === "god" ? "realm" : "god"); refreshOverlay(); break;
       case "realm-back": ovState.view = "list"; refreshOverlay(true); maybeFocusSearch(OV); break;
       case "realm-sort": ovState.sortBy = t.dataset.v; refreshOverlay(); break;
       case "realm-mode": ovState.mode = t.dataset.v; ovState.search = ""; refreshOverlay(true); maybeFocusSearch(OV); break;
