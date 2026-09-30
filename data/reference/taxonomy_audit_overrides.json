@@ -65,7 +65,9 @@
    "Related Types::Sorcery Creature",
    "Action/Mechanic::Creature Class"
   ],
-  "remove": []
+  "remove": [
+   "Active If::Creature is X Type"
+  ]
  },
  "perk:15:BERATE": {
   "add": [
@@ -118,7 +120,8 @@
   "add": [
    "Action/Mechanic::Indirect Damage",
    "Multiplied by::Amount of X Stat",
-   "Action/Mechanic::Stats"
+   "Action/Mechanic::Stats",
+   "Affect on Life::Creature is Killed"
   ],
   "remove": []
  },
@@ -168,7 +171,8 @@
  },
  "perk:19:INSPIRITEDGEMS": {
   "add": [
-   "Action/Mechanic::Spell Gems"
+   "Action/Mechanic::Spell Gems",
+   "Affect on Spells::Modify Spell Gem Property"
   ],
   "remove": []
  },
@@ -194,7 +198,8 @@
  },
  "perk:21:BRISTLE": {
   "add": [
-   "Action/Mechanic::Cast"
+   "Action/Mechanic::Cast",
+   "Related Spells::Damaging Spells"
   ],
   "remove": []
  },
@@ -223,7 +228,9 @@
   "add": [
    "Active If::Defending"
   ],
-  "remove": []
+  "remove": [
+   "Active If::Provoking"
+  ]
  },
  "perk:30:ZOOM": {
   "add": [
@@ -238,7 +245,8 @@
    "Affect on Spells::Automatic/Extra Cast",
    "Action/Mechanic::Cast",
    "Action/Mechanic::Indirect Damage",
-   "Related Debuff::Poisoned"
+   "Related Debuff::Poisoned",
+   "Action/Mechanic::Debuff"
   ],
   "remove": []
  },
@@ -290,7 +298,10 @@
   "add": [
    "Action/Mechanic::Debuff",
    "Related Debuff::Bomb",
-   "Action/Mechanic::Indirect Damage"
+   "Action/Mechanic::Indirect Damage",
+   "Affect on Life::Creature is Damaged",
+   "Multiplied by::Amount of Damage Taken",
+   "Activates When::Enemy Indirectly Damaged"
   ],
   "remove": []
  },
@@ -344,14 +355,18 @@
  "perk:42:SCAPEGOAT": {
   "add": [
    "Action/Mechanic::Debuff",
-   "Affect on Status::Afflict with/Gain a Debuff"
+   "Affect on Status::Afflict with/Gain a Debuff",
+   "Affect on Status::Remove Debuff"
   ],
   "remove": []
  },
  "perk:43:ARCHAICWARSPEAR": {
   "add": [
    "Action/Mechanic::Relic",
-   "Affect on Damage::Ignore Defense"
+   "Affect on Damage::Ignore Defense",
+   "Action/Mechanic::Attack",
+   "Action/Mechanic::Cast",
+   "Related Stat::Defense"
   ],
   "remove": []
  },
@@ -360,14 +375,17 @@
    "Action/Mechanic::Relic",
    "Action/Mechanic::Buff",
    "Affect on Status::Apply/Gain a Buff",
-   "Affect on Status::Buffs Persist"
+   "Affect on Status::Buffs Persist",
+   "Affect on Status::Share/Gain Copy of Buff"
   ],
   "remove": []
  },
  "perk:43:FOSSILIZEDSHIELD": {
   "add": [
    "Action/Mechanic::Relic",
-   "Affect on Damage::Take Less Damage"
+   "Affect on Damage::Take Less Damage",
+   "Action/Mechanic::Attack",
+   "Action/Mechanic::Cast"
   ],
   "remove": []
  },
@@ -489,9 +507,16 @@
  },
  "spell:475": {
   "add": [
-   "Related Spells::Damaging Spells"
+   "Related Spells::Damaging Spells",
+   "Related Stat::Attack (Stat)",
+   "Related Stat::Intelligence",
+   "Related Stat::Defense",
+   "Related Stat::Speed",
+   "Multiplied by::Amount of Stat Change"
   ],
-  "remove": []
+  "remove": [
+   "Multiplied by::Amount of X Stat"
+  ]
  },
  "spell:48": {
   "add": [],
@@ -522,7 +547,9 @@
    "Affect on Spells::Redirect Spell",
    "Related Spells::Multi-Target Spells"
   ],
-  "remove": []
+  "remove": [
+   "Related Spells::Single-Target Spells"
+  ]
  },
  "spell:544": {
   "add": [
@@ -538,7 +565,9 @@
  },
  "spell:631": {
   "add": [
-   "Affect on Spells::Modify Spell Calculation"
+   "Affect on Spells::Modify Spell Calculation",
+   "Related Stat::Highest Stat",
+   "Related Stat::Lowest Stat"
   ],
   "remove": [
    "Affect on Attacks::Modify Attack Calculation"
@@ -661,7 +690,9 @@
    "Affect on Life::Creature is Healed",
    "Action/Mechanic::Healing"
   ],
-  "remove": []
+  "remove": [
+   "Action/Mechanic::Stats"
+  ]
  },
  "trait:1374": {
   "add": [
@@ -684,7 +715,8 @@
  "trait:1420": {
   "add": [],
   "remove": [
-   "Related Spells::Arsenal Spells"
+   "Related Spells::Arsenal Spells",
+   "Affect on Spells::Modify Charges/Behavior"
   ]
  },
  "trait:1466": {
@@ -697,11 +729,14 @@
   "add": [
    "Action/Mechanic::Cast"
   ],
-  "remove": []
+  "remove": [
+   "Related Stat::Lowest Stat"
+  ]
  },
  "trait:1527": {
   "add": [
-   "Related Spells::Damaging Spells"
+   "Related Spells::Damaging Spells",
+   "Affect on Spells::Automatic/Extra Cast"
   ],
   "remove": []
  },
@@ -721,7 +756,9 @@
   "add": [
    "Affect on Life::Creature is Killed"
   ],
-  "remove": []
+  "remove": [
+   "Action/Mechanic::Stats"
+  ]
  },
  "trait:1626": {
   "add": [],
@@ -743,7 +780,8 @@
  },
  "trait:17": {
   "add": [
-   "Action/Mechanic::Indirect Damage"
+   "Action/Mechanic::Indirect Damage",
+   "Activates When::Enemy Indirectly Damaged"
   ],
   "remove": [
    "Action/Mechanic::Stats"
@@ -799,7 +837,9 @@
   "remove": []
  },
  "trait:1953": {
-  "add": [],
+  "add": [
+   "Multiplied by::Amount of Damage Taken"
+  ],
   "remove": [
    "Affect on Stats::Stat/Change is Shared",
    "Action/Mechanic::Stats"
@@ -809,7 +849,9 @@
   "add": [
    "Related Spells::Damaging Spells"
   ],
-  "remove": []
+  "remove": [
+   "Action/Mechanic::Cast"
+  ]
  },
  "trait:1985": {
   "add": [
@@ -842,7 +884,8 @@
  "trait:2005": {
   "add": [],
   "remove": [
-   "Affect on Spells::Extra/Gain a Spell Gem"
+   "Affect on Spells::Extra/Gain a Spell Gem",
+   "Action/Mechanic::Stats"
   ]
  },
  "trait:2019": {
@@ -925,7 +968,8 @@
  },
  "trait:36": {
   "add": [
-   "Action/Mechanic::Indirect Damage"
+   "Action/Mechanic::Indirect Damage",
+   "Activates When::Enemy Indirectly Damaged"
   ],
   "remove": [
    "Action/Mechanic::Stats"
@@ -945,7 +989,8 @@
  },
  "trait:488": {
   "add": [
-   "Affect on Status::Increase Debuff Potency"
+   "Affect on Status::Increase Debuff Potency",
+   "Action/Mechanic::Indirect Damage"
   ],
   "remove": []
  },
@@ -982,7 +1027,8 @@
  "trait:581": {
   "add": [],
   "remove": [
-   "Action/Mechanic::Stats"
+   "Action/Mechanic::Stats",
+   "Active If::Health is X%"
   ]
  },
  "trait:604": {
@@ -1007,7 +1053,8 @@
  },
  "trait:71": {
   "add": [
-   "Related Spells::Healing Spells"
+   "Related Spells::Healing Spells",
+   "Affect on Spells::More Spell Potency"
   ],
   "remove": []
  },
@@ -1034,5 +1081,2399 @@
   "remove": [
    "Affect on Stats::Stat is Increased"
   ]
+ },
+ "trait:21": {
+  "add": [
+   "Affect on Stats::Stat is Decreased"
+  ],
+  "remove": []
+ },
+ "trait:79": {
+  "add": [],
+  "remove": [
+   "Action/Mechanic::Stats"
+  ]
+ },
+ "trait:93": {
+  "add": [
+   "Multiplied by::Amount of X Stat"
+  ],
+  "remove": []
+ },
+ "trait:117": {
+  "add": [],
+  "remove": [
+   "Action/Mechanic::Stats"
+  ]
+ },
+ "trait:127": {
+  "add": [],
+  "remove": [
+   "Action/Mechanic::Stats"
+  ]
+ },
+ "trait:134": {
+  "add": [],
+  "remove": [
+   "Action/Mechanic::Stats"
+  ]
+ },
+ "trait:136": {
+  "add": [],
+  "remove": [
+   "Action/Mechanic::Stats"
+  ]
+ },
+ "trait:157": {
+  "add": [],
+  "remove": [
+   "Action/Mechanic::Stats"
+  ]
+ },
+ "trait:159": {
+  "add": [],
+  "remove": [
+   "Action/Mechanic::Stats"
+  ]
+ },
+ "trait:161": {
+  "add": [],
+  "remove": [
+   "Action/Mechanic::Stats"
+  ]
+ },
+ "trait:173": {
+  "add": [
+   "Multiplied by::Amount of X Stat"
+  ],
+  "remove": []
+ },
+ "trait:184": {
+  "add": [],
+  "remove": [
+   "Action/Mechanic::Stats"
+  ]
+ },
+ "trait:187": {
+  "add": [
+   "Related Stat::Maximum Health",
+   "Affect on Stats::Stat is Increased",
+   "Affect on Stats::Stat is Decreased"
+  ],
+  "remove": []
+ },
+ "trait:213": {
+  "add": [
+   "Action/Mechanic::Creature Class"
+  ],
+  "remove": []
+ },
+ "trait:214": {
+  "add": [
+   "Action/Mechanic::Creature Class"
+  ],
+  "remove": []
+ },
+ "trait:215": {
+  "add": [
+   "Action/Mechanic::Creature Class"
+  ],
+  "remove": []
+ },
+ "trait:216": {
+  "add": [
+   "Action/Mechanic::Creature Class"
+  ],
+  "remove": []
+ },
+ "trait:217": {
+  "add": [
+   "Action/Mechanic::Creature Class"
+  ],
+  "remove": []
+ },
+ "trait:221": {
+  "add": [
+   "Affect on Stats::Stat is Decreased"
+  ],
+  "remove": []
+ },
+ "trait:222": {
+  "add": [],
+  "remove": [
+   "Related Debuff::Random Debuff"
+  ]
+ },
+ "trait:246": {
+  "add": [
+   "Affect on Type::Count Additional (Race)"
+  ],
+  "remove": []
+ },
+ "trait:261": {
+  "add": [],
+  "remove": [
+   "Action/Mechanic::Stats"
+  ]
+ },
+ "trait:274": {
+  "add": [],
+  "remove": [
+   "Related Stat::Maximum Health"
+  ]
+ },
+ "trait:294": {
+  "add": [],
+  "remove": [
+   "Action/Mechanic::Stats"
+  ]
+ },
+ "trait:300": {
+  "add": [
+   "Action/Mechanic::Indirect Damage"
+  ],
+  "remove": []
+ },
+ "trait:308": {
+  "add": [
+   "Related Spells::Multi-Target Spells"
+  ],
+  "remove": []
+ },
+ "trait:309": {
+  "add": [
+   "Related Spells::Multi-Target Spells"
+  ],
+  "remove": []
+ },
+ "trait:316": {
+  "add": [],
+  "remove": [
+   "Action/Mechanic::Attack"
+  ]
+ },
+ "trait:337": {
+  "add": [],
+  "remove": [
+   "Action/Mechanic::Stats"
+  ]
+ },
+ "trait:377": {
+  "add": [],
+  "remove": [
+   "Activates When::Ally Trait Activates"
+  ]
+ },
+ "trait:405": {
+  "add": [
+   "Related Spells::Damaging Spells"
+  ],
+  "remove": []
+ },
+ "trait:411": {
+  "add": [],
+  "remove": [
+   "Action/Mechanic::Cast"
+  ]
+ },
+ "trait:452": {
+  "add": [],
+  "remove": [
+   "Action/Mechanic::Stats"
+  ]
+ },
+ "trait:453": {
+  "add": [
+   "Affect on Stats::Stat/Change is Shared"
+  ],
+  "remove": []
+ },
+ "trait:476": {
+  "add": [
+   "Related Spells::Nature Spells"
+  ],
+  "remove": []
+ },
+ "trait:477": {
+  "add": [
+   "Related Spells::Nature Spells"
+  ],
+  "remove": []
+ },
+ "trait:498": {
+  "add": [
+   "Multiplied by::Amount of X Stat"
+  ],
+  "remove": []
+ },
+ "trait:530": {
+  "add": [],
+  "remove": [
+   "Action/Mechanic::Indirect Damage"
+  ]
+ },
+ "trait:597": {
+  "add": [],
+  "remove": [
+   "Affect on Stats::Persist (Stat Change)"
+  ]
+ },
+ "trait:702": {
+  "add": [],
+  "remove": [
+   "Affect on Damage::More Critical Chance"
+  ]
+ },
+ "trait:709": {
+  "add": [],
+  "remove": [
+   "Action/Mechanic::Stats"
+  ]
+ },
+ "trait:735": {
+  "add": [],
+  "remove": [
+   "Action/Mechanic::Stats"
+  ]
+ },
+ "trait:751": {
+  "add": [
+   "Action/Mechanic::Buff"
+  ],
+  "remove": [
+   "Related Minion::Dire Wolves",
+   "Action/Mechanic::Minion"
+  ]
+ },
+ "trait:787": {
+  "add": [
+   "Affect on Life::Creature is Killed"
+  ],
+  "remove": [
+   "Action/Mechanic::Stats"
+  ]
+ },
+ "trait:892": {
+  "add": [
+   "Action/Mechanic::Indirect Damage"
+  ],
+  "remove": [
+   "Action/Mechanic::Stats"
+  ]
+ },
+ "trait:929": {
+  "add": [
+   "Activates When::Enemy Attacks"
+  ],
+  "remove": []
+ },
+ "trait:938": {
+  "add": [],
+  "remove": [
+   "Action/Mechanic::Stats"
+  ]
+ },
+ "trait:939": {
+  "add": [],
+  "remove": [
+   "Action/Mechanic::Stats"
+  ]
+ },
+ "trait:990": {
+  "add": [
+   "Activates When::Ally Casts"
+  ],
+  "remove": []
+ },
+ "trait:1050": {
+  "add": [],
+  "remove": [
+   "Activates When::Ally Attacks"
+  ]
+ },
+ "trait:1060": {
+  "add": [],
+  "remove": [
+   "Action/Mechanic::Attack"
+  ]
+ },
+ "trait:1061": {
+  "add": [],
+  "remove": [
+   "Action/Mechanic::Cast"
+  ]
+ },
+ "trait:1105": {
+  "add": [
+   "Activates at::Start of Battle"
+  ],
+  "remove": []
+ },
+ "trait:1117": {
+  "add": [],
+  "remove": [
+   "Multiplied by::Current/Missing Health %"
+  ]
+ },
+ "trait:1273": {
+  "add": [],
+  "remove": [
+   "Action/Mechanic::Stats"
+  ]
+ },
+ "trait:1274": {
+  "add": [],
+  "remove": [
+   "Action/Mechanic::Stats"
+  ]
+ },
+ "trait:1278": {
+  "add": [
+   "Action/Mechanic::Indirect Damage"
+  ],
+  "remove": []
+ },
+ "trait:1279": {
+  "add": [
+   "Action/Mechanic::Indirect Damage"
+  ],
+  "remove": []
+ },
+ "trait:1280": {
+  "add": [
+   "Action/Mechanic::Indirect Damage"
+  ],
+  "remove": []
+ },
+ "trait:1330": {
+  "add": [],
+  "remove": [
+   "Affect on Attacks::Automatic/Extra Attack"
+  ]
+ },
+ "trait:1334": {
+  "add": [],
+  "remove": [
+   "Action/Mechanic::Stats",
+   "Multiplied by::Current/Missing Health %"
+  ]
+ },
+ "trait:1335": {
+  "add": [],
+  "remove": [
+   "Action/Mechanic::Stats",
+   "Multiplied by::Current/Missing Health %"
+  ]
+ },
+ "trait:1336": {
+  "add": [],
+  "remove": [
+   "Action/Mechanic::Stats",
+   "Multiplied by::Current/Missing Health %"
+  ]
+ },
+ "trait:1337": {
+  "add": [],
+  "remove": [
+   "Action/Mechanic::Stats"
+  ]
+ },
+ "trait:1338": {
+  "add": [],
+  "remove": [
+   "Action/Mechanic::Stats"
+  ]
+ },
+ "trait:1339": {
+  "add": [],
+  "remove": [
+   "Action/Mechanic::Stats"
+  ]
+ },
+ "trait:1345": {
+  "add": [],
+  "remove": [
+   "Action/Mechanic::Stats"
+  ]
+ },
+ "trait:1416": {
+  "add": [
+   "Activates When::Enemy Dodges"
+  ],
+  "remove": []
+ },
+ "trait:1434": {
+  "add": [],
+  "remove": [
+   "Action/Mechanic::Stats"
+  ]
+ },
+ "trait:1459": {
+  "add": [],
+  "remove": [
+   "Related Types::Maniacs"
+  ]
+ },
+ "trait:1471": {
+  "add": [
+   "Related Types::Phase Warrior"
+  ],
+  "remove": []
+ },
+ "trait:1474": {
+  "add": [
+   "Related Types::Pit Worm"
+  ],
+  "remove": []
+ },
+ "trait:1475": {
+  "add": [
+   "Related Types::Pit Wraith"
+  ],
+  "remove": []
+ },
+ "trait:1476": {
+  "add": [
+   "Related Types::Plague Doctor"
+  ],
+  "remove": []
+ },
+ "trait:1485": {
+  "add": [
+   "Related Types::Sea Shambler"
+  ],
+  "remove": [
+   "Multiplied by::Creature of X Type Count"
+  ]
+ },
+ "trait:1495": {
+  "add": [
+   "Activates When::Enemy is Debuffed"
+  ],
+  "remove": [
+   "Activates When::Ally is Debuffed"
+  ]
+ },
+ "trait:1522": {
+  "add": [],
+  "remove": [
+   "Related Stat::Lowest Stat"
+  ]
+ },
+ "trait:1523": {
+  "add": [],
+  "remove": [
+   "Related Stat::Highest Stat"
+  ]
+ },
+ "trait:1544": {
+  "add": [
+   "Affect on Life::Creature is Resurrected"
+  ],
+  "remove": []
+ },
+ "trait:1559": {
+  "add": [],
+  "remove": [
+   "Action/Mechanic::Stats"
+  ]
+ },
+ "trait:1562": {
+  "add": [
+   "Multiplied by::Amount of Stat Change"
+  ],
+  "remove": []
+ },
+ "trait:1565": {
+  "add": [],
+  "remove": [
+   "Action/Mechanic::Stats"
+  ]
+ },
+ "trait:1566": {
+  "add": [],
+  "remove": [
+   "Action/Mechanic::Stats"
+  ]
+ },
+ "trait:1574": {
+  "add": [],
+  "remove": [
+   "Action/Mechanic::Stats"
+  ]
+ },
+ "trait:1576": {
+  "add": [],
+  "remove": [
+   "Affect on Traits::More Activations/Potency"
+  ]
+ },
+ "trait:1584": {
+  "add": [],
+  "remove": [
+   "Action/Mechanic::Stats"
+  ]
+ },
+ "trait:1602": {
+  "add": [
+   "Activates When::Ally Takes Damage"
+  ],
+  "remove": []
+ },
+ "trait:1603": {
+  "add": [],
+  "remove": [
+   "Action/Mechanic::Stats"
+  ]
+ },
+ "trait:1605": {
+  "add": [
+   "Activates When::Ally Takes Damage"
+  ],
+  "remove": []
+ },
+ "trait:1646": {
+  "add": [],
+  "remove": [
+   "Action/Mechanic::Stats"
+  ]
+ },
+ "trait:1655": {
+  "add": [
+   "Activates When::Ally Indirectly Damaged"
+  ],
+  "remove": []
+ },
+ "trait:1702": {
+  "add": [
+   "Affect on Life::Creature is Killed"
+  ],
+  "remove": []
+ },
+ "trait:1704": {
+  "add": [],
+  "remove": [
+   "Affect on Stats::Stat is Increased"
+  ]
+ },
+ "trait:1723": {
+  "add": [],
+  "remove": [
+   "Affect on Spells::Modify Charges/Behavior"
+  ]
+ },
+ "trait:1738": {
+  "add": [
+   "Action/Mechanic::Indirect Damage"
+  ],
+  "remove": []
+ },
+ "trait:1764": {
+  "add": [],
+  "remove": [
+   "Affect on Damage::More Critical Chance"
+  ]
+ },
+ "trait:1785": {
+  "add": [
+   "Action/Mechanic::Turn Counter"
+  ],
+  "remove": []
+ },
+ "trait:1842": {
+  "add": [],
+  "remove": [
+   "Action/Mechanic::Cast"
+  ]
+ },
+ "trait:1936": {
+  "add": [
+   "Multiplied by::Amount Healed"
+  ],
+  "remove": []
+ },
+ "trait:1957": {
+  "add": [],
+  "remove": [
+   "Affect on Stats::Stat/Change is Shared"
+  ]
+ },
+ "trait:1965": {
+  "add": [
+   "Action/Mechanic::Creature Class"
+  ],
+  "remove": []
+ },
+ "trait:1966": {
+  "add": [
+   "Action/Mechanic::Creature Class"
+  ],
+  "remove": []
+ },
+ "trait:1967": {
+  "add": [
+   "Action/Mechanic::Creature Class"
+  ],
+  "remove": []
+ },
+ "trait:1968": {
+  "add": [
+   "Action/Mechanic::Creature Class"
+  ],
+  "remove": []
+ },
+ "trait:1969": {
+  "add": [
+   "Action/Mechanic::Creature Class"
+  ],
+  "remove": []
+ },
+ "trait:1987": {
+  "add": [
+   "Affect on Timeline::Count Additional (Turns)"
+  ],
+  "remove": [
+   "Affect on Timeline::Additional Turn"
+  ]
+ },
+ "trait:1988": {
+  "add": [
+   "Multiplied by::Amount of X Stat",
+   "Action/Mechanic::Indirect Damage"
+  ],
+  "remove": []
+ },
+ "trait:1994": {
+  "add": [
+   "Affect on Spells::Redirect Spell"
+  ],
+  "remove": []
+ },
+ "trait:2002": {
+  "add": [
+   "Affect on Spells::More Spell Potency"
+  ],
+  "remove": []
+ },
+ "trait:2006": {
+  "add": [],
+  "remove": [
+   "Action/Mechanic::Stats"
+  ]
+ },
+ "trait:2008": {
+  "add": [
+   "Multiplied by::Amount of X Stat",
+   "Affect on Damage::Deal More Damage"
+  ],
+  "remove": []
+ },
+ "trait:2009": {
+  "add": [
+   "Affect on Traits::Gain a Trait"
+  ],
+  "remove": [
+   "Affect on Traits::Steal Trait"
+  ]
+ },
+ "trait:2015": {
+  "add": [
+   "Affect on Spells::More Spell Potency"
+  ],
+  "remove": []
+ },
+ "trait:2023": {
+  "add": [
+   "Action/Mechanic::Indirect Damage"
+  ],
+  "remove": []
+ },
+ "trait:2042": {
+  "add": [
+   "Action/Mechanic::Indirect Damage"
+  ],
+  "remove": []
+ },
+ "trait:2067": {
+  "add": [
+   "Affect on Spells::Extra/Gain a Spell Gem"
+  ],
+  "remove": []
+ },
+ "trait:2095": {
+  "add": [
+   "Action/Mechanic::Indirect Damage"
+  ],
+  "remove": []
+ },
+ "trait:2099": {
+  "add": [
+   "Related Spells::Non-Ultimate Spells"
+  ],
+  "remove": []
+ },
+ "trait:2101": {
+  "add": [
+   "Activates When::Enemy Dies"
+  ],
+  "remove": []
+ },
+ "trait:2118": {
+  "add": [
+   "Related Spells::Multi-Target Spells"
+  ],
+  "remove": []
+ },
+ "trait:2120": {
+  "add": [
+   "Multiplied by::Amount of Damage Taken",
+   "Multiplied by::Amount Healed"
+  ],
+  "remove": []
+ },
+ "trait:2135": {
+  "add": [
+   "Related Stat::Highest Stat"
+  ],
+  "remove": []
+ },
+ "trait:2138": {
+  "add": [],
+  "remove": [
+   "Active If::Stat is Unmodified"
+  ]
+ },
+ "trait:2150": {
+  "add": [
+   "Action/Mechanic::Indirect Damage"
+  ],
+  "remove": []
+ },
+ "trait:2153": {
+  "add": [],
+  "remove": [
+   "Affect on Traits::Trait Effect is Ignored"
+  ]
+ },
+ "trait:2155": {
+  "add": [
+   "Multiplied by::Amount of Stat Change"
+  ],
+  "remove": []
+ },
+ "trait:2158": {
+  "add": [
+   "Related Spells::Healing Spells"
+  ],
+  "remove": []
+ },
+ "trait:2172": {
+  "add": [
+   "Related Spells::Healing Spells"
+  ],
+  "remove": []
+ },
+ "spell:49": {
+  "add": [],
+  "remove": [
+   "Action/Mechanic::Defend"
+  ]
+ },
+ "spell:58": {
+  "add": [],
+  "remove": [
+   "Multiplied by::Current/Missing Health %"
+  ]
+ },
+ "spell:106": {
+  "add": [],
+  "remove": [
+   "Action/Mechanic::Provoke"
+  ]
+ },
+ "spell:135": {
+  "add": [
+   "Affect on Spells::Modify Spell Calculation"
+  ],
+  "remove": [
+   "Affect on Attacks::Modify Attack Calculation"
+  ]
+ },
+ "spell:152": {
+  "add": [
+   "Related Spells::Damaging Spells"
+  ],
+  "remove": []
+ },
+ "spell:207": {
+  "add": [],
+  "remove": [
+   "Affect on Damage::Deal More Damage"
+  ]
+ },
+ "spell:212": {
+  "add": [],
+  "remove": [
+   "Action/Mechanic::Stats"
+  ]
+ },
+ "spell:220": {
+  "add": [],
+  "remove": [
+   "Action/Mechanic::Stats"
+  ]
+ },
+ "spell:256": {
+  "add": [
+   "Multiplied by::Buff Potency",
+   "Action/Mechanic::Indirect Damage",
+   "Related Spells::Damaging Spells"
+  ],
+  "remove": []
+ },
+ "spell:258": {
+  "add": [
+   "Multiplied by::Buff Potency",
+   "Action/Mechanic::Indirect Damage",
+   "Related Spells::Damaging Spells"
+  ],
+  "remove": []
+ },
+ "spell:406": {
+  "add": [
+   "Related Spells::Multi-Target Spells"
+  ],
+  "remove": []
+ },
+ "spell:426": {
+  "add": [
+   "Related Spells::Damaging Spells"
+  ],
+  "remove": []
+ },
+ "spell:429": {
+  "add": [
+   "Related Spells::Damaging Spells"
+  ],
+  "remove": []
+ },
+ "spell:447": {
+  "add": [
+   "Related Spells::Damaging Spells"
+  ],
+  "remove": []
+ },
+ "spell:450": {
+  "add": [
+   "Related Spells::Damaging Spells"
+  ],
+  "remove": [
+   "Action/Mechanic::Indirect Damage"
+  ]
+ },
+ "spell:451": {
+  "add": [
+   "Related Spells::Damaging Spells",
+   "Affect on Damage::Deal More Damage"
+  ],
+  "remove": []
+ },
+ "spell:453": {
+  "add": [
+   "Multiplied by::Amount of Stat Change"
+  ],
+  "remove": [
+   "Multiplied by::Amount of X Stat"
+  ]
+ },
+ "spell:466": {
+  "add": [
+   "Related Spells::Damaging Spells"
+  ],
+  "remove": []
+ },
+ "spell:491": {
+  "add": [],
+  "remove": [
+   "Action/Mechanic::Stats"
+  ]
+ },
+ "spell:507": {
+  "add": [
+   "Related Stat::Attack (Stat)",
+   "Related Stat::Defense",
+   "Related Stat::Intelligence",
+   "Related Stat::Speed"
+  ],
+  "remove": []
+ },
+ "spell:510": {
+  "add": [
+   "Related Stat::Attack (Stat)",
+   "Related Stat::Defense",
+   "Related Stat::Intelligence",
+   "Affect on Stats::Stat is Decreased"
+  ],
+  "remove": []
+ },
+ "spell:521": {
+  "add": [],
+  "remove": [
+   "Related Types::Common Race",
+   "Active If::Creature is X Type"
+  ]
+ },
+ "spell:561": {
+  "add": [
+   "Related Spells::Damaging Spells"
+  ],
+  "remove": []
+ },
+ "spell:586": {
+  "add": [
+   "Affect on Spells::Modify Spell Calculation",
+   "Multiplied by::Amount of X Stat"
+  ],
+  "remove": [
+   "Affect on Attacks::Modify Attack Calculation"
+  ]
+ },
+ "spell:591": {
+  "add": [
+   "Affect on Spells::Modify Spell Calculation",
+   "Multiplied by::Amount of X Stat"
+  ],
+  "remove": [
+   "Affect on Attacks::Modify Attack Calculation",
+   "Related Types::Common Race"
+  ]
+ },
+ "spell:643": {
+  "add": [
+   "Activates When::Ally Attacks"
+  ],
+  "remove": []
+ },
+ "spell:648": {
+  "add": [
+   "Activates at::Start of Ally Turn"
+  ],
+  "remove": []
+ },
+ "spell:669": {
+  "add": [
+   "Activates at::Start of Ally Turn",
+   "Activates at::Start of Enemy Turn"
+  ],
+  "remove": []
+ },
+ "spell:704": {
+  "add": [
+   "Related Buff::Random Buff"
+  ],
+  "remove": []
+ },
+ "spell:706": {
+  "add": [],
+  "remove": [
+   "Action/Mechanic::Creature Race"
+  ]
+ },
+ "spell:717": {
+  "add": [
+   "Multiplied by::Above/Below on TL Count",
+   "Related Spells::Damaging Spells"
+  ],
+  "remove": []
+ },
+ "spell:720": {
+  "add": [
+   "Related Spells::Multi-Target Spells"
+  ],
+  "remove": []
+ },
+ "spell:723": {
+  "add": [
+   "Related Spells::Multi-Target Spells"
+  ],
+  "remove": []
+ },
+ "spell:731": {
+  "add": [
+   "Related Spells::Single-Target Spells",
+   "Activates When::Ally Moves on Timeline"
+  ],
+  "remove": []
+ },
+ "spell:734": {
+  "add": [
+   "Related Spells::Damaging Spells"
+  ],
+  "remove": []
+ },
+ "perk:1:IMPIETY": {
+  "add": [],
+  "remove": [
+   "Affect on Status::Remove Buff"
+  ]
+ },
+ "perk:1:DEATHSDUE": {
+  "add": [
+   "Affect on Damage::Deal More Damage",
+   "Action/Mechanic::Attack",
+   "Action/Mechanic::Cast",
+   "Related Stat::Highest Stat",
+   "Multiplied by::Amount of X Stat"
+  ],
+  "remove": []
+ },
+ "perk:2:EMBRACETHEARCANE": {
+  "add": [
+   "Action/Mechanic::Cast"
+  ],
+  "remove": []
+ },
+ "perk:3:SLEIGHTOFHAND": {
+  "add": [],
+  "remove": [
+   "Activates at::Start of Ally Turn"
+  ]
+ },
+ "perk:3:SPONTANEITY": {
+  "add": [],
+  "remove": [
+   "Activates at::Start of Ally Turn"
+  ]
+ },
+ "perk:3:IMMACULATERECOVERY": {
+  "add": [
+   "Activates When::Ally Takes Damage",
+   "Affect on Status::Apply/Gain a Buff",
+   "Action/Mechanic::Buff",
+   "Related Buff::Invisible",
+   "Related Buff::Shelled",
+   "Action/Mechanic::Attack",
+   "Action/Mechanic::Cast"
+  ],
+  "remove": []
+ },
+ "perk:4:ANCESTRY": {
+  "add": [],
+  "remove": [
+   "Active If::All Creatures Are X"
+  ]
+ },
+ "perk:5:ARTOFWAR": {
+  "add": [
+   "Affect on Damage::Deal More Damage"
+  ],
+  "remove": []
+ },
+ "perk:5:RETRIBUTION": {
+  "add": [],
+  "remove": [
+   "Action/Mechanic::Attack"
+  ]
+ },
+ "perk:5:DIVINEWRATH": {
+  "add": [
+   "Affect on Damage::Deal More Damage"
+  ],
+  "remove": []
+ },
+ "perk:5:ZEAL": {
+  "add": [
+   "Affect on Damage::Deal More Damage"
+  ],
+  "remove": []
+ },
+ "perk:6:UNDERTOW": {
+  "add": [
+   "Activates at::Start of Enemy Turn"
+  ],
+  "remove": []
+ },
+ "perk:8:HARBINGER": {
+  "add": [
+   "Affect on Spells::Modify Charges/Behavior"
+  ],
+  "remove": []
+ },
+ "perk:9:EFFICIENCY": {
+  "add": [
+   "Affect on Spells::Automatic/Extra Cast"
+  ],
+  "remove": []
+ },
+ "perk:10:FOURHORSEMEN": {
+  "add": [
+   "Related Spells::Healing Spells"
+  ],
+  "remove": []
+ },
+ "perk:12:MASSACRE": {
+  "add": [
+   "Action/Mechanic::Indirect Damage"
+  ],
+  "remove": [
+   "Affect on Damage::Deal More Damage"
+  ]
+ },
+ "perk:12:HELLION": {
+  "add": [
+   "Affect on Damage::Deal More Damage",
+   "Action/Mechanic::Attack",
+   "Multiplied by::Attack Count"
+  ],
+  "remove": []
+ },
+ "perk:13:UNCONTROLLABLEANGER": {
+  "add": [
+   "Active If::Has taken X Action Once",
+   "Activates at::Start of Ally Turn",
+   "Affect on Attacks::Automatic/Extra Attack",
+   "Action/Mechanic::Attack"
+  ],
+  "remove": []
+ },
+ "perk:14:FORBIDDENMAGIC": {
+  "add": [
+   "Action/Mechanic::Creature Race",
+   "Related Types::Animatus",
+   "Activates When::Ally Dies"
+  ],
+  "remove": []
+ },
+ "perk:14:MOLECULARBETRAYAL": {
+  "add": [
+   "Related Stat::Attack (Stat)",
+   "Related Stat::Intelligence",
+   "Related Stat::Defense",
+   "Related Stat::Speed",
+   "Related Stat::Maximum Health"
+  ],
+  "remove": []
+ },
+ "perk:14:LIVETOSERVE": {
+  "add": [
+   "Activates When::Ally Resurrects",
+   "Affect on Life::Creature is Resurrected",
+   "Action/Mechanic::Resurrection",
+   "Action/Mechanic::Creature Race",
+   "Related Types::Animatus"
+  ],
+  "remove": []
+ },
+ "perk:15:REBUKE": {
+  "add": [
+   "Related Types::Nature Creature",
+   "Action/Mechanic::Creature Class"
+  ],
+  "remove": []
+ },
+ "perk:17:FROMASHES": {
+  "add": [],
+  "remove": [
+   "Active If::Debuffed with X"
+  ]
+ },
+ "perk:17:IMMOLATION": {
+  "add": [],
+  "remove": [
+   "Action/Mechanic::Cast"
+  ]
+ },
+ "perk:18:PROTOSTAR": {
+  "add": [
+   "Active If::Has taken X Action Once",
+   "Affect on Damage::Deal More Damage",
+   "Affect on Damage::Take Less Damage"
+  ],
+  "remove": []
+ },
+ "perk:20:DEROGATION": {
+  "add": [],
+  "remove": [
+   "Multiplied by::Buff Count",
+   "Multiplied by::Debuff Count",
+   "Multiplied by::Minion Count"
+  ]
+ },
+ "perk:20:MOMENTUM": {
+  "add": [
+   "Affect on Stats::Stat is Increased"
+  ],
+  "remove": []
+ },
+ "perk:20:OUTBURST": {
+  "add": [
+   "Related Stat::Attack (Stat)",
+   "Related Stat::Intelligence",
+   "Related Stat::Defense",
+   "Related Stat::Speed"
+  ],
+  "remove": []
+ },
+ "perk:20:SOULRENDING": {
+  "add": [],
+  "remove": [
+   "Multiplied by::Resurrect Count",
+   "Multiplied by::Amount Healed"
+  ]
+ },
+ "perk:22:LUA": {
+  "add": [
+   "Related Types::Life Creature"
+  ],
+  "remove": []
+ },
+ "perk:22:COR": {
+  "add": [
+   "Related Types::Chaos Creature"
+  ],
+  "remove": []
+ },
+ "perk:22:DUN": {
+  "add": [
+   "Related Types::Death Creature"
+  ],
+  "remove": []
+ },
+ "perk:22:NAX": {
+  "add": [
+   "Related Types::Nature Creature"
+  ],
+  "remove": []
+ },
+ "perk:22:SAH": {
+  "add": [
+   "Related Types::Sorcery Creature"
+  ],
+  "remove": []
+ },
+ "perk:26:MUMBOJUMBO": {
+  "add": [
+   "Action/Mechanic::Buff"
+  ],
+  "remove": []
+ },
+ "perk:26:VOODOO": {
+  "add": [],
+  "remove": [
+   "Action/Mechanic::Stats"
+  ]
+ },
+ "perk:26:CURSEDOMEN": {
+  "add": [
+   "Action/Mechanic::Attack",
+   "Action/Mechanic::Cast",
+   "Affect on Attacks::Automatic/Extra Attack",
+   "Affect on Spells::Automatic/Extra Cast"
+  ],
+  "remove": []
+ },
+ "perk:28:LOSTINTHEECHO": {
+  "add": [
+   "Action/Mechanic::Indirect Damage"
+  ],
+  "remove": []
+ },
+ "perk:28:UNFURLINGNIGHTMARE": {
+  "add": [],
+  "remove": [
+   "Action/Mechanic::Stats"
+  ]
+ },
+ "perk:28:LUCIDDREAMS": {
+  "add": [
+   "Affect on Status::Increase Debuff Potency",
+   "Action/Mechanic::Debuff",
+   "Related Debuff::Inverted"
+  ],
+  "remove": []
+ },
+ "perk:29:ARMORSHRED": {
+  "add": [],
+  "remove": [
+   "Action/Mechanic::Stats"
+  ]
+ },
+ "perk:29:INFORMATION": {
+  "add": [
+   "Affect on Mitigation::Automatically Defend"
+  ],
+  "remove": []
+ },
+ "perk:29:CSV_PURGE": {
+  "add": [
+   "Activates When::Ally Defends",
+   "Action/Mechanic::Defend",
+   "Affect on Status::Remove Debuff",
+   "Affect on Status::Apply/Gain a Buff",
+   "Action/Mechanic::Debuff",
+   "Action/Mechanic::Buff",
+   "Related Buff::Random Buff",
+   "Multiplied by::Debuff Count"
+  ],
+  "remove": []
+ },
+ "perk:31:SUDDENEXPOSURE": {
+  "add": [
+   "Action/Mechanic::Debuff"
+  ],
+  "remove": []
+ },
+ "perk:32:DEADDIVINITY": {
+  "add": [
+   "Related Spells::Healing Spells"
+  ],
+  "remove": []
+ },
+ "perk:32:DYSTOPIA": {
+  "add": [
+   "Related Spells::Healing Spells"
+  ],
+  "remove": []
+ },
+ "perk:36:GRANDFINALE": {
+  "add": [
+   "Related Spells::Corpse Explosion"
+  ],
+  "remove": []
+ },
+ "perk:36:IMPACTRESISTANCE": {
+  "add": [
+   "Multiplied by::Amount of Damage Dealt"
+  ],
+  "remove": []
+ },
+ "perk:36:PROTOTYPE": {
+  "add": [
+   "Related Stat::Attack (Stat)",
+   "Related Stat::Intelligence",
+   "Related Stat::Defense"
+  ],
+  "remove": []
+ },
+ "perk:39:ITSCALLEDALANCE": {
+  "add": [
+   "Action/Mechanic::Creature Class"
+  ],
+  "remove": []
+ },
+ "perk:39:WARPAINT": {
+  "add": [],
+  "remove": [
+   "Multiplied by::Spell Gem/Charge Count"
+  ]
+ },
+ "perk:41:SLAMSHUT": {
+  "add": [
+   "Affect on Life::Creature is Killed"
+  ],
+  "remove": []
+ },
+ "perk:42:ANAGNORISIS": {
+  "add": [
+   "Action/Mechanic::Indirect Damage"
+  ],
+  "remove": []
+ },
+ "perk:43:BYGONEENHANCEMENT": {
+  "add": [
+   "Action/Mechanic::Relic",
+   "Action/Mechanic::Stats",
+   "Affect on Stats::Stat is Increased"
+  ],
+  "remove": []
+ },
+ "relic:9": {
+  "add": [
+   "Related Trait::Random Trait"
+  ],
+  "remove": []
+ },
+ "relic:22": {
+  "add": [
+   "Activates When::Enemy Takes Damage"
+  ],
+  "remove": []
+ },
+ "card:30": {
+  "add": [],
+  "remove": [
+   "Affect on Spells::Seal Spell Gem"
+  ]
+ },
+ "card:56": {
+  "add": [
+   "Action/Mechanic::Indirect Damage"
+  ],
+  "remove": [
+   "Affect on Stats::Stat is Increased"
+  ]
+ },
+ "card:105": {
+  "add": [
+   "Activates When::Ally Attacks",
+   "Activates When::Ally Casts",
+   "Active If::Buffed with X"
+  ],
+  "remove": []
+ },
+ "card:107": {
+  "add": [],
+  "remove": [
+   "Active If::Creature is X Type"
+  ]
+ },
+ "card:120": {
+  "add": [
+   "Affect on Life::Creature is Healed"
+  ],
+  "remove": []
+ },
+ "card:133": {
+  "add": [
+   "Action/Mechanic::Cast"
+  ],
+  "remove": []
+ },
+ "trait:55": {
+  "add": [],
+  "remove": [
+   "Action/Mechanic::Stats"
+  ]
+ },
+ "trait:190": {
+  "add": [
+   "Active If::Has taken X Action Once"
+  ],
+  "remove": []
+ },
+ "trait:200": {
+  "add": [],
+  "remove": [
+   "Action/Mechanic::Cast"
+  ]
+ },
+ "trait:205": {
+  "add": [
+   "Affect on Life::Creature is Killed"
+  ],
+  "remove": []
+ },
+ "trait:218": {
+  "add": [
+   "Active If::Creature is X Type"
+  ],
+  "remove": []
+ },
+ "trait:260": {
+  "add": [
+   "Action/Mechanic::Indirect Damage"
+  ],
+  "remove": []
+ },
+ "trait:271": {
+  "add": [
+   "Active If::Buffed with X"
+  ],
+  "remove": []
+ },
+ "trait:282": {
+  "add": [
+   "Affect on Mitigation::Can't Manually Defend",
+   "Affect on Mitigation::Can't Manually Provoke"
+  ],
+  "remove": []
+ },
+ "trait:312": {
+  "add": [],
+  "remove": [
+   "Action/Mechanic::Attack"
+  ]
+ },
+ "trait:350": {
+  "add": [
+   "Action/Mechanic::Indirect Damage"
+  ],
+  "remove": []
+ },
+ "trait:355": {
+  "add": [
+   "Affect on Life::Creature is Killed"
+  ],
+  "remove": []
+ },
+ "trait:373": {
+  "add": [],
+  "remove": [
+   "Action/Mechanic::Stats"
+  ]
+ },
+ "trait:395": {
+  "add": [],
+  "remove": [
+   "Action/Mechanic::Stats"
+  ]
+ },
+ "trait:487": {
+  "add": [],
+  "remove": [
+   "Action/Mechanic::Stats"
+  ]
+ },
+ "trait:492": {
+  "add": [],
+  "remove": [
+   "Action/Mechanic::Attack"
+  ]
+ },
+ "trait:494": {
+  "add": [
+   "Action/Mechanic::Indirect Damage"
+  ],
+  "remove": [
+   "Action/Mechanic::Stats"
+  ]
+ },
+ "trait:496": {
+  "add": [],
+  "remove": [
+   "Action/Mechanic::Stats"
+  ]
+ },
+ "trait:506": {
+  "add": [],
+  "remove": [
+   "Action/Mechanic::Stats"
+  ]
+ },
+ "trait:524": {
+  "add": [],
+  "remove": [
+   "Action/Mechanic::Stats"
+  ]
+ },
+ "trait:526": {
+  "add": [
+   "Multiplied by::Amount Healed"
+  ],
+  "remove": []
+ },
+ "trait:529": {
+  "add": [
+   "Related Spells::Damaging Spells"
+  ],
+  "remove": []
+ },
+ "trait:557": {
+  "add": [],
+  "remove": [
+   "Action/Mechanic::Stats"
+  ]
+ },
+ "trait:571": {
+  "add": [
+   "Affect on Stats::Stat/Change is Shared"
+  ],
+  "remove": []
+ },
+ "trait:572": {
+  "add": [
+   "Affect on Stats::Stat/Change is Shared"
+  ],
+  "remove": []
+ },
+ "trait:671": {
+  "add": [
+   "Action/Mechanic::Indirect Damage"
+  ],
+  "remove": []
+ },
+ "trait:673": {
+  "add": [
+   "Active If::Debuffed with X"
+  ],
+  "remove": []
+ },
+ "trait:687": {
+  "add": [
+   "Action/Mechanic::Indirect Damage"
+  ],
+  "remove": []
+ },
+ "trait:724": {
+  "add": [
+   "Action/Mechanic::Indirect Damage"
+  ],
+  "remove": [
+   "Action/Mechanic::Attack"
+  ]
+ },
+ "trait:757": {
+  "add": [
+   "Multiplied by::Amount of X Stat"
+  ],
+  "remove": []
+ },
+ "trait:936": {
+  "add": [
+   "Affect on Mitigation::Automatically Defend",
+   "Affect on Mitigation::Automatically Provoke"
+  ],
+  "remove": []
+ },
+ "trait:937": {
+  "add": [
+   "Affect on Mitigation::Automatically Defend",
+   "Affect on Mitigation::Automatically Provoke"
+  ],
+  "remove": []
+ },
+ "trait:1006": {
+  "add": [
+   "Action/Mechanic::Spell Gems"
+  ],
+  "remove": []
+ },
+ "trait:1034": {
+  "add": [],
+  "remove": [
+   "Activates When::Ally is Debuffed"
+  ]
+ },
+ "trait:1046": {
+  "add": [
+   "Action/Mechanic::Creature Class"
+  ],
+  "remove": []
+ },
+ "trait:1049": {
+  "add": [
+   "Active If::Debuffed with X"
+  ],
+  "remove": []
+ },
+ "trait:1076": {
+  "add": [
+   "Active If::Buffed with X"
+  ],
+  "remove": []
+ },
+ "trait:1086": {
+  "add": [
+   "Active If::Buffed with X"
+  ],
+  "remove": []
+ },
+ "trait:1087": {
+  "add": [
+   "Active If::Buffed with X"
+  ],
+  "remove": []
+ },
+ "trait:1093": {
+  "add": [
+   "Affect on Stats::Stat/Change is Shared"
+  ],
+  "remove": []
+ },
+ "trait:1095": {
+  "add": [
+   "Activates When::Enemy Attacks"
+  ],
+  "remove": [
+   "Action/Mechanic::Attack"
+  ]
+ },
+ "trait:1106": {
+  "add": [
+   "Activates at::Start of Battle",
+   "Affect on Status::Afflict with/Gain a Debuff"
+  ],
+  "remove": []
+ },
+ "trait:1119": {
+  "add": [
+   "Activates When::Ally Takes Damage"
+  ],
+  "remove": []
+ },
+ "trait:1131": {
+  "add": [
+   "Affect on Life::Creature is Damaged"
+  ],
+  "remove": []
+ },
+ "trait:1169": {
+  "add": [],
+  "remove": [
+   "Action/Mechanic::Stats"
+  ]
+ },
+ "trait:1188": {
+  "add": [
+   "Related Trait::Random Trait"
+  ],
+  "remove": [
+   "Action/Mechanic::Creature Race"
+  ]
+ },
+ "trait:1193": {
+  "add": [],
+  "remove": [
+   "Action/Mechanic::Stats"
+  ]
+ },
+ "trait:1221": {
+  "add": [],
+  "remove": [
+   "Affect on Minions::Count Additional (Minion)"
+  ]
+ },
+ "trait:1225": {
+  "add": [],
+  "remove": [
+   "Action/Mechanic::Stats",
+   "Active If::Health is X%"
+  ]
+ },
+ "trait:1251": {
+  "add": [
+   "Activates When::Enemy Casts"
+  ],
+  "remove": []
+ },
+ "trait:1285": {
+  "add": [],
+  "remove": [
+   "Action/Mechanic::Defend"
+  ]
+ },
+ "trait:1352": {
+  "add": [
+   "Action/Mechanic::Indirect Damage"
+  ],
+  "remove": []
+ },
+ "trait:1358": {
+  "add": [
+   "Action/Mechanic::Indirect Damage"
+  ],
+  "remove": []
+ },
+ "trait:1373": {
+  "add": [
+   "Affect on Attacks::Automatic/Extra Attack"
+  ],
+  "remove": []
+ },
+ "trait:1375": {
+  "add": [
+   "Multiplied by::Amount of X Stat"
+  ],
+  "remove": []
+ },
+ "trait:1379": {
+  "add": [
+   "Affect on Attacks::Automatic/Extra Attack"
+  ],
+  "remove": []
+ },
+ "trait:1393": {
+  "add": [
+   "Action/Mechanic::Indirect Damage"
+  ],
+  "remove": []
+ },
+ "trait:1409": {
+  "add": [],
+  "remove": [
+   "Action/Mechanic::Stats"
+  ]
+ },
+ "trait:1415": {
+  "add": [],
+  "remove": [
+   "Affect on Spells::Can't Manually Cast"
+  ]
+ },
+ "trait:1427": {
+  "add": [
+   "Affect on Mitigation::More Dodge Chance",
+   "Action/Mechanic::Dodge"
+  ],
+  "remove": []
+ },
+ "trait:1436": {
+  "add": [
+   "Affect on Mitigation::More Dodge Chance",
+   "Action/Mechanic::Dodge"
+  ],
+  "remove": []
+ },
+ "trait:1438": {
+  "add": [
+   "Affect on Mitigation::More Dodge Chance",
+   "Action/Mechanic::Dodge"
+  ],
+  "remove": []
+ },
+ "trait:1441": {
+  "add": [
+   "Affect on Damage::Deal More Damage"
+  ],
+  "remove": []
+ },
+ "trait:1502": {
+  "add": [],
+  "remove": [
+   "Action/Mechanic::Stats"
+  ]
+ },
+ "trait:1535": {
+  "add": [],
+  "remove": [
+   "Affect on Attacks::Modify Attack Calculation"
+  ]
+ },
+ "trait:1556": {
+  "add": [
+   "Action/Mechanic::Cast"
+  ],
+  "remove": []
+ },
+ "trait:1571": {
+  "add": [
+   "Related Spells::Volcano"
+  ],
+  "remove": [
+   "Action/Mechanic::Attack"
+  ]
+ },
+ "trait:1631": {
+  "add": [
+   "Affect on Mitigation::Automatically Defend"
+  ],
+  "remove": []
+ },
+ "trait:1632": {
+  "add": [
+   "Affect on Mitigation::Automatically Provoke"
+  ],
+  "remove": []
+ },
+ "trait:1694": {
+  "add": [],
+  "remove": [
+   "Action/Mechanic::Stats"
+  ]
+ },
+ "trait:1698": {
+  "add": [
+   "Multiplied by::Cast Count"
+  ],
+  "remove": []
+ },
+ "trait:1759": {
+  "add": [],
+  "remove": [
+   "Action/Mechanic::Stats"
+  ]
+ },
+ "trait:1770": {
+  "add": [],
+  "remove": [
+   "Action/Mechanic::Stats"
+  ]
+ },
+ "trait:1806": {
+  "add": [
+   "Affect on Spells::Redirect Spell"
+  ],
+  "remove": []
+ },
+ "trait:1876": {
+  "add": [],
+  "remove": [
+   "Action/Mechanic::Attack",
+   "Action/Mechanic::Cast"
+  ]
+ },
+ "trait:1882": {
+  "add": [],
+  "remove": [
+   "Action/Mechanic::Indirect Damage"
+  ]
+ },
+ "trait:1890": {
+  "add": [
+   "Action/Mechanic::Indirect Damage",
+   "Affect on Status::Remove Buff"
+  ],
+  "remove": []
+ },
+ "trait:1893": {
+  "add": [
+   "Action/Mechanic::Indirect Damage",
+   "Affect on Status::Remove Buff"
+  ],
+  "remove": []
+ },
+ "trait:1941": {
+  "add": [
+   "Related Spells::Snowstorm"
+  ],
+  "remove": []
+ },
+ "spell:15": {
+  "add": [
+   "Related Spells::Chain Lightning"
+  ],
+  "remove": []
+ },
+ "spell:17": {
+  "add": [
+   "Related Spells::Chaos Bolt"
+  ],
+  "remove": []
+ },
+ "spell:27": {
+  "add": [
+   "Related Spells::Corpse Explosion"
+  ],
+  "remove": []
+ },
+ "spell:30": {
+  "add": [
+   "Related Spells::Crush Punch"
+  ],
+  "remove": []
+ },
+ "spell:36": {
+  "add": [
+   "Related Spells::Death Siphon"
+  ],
+  "remove": []
+ },
+ "spell:60": {
+  "add": [
+   "Related Spells::Fireball"
+  ],
+  "remove": []
+ },
+ "spell:99": {
+  "add": [
+   "Related Spells::Damaging Spells"
+  ],
+  "remove": []
+ },
+ "spell:133": {
+  "add": [
+   "Related Spells::Damaging Spells"
+  ],
+  "remove": []
+ },
+ "spell:243": {
+  "add": [
+   "Affect on Stats::Stat/Change is Shared"
+  ],
+  "remove": []
+ },
+ "spell:280": {
+  "add": [
+   "Affect on Stats::Stat is Increased",
+   "Affect on Stats::Stat is Decreased"
+  ],
+  "remove": []
+ },
+ "spell:281": {
+  "add": [
+   "Activates When::Ally Takes Damage",
+   "Active If::Health is X%"
+  ],
+  "remove": []
+ },
+ "spell:285": {
+  "add": [
+   "Related Types::Nature Creature"
+  ],
+  "remove": []
+ },
+ "spell:265": {
+  "add": [
+   "Related Types::Life Creature"
+  ],
+  "remove": []
+ },
+ "spell:305": {
+  "add": [],
+  "remove": [
+   "Affect on Timeline::Modify Starting Placement"
+  ]
+ },
+ "spell:342": {
+  "add": [
+   "Related Types::Chaos Creature"
+  ],
+  "remove": []
+ },
+ "spell:343": {
+  "add": [
+   "Related Types::Death Creature"
+  ],
+  "remove": []
+ },
+ "spell:344": {
+  "add": [
+   "Related Types::Nature Creature"
+  ],
+  "remove": []
+ },
+ "spell:345": {
+  "add": [
+   "Related Types::Sorcery Creature"
+  ],
+  "remove": []
+ },
+ "spell:346": {
+  "add": [
+   "Related Types::Life Creature"
+  ],
+  "remove": []
+ },
+ "spell:387": {
+  "add": [
+   "Affect on Spells::Extra/Gain a Spell Gem"
+  ],
+  "remove": [
+   "Affect on Spells::Automatic/Extra Cast"
+  ]
+ },
+ "spell:395": {
+  "add": [],
+  "remove": [
+   "Active If::Debuffed with X"
+  ]
+ },
+ "spell:402": {
+  "add": [
+   "Multiplied by::Turns Taken Count"
+  ],
+  "remove": []
+ },
+ "spell:403": {
+  "add": [
+   "Multiplied by::Amount of X Stat"
+  ],
+  "remove": []
+ },
+ "spell:405": {
+  "add": [
+   "Affect on Life::More Healing"
+  ],
+  "remove": []
+ },
+ "spell:411": {
+  "add": [],
+  "remove": [
+   "Active If::Debuffed with X"
+  ]
+ },
+ "spell:454": {
+  "add": [],
+  "remove": [
+   "Active If::Debuffed with X"
+  ]
+ },
+ "spell:513": {
+  "add": [
+   "Multiplied by::Amount of Stat Change"
+  ],
+  "remove": [
+   "Multiplied by::Amount of X Stat"
+  ]
+ },
+ "spell:516": {
+  "add": [
+   "Multiplied by::Amount of Stat Change"
+  ],
+  "remove": [
+   "Multiplied by::Amount of X Stat"
+  ]
+ },
+ "spell:531": {
+  "add": [],
+  "remove": [
+   "Action/Mechanic::Creature Class"
+  ]
+ },
+ "spell:618": {
+  "add": [],
+  "remove": [
+   "Action/Mechanic::Indirect Damage"
+  ]
+ },
+ "spell:656": {
+  "add": [
+   "Related Stat::Attack (Stat)",
+   "Related Stat::Intelligence",
+   "Related Stat::Defense",
+   "Related Stat::Speed",
+   "Related Stat::Maximum Health"
+  ],
+  "remove": []
+ },
+ "spell:686": {
+  "add": [
+   "Related Spells::Multi-Target Spells"
+  ],
+  "remove": []
+ },
+ "spell:692": {
+  "add": [
+   "Action/Mechanic::Healing"
+  ],
+  "remove": []
+ },
+ "perk:6:CALCIFY": {
+  "add": [],
+  "remove": [
+   "Action/Mechanic::Cast"
+  ]
+ },
+ "perk:10:DEADLYVITALITY": {
+  "add": [
+   "Multiplied by::Amount of X Stat",
+   "Related Stat::Maximum Health"
+  ],
+  "remove": [
+   "Multiplied by::Current/Missing Health %"
+  ]
+ },
+ "perk:12:BLAZINGSOUL": {
+  "add": [],
+  "remove": [
+   "Affect on Spells::Modify Spell Calculation"
+  ]
+ },
+ "perk:15:CENSURE": {
+  "add": [
+   "Action/Mechanic::Attack"
+  ],
+  "remove": []
+ },
+ "perk:16:HEMOSTASIS": {
+  "add": [
+   "Affect on Life::Creature is Damaged"
+  ],
+  "remove": []
+ },
+ "perk:17:CAUTERIZE": {
+  "add": [
+   "Affect on Life::Creature is Healed"
+  ],
+  "remove": []
+ },
+ "perk:17:PYROBLAST": {
+  "add": [
+   "Affect on Life::Creature is Damaged"
+  ],
+  "remove": []
+ },
+ "perk:20:UNBOUNDHATRED": {
+  "add": [
+   "Activates When::Ally Minion Gain/Action"
+  ],
+  "remove": []
+ },
+ "perk:23:DESIGNATEDSURVIVOR": {
+  "add": [],
+  "remove": [
+   "Multiplied by::Living Creature Count"
+  ]
+ },
+ "perk:24:CANONIZATION": {
+  "add": [
+   "Multiplied by::Amount of X Stat"
+  ],
+  "remove": []
+ },
+ "perk:29:EXPLOSIVEARMOR": {
+  "add": [
+   "Action/Mechanic::Indirect Damage"
+  ],
+  "remove": []
+ },
+ "perk:30:SIDESTEP": {
+  "add": [],
+  "remove": [
+   "Active If::Stat is Unmodified"
+  ]
+ },
+ "perk:34:SOMNUS": {
+  "add": [
+   "Affect on Life::Creature is Killed"
+  ],
+  "remove": []
+ },
+ "perk:35:DEMONICPACT": {
+  "add": [],
+  "remove": [
+   "Multiplied by::Minion Count"
+  ]
+ },
+ "perk:35:DRAINEDESSENCE": {
+  "add": [],
+  "remove": [
+   "Multiplied by::Minion Count"
+  ]
+ },
+ "perk:35:INNERDEMONS": {
+  "add": [
+   "Activates When::Ally Minion Gain/Action"
+  ],
+  "remove": []
+ },
+ "perk:35:SOULSHIELD": {
+  "add": [],
+  "remove": [
+   "Multiplied by::Minion Count"
+  ]
+ },
+ "perk:35:SUMMONASMODEUS": {
+  "add": [
+   "Related Types::Chaos Creature"
+  ],
+  "remove": []
+ },
+ "perk:35:SUMMONBEELZEBUB": {
+  "add": [
+   "Related Types::Death Creature"
+  ],
+  "remove": []
+ },
+ "perk:35:SUMMONBELPHEGOR": {
+  "add": [
+   "Related Types::Sorcery Creature"
+  ],
+  "remove": []
+ },
+ "perk:35:SUMMONLEVIATHAN": {
+  "add": [
+   "Related Types::Nature Creature"
+  ],
+  "remove": []
+ },
+ "perk:35:SUMMONMAMMON": {
+  "add": [
+   "Related Types::Life Creature"
+  ],
+  "remove": []
+ },
+ "perk:39:FRENZY": {
+  "add": [
+   "Action/Mechanic::Attack",
+   "Action/Mechanic::Cast"
+  ],
+  "remove": [
+   "Multiplied by::Debuff Count"
+  ]
+ },
+ "perk:39:TAKINGMEASURE": {
+  "add": [],
+  "remove": [
+   "Multiplied by::Buff Count"
+  ]
+ },
+ "perk:40:INEBRIATION": {
+  "add": [
+   "Related Spells::Booze Spells",
+   "Affect on Damage::Deal Less Damage"
+  ],
+  "remove": []
+ },
+ "perk:40:NUMBTHEPAIN": {
+  "add": [],
+  "remove": [
+   "Multiplied by::Cast Count"
+  ]
+ },
+ "perk:43:ABANDONEDALTAR": {
+  "add": [
+   "Action/Mechanic::Relic"
+  ],
+  "remove": []
+ },
+ "perk:43:IDOLATRY": {
+  "add": [
+   "Action/Mechanic::Relic",
+   "Activates at::Start of Battle",
+   "Affect on Spells::Extra/Gain a Spell Gem"
+  ],
+  "remove": []
+ },
+ "perk:43:DERELICTBLOCKADE": {
+  "add": [
+   "Action/Mechanic::Relic",
+   "Action/Mechanic::Debuff",
+   "Affect on Status::Avoid/Immune to Debuff",
+   "Affect on Status::Resistant to Debuff"
+  ],
+  "remove": []
+ },
+ "perk:43:CORRUPTEDWARHAMMER": {
+  "add": [
+   "Action/Mechanic::Relic",
+   "Affect on Damage::Deal More Damage"
+  ],
+  "remove": []
+ },
+ "perk:43:FORGOTTENBLESSING": {
+  "add": [
+   "Action/Mechanic::Relic"
+  ],
+  "remove": []
+ },
+ "relic:23": {
+  "add": [
+   "Affect on Mitigation::More Dodge Chance",
+   "Action/Mechanic::Indirect Damage"
+  ],
+  "remove": []
+ },
+ "relic:24": {
+  "add": [
+   "Affect on Spells::Redirect Spell"
+  ],
+  "remove": [
+   "Affect on Status::Remove Buff"
+  ]
+ },
+ "relic:26": {
+  "add": [
+   "Related Spells::Firestorm"
+  ],
+  "remove": []
+ },
+ "card:93": {
+  "add": [],
+  "remove": [
+   "Action/Mechanic::Stats"
+  ]
+ },
+ "card:118": {
+  "add": [
+   "Affect on Damage::Deal More Damage"
+  ],
+  "remove": []
+ },
+ "trait:67": {
+  "add": [
+   "Action/Mechanic::Indirect Damage"
+  ],
+  "remove": []
  }
 }
