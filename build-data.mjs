@@ -839,6 +839,11 @@ for (const [cls, base] of Object.entries(GEM_SRC)) {
 }
 let spellNoClass = 0;
 let spellCharged = 0;
+let spellTargetGrounded = 0;
+// Single/Multi-Target for a SPELL is derived code-grounded from the authoritative Spell_REF `target` field
+// (not the LLM): Target = single; Enemies / All Creatures / Your Creatures = multi; self/"-" = neither.
+const SPELL_SINGLE = 'Related Spells::Single-Target Spells', SPELL_MULTI = 'Related Spells::Multi-Target Spells';
+const MULTI_TARGETS = new Set(['Enemies', 'All Creatures', 'Your Creatures']);
 const spells = spellArr.map((s, i) => {
   const cls = spellClass(s.name);
   if (!cls) { spellNoClass++; warn(`spell "${s.name}" has no class match in spells_ref`); }
@@ -848,12 +853,18 @@ const spells = spellArr.map((s, i) => {
   const charges = codeCharge != null ? codeCharge : (ref.charges != null ? ref.charges : null);
   const chargesSrc = codeCharge != null ? 'code' : (ref.charges != null ? 'community' : null);
   if (charges != null) spellCharged++;
-  const sTaxo = correctTaxo(taxoStrs(spellTaxo[String(i)]), s.desc || '');
+  let sTaxo = correctTaxo(taxoStrs(spellTaxo[String(i)]), s.desc || '');
+  // strip the LLM's target guess, re-derive from the structured field
+  sTaxo = sTaxo.filter(k => k !== SPELL_SINGLE && k !== SPELL_MULTI);
+  const targetTag = ref.target === 'Target' ? SPELL_SINGLE : (MULTI_TARGETS.has(ref.target) ? SPELL_MULTI : null);
+  if (targetTag) { sTaxo.push(targetTag); spellTargetGrounded++; }
+  const srcArr = taxoSrcArr(spellTaxo[String(i)], sTaxo);
+  if (targetTag) { const idx = sTaxo.indexOf(targetTag); if (idx >= 0) srcArr[idx] = 'field'; }
   return { id: i, key: s.key, name: s.name, desc: s.desc || '', cls,
     charges, chargesSrc, potency: ref.potency || null, target: ref.target || null, source: ref.source || null,
-    taxo: sTaxo, taxoSrc: taxoSrcArr(spellTaxo[String(i)], sTaxo) };
+    taxo: sTaxo, taxoSrc: srcArr };
 }).filter(s => s.name);
-console.log(`  spells: ${spells.length} · charges ${spells.filter(s => s.chargesSrc === 'code').length} code + ${spells.filter(s => s.chargesSrc === 'community').length} community · ${spells.filter(s => s.potency).length} w/ potency · potency/target/source from Spell_REF.csv`);
+console.log(`  spells: ${spells.length} · charges ${spells.filter(s => s.chargesSrc === 'code').length} code + ${spells.filter(s => s.chargesSrc === 'community').length} community · ${spells.filter(s => s.potency).length} w/ potency · ${spellTargetGrounded} single/multi-target from Spell_REF field · potency/target/source from Spell_REF.csv`);
 console.log(`  taxonomy fixes: Innate-Trait stripped ${innateTagStripped} · Animatus retagged ${animatusRetagged} · Persist→Extend-Duration retagged ${persistRetagged} (duration, not death)`);
 console.log(`  canon-status validation: ${statusUngrounded} ungrounded buff/debuff tags dropped · ${randomMinionStripped} ungrounded Minion tags dropped · ${spellGemUngrounded} non-gem Spell-Gem tags dropped · ${maxHealthUngrounded} non-stat Max-Health tags dropped · ${creatureClassUngrounded} non-class Creature-Class tags dropped · ${spellGainTagged} spell-gain tags added`);
 
