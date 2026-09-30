@@ -267,12 +267,17 @@ const MINION_STEMS = [
 const minionNameRe = new RegExp('\\b(' + MINION_STEMS.join('|') + ')s?\\b', 'i');
 const hasMinionRef = (d) => /\{condname_minion_/i.test(d) || minionNameRe.test(d) || hasMinionSummon(d);
 const isMinionTag = (k) => k === 'Action/Mechanic::Minion' || k.startsWith('Affect on Minions::') || k.startsWith('Related Minion::');
+// Action/Mechanic::Spell Gems is for effects that manipulate the GEMS themselves — charges, Ethereal
+// creation, copying/sealing gems, gem potency/properties — NOT effects that merely cast or grant a spell
+// (user directive: those are Action/Mechanic::Cast). Keep the tag only when a gem-manipulation concept is
+// present; otherwise it's a mis-tag on a plain cast/grant reference.
+const gemManipRe = /spell gem|\bcharges?\b|ethereal|\bseal(ed|s|ing)?\b|\bunseal|gem propert|property gem/i;
 // "gain/grant [icons,N] <Spell>" — the icon token immediately after the verb flags a SPELL grant, not a buff
 const spellGainRe = /\b(gain|gains|grant|grants|give|gives)\s+\[icons?,\s*\d+\]/i;
 const BUFF_ASSERT = new Set(['Action/Mechanic::Buff','Affect on Status::Apply/Gain a Buff','Affect on Status::More Powerful Buff','Affect on Status::Remove Buff','Affect on Status::Share/Gain Copy of Buff','Affect on Status::Buffs Persist','Affect on Status::Limit/Prevent Buff Gain','Related Buff::Random Buff']);
 const DEBUFF_ASSERT = new Set(['Action/Mechanic::Debuff','Affect on Status::Afflict with/Gain a Debuff','Affect on Status::Increase Debuff Potency','Affect on Status::Remove Debuff','Affect on Status::Resistant to Debuff','Affect on Status::Avoid/Immune to Debuff','Affect on Status::Debuffs Persist','Related Debuff::Random Debuff']);
 // shared per-effect taxonomy corrections (traits / perks / spells all pass through this)
-let animatusRetagged = 0, innateTagStripped = 0, persistRetagged = 0, statusUngrounded = 0, randomMinionStripped = 0, spellGainTagged = 0;
+let animatusRetagged = 0, innateTagStripped = 0, persistRetagged = 0, statusUngrounded = 0, randomMinionStripped = 0, spellGainTagged = 0, spellGemUngrounded = 0;
 function correctTaxo(taxo, desc) {
   let out = taxo;
   if (out.includes('Related Types::Animation') && /animatus/i.test(desc) && !/\banimation\b/i.test(desc)) {
@@ -300,6 +305,8 @@ function correctTaxo(taxo, desc) {
     if (k === 'Affect on Status::Always Has X Buff/Debuff' && !b && !db) { statusUngrounded++; return false; }
     // every Minion label must reference a real Minion status name or a generic minion reference
     if (isMinionTag(k) && !mn) { randomMinionStripped++; return false; }
+    // Spell Gems = gem manipulation, not a plain cast/grant reference
+    if (k === 'Action/Mechanic::Spell Gems' && !gemManipRe.test(desc || '')) { spellGemUngrounded++; return false; }
     return true;
   });
   // a "gain [icons,N] <Spell>" that isn't a status → tag it as gaining a spell (the LLM missed this)
@@ -824,7 +831,7 @@ const spells = spellArr.map((s, i) => {
 }).filter(s => s.name);
 console.log(`  spells: ${spells.length} · charges ${spells.filter(s => s.chargesSrc === 'code').length} code + ${spells.filter(s => s.chargesSrc === 'community').length} community · ${spells.filter(s => s.potency).length} w/ potency · potency/target/source from Spell_REF.csv`);
 console.log(`  taxonomy fixes: Innate-Trait stripped ${innateTagStripped} · Animatus retagged ${animatusRetagged} · Persist→Extend-Duration retagged ${persistRetagged} (duration, not death)`);
-console.log(`  canon-status validation: ${statusUngrounded} ungrounded buff/debuff tags dropped · ${randomMinionStripped} ungrounded Minion tags dropped · ${spellGainTagged} spell-gain tags added`);
+console.log(`  canon-status validation: ${statusUngrounded} ungrounded buff/debuff tags dropped · ${randomMinionStripped} ungrounded Minion tags dropped · ${spellGemUngrounded} non-gem Spell-Gem tags dropped · ${spellGainTagged} spell-gain tags added`);
 
 // ── trait items (slottable into artifact trait slots) — with material icons ──
 const matStats = readJSON(path.join(MODEL, 'material_stats.json'));
