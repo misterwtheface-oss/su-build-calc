@@ -185,8 +185,23 @@
   for (const m of [...STATMAT, ...TRICKMAT]) MAT_BY_PROP.set(m.property, m);
   const TRAITITEM = new Map(D.traitItems.map(t => [t.id, t]));
   const SPELL = new Map((D.spells || []).map(s => [s.id, s]));
+  // name → spell, plus names sorted longest-first for greedy matching ("Major Healing" before "Healing")
+  const SPELL_BY_NAME = new Map((D.spells || []).map(s => [s.name, s]));
+  const SPELL_NAMES_DESC = [...SPELL_BY_NAME.keys()].sort((a, b) => b.length - a.length);
   const SPELLGEM = D.spellGems || {};                       // class -> class-coloured gem icon
   const spellIcon = (s) => s && s.cls ? SPELLGEM[s.cls] : null;
+  // spells a piece of rules text triggers: match each "Cast(s) <Spell Name>" against the spell DB.
+  // Generic casts ("Casts a spell", "Casts a random spell") start lowercase → never match a Title-Case name.
+  const spellsCastInText = (desc) => {
+    const out = [], re = /\bCasts?\s+/g; let m;
+    while ((m = re.exec(desc || ""))) {
+      const rest = desc.slice(m.index + m[0].length);
+      const name = SPELL_NAMES_DESC.find(n => rest.startsWith(n) && (rest.length === n.length || /[^A-Za-z]/.test(rest[n.length])));
+      const sp = name && SPELL_BY_NAME.get(name);
+      if (sp && !out.includes(sp)) out.push(sp);
+    }
+    return out;
+  };
   const SPELLPROP = new Map((D.spellProps || []).map(p => [p.id, p]));   // spell-gem property items (Slates/Curios)
   const SPELLGEM_MAX_PROPS = 3;                             // each spell gem holds up to 3 property items
   const SPELL_CLASSES = ["Nature", "Chaos", "Sorcery", "Death", "Life"];
@@ -3010,9 +3025,14 @@
     const st = dovState, sel = RELIC.get(st.sel);
     if (!sel) { closeDetail(); return ""; }
     const maxRank = Math.max(...sel.ranks.map(r => r.rank), 10);
-    const ranks = sel.ranks.map(rk => `<div class="prop-row ${st.rank >= rk.rank ? "chosen" : ""}">
-      <span class="prop-name" style="flex:0 0 44px;color:var(--accent)">R${rk.rank}</span>
-      <span class="prop-stat" style="flex:1;text-align:left">${richText(rk.desc)}</span></div>`).join("");
+    const ranks = sel.ranks.map(rk => {
+      const row = `<div class="prop-row ${st.rank >= rk.rank ? "chosen" : ""}">
+        <span class="prop-name" style="flex:0 0 44px;color:var(--accent)">R${rk.rank}</span>
+        <span class="prop-stat" style="flex:1;text-align:left">${richText(rk.desc)}</span></div>`;
+      // if this rank casts a named spell, show its spell-gem container (icon + description) beneath the row
+      const cards = spellsCastInText(rk.desc).map(sp => spellGemCard(sp)).join("");
+      return cards ? row + `<div class="relic-cast-spells">${cards}</div>` : row;
+    }).join("");
     return `<div class="ovl-backdrop" data-action="detail-backdrop"><div class="overlay-panel detail">
       <div class="overlay-header"><button class="btn-ghost" data-action="relic-back">‹ Relics</button>
         <h2 style="flex:1">${esc(sel.name)}</h2><button class="ovl-close" data-action="close-detail">✕</button></div>

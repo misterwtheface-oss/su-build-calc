@@ -838,6 +838,8 @@ button.apx-owner:hover .apx-owner-ico { border-color: var(--accent); }
 .av-tab:hover { color: var(--text); }
 .av-pipe { color: var(--border-dim); }
 .art-spellcards { display: flex; flex-direction: column; gap: 8px; }
+/* spell-gem container(s) shown beneath a relic rank row that casts a named spell */
+.relic-cast-spells { display: flex; flex-direction: column; gap: 6px; margin: 4px 0 8px 44px; }
 .art-spellcard { border: 1px solid var(--accent2); border-radius: 9px;
   padding: 8px; background: rgba(154,123,214,.08); }
 .art-spellcard-head { display: flex; align-items: center; gap: 8px; }
