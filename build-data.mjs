@@ -935,7 +935,10 @@ const spells = spellArr.map((s, i) => {
   // Damaging Spells for a spell: derive from Spell_REF potency + a damage reference (or explicit literal).
   const SPELL_DMG = 'Related Spells::Damaging Spells';
   sTaxo = sTaxo.filter(k => k !== SPELL_DMG);
-  const isDamaging = (ref.potency && /\bdamage\b/i.test(expandStatTokens(s.desc || ''))) || damagingSpellLit.test(s.desc || '');
+  // "absorbs damage" (Barrier grants) is DEFENSIVE, not dealing damage — strip that clause before the check
+  // (per-object audit: Corpse Shield / Divine Aegis / Holy Armor etc. were wrongly Damaging).
+  const dmgText = expandStatTokens(s.desc || '').replace(/absorbs?\s+(a\s+)?[^.]*?\bdamage\b/gi, '');
+  const isDamaging = (ref.potency && /\bdamage\b/i.test(dmgText)) || damagingSpellLit.test(s.desc || '');
   if (isDamaging) { sTaxo.push(SPELL_DMG); spellDamagingGrounded++; }
   const srcArr = taxoSrcArr(spellTaxo[String(i)], sTaxo);
   if (targetTag) { const idx = sTaxo.indexOf(targetTag); if (idx >= 0) srcArr[idx] = 'field'; }
@@ -2138,6 +2141,26 @@ const realmProps = realmPropsRaw.properties
     for (const c of m.counters) if (!themeKeys.has(c)) throw new Error(`threats: unknown theme key "${c}" on ${m.key}`);
   console.log(`  threats: ${realmProps.length} realm properties · ${runes.length} runes · ${BUILD_THEMES.length} themes`);
 }
+
+// ── Per-object audit overrides (from the 2-agent precision+recall audit; confirmed = both reviewers agreed).
+// Applied AFTER correctTaxo as a precise, reviewable last layer: data/reference/taxonomy_audit_overrides.json
+// maps ref ("trait:id" | "spell:id" | "perk:<specId>:<key>" | "relic:id" | "card:id") -> {add:[], remove:[]}.
+const AUDIT_OV_PATH = path.join(ROOT, 'data', 'reference', 'taxonomy_audit_overrides.json');
+const auditOv = fs.existsSync(AUDIT_OV_PATH) ? readJSON(AUDIT_OV_PATH) : {};
+let auditAdds = 0, auditRems = 0, auditHits = 0;
+const applyAudit = (ref, e) => {
+  const o = auditOv[ref]; if (!o) return;
+  auditHits++;
+  const t = e.taxo || (e.taxo = []); const s = e.taxoSrc || (e.taxoSrc = t.map(() => 'derived'));
+  for (const tag of (o.remove || [])) { const i = t.indexOf(tag); if (i >= 0) { t.splice(i, 1); s.splice(i, 1); auditRems++; } }
+  for (const tag of (o.add || [])) { if (!t.includes(tag)) { t.push(tag); s.push('audit'); auditAdds++; } }
+};
+for (const tr of Object.values(traits)) applyAudit('trait:' + tr.id, tr);
+for (const sp of spells) applyAudit('spell:' + sp.id, sp);
+for (const sc of specs) for (const p of (sc.perks || [])) applyAudit('perk:' + sc.id + ':' + p.key, p);
+for (const rl of relics) applyAudit('relic:' + rl.id, rl);
+for (const cd of cards) applyAudit('card:' + cd.id, cd);
+console.log(`  audit overrides: ${Object.keys(auditOv).length} defined · ${auditHits} matched · +${auditAdds} tags · -${auditRems} tags (src=audit)`);
 
 const SU_DATA = {
   meta: {
