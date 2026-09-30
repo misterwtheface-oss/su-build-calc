@@ -2718,6 +2718,22 @@
       <b>${esc(sp.name)}</b>${trigger ? `<span class="art-trigger">${esc(trigger)}</span>` : ""}</div>
     ${src ? `<div class="slot-sub">from ${esc(src)}</div>` : ""}
     ${sp.desc ? `<div class="trait-desc">${perkText(sp.desc)}</div>` : ""}</div>`;
+  // Selectable "clean container" cards for the artifact / nether pickers: the full description shows
+  // inline (no drill-in to read it), a link jumps to the trait's material/taxonomy, and the card
+  // adds/toggles on click. `attrs` carries the owning wizard's action + data-* (art-confirm-add /
+  // nether-pickprop). The inner link has its own data-action so it wins over the card's add-on-click.
+  const traitPickCard = (t, chosen, attrs) => {
+    const tr = t.traitId != null ? TRAIT[t.traitId] : null;
+    return `<div class="pick-card${chosen ? " chosen" : ""}" ${attrs}>
+      <div class="primary-traits">${traitBanner(t.traitId)}<div class="trait-desc">${tr ? richText(tr.desc || "") : esc(t.traitName || "")}</div></div>
+      <button class="pick-card-src" data-action="apx-open" data-ek="trait" data-eid="${t.traitId}" title="View trait & material">
+        <span class="prop-ico sm">${t.icon ? spriteImg(t.icon, "px") : ""}</span><span>${esc(t.name)}</span></button>
+    </div>`;
+  };
+  const spellPickCard = (sp, chosen, attrs) => `<div class="pick-card${chosen ? " chosen" : ""}" ${attrs}>
+    <div class="art-spellcard-head"><span class="prop-ico">${spellIcon(sp) ? spriteImg(spellIcon(sp), "px") : ""}</span><b>${esc(sp.name)}</b>
+      <button class="pick-card-src plain" data-action="apx-open" data-ek="spell" data-eid="${sp.id}" title="View taxonomy">tags ›</button></div>
+    ${sp.desc ? `<div class="trait-desc">${perkText(sp.desc)}</div>` : ""}</div>`;
   // spell-gem containers for an artifact: native slot fires on the type trigger; nether stones keep their own
   function artifactSpellContainers(a) {
     const rows = [], typeTrig = ART_TYPE_TRIGGER[a.primary];
@@ -2817,19 +2833,16 @@
           <span class="prop-name">${esc(m.name)}</span><span class="prop-stat">${esc(val)}</span></div>`;
       }).join("");
     } else if (type === "trait") {
+      // clean trait containers (banner + description + material link) that add on click — no drill-in
       rows = D.traitItems.filter(t => t.traitName
           && (!q || t.name.toLowerCase().includes(q) || (t.traitName || "").toLowerCase().includes(q) || matchTaxo(t.taxo))
           && (!st.traitTaxo || (t.taxo || []).includes(st.traitTaxo))
           && (!st.bkOnly || bookmarks.traits.includes(t.traitId))).slice(0, 300)
-        .map(t => `<div class="prop-row ${has(t.id) ? "chosen" : ""}" data-action="art-preview" data-t="trait" data-v="${t.id}">
-          <span class="prop-ico">${t.icon ? spriteImg(t.icon, "px") : ""}</span>
-          <span class="prop-name">${esc(t.name)}</span><span class="prop-stat">${esc(t.traitName)}</span></div>`).join("");
+        .map(t => traitPickCard(t, has(t.id), `data-action="art-confirm-add" data-t="trait" data-v="${t.id}"`)).join("");
     } else if (type === "spell") {   // raw spells (no sockets), like nether stones
       rows = (D.spells || []).filter(sp => (!q || sp.name.toLowerCase().includes(q) || (sp.desc || "").toLowerCase().includes(q) || matchTaxo(sp.taxo))
-          && (!st.bkOnly || bookmarks.spells.includes(sp.id))).slice(0, 300).map(sp =>
-        `<div class="prop-row ${has(sp.id) ? "chosen" : ""}" data-action="art-preview" data-t="spell" data-v="${sp.id}">
-          <span class="prop-ico">${spellIcon(sp) ? spriteImg(spellIcon(sp), "px") : ""}</span>
-          <span class="prop-name">${esc(sp.name)}</span><span class="prop-stat">${esc(sp.cls || "")}</span></div>`).join("");
+          && (!st.bkOnly || bookmarks.spells.includes(sp.id))).slice(0, 300)
+        .map(sp => spellPickCard(sp, has(sp.id), `data-action="art-confirm-add" data-t="spell" data-v="${sp.id}"`)).join("");
     } else {
       rows = nether.filter(n => !q || n.name.toLowerCase().includes(q)).map(n => `<div class="prop-row ${has(n.id) ? "chosen" : ""}" data-action="art-preview" data-t="nether" data-v="${n.id}">
           <span class="prop-ico">${spriteImg(gemSrc(n), "px")}</span>
@@ -3511,13 +3524,11 @@
               <span class="prop-ico">${mat && mat.icon ? spriteImg(mat.icon, "px") : ""}</span><span class="prop-name">${esc(mat ? mat.name : g.name)}</span><span class="prop-stat">${esc(g.entries.map(e => e.stat).join(" / "))}</span></div>`;
           }).join("");
         } else if (st.picking === "trait") {
-          rowsHtml = D.traitItems.filter(t => t.traitName && (!q || t.name.toLowerCase().includes(q) || (t.traitName || "").toLowerCase().includes(q))).slice(0, 300).map(t =>
-            `<div class="prop-row" data-action="nether-pickprop" data-k="${t.id}">
-              <span class="prop-ico">${t.icon ? spriteImg(t.icon, "px") : ""}</span><span class="prop-name">${esc(t.name)}</span><span class="prop-stat">grants ${esc(t.traitName)}</span></div>`).join("");
+          rowsHtml = D.traitItems.filter(t => t.traitName && (!q || t.name.toLowerCase().includes(q) || (t.traitName || "").toLowerCase().includes(q))).slice(0, 300)
+            .map(t => traitPickCard(t, false, `data-action="nether-pickprop" data-k="${t.id}"`)).join("");
         } else {   // spell: raw spells (no property modifiers)
-          rowsHtml = D.spells.filter(sp => !q || sp.name.toLowerCase().includes(q) || (sp.desc || "").toLowerCase().includes(q)).slice(0, 300).map(sp =>
-            `<div class="prop-row" data-action="nether-pickprop" data-k="${sp.id}">
-              <span class="prop-ico">${spellIcon(sp) ? spriteImg(spellIcon(sp), "px") : ""}</span><span class="prop-name">${esc(sp.name)}</span><span class="prop-stat">${esc(sp.cls || "")}</span></div>`).join("");
+          rowsHtml = D.spells.filter(sp => !q || sp.name.toLowerCase().includes(q) || (sp.desc || "").toLowerCase().includes(q)).slice(0, 300)
+            .map(sp => spellPickCard(sp, false, `data-action="nether-pickprop" data-k="${sp.id}"`)).join("");
         }
         picker = `<div class="art-picker">
           <div class="ovl-filterbar"><button class="chip" data-action="nether-addprop">‹ Category</button>
