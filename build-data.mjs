@@ -274,7 +274,9 @@ const isMinionTag = (k) => k === 'Action/Mechanic::Minion' || k.startsWith('Affe
 const gemManipRe = /spell gem|\bcharges?\b|ethereal|\bseal(ed|s|ing)?\b|\bunseal|gem propert|property gem/i;
 // {STAT_*} tokens (raw in spell/perk descriptions) → English, so text-grounding rules can match them.
 const STAT_EXPAND = { health: 'Health', attack: 'Attack', intelligence: 'Intelligence', defense: 'Defense', speed: 'Speed', mana: 'Mana' };
-const expandStatTokens = (d) => (d || '').replace(/\{STAT_([a-z]+)\}/gi, (_, s) => STAT_EXPAND[s.toLowerCase()] || s);
+const expandStatTokens = (d) => (d || '')
+  .replace(/\{STAT_([a-z]+)\}/gi, (_, s) => STAT_EXPAND[s.toLowerCase()] || s)
+  .replace(/\{ACTION_([a-z]+)\}/gi, (_, s) => s);   // {ACTION_provokes} -> "provokes" so action-verb rules match spell/perk text
 // Related Stat::Maximum Health grounding. Synthesized from the user's Trait_MTX SEARCH heuristic (the
 // authoritative term list) + generalized magnitudes + token expansion. The tag is the Maximum Health STAT:
 // an effect that gains/scales/modifies max HP, references a stat BUNDLE that includes Health (no omission),
@@ -325,7 +327,7 @@ const spellGainRe = /\b(gain|gains|grant|grants|give|gives)\s+\[icons?,\s*\d+\]/
 const BUFF_ASSERT = new Set(['Action/Mechanic::Buff','Affect on Status::Apply/Gain a Buff','Affect on Status::More Powerful Buff','Affect on Status::Remove Buff','Affect on Status::Share/Gain Copy of Buff','Affect on Status::Buffs Persist','Affect on Status::Limit/Prevent Buff Gain','Related Buff::Random Buff']);
 const DEBUFF_ASSERT = new Set(['Action/Mechanic::Debuff','Affect on Status::Afflict with/Gain a Debuff','Affect on Status::Increase Debuff Potency','Affect on Status::Remove Debuff','Affect on Status::Resistant to Debuff','Affect on Status::Avoid/Immune to Debuff','Affect on Status::Debuffs Persist','Related Debuff::Random Debuff']);
 // shared per-effect taxonomy corrections (traits / perks / spells all pass through this)
-let animatusRetagged = 0, innateTagStripped = 0, persistRetagged = 0, statusUngrounded = 0, randomMinionStripped = 0, spellGainTagged = 0, spellGemUngrounded = 0, maxHealthUngrounded = 0, creatureClassUngrounded = 0, turnCounterUngrounded = 0, damagingSpellUngrounded = 0, indirectDamageAdded = 0, effectLimKilled = 0, redirectUngrounded = 0, classCreatureUngrounded = 0, killedValueCount = 0, buffedWithUngrounded = 0, attackCalcUngrounded = 0, autoDefendUngrounded = 0;
+let animatusRetagged = 0, innateTagStripped = 0, persistRetagged = 0, statusUngrounded = 0, randomMinionStripped = 0, spellGainTagged = 0, spellGemUngrounded = 0, maxHealthUngrounded = 0, creatureClassUngrounded = 0, turnCounterUngrounded = 0, damagingSpellUngrounded = 0, indirectDamageAdded = 0, effectLimKilled = 0, redirectUngrounded = 0, classCreatureUngrounded = 0, killedValueCount = 0, buffedWithUngrounded = 0, attackCalcUngrounded = 0, autoDefendUngrounded = 0, autoProvokeUngrounded = 0;
 function correctTaxo(taxo, desc, kind) {
   let out = taxo;
   desc = expandStatTokens(desc);   // spell/perk descriptions carry raw {STAT_*}; expand so text rules match
@@ -380,8 +382,9 @@ function correctTaxo(taxo, desc, kind) {
     if (k === 'Active If::Buffed with X' && !keepBuffedWith(desc || '')) { buffedWithUngrounded++; return false; }
     // Modify Attack Calculation = alt-stat/conditional attack damage, not procs/intercept/retarget
     if (k === 'Affect on Attacks::Modify Attack Calculation' && !keepAttackCalc(desc || '')) { attackCalcUngrounded++; return false; }
-    // Automatically Defend = the creature auto-performs the Defend action
+    // Automatically Defend / Provoke = the creature auto-performs that action
     if (k === 'Affect on Mitigation::Automatically Defend' && !/\bdefends?\b/i.test(desc || '')) { autoDefendUngrounded++; return false; }
+    if (k === 'Affect on Mitigation::Automatically Provoke' && !/\bprovokes?\b/i.test(desc || '')) { autoProvokeUngrounded++; return false; }
     return true;
   });
   // Indirect Damage — ADD (never strip) proc damage on non-spell effects, to combine with the LLM's
@@ -929,7 +932,7 @@ const spells = spellArr.map((s, i) => {
 }).filter(s => s.name);
 console.log(`  spells: ${spells.length} · charges ${spells.filter(s => s.chargesSrc === 'code').length} code + ${spells.filter(s => s.chargesSrc === 'community').length} community · ${spells.filter(s => s.potency).length} w/ potency · ${spellTargetGrounded} single/multi-target from Spell_REF field · potency/target/source from Spell_REF.csv`);
 console.log(`  taxonomy fixes: Innate-Trait stripped ${innateTagStripped} · Animatus retagged ${animatusRetagged} · Persist→Extend-Duration retagged ${persistRetagged} (duration, not death)`);
-console.log(`  canon-status validation: ${statusUngrounded} ungrounded buff/debuff tags dropped · ${randomMinionStripped} ungrounded Minion tags dropped · ${spellGemUngrounded} non-gem Spell-Gem tags dropped · ${maxHealthUngrounded} non-stat Max-Health tags dropped · ${creatureClassUngrounded} non-class Creature-Class tags dropped · ${turnCounterUngrounded} non-turn Turn-Counter dropped · ${damagingSpellUngrounded} non-literal Damaging-Spell (non-spell) dropped · ${indirectDamageAdded} Indirect-Damage proc tags added · ${effectLimKilled} Effect-Limitation tags killed · ${redirectUngrounded} non-retarget Redirect-Spell dropped · ${classCreatureUngrounded} non-creature Class-Creature type dropped · ${killedValueCount} killed-value tags dropped · ${buffedWithUngrounded} non-gated Buffed-With dropped · ${attackCalcUngrounded} non-calc Attack-Calc dropped · ${autoDefendUngrounded} non-defend Auto-Defend dropped · ${spellGainTagged} spell-gain tags added`);
+console.log(`  canon-status validation: ${statusUngrounded} ungrounded buff/debuff tags dropped · ${randomMinionStripped} ungrounded Minion tags dropped · ${spellGemUngrounded} non-gem Spell-Gem tags dropped · ${maxHealthUngrounded} non-stat Max-Health tags dropped · ${creatureClassUngrounded} non-class Creature-Class tags dropped · ${turnCounterUngrounded} non-turn Turn-Counter dropped · ${damagingSpellUngrounded} non-literal Damaging-Spell (non-spell) dropped · ${indirectDamageAdded} Indirect-Damage proc tags added · ${effectLimKilled} Effect-Limitation tags killed · ${redirectUngrounded} non-retarget Redirect-Spell dropped · ${classCreatureUngrounded} non-creature Class-Creature type dropped · ${killedValueCount} killed-value tags dropped · ${buffedWithUngrounded} non-gated Buffed-With dropped · ${attackCalcUngrounded} non-calc Attack-Calc dropped · ${autoDefendUngrounded} non-defend Auto-Defend dropped · ${autoProvokeUngrounded} non-provoke Auto-Provoke dropped · ${spellGainTagged} spell-gain tags added`);
 
 // ── trait items (slottable into artifact trait slots) — with material icons ──
 const matStats = readJSON(path.join(MODEL, 'material_stats.json'));
