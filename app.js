@@ -619,13 +619,23 @@
   }
   const canEquipGemOn = (slot, g) => { const allowed = spellEquipClasses(slot); if (allowed === null) return true; const cls = gemClass(g); return !cls || allowed.has(cls); };
 
+  // low-key availability labels from an entity's Realm Depth + secondary favor/guild gate:
+  // "RD 25", "Favor 14", "Rep 40". Works for creatures / traits / trait-materials / spells.
+  const availLabels = (e) => {
+    const out = [];
+    if (e && typeof e.depth === "number") out.push(`RD ${e.depth}`);
+    if (e && e.gate) out.push(e.gate.type === "favor" ? `Favor ${e.gate.rank}` : `Rep ${e.gate.rank}`);
+    return out;
+  };
+  const availTagsHtml = (e) => { const l = availLabels(e); return l.length ? `<span class="avail-tags">${l.map(x => `<span class="avail-tag">${esc(x)}</span>`).join("")}</span>` : ""; };
   function traitBanner(tid, opts = {}) {
     const t = TRAIT[tid]; if (!t) return "";
     const color = clsColor(t.cls);
     const label = opts.label || t.name;
-    return `<span class="trait-banner" data-action="nav-trait" data-tid="${tid}"
+    // the class-coloured name pill, with any availability labels unbolded to its right on the same line
+    return `<span class="trait-banner-row"><span class="trait-banner" data-action="nav-trait" data-tid="${tid}"
       style="--aff-color:${color};--aff-text:${textOn(color === "var(--border-dim)" ? "#6d5a2e" : color)}" title="${esc(t.name)}">
-      <span class="trait-banner-label">${esc(label)}</span></span>`;
+      <span class="trait-banner-label">${esc(label)}</span></span>${opts.noAvail ? "" : availTagsHtml(t)}</span>`;
   }
   const artIcon = (a) => a && a.primary ? PRIMARY_ICON[a.primary] : null;
 
@@ -1717,10 +1727,10 @@
       const apxStack = (...boxes) => { const b = boxes.filter(Boolean); return b.length ? `<div class="apx-iconcol">${b.join("")}</div>` : ""; };
       // meta chips (material / creature / class name labels) render at the BOTTOM-LEFT of the row,
       // not beside the title — long names (e.g. a creature name) used to push the title into a wrap.
-      const line = (iconCol, name, meta, desc, bk, open) => `<div class="perk-line${open ? " apx-clickable" : ""}"${open ? ` data-action="apx-open" data-ek="${open.ek}" data-eid="${esc(String(open.eid))}"` : ""}>
+      const line = (iconCol, name, meta, desc, bk, open, avail) => `<div class="perk-line${open ? " apx-clickable" : ""}"${open ? ` data-action="apx-open" data-ek="${open.ek}" data-eid="${esc(String(open.eid))}"` : ""}>
         ${iconCol}
         <div class="perk-line-body">
-          <div class="perk-line-head"><b>${esc(name)}</b>${bk || ""}</div>
+          <div class="perk-line-head"><b>${esc(name)}</b>${avail || ""}${bk || ""}</div>
           ${desc ? `<div class="perk-desc">${desc}</div>` : ""}
           ${meta ? `<div class="perk-line-meta">${meta}</div>` : ""}
         </div></div>`;
@@ -1736,6 +1746,7 @@
         // name surfaces its traits the same way a creature name does.
         const fg = falseGodFor(t);
         return { id: t.id, name: t.name, desc: t.desc, creature, items, itemNames, taxo: t.taxo, taxoSrc: t.taxoSrc,
+          depth: t.depth, gate: t.gate,
           ownerType: t.ownerType, ownerCategory: t.ownerCategory, owner: t.owner, ownerGroup: t.ownerGroup,
           _search: [t.name, creature ? creature.name : "", t.owner || "", t.ownerGroup || "", fg ? fg.name : "", itemNames.join(" ")].join(" ") };
       }).sort((a, b) => a.name.localeCompare(b.name));
@@ -1751,7 +1762,7 @@
       const traitRow = (g) => {
         const creaBox = g.creature ? apxBox(critFace(g.creature), "apx-clickable", ` data-action="apx-crea-open" data-cid="${g.creature.id}" title="${esc(g.creature.name)} — view creature"`) : "";
         return line(apxStack(creaBox, matBox(g)), g.name, itemNameMeta(g) + creatureNameMeta(g),
-          g.desc ? richText(g.desc) : "", bkBtn("traits", g.id), { ek: "trait", eid: g.id });
+          g.desc ? richText(g.desc) : "", bkBtn("traits", g.id), { ek: "trait", eid: g.id }, availTagsHtml(g));
       };
       // boss-owned trait: material icon stacked over the boss sprite (Deity/False God) or an owner-name chip
       const bossTraitRow = (g) => {
@@ -1762,7 +1773,7 @@
                 : apxBox(spriteImg(spr), "apx-boss", ` title="${esc(g.owner || g.ownerGroup || "")}"`))
           : `<div class="apx-boss-name" title="${esc(g.ownerCategory || "Boss")}">${esc(g.owner || g.ownerGroup || "—")}</div>`;
         const meta = `<span class="anoint-spec-tag apx-boss-cat">${esc(g.ownerCategory || "Boss")}</span>${itemNameMeta(g)}`;
-        return line(apxStack(bossBox, matBox(g)), g.name, meta, g.desc ? richText(g.desc) : "", bkBtn("traits", g.id), { ek: "trait", eid: g.id });
+        return line(apxStack(bossBox, matBox(g)), g.name, meta, g.desc ? richText(g.desc) : "", bkBtn("traits", g.id), { ek: "trait", eid: g.id }, availTagsHtml(g));
       };
       const body_sections = [
         section("Traits", creatureTraitRows, traitRow),
@@ -1771,7 +1782,7 @@
         section("Perks", res.perks, p => line(apxStack(apxIcon(SPEC_EMBLEM.get(p.spec), "apx-spec", ` title="${esc(p.spec)}"`), apxIcon(p.icon)), p.name,
           `<span class="anoint-spec-tag">${esc(p.spec)}</span>`, perkText(p.desc, p.ranks), bkBtn("perks", p.key), { ek: "perk", eid: p.key })),
         section("Spells", res.spells, s => line(apxStack(apxIcon(spellIcon(s))), s.name,
-          `${s.cls ? `<span class="anoint-spec-tag">${esc(s.cls)}</span>` : ""}${spellMeta(s) ? `<span class="anoint-spec-tag">${esc(spellMeta(s))}</span>` : ""}`, perkText(s.desc, null), bkBtn("spells", s.id), { ek: "spell", eid: s.id })),
+          `${s.cls ? `<span class="anoint-spec-tag">${esc(s.cls)}</span>` : ""}${spellMeta(s) ? `<span class="anoint-spec-tag">${esc(spellMeta(s))}</span>` : ""}`, perkText(s.desc, null), bkBtn("spells", s.id), { ek: "spell", eid: s.id }, availTagsHtml(s))),
         section("Relics", res.relics, r => line(apxStack(apxIcon(r.icon)), r.name,
           r.statBonus ? `<span class="anoint-spec-tag">${esc(r.statBonus)}</span>` : "", relicRanksHtml(r.ranks), null, { ek: "relic", eid: r.id })),
         section("Realm Cards", res.cards.map(c => ({ ...c, name: c.family })), c => line(apxStack(apxIcon(c.sprite)), c.family,
@@ -1885,6 +1896,7 @@
     return `<div class="ovl-backdrop" data-action="entity-backdrop"><div class="overlay-panel detail">
       <div class="overlay-header">${r.icon ? `<span class="hdr-ico">${spriteImg(r.icon, "px")}</span>` : ""}
         <h2>${esc(r.name || "—")}</h2><span class="anoint-spec-tag">${esc(r.kindLabel)}</span>
+        ${availTagsHtml(e)}
         <button class="ovl-close" data-action="close-entity">✕</button></div>
       <div class="overlay-body"><div class="ovl-center"><div class="ovl-center-scroll">
         ${r.descHtml ? `<div class="perk-desc" style="margin-bottom:12px">${r.descHtml}</div>` : ""}
