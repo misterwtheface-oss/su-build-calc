@@ -2116,6 +2116,19 @@
     if (icon) return `<span class="gs-item-ico">${spriteImg(icon, "px")}</span>`;
     return `<span class="gs-item-ico empty"></span>`;
   }
+  // a shop item → the drill-in it opens: creature preview, or a spell/trait taxonomy page. "" if none.
+  function shopItemOpenAttrs(it) {
+    const m = gsNameMaps(), nm = (it.item || "").toLowerCase();
+    let crea = null, spell = null, traitId = null;
+    if (it.type === "Mana" || it.type === "Creature") crea = m.crea.get(nm);
+    else if (it.type === "Heart") crea = m.crea.get(nm.replace(/^heart of /, ""));
+    else if (it.type === "Inscription" || it.type === "Spell") spell = m.spell.get(nm);
+    else if (it.type === "Trait") { const t = m.ti.get(nm); traitId = t && t.traitId; }
+    if (crea) return ` data-action="apx-crea-open" data-cid="${crea.id}"`;
+    if (spell) return ` data-action="apx-open" data-ek="spell" data-eid="${spell.id}"`;
+    if (traitId != null) return ` data-action="apx-open" data-ek="trait" data-eid="${traitId}"`;
+    return "";
+  }
   function renderGodShopList(gs) {
     const st = ovState, q = st.search.trim().toLowerCase();
     const list = gs.filter(g => !q || g.god.toLowerCase().includes(q) || g.items.some(it => it.item.toLowerCase().includes(q) || (it.desc || "").toLowerCase().includes(q)));
@@ -2135,11 +2148,11 @@
   function renderGodShopDetail(sel) {
     if (!sel) { ovState.view = "list"; return renderGodShopList(D.godShops || []); }
     const typeChip = (t) => t ? `<span class="anoint-spec-tag">${esc(t)}</span>` : "";
-    const rows = sel.items.map(it => `<div class="perk-line">
+    const rows = sel.items.map(it => { const open = shopItemOpenAttrs(it); return `<div class="perk-line${open ? " apx-clickable" : ""}"${open}>
       ${shopItemIconHtml(it)}
       <div class="perk-line-body">
         <div class="perk-line-head"><b>${esc(it.item)}</b><span class="perk-line-meta">${typeChip(it.type)}${it.price != null ? `<span class="gs-price" title="Favor">${it.price} ✦</span>` : ""}</span></div>
-        ${it.desc ? `<div class="perk-desc">${esc(it.desc)}</div>` : ""}</div></div>`).join("")
+        ${it.desc ? `<div class="perk-desc">${esc(it.desc)}</div>` : ""}</div></div>`; }).join("")
       || `<div class="slot-sub" style="padding:10px">No items.</div>`;
     return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel">
       <div class="overlay-header"><button class="btn-ghost" data-action="gs-back">‹ God Shops</button>
@@ -2185,11 +2198,11 @@
   }
   function renderGuildShopDetail(sel) {
     if (!sel) { ovState.view = "list"; return renderGuildShopList(D.guildShops || []); }
-    const rows = sel.items.map(it => `<div class="perk-line">
+    const rows = sel.items.map(it => { const open = shopItemOpenAttrs(it); return `<div class="perk-line${open ? " apx-clickable" : ""}"${open}>
       ${guildItemIcon(it)}
       <div class="perk-line-body">
         <div class="perk-line-head"><b>${esc(it.item)}</b><span class="perk-line-meta"><span class="anoint-spec-tag">${esc(it.type)}</span><span class="gs-price" title="Guild Reputation rank">Rep ${it.rank}</span></span></div>
-      </div></div>`).join("")
+      </div></div>`; }).join("")
       || `<div class="slot-sub" style="padding:10px">No items.</div>`;
     return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel">
       <div class="overlay-header"><button class="btn-ghost" data-action="guild-back">‹ Guild Shops</button>
