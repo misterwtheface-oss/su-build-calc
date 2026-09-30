@@ -302,12 +302,16 @@ const damagingSpellLit = /damaging spell/i;
 const procDamageRe = /deals? (\d+%? )?damage to [^.]{0,45}(equal to|% of|\d+%)/i;
 // Redirect Spell = a spell's TARGET or CASTER is changed/bounced/retargeted (not a spell grant/copy/behavior).
 const redirectSpellRe = /\bbounce|\breflect|\bredirect|targets? (themselves|are reversed|all |provoking|a different|a random|another)|now targets?|(also )?(be )?cast on all|cast the spell on (a |all|another)|chance to target|instead targets?|spell targets all|targets? (of the spell )?are (reversed|chosen)/i;
+// Related Types::<Class> Creature must literally reference "<class> creature(s)" — the class NAMES double as
+// spell/gem classes, so a bare-name match over-tags "cast a Nature spell" / "Death Spell Gem" (user searches
+// the literal "[Class] Creature" text).
+const CLASS_CREATURE_RE = { Nature: /nature creatures?/i, Chaos: /chaos creatures?/i, Death: /death creatures?/i, Life: /life creatures?/i, Sorcery: /sorcery creatures?/i };
 // "gain/grant [icons,N] <Spell>" — the icon token immediately after the verb flags a SPELL grant, not a buff
 const spellGainRe = /\b(gain|gains|grant|grants|give|gives)\s+\[icons?,\s*\d+\]/i;
 const BUFF_ASSERT = new Set(['Action/Mechanic::Buff','Affect on Status::Apply/Gain a Buff','Affect on Status::More Powerful Buff','Affect on Status::Remove Buff','Affect on Status::Share/Gain Copy of Buff','Affect on Status::Buffs Persist','Affect on Status::Limit/Prevent Buff Gain','Related Buff::Random Buff']);
 const DEBUFF_ASSERT = new Set(['Action/Mechanic::Debuff','Affect on Status::Afflict with/Gain a Debuff','Affect on Status::Increase Debuff Potency','Affect on Status::Remove Debuff','Affect on Status::Resistant to Debuff','Affect on Status::Avoid/Immune to Debuff','Affect on Status::Debuffs Persist','Related Debuff::Random Debuff']);
 // shared per-effect taxonomy corrections (traits / perks / spells all pass through this)
-let animatusRetagged = 0, innateTagStripped = 0, persistRetagged = 0, statusUngrounded = 0, randomMinionStripped = 0, spellGainTagged = 0, spellGemUngrounded = 0, maxHealthUngrounded = 0, creatureClassUngrounded = 0, turnCounterUngrounded = 0, damagingSpellUngrounded = 0, indirectDamageAdded = 0, effectLimKilled = 0, redirectUngrounded = 0;
+let animatusRetagged = 0, innateTagStripped = 0, persistRetagged = 0, statusUngrounded = 0, randomMinionStripped = 0, spellGainTagged = 0, spellGemUngrounded = 0, maxHealthUngrounded = 0, creatureClassUngrounded = 0, turnCounterUngrounded = 0, damagingSpellUngrounded = 0, indirectDamageAdded = 0, effectLimKilled = 0, redirectUngrounded = 0, classCreatureUngrounded = 0;
 function correctTaxo(taxo, desc, kind) {
   let out = taxo;
   desc = expandStatTokens(desc);   // spell/perk descriptions carry raw {STAT_*}; expand so text rules match
@@ -350,6 +354,9 @@ function correctTaxo(taxo, desc, kind) {
     if (k === 'Related Spells::Damaging Spells' && kind !== 'spell' && !damagingSpellLit.test(desc || '')) { damagingSpellUngrounded++; return false; }
     // Redirect Spell = spell target/caster changed, not a grant/copy/behavior effect
     if (k === 'Affect on Spells::Redirect Spell' && !redirectSpellRe.test(desc || '')) { redirectUngrounded++; return false; }
+    // Related Types::<Class> Creature must literally reference "<class> creature(s)", not the class's spells/gems
+    { const m = k.match(/^Related Types::(Nature|Chaos|Death|Life|Sorcery) Creature$/);
+      if (m && !CLASS_CREATURE_RE[m[1]].test(desc || '')) { classCreatureUngrounded++; return false; } }
     return true;
   });
   // Indirect Damage — ADD (never strip) proc damage on non-spell effects, to combine with the LLM's
@@ -897,7 +904,7 @@ const spells = spellArr.map((s, i) => {
 }).filter(s => s.name);
 console.log(`  spells: ${spells.length} · charges ${spells.filter(s => s.chargesSrc === 'code').length} code + ${spells.filter(s => s.chargesSrc === 'community').length} community · ${spells.filter(s => s.potency).length} w/ potency · ${spellTargetGrounded} single/multi-target from Spell_REF field · potency/target/source from Spell_REF.csv`);
 console.log(`  taxonomy fixes: Innate-Trait stripped ${innateTagStripped} · Animatus retagged ${animatusRetagged} · Persist→Extend-Duration retagged ${persistRetagged} (duration, not death)`);
-console.log(`  canon-status validation: ${statusUngrounded} ungrounded buff/debuff tags dropped · ${randomMinionStripped} ungrounded Minion tags dropped · ${spellGemUngrounded} non-gem Spell-Gem tags dropped · ${maxHealthUngrounded} non-stat Max-Health tags dropped · ${creatureClassUngrounded} non-class Creature-Class tags dropped · ${turnCounterUngrounded} non-turn Turn-Counter dropped · ${damagingSpellUngrounded} non-literal Damaging-Spell (non-spell) dropped · ${indirectDamageAdded} Indirect-Damage proc tags added · ${effectLimKilled} Effect-Limitation tags killed · ${redirectUngrounded} non-retarget Redirect-Spell dropped · ${spellGainTagged} spell-gain tags added`);
+console.log(`  canon-status validation: ${statusUngrounded} ungrounded buff/debuff tags dropped · ${randomMinionStripped} ungrounded Minion tags dropped · ${spellGemUngrounded} non-gem Spell-Gem tags dropped · ${maxHealthUngrounded} non-stat Max-Health tags dropped · ${creatureClassUngrounded} non-class Creature-Class tags dropped · ${turnCounterUngrounded} non-turn Turn-Counter dropped · ${damagingSpellUngrounded} non-literal Damaging-Spell (non-spell) dropped · ${indirectDamageAdded} Indirect-Damage proc tags added · ${effectLimKilled} Effect-Limitation tags killed · ${redirectUngrounded} non-retarget Redirect-Spell dropped · ${classCreatureUngrounded} non-creature Class-Creature type dropped · ${spellGainTagged} spell-gain tags added`);
 
 // ── trait items (slottable into artifact trait slots) — with material icons ──
 const matStats = readJSON(path.join(MODEL, 'material_stats.json'));
