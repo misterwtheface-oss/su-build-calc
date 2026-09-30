@@ -2715,7 +2715,7 @@
   // one spell-gem container: name + trigger + description (clickable to the spell's taxonomy)
   const spellGemCard = (sp, trigger, src) => `<div class="art-spellcard apx-clickable" data-action="apx-open" data-ek="spell" data-eid="${sp.id}" title="View taxonomy">
     <div class="art-spellcard-head"><span class="prop-ico">${spellIcon(sp) ? spriteImg(spellIcon(sp), "px") : ""}</span>
-      <b>${esc(sp.name)}</b><span class="art-trigger">${esc(trigger || "—")}</span></div>
+      <b>${esc(sp.name)}</b>${trigger ? `<span class="art-trigger">${esc(trigger)}</span>` : ""}</div>
     ${src ? `<div class="slot-sub">from ${esc(src)}</div>` : ""}
     ${sp.desc ? `<div class="trait-desc">${perkText(sp.desc)}</div>` : ""}</div>`;
   // spell-gem containers for an artifact: native slot fires on the type trigger; nether stones keep their own
