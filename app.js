@@ -269,7 +269,7 @@
   const jsave = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} };
 
   const emptySlot = () => ({ cid: null, fusion: null, artifactId: null, relic: null, spellGemIds: [], personality: null, scrolls: {}, skinId: null });
-  const freshBuild = () => ({ schema: 3, specId: null, perkAlloc: {}, anoints: [], slots: Array.from({ length: 6 }, emptySlot) });
+  const freshBuild = () => ({ schema: 3, specIds: 2, specId: null, perkAlloc: {}, anoints: [], slots: Array.from({ length: 6 }, emptySlot) });
   let build = jload(LS.build, null);
   // schema 2 stored perkAlloc as a binary de-allocation map ({key:1} = deallocated).
   // schema 3 stores an allocated rank count ({key:R}; absent key = fully allocated = maxRanks).
@@ -347,6 +347,19 @@
   if (!Array.isArray(builds)) builds = [];
   let nextBuildId = builds.reduce((m, b) => Math.max(m, b.id || 0), 0) + 1;
   const persistBuilds = () => jsave(LS.builds, builds);
+  // Spec ids became code-grounded (2026-10-01): builds saved before that store the old, mislabeled ids.
+  // Remap specId / anoints[].specId / perkAlloc keys once via D.specIdMigration (old id -> new id).
+  const migrateSpecIds = (b) => {
+    if (!b || b.specIds === 2) return false;
+    const M = D.specIdMigration || {}, map = (id) => (id != null && M[id] != null ? M[id] : id);
+    b.specId = map(b.specId);
+    if (Array.isArray(b.anoints)) b.anoints.forEach(a => { a.specId = map(a.specId); });
+    if (b.perkAlloc) { const pa = {}; for (const k of Object.keys(b.perkAlloc)) pa[map(+k)] = b.perkAlloc[k]; b.perkAlloc = pa; }
+    b.specIds = 2;
+    return true;
+  };
+  if (migrateSpecIds(build)) jsave(LS.build, build);
+  if (builds.map(x => migrateSpecIds(x.build)).some(Boolean)) persistBuilds();
   const normalizeBuild = (b) => {
     b.schema = 3; b.perkAlloc = b.perkAlloc || {};
     b.anoints = Array.isArray(b.anoints) ? b.anoints : [];

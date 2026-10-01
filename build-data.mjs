@@ -690,27 +690,18 @@ for (const c of creatures) {
 // ── specializations (player slot) — prefer the 32×32 character SKIN, else the 16×16 emblem icon ──
 // The `spec_<key>` sprites are tiny 16×16 emblems. The real skins are the 32×32 player-costume sprites
 // (`spec_<class>_<spec>_<theme>` / `spec_<spec>_<theme>`) + the animated `TS_SU_Costume_<Spec>` set.
-// The extractor left a few specs unlabeled; user-confirmed identities are applied here so they ship.
-// (id 43 = Antiquarian, a full 15-perk spec. ids 27/37/38 stay dropped — only 1 perk each, need re-mining.)
-const SPEC_LABEL_OVERRIDE = { 43: 'Antiquarian' };
-// Challenge specs Royal/Pariah/Deprived: the extractor's scr_PerkGetPerkList membership is broken for
-// these (signature perks unassigned/misassigned), so define them from the perk catalog. Each has 2 perks
-// (name/desc/cost/icon still resolve by key). Their special mechanics are enforced app-side.
-const SPEC_EXTRA = [
-  { spec_id: 44, key: 'ROYAL', label: 'Royal',
-    playstyle: 'A prestige specialization whose perks let you equip far more Anointments than any other class — up to 20 total.',
-    perks: [{ key: 'ROYALTY', name: 'Master of All' }, { key: 'HIGHBORN', name: 'Highborn' }] },
-  { spec_id: 45, key: 'PARIAH', label: 'Pariah',
-    playstyle: 'A solitary specialization: you may only use 3 creatures at a time.',
-    perks: [{ key: 'INTROVERSION', name: 'Introversion' }, { key: 'LIFELONGRESPITE', name: 'Lifelong Respite' }] },
-  { spec_id: 46, key: 'DEPRIVED', label: 'Deprived',
-    playstyle: 'A minimalist specialization: Fused traits, Relic effects, and Avatar creatures are all unavailable.',
-    perks: [{ key: 'TOTALDEPRIVATION', name: 'Total Deprivation' }, { key: 'SIMPLELIFE', name: 'Simple Life' }] },
-];
-const specRecs = readJSON(path.join(MODEL, 'specializations.json')).records
-  .map(s => (s.label ? s : { ...s, label: SPEC_LABEL_OVERRIDE[s.spec_id] || s.label }))
-  .filter(s => s.label)
-  .concat(SPEC_EXTRA);
+// Specializations are now FULLY code-grounded (2026-10-01, _su_extract code/extract_specializations.py):
+// spec id/name from the scr_SpecializationName switch, perk membership from scr_PerkGetPerkList resolved
+// through TRUE runtime perk ids, the Ascension perk from scr_AscensionPerk, desc/playstyle from ui.csv.
+// (The old positional perk-id join mislabeled 31/43 specs and forced the CSV membership + SPEC_EXTRA
+// workarounds that used to live here; both are gone. Royal/Pariah/Deprived are code ids 27/37/38.)
+const specRecs = readJSON(path.join(MODEL, 'specializations.json')).records;
+for (const s of specRecs) if (!s.label) err(`specialization ${s.spec_id} has no code label`);
+// Saved builds (localStorage) store numeric specId / anoints[].specId / perkAlloc keys under the OLD,
+// mislabeled ids (+ 44/45/46 for the former SPEC_EXTRA). old id -> new id, derived by spec key from the
+// last data.js shipped before the change. app.js applies it once per build (build.specIds !== 2).
+const SPEC_ID_MIGRATION = {1:9,2:3,3:14,4:15,5:10,6:12,8:13,9:4,10:8,11:2,12:5,13:11,14:1,15:6,19:23,20:24,21:25,
+  22:19,23:20,24:21,25:22,26:29,28:26,29:30,30:28,32:33,33:32,44:27,45:37,46:38};
 const spriteMeta = readJSON(path.join(SRC, 'assets', 'sprite_metadata.json'));
 const metaByName = new Map(spriteMeta.map(r => [r.name, r]));
 const skin32 = spriteMeta.filter(r => r.name.startsWith('spec_') && r.w === 32).map(r => r.name);
@@ -743,11 +734,10 @@ for (const p of catalogPerkArr) { if (!p.key) continue; perkNameByKey.set(p.key,
 const PERK_NAME_ALIAS = { sovreignty: 'SOVEREIGNTY', wrath: 'DIVINEWRATH', redeyeflight: 'REDEYEFIGHT' };
 const perkKeyForName = (name) => PERK_NAME_ALIAS[norm(name)] || perkKeyByName.get(norm(name)) || null;
 
-// user-provided Perk_REF.csv → (1) per-perk Anointment/Ascension flags AND (2) the authoritative spec→perk
-// MEMBERSHIP. The code-derived membership (scr_PerkGetPerkList in specializations.json) leaks perks between
-// specs (e.g. Animator wrongly got Defiler's Lingering Sickness / Hopelessness / Impiety), so we drive
-// membership from the CSV and only fall back to code membership for specs the CSV doesn't list (Antiquarian).
+// user-provided Perk_REF.csv → per-perk ANOINTMENT flag only (not yet code-grounded). Membership and the
+// Ascension flag are code (specializations.json). csvPerksBySpec is kept for diagnostics only.
 const perkRef = new Map();          // norm(name)|norm(spec) -> {anoint, asc}
+const perkRefByKey = new Map();     // perk KEY -> {anoint, asc}  (CSV names resolved via perkKeyForName, incl. typo aliases)
 const perkRefByName = new Map();    // norm(name) -> {anoint, asc}  (fuzzy/spec-agnostic fallback)
 const csvPerksBySpec = new Map();   // norm(spec) -> [{name, key, anoint, asc, ranks, cost, desc}]
 let csvPerkKeyMisses = 0;
@@ -759,6 +749,7 @@ let csvPerkKeyMisses = 0;
     perkRef.set(norm(r.Name) + '|' + norm(r.Specialization), { anoint, asc });
     perkRefByName.set(norm(r.Name), { anoint, asc });
     const key = perkKeyForName(r.Name);
+    if (key && !perkRefByKey.has(key)) perkRefByKey.set(key, { anoint, asc });
     if (!key) { csvPerkKeyMisses++; warn(`Perk_REF perk "${r.Name}" [${r.Specialization}] has no catalog key — icon/taxo will be absent`); }
     const rec = { name: key ? (perkNameByKey.get(key) || r.Name) : r.Name, key: key || ('CSV_' + norm(r.Name).toUpperCase()),
       anoint, asc, ranks: parseInt(r.Ranks, 10) || null, cost: parseInt(r.Cost, 10) || null, desc: r.Description || '' };
@@ -835,21 +826,17 @@ for (const s of specRecs) {
   let emblem = sprite;
   const emName = findEmblem(s.label);
   if (emName && copyNamedSprite(emName, OUT_SPEC, `${slug}_emblem.png`)) { emblem = `assets/specs/${slug}_emblem.png`; emblemCount++; }
-  // membership: CSV is authoritative; fall back to code-derived membership only for specs the CSV omits
-  // (Antiquarian). CSV rows already carry name/key/anoint/asc/ranks/cost; code rows carry key/name only.
-  const slugN = norm(s.label);
-  const csvMembers = csvPerksBySpec.get(slugN) || csvPerksBySpec.get(SPEC_REF_ALIAS[slugN]);
-  const membership = csvMembers
-    || (s.perks || []).filter(p => p.key && p.name).map(p => ({ name: p.name, key: p.key, fromCode: true }));
-  const perks = membership.filter(p => p.key && p.name).map(p => {   // drop null placeholder perks (e.g. Antiquarian ids 661/663)
+  // membership: CODE (scr_PerkGetPerkList via true perk ids + scr_AscensionPerk). The CSV is used only for
+  // the per-perk Anointment flag, which is not yet code-grounded (see Progress backlog).
+  const perks = (s.perks || []).filter(p => p.key && p.name).map(p => {
     const st = perkStatByKey.get(p.key);
     let icon = null;
     const iconName = perkIconByKey.get(p.key);
     if (iconName && copyNamedSprite(iconName, OUT_PERK, `${p.key}.png`)) { icon = `assets/perks/${p.key}.png`; perkIconsCopied++; }
     else { perkIconsMissing++; }
-    // flags: CSV membership carries them directly; code-fallback rows resolve via perkFlags()
-    const fl = p.fromCode ? perkFlags(p.name, s.label) : { anoint: p.anoint, asc: p.asc };
-    if (p.fromCode && !(fl && (fl.anoint || fl.asc != null)) && !/antiquarian/i.test(s.label)) perkRefMisses++;
+    const csvFl = perkFlags(p.name, s.label) || perkRefByKey.get(p.key) || null;
+    const fl = { anoint: csvFl ? csvFl.anoint : false, asc: !!p.ascension };   // asc = code (scr_AscensionPerk)
+    if (!csvFl && !/antiquarian/i.test(s.label)) { perkRefMisses++; warn(`perk "${p.name}" [${s.label}] has no Perk_REF row — anointment flag unknown (false)`); }
     const pdesc = perkDescByKey.get(p.key) || p.desc || '';
     const name = perkNameByKey.get(p.key) || p.name;
     // Antiquarian: anointable except the two exclusions; every other spec keeps its CSV/code flag
@@ -1582,6 +1569,45 @@ const guildShops = GUILD_ORDER.map(guild => {
   return { guild, banner, currency: GUILD_CURRENCY[guild] || null, items };
 });
 console.log(`  guild shops: ${guildShops.length} guilds · ${guildShops.reduce((n, g) => n + g.items.length, 0)} items · ${guildBannerHits} banners`);
+
+// ── Shops (CODE-GROUNDED, data only — no UI yet; backlog: one "Shops" feature w/ a 4-way God/Guild/Arena/Tavern
+// toggle replacing the separate overlays) ─────────────────────────────────────────────────────────────────────
+// _su_extract code/build_shops_true.py: every entry is a typed constructor in scr_<X>ShopSetup resolved by
+// direct RUNTIME-id lookup (creature/spell/material/decoration/... *_ids_true.json). Joins into the calc:
+//   creature -> creatures[] by name (code L_CRIT name) · spell -> spells by key · trait_item -> the material
+//   key (traitItems) + the creature it is paired with · project_item/cosmetics -> name only.
+// Prices are the code literals. Currency is NOT decoded from code (left to the UI pass).
+const SHOP_DEF = [['god', 'God'], ['guild_nature', 'Nature Guild'], ['guild_chaos', 'Chaos Guild'], ['guild_sorcery', 'Sorcery Guild'],
+  ['guild_death', 'Death Guild'], ['guild_life', 'Life Guild'], ['arena', 'Arena'], ['tavern', 'Tavern']];
+const shopsSrc = readJSON(path.join(MODEL, 'shops.json')).shops;
+const slimShopItem = (i) => {
+  const o = { kind: i.kind, type: i.type_label || null, name: i.name || null, price: i.price ?? null };
+  if (i.id != null) o.id = i.id;
+  if (i.key) o.key = i.key;
+  if (i.kind === 'trait_item') { o.forCreature = i.for_creature || null; o.traitRuntimeId = i.trait_runtime_id ?? null; }
+  if (i.unresolved) o.unresolved = i.unresolved;
+  if (i.price_note) o.priceNote = i.price_note;
+  return o;
+};
+const godLabel = (k) => { const n = vocabGodName(k); return n || (k ? k.charAt(0) + k.slice(1).toLowerCase() : null); };
+function vocabGodName(k) { return k ? (GOD_KEY_NAME[k] || null) : null; }
+const GOD_KEY_NAME = { "T'MEREM'RGO": "T'mere M'rgo", '4080': '4080' };
+const shops = SHOP_DEF.filter(([k]) => shopsSrc[k]).map(([k, label]) => {
+  const s = shopsSrc[k];
+  const out = { key: k, label, fn: s.function };
+  if (s.gods) out.gods = s.gods.filter(g => g.god_key).map(g => ({ godIndex: g.god_index, godKey: g.god_key, god: godLabel(g.god_key), items: g.items.map(slimShopItem) }));
+  else out.items = s.items.map(slimShopItem);
+  return out;
+});
+{
+  const all = shops.flatMap(s => s.items || s.gods.flatMap(g => g.items));
+  const unres = all.filter(i => i.unresolved || !i.name);
+  const critNames = new Set(creatures.map(c => norm(c.name)));
+  const critMiss = all.filter(i => i.kind === 'creature' && !critNames.has(norm(i.name)));
+  console.log(`  shops (code): ${shops.length} · ${all.length} items · ${unres.length} unresolved · creature joins ${all.filter(i => i.kind === 'creature').length - critMiss.length}/${all.filter(i => i.kind === 'creature').length}`);
+  for (const i of unres) warn(`shop item unresolved: ${JSON.stringify(i)}`);
+  if (critMiss.length) warn(`shop creatures not in roster: ${[...new Set(critMiss.map(i => i.name))].join(', ')}`);
+}
 
 // ── boss battle sprites (Appendix boss-trait rows) ────────────────────────────
 // DEITY bosses use bspr_god_* (incl. Caliban). NETHER/SPECIAL bosses use spr_crits_battle_<frame> — the
@@ -2338,6 +2364,7 @@ const SU_DATA = {
   raceIcons,
   creatures,
   specs,
+  specIdMigration: SPEC_ID_MIGRATION,   // old (mislabeled) spec id -> code spec id; app.js migrates saved builds once
   falseGods,
   bossSprites,              // normalized Deity owner name → bspr_ battle sprite (Appendix boss rows)
   spellSlotGrants,
@@ -2368,6 +2395,7 @@ const SU_DATA = {
   realmProps,               // Realm-Instability realm properties (56) + authored theme/class counters
   godShops,                 // per-god favor shops (22 gods) — reference
   guildShops,               // per-guild reputation shops (5 guilds: creatures + spells) — reference
+  shops,                    // CODE-GROUNDED shop stock (God per-god / 5 Guilds / Arena / Tavern) — data only, UI pending
   realms,                   // 30 realms: denizens/resources + Realm Objects (w/ rank-0 base); each carries a
                             //   `favor` matrix { rank(0..100) → [value per favorAllCols] } from Favor_MTX
   favorCols,                // { unique:[{key,col,label,unit}], generic:[...] } — the Favor_MTX column groups

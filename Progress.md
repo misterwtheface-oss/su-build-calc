@@ -6,6 +6,28 @@ Pages on `master`/root, Cloudflare analytics active with the shared github.io to
 No verify-before-push ceremony (no real users yet) — but every change is checked with the jsdom smoke suite
 (scratchpad `smoke.mjs`, ~84 assertions across all flows) before commit.
 
+## 2026-10-01 — Code-grounded specs, perk effects, runtime ids + shops data (no UI change)
+Root cause (see `_su_extract/code/DB_ID_FINDINGS.md`): every game DB (not just traits) uses explicit runtime ids that
+differ from build position; the extract had keyed perks/materials/spells/creatures by position.
+1. **Specializations = 100% code.** Labels from `scr_SpecializationName`, membership from `scr_PerkGetPerkList` via TRUE
+   perk ids, Ascension perk from `scr_AscensionPerk`, playstyle/desc from game text. Removed `SPEC_LABEL_OVERRIDE`,
+   `SPEC_EXTRA` and the CSV-driven membership. Perk_REF.csv now supplies ONLY the per-perk Anointment flag. Net data
+   change vs before: Siegemaster *Shrug Off* replaces phantom `CSV_PURGE`; Antiquarian +3 perks (Primeval Spellblade,
+   Epigraphy, Timeworn Attunement); Highborn / Divine Dualwield ascension from code; Royal/Pariah/Deprived = code ids
+   27/37/38 with game playstyle text; Grovetender spec key = code `HERBALIST` (asset `assets/specs/herbalist*.png`).
+   **Saved-build migration:** spec ids changed (31/43 were mislabeled before) → `D.specIdMigration` + `migrateSpecIds`
+   in app.js remaps `specId`/`anoints[].specId`/`perkAlloc` keys once (`build.specIds = 2`; fresh builds carry it).
+2. **Perk effects** re-keyed (extract only; feeds #5 taxonomy work).
+3. **Runtime ids + creature names from code:** 5 shipped stat lines were the NEIGHBOUR record's (shared sprites) and now
+   match Creature_REF exactly — Aaxer Apocalypse, Dumpling, Shambler Benefactor, Blood Slime, Unguided Agnostic.
+   Innate traits now from code (`creature_data.aux[0]`), 0 traitId changes in the app.
+   Also: `theorycraft_tags` rebuilt → the 2026-09-30 corrected code trait tags (trait `produces`/`labels`) now ship
+   (973 traits changed; previously ~93% misattributed).
+4. **Shops data (UI pending):** `D.shops` = code-grounded stock for God (30 gods incl. 8 DLC) / 5 Guilds / Arena /
+   Tavern, every item typed + id-resolved (1819 items, 4 flagged unresolved). Existing God/Guild overlays unchanged.
+Verified: headless Chrome load (no JS errors), spec labels/perks, shops present, old-build migration (14→Animator 1,
+44→Royal 27, saved build 1→Defiler 9).
+
 ## 2026-09-28 — UI pass 3 (appendix/riddle/glossary/god-shops/realms/artifact/cards/builds)
 1. Appendix trait rows now stack the **creature sprite over the trait material** (apxStack order swapped).
 2. **Riddle Dwarf** dropped the Class-of-spell/creature answers — only realm↔ruler lookups (it never asks class).
@@ -1077,6 +1099,17 @@ MAPPING not for asserting PRESENCE; no inventing entities from the community-CSV
   traits/items/spells) is now complete.**
 
 ## Backlog
+### ⭐ NEXT — Shops feature (user, 2026-10-01)
+- [ ] **One "Shops" feature with a 4-way toggle (God / Guild / Arena / Tavern)** replacing the separate God Shops and
+      Guild Shops overlays (and covering Arena + Tavern, which have no overlay yet). Data is ready in `D.shops`
+      (code-grounded, from `_su_extract/code/build_shops_true.py`): God = per-god blocks `{godKey, god, items}`, others
+      flat `items`; item `{kind: creature|spell|trait_item|dust|project_item|decoration|music|wall|floor|background|skin|
+      consumable, type, name, id, key, price, forCreature?}`. Decide: currency labels (not decoded from code), whether
+      cosmetics show, God-shop open questions (Azural code=Smiths vs CSV Yetis, Tenebris Reapers vs Shadow X, dust price
+      code 1 vs CSV 10) — check in-game. Then retire `godShops`/`guildShops` (CSV/wiki-sourced).
+- [ ] Code-ground the per-perk **Anointment** flag (last CSV input to specs; `scr_AnointmentGetSpecialization` decompiled).
+- [ ] Spec sprites/emblems from `scr_SpecializationIcon/Costume` (decompiled) instead of the name-heuristic lookup.
+- [ ] #5 taxonomy → fully code-backed (workshop multi-parameter conditions first, e.g. side × event: "opposing-side buff gain").
 ### ⭐ HIGH PRIORITY — next session (2026-09-24)
 - [x] **Resolve the missing item-backed trait sprites — DONE (2026-09-24, commit e993af5).** 18 item-backed
       traits (13 Nether-Boss **reward** items — Flubris/Phobos/Ramses/Kraynaks/Cyhra body parts; 4 Master
