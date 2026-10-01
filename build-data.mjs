@@ -1517,70 +1517,67 @@ function godBattleFor(godName) {
   }
   return godBattleCache[slug] = out;
 }
-const godShops = [...godShopMap.entries()].sort((a, b) => a[0].localeCompare(b[0]))
-  .map(([god, items]) => ({ god, battle: godBattleFor(god), items: items.sort((a, b) => a.tier - b.tier || a.item.localeCompare(b.item)) }));
-console.log(`  god shops: ${godShops.length} gods · ${godShopArr.length} items`);
-
-// ── Guild Shops (per-guild reputation-rank rewards) — mirrors God Shops ───────────
-// Items = the build-relevant guild rewards (creatures + spells) from the wiki rank tables, ordered by the
-// Reputation rank that unlocks them (decorations / treasure chests are cosmetic → omitted). Banner = the
-// guild's seal crest; currency = the guild's bounty resource.
+// ── Shops (CODE-GROUNDED) — one D.shops feeds the unified "Shops" overlay (God / Guild / Arena / Tavern toggle) ──
+// _su_extract code/build_shops_true.py: every entry is a typed constructor in scr_<X>ShopSetup resolved by direct
+// RUNTIME-id lookup (creature/spell/material/decoration/project-item/... id tables). Replaces the CSV God Shops
+// (god_shop_ref) + wiki Guild Shops overlays. Prices are the code literals. Icons/links are joined in enrichShops()
+// (after skins are built); every join is counted and unresolved items are warned, never guessed.
 const OUT_GUILDBANNER = path.join(OUT_ASSETS, 'guildbanner');
+const OUT_SHOPICON = path.join(OUT_ASSETS, 'shopicons');
 fs.rmSync(OUT_GUILDBANNER, { recursive: true, force: true });
+fs.rmSync(OUT_SHOPICON, { recursive: true, force: true });
 const GUILD_CURRENCY = { Chaos: 'Brimstone', Death: 'Granite', Life: 'Power', Nature: 'Crystal', Sorcery: 'Essence' };
 const GUILD_ORDER = ['Nature', 'Chaos', 'Sorcery', 'Death', 'Life'];
-const guildItems = new Map(GUILD_ORDER.map(g => [g, []]));
-for (const r of readJSON(path.join(REF, 'guild_creature_ranks.json')).ranks) (guildItems.get(r.guild) || []).push({ rank: r.rank, item: r.creature, type: 'Creature' });
-for (const r of readJSON(path.join(REF, 'guild_spell_ranks.json')).ranks) (guildItems.get(r.guild) || []).push({ rank: r.rank, item: r.spell, type: 'Spell' });
-let guildBannerHits = 0;
-const guildShops = GUILD_ORDER.map(guild => {
-  const slug = guild.toLowerCase();
-  let banner = null;
-  if (copyNamedSprite(`project_guild_${slug}seal`, OUT_GUILDBANNER, `${slug}.png`)) { banner = `assets/guildbanner/${slug}.png`; guildBannerHits++; }
-  else warn(`guild banner seal missing for ${guild}`);
-  const items = (guildItems.get(guild) || []).sort((a, b) => a.rank - b.rank || a.type.localeCompare(b.type));
-  return { guild, banner, currency: GUILD_CURRENCY[guild] || null, items };
-});
-console.log(`  guild shops: ${guildShops.length} guilds · ${guildShops.reduce((n, g) => n + g.items.length, 0)} items · ${guildBannerHits} banners`);
-
-// ── Shops (CODE-GROUNDED, data only — no UI yet; backlog: one "Shops" feature w/ a 4-way God/Guild/Arena/Tavern
-// toggle replacing the separate overlays) ─────────────────────────────────────────────────────────────────────
-// _su_extract code/build_shops_true.py: every entry is a typed constructor in scr_<X>ShopSetup resolved by
-// direct RUNTIME-id lookup (creature/spell/material/decoration/... *_ids_true.json). Joins into the calc:
-//   creature -> creatures[] by name (code L_CRIT name) · spell -> spells by key · trait_item -> the material
-//   key (traitItems) + the creature it is paired with · project_item/cosmetics -> name only.
-// Prices are the code literals. Currency is NOT decoded from code (left to the UI pass).
-const SHOP_DEF = [['god', 'God'], ['guild_nature', 'Nature Guild'], ['guild_chaos', 'Chaos Guild'], ['guild_sorcery', 'Sorcery Guild'],
-  ['guild_death', 'Death Guild'], ['guild_life', 'Life Guild'], ['arena', 'Arena'], ['tavern', 'Tavern']];
+// wiki Guild Reputation rank that unlocks a guild creature/spell (secondary info, provenance = wiki)
+const guildRank = new Map();
+for (const r of readJSON(path.join(REF, 'guild_creature_ranks.json')).ranks) guildRank.set(norm(r.guild) + '|' + norm(r.creature), r.rank);
+for (const r of readJSON(path.join(REF, 'guild_spell_ranks.json')).ranks) guildRank.set(norm(r.guild) + '|' + norm(r.spell), r.rank);
+// god display name from the realm table (code god keys are upper-case: SURATHLI, T'MEREM'RGO, 4080 …)
+const godNameByNorm = new Map();
+for (const r of (Array.isArray(readJSON(path.join(REF, 'realms_ref.json'))) ? readJSON(path.join(REF, 'realms_ref.json')) : (readJSON(path.join(REF, 'realms_ref.json')).records || []))) {
+  const g = String(r.god || '').split(',')[0].trim(); if (g) godNameByNorm.set(norm(g), g);
+}
 const shopsSrc = readJSON(path.join(MODEL, 'shops.json')).shops;
 const slimShopItem = (i) => {
   const o = { kind: i.kind, type: i.type_label || null, name: i.name || null, price: i.price ?? null };
   if (i.id != null) o.id = i.id;
   if (i.key) o.key = i.key;
-  if (i.kind === 'trait_item') { o.forCreature = i.for_creature || null; o.traitRuntimeId = i.trait_runtime_id ?? null; }
+  if (i.sprite) o.sprite = i.sprite;
+  if (i.kind === 'trait_item') o.forCreature = i.for_creature || null;
   if (i.unresolved) o.unresolved = i.unresolved;
-  if (i.price_note) o.priceNote = i.price_note;
   return o;
 };
-const godLabel = (k) => { const n = vocabGodName(k); return n || (k ? k.charAt(0) + k.slice(1).toLowerCase() : null); };
-function vocabGodName(k) { return k ? (GOD_KEY_NAME[k] || null) : null; }
-const GOD_KEY_NAME = { "T'MEREM'RGO": "T'mere M'rgo", '4080': '4080' };
-const shops = SHOP_DEF.filter(([k]) => shopsSrc[k]).map(([k, label]) => {
-  const s = shopsSrc[k];
-  const out = { key: k, label, fn: s.function };
-  if (s.gods) out.gods = s.gods.filter(g => g.god_key).map(g => ({ godIndex: g.god_index, godKey: g.god_key, god: godLabel(g.god_key), items: g.items.map(slimShopItem) }));
-  else out.items = s.items.map(slimShopItem);
-  return out;
-});
-{
-  const all = shops.flatMap(s => s.items || s.gods.flatMap(g => g.items));
-  const unres = all.filter(i => i.unresolved || !i.name);
-  const critNames = new Set(creatures.map(c => norm(c.name)));
-  const critMiss = all.filter(i => i.kind === 'creature' && !critNames.has(norm(i.name)));
-  console.log(`  shops (code): ${shops.length} · ${all.length} items · ${unres.length} unresolved · creature joins ${all.filter(i => i.kind === 'creature').length - critMiss.length}/${all.filter(i => i.kind === 'creature').length}`);
-  for (const i of unres) warn(`shop item unresolved: ${JSON.stringify(i)}`);
-  if (critMiss.length) warn(`shop creatures not in roster: ${[...new Set(critMiss.map(i => i.name))].join(', ')}`);
+let guildBannerHits = 0;
+const shopTab = (key, label, extra) => ({ key, label, ...extra });
+const godShopSrc = shopsSrc.god;
+const shops = [
+  shopTab('god', 'God', { currency: 'Favor', groups: godShopSrc.gods.map(g => {
+    const god = godNameByNorm.get(norm(g.god_key)) || null;
+    if (!god) warn(`shop god key ${g.god_key} has no realm god name`);
+    return { key: g.god_key, name: god || g.god_key, img: god ? godBattleFor(god) : null, godIndex: g.god_index, items: g.items.map(slimShopItem) };
+  }).sort((a, b) => a.name.localeCompare(b.name)) }),
+  shopTab('guild', 'Guild', { groups: GUILD_ORDER.map(guild => {
+    const slug = guild.toLowerCase(), src = shopsSrc['guild_' + slug];
+    let img = null;
+    if (copyNamedSprite(`project_guild_${slug}seal`, OUT_GUILDBANNER, `${slug}.png`)) { img = `assets/guildbanner/${slug}.png`; guildBannerHits++; }
+    else warn(`guild banner seal missing for ${guild}`);
+    const items = src.items.map(slimShopItem).map(it => {
+      const rk = guildRank.get(norm(guild) + '|' + norm(it.name)); return rk != null ? { ...it, rank: rk } : it;
+    });
+    return { key: slug, name: `${guild} Guild`, img, currency: GUILD_CURRENCY[guild] || null, items };
+  }) }),
+  shopTab('arena', 'Arena', { items: shopsSrc.arena.items.map(slimShopItem) }),
+  shopTab('tavern', 'Tavern', { items: shopsSrc.tavern.items.map(slimShopItem) }),
+];
+const allShopItems = () => shops.flatMap(s => s.items || s.groups.flatMap(g => g.items));
+// Regalis' dust argument is a runtime global in code (not statically resolvable) → name it from God Shop_REF, tagged.
+for (const g of shops[0].groups) for (const it of g.items) {
+  if (it.kind === 'dust' && !it.name) {
+    const ref = (godShopMap.get(g.name) || []).find(r => r.type === 'Crafting Material');
+    if (ref) { it.name = ref.item; it.nameSrc = 'csv'; it.type = 'Crafting Material'; delete it.unresolved; }
+  }
 }
+console.log(`  shops (code): God ${shops[0].groups.length} gods · ${GUILD_ORDER.length} guilds (${guildBannerHits} banners) · Arena · Tavern · ${allShopItems().length} items`);
 
 // ── boss battle sprites (Appendix boss-trait rows) ────────────────────────────
 // DEITY bosses use bspr_god_* (incl. Caliban). NETHER/SPECIAL bosses use spr_crits_battle_<frame> — the
@@ -1798,7 +1795,7 @@ const realms = realmArr.map((r, i) => {
     ...parsed,
   };
 });
-const shopGods = new Set(godShops.map(g => g.god));
+const shopGods = new Set(shops[0].groups.map(g => g.name));
 for (const rm of realms) rm.hasShop = shopGods.has(rm.godName);   // cross-link to the God Shop reference
 // complex-interaction combination tables (Combination_REF.csv) — 5 realms with a combine-objects puzzle
 // (Tarot Cards / Squash / Music Crystal / Fruit / Chemistry Table). Wide layout: 3 cols per realm at [1,4,7,10,13].
@@ -2266,6 +2263,31 @@ for (const rl of relics) applyAudit('relic:' + rl.id, rl);
 for (const cd of cards) applyAudit('card:' + cd.id, cd);
 console.log(`  audit overrides: ${Object.keys(auditOv).length} defined · ${auditHits} matched · +${auditAdds} tags · -${auditRems} tags (src=audit)`);
 
+// ── Shops: icon + drill-in joins (needs creatures / spells / traitItems / spellProps / skins) ──
+{
+  const critBy = new Map(creatures.map(c => [norm(c.name), c]));
+  const spellBy = new Map(spells.map(sp => [sp.key, sp]));
+  const tiBy = new Map(traitItems.map(t => [norm(t.name), t]));
+  const dustBy = new Map(spellProps.map(p => [norm(p.name), p]));
+  const skinBy = new Map(skins.map(k => [k.id, k]));
+  const stat = {}, miss = {};
+  const bump = (k, ok) => { (stat[k] = stat[k] || [0, 0])[ok ? 0 : 1]++; };
+  for (const it of allShopItems()) {
+    let ok = true;
+    if (it.kind === 'creature') { const c = critBy.get(norm(it.name)); if (c) it.cid = c.id; else ok = false; }
+    else if (it.kind === 'spell') { const sp = spellBy.get(it.key); if (sp) { it.spellId = sp.id; it.cls = sp.cls; } else ok = false; }
+    else if (it.kind === 'trait_item') { const t = tiBy.get(norm(it.name)); if (t) { it.icon = t.icon; it.traitId = t.traitId; } else ok = false; }
+    else if (it.kind === 'dust') { const d = dustBy.get(norm(it.name)); if (d) it.icon = d.icon; else ok = false; }
+    else if (it.kind === 'skin') { const k = skinBy.get(it.id); if (k) it.icon = k.img; else ok = false; }
+    else if (it.sprite) { ok = copyNamedSprite(it.sprite, OUT_SHOPICON, `${it.sprite}.png`); if (ok) it.icon = `assets/shopicons/${it.sprite}.png`; }
+    else ok = null;                                                   // no art in code (walls/floors/music/chests/keys)
+    delete it.sprite;
+    if (ok !== null) { bump(it.kind, ok); if (!ok) (miss[it.kind] = miss[it.kind] || new Set()).add(it.name); }
+  }
+  console.log(`  shop joins: ${Object.entries(stat).map(([k, [o, m]]) => `${k} ${o}/${o + m}`).join(' · ')}`);
+  for (const [k, set] of Object.entries(miss)) warn(`shop ${k} items without a join/icon: ${[...set].slice(0, 8).join(', ')}${set.size > 8 ? ' …' : ''}`);
+}
+
 const SU_DATA = {
   meta: {
     generated: new Date().toISOString(),
@@ -2309,9 +2331,7 @@ const SU_DATA = {
   personalities: PERSONALITIES,
   runes,                    // False God difficulty runes (18) + authored theme counters
   realmProps,               // Realm-Instability realm properties (56) + authored theme/class counters
-  godShops,                 // per-god favor shops (22 gods) — reference
-  guildShops,               // per-guild reputation shops (5 guilds: creatures + spells) — reference
-  shops,                    // CODE-GROUNDED shop stock (God per-god / 5 Guilds / Arena / Tavern) — data only, UI pending
+  shops,                    // CODE-GROUNDED shop stock: [God(groups=gods), Guild(groups=guilds), Arena, Tavern] — the Shops overlay
   realms,                   // 30 realms: denizens/resources + Realm Objects (w/ rank-0 base); each carries a
                             //   `favor` matrix { rank(0..100) → [value per favorAllCols] } from Favor_MTX
   favorCols,                // { unique:[{key,col,label,unit}], generic:[...] } — the Favor_MTX column groups

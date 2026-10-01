@@ -44,12 +44,12 @@
     if (c.sprite && c.race && !RACE_REP.has(c.race)) RACE_REP.set(c.race, c);
   }
   const realmCritFor = (name) => CREA_BY_NAME.get((name || "").toLowerCase()) || RACE_REP.get(name) || null;
-  // boss-owned trait → boss sprite (Appendix). Deity = god battle sprite (D.realms/D.godShops), False God =
+  // boss-owned trait → boss sprite (Appendix). Deity = god battle sprite (D.realms/D.shops), False God =
   // combined portrait (D.falseGods). Nether/Special bosses have no sprite in the extract yet → null.
   const normNm = (s) => String(s || "").toLowerCase().replace(/[^a-z0-9]/g, "");
   const GOD_BATTLE = new Map();
   for (const r of (D.realms || [])) if (r.god && r.godBattle) { const k = normNm(String(r.god).split(",")[0]); if (!GOD_BATTLE.has(k)) GOD_BATTLE.set(k, r.godBattle); }
-  for (const g of (D.godShops || [])) if (g.god && g.battle) { const k = normNm(String(g.god).split(",")[0]); if (!GOD_BATTLE.has(k)) GOD_BATTLE.set(k, g.battle); }
+  for (const g of ((D.shops || []).find(s => s.key === "god") || {}).groups || []) if (g.img) { const k = normNm(g.name); if (!GOD_BATTLE.has(k)) GOD_BATTLE.set(k, g.img); }
   const FG_PORTRAITS = (D.falseGods || []).map(f => ({ k: normNm(f.name), img: f.img, name: f.name }));
   const BOSS_SPRITES = D.bossSprites || {};   // normalized Deity owner → bspr_ battle sprite (incl. Caliban)
   function bossSpriteFor(t) {
@@ -2107,134 +2107,82 @@
     </div></div>`;
   }
 
-  // ── God Shops reference ─────────────────────────────────────────────────────
-  function openGodShops(godName) {
-    // stepped page (mirrors Realms): full-page god list → full-screen detail, no split info panel
-    ovState = { kind: "godshops", search: "", view: godName ? "detail" : "list", sel: godName || null, render: renderGodShops };
+  // ── Shops — ONE overlay, 4-way toggle (God / Guild / Arena / Tavern) rotates the grid. Data = D.shops (code-grounded
+  // scr_<X>ShopSetup stock, icons/links joined at build). God & Guild show a tile grid of gods/guilds → that shop's
+  // items; Arena & Tavern show their items directly. Items are grouped by type. ──
+  const SHOP_TYPE_ORDER = ["Creature Mana", "Trait Item", "Inscription", "Crafting Material", "Project Item", "Skin",
+    "Decoration", "Background", "Wall", "Floor", "Music"];
+  const shopTab = (k) => (D.shops || []).find(s => s.key === k);
+  function openShops(tab, groupKey) {
+    ovState = { kind: "shops", tab: tab || "god", sel: groupKey || null, search: "", collapsed: new Set(), render: renderShops };
     openOverlay(ovState.render()); maybeFocusSearch(OV);
   }
-  function renderGodShops() {
-    const st = ovState, gs = D.godShops || [];
-    return st.view === "detail" ? renderGodShopDetail(gs.find(g => g.god === st.sel)) : renderGodShopList(gs);
+  function shopToggle(tab) {
+    return `<div class="art-view-toggle">${(D.shops || []).map((s, i) =>
+      `${i ? `<span class="av-pipe">|</span>` : ""}<button class="av-tab ${tab === s.key ? "on" : ""}" data-action="shop-tab" data-v="${s.key}">${esc(s.label)}</button>`).join("")}</div>`;
   }
-  // god-shop item → its real icon. Items name a creature (Mana / Heart of X), a spell (Inscription →
-  // class-coloured gem), a trait material (Trait) or a spell-gem dust (Crafting Material).
-  let GS_NAME_MAPS = null;
-  const gsNameMaps = () => GS_NAME_MAPS || (GS_NAME_MAPS = {
-    crea: new Map(D.creatures.map(c => [c.name.toLowerCase(), c])),
-    spell: new Map((D.spells || []).map(s => [s.name.toLowerCase(), s])),
-    ti: new Map((D.traitItems || []).map(t => [(t.name || "").toLowerCase(), t])),
-    dust: new Map((D.spellProps || []).map(p => [(p.name || "").toLowerCase(), p])),
-  });
-  function shopItemIconHtml(it) {
-    const m = gsNameMaps(), nm = (it.item || "").toLowerCase();
-    let icon = null, crea = null;
-    if (it.type === "Mana") crea = m.crea.get(nm);
-    else if (it.type === "Heart") crea = m.crea.get(nm.replace(/^heart of /, ""));
-    else if (it.type === "Inscription") { const s = m.spell.get(nm); icon = s && spellIcon(s); }
-    else if (it.type === "Trait") { const t = m.ti.get(nm); icon = t && t.icon; }
-    else if (it.type === "Crafting Material") { const d = m.dust.get(nm) || m.ti.get(nm); icon = d && d.icon; }
-    if (crea) return `<span class="gs-item-ico">${critFace(crea)}</span>`;
-    if (icon) return `<span class="gs-item-ico">${spriteImg(icon, "px")}</span>`;
+  function shopItemIcon(it) {
+    if (it.kind === "creature") { const c = CREA.get(it.cid); if (c) return `<span class="gs-item-ico">${critFace(c)}</span>`; }
+    if (it.kind === "spell") { const ic = spellIcon(SPELL.get(it.spellId)); if (ic) return `<span class="gs-item-ico">${spriteImg(ic, "px")}</span>`; }
+    if (it.icon) return `<span class="gs-item-ico">${spriteImg(it.icon, "px")}</span>`;
     return `<span class="gs-item-ico empty"></span>`;
   }
-  // a shop item → the drill-in it opens: creature preview, or a spell/trait taxonomy page. "" if none.
-  function shopItemOpenAttrs(it) {
-    const m = gsNameMaps(), nm = (it.item || "").toLowerCase();
-    let crea = null, spell = null, traitId = null;
-    if (it.type === "Mana" || it.type === "Creature") crea = m.crea.get(nm);
-    else if (it.type === "Heart") crea = m.crea.get(nm.replace(/^heart of /, ""));
-    else if (it.type === "Inscription" || it.type === "Spell") spell = m.spell.get(nm);
-    else if (it.type === "Trait") { const t = m.ti.get(nm); traitId = t && t.traitId; }
-    if (crea) return ` data-action="apx-crea-open" data-cid="${crea.id}"`;
-    if (spell) return ` data-action="apx-open" data-ek="spell" data-eid="${spell.id}"`;
-    if (traitId != null) return ` data-action="apx-open" data-ek="trait" data-eid="${traitId}"`;
+  function shopItemOpen(it) {
+    if (it.kind === "creature" && it.cid != null) return ` data-action="apx-crea-open" data-cid="${it.cid}"`;
+    if (it.kind === "spell" && it.spellId != null) return ` data-action="apx-open" data-ek="spell" data-eid="${it.spellId}"`;
+    if (it.kind === "trait_item" && it.traitId != null) return ` data-action="apx-open" data-ek="trait" data-eid="${it.traitId}"`;
     return "";
   }
-  function renderGodShopList(gs) {
+  function shopItemsHtml(items, shop, group) {
     const st = ovState, q = st.search.trim().toLowerCase();
-    const list = gs.filter(g => !q || g.god.toLowerCase().includes(q) || g.items.some(it => it.item.toLowerCase().includes(q) || (it.desc || "").toLowerCase().includes(q)));
-    // tiles like the creature selector — the whole tile navigates to the god's shop
-    const tiles = list.map(g => `<div class="pick-tile" data-action="gs-god" data-g="${esc(g.god)}">
-      <div class="pt-sprite">${g.battle ? spriteImg(g.battle, "px") : `<span class="spec-tile-plus">✦</span>`}</div>
-      <div class="pt-name">${esc(g.god)}</div></div>`).join("")
-      || `<div class="slot-sub" style="padding:10px">No gods match.</div>`;
+    const cur = (group && group.currency) || shop.currency || "";
+    const byType = new Map();
+    for (const it of items) {
+      if (q && !(it.name || "").toLowerCase().includes(q) && !(it.type || "").toLowerCase().includes(q)) continue;
+      const t = it.type || "Item"; (byType.get(t) || byType.set(t, []).get(t)).push(it);
+    }
+    const rankOf = (t) => { const i = SHOP_TYPE_ORDER.indexOf(t); return i < 0 ? 99 : i; };
+    const order = [...byType.keys()].sort((x, y) => rankOf(x) - rankOf(y));
+    const parts = order.map(t => {
+      const open = q || !st.collapsed.has(t), list = byType.get(t);
+      const rows = open ? list.map(it => {
+        const go = shopItemOpen(it), tr = it.kind === "trait_item" && it.traitId != null && D.traits[it.traitId];
+        const nmTitle = it.nameSrc ? ` title="Not statically resolvable in code — name from the God Shop reference"` : "";
+        return `<div class="perk-line${go ? " apx-clickable" : ""}"${go}>${shopItemIcon(it)}
+          <div class="perk-line-body"><div class="perk-line-head"><b${nmTitle}>${esc(it.name || "?")}</b>
+            <span class="perk-line-meta">${it.rank != null ? `<span class="anoint-spec-tag" title="Guild Reputation rank">Rank ${it.rank}</span>` : ""}${it.price != null ? `<span class="gs-price"${cur ? ` title="${esc(cur)}"` : ""}>${it.price}${shop.key === "god" ? " ✦" : ""}</span>` : ""}</span></div>
+            ${tr ? `<div class="perk-desc">${esc(tr.name)}</div>` : ""}</div></div>`;
+      }).join("") : "";
+      return `<button class="apx-sec-head apx-cat${open ? "" : " collapsed"}" data-action="shop-sec" data-c="${esc(t)}"><span class="apx-sec-caret">${open ? "▾" : "▸"}</span>${esc(t)}</button>${rows}`;
+    });
+    return parts.join("") || `<div class="slot-sub" style="padding:10px">No items match.</div>`;
+  }
+  function renderShops() {
+    const st = ovState, shop = shopTab(st.tab) || (D.shops || [])[0];
+    const q = st.search.trim().toLowerCase();
+    const group = shop.groups && st.sel ? shop.groups.find(g => g.key === st.sel) : null;
+    let header, body;
+    if (shop.groups && !group) {
+      const list = shop.groups.filter(g => !q || g.name.toLowerCase().includes(q) || g.items.some(it => (it.name || "").toLowerCase().includes(q)));
+      const tiles = list.map(g => `<div class="pick-tile" data-action="shop-pick" data-k="${esc(g.key)}">
+        <div class="pt-sprite">${g.img ? spriteImg(g.img, "px") : `<span class="spec-tile-plus">✦</span>`}</div>
+        <div class="pt-name">${esc(g.name)}</div></div>`).join("") || `<div class="slot-sub" style="padding:10px">Nothing matches.</div>`;
+      header = `<h2>Shops</h2>`;
+      body = `${shopToggle(shop.key)}<div class="ovl-center-scroll"><div class="pick-grid gs-grid">${tiles}</div></div>`;
+    } else if (group) {
+      header = `<button class="btn-ghost" data-action="shop-back">‹ ${esc(shop.label)}</button><h2 style="flex:1">${esc(group.name)}</h2>`;
+      body = `${shopToggle(shop.key)}<div class="gs-detail-head">${group.img ? `<div class="gs-god-sprite">${spriteImg(group.img, "px")}</div>` : ""}<div class="gs-god-name">${esc(group.name)}</div>${group.currency ? `<div class="slot-sub">${esc(group.currency)}</div>` : ""}</div>
+        <div class="ovl-center-scroll"><div class="perk-list">${shopItemsHtml(group.items, shop, group)}</div></div>`;
+    } else {
+      header = `<h2>Shops</h2>`;
+      body = `${shopToggle(shop.key)}<div class="ovl-center-scroll"><div class="perk-list">${shopItemsHtml(shop.items, shop, null)}</div></div>`;
+    }
     return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel">
-      <div class="overlay-header"><h2>God Shops</h2>
-        <input class="ovl-search" placeholder="Search god / item…" value="${esc(st.search)}" data-action="gs-search">
+      <div class="overlay-header">${header}
+        <input class="ovl-search" placeholder="Search…" value="${esc(st.search)}" data-action="shop-search">
         <button class="ovl-close" data-action="close-ovl">✕</button></div>
-      <div class="overlay-body"><div class="ovl-center"><div class="ovl-center-scroll"><div class="pick-grid gs-grid">${tiles}</div></div></div></div>
-      <div class="overlay-footer"><span class="foot-info"></span><button class="btn-confirm" data-action="close-ovl">Done</button></div>
-    </div></div>`;
-  }
-  function renderGodShopDetail(sel) {
-    if (!sel) { ovState.view = "list"; return renderGodShopList(D.godShops || []); }
-    const typeChip = (t) => t ? `<span class="anoint-spec-tag">${esc(t)}</span>` : "";
-    const rows = sel.items.map(it => { const open = shopItemOpenAttrs(it); return `<div class="perk-line${open ? " apx-clickable" : ""}"${open}>
-      ${shopItemIconHtml(it)}
-      <div class="perk-line-body">
-        <div class="perk-line-head"><b>${esc(it.item)}</b><span class="perk-line-meta">${typeChip(it.type)}${it.price != null ? `<span class="gs-price" title="Favor">${it.price} ✦</span>` : ""}</span></div>
-        ${it.desc ? `<div class="perk-desc">${esc(it.desc)}</div>` : ""}</div></div>`; }).join("")
-      || `<div class="slot-sub" style="padding:10px">No items.</div>`;
-    return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel">
-      <div class="overlay-header"><button class="btn-ghost" data-action="gs-back">‹ God Shops</button>
-        <h2 style="flex:1">${esc(sel.god)}</h2><button class="ovl-close" data-action="close-ovl">✕</button></div>
-      <div class="overlay-body"><div class="ovl-center">
-        <div class="gs-detail-head">${sel.battle ? `<div class="gs-god-sprite">${spriteImg(sel.battle, "px")}</div>` : ""}<div class="gs-god-name">${esc(sel.god)}</div></div>
-        <div class="ovl-center-scroll"><div class="perk-list">${rows}</div></div>
-      </div></div>
-      <div class="overlay-footer"><button class="btn-ghost" data-action="gs-back">‹ Back to gods</button>
-        <button class="btn-confirm" data-action="close-ovl">Done</button></div>
-    </div></div>`;
-  }
-
-  // ── Guild Shops reference (mirrors God Shops) — per-guild reputation-rank rewards ────────────
-  function openGuildShops(guildName) {
-    ovState = { kind: "guildshops", search: "", view: guildName ? "detail" : "list", sel: guildName || null, render: renderGuildShops };
-    openOverlay(ovState.render()); maybeFocusSearch(OV);
-  }
-  function renderGuildShops() {
-    const st = ovState, gs = D.guildShops || [];
-    return st.view === "detail" ? renderGuildShopDetail(gs.find(g => g.guild === st.sel)) : renderGuildShopList(gs);
-  }
-  function guildItemIcon(it) {
-    const m = gsNameMaps(), nm = (it.item || "").toLowerCase();
-    if (it.type === "Creature") { const c = m.crea.get(nm); if (c) return `<span class="gs-item-ico">${critFace(c)}</span>`; }
-    else if (it.type === "Spell") { const s = m.spell.get(nm), ic = s && spellIcon(s); if (ic) return `<span class="gs-item-ico">${spriteImg(ic, "px")}</span>`; }
-    return `<span class="gs-item-ico empty"></span>`;
-  }
-  function renderGuildShopList(gs) {
-    const st = ovState, q = st.search.trim().toLowerCase();
-    const list = gs.filter(g => !q || g.guild.toLowerCase().includes(q) || g.items.some(it => it.item.toLowerCase().includes(q)));
-    const tiles = list.map(g => `<div class="pick-tile" data-action="guild-pick" data-g="${esc(g.guild)}">
-      <div class="pt-sprite">${g.banner ? spriteImg(g.banner, "px") : `<span class="spec-tile-plus">✦</span>`}</div>
-      <div class="pt-name">${esc(g.guild)}</div></div>`).join("")
-      || `<div class="slot-sub" style="padding:10px">No guilds match.</div>`;
-    return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel">
-      <div class="overlay-header"><h2>Guild Shops</h2>
-        <input class="ovl-search" placeholder="Search guild / item…" value="${esc(st.search)}" data-action="guild-search">
-        <button class="ovl-close" data-action="close-ovl">✕</button></div>
-      <div class="overlay-body"><div class="ovl-center"><div class="ovl-center-scroll"><div class="pick-grid gs-grid">${tiles}</div></div></div></div>
-      <div class="overlay-footer"><span class="foot-info"></span><button class="btn-confirm" data-action="close-ovl">Done</button></div>
-    </div></div>`;
-  }
-  function renderGuildShopDetail(sel) {
-    if (!sel) { ovState.view = "list"; return renderGuildShopList(D.guildShops || []); }
-    const rows = sel.items.map(it => { const open = shopItemOpenAttrs(it); return `<div class="perk-line${open ? " apx-clickable" : ""}"${open}>
-      ${guildItemIcon(it)}
-      <div class="perk-line-body">
-        <div class="perk-line-head"><b>${esc(it.item)}</b><span class="perk-line-meta"><span class="anoint-spec-tag">${esc(it.type)}</span><span class="gs-price" title="Guild Reputation rank">Rep ${it.rank}</span></span></div>
-      </div></div>`; }).join("")
-      || `<div class="slot-sub" style="padding:10px">No items.</div>`;
-    return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel">
-      <div class="overlay-header"><button class="btn-ghost" data-action="guild-back">‹ Guild Shops</button>
-        <h2 style="flex:1">${esc(sel.guild)} Guild</h2><button class="ovl-close" data-action="close-ovl">✕</button></div>
-      <div class="overlay-body"><div class="ovl-center">
-        <div class="gs-detail-head">${sel.banner ? `<div class="gs-god-sprite">${spriteImg(sel.banner, "px")}</div>` : ""}<div class="gs-god-name">${esc(sel.guild)} Guild</div>${sel.currency ? `<div class="slot-sub">Currency: ${esc(sel.currency)}</div>` : ""}</div>
-        <div class="ovl-center-scroll"><div class="perk-list">${rows}</div></div>
-      </div></div>
-      <div class="overlay-footer"><button class="btn-ghost" data-action="guild-back">‹ Back to guilds</button>
-        <button class="btn-confirm" data-action="close-ovl">Done</button></div>
+      <div class="overlay-body"><div class="ovl-center">${body}</div></div>
+      <div class="overlay-footer">${group ? `<button class="btn-ghost" data-action="shop-back">‹ Back</button>` : `<span class="foot-info"></span>`}<button class="btn-confirm" data-action="close-ovl">Done</button></div>
     </div></div>`;
   }
 
@@ -3945,7 +3893,6 @@
       case "iconpick-use": { const w = (D.wardrobe || []).find(x => x.sprite === dovState.sel); if (w && dovState.onPick) { dovState.onPick(w); closeDetail(); refreshOverlay(); } break; }
       case "open-appendix": openAppendix(); break;
       case "open-realms": openRealms(); break;
-      case "open-godshops": openGodShops(); break;
       case "open-riddle": openRiddle(); break;
       case "riddle-search": break;   // handled in onInput
       case "open-glossary": openGlossary(); break;
@@ -3963,14 +3910,13 @@
       case "realm-clearranks": favorPrefs.ranks = {}; persistFavorPrefs(); refreshOverlay(); break;
       case "realm-cat": { const k = t.dataset.k; ovState.cmpExpanded.has(k) ? ovState.cmpExpanded.delete(k) : ovState.cmpExpanded.add(k); refreshOverlay(); break; }
       case "realm-search": break;   // handled in onInput
-      case "realm-shop": openGodShops(t.dataset.g); break;
-      case "gs-god": ovState.sel = t.dataset.g; ovState.view = "detail"; refreshOverlay(true); break;
-      case "gs-back": ovState.view = "list"; refreshOverlay(true); maybeFocusSearch(OV); break;
-      case "gs-search": break;      // handled in onInput
-      case "open-guildshops": openGuildShops(); break;
-      case "guild-pick": ovState.sel = t.dataset.g; ovState.view = "detail"; refreshOverlay(true); break;
-      case "guild-back": ovState.view = "list"; refreshOverlay(true); maybeFocusSearch(OV); break;
-      case "guild-search": break;   // handled in onInput
+      case "realm-shop": { const g = (shopTab("god").groups || []).find(x => normNm(x.name) === normNm(t.dataset.g)); openShops("god", g ? g.key : null); break; }
+      case "open-shops": openShops(); break;
+      case "shop-tab": ovState.tab = t.dataset.v; ovState.sel = null; ovState.search = ""; refreshOverlay(true); maybeFocusSearch(OV); break;
+      case "shop-pick": ovState.sel = t.dataset.k; ovState.search = ""; refreshOverlay(true); break;
+      case "shop-back": ovState.sel = null; ovState.search = ""; refreshOverlay(true); maybeFocusSearch(OV); break;
+      case "shop-sec": { const c = t.dataset.c; ovState.collapsed.has(c) ? ovState.collapsed.delete(c) : ovState.collapsed.add(c); refreshOverlay(); break; }
+      case "shop-search": break;    // handled in onInput
       case "open-threats": openThreats(); break;
       case "open-macros": if (FEATURES.macros) openMacros(); break;
       case "macro-crea": ovState.sel = +t.dataset.slot; refreshOverlay(); break;
@@ -4329,7 +4275,7 @@
     if (A === "builds-name") { ovState.draft.name = v; return; }
     // search fields — live filter without losing caret
     const searchMap = { "crea-search": [OV, ovState], "spec-search": [OV, ovState], "artb-search": [OV, ovState],
-      "relic-search": [OV, ovState], "cards-search": [OV, ovState], "anoint-search": [OV, ovState], "nether-search": [OV, ovState], "sg-search": [OV, ovState], "appendix-search": [OV, ovState], "gs-search": [OV, ovState], "guild-search": [OV, ovState], "realm-search": [OV, ovState], "riddle-search": [OV, ovState], "gloss-search": [OV, ovState], "facet-search": [DOV, dovState], "perk-search": [DOV, dovState], "pers-search": [DOV, dovState], "iconpick-search": [DOV, dovState], "skin-search": [DOV, dovState] };
+      "relic-search": [OV, ovState], "cards-search": [OV, ovState], "anoint-search": [OV, ovState], "nether-search": [OV, ovState], "sg-search": [OV, ovState], "appendix-search": [OV, ovState], "shop-search": [OV, ovState], "realm-search": [OV, ovState], "riddle-search": [OV, ovState], "gloss-search": [OV, ovState], "facet-search": [DOV, dovState], "perk-search": [DOV, dovState], "pers-search": [DOV, dovState], "iconpick-search": [DOV, dovState], "skin-search": [DOV, dovState] };
     if (searchMap[A]) {
       const [root, state] = searchMap[A]; state.search = v;
       if (A === "crea-search") resetCreaPage();   // new query → back to page 1

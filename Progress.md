@@ -6,6 +6,23 @@ Pages on `master`/root, Cloudflare analytics active with the shared github.io to
 No verify-before-push ceremony (no real users yet) — but every change is checked with the jsdom smoke suite
 (scratchpad `smoke.mjs`, ~84 assertions across all flows) before commit.
 
+## 2026-10-01 (eve) — Unified Shops overlay (code-grounded)
+- **One "Shops" overlay** (menu → Shops) with a 4-way **God | Guild | Arena | Tavern** toggle that rotates the grid:
+  God/Guild = tile grid (30 god battle sprites / 5 guild seals) → that shop's stock; Arena/Tavern = stock directly.
+  Stock grouped by type (Creature Mana, Trait Item, Inscription, Crafting Material, Project Item, Skin, Decoration,
+  Background, Wall, Floor, Music, Item) as collapsible bars; rows drill into creature / spell / trait pages; search
+  filters gods/guilds by any item they sell, or items within a shop. Replaces the God Shops + Guild Shops overlays
+  (CSV god_shop_ref / wiki guild tables no longer shipped; `D.godShops`/`D.guildShops` removed).
+- **Data fixes** (`_su_extract/code/build_shops_true.py`): Thrasher Tooth / Armored Tusk trait-items now resolve
+  (register-set item_class was filtered); T'mere's `inv_CreateMisc(131)` = Gate of the Gods Key (misc-item table);
+  icons from code for project items (`scr_ProjectItemSprite` → Hearts/Essences), decorations + backgrounds (sprite ref
+  in their DB records). Joins 100% for every kind; walls/floors/music/chests have no art in code (blank icon).
+  Regalis' dust is a runtime argument in code → named from God Shop_REF with a tooltip (only CSV-sourced item).
+- All 30 realms now link to their god's shop (`realm-shop` → Shops/God/<god>), was 22.
+- Prices are code literals; God shows ✦ (Favor), Guild shows its resource as tooltip (`GUILD_CURRENCY`), Arena/Tavern
+  plain (currency not decoded). Guild rows show the wiki Reputation **Rank** chip where known.
+- Open (in-game check): Azural block = Smiths/Crafters (CSV: Yetis), Tenebris = Reapers (CSV: Shadow X), dust price 1 (CSV 10).
+
 ## 2026-10-01 (late) — Wardrobe runtime ids + exact game names
 `scr_WardrobeName` / `scr_WardrobeSprite` are both switches over the wardrobe id (831 cases) → joined by id
 (`_su_extract/code/extract_wardrobe_ids.py` → `wardrobe_ids.json`; `wardrobe.json` enriched with `wardrobe_ids` +
@@ -1120,14 +1137,7 @@ MAPPING not for asserting PRESENCE; no inventing entities from the community-CSV
   traits/items/spells) is now complete.**
 
 ## Backlog
-### ⭐ NEXT — Shops feature (user, 2026-10-01)
-- [ ] **One "Shops" feature with a 4-way toggle (God / Guild / Arena / Tavern)** replacing the separate God Shops and
-      Guild Shops overlays (and covering Arena + Tavern, which have no overlay yet). Data is ready in `D.shops`
-      (code-grounded, from `_su_extract/code/build_shops_true.py`): God = per-god blocks `{godKey, god, items}`, others
-      flat `items`; item `{kind: creature|spell|trait_item|dust|project_item|decoration|music|wall|floor|background|skin|
-      consumable, type, name, id, key, price, forCreature?}`. Decide: currency labels (not decoded from code), whether
-      cosmetics show, God-shop open questions (Azural code=Smiths vs CSV Yetis, Tenebris Reapers vs Shadow X, dust price
-      code 1 vs CSV 10) — check in-game. Then retire `godShops`/`guildShops` (CSV/wiki-sourced).
+### ✅ DONE — Shops feature (user, 2026-10-01) — unified overlay shipped (see 2026-10-01 eve)
 - [x] Code-ground the per-perk **Anointment** flag — DONE 2026-10-01 pm.
 - [x] Spec costume tiers from `scr_SpecializationCostume` — DONE 2026-10-01 pm. [ ] Spec emblem/icon from `scr_SpecializationIcon` (decompiled, not yet wired).
 - [ ] #5 taxonomy → fully code-backed (workshop multi-parameter conditions first, e.g. side × event: "opposing-side buff gain").
