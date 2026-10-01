@@ -1589,7 +1589,9 @@
   }
 
   // wardrobe icon picker (detail overlay) — full 820 costumes, front-facing frame, search + category
-  const WARDROBE_CATS = ["specialization", "npc", "master", "creature", "animal"];
+  // 4 groups, every costume in exactly one (_su_extract code/classify_wardrobe.py: spec tiers / "Master of" / creature / npc)
+  const WARDROBE_CATS = ["specialization", "master", "creature", "npc"];
+  const WARDROBE_CAT_LABEL = { specialization: "Specialization", master: "Master", creature: "Creature", npc: "NPC" };
   const ICON_PAGE = 120;   // wardrobe sprites rendered per page; "Load more" adds another page
   function openIconPicker(onPick) {
     dovState = { kind: "iconpick", search: "", cat: null, limit: ICON_PAGE, onPick, render: renderIconPicker };
@@ -1603,7 +1605,7 @@
     list = list.slice().sort((a, b) => (a.name || "").localeCompare(b.name || ""));
     const limit = st.limit || ICON_PAGE, shown = list.slice(0, limit);
     const catChips = WARDROBE_CATS.map(c =>
-      `<button class="facet ${st.cat === c ? "on" : ""}" data-action="iconpick-cat" data-c="${c}">${c[0].toUpperCase() + c.slice(1)}</button>`).join("")
+      `<button class="facet ${st.cat === c ? "on" : ""}" data-action="iconpick-cat" data-c="${c}">${WARDROBE_CAT_LABEL[c]}</button>`).join("")
       + (st.cat ? `<button class="facet tag" data-action="iconpick-cat-clear">Clear ✕</button>` : "");
     // tap a tile to select it; the animated preview shows in the right info panel. Tap again / "Use" commits.
     const tiles = shown.map(w =>

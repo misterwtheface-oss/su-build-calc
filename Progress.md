@@ -15,6 +15,13 @@ No verify-before-push ceremony (no real users yet) — but every change is check
    Layout toggle's "Roster" is now labelled "List" (internal value unchanged) so both read List | Grid.
 3. Builds: **Update** is disabled (with a tooltip) when the current loadout has no creatures, so a saved build can't be
    overwritten back to the template state (handler guarded too).
+4. Builds icon picker: groups are now code-grounded (_su_extract `code/classify_wardrobe.py`). There are 4 groups, and every
+   one of the 820 skins is in exactly one:
+   - **Specialization** (129): exactly the code spec tiers. 20 untiered "Alternate"/Mime/Engineer outfits moved out;
+     Defiler/Tribalist T2/T3 moved in.
+   - **Master** (155): code name starts "Master of …".
+   - **Creature** (91): matches a code creature or god name, or is a listed animal/monster. The former Animal group is folded in here.
+   - **NPC** (445): everything else.
 
 ## 2026-10-01 (night 3) — Asset mappings converged on code + level-aware artifact icons
 Replaced hand-curated / heuristic asset tables with game-code maps (`_su_extract` asset_maps.json; DB_ID_FINDINGS.md):
