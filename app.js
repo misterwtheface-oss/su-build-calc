@@ -1049,11 +1049,11 @@
         const raceIco = c.race && D.raceIcons && D.raceIcons[c.race] ? spriteImg(D.raceIcons[c.race], "px") : "";
         const clsIco = c.cls && D.classIcons && D.classIcons[c.cls] ? spriteImg(D.classIcons[c.cls], "px") : "";
         const head = `<div class="ctr-head">
-            <div class="ctr-id"><b class="ctr-name">${esc(c.name)}</b>
+            <div class="ctr-id"><b class="ctr-name">${esc(c.name)}</b><span class="ctr-tags">
               ${c.race ? `<span class="ctr-tag">${raceIco ? `<span class="ctr-ico">${raceIco}</span>` : ""}${esc(c.race)}</span>` : ""}
-              ${c.cls ? `<span class="ctr-tag">${clsIco ? `<span class="ctr-ico">${clsIco}</span>` : ""}${esc(c.cls)}</span>` : ""}</div>
+              ${c.cls ? `<span class="ctr-tag">${clsIco ? `<span class="ctr-ico">${clsIco}</span>` : ""}${esc(c.cls)}</span>` : ""}</span></div>
             <div class="ctr-stats">${STAT_KEYS.map(k => `<span class="ctr-stat"><span class="ctr-stat-k">${STAT_LABEL[k]}</span> <b>${c[k] ?? "—"}</b></span>`).join("")}
-              <span class="ctr-stat"><span class="ctr-stat-k">Total</span> <b>${c.total ?? "—"}</b></span></div></div>`;
+</div></div>`;
         return `<div class="crea-trait-row primary-traits ${sel === c.id ? "selected" : ""} ${blk ? "disabled" : ""}"${blk ? "" : ` data-action="crea-pick" data-id="${c.id}"`}>
           ${head}${traitBanner(c.traitId, { noNav: true })}<div class="trait-desc">${richText(tr ? tr.desc || "" : "")}</div></div>`; }).join("")}
     </div>` : "";
@@ -1087,7 +1087,7 @@
         </div>
         ${traitsView ? "" : `<div class="ovl-right">${side}</div>`}
       </div>
-      <div class="overlay-footer"><span class="foot-info"></span><div class="crea-foot">${viewToggle}${footer}</div></div>
+      <div class="overlay-footer">${viewToggle}<div class="crea-foot">${footer}</div></div>
     </div></div>`;
   }
   // creature info panel: trait leads, stat table follows (per house layout). `opts.infoCid` adds an "i"
