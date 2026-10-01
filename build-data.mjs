@@ -36,7 +36,6 @@ const OUT_REALMICON = path.join(OUT_ASSETS, 'realmicons');
 const OUT_REALMOBJ = path.join(OUT_ASSETS, 'realmobjects');
 const OUT_GODBATTLE = path.join(OUT_ASSETS, 'godbattle');
 const OUT_CONDICON = path.join(OUT_ASSETS, 'condicons');
-const SRC_PROPGEM = path.join(SRC, 'assets', 'spell_gem_property_icons'); // hand-cropped from in-game Enchanter/Materials UI (no named sprite in the dump)
 
 // ── asset provenance registry — permanent preventive guards on everything we ship ──
 // Every sprite copy is recorded as (source sprite base) -> (category = output dir). Two invariants
@@ -1370,23 +1369,30 @@ function loadLoc(file) {
 }
 // ── spell-gem enchant items = "Dust" (L_IN_DUST_<gem>); property from L_ID_DUST_<gem>, used at the Enchanter ──
 const itemsLoc = loadLoc('items.csv');
-const dustIcon = copyNamedSprite('spr_gem_dust', OUT_MATICON, 'spr_gem_dust.png') ? 'assets/maticons/spr_gem_dust.png' : null;
-// per-gem property icons: hand-cropped from the in-game Enchanter/Materials UI (these items have no
-// named sprite in the dump — the game picks the icon by dust-type index at draw time). Copied here
-// keyed by the L_IN_DUST_<GEM> key; gems without a captured icon fall back to the generic dust pile.
+// per-gem property icons — CODE (2026-10-01): inv_ItemIconIndex's dust table gives each dust type a frame of the
+// `icons` sheet (_su_extract data/model/item_icons.json dust_by_key, e.g. AGATE -> 2144). Replaces the hand-cropped
+// screenshot icons (several had neighbour-row bleed). No fallback: a gem without a frame is a build error.
 fs.rmSync(OUT_PROPGEM, { recursive: true, force: true });
-const copyPropGem = (gem, dest) => {
-  const src = path.join(SRC_PROPGEM, `${gem}.png`);
-  if (!fs.existsSync(src)) return false;
-  fs.mkdirSync(OUT_PROPGEM, { recursive: true });
-  fs.copyFileSync(src, path.join(OUT_PROPGEM, dest));
-  return true;
-};
-// each property gem is a Tier-4 Favor reward sold by exactly one god (God Shop_REF → god_shop_ref.json).
+fs.mkdirSync(OUT_PROPGEM, { recursive: true });
+const dustByKey = readJSON(path.join(MODEL, 'item_icons.json')).dust_by_key || {};
+const copyPropGem = (gem, dest) => { const d = dustByKey[gem]; return !!(d && d.frame != null && copySpriteFrame('icons', d.frame, OUT_PROPGEM, dest)); };
+// each property gem is sold by exactly one god — CODE: the god-shop dust item (shops.json god blocks, kind=dust).
+// Regalis' dust id is a runtime operand in code → the one gem/god left over is paired by elimination (asserted).
 const gemGod = new Map();
-for (const r of readJSON(path.join(REF, 'god_shop_ref.json')).records) {
-  if ((r.type || '').toLowerCase() === 'crafting material' && /property to a Spell Gem/i.test(r.description || ''))
-    gemGod.set((r.item || '').toUpperCase(), r.god);
+{
+  const godShopBlocks = readJSON(path.join(MODEL, 'shops.json')).shops.god.gods;
+  const rr = readJSON(path.join(REF, 'realms_ref.json')), rrArr = Array.isArray(rr) ? rr : (rr.records || []);
+  const godName = new Map(rrArr.map(r => String(r.god || '').split(',')[0].trim()).filter(Boolean).map(g => [norm(g), g]));
+  const nameOfGod = (k) => godName.get(norm(k)) || k;
+  const unresolvedGods = [];
+  for (const g of godShopBlocks) {
+    const d = g.items.find(i => i.kind === 'dust');
+    if (!d) continue;
+    if (d.key) gemGod.set(d.key.replace(/^L_IN_DUST_/, ''), nameOfGod(g.god_key)); else unresolvedGods.push(nameOfGod(g.god_key));
+  }
+  const leftGems = Object.keys(dustByKey).filter(k => !gemGod.has(k));
+  if (unresolvedGods.length === 1 && leftGems.length === 1) gemGod.set(leftGems[0], unresolvedGods[0]);
+  else if (unresolvedGods.length || leftGems.length) err(`gem->god: unresolved gods ${unresolvedGods} / gems ${leftGems}`);
 }
 const SPELL_CLASS_LIST = ['Nature', 'Chaos', 'Sorcery', 'Death', 'Life'];
 const spellProps = [];
@@ -1399,8 +1405,9 @@ let propGemIcons = 0, propGemGods = 0;
     const desc = itemsLoc.get('L_ID_DUST_' + gem) || '';
     // desc = "…add the following property to your Spell Gems:\n\n<PROPERTY>"
     let effect = desc.split(/Spell Gems:/i).pop().replace(/\\n|\n/g, ' ').trim();
-    let icon = dustIcon;
+    let icon = null;
     if (copyPropGem(gem, `${gem}.png`)) { icon = `assets/propgems/${gem}.png`; propGemIcons++; }
+    else err(`spell-gem property ${gem} has no code icon frame`);
     const god = gemGod.get(gem) || null;
     if (god) propGemGods++;
     // Opal's "Class Swap" lets you choose a target class in-game → expand into one variant per class,
@@ -1412,8 +1419,7 @@ let propGemIcons = 0, propGemGods = 0;
       spellProps.push({ id: idx++, key: gem, name, effect, icon, god });
     }
   }
-  warn(`spell-gem property icons: ${propGemIcons}/${spellProps.length} captured (rest use generic dust pile)`);
-  warn(`spell-gem property gods: ${propGemGods}/${spellProps.length} mapped from god_shop_ref`);
+  console.log(`  spell-gem properties: icons ${propGemIcons} (code frames) · gods ${propGemGods}/${spellProps.length} (code god-shop dust)`);
 }
 
 // ── relics ──

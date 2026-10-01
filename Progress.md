@@ -6,6 +6,12 @@ Pages on `master`/root, Cloudflare analytics active with the shared github.io to
 No verify-before-push ceremony (no real users yet) — but every change is checked with the jsdom smoke suite
 (scratchpad `smoke.mjs`, ~84 assertions across all flows) before commit.
 
+## 2026-10-01 (night 2) — Spell-gem property icons + gods from code
+The 21 property gems (dust items) now use the `icons`-sheet frames `inv_ItemIconIndex`'s dust table assigns (2144-2164,
+Agate..Tourmaline; `_su_extract` item_icons.json dust_by_key) instead of the hand-cropped screenshots (some had
+neighbour-row bleed: Beryl, Jade, Onyx). Gem→god now comes from the code god-shop dust items (20 direct + Agate↔Regalis
+by asserted elimination; identical to God Shop_REF). No fallback icon — a gem without a code frame fails the build.
+
 ## 2026-10-01 (night) — Shop currencies from code
 Each shop item now carries the currency it is bought with, decoded from `scr_ShopFill(…, MODE, CURRENCY)` + the
 `obj_shop` currency switches (`_su_extract/code/extract_shop_currency.py`): **God = Emblem of <God>** (was mislabeled
