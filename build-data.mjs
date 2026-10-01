@@ -2041,8 +2041,8 @@ for (const w of wardrobeRecs) {
                   category: w.category, frameCount: w.frames, frames, order: w.order, img });
 }
 // spec costume tiers 1/2/3 — from _su_extract data/model/spec_costumes.json (code/extract_spec_costumes.py):
-// tier 1 = scr_SpecializationCostume (code switch, all 43); tiers 2/3 = scr_WardrobeSprite entries matched by the
-// spec's INTERNAL sprite stem (Defiler=occultist, Tribalist=shaman, Hell Knight=hell_knight). Replaces the old
+// tiers = the wardrobe entries the game names "<Spec> (Tier N)" (L_WD_*_TIER_N), tier 1 cross-checked vs
+// scr_SpecializationCostume. Replaces the old
 // hand-written SPEC_COSTUME_OVERRIDE + stem heuristic (which missed Hell Knight's npc_hell_knight_2/_3).
 const specCostumeById = new Map(readJSON(path.join(MODEL, 'spec_costumes.json')).records.map(r => [r.spec_id, r.tiers]));
 let specCostumes = 0;
@@ -2073,7 +2073,7 @@ console.log(`  spec sprites: ${specSkins} real skins + ${specs.filter(s => s.spr
   console.log(`  perk icons: ${perkIconsCopied} copied (code-certain from perk_icons.json)${perkIconsMissing ? ` · ${perkIconsMissing} missing` : ' · 100%'}`);
   console.log(`  perk flags (code): ${anointFlagged} anointable · ${specs.reduce((n, s) => n + s.perks.filter(p => p.ascension).length, 0)} ascension`);
   console.log(`  False Gods: ${falseGods.length} with specs · ${specs.length - specGodMisses}/${specs.length} specs mapped${fgodImgMisses ? ` · ${fgodImgMisses} composites MISSING (run tools/build_falsegods.py)` : ' · composites ✓'}`);
-  console.log(`  wardrobe: ${wardrobeCopied} player costumes copied (code-certain)${wardrobeMissing ? ` · ${wardrobeMissing} missing` : ''} · ${wardrobeAnim} with a 2-frame animation · ${specCostumes}/${specs.length} specs linked (3 tiers: code tier-1 + internal-stem tiers 2/3)`);
+  console.log(`  wardrobe: ${wardrobeCopied} player costumes copied (code-certain)${wardrobeMissing ? ` · ${wardrobeMissing} missing` : ''} · ${wardrobeAnim} with a 2-frame animation · ${specCostumes}/${specs.length} specs linked (3 tiers, code-named)`);
   console.log(`  wardrobe names: ${nameSrc.class_vocab} class-vocab + ${nameSrc.L_WD} L_WD + ${nameSrc.derived} derived (of ${wardrobe.length})`);
   console.log(`  trait-item icons: ${matIconCopied} copied (code-certain from material_icons.json)${matIconMissing ? ` · ${matIconMissing} missing` : ''}`);
 

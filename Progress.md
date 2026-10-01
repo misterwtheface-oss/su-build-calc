@@ -6,6 +6,14 @@ Pages on `master`/root, Cloudflare analytics active with the shared github.io to
 No verify-before-push ceremony (no real users yet) — but every change is checked with the jsdom smoke suite
 (scratchpad `smoke.mjs`, ~84 assertions across all flows) before commit.
 
+## 2026-10-01 (late) — Wardrobe runtime ids + exact game names
+`scr_WardrobeName` / `scr_WardrobeSprite` are both switches over the wardrobe id (831 cases) → joined by id
+(`_su_extract/code/extract_wardrobe_ids.py` → `wardrobe_ids.json`; `wardrobe.json` enriched with `wardrobe_ids` +
+code `name`). **521/820 wardrobe names corrected** (e.g. Arenaguy → Town Guard, Alien → Martian, spec costumes now
+"<Spec> (Tier N)" / "(Alternate)"). Spec costume tiers now come from the game's own "<Spec> (Tier N)" names (same
+sprites as before; tier 1 cross-checked vs scr_SpecializationCostume). Game quirks (in code): id 240 "Surfer" uses
+the Scarecrow sprite; `ospr_chaosmage` = fallback sprite (no id); 11 wave-2 "(Tier 1)" entries exist under 2 ids.
+
 ## 2026-10-01 (pm) — 100% CSV agreement, code anointments, code costume tiers
 1. Source CSVs fixed in `_su_extract/data/reference/_raw_csv` (Sovereignty, Divine Wrath, Red-eye Fight, Siegemaster
    Shrug Off; Lurid Masochist trait = Purge, duplicate Trait_REF row removed) → spec perks code vs CSV 0/0.
