@@ -725,43 +725,14 @@ const perkDescByKey = new Map(catalogPerkArr.map(p => [p.key, p.desc || '']));
 const perkStatByKey = new Map(readJSON(path.join(MODEL, 'perk_stats.json')).records.map(p => [p.key, p]));
 // perk KEY -> icon sprite name, code-certain from scr_DatabasePerks (see _su_extract/code/extract_perk_icons.py)
 const perkIconByKey = new Map(readJSON(path.join(MODEL, 'perk_icons.json')).records.map(p => [p.key, p.icon]));
-// full perk catalog (661) gives a clean, globally-unique name↔key map — the authority for resolving the
-// user's Perk_REF.csv membership (which is by NAME) back to code keys (needed for icon/desc/stats/taxo).
-const perkKeyByName = new Map(), perkNameByKey = new Map();
-for (const p of catalogPerkArr) { if (!p.key) continue; perkNameByKey.set(p.key, p.name || p.key);
-  if (p.name) { const n = norm(p.name); if (!perkKeyByName.has(n)) perkKeyByName.set(n, p.key); } }
-// a few Perk_REF.csv names are misspelled vs the catalog — map them explicitly (verified against catalog)
-const PERK_NAME_ALIAS = { sovreignty: 'SOVEREIGNTY', wrath: 'DIVINEWRATH', redeyeflight: 'REDEYEFIGHT' };
-const perkKeyForName = (name) => PERK_NAME_ALIAS[norm(name)] || perkKeyByName.get(norm(name)) || null;
+const perkNameByKey = new Map();
+for (const p of catalogPerkArr) if (p.key) perkNameByKey.set(p.key, p.name || p.key);
 
-// user-provided Perk_REF.csv → per-perk ANOINTMENT flag only (not yet code-grounded). Membership and the
-// Ascension flag are code (specializations.json). csvPerksBySpec is kept for diagnostics only.
-const perkRef = new Map();          // norm(name)|norm(spec) -> {anoint, asc}
-const perkRefByKey = new Map();     // perk KEY -> {anoint, asc}  (CSV names resolved via perkKeyForName, incl. typo aliases)
-const perkRefByName = new Map();    // norm(name) -> {anoint, asc}  (fuzzy/spec-agnostic fallback)
-const csvPerksBySpec = new Map();   // norm(spec) -> [{name, key, anoint, asc, ranks, cost, desc}]
-let csvPerkKeyMisses = 0;
-{
-  const rows = parseCSV(fs.readFileSync(path.join(SRC, 'data', 'reference', '_raw_csv', 'Perk_REF.csv'), 'utf8'));
-  for (const r of rows) {
-    if (!r.Name) continue;
-    const anoint = /yes/i.test(r.Annointment || ''), asc = /yes/i.test(r.Ascension || '');
-    perkRef.set(norm(r.Name) + '|' + norm(r.Specialization), { anoint, asc });
-    perkRefByName.set(norm(r.Name), { anoint, asc });
-    const key = perkKeyForName(r.Name);
-    if (key && !perkRefByKey.has(key)) perkRefByKey.set(key, { anoint, asc });
-    if (!key) { csvPerkKeyMisses++; warn(`Perk_REF perk "${r.Name}" [${r.Specialization}] has no catalog key — icon/taxo will be absent`); }
-    const rec = { name: key ? (perkNameByKey.get(key) || r.Name) : r.Name, key: key || ('CSV_' + norm(r.Name).toUpperCase()),
-      anoint, asc, ranks: parseInt(r.Ranks, 10) || null, cost: parseInt(r.Cost, 10) || null, desc: r.Description || '' };
-    const sk = norm(r.Specialization);
-    (csvPerksBySpec.get(sk) || csvPerksBySpec.set(sk, []).get(sk)).push(rec);
-  }
-}
-const SPEC_REF_ALIAS = { grovetender: 'herbalist' };  // display label -> CSV Specialization
-function perkFlags(perkName, specLabel) {
-  const n = norm(perkName), sp = norm(specLabel), spCsv = SPEC_REF_ALIAS[sp] || sp;
-  return perkRef.get(n + '|' + spCsv) || perkRef.get(n + '|' + sp) || perkRefByName.get(n) || null;
-}
+// Anointability — CODE (2026-10-01, _su_extract code/extract_anointments.py): scr_AnointmentsListBySpec(spec) =
+// that spec's scr_PerkGetPerkList perks minus hard-coded exclusions (Ascension perks are never listed; Royal has
+// no case). Replaces the Perk_REF.csv "Annointment" column + the Antiquarian hand-rule.
+const anointData = readJSON(path.join(MODEL, 'anointments.json'));
+const anointableBySpec = new Map(Object.entries(anointData.by_spec).map(([sid, v]) => [+sid, new Set(v.anointable.map(p => p.key))]));
 
 // 16×16 spec emblem lookup (spec_<slug>) — aliases for internally-renamed/misspelled classes.
 // defiler→occultist: the sprite named `spec_occultist` is actually the Defiler crest (user-verified);
@@ -806,13 +777,20 @@ const FALSE_GODS = [
 ];
 const godBySpec = new Map();       // norm(spec label) -> god key
 for (const g of FALSE_GODS) for (const sp of g.specs) godBySpec.set(norm(sp), g.key);
+// guard: the spec lists above must equal the code's scr_AnointmentsListByGod mapping (by spec id)
+{
+  const codeGodBySpecId = new Map();
+  for (const g of Object.values(anointData.by_god)) for (const sid of g.spec_ids) codeGodBySpecId.set(sid, g.god_key);
+  const KEY_ALIAS = { JOTUN: 'JOTUNIR' };   // code L_WBOSS_JOTUN; app key JOTUNIR (portrait file name)
+  for (const r of specRecs) {
+    const appGod = godBySpec.get(norm(r.label)) || null, codeGod = codeGodBySpecId.get(r.spec_id) || null;
+    if ((KEY_ALIAS[codeGod] || codeGod) !== appGod) err(`False God of "${r.label}": app ${appGod} vs code ${codeGod}`);
+  }
+}
 
 const specs = [];
-let specSkins = 0, perkIconsCopied = 0, perkIconsMissing = 0, emblemCount = 0, anointFlagged = 0, perkRefMisses = 0;
+let specSkins = 0, perkIconsCopied = 0, perkIconsMissing = 0, emblemCount = 0, anointFlagged = 0;
 let specGodMisses = 0;
-// Antiquarian is absent from Perk_REF.csv; user-confirmed in-game: EVERY Antiquarian perk is anointable
-// except these two. (Other specs take their anoint flag from the CSV / code as before.)
-const ANTIQ_NON_ANOINT = new Set(['Derelict Blockade', 'Last of the Ancients'].map(norm));
 for (const s of specRecs) {
   const slug = norm(s.key || s.label);
   const found = findSpecSprite(s.label);
@@ -826,26 +804,21 @@ for (const s of specRecs) {
   let emblem = sprite;
   const emName = findEmblem(s.label);
   if (emName && copyNamedSprite(emName, OUT_SPEC, `${slug}_emblem.png`)) { emblem = `assets/specs/${slug}_emblem.png`; emblemCount++; }
-  // membership: CODE (scr_PerkGetPerkList via true perk ids + scr_AscensionPerk). The CSV is used only for
-  // the per-perk Anointment flag, which is not yet code-grounded (see Progress backlog).
+  // membership + ascension + anointability: all CODE (no CSV input left for specs).
   const perks = (s.perks || []).filter(p => p.key && p.name).map(p => {
     const st = perkStatByKey.get(p.key);
     let icon = null;
     const iconName = perkIconByKey.get(p.key);
     if (iconName && copyNamedSprite(iconName, OUT_PERK, `${p.key}.png`)) { icon = `assets/perks/${p.key}.png`; perkIconsCopied++; }
     else { perkIconsMissing++; }
-    const csvFl = perkFlags(p.name, s.label) || perkRefByKey.get(p.key) || null;
-    const fl = { anoint: csvFl ? csvFl.anoint : false, asc: !!p.ascension };   // asc = code (scr_AscensionPerk)
-    if (!csvFl && !/antiquarian/i.test(s.label)) { perkRefMisses++; warn(`perk "${p.name}" [${s.label}] has no Perk_REF row — anointment flag unknown (false)`); }
     const pdesc = perkDescByKey.get(p.key) || p.desc || '';
     const name = perkNameByKey.get(p.key) || p.name;
-    // Antiquarian: anointable except the two exclusions; every other spec keeps its CSV/code flag
-    const anointment = /antiquarian/i.test(s.label) ? !ANTIQ_NON_ANOINT.has(norm(name)) : (fl ? !!fl.anoint : false);
+    const anointment = !!(anointableBySpec.get(s.spec_id) || new Set()).has(p.key);
     if (anointment) anointFlagged++;
     const pTaxo = correctTaxo(taxoStrs(perkTaxoByKey[p.key]), pdesc, 'perk');
     return { key: p.key, name, desc: pdesc,
              cost: st ? st.cost : (p.cost ?? null), ranks: st ? st.ranks : (p.ranks || 1), icon,
-             anointment, ascension: fl ? !!fl.asc : false,
+             anointment, ascension: !!p.ascension,
              taxo: pTaxo, taxoSrc: taxoSrcArr(perkTaxoByKey[p.key], pTaxo) };
   });
   const falseGod = godBySpec.get(norm(s.label)) || null;
@@ -2067,74 +2040,17 @@ for (const w of wardrobeRecs) {
                   spec: w.spec, stem: w.stem, tier: w.tier, variant: w.variant,
                   category: w.category, frameCount: w.frames, frames, order: w.order, img });
 }
-// group the THREE canonical tier costumes per specialization (Grovetender -> herbalist tiers, etc.).
-// The info panel animates one costume per tier, so the set must be exactly tiers 1/2/3 — NOT the extra
-// `_alt`/`_robe`/`_minotaur` variants or legacy `ospr_*` duplicates (those inflated the cycle count and
-// mis-attributed the first frame, e.g. Reaver showing 4 cycles). Tier naming is inconsistent across specs:
-//   canonical  npc_<stem>_1 / _2 / _3   ·  numbered  npc_<stem>01 / 02 / 03
-//   suffix     npc_<stem>   (bare = tier 1) + _2 / _3
-// so derive a tier number per record and prefer an explicit tier over a bare-stem fallback.
-// User-verified costume corrections (wardrobe.json mis-attributes these). Two anti-patterns:
-//  • Many specs' true PLAYER tier-1 is the `_alt` sprite (bare npc_<stem> is the NPC version); the
-//    build's variant filter was dropping it, so tier 1 was wrong (or missing, e.g. Inquisitor).
-//  • DEFILER & TRIBALIST split their tiers across TWO stem names (user-verified, hard-coded):
-//    tier-1 lives under the SPEC name (`npc_defiler_alt` / `npc_tribalist_alt`, wardrobe cat=specialization),
-//    but tiers 2/3 live under a MISMATCHED name (`npc_occultist_2/_3` / `npc_shaman_2/_3`, cat=npc — the
-//    tiers are correct despite the creature-looking name; the naming is the antipattern). An earlier fix
-//    used the bare `npc_occultist`/`npc_shaman` for tier-1 which showed the wrong sprite; the tiers 2/3
-//    were already right. So each set = [spec-name tier-1, mismatched-name tier-2, mismatched-name tier-3].
-// Each entry lists the tier-1/2/3 sprite stems in order; missing ones are filtered out (e.g. Hell Knight = alt only).
-const SPEC_COSTUME_OVERRIDE = {
-  'Defiler':     ['npc_defiler_alt', 'npc_occultist_2', 'npc_occultist_3'],
-  'Tribalist':   ['npc_tribalist_alt', 'npc_shaman_2', 'npc_shaman_3'],
-  'Cabalist':    ['npc_cabalist_alt', 'npc_cabalist_2', 'npc_cabalist_3'],
-  'Cleric':      ['npc_cleric_alt', 'npc_cleric_2', 'npc_cleric_3'],
-  'Druid':       ['npc_druid_alt', 'npc_druid_2', 'npc_druid_3'],
-  'Evoker':      ['npc_evoker_alt', 'npc_evoker_2', 'npc_evoker_3'],
-  'Hell Knight': ['npc_hellknight_alt'],
-  'Monk':        ['npc_monk_alt', 'npc_monk_2', 'npc_monk_3'],
-  'Necromancer': ['npc_necromancer_alt', 'npc_necromancer_2', 'npc_necromancer_3'],
-  'Paladin':     ['npc_paladin_alt', 'npc_paladin_2', 'npc_paladin_3'],
-  'Reaver':      ['npc_reaver_alt', 'npc_reaver_2', 'npc_reaver_3'],
-  'Sorcerer':    ['npc_sorcerer_alt', 'npc_sorcerer_2', 'npc_sorcerer_3'],
-  'Trickster':   ['npc_trickster_alt', 'npc_trickster_2', 'npc_trickster_3'],
-  'Inquisitor':  ['npc_inquisitor_alt', 'npc_inquisitor_2', 'npc_inquisitor_3'],
-};
-let specCostumes = 0, specCostumeOverrides = 0;
-const isOspr = (sp) => sp.startsWith('ospr_');
+// spec costume tiers 1/2/3 — from _su_extract data/model/spec_costumes.json (code/extract_spec_costumes.py):
+// tier 1 = scr_SpecializationCostume (code switch, all 43); tiers 2/3 = scr_WardrobeSprite entries matched by the
+// spec's INTERNAL sprite stem (Defiler=occultist, Tribalist=shaman, Hell Knight=hell_knight). Replaces the old
+// hand-written SPEC_COSTUME_OVERRIDE + stem heuristic (which missed Hell Knight's npc_hell_knight_2/_3).
+const specCostumeById = new Map(readJSON(path.join(MODEL, 'spec_costumes.json')).records.map(r => [r.spec_id, r.tiers]));
+let specCostumes = 0;
 for (const s of specs) {
-  let chosen;
-  const ov = SPEC_COSTUME_OVERRIDE[s.label];
-  if (ov) {
-    chosen = ov.map((sprite, i) => ({ sprite, tierNum: i + 1, variant: null, order: i, img: `assets/wardrobe/${sprite}.png` }))
-      .filter(w => copyNamedSprite(w.sprite, OUT_WARDROBE, `${w.sprite}.png`));   // keep only stems that have a PNG
-    if (chosen.length) specCostumeOverrides++;
-    else warn(`spec "${s.label}" costume override matched no sprites`);
-  } else {
-  const recs = wardrobe.filter(w => w.spec === s.label);
-  const real = recs.filter(w => !w.variant && !isOspr(w.sprite)).map(w => {
-    const t = Number(w.tier);
-    let tierNum, explicit;
-    if (t === 1 || t === 2 || t === 3) { tierNum = t; explicit = true; }
-    else { const m = w.sprite.match(/(\d{1,2})$/); if (m) { tierNum = parseInt(m[1], 10); explicit = true; }
-           else { tierNum = 1; explicit = false; } }          // bare npc_<stem> = tier 1
-    return { ...w, tierNum, explicit };
-  });
-  // one costume per tier: prefer an explicit tier over the bare-stem fallback, then the lower sprite order
-  const byTier = new Map();
-  for (const w of real) {
-    const cur = byTier.get(w.tierNum);
-    if (!cur || (w.explicit && !cur.explicit) || (w.explicit === cur.explicit && w.order < cur.order)) byTier.set(w.tierNum, w);
-  }
-  chosen = [1, 2, 3].map(t => byTier.get(t)).filter(Boolean);
-  if (!chosen.length) {                                        // data gap: only a variant shipped
-    const v = recs.filter(w => w.variant).sort((a, b) => a.order - b.order);
-    chosen = v.length ? [{ ...v[0], tierNum: null }] : [];
-    if (chosen.length) warn(`spec "${s.label}" has no standard tier costume; using variant "${chosen[0].sprite}"`);
-  } else if (chosen.length < 3) {
-    warn(`spec "${s.label}" has only ${chosen.length} tier costume(s) in the extract (missing tier ${[1, 2, 3].filter(t => !byTier.get(t)).join('/')})`);
-  }
-  }
+  const tiers = specCostumeById.get(s.id) || [];
+  const chosen = tiers.map((sprite, i) => ({ sprite, tierNum: i + 1, variant: null, img: `assets/wardrobe/${sprite}.png` }))
+    .filter(w => copyNamedSprite(w.sprite, OUT_WARDROBE, `${w.sprite}.png`));
+  if (chosen.length !== 3) warn(`spec "${s.label}" has ${chosen.length}/3 tier costumes (${tiers.join(', ')})`);
   s.costumes = chosen.map(w => {
     const f0 = `${w.sprite}_0.png`, f1 = `${w.sprite}_1.png`;
     const has0 = copySpriteFrame(w.sprite, 0, OUT_WARDROBE, f0);
@@ -2155,9 +2071,9 @@ if (statFilled.length) console.log(`  base-stat null-fill from Creature_REF.csv:
 console.log(`  cards w/ art ${cardArt}/${cards.length} · artifact-type icons ${artGroup.primary.filter(p => p.icon).length}/5 · gem icons ${gemIcons.length} · class bgs ${Object.keys(classBg).length}`);
 console.log(`  spec sprites: ${specSkins} real skins + ${specs.filter(s => s.spriteKind === 'icon').length} emblem icons · ${emblemCount}/${specs.length} 16×16 emblems · terms ${Object.keys(terms).length}`);
   console.log(`  perk icons: ${perkIconsCopied} copied (code-certain from perk_icons.json)${perkIconsMissing ? ` · ${perkIconsMissing} missing` : ' · 100%'}`);
-  console.log(`  perk flags (Perk_REF.csv): ${anointFlagged} anointments${perkRefMisses ? ` · ${perkRefMisses} perks not in CSV` : ' · all matched'}`);
+  console.log(`  perk flags (code): ${anointFlagged} anointable · ${specs.reduce((n, s) => n + s.perks.filter(p => p.ascension).length, 0)} ascension`);
   console.log(`  False Gods: ${falseGods.length} with specs · ${specs.length - specGodMisses}/${specs.length} specs mapped${fgodImgMisses ? ` · ${fgodImgMisses} composites MISSING (run tools/build_falsegods.py)` : ' · composites ✓'}`);
-  console.log(`  wardrobe: ${wardrobeCopied} player costumes copied (code-certain)${wardrobeMissing ? ` · ${wardrobeMissing} missing` : ''} · ${wardrobeAnim} with a 2-frame animation · ${specCostumes}/${specs.length} specs linked (all tiers) · ${specCostumeOverrides} costume overrides`);
+  console.log(`  wardrobe: ${wardrobeCopied} player costumes copied (code-certain)${wardrobeMissing ? ` · ${wardrobeMissing} missing` : ''} · ${wardrobeAnim} with a 2-frame animation · ${specCostumes}/${specs.length} specs linked (3 tiers: code tier-1 + internal-stem tiers 2/3)`);
   console.log(`  wardrobe names: ${nameSrc.class_vocab} class-vocab + ${nameSrc.L_WD} L_WD + ${nameSrc.derived} derived (of ${wardrobe.length})`);
   console.log(`  trait-item icons: ${matIconCopied} copied (code-certain from material_icons.json)${matIconMissing ? ` · ${matIconMissing} missing` : ''}`);
 

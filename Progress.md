@@ -6,6 +6,19 @@ Pages on `master`/root, Cloudflare analytics active with the shared github.io to
 No verify-before-push ceremony (no real users yet) — but every change is checked with the jsdom smoke suite
 (scratchpad `smoke.mjs`, ~84 assertions across all flows) before commit.
 
+## 2026-10-01 (pm) — 100% CSV agreement, code anointments, code costume tiers
+1. Source CSVs fixed in `_su_extract/data/reference/_raw_csv` (Sovereignty, Divine Wrath, Red-eye Fight, Siegemaster
+   Shrug Off; Lurid Masochist trait = Purge, duplicate Trait_REF row removed) → spec perks code vs CSV 0/0.
+   Removed `PERK_NAME_ALIAS` and all Perk_REF parsing from build-data (no CSV input left for specs).
+2. **Anointment flag = code** (`anointments.json`: scr_AnointmentsListBySpec = spec perk list minus hard-coded
+   exclusions; Royal + all Ascension perks excluded). 605 anointable. Changes vs before: +Lingering Sickness,
+   +Acclimatization, +Divine Wrath, +Battalion, +Shrug Off; −Hemostasis, −Highborn, −Divine Dualwield (ascension).
+   Removed the Antiquarian hand-rule (code excludes the same two perks). New build guard: FALSE_GODS spec lists must
+   equal code `scr_AnointmentsListByGod` (passes; JOTUN↔JOTUNIR key alias).
+3. **Spec costume tiers from code** (`spec_costumes.json`): tier 1 = scr_SpecializationCostume, tiers 2/3 by internal
+   stem. Replaced SPEC_COSTUME_OVERRIDE + heuristic; only change = **Hell Knight now animates T1→T2→T3**
+   (`npc_hell_knight_2/_3`, underscore stem — the 2026-09-21 override searched `npc_hellknight_*`).
+
 ## 2026-10-01 — Code-grounded specs, perk effects, runtime ids + shops data (no UI change)
 Root cause (see `_su_extract/code/DB_ID_FINDINGS.md`): every game DB (not just traits) uses explicit runtime ids that
 differ from build position; the extract had keyed perks/materials/spells/creatures by position.
@@ -1107,8 +1120,8 @@ MAPPING not for asserting PRESENCE; no inventing entities from the community-CSV
       consumable, type, name, id, key, price, forCreature?}`. Decide: currency labels (not decoded from code), whether
       cosmetics show, God-shop open questions (Azural code=Smiths vs CSV Yetis, Tenebris Reapers vs Shadow X, dust price
       code 1 vs CSV 10) — check in-game. Then retire `godShops`/`guildShops` (CSV/wiki-sourced).
-- [ ] Code-ground the per-perk **Anointment** flag (last CSV input to specs; `scr_AnointmentGetSpecialization` decompiled).
-- [ ] Spec sprites/emblems from `scr_SpecializationIcon/Costume` (decompiled) instead of the name-heuristic lookup.
+- [x] Code-ground the per-perk **Anointment** flag — DONE 2026-10-01 pm.
+- [x] Spec costume tiers from `scr_SpecializationCostume` — DONE 2026-10-01 pm. [ ] Spec emblem/icon from `scr_SpecializationIcon` (decompiled, not yet wired).
 - [ ] #5 taxonomy → fully code-backed (workshop multi-parameter conditions first, e.g. side × event: "opposing-side buff gain").
 ### ⭐ HIGH PRIORITY — next session (2026-09-24)
 - [x] **Resolve the missing item-backed trait sprites — DONE (2026-09-24, commit e993af5).** 18 item-backed
