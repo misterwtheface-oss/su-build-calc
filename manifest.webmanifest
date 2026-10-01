@@ -1,7 +1,7 @@
 {
   "//": "TIER 2 — installability, ACTIVE. Linked from index.html (manifest + theme-color + apple-touch-icon). Icons live in assets/ (icon-192, icon-512, icon-512-maskable, apple-touch-icon), generated nearest-neighbor from the Riddle Dwarf tile on the SU purple field.",
-  "name": "Siralim Ultimate Build Calculator",
-  "short_name": "SU Build Calc",
+  "name": "Siralim Ultimate Companion",
+  "short_name": "SU Companion",
   "description": "Theorycraft Siralim Ultimate parties — creatures, fusion, artifacts, relics, nether stones and realm cards.",
   "start_url": "./",
   "scope": "./",

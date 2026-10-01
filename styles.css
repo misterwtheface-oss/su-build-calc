@@ -1,4 +1,4 @@
-/* Siralim Ultimate Build Calculator — mobile-first, palette in :root.
+/* Siralim Ultimate Companion — mobile-first, palette in :root.
    House conventions: overlay-driven, statically-sized panels, scroll never
    resets, sprite-dominant tiles, data-driven trait colours. */
 
@@ -77,7 +77,7 @@ h1, h2, h3 { margin: 0; }
 .topbar-title h1 { font-size: clamp(14px, 2.6vw, 18px); letter-spacing: .3px; color: var(--text);
   text-align: left; line-height: 1.15; }
 /* each phrase is its own non-breaking unit, so the title stays on one line when it fits and otherwise
-   breaks ONLY between them → "Siralim Ultimate" / "Build Calculator" (never mid-phrase) */
+   breaks ONLY between them → "Siralim Ultimate" / "Companion" (never mid-phrase) */
 .topbar-title h1 span { display: inline-block; white-space: nowrap; }
 .topbar-title h1 .tt-sub { color: var(--accent); font-weight: 500; }
 .topbar-actions { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; flex-shrink: 0; }
@@ -654,7 +654,7 @@ h1, h2, h3 { margin: 0; }
 }
 @media (max-width: 600px) {
   /* header: compact the nav buttons so the left-aligned title keeps enough room to wrap to ~2 lines
-     (Siralim Ultimate / Build Calculator) with the buttons beside it, rather than 3–4 skinny lines */
+     (Siralim Ultimate / Companion) with the buttons beside it, rather than 3–4 skinny lines */
   .topbar { padding: 5px 8px; gap: 8px; }
   .topbar-actions { gap: 5px; }
   .topbar-actions .tb-btn { padding: 5px 7px; font-size: 12px; }

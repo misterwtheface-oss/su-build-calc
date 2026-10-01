@@ -1,4 +1,4 @@
-# Siralim Ultimate — Build Calculator
+# Siralim Ultimate — Companion
 
 A theorycraft sandbox for [Siralim Ultimate](https://store.steampowered.com/app/1289810/):
 plan a party of 6 creatures, fuse them, build their artifacts and relics, socket your

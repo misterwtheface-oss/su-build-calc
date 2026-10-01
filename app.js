@@ -1,10 +1,19 @@
-/* Siralim Ultimate Build Calculator — app.js
+/* Siralim Ultimate Companion — app.js
  * Build-first, overlay-driven, vanilla. State mutates then re-renders explicitly.
  * Persistence under subc.* ; scroll position is never reset on re-render. */
 (() => {
   "use strict";
   const D = window.SU_DATA;
   if (!D) { document.getElementById("app").textContent = "data.js failed to load."; return; }
+
+  // Feature flags — flip to true to re-enable. Macros (battle-AI proposal) is WIP: hidden for now.
+  // nyi: content that is in the data but NOT live in the game yet (e.g. the Misery False God). Stripped from D here —
+  // before anything indexes D.traits / D.falseGods — so with the flag off the app sees exactly the live-game data.
+  const FEATURES = { macros: false, nyi: false };
+  if (!FEATURES.nyi) {
+    for (const id of Object.keys(D.traits)) if (D.traits[id].nyi) delete D.traits[id];
+    D.falseGods = (D.falseGods || []).filter(g => !g.nyi);
+  }
 
   // ── runtime 404 alert — surface any asset the app requests but can't load (no silent hiding) ──
   // A missing asset is a data bug (a removed fallback or bad mapping), never hidden away. Always logs
@@ -256,8 +265,6 @@
 
   // ── persistence (schema 2) ─────────────────────────────────────────────────
   const LS = { build: "subc.build", cards: "subc.cards", nether: "subc.nether", artifacts: "subc.artifacts", spellgems: "subc.spellgems", builds: "subc.builds", bookmarks: "subc.bookmarks", favorRanks: "subc.favorRanks", homeView: "subc.homeView" };
-  // Feature flags — flip to true to re-enable. Macros (battle-AI proposal) is WIP: hidden for now.
-  const FEATURES = { macros: false };
   const jload = (k, dflt) => { try { const v = JSON.parse(localStorage.getItem(k)); return v == null ? dflt : v; } catch { return dflt; } };
   const jsave = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} };
 
@@ -1125,9 +1132,9 @@
         <h2>${esc(g.name)}</h2><span class="anoint-spec-tag apx-boss-cat">False God</span>
         <button class="ovl-close" data-action="close-detail">✕</button></div>
       <div class="overlay-body"><div class="ovl-center"><div class="ovl-center-scroll">
-        <div class="section-label">Body-part base stats${g.statsShared ? " · shared by all parts" : ""}</div>
-        ${statTable(s)}
-        <div class="section-label" style="margin-top:14px">Body parts — ${(g.parts || []).length}</div>
+        ${g.stats ? `<div class="section-label">Body-part base stats${g.statsShared ? " · shared by all parts" : ""}</div>
+        ${statTable(s)}` : ""}
+        <div class="section-label"${g.stats ? ` style="margin-top:14px"` : ""}>Body parts — ${(g.parts || []).length}</div>
         ${parts || `<div class="slot-sub">No body parts.</div>`}
       </div></div></div>
       <div class="overlay-footer"><span class="foot-info"></span><button class="btn-confirm" data-action="close-detail">Done</button></div>
