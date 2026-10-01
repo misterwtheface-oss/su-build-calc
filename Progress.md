@@ -1484,3 +1484,10 @@ MAPPING not for asserting PRESENCE; no inventing entities from the community-CSV
   the vanilla SPA (`index.html`/`styles.css`/`app.js`) with the full overlay/trait/stat house style, and the
   planning docs. P0 expanded to include artifact/relic builders + nether library + card collection. Palette:
   SU indigo + gold with 5 class accents. Verified P0 flow on `tools/serve.mjs`, then `git init` + initial commit.
+
+## 2026-09-30 — true passive ids + Misery (NYI) behind a flag
+- Traits now carry `runtimeIds` (game's real passive ids; same-name parts/tiers share one shipped trait). False God `parts[]` are mapped by creature-table instance (not display name): +`runtimeIds`, `count`, `traitIds`.
+  Fixes six "Arm of <God>" parts that showed "no distinct trait" (creature "Arm of X" carries trait "Hand of X").
+- `FEATURES.nyi` (app.js, default false) strips `nyi:true` traits/False Gods from D before anything indexes it. First user: **Misery** (Hand/Heart/Brain of Misery, legacy #568-570), shipped in data, hidden.
+- build-data.mjs reads extract tables: trait_runtime_groups, false_god_parts_true, passive_owners_true (see _su_extract/code/TRAIT_EFFECT_DECODE_FINDINGS.md). Build warns on owner disagreement (known: #1521 Torun vs Treasure Golem = user override).
+- Not yet done: browser smoke test of False God detail pages with the flag on/off; UI for part `count` (e.g. "Head ×5") deliberately NOT added.

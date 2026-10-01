@@ -125,6 +125,12 @@ console.log('· reading _su_extract …');
 
 // ── traits (association layer): id -> {name, desc, cls, produces, consumes, labels, stats} ──
 const consolidated = readJSON(path.join(MODEL, 'traits_consolidated.json')).records;
+// TRUE-ID layer (extract: trait_runtime_groups / false_god_parts_true / passive_owners_true). The legacy `id` stays the
+// shipped trait id; each trait also carries `runtimeIds` = the game's real passive id(s) for it (same-named
+// parts/tiers are distinct runtime ids but ONE shipped trait, e.g. 5x Head of Hydranox).
+const RT_GROUPS = readJSON(path.join(MODEL, 'trait_runtime_groups.json')).groups;      // legacy id -> [runtime ids]
+const FG_TRUE = readJSON(path.join(MODEL, 'false_god_parts_true.json')).gods;           // False God -> part instances (runtime id each)
+const OWN_TRUE = readJSON(path.join(MODEL, 'passive_owners_true.json')).records;        // runtime id -> owner (creature DB / key-sibling)
 // Trait reconciliation (code/CSV/wiki + owner tags). Traits NOT present in live Ultimate are EXCLUDED from
 // the app entirely: UNRESOLVED (sandbox-unreleased / undetermined) + Not Yet Implemented (code desc "NYI") +
 // legacy (prior-Siralim, deliberately not implemented). Resolved live traits carry status/provenance + boss tags.
@@ -200,7 +206,12 @@ for (const id of NYI_SANDBOX_TRAIT_IDS) excludedTraitIds.add(id);
 // (siralimultimate.wiki.gg/wiki/Lord_Zantai) only MAPS the encounter trait to it. So #1538 is owned by
 // Zantai, ownerForm=encounter. His Jewel of Zantai drops stay item-only (via itemSource).
 const MANUAL_TRAIT_OWNERS = new Map([
-  [1538, { owner: 'Zantai', ownerType: 'boss', ownerForm: 'encounter', ownerCategory: 'Special Boss', ownerGroup: 'Lord Zantai', ownerProvenance: 'wiki' }],
+  // MISERY — NYI False God (sandbox-staged, user-confirmed not live): its 3 body-part traits ship in the data flagged
+  // `nyi:true` and are HIDDEN in the app unless FEATURES.nyi. One trait per part, owner = the part (like every False God).
+  [568, { owner: 'Hand of Misery',  ownerType: 'boss', ownerForm: 'encounter', ownerCategory: 'False God', ownerGroup: 'Misery', ownerProvenance: 'user', nyi: true }],
+  [569, { owner: 'Heart of Misery', ownerType: 'boss', ownerForm: 'encounter', ownerCategory: 'False God', ownerGroup: 'Misery', ownerProvenance: 'user', nyi: true }],
+  [570, { owner: 'Brain of Misery', ownerType: 'boss', ownerForm: 'encounter', ownerCategory: 'False God', ownerGroup: 'Misery', ownerProvenance: 'user', nyi: true }],
+  [1538,{ owner: 'Zantai', ownerType: 'boss', ownerForm: 'encounter', ownerCategory: 'Special Boss', ownerGroup: 'Lord Zantai', ownerProvenance: 'wiki' }],
   // Guided by Darkness = Erebyss's CURRENT Deity (encounter) trait — patch 2.0.17 (2025-05-24) changed it
   // FROM "Absence of Light" (which is now just Fog Spirit's creature trait #797). This fills Erebyss's
   // previously-empty Deity slot; her Avatar/player trait (#609 Avenged Sevenfold) is unchanged.
@@ -445,6 +456,7 @@ for (const t of consolidated) {
   const rec = reconById.get(t.id) || {};
   traits[t.id] = {
     id: t.id,
+    runtimeIds: RT_GROUPS[String(t.id)] || [],
     name: t.name || t.key || `Trait ${t.id}`,
     desc,
     cls,
@@ -798,6 +810,8 @@ const FALSE_GODS = [
   { key: 'IMPIMPINGTON',  name: 'Imp Impington',     specs: ['Druid', 'Tribalist', 'Windrunner', 'Deprived', 'Grovetender'] },
   { key: 'JOTUNIR',       name: 'Jotunir',           specs: ['Monk', 'Warden', 'Witch Doctor', 'Brewmaster'] },
   { key: 'LOSTCONSTRUCT', name: 'The Lost Construct', specs: ['Rune Knight', 'Siegemaster', 'Engineer', 'Antiquarian'] },
+  // NYI (sandbox-staged, not live): no specs, no creature rows/sprites in the extract — only its 3 part traits. Hidden unless FEATURES.nyi.
+  { key: 'MISERY',        name: 'Misery',            specs: [], nyi: true, partTraitIds: [568, 569, 570] },
 ];
 const godBySpec = new Map();       // norm(spec label) -> god key
 for (const g of FALSE_GODS) for (const sp of g.specs) godBySpec.set(norm(sp), g.key);
@@ -861,6 +875,7 @@ const specGodKeys = new Set(specs.map(s => s.falseGod).filter(Boolean));
 const falseGods = [];
 let fgodImgMisses = 0;
 for (const g of FALSE_GODS) {
+  if (g.nyi) { falseGods.push({ key: g.key, name: g.name, img: null, nyi: true }); continue; }   // NYI: ships flagged, no portrait/specs
   if (!specGodKeys.has(g.key)) continue;
   const rel = `assets/falsegods/${g.key}.png`;
   if (!fs.existsSync(path.join(OUT_FGOD, `${g.key}.png`))) {
@@ -1225,6 +1240,21 @@ for (const m of matRecs) {
     if (!owner && !hasItem) ownGap++;                              // should be 0 — the 17 are already excluded
   }
   console.log(`  owner model: ${ownCrea} creature · ${ownBoss} boss (${Object.entries(ownerCatCount).map(([k, v]) => `${v} ${k}`).join(', ')}) · ${itemOnly} item-only · ${ownGap} unresolved-gap${ownGap ? ' ⚠' : ' ✓'}`);
+  // TRUE-ID owner cross-check: every runtime id of a shipped boss-owned trait must resolve to the SAME boss in the
+  // true-id owner table (creature-DB row, or key-sibling inheritance for Nether Bosses, which have no creature row).
+  {
+    let chk = 0, bad = 0;
+    for (const id in traits) {
+      const t = traits[id]; if (t.ownerType !== 'boss' || t.nyi) continue;
+      for (const rid of t.runtimeIds || []) {
+        const o = OWN_TRUE[String(rid)]; if (!o || !o.owner || o.owner_source !== 'key_sibling') continue;
+        chk++;
+        const a = norm(String(o.owner)), b = norm(t.owner || ''), c = norm(t.ownerGroup || '');
+        if (a !== b && a !== c && !b.includes(a) && !a.includes(b) && !(c && (c.includes(a) || a.includes(c)))) { bad++; warn(`owner mismatch: trait #${id} "${t.name}" owner "${t.owner}"/"${t.ownerGroup}" vs true-id owner "${o.owner}" (runtime ${rid})`); }
+      }
+    }
+    console.log(`  true-id owner cross-check: ${chk} boss traits via key-sibling · ${bad} mismatch${bad ? ' ⚠' : ' ✓'}`);
+  }
   // GUARDRAIL — a playable creature's innate trait is normally extractable as a trait-material, so a
   // creature-owned trait with NO item is the exception. The VALID exceptions are encoded in the data,
   // not guessed: (a) Avatar/Deity forms (unique, not farmable) and (b) traits the reference explicitly
@@ -1262,8 +1292,14 @@ for (const m of matRecs) {
     if (!partsByFg.has(k)) partsByFg.set(k, []);
     partsByFg.get(k).push({ name: r.name, traitId: fgTraitByName.get(norm(r.name)) ?? null, stats });
   }
-  let fgPartsHits = 0, fgSpreadWarn = 0;
+  let fgPartsHits = 0, fgSpreadWarn = 0, fgPartsRemapped = 0, fgInstances = 0;
   for (const g of falseGods) {
+    if (g.nyi) {   // NYI False God: parts = its shipped (flagged) part traits; no stats in the extract
+      const def = FALSE_GODS.find(x => x.key === g.key);
+      g.stats = null; g.statsShared = false;
+      g.parts = def.partTraitIds.filter(id => traits[id]).map(id => ({ name: traits[id].name, traitId: id, runtimeIds: traits[id].runtimeIds, count: traits[id].runtimeIds.length || 1 }));
+      continue;
+    }
     const gk = norm(g.name);
     // tiedTo is a short name (Impington ↔ Imp Impington, Althea ↔ Saint Althea, Jotun ↔ Jotunir …)
     let parts = partsByFg.get(gk);
@@ -1273,10 +1309,33 @@ for (const m of matRecs) {
     if (spreads.size > 1) { fgSpreadWarn++; warn(`False God "${g.name}" parts do NOT share one stat spread (${spreads.size}) — app shows per-part`); }
     g.stats = parts[0].stats;                                  // shared spread (verified uniform in the extract)
     g.statsShared = spreads.size === 1;
-    g.parts = parts.map(p => ({ name: p.name, traitId: p.traitId, ...(spreads.size > 1 ? { stats: p.stats } : {}) }));
+    // TRUE-ID MAPPING: a part is looked up by its creature-table instances (each row = one body part with its OWN runtime
+    // trait id), NOT by display name — same-named parts (5x Head of Hydranox, 2x Hand of Loid …) are distinct instances of
+    // one shipped trait. Caliban's table also holds the story-boss block (excluded here via owner_type).
+    const inst = (FG_TRUE[g.name] || []).filter(i => i.block !== 'story_boss');
+    // creature name != trait name for exactly one part (The Ancestor: creature "Arm of The Ancestor" carries the trait "Hand of
+    // The Ancestor" x2) — pair the single unmatched part with the single leftover trait group (asserted), never by guess.
+    const matchedNames = new Set(parts.map(p => norm(p.name)));
+    const leftover = [...new Set(inst.filter(i => !matchedNames.has(norm(i.trait_name))).map(i => norm(i.trait_name)))];
+    const unmatchedParts = parts.filter(p => !inst.some(i => norm(i.trait_name) === norm(p.name)));
+    const pairedBy = new Map();
+    if (unmatchedParts.length === 1 && leftover.length === 1) pairedBy.set(norm(unmatchedParts[0].name), leftover[0]);
+    g.parts = parts.map(p => {
+      const want = pairedBy.get(norm(p.name)) || norm(p.name);
+      const mine = inst.filter(i => norm(i.trait_name) === want);
+      const reps = [...new Set(mine.map(i => i.legacy_rep).filter(l => l != null && traits[l]))].sort((a, b) => a - b);
+      const traitId = reps.length ? reps[0] : p.traitId;
+      if (traitId !== p.traitId) fgPartsRemapped++;
+      fgInstances += mine.length;
+      if (pairedBy.has(norm(p.name))) console.log(`False God "${g.name}" part "${p.name}" paired by elimination with trait "${mine[0] && mine[0].trait_name}" (x${mine.length})`);
+      else if (!mine.length) warn(`False God "${g.name}" part "${p.name}": no creature-table instance — kept name-based trait link`);
+      return { name: p.name, traitId, ...(reps.length > 1 ? { traitIds: reps } : {}),
+        runtimeIds: mine.map(i => i.runtime_id).sort((a, b) => a - b), count: mine.length || 1,
+        ...(spreads.size > 1 ? { stats: p.stats } : {}) };
+    });
     fgPartsHits++;
   }
-  console.log(`  False God parts: ${fgPartsHits}/${falseGods.length} gods enriched with body parts + shared stat spread${fgSpreadWarn ? ` · ${fgSpreadWarn} non-uniform` : ''}`);
+  console.log(`  False God parts: ${fgPartsHits}/${falseGods.filter(g => !g.nyi).length} gods enriched with body parts + shared stat spread${fgSpreadWarn ? ` · ${fgSpreadWarn} non-uniform` : ''} · ${fgInstances} part instances mapped by true id (${fgPartsRemapped} parts re-linked vs name join)`);
 }
 
 // ── Stat materials (Ambers) → Stat-slot properties ──
