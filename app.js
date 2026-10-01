@@ -2652,7 +2652,11 @@
   function anointList() {
     if (ANOINTS) return ANOINTS;
     ANOINTS = [];
-    for (const s of D.specs) for (const p of s.perks) if (p.anointment) ANOINTS.push({ ...p, spec: s.label, specId: s.id, falseGod: s.falseGod });
+    // Exclude Highborn (Royal's cap-raiser — works only in your own spec tree, not as an anoint) and any
+    // spec with no affiliated False God (removes the "Other" group — Highborn was its only member).
+    for (const s of D.specs) for (const p of s.perks)
+      if (p.anointment && s.falseGod && p.key !== "HIGHBORN")
+        ANOINTS.push({ ...p, spec: s.label, specId: s.id, falseGod: s.falseGod });
     ANOINTS.sort((a, b) => a.spec.localeCompare(b.spec) || a.name.localeCompare(b.name));
     return ANOINTS;
   }
