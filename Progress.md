@@ -6,6 +6,14 @@ Pages on `master`/root, Cloudflare analytics active with the shared github.io to
 No verify-before-push ceremony (no real users yet) — but every change is checked with the jsdom smoke suite
 (scratchpad `smoke.mjs`, ~84 assertions across all flows) before commit.
 
+## 2026-10-01 (night 4) — Creature picker List|Grid toggle, trait-list headers, Update guard
+1. "Show Traits" facet → footer two-part toggle **List | Grid** (same `.seg`/`.seg-btn` styling as the home Layout toggle),
+   left of Cancel/Next; both creature and fusion steps.
+2. List view: each trait card now leads with a header — creature name · race emblem + race · class emblem + class, a
+   divider, then base stats (Health/Attack/Defense/Intelligence/Speed/Total).
+3. Builds: **Update** is disabled (with a tooltip) when the current loadout has no creatures, so a saved build can't be
+   overwritten back to the template state (handler guarded too).
+
 ## 2026-10-01 (night 3) — Asset mappings converged on code + level-aware artifact icons
 Replaced hand-curated / heuristic asset tables with game-code maps (`_su_extract` asset_maps.json; DB_ID_FINDINGS.md):
 conditions (`scr_GetConditionIcon`; Repelling/Warded/Mania corrected, Protect/Savage now code ids 0/1), relics (code relic

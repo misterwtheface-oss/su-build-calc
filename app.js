@@ -1012,7 +1012,6 @@
       ${taxoChips}
       <button class="facet add" data-action="facet-taxo">＋ Filter</button>
       ${bookmarks.traits.length ? `<button class="facet ${st.bkOnly ? "on" : ""}" data-action="crea-bkonly" title="Show only creatures whose trait you bookmarked">★ Bookmarked</button>` : ""}
-      <button class="facet ${st.view === "traits" ? "on" : ""}" data-action="crea-view" title="Browse by innate trait">Show Traits</button>
     </div>`;
     // stat sort — highest first; picking a stat draws a magnitude bar (value / roster max) on each tile
     const sortbar = `<div class="ovl-filterbar crea-sortbar"><span class="foot-info">Sort</span><div class="seg">
@@ -1047,11 +1046,23 @@
     const traitList = traitsView ? `<div class="crea-trait-list">
       ${fusion ? `<div class="crea-trait-row nofuse ${st.fusionId == null ? "selected" : ""}" data-action="crea-nofuse"><span class="nofuse-glyph">∅</span> No fusion</div>` : ""}
       ${shown.map(c => { const blk = avBlocked(c); const tr = c.traitId != null ? TRAIT[c.traitId] : null;
+        const raceIco = c.race && D.raceIcons && D.raceIcons[c.race] ? spriteImg(D.raceIcons[c.race], "px") : "";
+        const clsIco = c.cls && D.classIcons && D.classIcons[c.cls] ? spriteImg(D.classIcons[c.cls], "px") : "";
+        const head = `<div class="ctr-head">
+            <div class="ctr-id"><b class="ctr-name">${esc(c.name)}</b>
+              ${c.race ? `<span class="ctr-tag">${raceIco ? `<span class="ctr-ico">${raceIco}</span>` : ""}${esc(c.race)}</span>` : ""}
+              ${c.cls ? `<span class="ctr-tag">${clsIco ? `<span class="ctr-ico">${clsIco}</span>` : ""}${esc(c.cls)}</span>` : ""}</div>
+            <div class="ctr-stats">${STAT_KEYS.map(k => `<span class="ctr-stat"><span class="ctr-stat-k">${STAT_LABEL[k]}</span> <b>${c[k] ?? "—"}</b></span>`).join("")}
+              <span class="ctr-stat"><span class="ctr-stat-k">Total</span> <b>${c.total ?? "—"}</b></span></div></div>`;
         return `<div class="crea-trait-row primary-traits ${sel === c.id ? "selected" : ""} ${blk ? "disabled" : ""}"${blk ? "" : ` data-action="crea-pick" data-id="${c.id}"`}>
-          ${traitBanner(c.traitId, { noNav: true })}<div class="trait-desc">${richText(tr ? tr.desc || "" : "")}</div></div>`; }).join("")}
+          ${head}${traitBanner(c.traitId, { noNav: true })}<div class="trait-desc">${richText(tr ? tr.desc || "" : "")}</div></div>`; }).join("")}
     </div>` : "";
 
     const title = fusion ? "Fusion partner" : "Choose creature";
+    // List (innate-trait list) | Grid (creature tiles) — two-part toggle, same styling as the home Layout toggle
+    const viewToggle = `<div class="seg crea-view-seg">
+      <button class="seg-btn ${st.view === "traits" ? "on" : ""}" data-action="crea-view" data-v="traits" title="Browse by innate trait">List</button>
+      <button class="seg-btn ${st.view !== "traits" ? "on" : ""}" data-action="crea-view" data-v="grid" title="Creature tiles">Grid</button></div>`;
     const footer = fusion
       ? `<button class="btn-ghost" data-action="crea-back">‹ Back</button>
          <button class="btn-confirm" data-action="crea-next" ${st.primaryId == null ? "disabled" : ""}>Next: Customize ›</button>`
@@ -1076,7 +1087,7 @@
         </div>
         ${traitsView ? "" : `<div class="ovl-right">${side}</div>`}
       </div>
-      <div class="overlay-footer"><span class="foot-info"></span><div>${footer}</div></div>
+      <div class="overlay-footer"><span class="foot-info"></span><div class="crea-foot">${viewToggle}${footer}</div></div>
     </div></div>`;
   }
   // creature info panel: trait leads, stat table follows (per house layout). `opts.infoCid` adds an "i"
@@ -1559,6 +1570,8 @@
     </div></div>` : "";
     // right info panel: preview the selected build — spec emblem + equipped anointment icons, then a 2×3 creature grid
     const infoPanel = sel ? `<div class="ovl-right build-info">${renderBuildPreview(sel)}</div>` : "";
+    // a blank loadout (no creature in any slot) must never overwrite a saved build back to the template state
+    const loadoutBlank = !build.slots.some(s => s && s.cid != null);
     return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel">
       <div class="overlay-header"><h2>Builds</h2><button class="ovl-close" data-action="close-ovl">✕</button></div>
       <div class="overlay-body"><div class="ovl-center">${sortBar}<div class="ovl-center-scroll">
@@ -1567,7 +1580,7 @@
         <button class="btn-ghost danger" data-action="builds-del" data-id="${sel ? sel.id : ""}" ${sel ? "" : "disabled"}>Delete</button>
         <span class="foot-info">${st.flash ? "Saved ✓" : ""}</span>
         <div>
-          <button class="btn-ghost" data-action="builds-overwrite" ${sel ? `data-id="${sel.id}"` : "disabled"}>Update</button>
+          <button class="btn-ghost" data-action="builds-overwrite" ${sel && !loadoutBlank ? `data-id="${sel.id}"` : "disabled"}${sel && loadoutBlank ? ` title="Your current loadout is empty — load or build a party before updating a saved build"` : ""}>Update</button>
           ${sel
             ? `<button class="btn-confirm" data-action="builds-load" data-id="${sel.id}">Load</button>`
             : `<button class="btn-confirm" data-action="builds-save-new">Save</button>`}
@@ -3885,7 +3898,7 @@
         if (b) { build = normalizeBuild(JSON.parse(JSON.stringify(b.build))); clearBookmarks(); persistBuild(); closeOverlay(); render(); }
         break;
       }
-      case "builds-overwrite": { const b = builds.find(x => x.id === +t.dataset.id); if (b) { b.build = JSON.parse(JSON.stringify(build)); b.ts = Date.now(); persistBuilds(); ovState.sel = b.id; flashBuild(b.id); } break; }
+      case "builds-overwrite": { const b = builds.find(x => x.id === +t.dataset.id); if (b && build.slots.some(s => s && s.cid != null)) { b.build = JSON.parse(JSON.stringify(build)); b.ts = Date.now(); persistBuilds(); ovState.sel = b.id; flashBuild(b.id); } break; }
       case "builds-del": armOrDo(t, () => { const id = +t.dataset.id; builds = builds.filter(b => b.id !== id); if (ovState.sel === id) ovState.sel = null; persistBuilds(); refreshOverlay(); }); break;
       case "iconpick-cat": dovState.cat = t.dataset.c; dovState.limit = ICON_PAGE; refreshDetail(); break;
       case "iconpick-cat-clear": e.stopPropagation(); dovState.cat = null; dovState.limit = ICON_PAGE; refreshDetail(); break;
@@ -3993,7 +4006,7 @@
         ovState.step = ovState.step === "customize" ? "fusion" : "primary";
         ovState.search = ""; ovState.limit = CREA_PAGE; refreshOverlay(); break;
       case "crea-more": ovState.limit = (ovState.limit || CREA_PAGE) + CREA_PAGE; refreshOverlay(); break;
-      case "crea-view": ovState.view = ovState.view === "traits" ? "grid" : "traits"; refreshOverlay(true); break;
+      case "crea-view": ovState.view = t.dataset.v === "traits" ? "traits" : "grid"; refreshOverlay(true); break;
       case "crea-bkonly": ovState.bkOnly = !ovState.bkOnly; resetCreaPage(); refreshOverlay(); break;
       case "crea-sort": ovState.sort = t.dataset.k || null; resetCreaPage(); refreshOverlay(); break;
       case "crea-confirm": {
