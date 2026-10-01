@@ -2135,7 +2135,7 @@
   }
   function shopItemsHtml(items, shop, group) {
     const st = ovState, q = st.search.trim().toLowerCase();
-    const cur = (group && group.currency) || shop.currency || "";
+    const cur = (group && group.currency) || shop.currency || "", curIco = (group && group.currencyIcon) || shop.currencyIcon || null;
     const byType = new Map();
     for (const it of items) {
       if (q && !(it.name || "").toLowerCase().includes(q) && !(it.type || "").toLowerCase().includes(q)) continue;
@@ -2150,7 +2150,7 @@
         const nmTitle = it.nameSrc ? ` title="Not statically resolvable in code — name from the God Shop reference"` : "";
         return `<div class="perk-line${go ? " apx-clickable" : ""}"${go}>${shopItemIcon(it)}
           <div class="perk-line-body"><div class="perk-line-head"><b${nmTitle}>${esc(it.name || "?")}</b>
-            <span class="perk-line-meta">${it.rank != null ? `<span class="anoint-spec-tag" title="Guild Reputation rank">Rank ${it.rank}</span>` : ""}${it.price != null ? `<span class="gs-price">${it.price}${cur ? ` <span class="gs-cur">${esc(cur)}</span>` : ""}</span>` : ""}</span></div>
+            <span class="perk-line-meta">${it.rank != null ? `<span class="anoint-spec-tag" title="Guild Reputation rank">Rank ${it.rank}</span>` : ""}${it.price != null ? `<span class="gs-price"${cur ? ` title="${esc(cur)}"` : ""}>${it.price}${curIco ? `<span class="gs-cur-ico">${spriteImg(curIco, "px")}</span>` : cur ? ` <span class="gs-cur">${esc(cur)}</span>` : ""}</span>` : ""}</span></div>
             ${tr ? `<div class="perk-desc">${esc(tr.name)}</div>` : ""}</div></div>`;
       }).join("") : "";
       return `<button class="apx-sec-head apx-cat${open ? "" : " collapsed"}" data-action="shop-sec" data-c="${esc(t)}"><span class="apx-sec-caret">${open ? "▾" : "▸"}</span>${esc(t)}</button>${rows}`;
@@ -2171,11 +2171,11 @@
       body = `${shopToggle(shop.key)}<div class="ovl-center-scroll"><div class="pick-grid gs-grid">${tiles}</div></div>`;
     } else if (group) {
       header = `<button class="btn-ghost" data-action="shop-back">‹ ${esc(shop.label)}</button><h2 style="flex:1">${esc(group.name)}</h2>`;
-      body = `${shopToggle(shop.key)}<div class="gs-detail-head">${group.img ? `<div class="gs-god-sprite">${spriteImg(group.img, "px")}</div>` : ""}<div class="gs-god-name">${esc(group.name)}</div>${group.currency ? `<div class="slot-sub">Currency: ${esc(group.currency)}</div>` : ""}</div>
+      body = `${shopToggle(shop.key)}<div class="gs-detail-head">${group.img ? `<div class="gs-god-sprite">${spriteImg(group.img, "px")}</div>` : ""}<div class="gs-god-name">${esc(group.name)}</div>${group.currency ? `<div class="slot-sub gs-cur-line">${group.currencyIcon ? `<span class="gs-cur-ico">${spriteImg(group.currencyIcon, "px")}</span>` : ""}${esc(group.currency)}</div>` : ""}</div>
         <div class="ovl-center-scroll"><div class="perk-list">${shopItemsHtml(group.items, shop, group)}</div></div>`;
     } else {
       header = `<h2>Shops</h2>`;
-      body = `${shopToggle(shop.key)}${shop.currency ? `<div class="slot-sub gs-cur-line">Currency: ${esc(shop.currency)}</div>` : ""}<div class="ovl-center-scroll"><div class="perk-list">${shopItemsHtml(shop.items, shop, null)}</div></div>`;
+      body = `${shopToggle(shop.key)}${shop.currency ? `<div class="slot-sub gs-cur-line">${shop.currencyIcon ? `<span class="gs-cur-ico">${spriteImg(shop.currencyIcon, "px")}</span>` : ""}${esc(shop.currency)}</div>` : ""}<div class="ovl-center-scroll"><div class="perk-list">${shopItemsHtml(shop.items, shop, null)}</div></div>`;
     }
     return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel">
       <div class="overlay-header">${header}

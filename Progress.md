@@ -10,8 +10,9 @@ No verify-before-push ceremony (no real users yet) — but every change is check
 Each shop item now carries the currency it is bought with, decoded from `scr_ShopFill(…, MODE, CURRENCY)` + the
 `obj_shop` currency switches (`_su_extract/code/extract_shop_currency.py`): **God = Emblem of <God>** (was mislabeled
 "Favor"), Guilds = Brimstone/Granite/Power/Crystal/Essence (replaces hand-written GUILD_CURRENCY), **Arena = Glory**,
-**Tavern = Notoriety**. UI: price shows "10 Emblem of Surathli", headers show "Currency: …". Build errors if any shop
-lacks a currency.
+**Tavern = Notoriety**. **Currency icons (code):** the `icons`-sheet frame `inv_ItemIconIndex` returns for each currency
+item (`_su_extract/code/extract_item_icons.py`) → `assets/shopicons/cur_<frame>.png`; prices show "10 [icon]" (name on hover),
+headers show icon + name. Build errors if any shop lacks a currency or currency icon.
 
 ## 2026-10-01 (eve) — Unified Shops overlay (code-grounded)
 - **One "Shops" overlay** (menu → Shops) with a 4-way **God | Guild | Arena | Tavern** toggle that rotates the grid:

@@ -1549,12 +1549,14 @@ const slimShopItem = (i) => {
 };
 let guildBannerHits = 0;
 const shopTab = (key, label, extra) => ({ key, label, ...extra });
+// currency icon = frame of the `icons` sheet chosen by inv_ItemIconIndex for the currency item (code; shops.json)
+const curIcon = (frame) => (frame != null && copySpriteFrame('icons', frame, OUT_SHOPICON, `cur_${frame}.png`)) ? `assets/shopicons/cur_${frame}.png` : null;
 const godShopSrc = shopsSrc.god;
 const shops = [
   shopTab('god', 'God', { groups: godShopSrc.gods.map(g => {
     const god = godNameByNorm.get(norm(g.god_key)) || null;
     if (!god) warn(`shop god key ${g.god_key} has no realm god name`);
-    return { key: g.god_key, name: god || g.god_key, img: god ? godBattleFor(god) : null, godIndex: g.god_index, currency: g.currency || null, items: g.items.map(slimShopItem) };
+    return { key: g.god_key, name: god || g.god_key, img: god ? godBattleFor(god) : null, godIndex: g.god_index, currency: g.currency || null, currencyIcon: curIcon(g.currency_icon_frame), items: g.items.map(slimShopItem) };
   }).sort((a, b) => a.name.localeCompare(b.name)) }),
   shopTab('guild', 'Guild', { groups: GUILD_ORDER.map(guild => {
     const slug = guild.toLowerCase(), src = shopsSrc['guild_' + slug];
@@ -1564,10 +1566,10 @@ const shops = [
     const items = src.items.map(slimShopItem).map(it => {
       const rk = guildRank.get(norm(guild) + '|' + norm(it.name)); return rk != null ? { ...it, rank: rk } : it;
     });
-    return { key: slug, name: `${guild} Guild`, img, currency: src.currency || null, items };
+    return { key: slug, name: `${guild} Guild`, img, currency: src.currency || null, currencyIcon: curIcon(src.currency_icon_frame), items };
   }) }),
-  shopTab('arena', 'Arena', { currency: shopsSrc.arena.currency || null, items: shopsSrc.arena.items.map(slimShopItem) }),
-  shopTab('tavern', 'Tavern', { currency: shopsSrc.tavern.currency || null, items: shopsSrc.tavern.items.map(slimShopItem) }),
+  shopTab('arena', 'Arena', { currency: shopsSrc.arena.currency || null, currencyIcon: curIcon(shopsSrc.arena.currency_icon_frame), items: shopsSrc.arena.items.map(slimShopItem) }),
+  shopTab('tavern', 'Tavern', { currency: shopsSrc.tavern.currency || null, currencyIcon: curIcon(shopsSrc.tavern.currency_icon_frame), items: shopsSrc.tavern.items.map(slimShopItem) }),
 ];
 const allShopItems = () => shops.flatMap(s => s.items || s.groups.flatMap(g => g.items));
 // Regalis' dust argument is a runtime global in code (not statically resolvable) → name it from God Shop_REF, tagged.
@@ -1577,7 +1579,7 @@ for (const g of shops[0].groups) for (const it of g.items) {
     if (ref) { it.name = ref.item; it.nameSrc = 'csv'; it.type = 'Crafting Material'; delete it.unresolved; }
   }
 }
-for (const sh of shops) for (const g of (sh.groups || [sh])) if (!g.currency) err(`shop ${sh.key}/${g.key || ''} has no currency`);
+for (const sh of shops) for (const g of (sh.groups || [sh])) { if (!g.currency) err(`shop ${sh.key}/${g.key || ''} has no currency`); if (!g.currencyIcon) err(`shop ${sh.key}/${g.key || ''} has no currency icon`); }
 console.log(`  shops (code): God ${shops[0].groups.length} gods · ${GUILD_ORDER.length} guilds (${guildBannerHits} banners) · Arena · Tavern · ${allShopItems().length} items`);
 
 // ── boss battle sprites (Appendix boss-trait rows) ────────────────────────────
