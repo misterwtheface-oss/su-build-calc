@@ -6,6 +6,17 @@ Pages on `master`/root, Cloudflare analytics active with the shared github.io to
 No verify-before-push ceremony (no real users yet) — but every change is checked with the jsdom smoke suite
 (scratchpad `smoke.mjs`, ~84 assertions across all flows) before commit.
 
+## 2026-10-01 (night 3) — Asset mappings converged on code + level-aware artifact icons
+Replaced hand-curated / heuristic asset tables with game-code maps (`_su_extract` asset_maps.json; DB_ID_FINDINGS.md):
+conditions (`scr_GetConditionIcon`; Repelling/Warded/Mania corrected, Protect/Savage now code ids 0/1), relics (code relic
+→ overworld sprite, unchanged art; `iconBig` added), spec emblems (`scr_SpecializationIcon`, identical), god battle
+sprites (`scr_GodBattleSprite` by god index, identical), trait-item icons (material DB record sprite; Volatile Stitches
+corrected), creature battle frames (code record; manual overrides retired — 4 visible changes: Centaur Khan, Deep
+Clutcher, Marionette Hypnotist, Nihilist Paralyzer). Nether boss frames stay human-validated (code table not resolvable).
+**Artifact icons follow level** like the game (`inv_ArtifactIcon`): 6 tiers per type (`assets/arttypes/<type>_<1-6>.png`),
+`D.artTierMinLevel` = [1,10,20,30,40,50]; library tiles, detail header, builder type tiles + primary slot all use the
+artifact's rank (builder updates live with the slider).
+
 ## 2026-10-01 (night 2) — Spell-gem property icons + gods from code
 The 21 property gems (dust items) now use the `icons`-sheet frames `inv_ItemIconIndex`'s dust table assigns (2144-2164,
 Agate..Tourmaline; `_su_extract` item_icons.json dust_by_key) instead of the hand-cropped screenshots (some had

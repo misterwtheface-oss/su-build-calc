@@ -483,7 +483,11 @@ console.log(`  traits: ${Object.keys(traits).length} shipped · ${traitsExcluded
 const creatureData = readJSON(path.join(MODEL, 'creature_data.json')).records;
 const creatureStats = readJSON(path.join(MODEL, 'creature_stats.json')).records;
 const creaturesRef = readJSON(path.join(REF, 'creatures_ref.json')).records;
-const cdByName = new Map(creatureData.map(c => [norm(c.name), c]));
+// name -> code record; when a name has several records (e.g. Tipsy Denizen: a framed record + a frameless twin),
+// prefer the one with a real battle frame
+const cdByName = new Map();
+for (const c of creatureData) { const k = norm(c.name), cur = cdByName.get(k);
+  if (!cur || ((cur.battle_frame == null || cur.battle_frame === 6969) && c.battle_frame != null && c.battle_frame !== 6969)) cdByName.set(k, c); }
 const csByName = new Map(creatureStats.map(c => [norm(c.name), c]));   // field0 = battle_frame
 const SRC_BATTLE = SRC_SPEC_PNG;                                       // assets/sprites/spr_crits_battle_<frame>.png
 // user's Creature_REF.csv compendium base stats (name -> {hp,atk,int,def,spd}) — the grounded fill
@@ -522,21 +526,16 @@ fs.mkdirSync(OUT_CRIT, { recursive: true });
 // CODE-authoritative spelling (catalog + creature_stats + creature_data all agree) is different.
 // Correcting the name at the source fixes the code-join (stats + battle sprite resolve naturally),
 // so these no longer need a sprite-frame override. No alias — the wrong spelling is replaced outright.
+// CODE-GROUNDED asset maps (_su_extract code/extract_asset_maps.py): conditions / relics / spec emblems / god battle /
+// artifact tiers, each decoded from the game's own sprite switch. Replaces the hand-curated tables that used to live here.
+const ASSET_MAPS = readJSON(path.join(MODEL, 'asset_maps.json'));
 const CREATURE_SPELLING_FIX = {
   'Manticore Conquerer': 'Manticore Conqueror', 'Phenominal Possum': 'Phenomenal Possum',
   'Maionette Charlatan': 'Marionette Charlatan', 'Gloopidator': 'Gloopdiator',
 };
-// battle-sprite frame overrides for the REMAINING creatures whose roster name matches the code but
-// whose sprite-catalog (creature_sprites.json) entry is under a different key (verified frame-by-frame).
-const SPRITE_FRAME_OVERRIDE = {
-  atlasbeacon: 2941, elfhuntsman: 1299, tipsydenizen: 3444,
-};
-// VALIDATED frame corrections — loaded from the CANONICAL data file (data/model/creature_frame_overrides.json),
-// NOT hardcoded. The source docs have duplicate creature names (a current SU frame + a legacy Siralim-3 frame);
-// the auto-pick (battle_frame ?? field0) sometimes lands on the WRONG one (e.g. Aaxer shipped 9 = an S3 Paragon;
-// correct 2095). These overrides win (top priority). Human-validated via frame_disagreements.html.
-const CREATURE_FRAME_FIX = readJSON(path.join(MODEL, 'creature_frame_overrides.json')).overrides || {};
-const CREATURE_FRAME_FIX_N = Object.fromEntries(Object.entries(CREATURE_FRAME_FIX).map(([k, v]) => [norm(k), v]));
+// Battle-sprite frame = the code creature DB record's battle_frame (creature_data, code-named since 2026-10-01).
+// The former SPRITE_FRAME_OVERRIDE / creature_frame_overrides.json manual picks are retired (8/15 already equalled
+// code; the other 7 now follow code by user decision) — see _su_extract creature_frame_overrides.json overrides_retired.
 
 // Canonical frame remap (asset-index driven). The appraisal (frame_index.json) marks each spr_crits_battle
 // frame keep|removable; removable = legacy / unused / a non-canonical byte-duplicate, with canonical_frame
@@ -599,11 +598,7 @@ creaturesRef.forEach((r, i) => {
   // battle sprite — spr_crits_battle frame from the capstone battle_frame, else legacy field0,
   // else a name-mismatch override (roster spelling ≠ sprite-catalog spelling)
   let frame = (cd && cd.battle_frame != null) ? cd.battle_frame : (cs ? cs.field0 : null);
-  if (CREATURE_FRAME_FIX_N[norm(r.name)] != null) {          // validated correction wins over the auto-pick
-    frame = CREATURE_FRAME_FIX_N[norm(r.name)]; spriteOverrides++;
-  } else if ((frame == null || frame === 6969) && SPRITE_FRAME_OVERRIDE[norm(r.name)] != null) {
-    frame = SPRITE_FRAME_OVERRIDE[norm(r.name)]; spriteOverrides++;
-  }
+  if (!cd) { spriteOverrides++; warn(`creature "${r.name}" has no code creature record — battle frame from legacy creature_stats`); }
   if (frame != null && frame !== 6969) frame = canonFrame(frame);   // route to the kept byte-twin (cleanup-safe)
   let sprite = null;
   if (frame != null && frame !== 6969 /* "no battle sprite" sentinel */) {
@@ -733,15 +728,8 @@ for (const p of catalogPerkArr) if (p.key) perkNameByKey.set(p.key, p.name || p.
 const anointData = readJSON(path.join(MODEL, 'anointments.json'));
 const anointableBySpec = new Map(Object.entries(anointData.by_spec).map(([sid, v]) => [+sid, new Set(v.anointable.map(p => p.key))]));
 
-// 16×16 spec emblem lookup (spec_<slug>) — aliases for internally-renamed/misspelled classes.
-// defiler→occultist: the sprite named `spec_occultist` is actually the Defiler crest (user-verified);
-// Defiler has no `spec_defiler` sprite, so it previously fell back to its 32×32 skin.
-const EMBLEM_ALIAS = { sorcerer: 'sorceror', runeknight: 'deathknight', defiler: 'occultist' };
-function findEmblem(label) {
-  const slug = norm(label), a = EMBLEM_ALIAS[slug];
-  for (const cand of [a, slug].filter(Boolean)) if (metaByName.has(`spec_${cand}`)) return `spec_${cand}`;
-  return null;
-}
+// 16×16 spec emblem = scr_SpecializationIcon(spec id) (code; asset_maps.spec_icons). Replaces the name + alias heuristic.
+const findEmblem = (specId) => ASSET_MAPS.spec_icons[String(specId)] || null;
 
 // per-surface taxonomy tags (LLM-classified against the codebook; optional until generated)
 const loadTaxoBy = (fname) => { const p = path.join(MODEL, fname); return fs.existsSync(p) ? (readJSON(p).by_key || {}) : {}; };
@@ -801,7 +789,7 @@ for (const s of specRecs) {
   if (!sprite) err(`specialization "${s.label}" has no sprite`);
   // 16×16 emblem for the selector grid (falls back to the main sprite if none, e.g. Defiler)
   let emblem = sprite;
-  const emName = findEmblem(s.label);
+  const emName = findEmblem(s.spec_id);
   if (emName && copyNamedSprite(emName, OUT_SPEC, `${slug}_emblem.png`)) { emblem = `assets/specs/${slug}_emblem.png`; emblemCount++; }
   // membership + ascension + anointability: all CODE (no CSV input left for specs).
   const perks = (s.perks || []).filter(p => p.key && p.name).map(p => {
@@ -889,15 +877,19 @@ artRef.forEach((a, i) => {
     perRank,
   });
 });
-// artifact-type icons for the 5 primary properties — use the HIGHEST tier art available per type
-const ART_ICON_SRC = { Helmet: 'helmet_6', Sword: 'sword_6', Staff: 'staff_5', Shield: 'shield_6', Boots: 'boots_5' };
+// artifact-type icons — CODE: inv_ArtifactIcon(type, level) picks one of 6 tier frames of the `icons` sheet per type
+// (asset_maps.artifacts; pixel-identical to the <type>_<n> sprites). Ship all 6 tiers per type as icons[0..5] and the
+// level rule (tierMinLevel) so the app can show the tier for the artifact's level like the game does. `icon` = tier 6.
 fs.rmSync(OUT_ARTTYPE, { recursive: true, force: true });
+const ART_TIERS = ASSET_MAPS.artifacts.tiers_by_type;
 for (const p of artGroup.primary) {
-  const base = ART_ICON_SRC[p.property];
-  const dest = `${norm(p.property)}.png`;
-  if (base && copyNamedSprite(base, OUT_ARTTYPE, dest)) p.icon = `assets/arttypes/${dest}`;
-  else warn(`artifact type icon missing for ${p.property}`);
+  const t = ART_TIERS[p.property];
+  if (!t) { err(`artifact type ${p.property} has no code icon tiers`); continue; }
+  p.icons = t.frames.map((f, i) => copySpriteFrame('icons', f, OUT_ARTTYPE, `${norm(p.property)}_${i + 1}.png`) ? `assets/arttypes/${norm(p.property)}_${i + 1}.png` : null);
+  if (p.icons.some(x => !x)) err(`artifact type ${p.property}: missing tier icon frame`);
+  p.icon = p.icons[5];
 }
+const artTierMinLevel = ASSET_MAPS.artifacts.tier_min_level;   // [1,10,20,30,40,50] -> tiers 1..6
 
 // ── spells (for the artifact spell slot) — class from spells_ref, class-coloured gem icon ──
 const spellCatalog = readJSON(path.join(SRC, 'data', 'catalog', 'spells.json'));
@@ -1007,7 +999,9 @@ console.log(`  canon-status validation: ${statusUngrounded} ungrounded buff/debu
 // ── trait items (slottable into artifact trait slots) — with material icons ──
 const matStats = readJSON(path.join(MODEL, 'material_stats.json'));
 const matRecs = Array.isArray(matStats) ? matStats : matStats.records;
-const matIconByKey = new Map(readJSON(path.join(MODEL, 'material_icons.json')).records.map(r => [r.key, r.icon]));
+// material icon = the sprite referenced in the material's own scr_DatabaseMaterials record (code; material_ids_true.json),
+// replacing the localization-key name join (material_icons.json; 1859/1860 identical — Volatile Stitches corrected).
+const matIconByKey = new Map(Object.values(readJSON(path.join(MODEL, 'material_ids_true.json')).records).filter(r => r.sprite).map(r => [r.key, r.sprite]));
 fs.rmSync(OUT_MATICON, { recursive: true, force: true });
 let matIconCopied = 0, matIconMissing = 0;
 const matIcon = (m) => {                                    // copy a material's sprite → assets/maticons, return web path (or null)
@@ -1424,27 +1418,24 @@ let propGemIcons = 0, propGemGods = 0;
 
 // ── relics ──
 const relicRef = readJSON(path.join(REF, 'relics_ref.json')).records;
-// per-relic icons: sprites are named relicW_<god>_<name>; join relic→god via relic_effects,
-// with a fuzzy name-part fallback for the one whose relic_effects name is null (ROBO/r080).
+// per-relic icons — CODE: scr_RelicName(id) -> L_RELIC_<GOD> name, scr_RelicOverworldSprite(id) -> icon (the 32px relic
+// sprite the app has always shown), scr_RelicBigIcon(id) -> large art (shipped as iconBig). Joined to relics_ref by the
+// code relic name (the part before the comma). Replaces the "first relicW_ sprite of the relic's god" heuristic.
 const OUT_RELIC = path.join(OUT_ASSETS, 'relics');
 fs.rmSync(OUT_RELIC, { recursive: true, force: true });
-const relicEff = readJSON(path.join(MODEL, 'relic_effects.json')).records || readJSON(path.join(MODEL, 'relic_effects.json'));
-const relicGodByName = new Map((Array.isArray(relicEff) ? relicEff : []).map(e => [norm(e.relic_name), (e.relic_god || '').toLowerCase()]));
-const relicSpriteBases = fs.readdirSync(SRC_SPEC_PNG).filter(f => /^relicW_.+_0\.png$/.test(f)).map(f => f.replace(/_0\.png$/, ''));
-const relicByGod = new Map();
-for (const b of relicSpriteBases) { const m = b.match(/^relicW_([a-z0-9]+)_/); if (m && !relicByGod.has(m[1])) relicByGod.set(m[1], b); }
+const relicCodeByName = new Map(Object.values(ASSET_MAPS.relics).map(r => [norm(r.name), r]));
 let relicIconCopied = 0;
 const relics = relicRef.map((r, i) => {
-  const g = relicGodByName.get(norm(r.relic));
-  let base = g && relicByGod.get(g);
-  if (!base) { const rn = norm(r.relic); base = relicSpriteBases.find(b => b.replace(/^relicW_/, '').split('_').some(p => p.length >= 4 && rn.includes(p))); }
-  let icon = null;
-  if (base && copySpriteFrame(base, 0, OUT_RELIC, `${i}.png`)) { icon = `assets/relics/${i}.png`; relicIconCopied++; }
+  const rc = relicCodeByName.get(norm(String(r.relic).split(',')[0]));
+  if (!rc) err(`relic "${r.relic}" has no code relic record`);
+  let icon = null, iconBig = null;
+  if (rc && rc.overworld && copySpriteFrame(rc.overworld, 0, OUT_RELIC, `${i}.png`)) { icon = `assets/relics/${i}.png`; relicIconCopied++; }
+  if (rc && rc.big && copySpriteFrame(rc.big, 0, OUT_RELIC, `${i}_big.png`)) iconBig = `assets/relics/${i}_big.png`;
   const rTaxo = correctTaxo(taxoStrs(relicTaxo[String(i)]), (r.ranks || []).map(x => x.description || '').join(' '), 'relic');
   return {
     id: i,
     name: r.relic,
-    icon,
+    icon, iconBig,
     statBonus: r.stat_bonus || null,
     ranks: (r.ranks || []).map(x => ({ rank: pct(x.rank), desc: x.description || '' })),
     taxo: rTaxo,
@@ -1495,19 +1486,20 @@ for (const r of godShopArr) {
   godShopMap.get(r.god).push({ tier: parseInt(r.tier, 10) || 0, item: r.item || '', type: r.type || null,
     price: parseInt(r.price, 10) || null, desc: r.description || '' });
 }
-// god BATTLE sprite (bspr_god_<name-or-theme>) → shown on the realm detail page (in place of the realm icon)
-// and in the God Shop. Mapping is hand-curated (theme/arena naming; see _su_extract memory). Keyed by god
-// short-name; copied to assets/godbattle/<godSlug>.png. Memoized so realms + shops share one copy.
-const GOD_BSPR = {
-  'Alexandria': 'alexandria', 'Anneltha': 'anneltha', 'Ariamaki': 'ariamaki', 'Genaros': 'genaros', 'Muse': 'muse',
-  'Reclusa': 'reclusa', 'Shallan': 'shallan', "T'Mere M'rgo": 'tmeremrgo', 'Azural': 'snow', 'Friden': 'underwater',
-  'Gonfurian': 'war', 'Torun': 'jungle', 'Yseros': 'desert', 'Tenebris': 'void', 'Tartarith': 'dungeon', 'Aurum': 'gem',
-  'Aeolian': 'grassland', 'Mortem': 'bloodbone', 'Regalis': 'cave', 'Lister': 'island', '4080': 'robo', 'Vulcanar': 'chaos',
-  'Surathli': 'life', 'Apocranox': 'autumn', 'Erebyss': 'death', 'Meraxis': 'nature', 'Perdition': 'purgatory',
-  'Venedon': 'reactor', 'Vertraag': 'space', 'Zonte': 'sorcery',
-  // Caliban is a Deity AND a False God (separate entries); his Deity battle sprite is bspr_god_caliban.
-  'Caliban': 'caliban',
-};
+// god BATTLE sprite = scr_GodBattleSprite(god index) (code; asset_maps.god_battle). god index = the god's branch id in
+// scr_GodShopSetup (shops.json god blocks). Caliban (Deity) has no case in that switch — the game draws his Deity
+// battle sprite from boss code (bspr_god_caliban), kept as the single documented explicit entry.
+const GOD_BSPR = {};
+{
+  const godIdxByKey = new Map(readJSON(path.join(MODEL, 'shops.json')).shops.god.gods.map(g => [norm(g.god_key), g.god_index]));
+  const rr = readJSON(path.join(REF, 'realms_ref.json')), rrArr = Array.isArray(rr) ? rr : (rr.records || []);
+  for (const r of rrArr) {
+    const god = String(r.god || '').split(',')[0].trim(); if (!god) continue;
+    const gi = godIdxByKey.get(norm(god)); const sp = gi != null ? ASSET_MAPS.god_battle[String(gi)] : null;
+    if (sp) GOD_BSPR[god] = sp.replace(/^bspr_god_/, ''); else warn(`god "${god}" has no code battle sprite`);
+  }
+  GOD_BSPR['Caliban'] = 'caliban';
+}
 fs.rmSync(OUT_GODBATTLE, { recursive: true, force: true });
 // case-insensitive lookup (the God Shop spells "T'mere M'rgo" vs the realm's "T'Mere M'rgo")
 const GOD_BSPR_CI = Object.fromEntries(Object.entries(GOD_BSPR).map(([k, v]) => [k.toLowerCase(), v]));
@@ -1956,35 +1948,26 @@ for (const r of parseCSVRaw(fs.readFileSync(path.join(REF, '..', 'localization',
 }
 conditions.sort((a, b) => a.cat.localeCompare(b.cat) || a.name.localeCompare(b.name));
 
-// Condition icons — the in-game status glyph sets keyed by category:
-//   Buff → stat_g_<name>, Debuff → stat_b_<name>, Minion → stat_m_<name>.
-// A small alias map bridges the few naming gaps between the CONDNAME_* labels and the sprite stems
-// (e.g. Stunned→stun, Mania→drunk). The Demonologist summon-minions (the six Inner Demons sins + Brimfiend/
-// Chaos Satyr/Fire Imp/Leviathan/Microbot) have no stat_m_ glyph — they use the dedicated m_<name> minion
-// portrait set instead (gives each sin its own icon rather than the generic stat_m_innerdemons).
-const COND_ICON_PRE = { Buff: 'stat_g_', Debuff: 'stat_b_', Minion: 'stat_m_' };
-const COND_ICON_ALIAS = {
-  // buffs
-  leeching: 'leech', mending: 'mend', protected: 'protect', immune: 'immunity', warded: 'ward', gracious: 'grace', repelling: 'splash',
-  // debuffs
-  burned: 'burn', disarmed: 'disarm', snared: 'snare', stunned: 'stun', mania: 'drunk',
-  // minions (stat_m_ set)
-  littletorun: 'liltorun', unstablehorror: 'shamblinghorror',
-};
-// Full-base overrides (prefix included) — the m_<name> Demonologist-summon minion portraits.
-const COND_ICON_OVERRIDE = {
-  brimfiend: 'm_brimfiend', chaossatyr: 'm_chaossatyr', fireimp: 'm_fireimps', leviathan: 'm_leviathan', microbot: 'm_microbots',
-  asmodeus: 'm_asmodeus', beelzebub: 'm_beelzebub', belphegor: 'm_belphegor', lucifer: 'm_lucifer', mammon: 'm_mammon', satanachia: 'm_satanachia',
-};
+// Condition icons = scr_GetConditionIcon(condition id) (code; asset_maps.conditions, joined by the registry's CONDNAME
+// key/name). Replaces the prefix + alias + override heuristic. Conditions with no code condition id (none expected)
+// are reported, never guessed.
 fs.rmSync(OUT_CONDICON, { recursive: true, force: true });
 let condIconHits = 0;
-for (const c of conditions) {
-  const s0 = c.key;   // stable CONDNAME suffix — not the (overridable) display name
-  const base = COND_ICON_OVERRIDE[s0] || (COND_ICON_PRE[c.cat] + (COND_ICON_ALIAS[s0] || s0));
-  const dest = `${c.cat.toLowerCase()}_${s0}.png`;
-  // Existence-gate so a documented, fallback-free gap never trips the 404 guard — a miss renders iconless.
-  const exists = fs.existsSync(path.join(SRC_SPEC_PNG, `${base}_0.png`)) || fs.existsSync(path.join(SRC_SPEC_PNG, `${base}.png`));
-  if (exists && copyNamedSprite(base, OUT_CONDICON, dest)) { c.icon = `assets/condicons/${dest}`; condIconHits++; }
+{
+  const byKey = new Map(), byName = new Map();
+  for (const c of Object.values(ASSET_MAPS.conditions)) {
+    if (!c.sprite) continue;
+    if (c.key) byKey.set(norm(c.key), c.sprite);
+    if (c.name) byName.set(norm(c.name), c.sprite);
+  }
+  const miss = [];
+  for (const c of conditions) {
+    const base = byKey.get(c.key) || byName.get(norm(c.name)) || byName.get(c.key);
+    const dest = `${c.cat.toLowerCase()}_${c.key}.png`;
+    if (base && copyNamedSprite(base, OUT_CONDICON, dest)) { c.icon = `assets/condicons/${dest}`; condIconHits++; }
+    else miss.push(`${c.cat}:${c.name}`);
+  }
+  if (miss.length) warn(`conditions without a code icon: ${miss.join(', ')}`);
 }
 
 // Condition taxonomy — per-description classification against the canonical vocabulary (identity Related
@@ -2322,6 +2305,7 @@ const SU_DATA = {
       .map(c => ({ ...c, values: c.values.filter(v => !KILLED_VALUES.has(c.category + '::' + v)) })),
     status: taxonomy.status },
   artifact: artGroup,
+  artTierMinLevel,          // code (inv_ArtifactIcon): min level for artifact icon tiers 1..6
   traitItems,
   statMats,
   trickMats,

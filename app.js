@@ -184,7 +184,10 @@
     }
   }
   const PRIMARY = D.artifact.primary;                                    // 5 {property,stat,perRank,icon}
-  const PRIMARY_ICON = Object.fromEntries(PRIMARY.map(p => [p.property, p.icon]));
+  // artifact icon tier follows the artifact's level like the game (inv_ArtifactIcon): tiers 1..6 at D.artTierMinLevel
+  const ART_TIER_MIN = D.artTierMinLevel || [1, 10, 20, 30, 40, 50];
+  const artTier = (rank) => { const r = rank || 50; let t = 0; ART_TIER_MIN.forEach((m, i) => { if (r >= m) t = i; }); return t; };
+  const primaryIconAt = (prop, rank) => { const p = PRIMARY.find(x => x.property === prop); return p ? ((p.icons && p.icons[artTier(rank)]) || p.icon) : null; };
   // artifact enchant materials: Stat slot = Ambers, Trick slot = Slates/Curios/Cripplers/… — each maps 1:1
   // to a stat/trick property. Slots still STORE the property name (calc + migration unchanged); the picker
   // and slot chips surface the real material (name + icon).
@@ -660,7 +663,7 @@
       style="--aff-color:${color};--aff-text:${txt}" title="${esc(t.name)}">
       <span class="trait-banner-label">${esc(label)}</span>${avail}</span>`;
   }
-  const artIcon = (a) => a && a.primary ? PRIMARY_ICON[a.primary] : null;
+  const artIcon = (a) => a && a.primary ? primaryIconAt(a.primary, a.rank) : null;
 
   // ── HOME (build-first) ─────────────────────────────────────────────────────
   function render() {
@@ -2741,7 +2744,7 @@
   };
   function artContentRows(a) {
     const r = [];
-    if (a.primary) { const p = PRIMARY.find(x => x.property === a.primary); r.push(libRow(p && p.icon, a.primary, "primary")); }
+    if (a.primary) r.push(libRow(primaryIconAt(a.primary, a.rank), a.primary, "primary"));
     for (const n of a.stat || []) { const m = MAT_BY_PROP.get(n); r.push(libRow(m && m.icon, m ? m.name : n, n)); }
     for (const n of a.trick || []) { const m = MAT_BY_PROP.get(n); r.push(libRow(m && m.icon, m ? m.name : n, n)); }
     for (const id of a.traits || []) { const t = TRAITITEM.get(id); r.push(libTraitRow(t && t.icon, t ? t.name : id, t ? t.traitId : null)); }
@@ -3005,7 +3008,7 @@
     if (st.step === "type") {
       const tiles = PRIMARY.map(p => `
         <div class="art-type-tile ${a.primary === p.property ? "chosen" : ""}" data-action="art-primary" data-p="${esc(p.property)}">
-          <div class="att-ico">${spriteImg(p.icon, "px")}</div>
+          <div class="att-ico">${spriteImg(primaryIconAt(p.property, a.rank), "px")}</div>
           <div class="att-name">${esc(p.property)}</div>
           <div class="att-stat">${esc(p.stat)} +${p.perRank[rank]}%</div></div>`).join("");
       body = `<div class="ovl-center"><div class="ovl-center-scroll">
@@ -3030,7 +3033,7 @@
         return `<div class="art-slot"><button class="as-rm" data-action="art-rm" data-t="${type}" data-i="${idx}">✕</button>${ico}<div class="as-lab">${esc(lab)}</div><div class="as-sub">${esc(sub)}</div></div>`;
       };
       const primaryBox = a.primary
-        ? (() => { const p = PRIMARY.find(x => x.property === a.primary); return `<div class="art-slot primary"><div class="as-ico">${spriteImg(p && p.icon, "px")}</div><div class="as-lab">${esc(a.primary)}</div><div class="as-sub">primary</div></div>`; })()
+        ? (() => `<div class="art-slot primary"><div class="as-ico">${spriteImg(primaryIconAt(a.primary, a.rank), "px")}</div><div class="as-lab">${esc(a.primary)}</div><div class="as-sub">primary</div></div>`)()
         : `<div class="art-slot add" data-action="artb-back"><div class="as-ico glyph">＋</div><div class="as-lab">Primary</div></div>`;
       const groupsHtml = [`<div class="art-slot-group"><div class="section-label">Primary</div><div class="art-slot-grid">${primaryBox}</div></div>`]
         .concat(ART_SLOTS.map(sl => {
