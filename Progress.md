@@ -6,6 +6,13 @@ Pages on `master`/root, Cloudflare analytics active with the shared github.io to
 No verify-before-push ceremony (no real users yet) — but every change is checked with the jsdom smoke suite
 (scratchpad `smoke.mjs`, ~84 assertions across all flows) before commit.
 
+## 2026-10-01 (night) — Shop currencies from code
+Each shop item now carries the currency it is bought with, decoded from `scr_ShopFill(…, MODE, CURRENCY)` + the
+`obj_shop` currency switches (`_su_extract/code/extract_shop_currency.py`): **God = Emblem of <God>** (was mislabeled
+"Favor"), Guilds = Brimstone/Granite/Power/Crystal/Essence (replaces hand-written GUILD_CURRENCY), **Arena = Glory**,
+**Tavern = Notoriety**. UI: price shows "10 Emblem of Surathli", headers show "Currency: …". Build errors if any shop
+lacks a currency.
+
 ## 2026-10-01 (eve) — Unified Shops overlay (code-grounded)
 - **One "Shops" overlay** (menu → Shops) with a 4-way **God | Guild | Arena | Tavern** toggle that rotates the grid:
   God/Guild = tile grid (30 god battle sprites / 5 guild seals) → that shop's stock; Arena/Tavern = stock directly.
@@ -19,8 +26,7 @@ No verify-before-push ceremony (no real users yet) — but every change is check
   in their DB records). Joins 100% for every kind; walls/floors/music/chests have no art in code (blank icon).
   Regalis' dust is a runtime argument in code → named from God Shop_REF with a tooltip (only CSV-sourced item).
 - All 30 realms now link to their god's shop (`realm-shop` → Shops/God/<god>), was 22.
-- Prices are code literals; God shows ✦ (Favor), Guild shows its resource as tooltip (`GUILD_CURRENCY`), Arena/Tavern
-  plain (currency not decoded). Guild rows show the wiki Reputation **Rank** chip where known.
+- Prices are code literals (currency decoded later the same day — see 'night' entry). Guild rows show the wiki Reputation **Rank** chip where known.
 - Open (in-game check): Azural block = Smiths/Crafters (CSV: Yetis), Tenebris = Reapers (CSV: Shadow X), dust price 1 (CSV 10).
 
 ## 2026-10-01 (late) — Wardrobe runtime ids + exact game names

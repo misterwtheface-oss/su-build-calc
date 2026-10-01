@@ -963,6 +963,8 @@ button.apx-owner:hover .apx-owner-ico { border-color: var(--accent); }
 .opt-row .anoint-spec-tag { margin-left: auto; }
 /* God Shops + Realms reference overlays */
 .gs-price { color: var(--accent); font-weight: 800; font-variant-numeric: tabular-nums; }
+.gs-cur { color: var(--text-mute); font-weight: 600; font-size: 11px; }
+.gs-cur-line { text-align: center; padding: 6px 12px 0; }
 .realm-crits { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 8px; }
 .realm-crit { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; padding: 3px 8px 3px 4px;
   background: var(--surface); border: 1px solid var(--border-dim); border-radius: 999px; }

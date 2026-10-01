@@ -1520,13 +1520,13 @@ function godBattleFor(godName) {
 // ── Shops (CODE-GROUNDED) — one D.shops feeds the unified "Shops" overlay (God / Guild / Arena / Tavern toggle) ──
 // _su_extract code/build_shops_true.py: every entry is a typed constructor in scr_<X>ShopSetup resolved by direct
 // RUNTIME-id lookup (creature/spell/material/decoration/project-item/... id tables). Replaces the CSV God Shops
-// (god_shop_ref) + wiki Guild Shops overlays. Prices are the code literals. Icons/links are joined in enrichShops()
+// (god_shop_ref) + wiki Guild Shops overlays. Prices AND currency are code (currency: scr_ShopFill MODE/CURRENCY ->
+// obj_shop switch; God = each god's Emblem, Guilds = Brimstone/Crystal/Essence/Granite/Power, Arena = Glory, Tavern = Notoriety). Icons/links are joined in enrichShops()
 // (after skins are built); every join is counted and unresolved items are warned, never guessed.
 const OUT_GUILDBANNER = path.join(OUT_ASSETS, 'guildbanner');
 const OUT_SHOPICON = path.join(OUT_ASSETS, 'shopicons');
 fs.rmSync(OUT_GUILDBANNER, { recursive: true, force: true });
 fs.rmSync(OUT_SHOPICON, { recursive: true, force: true });
-const GUILD_CURRENCY = { Chaos: 'Brimstone', Death: 'Granite', Life: 'Power', Nature: 'Crystal', Sorcery: 'Essence' };
 const GUILD_ORDER = ['Nature', 'Chaos', 'Sorcery', 'Death', 'Life'];
 // wiki Guild Reputation rank that unlocks a guild creature/spell (secondary info, provenance = wiki)
 const guildRank = new Map();
@@ -1551,10 +1551,10 @@ let guildBannerHits = 0;
 const shopTab = (key, label, extra) => ({ key, label, ...extra });
 const godShopSrc = shopsSrc.god;
 const shops = [
-  shopTab('god', 'God', { currency: 'Favor', groups: godShopSrc.gods.map(g => {
+  shopTab('god', 'God', { groups: godShopSrc.gods.map(g => {
     const god = godNameByNorm.get(norm(g.god_key)) || null;
     if (!god) warn(`shop god key ${g.god_key} has no realm god name`);
-    return { key: g.god_key, name: god || g.god_key, img: god ? godBattleFor(god) : null, godIndex: g.god_index, items: g.items.map(slimShopItem) };
+    return { key: g.god_key, name: god || g.god_key, img: god ? godBattleFor(god) : null, godIndex: g.god_index, currency: g.currency || null, items: g.items.map(slimShopItem) };
   }).sort((a, b) => a.name.localeCompare(b.name)) }),
   shopTab('guild', 'Guild', { groups: GUILD_ORDER.map(guild => {
     const slug = guild.toLowerCase(), src = shopsSrc['guild_' + slug];
@@ -1564,10 +1564,10 @@ const shops = [
     const items = src.items.map(slimShopItem).map(it => {
       const rk = guildRank.get(norm(guild) + '|' + norm(it.name)); return rk != null ? { ...it, rank: rk } : it;
     });
-    return { key: slug, name: `${guild} Guild`, img, currency: GUILD_CURRENCY[guild] || null, items };
+    return { key: slug, name: `${guild} Guild`, img, currency: src.currency || null, items };
   }) }),
-  shopTab('arena', 'Arena', { items: shopsSrc.arena.items.map(slimShopItem) }),
-  shopTab('tavern', 'Tavern', { items: shopsSrc.tavern.items.map(slimShopItem) }),
+  shopTab('arena', 'Arena', { currency: shopsSrc.arena.currency || null, items: shopsSrc.arena.items.map(slimShopItem) }),
+  shopTab('tavern', 'Tavern', { currency: shopsSrc.tavern.currency || null, items: shopsSrc.tavern.items.map(slimShopItem) }),
 ];
 const allShopItems = () => shops.flatMap(s => s.items || s.groups.flatMap(g => g.items));
 // Regalis' dust argument is a runtime global in code (not statically resolvable) → name it from God Shop_REF, tagged.
@@ -1577,6 +1577,7 @@ for (const g of shops[0].groups) for (const it of g.items) {
     if (ref) { it.name = ref.item; it.nameSrc = 'csv'; it.type = 'Crafting Material'; delete it.unresolved; }
   }
 }
+for (const sh of shops) for (const g of (sh.groups || [sh])) if (!g.currency) err(`shop ${sh.key}/${g.key || ''} has no currency`);
 console.log(`  shops (code): God ${shops[0].groups.length} gods · ${GUILD_ORDER.length} guilds (${guildBannerHits} banners) · Arena · Tavern · ${allShopItems().length} items`);
 
 // ── boss battle sprites (Appendix boss-trait rows) ────────────────────────────
