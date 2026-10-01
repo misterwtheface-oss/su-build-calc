@@ -11,7 +11,8 @@ No verify-before-push ceremony (no real users yet) — but every change is check
    left of Cancel/Next; both creature and fusion steps.
 2. List view: each trait card now leads with a header — creature name · race emblem + race · class emblem + class, a
    divider, then base stats on one row (Health/Attack/Defense/Intelligence/Speed — Total dropped so it fits). Race/class
-   tags right-aligned; the List|Grid toggle sits at the footer's left edge.
+   tags right-aligned; the List|Grid toggle sits at the footer's left edge. List is the picker's default view, and the home
+   Layout toggle's "Roster" is now labelled "List" (internal value unchanged) so both read List | Grid.
 3. Builds: **Update** is disabled (with a tooltip) when the current loadout has no creatures, so a saved build can't be
    overwritten back to the template state (handler guarded too).
 

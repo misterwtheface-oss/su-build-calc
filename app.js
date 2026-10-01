@@ -703,7 +703,7 @@
     `;
   }
 
-  // The Grid/Roster switch lives in the header Menu (outside #app), so render() doesn't touch it —
+  // The List/Grid switch lives in the header Menu (outside #app), so render() doesn't touch it —
   // reflect the active layout on its seg buttons whenever the menu opens / the layout changes.
   function syncLayoutMenu() {
     document.querySelectorAll('#main-menu [data-action="home-view"]').forEach(b =>
@@ -954,7 +954,7 @@
       kind: "creature", slotIdx, step: "primary",
       primaryId: slot.cid, fusionId: slot.fusion, skinId: slot.skinId != null ? slot.skinId : null,
       personality: slot.personality || null, scrolls: { ...(slot.scrolls || {}) },
-      search: "", clsFilter: null, raceFilter: null, taxoFilters: [], limit: CREA_PAGE, sort: null, view: "grid",
+      search: "", clsFilter: null, raceFilter: null, taxoFilters: [], limit: CREA_PAGE, sort: null, view: "traits",
       render: renderCreaturePicker,
     };
     openOverlay(ovState.render()); maybeFocusSearch(OV);
