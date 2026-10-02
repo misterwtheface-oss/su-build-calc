@@ -1247,7 +1247,7 @@ MAPPING not for asserting PRESENCE; no inventing entities from the community-CSV
 ## Backlog
 ### ✅ DONE — Shops feature (user, 2026-10-01) — unified overlay shipped (see 2026-10-01 eve)
 - [x] Code-ground the per-perk **Anointment** flag — DONE 2026-10-01 pm.
-- [x] Spec costume tiers from `scr_SpecializationCostume` — DONE 2026-10-01 pm. [ ] Spec emblem/icon from `scr_SpecializationIcon` (decompiled, not yet wired).
+- [x] Spec costume tiers from `scr_SpecializationCostume` — DONE 2026-10-01 pm. [x] Spec emblem/icon from `scr_SpecializationIcon` — wired 2026-10-01 (asset_maps.spec_icons).
 - [ ] #5 taxonomy → fully code-backed (workshop multi-parameter conditions first, e.g. side × event: "opposing-side buff gain").
 ### 💤 PARKED — Player-customized spell availability list (+ dependent nether spell restriction)
 - [ ] **Player-customized spell availability list:** the player marks which spells/recipes they own.
@@ -1371,7 +1371,7 @@ full builder stays the high-fidelity path.
 - [ ] **Threat-set icons**: both threat sources have icons to wire onto the Threats page (per the Realm Props |
       False God toggle) — Realm Property icons (`realmprop_e_<slug>` sprites, ~32 exist but slug ≠ `L_RP_` key,
       so the join was deferred) and False God rune icons. Find/curate the joins like realm icons + realm objects.
-- [ ] **Antiquarian anointment eligibility — VALIDATE**: Antiquarian (13 perks) isn't in `Perk_REF.csv`, so
+- [x] **Antiquarian anointment eligibility — RESOLVED 2026-10-01 by the code-grounded anointment flag (13/16 anointable).** Was: Antiquarian (13 perks) isn't in `Perk_REF.csv`, so
       all its perks default to `anointment:false` and never appear in the Anointments overlay — but some are
       likely anointable in-game. Flagged in data as `perk.anointValidate:true` (build-data.mjs). Confirm which
       Antiquarian perks are anointable in-game, then set their anoint flag (needs a per-perk override since
@@ -1399,7 +1399,7 @@ full builder stays the high-fidelity path.
 
 ### Later (P2)
 - [ ] Spell-gem loadouts (potency tiers already in `damageModel`).
-- [ ] Fusion palette / colour-combination picker (cosmetic).
+- [x] Fusion palette / colour-combination picker — DONE 2026-10-01: code-exact 6-option Fusion Colour wizard step.
 - [ ] Save / load / share builds; multiple saved parties.
 - [x] Turn on the Cloudflare analytics beacon (shared github.io token). DONE — beacon is in `index.html`
       and live on master (deployed 2026-09-23).
