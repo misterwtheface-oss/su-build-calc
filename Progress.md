@@ -45,6 +45,11 @@ No verify-before-push ceremony (no real users yet) — but every change is check
      code frame (pre byte-twin canonicalisation).
    - **Verified:** Exiled Satyr ⚭ Ashskin Spellmane — browser output equals the Python engine pixel-for-pixel on all
      5 modes, and that engine matches the in-game capture on all 6 cells.
+   - **Semi-transparent pixels resolved** from an in-game Sparktail Student ⚭ Uralos Spellslinger capture (1,551 partial
+     px). Modes 0–3 never recolour them. Mode 4 matches their **premultiplied** colour (rgb·a) and writes the nearest
+     palette colour **fully opaque**. Every pixel of all 5 cells is exact (_su_extract
+     `code/validate_fusion_partial_alpha.py`), and the browser output matches the engine pixel-for-pixel.
+   - The colour step shows only the 2×3 grid (no info panel).
 
 ## 2026-10-01 (night 3) — Asset mappings converged on code + level-aware artifact icons
 Replaced hand-curated / heuristic asset tables with game-code maps (`_su_extract` asset_maps.json; DB_ID_FINDINGS.md):

@@ -200,16 +200,17 @@
     }
     for (let i = 0; i < d.length; i += 4) {
       const a = d[i + 3]; if (!a) continue;
-      // the game composites onto a transparent-white surface first (only partial-alpha pixels differ)
-      let r = d[i], g = d[i + 1], b = d[i + 2], ca = 255;
-      if (a < 255) { const f = a / 255; r = Math.round(r * f + 255 * (1 - f)); g = Math.round(g * f + 255 * (1 - f)); b = Math.round(b * f + 255 * (1 - f)); ca = Math.round(255 * f * f); }
-      const key = (r << 16 | g << 8 | b) * 256 + ca;
+      // semi-transparent pixels (verified on an in-game Sparktail Student capture): modes 0–3 never recolour them;
+      // mode 4 matches their PREMULTIPLIED colour (rgb·a) and writes the nearest palette colour fully OPAQUE
+      if (a < 255 && rows) continue;
+      const f = a / 255, r = d[i] * f, g = d[i + 1] * f, b = d[i + 2] * f;
+      const key = a < 255 ? `p${r},${g},${b}` : (d[i] << 16 | d[i + 1] << 8 | d[i + 2]);
       let out = cache.get(key);
       if (out === undefined) {
         out = null;
         if (rows) {
           for (const [src, dst] of rows) {
-            const dr = r - src.rgb[0], dg = g - src.rgb[1], db = b - src.rgb[2], da = ca - src.a;
+            const dr = r - src.rgb[0], dg = g - src.rgb[1], db = b - src.rgb[2], da = 255 - src.a;
             if (dr * dr + dg * dg + db * db + da * da <= 1) { out = dst ? dst.rgb : null; break; }
           }
         } else {
@@ -218,7 +219,7 @@
         }
         cache.set(key, out);
       }
-      if (out) { d[i] = out[0]; d[i + 1] = out[1]; d[i + 2] = out[2]; }
+      if (out) { d[i] = out[0]; d[i + 1] = out[1]; d[i + 2] = out[2]; if (!rows) d[i + 3] = 255; }
     }
     cx.putImageData(id, 0, 0);
     return cv.toDataURL();
@@ -1070,7 +1071,6 @@
           <button class="ovl-close" data-action="close-ovl">✕</button></div>
         <div class="overlay-body">
           <div class="ovl-center"><div class="ovl-center-scroll"><div class="fuse-grid">${cells}</div></div></div>
-          <div class="ovl-right">${renderWizardPreview(st)}</div>
         </div>
         <div class="overlay-footer"><span class="foot-info"></span><div>${footer}</div></div>
       </div></div>`;
