@@ -1280,8 +1280,10 @@ MAPPING not for asserting PRESENCE; no inventing entities from the community-CSV
 - [x] Nether Stone generation · Fusion palettes · Nether Stone icons · Skin owners — DONE 2026-10-01 (see top).
 ### 🧊 Low priority (probably won't do)
 - [ ] **Project costs** — the app has no Projects feature at all.
-- [ ] **Sigil difficulty scaling** — sigils are the "Sigil of the <Creature>" items that open a race's realm at a chosen
-      difficulty (Relaxed/Normal/Ruthless); the per-difficulty enemy scaling isn't used by the app.
+- [ ] **Sigil "difficulty scaling"** — UNVERIFIED premise. An early extract pass guessed that sigils open a race realm at
+      Relaxed/Normal/Ruthless difficulty, from function names (`inv_SigilGetEnemyLevelByDifficultyLevel` …) only.
+      Evidence says otherwise: the "Sigil of the <Creature>" items are `L_MAT_` materials (Mastery Sigils = Master trait
+      items, already shipped as artifact trait-items). What the difficulty functions drive is unknown; not app-relevant.
 - [x] ~~Nether Stone leveling~~ — DROPPED: stones don't level (better rolls at higher RD aren't worth replicating; the
       rarity score is low value).
 ### 💤 PARKED — Player-customized spell availability list (+ dependent nether spell restriction)
