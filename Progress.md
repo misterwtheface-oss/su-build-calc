@@ -1277,6 +1277,8 @@ MAPPING not for asserting PRESENCE; no inventing entities from the community-CSV
   - **Realm property icons:** the inline "[realmprop_*]" tag in each property's localized name (`scr_RealmPropertyName`),
     56/56. Both show on the Threats page rows.
   - **No instability-level icon exists:** instability is drawn as a number.
+  - **Follow-up UI (2026-10-02):** dropped the per-row Realm/Rune source chip (the Realm Props | False God toggle already
+    says which); the feature is renamed **Threats → RI/Runes** (menu item + overlay title; internal `open-threats` kept).
   - **Follow-ups:** a 19th rune, EXTRASPELLS (id 7), is missing from runes.json; the code has display names for realm
     properties that could replace the authored ones.
 - [x] **Class-advantage multiplier — FOUND 2026-10-01 in `bc_EventDamage`** (_su_extract `code/CLASS_ADVANTAGE.md`,

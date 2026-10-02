@@ -2149,7 +2149,6 @@
     ].join("");
     return `<div class="thr-row">
       <span class="thr-ico">${m.icon ? spriteImg(m.icon, "px") : ""}</span>
-      <span class="thr-src ${m.source === "Rune" ? "rune" : "realm"}">${m.source}</span>
       <div class="thr-body"><div class="thr-head"><b>${esc(m.name)}</b>${chips}</div>
         <div class="thr-eff">${esc(m.effect)}</div></div></div>`;
   }
@@ -2179,7 +2178,7 @@
       : `<div class="slot-sub" style="padding:10px">Build a party (creatures + perks) to detect a theme, or pick one above to explore what would counter it.</div>`;
     const genRows = general.map(m => threatRow({ ...m, hitThemes: [], hitClass: null })).join("");
     return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel">
-      <div class="overlay-header"><h2>Threats</h2><button class="ovl-close" data-action="close-ovl">✕</button></div>
+      <div class="overlay-header"><h2>RI/Runes</h2><button class="ovl-close" data-action="close-ovl">✕</button></div>
       <div class="overlay-body"><div class="ovl-center"><div class="ovl-center-scroll">
         <div class="thr-themebar">${themeSelect}</div>
         ${srcToggle}
