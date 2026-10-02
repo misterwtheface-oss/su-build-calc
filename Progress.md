@@ -22,6 +22,8 @@ No verify-before-push ceremony (no real users yet) — but every change is check
    - **Master** (155): code name starts "Master of …".
    - **God** (31): the gods' overworld forms — code God-shop roster (30) or a god sprite asset (adds Caliban).
    - **Misc** (505): catch-all for everything not code-backed.
+5. Relic picker: a relic already equipped by another creature in the party is greyed out (low alpha, full grayscale)
+   and unselectable, with an "Equipped by <creature>" tooltip.
 
 ## 2026-10-01 (night 3) — Asset mappings converged on code + level-aware artifact icons
 Replaced hand-curated / heuristic asset tables with game-code maps (`_su_extract` asset_maps.json; DB_ID_FINDINGS.md):

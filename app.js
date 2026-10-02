@@ -3108,6 +3108,9 @@
   function renderRelicBuilder() {
     const st = ovState, c = CREA.get(build.slots[st.slotIdx].cid);
     const equipped = build.slots[st.slotIdx].relic;
+    // a relic can only be equipped once per party: relics held by ANOTHER slot are greyed out and unselectable
+    const takenBy = new Map();
+    build.slots.forEach((sl, i) => { if (i !== st.slotIdx && sl.relic) takenBy.set(sl.relic.id, (CREA.get(sl.cid) || {}).name || `slot ${i + 1}`); });
     const q = st.search.trim().toLowerCase();
     const list = D.relics.filter(r => (!q || r.name.toLowerCase().includes(q) || (r.statBonus || "").toLowerCase().includes(q)) && taxoMatch(st, r));
     // one section per stat, in the app's canonical stat order; picking a tile opens the rank overlay
@@ -3115,9 +3118,9 @@
       const label = STAT_LABEL[k];
       const rels = list.filter(r => r.statBonus === label);
       if (!rels.length) return "";
-      const tiles = rels.map(r => `<div class="pick-tile ${equipped && equipped.id === r.id ? "selected" : ""}" data-action="relic-pick" data-id="${r.id}">
+      const tiles = rels.map(r => { const taken = takenBy.get(r.id); return `<div class="pick-tile ${equipped && equipped.id === r.id ? "selected" : ""}${taken ? " disabled" : ""}" ${taken ? `title="Equipped by ${esc(taken)}"` : `data-action="relic-pick" data-id="${r.id}"`}>
         <div class="pt-sprite">${r.icon ? spriteImg(r.icon, "px") : `<span class="spec-tile-plus">✦</span>`}</div>
-        <div class="pt-name">${esc(relicShortName(r))}</div></div>`).join("");
+        <div class="pt-name">${esc(relicShortName(r))}</div></div>`; }).join("");
       return `<div class="section-label">${esc(label)}</div><div class="pick-grid relic-grid">${tiles}</div>`;
     }).join("");
     return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel">
