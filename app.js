@@ -841,8 +841,11 @@
       });
     }
   }
+  // a saved build icon → the CURRENT (versioned) wardrobe image path, so stale cached art is never shown
+  const currentWardrobeImg = (p) => { const b = String(p || "").split("?")[0]; const w = (D.wardrobe || []).find(x => String(x.img || "").split("?")[0] === b); return w ? w.img : p; };
   const wardrobeFramesFor = (imgOrSprite) => {   // resolve a wardrobe entry's [f0,f1] from its img path or sprite key
-    const w = (D.wardrobe || []).find(x => x.img === imgOrSprite || x.sprite === imgOrSprite);
+    const bare = (u) => String(u || "").split("?")[0];   // saved icons may predate the ?v= asset versioning
+    const w = (D.wardrobe || []).find(x => bare(x.img) === bare(imgOrSprite) || x.sprite === imgOrSprite);
     return w && Array.isArray(w.frames) && w.frames.length >= 2 ? w.frames : null;
   };
   const SCROLLERS = [".ovl-center-scroll", ".ovl-left", ".ovl-right", ".art-side-list", ".art-side-scroll", ".art-pv-body", ".xref-wrap"];
@@ -1581,7 +1584,7 @@
     const tiles = sortBuilds(builds.slice(), st.sort).map(b => {   // the SELECTED tile animates its costume
       const selB = st.sel === b.id, bframes = selB && b.icon ? wardrobeFramesFor(b.icon) : null;
       return `<div class="lib-tile ${selB ? "selected" : ""} ${st.flash === b.id ? "flash" : ""}" data-action="builds-sel" data-id="${b.id}">
-        <div class="lib-icon"${bframes ? ` data-anim-frames='${JSON.stringify(bframes)}'` : ""}>${b.icon ? spriteImg(b.icon, "px") : `<span class="slot-empty-icon">✦</span>`}</div>
+        <div class="lib-icon"${bframes ? ` data-anim-frames='${JSON.stringify(bframes)}'` : ""}>${b.icon ? spriteImg(currentWardrobeImg(b.icon), "px") : `<span class="slot-empty-icon">✦</span>`}</div>
         <div class="lib-name">${esc(b.name)}</div>
         <div class="lib-sub">${buildSummary(b.build || {})}</div>
       </div>`; }).join("") || `<div class="slot-sub" style="padding:10px">No saved builds yet — save your current party.</div>`;

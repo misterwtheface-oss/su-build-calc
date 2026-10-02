@@ -58,6 +58,15 @@ No verify-before-push ceremony (no real users yet) — but every change is check
      `assets/gems/nether_<n>.png` now holds the coloured frames (keys unchanged, so saved stones keep their shape).
    - **Removed:** the Main/Outline colour picker, presets (`data/nether_colors.json`), the recolour engine and its
      CSS. Stored `mainColor`/`outlineColor` are dropped on load.
+9. **Asset cache-busting by content hash.** The SW asset cache is cache-first by URL, so an image whose content changed
+   under the same filename stayed stale for returning visitors.
+   - **Data URLs:** build-data rewrites every `assets/…` image URL in `data.js` to `…?v=<md5[:8] of the file>`
+     (~9.6k URLs).
+   - **Precache list:** `precache-list.json` lists the same versioned URLs; its version = hash of the URL list, so
+     any content change triggers a re-precache.
+   - **Service worker:** after precaching, it deletes superseded `?v=` entries. Unversioned ones (index.html icons)
+     are kept.
+   - **Saved build icons** (stored paths) resolve to the current versioned wardrobe image.
 
 ## 2026-10-01 (night 3) — Asset mappings converged on code + level-aware artifact icons
 Replaced hand-curated / heuristic asset tables with game-code maps (`_su_extract` asset_maps.json; DB_ID_FINDINGS.md):

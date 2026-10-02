@@ -27,7 +27,7 @@
 
   BUILD below is stamped by build-data.mjs each build.
 */
-const BUILD = "4a99d096";
+const BUILD = "56be5a60";
 const SHELL = `su-shell-${BUILD}`;
 const ASSETS = "su-assets"; // stable across deploys; versioned internally by the list
 const KEEP = new Set([SHELL, ASSETS]);
@@ -126,6 +126,11 @@ async function precacheAssets() {
         }
       })
     );
+  }
+  // drop superseded asset versions (URLs carry ?v=<content hash>; anything not in the current list is stale)
+  const keep = new Set(urls.map((u) => new URL(u, self.registration.scope).href));
+  for (const req of await cache.keys()) {
+    if (req.url.includes("?v=") && !keep.has(req.url)) await cache.delete(req);   // unversioned (index.html icons) kept
   }
   await cache.put(LIST_MARKER, new Response(list.v));
 }
