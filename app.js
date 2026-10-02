@@ -77,83 +77,9 @@
   const CLS_COLOR = Object.fromEntries(D.classes.map(c => [c.key, c.color]));
   const CLASS_BG = D.classBg || {};
   const GEM_ICONS = D.gemIcons || [];
-  const NETHER_COLORS = D.netherColors || { mains: [], outlines: [] };   // picker presets derived from in-game screenshots
-  // Nether-stone tint. In-game the base cornether_* shapes are colored procedurally at drop time
-  // (backlog: reverse the generator). Until then the user picks a main + outline colour, applied here by
-  // gradient-mapping the base sprite's luminance to the main colour and its darkest ring to the outline.
-  const DEFAULT_GEM_MAIN = "#7a4fe0";      // main body hue
-  const DEFAULT_GEM_OUTLINE = "#3ad0e0";   // contrasting outline hue (in-game outlines are coloured, not white)
-  const _gemBase = new Map();          // base sprite path -> ImageData (preloaded once)
-  const _gemOut = new Map();           // "path|main|outline" -> recolored data URL
-  let _gemsReady = false;
-  function preloadGems(done) {
-    let left = GEM_ICONS.length;
-    if (!left) { _gemsReady = true; return done && done(); }
-    for (const g of GEM_ICONS) {
-      const im = new Image();
-      im.onload = () => { try { const c = document.createElement("canvas"); c.width = im.width; c.height = im.height; const cx = c.getContext("2d"); cx.drawImage(im, 0, 0); _gemBase.set(g.path, cx.getImageData(0, 0, im.width, im.height)); } catch (_) {} if (--left === 0) { _gemsReady = true; done && done(); } };
-      im.onerror = () => { if (--left === 0) { _gemsReady = true; done && done(); } };
-      im.src = g.path;
-    }
-  }
-  const _hex = (h) => { h = String(h || "").replace("#", ""); return [parseInt(h.slice(0, 2), 16) || 0, parseInt(h.slice(2, 4), 16) || 0, parseInt(h.slice(4, 6), 16) || 0]; };
-  // The base gem has TWO palette ramps (like the game's 2-colour roll): a saturated BODY ramp and a
-  // desaturated bright OUTLINE ramp (the white ring). Segment by saturation, then gradient-map each ramp
-  // onto its rolled colour (colour = midtone; shadows darker; highlights blend to white) so both keep
-  // their built-in gradient.
-  const _lum = (r, g, b) => 0.299 * r + 0.587 * g + 0.114 * b;
-  const _sat = (r, g, b) => { const mx = Math.max(r, g, b), mn = Math.min(r, g, b); return mx ? (mx - mn) / mx : 0; };
-  const _rgb2hsv = (r, g, b) => { r /= 255; g /= 255; b /= 255; const mx = Math.max(r, g, b), mn = Math.min(r, g, b), dl = mx - mn; let h = 0; if (dl) { if (mx === r) h = ((g - b) / dl + 6) % 6; else if (mx === g) h = (b - r) / dl + 2; else h = (r - g) / dl + 4; h /= 6; } return [h, mx ? dl / mx : 0, mx]; };
-  const _hsv2rgb = (h, s, v) => { const i = Math.floor(h * 6), f = h * 6 - i, p = v * (1 - s), q = v * (1 - f * s), u = v * (1 - (1 - f) * s); let r, g, b; switch (i % 6) { case 0: r = v; g = u; b = p; break; case 1: r = q; g = v; b = p; break; case 2: r = p; g = v; b = u; break; case 3: r = p; g = q; b = v; break; case 4: r = u; g = p; b = v; break; default: r = v; g = p; b = q; } return [r * 255, g * 255, b * 255]; };
-  // The 16 cornether base shapes share ONE fixed 13-colour palette = two ramps. This is the HAND-ASSIGNED
-  // routing (user-mapped each base hex to Main or Outline): deterministic, per-pixel, no heuristics.
-  // Outline includes 2D304A (the shadowed rim, 99% border in the base). Each pixel routes by nearest hex.
-  const _GEM_OUTLINE_RAMP = [[255, 255, 255], [216, 217, 226], [175, 177, 194], [129, 132, 158], [99, 102, 129], [73, 76, 100], [45, 48, 74]];
-  const _GEM_BODY_RAMP = [[145, 124, 171], [102, 82, 128], [58, 49, 81], [41, 38, 64], [19, 17, 35], [2, 0, 22]];
-  const _nearest = (r, g, b, pal) => { let d = 1e9; for (const c of pal) { const e = (r - c[0]) ** 2 + (g - c[1]) ** 2 + (b - c[2]) ** 2; if (e < d) d = e; } return d; };
-  const _isOutlinePx = (r, g, b) => _nearest(r, g, b, _GEM_OUTLINE_RAMP) <= _nearest(r, g, b, _GEM_BODY_RAMP);
-  // Each ramp is regenerated from its rolled colour, ANCHORED to that colour's brightness so the gradient
-  // honours the input: shadow = 0.45×value, highlight = only halfway to white (v + (1-v)·0.5). So black →
-  // black-to-grey (not stark white), dark colours stay deep, bright colours stay vibrant but not blown out.
-  // Saturation eases slightly toward the highlight (×(1-0.30t)).
-  const _shade = (c, t) => {
-    const hsv = _rgb2hsv(c[0], c[1], c[2]);
-    const shadowV = hsv[2] * 0.45, highV = hsv[2] + (1 - hsv[2]) * 0.5;
-    return _hsv2rgb(hsv[0], hsv[1] * (1 - 0.30 * t), shadowV + (highV - shadowV) * t);
-  };
-  function recolorGem(path, main, outline) {
-    const key = path + "|" + main + "|" + outline;
-    if (_gemOut.has(key)) return _gemOut.get(key);
-    const src = _gemBase.get(path); if (!src) return null;
-    const W = src.width, H = src.height, m = _hex(main), o = _hex(outline), d = new Uint8ClampedArray(src.data);
-    // Deterministic: each pixel routes to Main or Outline purely by which hand-assigned ramp its base
-    // colour is nearest to. No border/shape heuristics.
-    let bMn = 255, bMx = 0, oMn = 255, oMx = 0;
-    for (let i = 0; i < d.length; i += 4) {
-      if (d[i + 3] < 8) continue;
-      const l = _lum(d[i], d[i + 1], d[i + 2]);
-      if (_isOutlinePx(d[i], d[i + 1], d[i + 2])) { if (l < oMn) oMn = l; if (l > oMx) oMx = l; }
-      else { if (l < bMn) bMn = l; if (l > bMx) bMx = l; }
-    }
-    for (let i = 0; i < d.length; i += 4) {
-      if (d[i + 3] < 8) continue;
-      const l = _lum(d[i], d[i + 1], d[i + 2]);
-      const out = _isOutlinePx(d[i], d[i + 1], d[i + 2])
-        ? _shade(o, (l - oMn) / Math.max(1, oMx - oMn))
-        : _shade(m, (l - bMn) / Math.max(1, bMx - bMn));
-      d[i] = out[0]; d[i + 1] = out[1]; d[i + 2] = out[2];
-    }
-    try { const c = document.createElement("canvas"); c.width = src.width; c.height = src.height; c.getContext("2d").putImageData(new ImageData(d, src.width, src.height), 0, 0); const url = c.toDataURL(); _gemOut.set(key, url); return url; } catch (_) { return null; }
-  }
-  // src STRING for a stone: RAW cor_n base until a colour is picked, then recoloured. drop-in for gemPath()
-  const gemSrc = (stone) => {
-    const p = gemPath(stone && stone.icon); if (!p) return p;
-    const tinted = stone && (stone.mainColor || stone.outlineColor);   // no colour yet → placeholder = raw base
-    const url = (_gemsReady && tinted) ? recolorGem(p, stone.mainColor || DEFAULT_GEM_MAIN, stone.outlineColor || DEFAULT_GEM_OUTLINE) : null;
-    return url || p;
-  };
+  // Nether-stone icon = one of the game's 16 pre-coloured `icons` frames (2085–2100); no tint/colour data exists in game.
+  const gemSrc = (stone) => gemPath(stone && stone.icon);
   const gemImg = (stone, cls) => spriteImg(gemSrc(stone), cls);
-  preloadGems(() => { try { if (typeof ovState !== "undefined" && ovState && ovState.render) refreshOverlay(); } catch (_) {} });
 
   // ── Alternate skins — a creature can wear a cosmetic skin whose RESTRICTION permits it (code-grounded from
   // scr_DatabaseSkins: race-restricted skins fit any creature of that race; creature-restricted skins fit one
@@ -391,7 +317,7 @@
     // (nether stones socket a raw spell + trigger); drop the stale ones so they don't mis-render
     n.props = n.props.filter(p => !(p.cat === "spell" && !p.trigger));
     for (const p of n.props) if (p.cat === "spell") delete p.chance;   // spells carry only a trigger (no chance)
-    // colours are user-picked; leave unset so an untinted stone renders the raw cor_n placeholder
+    delete n.mainColor; delete n.outlineColor;   // the game has no stone colour data — icons are pre-coloured frames
     if (!GEM_ICONS.some(g => g.key === n.icon)) n.icon = (GEM_ICONS[0] || {}).key;   // old jewel keys → real cornether shape
   }
   let artifacts = jload(LS.artifacts, null);                // [{id,name,rank,primary,stat[],trick[],traits[],spells[],netherIds[]}]
@@ -3777,30 +3703,13 @@
             <input class="ovl-search" placeholder="Search…" value="${esc(st.search)}" data-action="nether-search"></div>
           <div class="art-pick-scroll">${rowsHtml}</div></div>`;
       }
-    // ── 3) SHAPE — raw cor_n base as placeholder; recoloured once a colour is picked ──
-    const tinted = s.mainColor || s.outlineColor;
-    const shapeChoices = GEM_ICONS.map(g => {
-      const prev = (_gemsReady && tinted) ? recolorGem(g.path, s.mainColor || DEFAULT_GEM_MAIN, s.outlineColor || DEFAULT_GEM_OUTLINE) : null;
-      return `<button class="gem-choice ${s.icon === g.key ? "on" : ""}" data-action="nether-icon" data-k="${g.key}" title="${g.key}">${spriteImg(prev || g.path, "px")}</button>`;
-    }).join("");
-    // ── 4) COLOUR — Main / Outline as header groups, palette beneath each ──
-    const swatches = (list, act, cur) => (list || []).map(hx =>
-      `<button class="gem-swatch ${cur && cur.toLowerCase() === hx.toLowerCase() ? "on" : ""}" style="background:${esc(hx)}" data-action="${act}" data-hx="${esc(hx)}" title="${esc(hx)}"></button>`).join("");
-    const colGroup = (label, inputAct, val, list, presetAct) => `
-      <div class="color-col">
-        <div class="color-col-head"><span class="color-col-lab">${label}</span><input type="color" data-action="${inputAct}" value="${esc(val)}"></div>
-        <div class="swatch-grid">${swatches(list, presetAct, val)}</div>
-      </div>`;
-    const colorBox = `<div class="nether-colors two">
-        ${colGroup("Main", "nether-maincolor", s.mainColor || DEFAULT_GEM_MAIN, NETHER_COLORS.mains, "nether-mainpreset")}
-        ${colGroup("Outline", "nether-outlinecolor", s.outlineColor || DEFAULT_GEM_OUTLINE, NETHER_COLORS.outlines, "nether-outlinepreset")}
-      </div>
-      <div class="nether-color-actions"><button class="chip" data-action="nether-randcolor" title="Roll colours">🎲 Roll colours</button></div>`;
+    // ── 3) ICON — the game's 16 pre-coloured nether-stone icons ──
+    const shapeChoices = GEM_ICONS.map(g =>
+      `<button class="gem-choice ${s.icon === g.key ? "on" : ""}" data-action="nether-icon" data-k="${g.key}">${spriteImg(g.path, "px")}</button>`).join("");
     const body = `<div class="ovl-center"><div class="ovl-center-scroll">
       <div class="build-section"><h3>Traits &amp; properties</h3>${slotsBox}${picker}</div>
       <div class="build-section"><h3>Name</h3><input class="ovl-search name-field" style="max-width:none;width:100%" placeholder="Name" value="${esc(s.name)}" data-action="nether-name"></div>
-      <div class="build-section"><h3>Shape</h3><div class="gem-picker">${shapeChoices}</div></div>
-      <div class="build-section"><h3>Colour</h3>${colorBox}</div>
+      <div class="build-section"><h3>Icon</h3><div class="gem-picker">${shapeChoices}</div></div>
     </div></div>`;
     const issues = netherIssues(s);
     const footer = `<button class="btn-ghost" data-action="nether-cancel">Cancel</button>
@@ -4309,13 +4218,6 @@
       case "nether-del": armOrDo(t, () => { const id = +t.dataset.id; nether = nether.filter(n => n.id !== id); artifacts.forEach(a => a.netherIds = (a.netherIds || []).filter(x => x !== id)); if (ovState.sel === id) ovState.sel = nether[0] ? nether[0].id : null; persistNether(); persistArtifacts(); refreshOverlay(); }); break;
       case "nether-cancel": openNether(); break;
       case "nether-icon": ovState.draft.icon = t.dataset.k; refreshOverlay(); break;
-      case "nether-randcolor": {
-        const pick = (list) => list && list.length ? list[Math.floor(Math.random() * list.length)]
-          : "#" + Array.from({ length: 3 }, () => Math.floor(Math.random() * 256).toString(16).padStart(2, "0")).join("");
-        ovState.draft.mainColor = pick(NETHER_COLORS.mains); ovState.draft.outlineColor = pick(NETHER_COLORS.outlines); refreshOverlay(); break;
-      }
-      case "nether-mainpreset": ovState.draft.mainColor = t.dataset.hx; refreshOverlay(); break;
-      case "nether-outlinepreset": ovState.draft.outlineColor = t.dataset.hx; refreshOverlay(); break;
       case "nether-addprop": ovState.picking = "menu"; ovState.search = ""; refreshOverlay(); break;
       case "nether-pickcat": ovState.picking = t.dataset.c; ovState.search = ""; refreshOverlay(); break;
       case "nether-closepick": ovState.picking = false; refreshOverlay(); break;
@@ -4429,8 +4331,6 @@
     // name fields (no re-render — keep focus/caret)
     if (A === "artb-name") { ovState.draft.name = v; return; }
     if (A === "nether-name") { ovState.draft.name = v; return; }
-    if (A === "nether-maincolor") { ovState.draft.mainColor = v; refreshOverlay(); return; }
-    if (A === "nether-outlinecolor") { ovState.draft.outlineColor = v; refreshOverlay(); return; }
     if (A === "sg-name") { ovState.draft.name = v; return; }
     if (A === "builds-name") { ovState.draft.name = v; return; }
     // search fields — live filter without losing caret

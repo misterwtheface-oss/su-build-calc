@@ -1877,18 +1877,19 @@ const RACE_ICON_REVISIT = ['Mogwai', 'Purrghast'];
 warn(`RACE ICONS to revisit — special_ shared with the creature's trait-item; validate race-vs-item in-game: ${RACE_ICON_REVISIT.filter((r) => raceIcons[r]).join(', ')}`);
 console.log(`  tile icons: ${Object.keys(classIcons).length}/5 class · ${Object.keys(raceIcons).length}/${raceTotal} race · ${raceUnresolved.length} unresolved (404, no fallback)`);
 
-// Nether-stone icons: the 16 base `cornether_N` shapes (the real nether-stone sprites). In-game these
-// are TINTED at draw time by a procedural rule (deterministic from the stone's properties) that we have
-// not reversed yet — see the "fuse/nether color generation" backlog. For the planner the shape is chosen
-// cosmetically and shown in its base tint. (Previously these wrongly used jewel_* = Carbuncle trait art.)
+// Nether-stone icons — CODE-EXACT (_su_extract code/NETHER_COLOR_MODEL.md): inv_NetherStoneCreate rolls
+// icon = irandom_range(2085, 2100), a frame of the `icons` sheet, PRE-COLOURED (incl. two-tone / gradient borders);
+// a stone stores no colour data and no shader tints it. Frames 2085–2094 = cornether_7..16, 2095–2100 = cornether_1..6
+// (the uncoloured source art). Keys stay `nether_<cornether n>` so saved stones keep their shape. Picker = game order.
 fs.rmSync(OUT_GEM, { recursive: true, force: true });
 const gemIcons = [];
-for (let n = 1; n <= 16; n++) {
+for (let f = 2085; f <= 2100; f++) {
+  const n = f <= 2094 ? f - 2085 + 7 : f - 2095 + 1;
   const dest = `nether_${n}.png`;
-  if (copyNamedSprite(`cornether_${n}`, OUT_GEM, dest)) gemIcons.push({ key: `nether_${n}`, path: `assets/gems/${dest}` });
+  if (copySpriteFrame('icons', f, OUT_GEM, dest)) gemIcons.push({ key: `nether_${n}`, frame: f, path: `assets/gems/${dest}` });
+  else err(`nether icon frame icons_${f} missing`);
 }
-// Nether-stone Main/Outline colour OPTIONS — derived from in-game screenshots by the local
-// tools/nether_eyedrop.py (which stays out of git); this JSON accumulates and ships as picker presets.
+
 // Nether-stone GENERATION RULES — code-grounded (_su_extract code/extract_nether_generation.py, inv_NetherStoneCreate /
 // inv_NetherStoneGetStat / inv_NetherStoneRarity). Per stone: ≤6 stat/trick props (no duplicates), ≤3 traits (only traits
 // with an artifact trait-item), ≤3 spells. Each prop has a tier ≥10; value = f(tier) per stat group (+ cap). Joined to the
@@ -1915,11 +1916,6 @@ const netherGen = (() => {
   return { limits: g.limits, tierStart: 10, props, score: { prop: 10, trait: 150, spell: 75 } };
 })();
 console.log(`  nether generation rules: ${Object.keys(netherGen.props).length} props · limits ${JSON.stringify(netherGen.limits)}`);
-const NETHER_COLORS_PATH = path.join(ROOT, 'data', 'nether_colors.json');
-const netherColors = fs.existsSync(NETHER_COLORS_PATH)
-  ? (() => { const j = readJSON(NETHER_COLORS_PATH); return { mains: j.mains || [], outlines: j.outlines || [] }; })()
-  : { mains: [], outlines: [] };
-console.log(`  nether colour options: ${netherColors.mains.length} mains · ${netherColors.outlines.length} outlines (from screenshots)`);
 
 // ── plain-language term map (labels.json) — turns {TOKEN} params into UI words ──
 const labelsMap = readJSON(path.join(SRC, 'labels.json')).labels;
@@ -2342,7 +2338,6 @@ const SU_DATA = {
   cards,
   gemIcons,
   netherGen,
-  netherColors,
   terms,
   damageModel,
   macroVocab,                // creature-AI Macro vocabulary → Macro Proposal engine

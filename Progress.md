@@ -50,6 +50,14 @@ No verify-before-push ceremony (no real users yet) — but every change is check
      palette colour **fully opaque**. Every pixel of all 5 cells is exact (_su_extract
      `code/validate_fusion_partial_alpha.py`), and the browser output matches the engine pixel-for-pixel.
    - The colour step shows only the 2×3 grid (no info panel).
+8. **Nether Stone icons — CODE-EXACT** (_su_extract `code/NETHER_COLOR_MODEL.md`). The game stores no stone colour.
+   - **Source:** `inv_NetherStoneCreate` rolls `icon = irandom_range(2085, 2100)`, one of 16 PRE-COLOURED `icons`
+     frames (two-tone/gradient borders are painted in). No shader is involved.
+   - **Validation:** all 31 stones in two in-game captures are pixel-exact.
+   - **Builder:** "Shape" + "Colour" are replaced by one **Icon** picker of the 16 game icons, in game order.
+     `assets/gems/nether_<n>.png` now holds the coloured frames (keys unchanged, so saved stones keep their shape).
+   - **Removed:** the Main/Outline colour picker, presets (`data/nether_colors.json`), the recolour engine and its
+     CSS. Stored `mainColor`/`outlineColor` are dropped on load.
 
 ## 2026-10-01 (night 3) — Asset mappings converged on code + level-aware artifact icons
 Replaced hand-curated / heuristic asset tables with game-code maps (`_su_extract` asset_maps.json; DB_ID_FINDINGS.md):
@@ -1232,7 +1240,8 @@ full builder stays the high-fidelity path.
 - **Decided (2026-10-01):**
   - **Quick Artifact icon:** the game's own greyscale `menu_artifactsG` sprite (plain grey sword). Not a desaturated
     copy, and not a type/tier icon.
-  - **Quick Nether Stone icon:** `cornether_1` (sphere), untinted (`assets/gems/nether_1.png`).
+  - **Quick Nether Stone icon:** the sphere, `assets/gems/nether_1.png`, which is now the game's own pre-coloured
+    icons frame 2095. The game has no untinted stone.
   - **Nether trait limit = 3, CODE-CERTAIN.** In `inv_NetherStoneCreate` the trait loop runs i=1..3 and stops at the first
     failed roll. A trait is only accepted if an artifact trait-item material exists for it, so the quick-nether picker uses
     the **same trait-material pool** as the Artifact Trait step (minus duplicates on the stone).
