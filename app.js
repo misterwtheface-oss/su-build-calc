@@ -2148,6 +2148,7 @@
       ...(m.hitClass ? [`<span class="thr-chip cls">${esc(m.hitClass[0].toUpperCase() + m.hitClass.slice(1))}</span>`] : []),
     ].join("");
     return `<div class="thr-row">
+      <span class="thr-ico">${m.icon ? spriteImg(m.icon, "px") : ""}</span>
       <span class="thr-src ${m.source === "Rune" ? "rune" : "realm"}">${m.source}</span>
       <div class="thr-body"><div class="thr-head"><b>${esc(m.name)}</b>${chips}</div>
         <div class="thr-eff">${esc(m.effect)}</div></div></div>`;

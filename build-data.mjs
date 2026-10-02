@@ -1842,39 +1842,20 @@ for (const cl of raceClassIcons.classes) {
   const dest = `${norm(cl.class)}.png`;
   if (copyNamedSprite(cl.icon, OUT_CLSICON, dest)) classIcons[cl.class] = `assets/clsicons/${dest}`;
 }
-// Race icons are a <=16×16 sprite. Resolution families, in order (NO master_ — that is Sigil
-// trait-material art and is caught by the cross-usage guard; NO creature/representative fallback).
-// Every match is a NAME-ASSUMPTION (the game resolves race icons at runtime — there is no static
-// code map) unless it is user-confirmed in-game. Unresolved races get NO icon and a 404 alert —
-// nothing is substituted.
-const pngDims = (p) => { try { const b = fs.readFileSync(p); return [b.readUInt32BE(16), b.readUInt32BE(20)]; } catch { return null; } };
-const CLASS_PREFIX = { Nature: 'nature', Chaos: 'chaos', Death: 'death', Life: 'life', Sorcery: 'sorcery' };
-// verified in-game by user (highest confidence — overrides name resolution)
-const RACE_ICON_CONFIRMED = {
-  Cherub: 'backer_cherub', Mogwai: 'special_mogwai',
-  Guardian: 'race_benthicguardian', 'Sea Shambler': 'shambler', Shadow: 'shadow2', Soulflayer: 'flayer',
-  Arbiter: 'backer_arbiter', Gargantuan: 'garg',
-  Tanukrook: 'moncrown',   // Monster Crown crossover race — its icon is the "moncrown" crown sprite
-};
-const is16 = (base) => { for (const c of [`${base}_0.png`, `${base}.png`]) { const p = path.join(SRC_SPEC_PNG, c); if (fs.existsSync(p)) { const d = pngDims(p); return !!d && d[0] <= 16 && d[1] <= 16; } } return false; };
+// Race icons — CODE-GROUNDED (_su_extract code/extract_icon_maps2.py / ICON_MAPS.md): scr_LangRace(race) returns
+// "[<sprite>] <race name>" and that inline sprite is the race icon the game draws. Replaces the name-family heuristic +
+// user-confirmed table (5 changed: Amphisbaena=amphis, Arachnalisk=arachna, Mimic=mimic_icon2, Purrghast=coromon,
+// Mogwai=monsanc — the crossover races use their crossover-game emblem). Missing → 404 alert, no fallback.
+const ICONS2 = readJSON(path.join(MODEL, 'asset_maps_icons2.json'));
 const raceIcons = {};
 const raceUnresolved = [];
 for (const r of Object.values(raceClassIcons.races)) {
-  const nm = norm(r.race), cl = CLASS_PREFIX[r.class] || '';
-  // families: user-confirmed → <race> → backer_ → special_ → race_ → <ownClass>_  (no cross-class guessing)
-  const candidates = [RACE_ICON_CONFIRMED[r.race], nm, `backer_${nm}`, `special_${nm}`, `race_${nm}`, cl && `${cl}_${nm}`].filter(Boolean);
-  const icon = candidates.find(is16);
-  if (icon && copyNamedSprite(icon, OUT_RACEICON, `${nm}.png`)) raceIcons[r.race] = `assets/raceicons/${nm}.png`;
+  const nm = norm(r.race), code = ICONS2.races[r.race];
+  if (code && code.sprite && copyNamedSprite(code.sprite, OUT_RACEICON, `${nm}.png`)) raceIcons[r.race] = `assets/raceicons/${nm}.png`;
   else raceUnresolved.push(r.race);
 }
 const raceTotal = Object.values(raceClassIcons.races).length;
-if (raceUnresolved.length) warn(`404 race icons — no resolved sprite, NO fallback substituted (${raceUnresolved.length}): ${raceUnresolved.join(', ')}`);
-// REVISIT LATER: these race icons resolve to a special_ sprite that also serves as that creature's
-// trait-item icon (Mogwai→"Mogwai's Sanctuary"/trait "No Sanctuary"; Purrghast→"Purrghast's Emblem"/
-// trait "Memoriae"). Confirmed tied to the creature's trait, but whether special_ is the RACE icon or
-// only the trait-item icon needs in-game validation (user obtaining the trait items).
-const RACE_ICON_REVISIT = ['Mogwai', 'Purrghast'];
-warn(`RACE ICONS to revisit — special_ shared with the creature's trait-item; validate race-vs-item in-game: ${RACE_ICON_REVISIT.filter((r) => raceIcons[r]).join(', ')}`);
+if (raceUnresolved.length) warn(`404 race icons — no code race sprite, NO fallback substituted (${raceUnresolved.length}): ${raceUnresolved.join(', ')}`);
 console.log(`  tile icons: ${Object.keys(classIcons).length}/5 class · ${Object.keys(raceIcons).length}/${raceTotal} race · ${raceUnresolved.length} unresolved (404, no fallback)`);
 
 // Nether-stone icons — CODE-EXACT (_su_extract code/NETHER_COLOR_MODEL.md): inv_NetherStoneCreate rolls
@@ -2254,8 +2235,18 @@ const RUNE_NAME = {
   MOREHEALTH: 'More Health', MOREINTELLIGENCE: 'More Intelligence', MORESPEED: 'More Speed',
   RANDOMBUFF: 'Mass Buffs', TAKELESSDAMAGE: 'Takes Less Damage', TOPOFTIMELINE: 'Top of Timeline',
 };
+// Threat icons — CODE-GROUNDED (asset_maps_icons2.json): runes = scr_RuneSprite(rune id); realm properties = the inline
+// "[realmprop_*]" sprite tag in the property's own localized name (scr_RealmPropertyName). Joined by key; 404-alerted.
+const OUT_THREAT = path.join(OUT_ASSETS, 'threats');
+fs.rmSync(OUT_THREAT, { recursive: true, force: true });
+const threatIcon = (sprite, what) => {
+  if (!sprite) { warn(`threat icon: ${what} has no code sprite`); return null; }
+  if (!copyNamedSprite(sprite, OUT_THREAT, `${sprite}.png`)) { warn(`threat icon: ${what} sprite "${sprite}" missing (404)`); return null; }
+  return `assets/threats/${sprite}.png`;
+};
 const runes = runesRaw.runes.map(r => ({
   key: r.key, name: RUNE_NAME[r.key] || r.key, effect: r.effect,
+  icon: threatIcon((ICONS2.runes_app_join[r.key] || {}).sprite, `rune ${r.key}`),
   counters: RUNE_COUNTERS[r.key] || [], counterClass: null,
   general: !RUNE_COUNTERS[r.key],
 }));
@@ -2263,6 +2254,7 @@ const realmProps = realmPropsRaw.properties
   .filter(p => !REALM_NEUTRAL.has(p.key))
   .map(p => ({
     key: p.key, name: p.name, effect: p.effect,
+    icon: threatIcon((ICONS2.realm_properties_app_join[p.key] || {}).sprite, `realm property ${p.key}`),
     counters: REALM_COUNTERS[p.key] || [], counterClass: REALM_COUNTER_CLASS[p.key] || null,
     general: !(REALM_COUNTERS[p.key] || REALM_COUNTER_CLASS[p.key]),
   }));
@@ -2271,7 +2263,7 @@ const realmProps = realmPropsRaw.properties
   const themeKeys = new Set(BUILD_THEMES.map(t => t.key));
   for (const m of [...runes, ...realmProps])
     for (const c of m.counters) if (!themeKeys.has(c)) throw new Error(`threats: unknown theme key "${c}" on ${m.key}`);
-  console.log(`  threats: ${realmProps.length} realm properties · ${runes.length} runes · ${BUILD_THEMES.length} themes`);
+  console.log(`  threats: ${realmProps.length} realm properties · ${runes.length} runes · ${BUILD_THEMES.length} themes · icons ${[...runes, ...realmProps].filter(m => m.icon).length}/${runes.length + realmProps.length}`);
 }
 
 // ── Per-object audit overrides (from the 2-agent precision+recall audit; confirmed = both reviewers agreed).

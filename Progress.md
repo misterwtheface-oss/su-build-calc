@@ -1270,8 +1270,15 @@ MAPPING not for asserting PRESENCE; no inventing entities from the community-CSV
 - [x] Spec costume tiers from `scr_SpecializationCostume` — DONE 2026-10-01 pm. [x] Spec emblem/icon from `scr_SpecializationIcon` — wired 2026-10-01 (asset_maps.spec_icons).
 - [ ] #5 taxonomy → fully code-backed (workshop multi-parameter conditions first, e.g. side × event: "opposing-side buff gain").
 ### 🔬 Extract follow-ups (2026-10-01, triaged with user)
-- [ ] **Threats / instability / race icons** — IN PROGRESS: code-grounded joins for realm property (instability) icons,
-      False God rune icons and race icons (replacing the non-code race icon source).
+- [x] **Threats / instability / race icons — DONE 2026-10-01** (_su_extract `code/extract_icon_maps2.py` / `ICON_MAPS.md`):
+  - **Race icons:** `scr_LangRace` returns "[sprite] Race", 164/164 from code. This replaced the name-family heuristic
+    and changed 5: Amphisbaena, Arachnalisk, Mimic, and the crossover races Purrghast = `coromon` and Mogwai = `monsanc`.
+  - **Rune icons:** `scr_RuneSprite`, 18/18.
+  - **Realm property icons:** the inline "[realmprop_*]" tag in each property's localized name (`scr_RealmPropertyName`),
+    56/56. Both show on the Threats page rows.
+  - **No instability-level icon exists:** instability is drawn as a number.
+  - **Follow-ups:** a 19th rune, EXTRASPELLS (id 7), is missing from runes.json; the code has display names for realm
+    properties that could replace the authored ones.
 - [ ] **Class-advantage multiplier** — IN PROGRESS: static-code research of the damage pipeline (wanted as context for
       the DPS sim).
 - [ ] **Spell `potency` / `target` / `source`** — still CSV-sourced; ground them in code.
@@ -1404,7 +1411,7 @@ full builder stays the high-fidelity path.
       `m_<name>` portrait set (each sin gets its own icon rather than the shared generic `stat_m_innerdemons`).
       `assets/condicons/<cat>_<slug>.png`; rendered as `.gloss-icon`. Existence-gated so any future gap renders
       iconless without tripping the 404 guard. (Source-set details: `_su_extract/assets/ASSET_MAP.md`.)
-- [ ] **Threat-set icons**: both threat sources have icons to wire onto the Threats page (per the Realm Props |
+- [x] **Threat-set icons — DONE 2026-10-01 (code-grounded, see Extract follow-ups).** Was: both threat sources have icons to wire onto the Threats page (per the Realm Props |
       False God toggle) — Realm Property icons (`realmprop_e_<slug>` sprites, ~32 exist but slug ≠ `L_RP_` key,
       so the join was deferred) and False God rune icons. Find/curate the joins like realm icons + realm objects.
 - [x] **Antiquarian anointment eligibility — RESOLVED 2026-10-01 by the code-grounded anointment flag (13/16 anointable).** Was: Antiquarian (13 perks) isn't in `Perk_REF.csv`, so
