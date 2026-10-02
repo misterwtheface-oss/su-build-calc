@@ -76,6 +76,19 @@ No verify-before-push ceremony (no real users yet) — but every change is check
       simulated touch drag with the same DOM node throughout.
 11. Home List view: the class and race emblems now sit to the RIGHT of the creature sprite, stacked class over race
     (sprite stays centred; same on phones). They were previously top-left of the identity column.
+12. **Skins — CODE-GROUNDED owners** (_su_extract `code/extract_skin_owners.py` / `SKIN_OWNER_MODEL.md`). In
+    `scr_DatabaseSkins`, `skin[i][1]` is either a race-name string (the skin fits any creature of that race) or a
+    creature id (that creature only); the skin-apply handler enforces it.
+    - **Coverage:** all **834** skins ship (was 786): 662 race-restricted, 172 creature-locked.
+    - **Fixes:** 48 previously unresolved skins resolved, 36 wrong races, Summer 4080 → 4080, and Iron Rich →
+      Dumpling race. Correct names come from code tags (old: 65 null, 17 wrong, e.g. Scylla/Charybdis swapped).
+    - **Exclusions dropped:** the 37 "boss" skins (Xyrxzys, Etta, Shadow Monarch…) are real race skins in code, so
+      `skin_exclusions.json` is no longer used.
+    - **Join:** creature-locked joins are case-insensitive by name (roster "Grom'met" vs code "Grom'Met").
+    - **Saved ids:** the old skin ids were shifted (+1). `D.skinIdMigration` remaps the current build and every saved
+      build once (`skinIds: 2`), then drops any skin the code restriction no longer allows.
+13. **Builds party preview** renders each saved slot as the main screen does (`slotFace`: equipped skin + fusion
+    colour option), not the plain base sprite.
 
 ## 2026-10-01 (night 3) — Asset mappings converged on code + level-aware artifact icons
 Replaced hand-curated / heuristic asset tables with game-code maps (`_su_extract` asset_maps.json; DB_ID_FINDINGS.md):
