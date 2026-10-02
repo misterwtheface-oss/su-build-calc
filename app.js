@@ -3117,14 +3117,14 @@
       const primaryBox = a.primary
         ? (() => `<div class="art-slot primary"><div class="as-ico">${spriteImg(primaryIconAt(a.primary, a.rank), "px")}</div><div class="as-lab">${esc(a.primary)}</div><div class="as-sub">primary</div></div>`)()
         : `<div class="art-slot add" data-action="artb-back"><div class="as-ico glyph">＋</div><div class="as-lab">Primary</div></div>`;
-      const groupsHtml = [`<div class="art-slot-group"><div class="section-label">Primary</div><div class="art-slot-grid">${primaryBox}</div></div>`]
+      const groupsHtml = `<div class="art-slot-groups">` + [`<div class="art-slot-group" style="--n:1"><div class="section-label">Primary</div><div class="art-slot-grid">${primaryBox}</div></div>`]
         .concat(ART_SLOTS.map(sl => {
           const arr = a[sl.key] || [];
           const boxes = [];
           for (let i = 0; i < sl.max; i++) boxes.push(arr[i] !== undefined ? filledBox(sl.pick, arr[i], i)
             : `<div class="art-slot add ${st.pickType === sl.pick ? "picking" : ""}" data-action="art-slot" data-t="${sl.pick}"><div class="as-ico glyph">＋</div><div class="as-lab">${sl.label}</div></div>`);
-          return `<div class="art-slot-group"><div class="section-label">${sl.label}</div><div class="art-slot-grid">${boxes.join("")}</div></div>`;
-        })).join("");
+          return `<div class="art-slot-group" style="--n:${sl.max}"><div class="section-label">${sl.label}</div><div class="art-slot-grid">${boxes.join("")}</div></div>`;
+        })).join("") + `</div>`;
 
       // info panel (right): item preview (confirm) › picker list › live bonus — never appended below the slots
       let side;
