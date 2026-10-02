@@ -2164,9 +2164,9 @@
     const srcView = st.srcView === "fgod" ? "fgod" : "realm";
     const wantSrc = srcView === "fgod" ? "Rune" : "Realm";
     const srcToggle = `<div class="art-view-toggle">
-      <button class="av-tab ${srcView === "realm" ? "on" : ""}" data-action="threat-src" data-v="realm">Realm Props</button>
+      <button class="av-tab ${srcView === "realm" ? "on" : ""}" data-action="threat-src" data-v="realm">Realm Properties</button>
       <span class="av-pipe">|</span>
-      <button class="av-tab ${srcView === "fgod" ? "on" : ""}" data-action="threat-src" data-v="fgod">False God</button></div>`;
+      <button class="av-tab ${srcView === "fgod" ? "on" : ""}" data-action="threat-src" data-v="fgod">False God Runes</button></div>`;
     const counters = (active.length || heavy.length ? threatCounters(active, heavy) : []).filter(m => m.source === wantSrc);
     const general = [...(D.realmProps || []).map(m => ({ ...m, source: "Realm" })),
                      ...(D.runes || []).map(m => ({ ...m, source: "Rune" }))]
