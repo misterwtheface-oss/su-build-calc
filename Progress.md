@@ -1269,17 +1269,21 @@ MAPPING not for asserting PRESENCE; no inventing entities from the community-CSV
 - [x] Code-ground the per-perk **Anointment** flag — DONE 2026-10-01 pm.
 - [x] Spec costume tiers from `scr_SpecializationCostume` — DONE 2026-10-01 pm. [x] Spec emblem/icon from `scr_SpecializationIcon` — wired 2026-10-01 (asset_maps.spec_icons).
 - [ ] #5 taxonomy → fully code-backed (workshop multi-parameter conditions first, e.g. side × event: "opposing-side buff gain").
-### 🔬 Extract follow-ups (2026-10-01): previously "runtime-only" items worth a static-code pass now
-- [ ] **Sigil scaling** — logged as runtime-built; trace the writer, as was done for nether generation.
-- [ ] **Nether Stone leveling** (XP / level-up effects), if any beyond creation.
-- [ ] **Project costs** — `projects.json` costs never decoded.
+### 🔬 Extract follow-ups (2026-10-01, triaged with user)
+- [ ] **Threats / instability / race icons** — IN PROGRESS: code-grounded joins for realm property (instability) icons,
+      False God rune icons and race icons (replacing the non-code race icon source).
+- [ ] **Class-advantage multiplier** — IN PROGRESS: static-code research of the damage pipeline (wanted as context for
+      the DPS sim).
 - [ ] **Spell `potency` / `target` / `source`** — still CSV-sourced; ground them in code.
-- [ ] **Threats icons** — realm property + False God rune sprite joins (see P1 item below), likely via a code switch.
-- [ ] **Race icons** — no code source found yet.
-- [ ] **God shop discrepancies** (need in-game checks): Azural (code Smiths vs CSV Yetis), Tenebris (Reapers vs a
-      Shadow item), dust price (code 1 vs CSV 10). Plus the Regalis dust, named from the CSV (not resolvable at runtime).
-- [ ] **Class-advantage multiplier** — still needs an in-game observation.
+- [x] **God shop discrepancies** — RESOLVED by the user's in-game check: the code is right and the CSV was wrong
+      (Azural = Smiths, Tenebris = Reapers, dust price 1). The app already uses code.
 - [x] Nether Stone generation · Fusion palettes · Nether Stone icons · Skin owners — DONE 2026-10-01 (see top).
+### 🧊 Low priority (probably won't do)
+- [ ] **Project costs** — the app has no Projects feature at all.
+- [ ] **Sigil difficulty scaling** — sigils are the "Sigil of the <Creature>" items that open a race's realm at a chosen
+      difficulty (Relaxed/Normal/Ruthless); the per-difficulty enemy scaling isn't used by the app.
+- [x] ~~Nether Stone leveling~~ — DROPPED: stones don't level (better rolls at higher RD aren't worth replicating; the
+      rarity score is low value).
 ### 💤 PARKED — Player-customized spell availability list (+ dependent nether spell restriction)
 - [ ] **Player-customized spell availability list:** the player marks which spells/recipes they own.
 - [ ] **Depends on the list above** (probably not worth it): restrict Nether Stone spells to owned recipes, as the game
