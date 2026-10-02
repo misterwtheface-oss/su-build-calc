@@ -3519,24 +3519,17 @@
   };
   // ── code-grounded generation rules (D.netherGen; inv_NetherStoneCreate / GetStat / Rarity) ──
   // ≤6 stat+trick props, ≤3 traits, ≤3 spells, no duplicates; each prop has a tier ≥10 and value = f(tier) (+ cap).
+  // (the game's rarity score after the stone name is intentionally not shown — low value for the planner)
   const NG = D.netherGen || { limits: { props_max: 6, traits_max: 3, spells_max: 3 }, tierStart: 10, props: {}, score: { prop: 10, trait: 150, spell: 75 } };
   const ngVal = (key, t) => { const r = NG.props[key]; if (!r) return null;
     const v = r.div ? r.base + Math.floor(t / r.div) : Math.floor(r.base + r.mult * (t - 1) + 1e-9);
     return r.cap != null ? Math.min(v, r.cap) : v; };
   const ngMin = (key) => ngVal(key, NG.tierStart);
   const ngMax = (key) => { const r = NG.props[key]; return r && r.cap != null ? r.cap : null; };
-  const ngTier = (key, value) => {   // lowest tier whose (truncated) value reaches `value` — the game never shows the tier
-    for (let t = NG.tierStart; t < 2000; t++) { const v = ngVal(key, t); if (v == null) return NG.tierStart; if (v >= value) return t; }
-    return 2000;
-  };
   const isFlatProp = (key) => { const g = propGroups.get(key); return !!(g && g.entries.some(e => e.unit === "flat")); };
   const isPropCat = (p) => p.cat === "stat" || p.cat === "trick";
   const netherCounts = (n) => { const ps = n.props || [];
     return { props: ps.filter(isPropCat).length, traits: ps.filter(p => p.cat === "trait").length, spells: ps.filter(p => p.cat === "spell").length }; };
-  // the number the game prints after a stone's name: 10·#props + Σtier + 150·#traits + 75·#spells
-  const netherScore = (n) => { const c = netherCounts(n);
-    const tiers = (n.props || []).filter(isPropCat).reduce((a, p) => a + ngTier(p.key, Number(p.value) || 0), 0);
-    return NG.score.prop * c.props + tiers + NG.score.trait * c.traits + NG.score.spell * c.spells; };
   // rule violations (e.g. stones saved before the guardrails) — Save stays disabled until resolved
   function netherIssues(n) {
     const c = netherCounts(n), L = NG.limits, out = [], ps = n.props || [];
@@ -3590,7 +3583,7 @@
     const tiles = list.map(n => `
       <div class="pick-tile ${st.sel === n.id ? "selected" : ""}" data-action="nether-sel" data-id="${n.id}">
         <div class="pt-sprite">${spriteImg(gemSrc(n), "px")}</div>
-        <div class="pt-name">${esc(n.name)} (${netherScore(n)})</div></div>`).join("")
+        <div class="pt-name">${esc(n.name)}</div></div>`).join("")
       || `<div class="slot-sub" style="padding:10px">No Nether Stones${st.hideEquipped ? " match" : " yet — build one"}.</div>`;
     let info;
     if (sel) {
@@ -3607,7 +3600,7 @@
         <span class="av-pipe">|</span>
         <button class="av-tab ${view === "sockets" ? "on" : ""}" data-action="ns-view" data-v="sockets">Sockets</button></div>`;
       const viewBody = view === "sockets" ? `<div class="prop-list">${rows}</div>` : netherBonusView(sel);
-      info = `<div class="ns-info-head"><span class="ns-info-icon">${spriteImg(gemSrc(sel), "px")}</span><h3>${esc(sel.name)} (${netherScore(sel)})</h3></div>
+      info = `<div class="ns-info-head"><span class="ns-info-icon">${spriteImg(gemSrc(sel), "px")}</span><h3>${esc(sel.name)}</h3></div>
         ${toggle}${viewBody}
         <div class="ns-info-actions">
           <button class="slot-mini" data-action="nether-edit" data-id="${sel.id}">Edit</button>
@@ -3718,7 +3711,7 @@
       <button class="btn-confirm" data-action="nether-save" ${issues.length ? `disabled title="${esc("Not possible in game: " + issues.join("; "))}"` : ""}>Save Stone</button>`;
     return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel detail">
       <div class="overlay-header"><span class="hdr-ico">${gemImg(s, "px")}</span>
-        <h2>${esc(s.name)} (${netherScore(s)})</h2>
+        <h2>${esc(s.name)}</h2>
         <button class="ovl-close" data-action="close-ovl">✕</button></div>
       <div class="overlay-body">${body}</div>
       <div class="overlay-footer"><span class="foot-info">${issues.length ? `<span class="ns-issue">⚠ ${esc(issues.join(" · "))}</span>` : ""}</span><div>${footer}</div></div>
