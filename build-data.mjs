@@ -1885,7 +1885,8 @@ fs.rmSync(OUT_GEM, { recursive: true, force: true });
 const gemIcons = [];
 for (let f = 2085; f <= 2100; f++) {
   const n = f <= 2094 ? f - 2085 + 7 : f - 2095 + 1;
-  const dest = `nether_${n}.png`;
+  const dest = `stone_${f}.png`;   // new filename (not nether_<n>.png): the SW asset cache is URL-keyed, so the
+                                   // old grey cornether art at the old URLs would otherwise stay cached forever
   if (copySpriteFrame('icons', f, OUT_GEM, dest)) gemIcons.push({ key: `nether_${n}`, frame: f, path: `assets/gems/${dest}` });
   else err(`nether icon frame icons_${f} missing`);
 }
