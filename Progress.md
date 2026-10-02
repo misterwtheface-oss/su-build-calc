@@ -1269,6 +1269,13 @@ MAPPING not for asserting PRESENCE; no inventing entities from the community-CSV
 - [x] Code-ground the per-perk **Anointment** flag — DONE 2026-10-01 pm.
 - [x] Spec costume tiers from `scr_SpecializationCostume` — DONE 2026-10-01 pm. [x] Spec emblem/icon from `scr_SpecializationIcon` — wired 2026-10-01 (asset_maps.spec_icons).
 - [ ] #5 taxonomy → fully code-backed (workshop multi-parameter conditions first, e.g. side × event: "opposing-side buff gain").
+  - **2026-10-02 decode DONE** (no app change yet). Per-trait code signatures (WHEN / BY / TO / DOES / WITH / IF /
+    SCALES BY) are in _su_extract `data/model/trait_signatures.json` (`code/TRAIT_SIGNATURES.md`) for 2,005 traits.
+    - **Validation vs descriptions:** BY 99.1%, TO 90%, WITH 87%.
+    - **Vs the app's Activates tags:** 84.6% agree. The disagreements include real LLM errors, e.g. "after your
+      creatures are attacked" should be Enemy Attacks; "after this creature kills" should be Enemy Dies.
+    - **Next:** map signatures → the existing Category/Value system (code-certain values replace llm tags; keep llm
+      where code is silent, flagged).
 ### 🔬 Extract follow-ups (2026-10-01, triaged with user)
 - [x] **Threats / instability / race icons — DONE 2026-10-01** (_su_extract `code/extract_icon_maps2.py` / `ICON_MAPS.md`):
   - **Race icons:** `scr_LangRace` returns "[sprite] Race", 164/164 from code. This replaced the name-family heuristic
