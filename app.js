@@ -3115,7 +3115,7 @@
         return `<div class="art-slot"><button class="as-rm" data-action="art-rm" data-t="${type}" data-i="${idx}">✕</button>${ico}<div class="as-lab">${esc(lab)}</div><div class="as-sub">${esc(sub)}</div></div>`;
       };
       const primaryBox = a.primary
-        ? (() => `<div class="art-slot primary"><div class="as-ico">${spriteImg(primaryIconAt(a.primary, a.rank), "px")}</div><div class="as-lab">${esc(a.primary)}</div><div class="as-sub">primary</div></div>`)()
+        ? (() => `<div class="art-slot primary"><div class="as-ico">${spriteImg(primaryIconAt(a.primary, a.rank), "px")}</div><div class="as-lab">${esc(a.primary)}</div><div class="as-sub">${(() => { const p = PRIMARY.find(x => x.property === a.primary); return p ? `${esc(p.stat)} +${p.perRank[rank] || 0}%` : ""; })()}</div></div>`)()
         : `<div class="art-slot add" data-action="artb-back"><div class="as-ico glyph">＋</div><div class="as-lab">Primary</div></div>`;
       const groupsHtml = `<div class="art-slot-groups">` + [`<div class="art-slot-group" style="--n:1"><div class="section-label">Primary</div><div class="art-slot-grid">${primaryBox}</div></div>`]
         .concat(ART_SLOTS.map(sl => {

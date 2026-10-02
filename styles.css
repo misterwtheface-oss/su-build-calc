@@ -1408,8 +1408,8 @@ select.app-select:hover { border-color: var(--accent2); }
   .art-slot-grid { grid-template-columns: repeat(auto-fill, minmax(74px, 1fr)); gap: 6px; }
   /* artifact wizard: slot groups packed 4 slots per row — [Primary|Stat×3] [Trick×2|Trait|Spell] [Nether] */
   .art-slot-groups { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); column-gap: 6px; }
-  .art-slot-groups .art-slot-group { grid-column: span var(--n, 1); min-width: 0; margin-bottom: 10px; }
-  .art-slot-groups .art-slot-grid { grid-template-columns: repeat(var(--n, 1), minmax(0, 1fr)); }
+  .art-slot-groups .art-slot-group { grid-column: span var(--n, 1); min-width: 0; margin-bottom: 10px; display: flex; flex-direction: column; }
+  .art-slot-groups .art-slot-grid { grid-template-columns: repeat(var(--n, 1), minmax(0, 1fr)); flex: 1; }   /* stretch → equal heights across a row */
   .art-slot-groups .section-label { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; letter-spacing: 1px; }
   .art-type-tile { padding: 13px 14px; gap: 13px; }
   .att-ico { width: 46px; height: 46px; }
