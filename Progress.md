@@ -1184,6 +1184,25 @@ MAPPING not for asserting PRESENCE; no inventing entities from the community-CSV
 - [x] Code-ground the per-perk **Anointment** flag — DONE 2026-10-01 pm.
 - [x] Spec costume tiers from `scr_SpecializationCostume` — DONE 2026-10-01 pm. [ ] Spec emblem/icon from `scr_SpecializationIcon` (decompiled, not yet wired).
 - [ ] #5 taxonomy → fully code-backed (workshop multi-parameter conditions first, e.g. side × event: "opposing-side buff gain").
+### 💤 PARKED OPTION — Quick artifact/nether traits in the creature wizard (user, 2026-10-01; only if more users ask)
+Goal: users who only plot traits can add Artifact and Nether Stone traits without the full artifact builder, while the
+full builder stays the high-fidelity path.
+- **Wizard steps:** Creature → Fusion → **Artifact Trait** → **Nether Stone Traits** → Personality/Scrolls.
+  - The new steps use the same list layout as the creature selector. Each row shows the trait **material** in place
+    of the creature name: no stats, no race/class.
+- **Artifact Trait step:** pick one material, or choose "No Artifact Trait" to skip straight to Personality/Scrolls.
+- **Nether Stone Traits step:** up to 3 traits, then Personality. "No Nether Stone Trait" exits early.
+- **Picks write real data:** a pick creates or updates a **quick Artifact** (plus its nether stone) in the background.
+  It is the same artifact/nether model, so traits, builds and the appendix work unchanged.
+- **Edit flow, creature already has a proper (non-quick) Artifact:** the Artifact Trait and Nether steps are
+  **suppressed**.
+- **Edit flow, equipped Artifact is a quick Artifact:** the steps are shown, and changes apply to that quick Artifact
+  in the background.
+- Open details to settle at build time:
+  - Badge or library treatment for quick Artifacts.
+  - Promoting a quick Artifact to a proper one when it is opened in the builder.
+  - Cleanup when a quick pick is cleared.
+  - Code-check the nether stone trait limit (3).
 ### ⭐ HIGH PRIORITY — next session (2026-09-24)
 - [x] **Resolve the missing item-backed trait sprites — DONE (2026-09-24, commit e993af5).** 18 item-backed
       traits (13 Nether-Boss **reward** items — Flubris/Phobos/Ramses/Kraynaks/Cyhra body parts; 4 Master
