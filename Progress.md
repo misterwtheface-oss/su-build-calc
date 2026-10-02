@@ -24,6 +24,20 @@ No verify-before-push ceremony (no real users yet) — but every change is check
    - **Misc** (505): catch-all for everything not code-backed.
 5. Relic picker: a relic already equipped by another creature in the party is greyed out (low alpha, full grayscale)
    and unselectable, with an "Equipped by <creature>" tooltip.
+6. **Nether Stone builder guardrails — code-grounded** (`inv_NetherStoneCreate` / `inv_NetherStoneGetStat` /
+   `inv_NetherStoneRarity`, via _su_extract `data/model/nether_generation.json` → `D.netherGen`; build-data asserts all
+   62 code pool stats map 1:1 to the app's artifact property names).
+   - **Limits:** ≤6 stat+trick properties (shared budget), ≤3 traits, ≤3 spells. The category chips show "n/max"
+     and disable when full, and the Add tile hides once every category is full.
+   - **No duplicates:** properties, traits and spells already on the stone are hidden from the pickers.
+   - **Value range per property:** the minimum is the tier-10 value (e.g. Health 19, dual stats 12, on-damage 5,
+     Attack Damage 23); element strengths are capped at 80. New properties default to the minimum, and values are
+     clamped on commit. Spell Gem Slots shows no "%".
+   - **Score:** the in-game number after the stone name, `10·#props + Σtier + 150·#traits + 75·#spells`, shown in
+     the library tiles, info head and builder header. Tier = the lowest tier reaching the entered value. It reproduces
+     the in-game "Glowing Prism (61)".
+   - **Older stones that break the rules** (e.g. old default value 10) show a ⚠ list of issues, and **Save is
+     disabled** until they are fixed. Nothing is auto-deleted.
 
 ## 2026-10-01 (night 3) — Asset mappings converged on code + level-aware artifact icons
 Replaced hand-curated / heuristic asset tables with game-code maps (`_su_extract` asset_maps.json; DB_ID_FINDINGS.md):

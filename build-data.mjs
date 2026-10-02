@@ -1887,6 +1887,32 @@ for (let n = 1; n <= 16; n++) {
 }
 // Nether-stone Main/Outline colour OPTIONS — derived from in-game screenshots by the local
 // tools/nether_eyedrop.py (which stays out of git); this JSON accumulates and ships as picker presets.
+// Nether-stone GENERATION RULES — code-grounded (_su_extract code/extract_nether_generation.py, inv_NetherStoneCreate /
+// inv_NetherStoneGetStat / inv_NetherStoneRarity). Per stone: ≤6 stat/trick props (no duplicates), ≤3 traits (only traits
+// with an artifact trait-item), ≤3 spells. Each prop has a tier ≥10; value = f(tier) per stat group (+ cap). Joined to the
+// app's artifact property names; every one of the 62 code pool ids must map.
+const netherGen = (() => {
+  const g = readJSON(path.join(MODEL, 'nether_generation.json'));
+  const STAT = { health: 'Health', attack: 'Attack', intelligence: 'Intelligence', defense: 'Defense', speed: 'Speed' };
+  const appName = (nm) => {
+    const st = [...nm.matchAll(/\{STAT_(\w+)\}/g)].map(m => STAT[m[1]]);
+    return st.length ? st.join(' / ') : nm;
+  };
+  const grp = new Map(); for (const v of g.value_groups) for (const id of v.stat_ids) grp.set(id, v);
+  const caps = {}; for (const [k, cap] of Object.entries(g.value_caps || {})) { const ids = (k.match(/\(([\d,]+)\)/) || [, ''])[1].split(',').map(Number); ids.forEach(i => { caps[i] = cap; }); }
+  const appProps = new Set([...artGroup.stat, ...artGroup.trick].map(x => x.property));
+  const props = {};
+  for (const p of g.props.pool) {
+    const name = appName(p.name), v = grp.get(p.id);
+    if (!appProps.has(name)) err(`nether pool stat ${p.id} "${name}" has no app artifact property`);
+    if (!v) err(`nether pool stat ${p.id} "${name}" has no value formula`);
+    props[name] = { id: p.id, base: v.base, mult: v.mult ?? null, div: v.div ?? null, cap: caps[p.id] ?? null };
+  }
+  const missing = [...appProps].filter(n => !props[n]);
+  if (missing.length) err(`app artifact properties not in the nether pool: ${missing.join(', ')}`);
+  return { limits: g.limits, tierStart: 10, props, score: { prop: 10, trait: 150, spell: 75 } };
+})();
+console.log(`  nether generation rules: ${Object.keys(netherGen.props).length} props · limits ${JSON.stringify(netherGen.limits)}`);
 const NETHER_COLORS_PATH = path.join(ROOT, 'data', 'nether_colors.json');
 const netherColors = fs.existsSync(NETHER_COLORS_PATH)
   ? (() => { const j = readJSON(NETHER_COLORS_PATH); return { mains: j.mains || [], outlines: j.outlines || [] }; })()
@@ -2312,6 +2338,7 @@ const SU_DATA = {
   relics,
   cards,
   gemIcons,
+  netherGen,
   netherColors,
   terms,
   damageModel,

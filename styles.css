@@ -1439,3 +1439,6 @@ select.app-select:hover { border-color: var(--accent2); }
   .art-pick-scroll { height: 38vh; }
   .ovl-right.art-side { flex: 0 0 50vh; height: 50vh; max-height: 50vh; }   /* roomier artifact side panel */
 }
+
+.ns-issue { color: var(--bad); font-size: 12px; }
+.art-addmenu .chip:disabled { opacity: .4; cursor: not-allowed; }

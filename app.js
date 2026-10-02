@@ -3509,7 +3509,7 @@
   function netherPropLabel(p) {
     if (p.cat === "trait") { const t = TRAITITEM.get(p.key); return t ? t.name : p.key; }
     if (p.cat === "spell") { const s = SPELL.get(p.key); return `${s ? s.name : p.key} (${p.trigger || "?"})`; }
-    return `+${p.value}% ${p.key}`;
+    return `+${p.value}${isFlatProp(p.key) ? "" : "%"} ${p.key}`;
   }
   const netherSummary = (n) => (n.props || []).map(netherPropLabel).join(" · ") || "no properties";
   const netherPropIcon = (p) => {
@@ -3517,6 +3517,42 @@
     if (p.cat === "spell") return spellIcon(SPELL.get(p.key));
     const m = MAT_BY_PROP.get(p.key); return m && m.icon ? m.icon : null;
   };
+  // ── code-grounded generation rules (D.netherGen; inv_NetherStoneCreate / GetStat / Rarity) ──
+  // ≤6 stat+trick props, ≤3 traits, ≤3 spells, no duplicates; each prop has a tier ≥10 and value = f(tier) (+ cap).
+  const NG = D.netherGen || { limits: { props_max: 6, traits_max: 3, spells_max: 3 }, tierStart: 10, props: {}, score: { prop: 10, trait: 150, spell: 75 } };
+  const ngVal = (key, t) => { const r = NG.props[key]; if (!r) return null;
+    const v = r.div ? r.base + Math.floor(t / r.div) : Math.floor(r.base + r.mult * (t - 1) + 1e-9);
+    return r.cap != null ? Math.min(v, r.cap) : v; };
+  const ngMin = (key) => ngVal(key, NG.tierStart);
+  const ngMax = (key) => { const r = NG.props[key]; return r && r.cap != null ? r.cap : null; };
+  const ngTier = (key, value) => {   // lowest tier whose (truncated) value reaches `value` — the game never shows the tier
+    for (let t = NG.tierStart; t < 2000; t++) { const v = ngVal(key, t); if (v == null) return NG.tierStart; if (v >= value) return t; }
+    return 2000;
+  };
+  const isFlatProp = (key) => { const g = propGroups.get(key); return !!(g && g.entries.some(e => e.unit === "flat")); };
+  const isPropCat = (p) => p.cat === "stat" || p.cat === "trick";
+  const netherCounts = (n) => { const ps = n.props || [];
+    return { props: ps.filter(isPropCat).length, traits: ps.filter(p => p.cat === "trait").length, spells: ps.filter(p => p.cat === "spell").length }; };
+  // the number the game prints after a stone's name: 10·#props + Σtier + 150·#traits + 75·#spells
+  const netherScore = (n) => { const c = netherCounts(n);
+    const tiers = (n.props || []).filter(isPropCat).reduce((a, p) => a + ngTier(p.key, Number(p.value) || 0), 0);
+    return NG.score.prop * c.props + tiers + NG.score.trait * c.traits + NG.score.spell * c.spells; };
+  // rule violations (e.g. stones saved before the guardrails) — Save stays disabled until resolved
+  function netherIssues(n) {
+    const c = netherCounts(n), L = NG.limits, out = [], ps = n.props || [];
+    if (c.props > L.props_max) out.push(`${c.props}/${L.props_max} stat & trick properties`);
+    if (c.traits > L.traits_max) out.push(`${c.traits}/${L.traits_max} traits`);
+    if (c.spells > L.spells_max) out.push(`${c.spells}/${L.spells_max} spells`);
+    const dup = (arr) => arr.length !== new Set(arr).size;
+    if (dup(ps.filter(isPropCat).map(p => p.key))) out.push("duplicate property");
+    if (dup(ps.filter(p => p.cat === "trait").map(p => { const ti = TRAITITEM.get(p.key); return ti ? ti.traitId : p.key; }))) out.push("duplicate trait");
+    if (dup(ps.filter(p => p.cat === "spell").map(p => p.key))) out.push("duplicate spell");
+    for (const p of ps) if (isPropCat(p) && NG.props[p.key]) {
+      const lo = ngMin(p.key), hi = ngMax(p.key), v = Number(p.value) || 0;
+      if (v < lo || (hi != null && v > hi)) out.push(`${p.key} must be ${lo}${hi != null ? `–${hi}` : "+"}`);
+    }
+    return [...new Set(out)];
+  }
   function openNether() {   // library
     ovState = { kind: "nether", sel: nether[0] ? nether[0].id : null, hideEquipped: false, render: renderNether };
     openOverlay(ovState.render());
@@ -3554,7 +3590,7 @@
     const tiles = list.map(n => `
       <div class="pick-tile ${st.sel === n.id ? "selected" : ""}" data-action="nether-sel" data-id="${n.id}">
         <div class="pt-sprite">${spriteImg(gemSrc(n), "px")}</div>
-        <div class="pt-name">${esc(n.name)}</div></div>`).join("")
+        <div class="pt-name">${esc(n.name)} (${netherScore(n)})</div></div>`).join("")
       || `<div class="slot-sub" style="padding:10px">No Nether Stones${st.hideEquipped ? " match" : " yet — build one"}.</div>`;
     let info;
     if (sel) {
@@ -3571,7 +3607,7 @@
         <span class="av-pipe">|</span>
         <button class="av-tab ${view === "sockets" ? "on" : ""}" data-action="ns-view" data-v="sockets">Sockets</button></div>`;
       const viewBody = view === "sockets" ? `<div class="prop-list">${rows}</div>` : netherBonusView(sel);
-      info = `<div class="ns-info-head"><span class="ns-info-icon">${spriteImg(gemSrc(sel), "px")}</span><h3>${esc(sel.name)}</h3></div>
+      info = `<div class="ns-info-head"><span class="ns-info-icon">${spriteImg(gemSrc(sel), "px")}</span><h3>${esc(sel.name)} (${netherScore(sel)})</h3></div>
         ${toggle}${viewBody}
         <div class="ns-info-actions">
           <button class="slot-mini" data-action="nether-edit" data-id="${sel.id}">Edit</button>
@@ -3616,25 +3652,35 @@
         const mat = MAT_BY_PROP.get(p.key);
         return `<div class="art-slot">${rm}<div class="as-ico">${mat && mat.icon ? spriteImg(mat.icon, "px") : "◆"}</div>
           <div class="as-lab">${esc(mat ? mat.name : p.key)}</div><div class="as-sub">${esc(p.key)}</div>
-          <div class="np-wrap"><input type="number" class="np-num" data-action="nether-propval" data-i="${i}" value="${p.value}"><span class="np-pct">%</span></div></div>`;
+          <div class="np-wrap"><input type="number" class="np-num" data-action="nether-propval" data-i="${i}" value="${p.value}" min="${ngMin(p.key) ?? 0}"${ngMax(p.key) != null ? ` max="${ngMax(p.key)}"` : ""} step="1"><span class="np-pct">${isFlatProp(p.key) ? "" : "%"}</span></div></div>`;
       }).join("");
-      const slotsBox = `<div class="art-slot-grid">${rows}<div class="art-slot add ${st.picking ? "picking" : ""}" data-action="nether-addprop"><div class="as-ico glyph">＋</div><div class="as-lab">Add</div></div></div>`;
+      const cnt = netherCounts(s), L = NG.limits;
+      const full = { stat: cnt.props >= L.props_max, trick: cnt.props >= L.props_max, trait: cnt.traits >= L.traits_max, spell: cnt.spells >= L.spells_max };
+      const addTile = Object.values(full).every(Boolean) ? ""
+        : `<div class="art-slot add ${st.picking ? "picking" : ""}" data-action="nether-addprop"><div class="as-ico glyph">＋</div><div class="as-lab">Add</div></div>`;
+      const slotsBox = `<div class="art-slot-grid">${rows}${addTile}</div>`;
       let picker = "";
       if (st.picking === "menu") {
-        picker = `<div class="art-addmenu">${NETHER_CATS.map(x => `<button class="chip" data-action="nether-pickcat" data-c="${x.c}">${x.label}</button>`).join("")}</div>`;
+        // Stat + Trick share the 6-property budget; traits and spells have their own 3 each
+        const used = { stat: cnt.props, trick: cnt.props, trait: cnt.traits, spell: cnt.spells };
+        const max = { stat: L.props_max, trick: L.props_max, trait: L.traits_max, spell: L.spells_max };
+        picker = `<div class="art-addmenu">${NETHER_CATS.map(x => `<button class="chip" ${full[x.c] ? "disabled" : `data-action="nether-pickcat" data-c="${x.c}"`}>${x.label} ${used[x.c]}/${max[x.c]}</button>`).join("")}</div>`;
       } else if (st.picking) {
         const q = st.search.trim().toLowerCase(); let rowsHtml = "";
         if (st.picking === "stat" || st.picking === "trick") {
-          rowsHtml = [...propGroups.values()].filter(g => g.group === st.picking && (!q || g.name.toLowerCase().includes(q))).map(g => {
+          const have = new Set(s.props.filter(isPropCat).map(p => p.key));
+          rowsHtml = [...propGroups.values()].filter(g => g.group === st.picking && !have.has(g.name) && (!q || g.name.toLowerCase().includes(q))).map(g => {
             const mat = MAT_BY_PROP.get(g.name);
             return `<div class="prop-row" data-action="nether-pickprop" data-k="${esc(g.name)}">
               <span class="prop-ico">${mat && mat.icon ? spriteImg(mat.icon, "px") : ""}</span><span class="prop-name">${esc(mat ? mat.name : g.name)}</span><span class="prop-stat">${esc(g.entries.map(e => e.stat).join(" / "))}</span></div>`;
           }).join("");
         } else if (st.picking === "trait") {
-          rowsHtml = D.traitItems.filter(t => t.traitName && (!q || t.name.toLowerCase().includes(q) || (t.traitName || "").toLowerCase().includes(q))).slice(0, 300)
+          const haveT = new Set(s.props.filter(p => p.cat === "trait").map(p => (TRAITITEM.get(p.key) || {}).traitId));
+          rowsHtml = D.traitItems.filter(t => t.traitName && !haveT.has(t.traitId) && (!q || t.name.toLowerCase().includes(q) || (t.traitName || "").toLowerCase().includes(q))).slice(0, 300)
             .map(t => traitPickCard(t, false, `data-action="nether-pickprop" data-k="${t.id}"`)).join("");
         } else {   // spell: raw spells (no property modifiers)
-          rowsHtml = D.spells.filter(sp => !q || sp.name.toLowerCase().includes(q) || (sp.desc || "").toLowerCase().includes(q)).slice(0, 300)
+          const haveS = new Set(s.props.filter(p => p.cat === "spell").map(p => p.key));
+          rowsHtml = D.spells.filter(sp => !haveS.has(sp.id)).filter(sp => !q || sp.name.toLowerCase().includes(q) || (sp.desc || "").toLowerCase().includes(q)).slice(0, 300)
             .map(sp => spellPickCard(sp, false, `data-action="nether-pickprop" data-k="${sp.id}"`)).join("");
         }
         picker = `<div class="art-picker">
@@ -3667,14 +3713,15 @@
       <div class="build-section"><h3>Shape</h3><div class="gem-picker">${shapeChoices}</div></div>
       <div class="build-section"><h3>Colour</h3>${colorBox}</div>
     </div></div>`;
+    const issues = netherIssues(s);
     const footer = `<button class="btn-ghost" data-action="nether-cancel">Cancel</button>
-      <button class="btn-confirm" data-action="nether-save">Save Stone</button>`;
+      <button class="btn-confirm" data-action="nether-save" ${issues.length ? `disabled title="${esc("Not possible in game: " + issues.join("; "))}"` : ""}>Save Stone</button>`;
     return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel detail">
       <div class="overlay-header"><span class="hdr-ico">${gemImg(s, "px")}</span>
-        <h2>${esc(s.name)}</h2>
+        <h2>${esc(s.name)} (${netherScore(s)})</h2>
         <button class="ovl-close" data-action="close-ovl">✕</button></div>
       <div class="overlay-body">${body}</div>
-      <div class="overlay-footer"><span class="foot-info"></span><div>${footer}</div></div>
+      <div class="overlay-footer"><span class="foot-info">${issues.length ? `<span class="ns-issue">⚠ ${esc(issues.join(" · "))}</span>` : ""}</span><div>${footer}</div></div>
     </div></div>`;
   }
 
@@ -4185,12 +4232,13 @@
         const cat = ovState.picking;
         if (cat === "spell") ovState.draft.props.push({ cat, key: +t.dataset.k, trigger: NETHER_TRIGGERS[0] });
         else if (cat === "trait") ovState.draft.props.push({ cat, key: +t.dataset.k, value: null });
-        else ovState.draft.props.push({ cat, key: t.dataset.k, value: 10 });
+        else ovState.draft.props.push({ cat, key: t.dataset.k, value: ngMin(t.dataset.k) ?? 10 });
         ovState.picking = false; refreshOverlay(); break;
       }
       case "nether-prop-del": ovState.draft.props.splice(+t.dataset.i, 1); refreshOverlay(); break;
       case "nether-save": {
         const d = ovState.draft;
+        if (netherIssues(d).length) break;
         if (!d.name || !d.name.trim()) d.name = `Nether Stone ${nextNetherId}`;
         if (ovState.editId != null) { const idx = nether.findIndex(n => n.id === ovState.editId); if (idx >= 0) nether[idx] = d; }
         else { d.id = nextNetherId++; nether.push(d); }
@@ -4342,6 +4390,13 @@
       for (const g of OV.querySelectorAll(".syn-group")) if (g.dataset.key === k) { g.scrollIntoView({ block: "start" }); break; }
     }
     else if (A === "threat-navsel") { ovState.themeSel = t.value || null; refreshOverlay(); }
+    else if (A === "nether-propval" && ovState && ovState.kind === "netherbuild") {   // commit: clamp to the code range, refresh score
+      const p = ovState.draft.props[+t.dataset.i]; if (!p) return;
+      const lo = ngMin(p.key), hi = ngMax(p.key);
+      let v = Math.round(Number(t.value) || 0);
+      if (lo != null && v < lo) v = lo; if (hi != null && v > hi) v = hi;
+      p.value = v; refreshOverlay();
+    }
   });
   document.addEventListener("keydown", (e) => {
     if (e.key === "Escape") { if (!DOV.classList.contains("hidden")) closeDetail(); else if (!OV.classList.contains("hidden")) closeOverlay(); }
