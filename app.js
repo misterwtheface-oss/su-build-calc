@@ -928,6 +928,28 @@
     maybeFocusSearch(OV);
     syncSpecAnim(); syncWardrobeAnims();
   }
+  // Re-render a panel while a range slider is being dragged WITHOUT replacing that slider's DOM node: replacing it
+  // (outerHTML) aborts the pointer/touch drag after one step — the "doesn't slide smoothly on touch" bug. Every other
+  // node is patched from the fresh render; if the structure around the slider changed, fall back to a full refresh.
+  function refreshKeeping(root, html, keep, fallback) {
+    const panel = root.querySelector(".overlay-panel"); if (!panel || !panel.contains(keep)) return fallback();
+    const tpl = document.createElement("template"); tpl.innerHTML = html.trim();
+    const fresh = tpl.content.firstElementChild && tpl.content.firstElementChild.querySelector(".overlay-panel");
+    const target = fresh || tpl.content.firstElementChild;
+    if (!target) return fallback();
+    const patch = (live, next) => {
+      if (live === keep) return true;
+      if (!live.contains(keep)) { if (live.isEqualNode(next)) return true; live.replaceWith(next.cloneNode(true)); return true; }
+      if (live.nodeName !== next.nodeName || live.childNodes.length !== next.childNodes.length) return false;
+      for (const a of [...live.attributes]) if (!next.hasAttribute(a.name)) live.removeAttribute(a.name);
+      for (const a of [...next.attributes]) if (live.getAttribute(a.name) !== a.value) live.setAttribute(a.name, a.value);
+      const lc = [...live.childNodes], nc = [...next.childNodes];
+      for (let i = 0; i < lc.length; i++) if (!patch(lc[i], nc[i])) return false;
+      return true;
+    };
+    if (!patch(panel, target)) return fallback();
+    syncSpecAnim(); syncWardrobeAnims();
+  }
   function refreshDetail(resetTop) {
     if (!dovState) return;
     const panel = DOV.querySelector(".overlay-panel"); if (!panel) return;
@@ -4313,8 +4335,8 @@
     const t = e.target.closest("[data-action]"); if (!t) return;
     const A = t.dataset.action, v = t.value;
     // range sliders / selects
-    if (A === "artb-rank") { ovState.draft.rank = +v; refreshOverlay(); return; }
-    if (A === "relic-rank") { dovState.rank = +v; refreshDetail(); return; }
+    if (A === "artb-rank") { ovState.draft.rank = +v; refreshKeeping(OV, ovState.render(), t, () => refreshOverlay()); return; }
+    if (A === "relic-rank") { dovState.rank = +v; refreshKeeping(DOV, dovState.render(), t, () => refreshDetail()); return; }
     // favor rank slider: live in-place update while dragging (no re-render → smooth); 'change' re-sorts (below).
     // In "My ranks" mode the detail slider edits THIS realm's tracked rank (persisted); otherwise the global rank.
     if (A === "realm-rank") {

@@ -67,6 +67,13 @@ No verify-before-push ceremony (no real users yet) — but every change is check
    - **Service worker:** after precaching, it deletes superseded `?v=` entries. Unversioned ones (index.html icons)
      are kept.
    - **Saved build icons** (stored paths) resolve to the current versioned wardrobe image.
+10. **Touch-drag fix for the Relic and Artifact rank sliders.**
+    - **Cause:** their `input` handlers re-rendered the whole panel (`outerHTML`) on every step, replacing the slider
+      mid-drag. Touch/pointer drags died after one step (repro: full-width touch drag stopped at relic 20 / artifact
+      3). The realm favor slider already updated in place, which is why it felt smooth.
+    - **Fix:** new `refreshKeeping(root, html, keepEl, fallback)` patches every node from the fresh render except the
+      slider being dragged, falling back to a full refresh if the structure changed. Both sliders now reach max on a
+      simulated touch drag with the same DOM node throughout.
 
 ## 2026-10-01 (night 3) — Asset mappings converged on code + level-aware artifact icons
 Replaced hand-curated / heuristic asset tables with game-code maps (`_su_extract` asset_maps.json; DB_ID_FINDINGS.md):
