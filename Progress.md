@@ -1279,8 +1279,16 @@ MAPPING not for asserting PRESENCE; no inventing entities from the community-CSV
   - **No instability-level icon exists:** instability is drawn as a number.
   - **Follow-ups:** a 19th rune, EXTRASPELLS (id 7), is missing from runes.json; the code has display names for realm
     properties that could replace the authored ones.
-- [ ] **Class-advantage multiplier** — IN PROGRESS: static-code research of the damage pipeline (wanted as context for
-      the DPS sim).
+- [x] **Class-advantage multiplier — FOUND 2026-10-01 in `bc_EventDamage`** (_su_extract `code/CLASS_ADVANTAGE.md`,
+      `data/model/class_advantage.json`; read from the disassembly with variable names).
+  - **Values:** strong = ×2.0, weak = ×0.5 (the code halves; the codex text only mentions the bonus), neutral ×1.
+  - **Cycle:** Life → Death → Chaos → Sorcery → Nature → Life.
+  - **Attacker class:** spell damage uses the spell's class.
+  - **Modifiers:** Widdershins reverses the wheel; True Strike / Bloodline / Aurum relic count hits as strong; Details
+    Matter reduces damage taken; Master of Unguided → ×3.5; Shapeshifter cards ±10/20%.
+  - **Open:** its order vs crit/Defend; the "Strong Against <Class>" realm property.
+  - [ ] **Confirm in-game:** same attacker, no crit, two defenders with equal Defense — strong-vs takes exactly 2×,
+        weak-vs exactly 0.5× of neutral. Then use it as the DPS sim's class toggle.
 - [ ] **Spell `potency` / `target` / `source`** — still CSV-sourced; ground them in code.
 - [x] **God shop discrepancies** — RESOLVED by the user's in-game check: the code is right and the CSV was wrong
       (Azural = Smiths, Tenebris = Reapers, dust price 1). The app already uses code.
