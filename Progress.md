@@ -74,6 +74,8 @@ No verify-before-push ceremony (no real users yet) — but every change is check
     - **Fix:** new `refreshKeeping(root, html, keepEl, fallback)` patches every node from the fresh render except the
       slider being dragged, falling back to a full refresh if the structure changed. Both sliders now reach max on a
       simulated touch drag with the same DOM node throughout.
+11. Home List view: the class and race emblems now sit to the RIGHT of the creature sprite, stacked class over race
+    (sprite stays centred; same on phones). They were previously top-left of the identity column.
 
 ## 2026-10-01 (night 3) — Asset mappings converged on code + level-aware artifact icons
 Replaced hand-curated / heuristic asset tables with game-code maps (`_su_extract` asset_maps.json; DB_ID_FINDINGS.md):

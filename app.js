@@ -749,9 +749,11 @@
       + `<span class="rstat total"><i>Total</i>${fs.total}</span>`;
     return `<div class="roster-row filled ${locked ? "locked" : ""}" data-slot="${i}" title="Right-click to change creature / fusion">
       <div class="roster-identity">
-        <div class="tile-badges">${clsIco}${raceIco}</div>
         <button class="slot-remove" data-action="remove-creature" data-slot="${i}" title="Remove">✕</button>
-        <div class="roster-sprite" data-action="creature-detail" data-slot="${i}">${slotFace(slot, c)}</div>
+        <div class="roster-sprite-row">
+          <div class="roster-sprite" data-action="creature-detail" data-slot="${i}">${slotFace(slot, c)}</div>
+          <div class="tile-badges roster-badges">${clsIco}${raceIco}</div>
+        </div>
         <div class="roster-head">
           <div class="roster-name">${esc(c.name)}${f ? ` <span style="color:var(--accent2)">⚭</span>` : ""}</div>
           <div class="slot-sub roster-clsrace"><span style="color:${clsColor(cls)};font-weight:700">${esc(cls || "—")}</span>${c.race ? " · " + esc(c.race) : ""}</div>
