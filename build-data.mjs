@@ -2319,6 +2319,53 @@ console.log(`  audit overrides: ${Object.keys(auditOv).length} defined · ${audi
   for (const [k, set] of Object.entries(miss)) warn(`shop ${k} items without a join/icon: ${[...set].slice(0, 8).join(', ')}${set.size > 8 ? ' …' : ''}`);
 }
 
+// ── code-grounded effect notes (mechanics the game's own text omits) ─────────────────────────────
+// Shipped as `notes: string[]` on traits / spec perks / relic ranks; the app renders them as chips BESIDE the
+// prose (never edited into it). Sources (_su_extract code/DR_CAPS_AND_RUNES_FINDINGS.md):
+//   dr_caps.json            — every per-effect damage-reduction clamp in bc_EventDamage (global.dr_cap = 0.8)
+//   rune_knight_perks.json  — Undermine / Inspirit per-rune condition + Ruse's rune-gem properties
+{
+  const addNote = (o, n) => { if (o && !(o.notes ||= []).includes(n)) o.notes.push(n); };
+  const perkByKey = new Map(); for (const sp of specs) for (const pk of sp.perks) perkByKey.set(pk.key, pk);
+  const traitByName = new Map(Object.values(traits).map(t => [norm(t.name), t]));
+  const relicRank = (name, rank) => { const r = relics.find(x => norm(String(x.name).split(',')[0]) === norm(String(name).split(',')[0]));
+    return r ? r.ranks.find(k => +k.rank === +rank) : null; };
+  const capsF = path.join(MODEL, 'dr_caps.json');
+  if (fs.existsSync(capsF)) {
+    const caps = readJSON(capsF), capTxt = `Max ${Math.round(caps.dr_cap * 100)}% damage reduction`;
+    let hit = 0; const miss = [];
+    for (const e of caps.effects || []) {
+      const tgt = e.kind === 'perk' ? perkByKey.get(e.perk_key)
+        : e.kind === 'trait' ? (traits[e.trait_consolidated_id] && norm(traits[e.trait_consolidated_id].name) === norm(e.name) ? traits[e.trait_consolidated_id] : traitByName.get(norm(e.name)))
+        : e.kind === 'relic' ? relicRank(e.relic_name || e.name, e.rank)
+        : e.kind === 'condition' && e.source_perk_key ? perkByKey.get(e.source_perk_key)   // minion granted by a perk (Mammon)
+        : undefined;   // guild bonuses / race mastery: no app surface yet
+      if (tgt) { addNote(tgt, capTxt); hit++; } else if (tgt === null) miss.push(`${e.kind}:${e.name}`);
+    }
+    console.log(`  dr-cap notes: ${hit}/${(caps.effects || []).length} effects tagged "${capTxt}"`);
+    if (miss.length) warn(`dr-cap notes: ${miss.length} effect(s) not joined to app data: ${miss.join(', ')}`);
+  } else warn('dr_caps.json missing — no damage-reduction cap notes');
+  const runeF = path.join(MODEL, 'rune_knight_perks.json');
+  if (fs.existsSync(runeF)) {
+    const short = (r) => String(r).replace(/^Rune of /, '');
+    for (const pk of readJSON(runeF).perks || []) {
+      const tgt = perkByKey.get(pk.perk_key); if (!tgt) { warn(`rune notes: perk ${pk.perk_key} not in app data`); continue; }
+      if (pk.per_rune && pk.per_rune[0] && pk.per_rune[0].condition)            // Undermine / Inspirit: one chip per rune
+        for (const r of pk.per_rune) addNote(tgt, `${short(r.rune)}: ${r.condition}`);
+      else if (pk.per_rune) {                                                    // Ruse: shared props + per-rune variant
+        if (pk.tier) addNote(tgt, `Rune gems: Tier ${pk.tier}`);
+        const all = pk.per_rune.map(r => r.properties);
+        const common = all[0].filter(x => all.every(l => l.includes(x)));
+        for (const x of common) addNote(tgt, x);
+        const odd = new Map();                                                   // property → runes that get it
+        pk.per_rune.forEach(r => r.properties.filter(x => !common.includes(x)).forEach(x => odd.set(x, [...(odd.get(x) || []), short(r.rune)])));
+        const sorted = [...odd].sort((x, y) => y[1].length - x[1].length);      // majority variant first
+        if (sorted.length === 2) addNote(tgt, `${sorted[0][0]} (${sorted[1][1].join('/')}: ${sorted[1][0]})`);
+        else for (const [x, rs] of sorted) addNote(tgt, `${x} (${rs.join('/')})`);
+      }
+    }
+  }
+}
 const SU_DATA = {
   meta: {
     generated: new Date().toISOString(),
