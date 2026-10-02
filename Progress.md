@@ -17,7 +17,7 @@ table is lazily filled by a static function, so trace the writer.
 | Fusion colour | "not reproducible from static data" (2026-09-20 below) | `scr_GetFusionSurface` palette sort + swap; pixel-exact on 2 in-game captures incl. 1,551 semi-transparent px | 7 |
 | Nether Stone colour | user-picked 2-colour tint | 16 pre-coloured `icons` frames (2085–2100), no colour data; 31/31 in-game stones pixel-exact | 8 |
 | Skin owners | sprite-name heuristic, 48 unresolved, ids shifted +1 | `scr_DatabaseSkins` restriction field (race name / creature id) + apply handler; all 834 | 12 |
-| Wardrobe groups | sprite-prefix guess | code spec tiers / "Master of" / god roster; rest = Misc | (night 4 a) |
+| Wardrobe groups | sprite-prefix guess | code spec tiers / "Master of" / god roster; rest = Misc | 4 |
 
 Also this session: relic equip-once guardrail, Builds icon-picker regroup, List as default view naming, Nether builder
 guardrails, Fusion Colour wizard step, touch-drag slider fix, content-hash image cache-busting, List-view emblem
