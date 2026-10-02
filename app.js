@@ -1473,7 +1473,7 @@
       const r = perkRank(spec, p), mx = perkMax(p), on = r > 0;
       const badge = mx > 1 ? `<span class="perk-rankbadge">${r}/${mx}</span>` : (on ? `<span class="perk-rankbadge">✓</span>` : "");
       const asc = p.ascension ? `<span class="anoint-badge asc">Ascension</span>` : "";
-      const ico = p.icon ? `<span class="perk-ico sm">${spriteImg(p.icon, "px")}</span>` : `<span class="perk-ico sm empty"></span>`;
+      const ico = `<div class="apx-iconcol">${p.icon ? `<div class="apx-crea">${spriteImg(p.icon, "px")}</div>` : ""}</div>`;   // same 48px centered icon as the Glossary
       return `<div class="perk-line apx-clickable ${on ? "on" : "off"} ${p.ascension ? "asc" : ""}" data-action="apx-open" data-ek="perk" data-eid="${esc(p.key)}">${ico}
         <div class="perk-line-body">
           <div class="perk-line-head"><b>${esc(p.name)}</b><span class="perk-line-meta">${asc}${badge}</span>${bkBtn("perks", p.key)}</div>
@@ -1542,7 +1542,7 @@
         <button class="perk-step wide" data-action="perk-zero" data-k="${k}" ${r <= 0 ? "disabled" : ""}>0</button></div>`;
       const costLine = p.cost != null ? `<span class="perk-meta">${p.cost} pt${p.cost === 1 ? "" : "s"}/rank${on ? ` · ${p.cost * r} spent` : ""}</span>` : "";
       const asc = p.ascension ? `<span class="anoint-badge asc">Ascension</span>` : "";
-      const ico = p.icon ? `<div class="perk-ico">${spriteImg(p.icon, "px")}</div>` : `<div class="perk-ico empty"></div>`;
+      const ico = `<div class="apx-iconcol">${p.icon ? `<div class="apx-crea">${spriteImg(p.icon, "px")}</div>` : ""}</div>`;   // same 48px centered icon as the Glossary
       return `<div class="perk-row ${on ? "on" : "off"} ${p.ascension ? "asc" : ""}">
         ${ico}<div class="perk-row-main">
           <div class="perk-row-head"><b>${esc(p.name)}</b><span class="perk-line-meta">${asc}${costLine}</span></div>
@@ -2740,7 +2740,7 @@
         ? `<button class="slot-mini anoint-eq" disabled title="Already available in your current specialization">In your spec</button>`
         : `<button class="slot-mini anoint-eq ${on ? "on" : ""}" data-action="anoint-toggle" data-sid="${a.specId}" data-k="${esc(a.key)}" ${(!on && full) ? "disabled" : ""}>${on ? "Equipped ✓" : "Equip"}</button>`;
       return `<div class="perk-line apx-clickable ${on ? "equipped" : ""} ${inCur ? "anoint-incur" : ""}" data-action="apx-open" data-ek="perk" data-eid="${esc(a.key)}">
-        <span class="perk-ico sm">${a.icon ? spriteImg(a.icon, "px") : ""}</span>
+        <div class="apx-iconcol">${a.icon ? `<div class="apx-crea">${spriteImg(a.icon, "px")}</div>` : ""}</div>
         <div class="perk-line-body">
           <div class="perk-line-head"><b>${esc(a.name)}</b>
             <span class="perk-line-meta"><span class="anoint-spec-tag">${esc(a.spec)}</span>${inCur ? `<span class="anoint-badge">Current spec</span>` : ""}${a.ascension ? `<span class="anoint-badge asc">Ascension</span>` : ""}</span>${bkBtn("perks", a.key)}</div>
@@ -2789,7 +2789,7 @@
   function renderAnointDetail() {
     const eq = equippedAnointObjs();
     const rows = eq.map(a => `<div class="perk-line apx-clickable" data-action="apx-open" data-ek="perk" data-eid="${esc(a.key)}">
-        <span class="perk-ico sm">${a.icon ? spriteImg(a.icon, "px") : ""}</span>
+        <div class="apx-iconcol">${a.icon ? `<div class="apx-crea">${spriteImg(a.icon, "px")}</div>` : ""}</div>
         <div class="perk-line-body">
           <div class="perk-line-head"><b>${esc(a.name)}</b>
             <span class="perk-line-meta"><span class="anoint-spec-tag">${esc(a.spec)}</span>${a.ascension ? `<span class="anoint-badge asc">Ascension</span>` : ""}</span></div>

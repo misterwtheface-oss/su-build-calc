@@ -1279,6 +1279,10 @@ MAPPING not for asserting PRESENCE; no inventing entities from the community-CSV
   - **No instability-level icon exists:** instability is drawn as a number.
   - **Follow-up UI (2026-10-02):** dropped the per-row Realm/Rune source chip (the Realm Props | False God toggle already
     says which); the feature is renamed **Threats → RI/Runes** (menu item + overlay title; internal `open-threats` kept).
+  - **Row icon consistency (2026-10-02):** RI/Runes rows, spec perk list (selector panel + detail), perk Customize rows,
+    the Anointments list and the equipped-anointments detail now use the Glossary row icon (`apx-iconcol` / `apx-crea`,
+    48px, vertically centred). The old `perk-ico` 22/32px styles were removed. Remaining non-48px row icons are
+    deliberate compact lists (info-panel property rows, realm objects, filter options), plus Shops at 42px.
   - **Follow-ups:** a 19th rune, EXTRASPELLS (id 7), is missing from runes.json; the code has display names for realm
     properties that could replace the authored ones.
 - [x] **Class-advantage multiplier — FOUND 2026-10-01 in `bc_EventDamage`** (_su_extract `code/CLASS_ADVANTAGE.md`,

@@ -904,11 +904,6 @@ button.apx-owner:hover .apx-owner-ico { border-color: var(--accent); }
 .etax-tag .apx-src { font-size: 9px; }
 .etax-legend { color: var(--text-mute); font-size: 11px; margin-top: 12px; line-height: 1.5; }
 .etax-legend b { color: var(--text-dim); }
-.perk-ico { flex: 0 0 auto; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,.25); border: 1px solid var(--border-dim); border-radius: 6px; }
-.perk-ico img { width: 28px; height: 28px; object-fit: contain; }
-.perk-ico.empty { background: none; border-color: transparent; }
-.perk-ico.sm { width: 22px; height: 22px; border-radius: 4px; }
-.perk-ico.sm img { width: 18px; height: 18px; }
 .perk-rankbadge { flex: 0 0 auto; box-sizing: border-box; text-align: center; font-size: 10px; font-weight: 800; color: var(--accent2); background: rgba(201,162,75,.14); border: 1px solid var(--border-dim); border-radius: 5px; padding: 1px 6px; font-variant-numeric: tabular-nums; }
 .perk-line.off .perk-rankbadge { color: var(--text-mute); background: none; }
 .perk-desc { color: var(--text-dim); font-size: 12.5px; line-height: 1.4; }
