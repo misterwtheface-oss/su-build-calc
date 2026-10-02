@@ -926,12 +926,6 @@ button.apx-owner:hover .apx-owner-ico { border-color: var(--accent); }
 .thr-w { font-size: 10px; font-weight: 800; padding: 0 5px; border-radius: 999px; background: rgba(0,0,0,.28);
   color: var(--text-dim); font-variant-numeric: tabular-nums; }
 .thr-theme.on .thr-w { background: rgba(0,0,0,.22); color: #1a1230; }
-.thr-list { display: flex; flex-direction: column; gap: 5px; margin: 6px 0 4px; }
-.thr-row { display: flex; gap: 9px; align-items: flex-start; padding: 8px 10px; background: var(--surface);
-  border: 1px solid var(--border-dim); border-radius: 8px; }
-.thr-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
-.thr-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 7px; }
-.thr-eff { color: var(--text-dim); font-size: 12px; line-height: 1.35; }
 .thr-chip { flex: 0 0 auto; font-size: 10px; font-weight: 700; padding: 1px 7px; border-radius: 999px;
   color: var(--bad); background: rgba(224,107,107,.15); border: 1px solid rgba(224,107,107,.35); }
 .thr-chip.cls { color: var(--accent); background: rgba(201,162,75,.15); border-color: rgba(201,162,75,.35); }
@@ -1434,7 +1428,3 @@ select.app-select:hover { border-color: var(--accent2); }
 .fuse-cell:hover { border-color: var(--accent2); }
 .fuse-cell.on { border-color: var(--accent2); box-shadow: inset 0 0 0 2px var(--accent2); background: rgba(154,123,214,.2); }
 .fuse-cell img { width: 100%; height: 100%; object-fit: contain; image-rendering: pixelated; }
-
-/* Threats: code-grounded rune / realm-property icon */
-.thr-ico { width: 24px; height: 24px; flex: 0 0 24px; display: flex; align-items: center; justify-content: center; }
-.thr-ico img { width: 100%; height: 100%; object-fit: contain; image-rendering: pixelated; }

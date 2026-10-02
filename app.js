@@ -2147,10 +2147,11 @@
       ...m.hitThemes.map(t => `<span class="thr-chip">${esc(themeLabel(t))}</span>`),
       ...(m.hitClass ? [`<span class="thr-chip cls">${esc(m.hitClass[0].toUpperCase() + m.hitClass.slice(1))}</span>`] : []),
     ].join("");
-    return `<div class="thr-row">
-      <span class="thr-ico">${m.icon ? spriteImg(m.icon, "px") : ""}</span>
-      <div class="thr-body"><div class="thr-head"><b>${esc(m.name)}</b>${chips}</div>
-        <div class="thr-eff">${esc(m.effect)}</div></div></div>`;
+    // same row layout as the Glossary: large icon column + name/effect body (perk-line / apx-iconcol)
+    return `<div class="perk-line">
+      <div class="apx-iconcol">${m.icon ? `<div class="apx-crea">${spriteImg(m.icon, "px")}</div>` : ""}</div>
+      <div class="perk-line-body"><div class="perk-line-head"><b>${esc(m.name)}</b>${chips}</div>
+        <div class="perk-desc">${esc(m.effect)}</div></div></div>`;
   }
   function renderThreats() {
     const st = ovState, w = st.weights, heavy = heavyPartyClasses(), active = activeThemes();
@@ -2183,9 +2184,9 @@
         <div class="thr-themebar">${themeSelect}</div>
         ${srcToggle}
         <div class="section-label">Counters your build</div>
-        <div class="thr-list">${countersBody}</div>
+        <div class="perk-list">${countersBody}</div>
         <button class="thr-genhead ${st.showGeneral ? "open" : ""}" data-action="threat-general">${st.showGeneral ? "▾" : "▸"} Generally punishing <span class="thr-w">${general.length}</span></button>
-        ${st.showGeneral ? `<div class="thr-list">${genRows}</div>` : ""}
+        ${st.showGeneral ? `<div class="perk-list">${genRows}</div>` : ""}
       </div></div></div>
       <div class="overlay-footer"><span class="foot-info"></span><button class="btn-confirm" data-action="close-ovl">Done</button></div>
     </div></div>`;
