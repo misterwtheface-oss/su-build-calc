@@ -1202,11 +1202,14 @@ full builder stays the high-fidelity path.
   - **Quick Artifact icon:** the game's own greyscale `menu_artifactsG` sprite (plain grey sword). Not a desaturated
     copy, and not a type/tier icon.
   - **Quick Nether Stone icon:** `cornether_1` (sphere), untinted (`assets/gems/nether_1.png`).
+  - **Nether trait limit = 3, CODE-CERTAIN.** In `inv_NetherStoneCreate` the trait loop runs i=1..3 and stops at the first
+    failed roll. A trait is only accepted if an artifact trait-item material exists for it, so the quick-nether picker uses
+    the **same trait-material pool** as the Artifact Trait step (minus duplicates on the stone).
+    Source: _su_extract `code/NETHER_GENERATION.md` / `data/model/nether_generation.json`.
 - Still open:
   - Library treatment for quick Artifacts.
   - Promoting a quick Artifact to a proper one when it is opened in the builder.
   - Cleanup when a quick pick is cleared.
-  - Code-grounded nether stone trait limit (wiki says 3; static-code research in progress).
 ### ⭐ HIGH PRIORITY — next session (2026-09-24)
 - [x] **Resolve the missing item-backed trait sprites — DONE (2026-09-24, commit e993af5).** 18 item-backed
       traits (13 Nether-Boss **reward** items — Flubris/Phobos/Ramses/Kraynaks/Cyhra body parts; 4 Master
