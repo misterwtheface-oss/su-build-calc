@@ -1667,7 +1667,7 @@ const realmIconFor = (godName) => {
 // is usually a word-join of the name; misses are dispositioned via REALM_OBJ_OVERRIDE.
 const REALM_ACRONYMS = {
   'Forgotten Lab': 'fl', 'Unsullied Meadows': 'um', 'Damarel': 'dmr', 'Forbidden Depths': 'fdp',
-  'Blood Grove': 'bg', 'Land of Breath and Balance': 'lobab', 'Temple of Lies': 'tol', 'Frostbite Cavern': 'fc',
+  'Blood Grove': 'bg', 'Land of Breath and Balance': 'lobab', 'Temple of Lies': 'tol', 'Frostbite Caverns': 'fc',
   'Path of the Damned': 'ptd', 'Where the Dead Ships Dwell': 'wdsd', 'Overgrown Temple': 'ot',
   'Kingdom of Heretics': 'kh', 'Faraway Enclave': 'fe', 'The Swamplands': 'swm', "Titan's Wound": 'tw',
   'Astral Gallery': 'ag', 'Sanctum Umbra': 'su', "Gambler's Hive": 'gh', 'Arachnid Nest': 'an',
