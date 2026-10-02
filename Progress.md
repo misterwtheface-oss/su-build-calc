@@ -6,7 +6,23 @@ Pages on `master`/root, Cloudflare analytics active with the shared github.io to
 No verify-before-push ceremony (no real users yet) — but every change is checked with the jsdom smoke suite
 (scratchpad `smoke.mjs`, ~84 assertions across all flows) before commit.
 
-## 2026-10-01 (night 4) — Creature picker List|Grid toggle, trait-list headers, Update guard
+## 2026-10-01 (night 4 → session close) — "runtime-only" systems cracked from static code + UI polish
+**Session summary.** Every system below was previously logged as runtime-only / not reproducible / heuristic.
+Each is now read from static code and validated against in-game ground truth. The lesson: a "runtime-built .bss"
+table is lazily filled by a static function, so trace the writer.
+
+| System | Was | Now (code + validation) | Item |
+|---|---|---|---|
+| Nether Stone generation | "numeric layer runtime-only" | `inv_NetherStoneCreate`: ≤6 props / 3 traits / 3 spells, tier ≥10 value formulas; reproduces in-game "Glowing Prism (61)" | 6 |
+| Fusion colour | "not reproducible from static data" (2026-09-20 below) | `scr_GetFusionSurface` palette sort + swap; pixel-exact on 2 in-game captures incl. 1,551 semi-transparent px | 7 |
+| Nether Stone colour | user-picked 2-colour tint | 16 pre-coloured `icons` frames (2085–2100), no colour data; 31/31 in-game stones pixel-exact | 8 |
+| Skin owners | sprite-name heuristic, 48 unresolved, ids shifted +1 | `scr_DatabaseSkins` restriction field (race name / creature id) + apply handler; all 834 | 12 |
+| Wardrobe groups | sprite-prefix guess | code spec tiers / "Master of" / god roster; rest = Misc | (night 4 a) |
+
+Also this session: relic equip-once guardrail, Builds icon-picker regroup, List as default view naming, Nether builder
+guardrails, Fusion Colour wizard step, touch-drag slider fix, content-hash image cache-busting, List-view emblem
+layout, Builds preview showing saved sprites. Backlog updated: closed items ticked, new extract follow-ups added.
+
 1. "Show Traits" facet → footer two-part toggle **List | Grid** (same `.seg`/`.seg-btn` styling as the home Layout toggle),
    left of Cancel/Next; both creature and fusion steps.
 2. List view: each trait card now leads with a header — creature name · race emblem + race · class emblem + class, a
@@ -694,6 +710,10 @@ creature wizard's Customize panel (only restriction-allowed skins + a Default ti
 rendered in slot / wizard preview / detail; kept across creature changes only if still allowed. 1268/1362
 creatures have ≥1 applicable skin.
 
+> **SUPERSEDED 2026-10-01:** fusion palettes and skin owners were both cracked from static code. See the
+> 2026-10-01 night-4 section: items 7 (fusion, pixel-exact) and 12 (skin owners, all 834). The analysis below is
+> kept for history.
+
 **Fusion palette — researched, NOT shipped (deliberate).** Deep dive (3 Ghidra decompile passes + 5-pair
 pixel-exact ground truth) concluded the in-game fuse recolour is **not reproducible from static data**: it is a
 runtime GPU palette-swap (`FX_PaletteSwap`) whose grey/body/accent ramp clustering is computed by VM-dispatched
@@ -1249,6 +1269,17 @@ MAPPING not for asserting PRESENCE; no inventing entities from the community-CSV
 - [x] Code-ground the per-perk **Anointment** flag — DONE 2026-10-01 pm.
 - [x] Spec costume tiers from `scr_SpecializationCostume` — DONE 2026-10-01 pm. [x] Spec emblem/icon from `scr_SpecializationIcon` — wired 2026-10-01 (asset_maps.spec_icons).
 - [ ] #5 taxonomy → fully code-backed (workshop multi-parameter conditions first, e.g. side × event: "opposing-side buff gain").
+### 🔬 Extract follow-ups (2026-10-01): previously "runtime-only" items worth a static-code pass now
+- [ ] **Sigil scaling** — logged as runtime-built; trace the writer, as was done for nether generation.
+- [ ] **Nether Stone leveling** (XP / level-up effects), if any beyond creation.
+- [ ] **Project costs** — `projects.json` costs never decoded.
+- [ ] **Spell `potency` / `target` / `source`** — still CSV-sourced; ground them in code.
+- [ ] **Threats icons** — realm property + False God rune sprite joins (see P1 item below), likely via a code switch.
+- [ ] **Race icons** — no code source found yet.
+- [ ] **God shop discrepancies** (need in-game checks): Azural (code Smiths vs CSV Yetis), Tenebris (Reapers vs a
+      Shadow item), dust price (code 1 vs CSV 10). Plus the Regalis dust, named from the CSV (not resolvable at runtime).
+- [ ] **Class-advantage multiplier** — still needs an in-game observation.
+- [x] Nether Stone generation · Fusion palettes · Nether Stone icons · Skin owners — DONE 2026-10-01 (see top).
 ### 💤 PARKED — Player-customized spell availability list (+ dependent nether spell restriction)
 - [ ] **Player-customized spell availability list:** the player marks which spells/recipes they own.
 - [ ] **Depends on the list above** (probably not worth it): restrict Nether Stone spells to owned recipes, as the game
@@ -1394,13 +1425,16 @@ full builder stays the high-fidelity path.
       (recall Affliction CSV charges 17 vs code 14). Come back and re-ground them against the datamine /
       in-game where possible, or at least tag provenance in the UI. Known CSV-sourced fields today:
       **spell `potency`/`target`/`source`** (spells_ref.json — charges are already code), **god base-stat
-      null-fills** (Creature_REF.csv, 14 creatures), **perk→spec membership + anoint/ascension flags**
-      (Perk_REF.csv), **amber name→stat map** (user sheet). Audit each; prefer code, mark the rest.
+      null-fills** (Creature_REF.csv, 14 creatures), **ascension flag** (Perk_REF.csv), **amber name→stat map**
+      (user sheet). Audit each; prefer code, mark the rest.
+      ✓ 2026-10-01: perk→spec membership and the anointment flag are now from code (specializations.json /
+      anointments.json), and the CSV was corrected to 100% agreement.
 
 ### Later (P2)
 - [ ] Spell-gem loadouts (potency tiers already in `damageModel`).
 - [x] Fusion palette / colour-combination picker — DONE 2026-10-01: code-exact 6-option Fusion Colour wizard step.
-- [ ] Save / load / share builds; multiple saved parties.
+- [x] Save / load builds; multiple saved parties — DONE (Builds library: save/update/load/sort, wardrobe icon, preview
+      with saved skins + fusion colours). [ ] **Share** (export/import a build) still open.
 - [x] Turn on the Cloudflare analytics beacon (shared github.io token). DONE — beacon is in `index.html`
       and live on master (deployed 2026-09-23).
 
@@ -1437,6 +1471,8 @@ full builder stays the high-fidelity path.
   the item's own `trait_name` is still displayed. Both are recorded, not blocking.
 - Relic contributions are qualitative (no numeric stat) → shown as effect text, deliberately not a stat column.
 - Class-advantage multiplier + Nether Stone numerics are runtime/in-game-only (see WIKI_CONTEXT) → modelled around.
+  **Update 2026-10-01:** Nether Stone numerics are now CODE-GROUNDED (`inv_NetherStoneCreate`); class-advantage is
+  still open.
 
 ## Session log
 - 2026-09-24: **ASSET OWNERSHIP INDEX + boss/skin reconciliation (source-of-truth layer).** Built a canonical,
