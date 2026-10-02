@@ -1589,9 +1589,9 @@
   }
 
   // wardrobe icon picker (detail overlay) — full 820 costumes, front-facing frame, search + category
-  // 4 groups, every costume in exactly one (_su_extract code/classify_wardrobe.py: spec tiers / "Master of" / creature / npc)
-  const WARDROBE_CATS = ["specialization", "master", "creature", "npc"];
-  const WARDROBE_CAT_LABEL = { specialization: "Specialization", master: "Master", creature: "Creature", npc: "NPC" };
+  // 4 groups, every costume in exactly one (_su_extract code/classify_wardrobe.py: spec tiers / "Master of" / god / misc)
+  const WARDROBE_CATS = ["specialization", "master", "god", "misc"];
+  const WARDROBE_CAT_LABEL = { specialization: "Specialization", master: "Master", god: "God", misc: "Misc" };
   const ICON_PAGE = 120;   // wardrobe sprites rendered per page; "Load more" adds another page
   function openIconPicker(onPick) {
     dovState = { kind: "iconpick", search: "", cat: null, limit: ICON_PAGE, onPick, render: renderIconPicker };

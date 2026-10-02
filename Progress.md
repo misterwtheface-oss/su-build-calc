@@ -20,8 +20,8 @@ No verify-before-push ceremony (no real users yet) — but every change is check
    - **Specialization** (129): exactly the code spec tiers. 20 untiered "Alternate"/Mime/Engineer outfits moved out;
      Defiler/Tribalist T2/T3 moved in.
    - **Master** (155): code name starts "Master of …".
-   - **Creature** (33): code name matches a code creature/god name (God overworld forms, Kobold, Gravekeeper).
-   - **NPC** (503): catch-all for everything not code-backed (incl. animals; no hand-written lists).
+   - **God** (31): the gods' overworld forms — code God-shop roster (30) or a god sprite asset (adds Caliban).
+   - **Misc** (505): catch-all for everything not code-backed.
 
 ## 2026-10-01 (night 3) — Asset mappings converged on code + level-aware artifact icons
 Replaced hand-curated / heuristic asset tables with game-code maps (`_su_extract` asset_maps.json; DB_ID_FINDINGS.md):
