@@ -277,7 +277,7 @@
   const jsave = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} };
 
   const emptySlot = () => ({ cid: null, fusion: null, artifactId: null, relic: null, spellGemIds: [], personality: null, scrolls: {}, skinId: null });
-  const freshBuild = () => ({ schema: 3, specIds: 2, specId: null, perkAlloc: {}, anoints: [], slots: Array.from({ length: 6 }, emptySlot) });
+  const freshBuild = () => ({ schema: 3, specIds: 2, skinIds: 2, specId: null, perkAlloc: {}, anoints: [], slots: Array.from({ length: 6 }, emptySlot) });
   let build = jload(LS.build, null);
   // schema 2 stored perkAlloc as a binary de-allocation map ({key:1} = deallocated).
   // schema 3 stores an allocated rank count ({key:R}; absent key = fully allocated = maxRanks).
@@ -368,6 +368,22 @@
   };
   if (migrateSpecIds(build)) jsave(LS.build, build);
   if (builds.map(x => migrateSpecIds(x.build)).some(Boolean)) persistBuilds();
+  // Skin ids became code-grounded (2026-10-01): the old skin ids were shifted. Remap once via D.skinIdMigration,
+  // then drop any skin the (now code-exact) restriction no longer allows on that slot's creature.
+  const migrateSkinIds = (b) => {
+    if (!b || b.skinIds === 2) return false;
+    const M = D.skinIdMigration || {};
+    for (const sl of b.slots || []) {
+      if (!sl || sl.skinId == null) continue;
+      const id = M[sl.skinId] != null ? M[sl.skinId] : sl.skinId;
+      const c = CREA.get(sl.cid);
+      sl.skinId = c && skinsForCreature(c).some(k => k.id === id) ? id : null;
+    }
+    b.skinIds = 2;
+    return true;
+  };
+  if (migrateSkinIds(build)) jsave(LS.build, build);
+  if (builds.map(x => migrateSkinIds(x.build)).some(Boolean)) persistBuilds();
   const normalizeBuild = (b) => {
     b.schema = 3; b.perkAlloc = b.perkAlloc || {};
     b.anoints = Array.isArray(b.anoints) ? b.anoints : [];
@@ -1581,7 +1597,8 @@
     const slots = bd.slots || [];
     const crits = `<div class="bi-crits">${Array.from({ length: 6 }, (_, i) => {
       const s = slots[i], c = s && s.cid != null ? CREA.get(s.cid) : null;
-      return `<div class="bi-crit${c ? "" : " empty"}"${c ? ` title="${esc(c.name)}"` : ""}>${c ? critFace(c) : ""}</div>`; }).join("")}</div>`;
+      // the saved slot exactly as the main screen shows it: equipped skin + fusion colour option
+      return `<div class="bi-crit${c ? "" : " empty"}"${c ? ` title="${esc(c.name)}"` : ""}>${c ? slotFace(s, c) : ""}</div>`; }).join("")}</div>`;
     return `<div class="section-label" style="text-align:center">${esc(b.name)}</div>
       <div class="bi-head">${emblem}${anointRow}</div>${crits}`;
   }

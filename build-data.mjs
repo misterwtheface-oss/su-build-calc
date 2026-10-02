@@ -2158,24 +2158,37 @@ const PERSONALITIES = [
 const OUT_SKIN = path.join(OUT_ASSETS, 'skins');
 fs.rmSync(OUT_SKIN, { recursive: true, force: true });
 fs.mkdirSync(OUT_SKIN, { recursive: true });
-const skinRecs = readJSON(path.join(MODEL, 'skins.json')).records;
-// skins.json OVER-claims: the Nether boss roster + Inner Darkness/Shadow Lord parts are mislabeled as skins.
-// Exclude them (canonical, human-validated) so they don't ship as skins — their frames are boss sprites.
-const skinExclusions = new Set((readJSON(path.join(MODEL, 'skin_exclusions.json')).exclude || []).map(e => e.key));
+// CODE-GROUNDED owners (_su_extract code/extract_skin_owners.py / SKIN_OWNER_MODEL.md, 2026-10-01): scr_DatabaseSkins
+// skin[i][1] = a race-name string (skin fits any creature of that race) or a creature id (fits that creature only);
+// enforced by the skin-apply handler. Replaces the sprite-name heuristic (skins.json) and its boss "exclusions" — the
+// 37 boss-named skins are real race-restricted skin records in code. Same order + frames as skins.json, whose
+// skin_id was shifted, so D.skinIdMigration maps old (shifted) ids -> code ids for saved builds.
+const skinRecs = readJSON(path.join(MODEL, 'skin_owners.json')).records;
+const SKIN_ID_MIGRATION = {};
+{
+  const oldRecs = readJSON(path.join(MODEL, 'skins.json')).records;
+  if (oldRecs.length !== skinRecs.length) err(`skin id migration: skins.json ${oldRecs.length} vs skin_owners.json ${skinRecs.length} records`);
+  oldRecs.forEach((o, i) => {
+    const n = skinRecs[i]; if (!n) return;
+    if (o.sprite_frame !== n.sprite_frame) err(`skin id migration: record ${i} frame ${o.sprite_frame} != ${n.sprite_frame}`);
+    if (o.skin_id !== n.skin_id) SKIN_ID_MIGRATION[o.skin_id] = n.skin_id;
+  });
+}
 const creNameSet = new Set(creatures.map(c => c.name));
+const creNameByNorm = new Map(creatures.map(c => [norm(c.name), c.name]));
 const creRaceSet = new Set(creatures.map(c => c.race).filter(Boolean));
 const skins = [];
-let skinUnresolved = 0, skinFrameMissing = 0, skinExcluded = 0;
+let skinUnresolved = 0, skinFrameMissing = 0;
 const skinFrames = new Set();
 for (const s of skinRecs) {
-  if (skinExclusions.has(s.key)) { skinExcluded++; continue; }   // actually a boss, not a skin
   let race = null, creatureName = null;
   if (s.restriction === 'race') {
-    if (!s.race || !creRaceSet.has(s.race)) { skinUnresolved++; continue; }         // unresolved / race not in roster
+    if (!s.race || !creRaceSet.has(s.race)) { warn(`skin "${s.name}" race "${s.race}" not in roster`); skinUnresolved++; continue; }
     race = s.race;
   } else if (s.restriction === 'creature') {
-    if (!s.locked_creature || !creNameSet.has(s.locked_creature)) { skinUnresolved++; continue; }
-    creatureName = s.locked_creature;
+    const rosterName = s.creature ? creNameByNorm.get(norm(s.creature)) : null;   // roster spelling (e.g. Grom'met vs code Grom'Met)
+    if (!rosterName) { warn(`skin "${s.name}" locked to "${s.creature}" (id ${s.creature_id}) — not in roster`); skinUnresolved++; continue; }
+    creatureName = rosterName;
   } else { skinUnresolved++; continue; }
   const frame = s.sprite_frame == null ? null : canonFrame(s.sprite_frame);   // kept byte-twin (cleanup-safe)
   if (frame == null) { skinUnresolved++; continue; }
@@ -2185,7 +2198,7 @@ for (const s of skinRecs) {
   skins.push({ id: s.skin_id, name: s.name, restriction: s.restriction, race, creature: creatureName, img: `assets/skins/${frame}.png` });
   FUSE_SKIN_FRAME[s.skin_id] = s.sprite_frame;
 }
-console.log(`  skins: ${skins.length} applicable (${skinFrames.size} frames) · ${skinExcluded} boss-skins excluded · ${skinUnresolved} unresolved-skip${skinFrameMissing ? ` · ${skinFrameMissing} frame-missing(404)` : ''}`);
+console.log(`  skins: ${skins.length} applicable (${skinFrames.size} frames, code-grounded owners) · ${Object.keys(SKIN_ID_MIGRATION).length} old ids remapped · ${skinUnresolved} unresolved-skip${skinFrameMissing ? ` · ${skinFrameMissing} frame-missing(404)` : ''}`);
 
 // ── Threats advisor: Realm Properties (instability) + False God Runes ───────────────────────
 // Both systems are "enemy modifiers that make a fight harder". A build tool reads the build's
@@ -2357,6 +2370,7 @@ const SU_DATA = {
   favorColMax,              // rank-100 cross-realm max per column key — scales the magnitude bars
   favorCommon,              // Favor_REF: [{rank,effect,blessing}] — the shared favor-rank tier schedule
   buildThemes: BUILD_THEMES,// detectable build intents (Action/Mechanic taxonomy) for the Threats advisor
+  skinIdMigration: SKIN_ID_MIGRATION,   // old (shifted) skin id -> code skin id, for saved builds
   skins,                    // alternate creature skins, gated by code-grounded race/creature restriction
   scrollMax: 15,            // creatures consume up to 15 stat scrolls total, each +1 base stat (L_ID_SCROLL_*)
 };
