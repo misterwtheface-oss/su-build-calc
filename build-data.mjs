@@ -1411,10 +1411,18 @@ let propGemIcons = 0, propGemGods = 0;
     // same-class option is filtered out per-spell in the wizard (only the 4 other classes are valid).
     if (gem === 'OPAL') {
       for (const cl of SPELL_CLASS_LIST) spellProps.push({ id: idx++, key: 'OPAL_' + cl.toUpperCase(), name, effect: 'Class Swap: ' + cl, icon, god, swapClass: cl });
+    } else if (gem === 'CITRINE') {
+      // Citrine's one item text lists 4 triggers ("Cast On Attack, Cast On Defend, Cast On Provoke, Cast On Heal"),
+      // but in-game each is a SEPARATE property → one variant per trigger. The first keeps Citrine's original
+      // id (saved gems stay valid); the other 3 take ids appended after the last gem (assigned below).
+      const trig = effect.split(',').map(t => t.trim()).filter(Boolean);
+      if (trig.length !== 4 || !trig.every(t => /^Cast On /i.test(t))) err(`Citrine effect no longer splits into 4 Cast On triggers: "${effect}"`);
+      trig.forEach((t, i) => spellProps.push({ id: i === 0 ? idx++ : null, key: 'CITRINE_' + t.replace(/^Cast On /i, '').toUpperCase(), name, effect: t, icon, god }));
     } else {
       spellProps.push({ id: idx++, key: gem, name, effect, icon, god });
     }
   }
+  for (const p of spellProps) if (p.id == null) p.id = idx++;   // Citrine's appended variants (stable ids)
   console.log(`  spell-gem properties: icons ${propGemIcons} (code frames) · gods ${propGemGods}/${spellProps.length} (code god-shop dust)`);
 }
 
