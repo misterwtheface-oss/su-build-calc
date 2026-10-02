@@ -157,9 +157,7 @@
 
   // ── Alternate skins — a creature can wear a cosmetic skin whose RESTRICTION permits it (code-grounded from
   // scr_DatabaseSkins: race-restricted skins fit any creature of that race; creature-restricted skins fit one
-  // specific creature). Fusion recolour is intentionally NOT implemented — the in-game recolour is a runtime
-  // palette-swap not reproducible from static data (see _su_extract/FUSION_MODEL.md); a fused slot shows the
-  // primary's sprite (its equipped skin still applies).
+  // specific creature). A fused slot is recoloured by the code-exact fusion palette engine below.
   const SKINS = D.skins || [];                                   // {id,name,race,restriction,creature,img}
   const SKIN_BY_ID = new Map(SKINS.map(s => [s.id, s]));
   const skinsForCreature = (c) => !c ? [] : SKINS.filter(s =>
@@ -169,6 +167,86 @@
     const s = skinId != null ? SKIN_BY_ID.get(skinId) : null;
     return s && s.img ? spriteImg(s.img) : critFace(c);
   };
+
+  // ── Fusion colour (CODE-EXACT; _su_extract code/fusion_palette.py + FUSION_MODEL.md, scr_GetFusionSurface) ──
+  // Each battle frame's distinct non-outline colours, sorted 4 ways (0 pixel count / 1 hue / 2 value / 3 saturation).
+  // Modes 0–3: the primary's top ceil(0.5·n) colours become the secondary's colours at the same rank (shader match
+  // within one 8-bit step, first row wins). Mode 4: every primary colour → nearest (squared RGB) colour of the
+  // secondary's palette. FUSE_UNTINTED = the plain primary. Palettes ship in fusion.json (lazy-loaded).
+  const FUSE_UNTINTED = 5;
+  const FUSE_GRID = [2, 3, 0, 1, 4, FUSE_UNTINTED];      // in-game 2×3 layout: TL TR / ML MR / BL BR
+  let _fuseData = null, _fuseLoad = null;
+  const _fuseFrames = new Map(), _fuseImgs = new Map(), _fuseOut = new Map();
+  const loadFusion = () => _fuseLoad || (_fuseLoad = fetch(D.fusionFile || "fusion.json")
+    .then(r => r.json()).then(j => { _fuseData = j; }).catch(e => console.error("fusion.json failed to load", e)));
+  function fuseFrame(f) {
+    if (_fuseFrames.has(f)) return _fuseFrames.get(f);
+    const raw = _fuseData && _fuseData.f[f]; if (!raw) return null;
+    const hex = (h) => [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)];
+    const U = raw[0].split(",").map(c => ({ rgb: hex(c), a: c.endsWith("t") ? 0 : 255 }));
+    const rec = { modes: [1, 2, 3, 4].map(k => raw[k].split(".").map(x => U[parseInt(x, 36)])), pal: raw[5].split(",").map(hex) };
+    _fuseFrames.set(f, rec); return rec;
+  }
+  const fuseImg = (src) => _fuseImgs.get(src) || (_fuseImgs.set(src, new Promise((ok, no) => {
+    const im = new Image(); im.onload = () => ok(im); im.onerror = no; im.src = src; })), _fuseImgs.get(src));
+  function recolourFused(im, P, S, mode) {
+    const cv = document.createElement("canvas"); cv.width = im.naturalWidth; cv.height = im.naturalHeight;
+    const cx = cv.getContext("2d"); cx.drawImage(im, 0, 0);
+    const id = cx.getImageData(0, 0, cv.width, cv.height), d = id.data, cache = new Map();
+    let rows = null;
+    if (mode < 4) {
+      const pl = P.modes[mode], sl = S.modes[mode], n = Math.ceil(0.5 * pl.length);
+      rows = []; for (let i = 0; i < n; i++) rows.push([pl[i], sl[i] || null]);
+    }
+    for (let i = 0; i < d.length; i += 4) {
+      const a = d[i + 3]; if (!a) continue;
+      // the game composites onto a transparent-white surface first (only partial-alpha pixels differ)
+      let r = d[i], g = d[i + 1], b = d[i + 2], ca = 255;
+      if (a < 255) { const f = a / 255; r = Math.round(r * f + 255 * (1 - f)); g = Math.round(g * f + 255 * (1 - f)); b = Math.round(b * f + 255 * (1 - f)); ca = Math.round(255 * f * f); }
+      const key = (r << 16 | g << 8 | b) * 256 + ca;
+      let out = cache.get(key);
+      if (out === undefined) {
+        out = null;
+        if (rows) {
+          for (const [src, dst] of rows) {
+            const dr = r - src.rgb[0], dg = g - src.rgb[1], db = b - src.rgb[2], da = ca - src.a;
+            if (dr * dr + dg * dg + db * db + da * da <= 1) { out = dst ? dst.rgb : null; break; }
+          }
+        } else {
+          let best = Infinity;
+          for (const c of S.pal) { const dr = r - c[0], dg = g - c[1], db = b - c[2], dd = dr * dr + dg * dg + db * db; if (dd < best) { best = dd; out = c; } }
+        }
+        cache.set(key, out);
+      }
+      if (out) { d[i] = out[0]; d[i + 1] = out[1]; d[i + 2] = out[2]; }
+    }
+    cx.putImageData(id, 0, 0);
+    return cv.toDataURL();
+  }
+  let _fuseRepaint = null;
+  const scheduleFuseRepaint = () => { if (_fuseRepaint) return; _fuseRepaint = setTimeout(() => {
+    _fuseRepaint = null; if (typeof ovState !== "undefined" && ovState) refreshOverlay(); render(); }, 0); };
+  // fused sprite <img> for (primary [+skin], secondary, mode); falls back to the plain primary while computing
+  function fusedFace(c, skinId, sec, mode) {
+    const plain = critFaceSkinned(c, skinId);
+    if (!c || !sec || mode == null || mode === FUSE_UNTINTED) return plain;
+    const skin = skinId != null ? SKIN_BY_ID.get(skinId) : null;
+    const src = skin && skin.img ? skin.img : c.sprite; if (!src) return plain;
+    const key = `${skin ? "s" + skinId : "c" + c.id}|${sec.id}|${mode}`;
+    const hit = _fuseOut.get(key);
+    if (hit) return spriteImg(hit);
+    if (hit === undefined) {
+      _fuseOut.set(key, null);
+      loadFusion().then(() => {
+        const pf = skin ? _fuseData.s[skinId] : _fuseData.c[c.id], sf = _fuseData.c[sec.id];
+        const P = fuseFrame(pf), S = fuseFrame(sf);
+        if (!P || !S) { console.error("fusion palette missing", key, pf, sf); return; }
+        return fuseImg(src).then(im => { _fuseOut.set(key, recolourFused(im, P, S, mode)); scheduleFuseRepaint(); });
+      }).catch(e => console.error("fusion recolour failed", key, e));
+    }
+    return plain;
+  }
+  const slotFace = (slot, c) => fusedFace(c, slot.skinId, slot.fusion != null ? CREA.get(slot.fusion) : null, slot.fuseColor);
 
   const STAT_KEYS = ["hp", "atk", "def", "int", "spd"];
   const STAT_LABEL = { hp: "Health", atk: "Attack", def: "Defense", int: "Intelligence", spd: "Speed" };
@@ -746,7 +824,7 @@
       <div class="roster-identity">
         <div class="tile-badges">${clsIco}${raceIco}</div>
         <button class="slot-remove" data-action="remove-creature" data-slot="${i}" title="Remove">✕</button>
-        <div class="roster-sprite" data-action="creature-detail" data-slot="${i}">${critFaceSkinned(c, slot.skinId)}</div>
+        <div class="roster-sprite" data-action="creature-detail" data-slot="${i}">${slotFace(slot, c)}</div>
         <div class="roster-head">
           <div class="roster-name">${esc(c.name)}${f ? ` <span style="color:var(--accent2)">⚭</span>` : ""}</div>
           <div class="slot-sub roster-clsrace"><span style="color:${clsColor(cls)};font-weight:700">${esc(cls || "—")}</span>${c.race ? " · " + esc(c.race) : ""}</div>
@@ -787,7 +865,7 @@
       ${locked ? `<div class="slot-ignored" title="Pariah allows only 3 creatures — this slot is ignored">Ignored</div>` : ""}
       <div class="tile-badges">${clsIco}${raceIco}</div>
       <button class="slot-remove" data-action="remove-creature" data-slot="${i}" title="Remove">✕</button>
-      <div class="slot-sprite-wrap" data-action="creature-detail" data-slot="${i}">${critFaceSkinned(c, slot.skinId)}</div>
+      <div class="slot-sprite-wrap" data-action="creature-detail" data-slot="${i}">${slotFace(slot, c)}</div>
       <div class="slot-name">${esc(c.name)}${f ? ` <span style="color:var(--accent2)">⚭</span>` : ""}</div>
       <div class="slot-actions">
         <button class="slot-mini ${a ? "on" : ""}" data-action="equip-artifact" data-slot="${i}" title="Artifact">Artifact</button>
@@ -954,6 +1032,7 @@
       kind: "creature", slotIdx, step: "primary",
       primaryId: slot.cid, fusionId: slot.fusion, skinId: slot.skinId != null ? slot.skinId : null,
       personality: slot.personality || null, scrolls: { ...(slot.scrolls || {}) },
+      fuseColor: slot.fuseColor != null ? slot.fuseColor : FUSE_UNTINTED,
       search: "", clsFilter: null, raceFilter: null, taxoFilters: [], limit: CREA_PAGE, sort: null, view: "traits",
       render: renderCreaturePicker,
     };
@@ -981,9 +1060,26 @@
     if (st.bkOnly && !bookmarks.traits.length) st.bkOnly = false;
     // step 3 — customization on its own screen: controls lead (center), live preview follows (right).
     // On phones the center panel sits on top, so Personality / Scrolls / Skin are the first thing seen.
+    if (st.step === "color") {   // final step for a fusion: the game's 6 colour options, same 2×3 layout
+      const prim = CREA.get(st.primaryId), sec = CREA.get(st.fusionId);
+      const cells = FUSE_GRID.map(m => `<button class="fuse-cell ${st.fuseColor === m ? "on" : ""}" data-action="crea-fusecolor" data-m="${m}">${fusedFace(prim, st.skinId, sec, m)}</button>`).join("");
+      const footer = `<button class="btn-ghost" data-action="crea-back">‹ Back</button>
+        <button class="btn-confirm" data-action="crea-confirm">Commit fusion</button>`;
+      return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel">
+        <div class="overlay-header"><h2>Fusion Colour</h2>
+          <button class="ovl-close" data-action="close-ovl">✕</button></div>
+        <div class="overlay-body">
+          <div class="ovl-center"><div class="ovl-center-scroll"><div class="fuse-grid">${cells}</div></div></div>
+          <div class="ovl-right">${renderWizardPreview(st)}</div>
+        </div>
+        <div class="overlay-footer"><span class="foot-info"></span><div>${footer}</div></div>
+      </div></div>`;
+    }
     if (st.step === "customize") {
       const footer = `<button class="btn-ghost" data-action="crea-back">‹ Back</button>
-        <button class="btn-confirm" data-action="crea-confirm" ${st.primaryId == null ? "disabled" : ""}>${st.fusionId == null ? "Commit (no fusion)" : "Commit fusion"}</button>`;
+        ${st.fusionId == null
+          ? `<button class="btn-confirm" data-action="crea-confirm" ${st.primaryId == null ? "disabled" : ""}>Commit (no fusion)</button>`
+          : `<button class="btn-confirm" data-action="crea-next">Next ›</button>`}`;
       return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel">
         <div class="overlay-header"><h2>Customize</h2>
           <button class="ovl-close" data-action="close-ovl">✕</button></div>
@@ -1202,7 +1298,7 @@
     };
     const traitIds = [primary.traitId, secondary ? secondary.traitId : null].filter(x => x != null);
     return `<button class="cd-info-btn" data-action="crea-info" data-cid="${primary.id}" title="Open full details for ${esc(primary.name)}" aria-label="Open full creature details">i</button>
-      <div class="cd-sprite">${critFaceSkinned(primary, st.skinId)}</div>
+      <div class="cd-sprite">${fusedFace(primary, st.skinId, secondary, st.step === "color" || st.fuseColor != null ? st.fuseColor : null)}</div>
       <h3 style="text-align:center;margin:6px 0">${esc(primary.name)}${secondary ? ` <span style="color:var(--accent2)">⚭</span> ${esc(secondary.name)}` : ""}</h3>
       <div class="slot-sub" style="margin-bottom:10px"><span style="color:${clsColor(b.cls)};font-weight:700">${esc(b.cls || "—")}</span></div>
       ${traitIds.length ? `<div class="section-label">Traits</div><div style="margin-bottom:10px">${traitIds.map(tid => `<div class="primary-traits" style="margin-bottom:6px">${traitBanner(tid)}<div class="trait-desc">${richText((TRAIT[tid] || {}).desc || "")}</div></div>`).join("")}</div>` : ""}
@@ -3364,7 +3460,7 @@
       if (st.sel == null || !filled.includes(st.sel)) st.sel = filled[0];
       const chips = filled.map(i => { const c = CREA.get(build.slots[i].cid);
         return `<button class="macro-crea ${st.sel === i ? "on" : ""}" data-action="macro-crea" data-slot="${i}" title="${esc(c.name)}">
-          <span class="macro-crea-face">${critFaceSkinned(c, build.slots[i].skinId)}</span>
+          <span class="macro-crea-face">${slotFace(build.slots[i], c)}</span>
           <span class="macro-crea-name">${esc(c.name)}</span></button>`; }).join("");
       body = `<div class="macro-creabar">${chips}</div>${renderMacroProposal(st.sel)}`;
     }
@@ -3420,7 +3516,7 @@
       <div class="overlay-body">
         <div class="ovl-left cd-left">
           <div class="cd-sprite-row">${hasNav ? chev(-1, "flank prev") : ""}
-            <div class="cd-sprite">${critFaceSkinned(c, slot.skinId)}</div>${hasNav ? chev(1, "flank next") : ""}</div>
+            <div class="cd-sprite">${slotFace(slot, c)}</div>${hasNav ? chev(1, "flank next") : ""}</div>
           <div class="slot-sub"><span style="color:${clsColor(b.cls)};font-weight:700">${esc(b.cls || "—")}</span>${c.race ? " · " + esc(c.race) : ""}</div>
           ${hasNav ? `<div class="cd-nav-below">${chev(-1, "prev")}<span class="cd-nav-pos">${pos + 1} / ${total}</span>${chev(1, "next")}</div>` : ""}</div>
         <div class="ovl-center"><div class="ovl-center-scroll">
@@ -4043,12 +4139,13 @@
         refreshOverlay(); break;
       }
       case "crea-nofuse": ovState.fusionId = null; refreshOverlay(); break;
+      case "crea-fusecolor": ovState.fuseColor = +t.dataset.m; refreshOverlay(); break;
       case "crea-next":
         if (ovState.primaryId == null) break;
-        ovState.step = ovState.step === "primary" ? "fusion" : "customize";
+        ovState.step = ovState.step === "primary" ? "fusion" : ovState.step === "fusion" ? "customize" : (ovState.fusionId != null ? "color" : "customize");
         ovState.search = ""; ovState.limit = CREA_PAGE; refreshOverlay(); break;
       case "crea-back":
-        ovState.step = ovState.step === "customize" ? "fusion" : "primary";
+        ovState.step = ovState.step === "color" ? "customize" : ovState.step === "customize" ? "fusion" : "primary";
         ovState.search = ""; ovState.limit = CREA_PAGE; refreshOverlay(); break;
       case "crea-more": ovState.limit = (ovState.limit || CREA_PAGE) + CREA_PAGE; refreshOverlay(); break;
       case "crea-view": ovState.view = t.dataset.v === "traits" ? "traits" : "grid"; refreshOverlay(true); break;
@@ -4058,6 +4155,7 @@
         if (ovState.primaryId == null) break;
         const s = build.slots[ovState.slotIdx];
         s.cid = ovState.primaryId; s.fusion = ovState.fusionId;
+        s.fuseColor = ovState.fusionId != null ? ovState.fuseColor : null;
         s.personality = ovState.personality; s.scrolls = ovState.scrolls || {};
         // keep the skin only if it's still allowed on the (possibly changed) primary creature
         const prim = CREA.get(s.cid);

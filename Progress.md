@@ -34,6 +34,17 @@ No verify-before-push ceremony (no real users yet) — but every change is check
      clamped on commit. Spell Gem Slots shows no "%".
    - **Older stones that break the rules** (e.g. old default value 10) show a ⚠ list of issues, and **Save is
      disabled** until they are fixed. Nothing is auto-deleted.
+7. **Fusion colour — CODE-EXACT** (_su_extract `code/fusion_palette.py` / `FUSION_MODEL.md`, `scr_GetFusionSurface`).
+   - **Wizard:** the creature wizard's final step for a fusion is **Fusion Colour**: the game's 6 options in its 2×3
+     layout (TL value · TR saturation / ML pixel-count · MR hue / BL full-secondary · BR untinted). Customize →
+     "Next ›" when fused; "Commit fusion" saves `slot.fuseColor` (0–4, 5 = untinted; default untinted).
+   - **Rendering:** fused slots render recoloured on home (roster + grid), creature detail, the macro face and the
+     wizard preview. Recolouring happens in the browser on a canvas from the shipped PNG, and the result is cached.
+   - **Data:** `fusion.json` (1.13 MB, lazily fetched, `?v=` content hash via `D.fusionFile`). It holds the per-frame
+     colour list plus 4 code sort orders and the mode-4 palette for every creature and skin frame (2,138), keyed by
+     code frame (pre byte-twin canonicalisation).
+   - **Verified:** Exiled Satyr ⚭ Ashskin Spellmane — browser output equals the Python engine pixel-for-pixel on all
+     5 modes, and that engine matches the in-game capture on all 6 cells.
 
 ## 2026-10-01 (night 3) — Asset mappings converged on code + level-aware artifact icons
 Replaced hand-curated / heuristic asset tables with game-code maps (`_su_extract` asset_maps.json; DB_ID_FINDINGS.md):
