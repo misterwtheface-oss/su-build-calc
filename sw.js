@@ -27,7 +27,7 @@
 
   BUILD below is stamped by build-data.mjs each build.
 */
-const BUILD = "4219a15f";
+const BUILD = "c064b602";
 const SHELL = `su-shell-${BUILD}`;
 const ASSETS = "su-assets"; // stable across deploys; versioned internally by the list
 const KEEP = new Set([SHELL, ASSETS]);
