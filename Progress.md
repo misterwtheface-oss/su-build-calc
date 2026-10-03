@@ -1276,6 +1276,12 @@ MAPPING not for asserting PRESENCE; no inventing entities from the community-CSV
       creatures are attacked" should be Enemy Attacks; "after this creature kills" should be Enemy Dies.
     - **Next:** map signatures → the existing Category/Value system (code-certain values replace llm tags; keep llm
       where code is silent, flagged).
+- [ ] **Capped effects with no app surface yet** (keep in context — user 2026-10-02). `_su_extract data/model/dr_caps.json`
+  has 6 entries that `build-data` can't attach a note to, because the app has no place for them: **Life Guild bonus 1**
+  (attack/spell damage taken), **Nature Guild bonus 3** (indirect damage taken), and the **4 Race Mastery lines**.
+  Two of the four mastery lines are damage-DEALT bonuses that are also clamped at 0.8. If a Guild or Race Mastery feature
+  is ever added, show the "Max 80% damage reduction" chip on these too. They are joined by `kind`
+  (`guild`/`mastery`), so the notes block just needs a target.
 ### 🔬 Extract follow-ups (2026-10-01, triaged with user)
 - [x] **Threats / instability / race icons — DONE 2026-10-01** (_su_extract `code/extract_icon_maps2.py` / `ICON_MAPS.md`):
   - **Race icons:** `scr_LangRace` returns "[sprite] Race", 164/164 from code. This replaced the name-family heuristic
