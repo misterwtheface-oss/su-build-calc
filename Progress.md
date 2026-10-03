@@ -1356,8 +1356,7 @@ MAPPING not for asserting PRESENCE; no inventing entities from the community-CSV
     Memento / Thoughts and Prayers / Time Stop):
     - **Results:** all "irreducible" gaps proved decodable. Cards 451/465 powers (Construct = dead text). Provenance now
       code 44% · llm 31%.
-    - **Pending review:** 13 proposals (10 class Related Types on perks, Total Deprivation Avatar, 2 Mireling card tags)
-      + the Time Stop tag question.
+    - **APPROVED:** all 13. Time Stop keeps Action/Mechanic::Timeline but drops Affect on Timeline::Additional Turn (user).
     - **Spells decoded too** (per-spell switch in bc_CreatureCast; 82% agreement with app spell tags); taxonomy
       integration is next.
 - [ ] **Capped effects with no app surface yet** (keep in context — user 2026-10-02). `_su_extract data/model/dr_caps.json`

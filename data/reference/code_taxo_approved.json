@@ -458,7 +458,8 @@
    "name": "Total Deprivation",
    "replace": [],
    "add": [
-    "Action/Mechanic::Relic"
+    "Action/Mechanic::Relic",
+    "Related Types::Avatar"
    ],
    "approved": "2026-10-03"
   },
@@ -483,6 +484,86 @@
    "replace": [],
    "add": [
     "Multiplied by::Amount of X Stat"
+   ],
+   "approved": "2026-10-03"
+  },
+  "6:ADMONISH": {
+   "name": "Admonish",
+   "replace": [],
+   "add": [
+    "Related Types::Sorcery Creature"
+   ],
+   "approved": "2026-10-03"
+  },
+  "6:BERATE": {
+   "name": "Berate",
+   "replace": [],
+   "add": [
+    "Related Types::Life Creature"
+   ],
+   "approved": "2026-10-03"
+  },
+  "6:CASTIGATE": {
+   "name": "Castigate",
+   "replace": [],
+   "add": [
+    "Related Types::Chaos Creature"
+   ],
+   "approved": "2026-10-03"
+  },
+  "6:REBUKE": {
+   "name": "Rebuke",
+   "replace": [],
+   "add": [
+    "Related Types::Nature Creature"
+   ],
+   "approved": "2026-10-03"
+  },
+  "6:CONDEMN": {
+   "name": "Condemn",
+   "replace": [],
+   "add": [
+    "Related Types::Death Creature"
+   ],
+   "approved": "2026-10-03"
+  },
+  "19:COR": {
+   "name": "Rune of Cor",
+   "replace": [],
+   "add": [
+    "Related Types::Chaos Creature"
+   ],
+   "approved": "2026-10-03"
+  },
+  "19:DUN": {
+   "name": "Rune of Dun",
+   "replace": [],
+   "add": [
+    "Related Types::Death Creature"
+   ],
+   "approved": "2026-10-03"
+  },
+  "19:LUA": {
+   "name": "Rune of Lua",
+   "replace": [],
+   "add": [
+    "Related Types::Life Creature"
+   ],
+   "approved": "2026-10-03"
+  },
+  "19:NAX": {
+   "name": "Rune of Nax",
+   "replace": [],
+   "add": [
+    "Related Types::Nature Creature"
+   ],
+   "approved": "2026-10-03"
+  },
+  "19:SAH": {
+   "name": "Rune of Sah",
+   "replace": [],
+   "add": [
+    "Related Types::Sorcery Creature"
    ],
    "approved": "2026-10-03"
   }
@@ -806,6 +887,20 @@
     "Related Spells::Healing Spells"
    ],
    "approved": "2026-10-03"
+  },
+  "642": {
+   "name": "Time Stop",
+   "replace": [
+    {
+     "from": [
+      "Affect on Timeline::Additional Turn"
+     ],
+     "to": null
+    }
+   ],
+   "add": [],
+   "approved": "2026-10-03",
+   "note": "user: keep Action/Mechanic::Timeline, drop Additional Turn (code: the cast just ends; no extra turn)"
   }
  },
  "cardChanges": {
@@ -877,6 +972,15 @@
     "Related Debuff::Feared",
     "Related Stat::Attack (Stat)",
     "Related Stat::Intelligence"
+   ],
+   "approved": "2026-10-03"
+  },
+  "150": {
+   "name": "Mireling",
+   "replace": [],
+   "add": [
+    "Action/Mechanic::Creature Class",
+    "Affect on Damage::Deal More Damage"
    ],
    "approved": "2026-10-03"
   }
