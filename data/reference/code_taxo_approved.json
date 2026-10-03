@@ -210,7 +210,10 @@
      "to": "Activates When::Enemy Attacks"
     }
    ],
-   "add": []
+   "add": [
+    "Affect on Damage::Deal More Damage"
+   ],
+   "approved": "2026-10-03"
   },
   "1041": {
    "name": "Ovular Barrage",
@@ -278,6 +281,67 @@
     }
    ],
    "add": []
+  },
+  "499": {
+   "name": "Shadow Hook",
+   "replace": [],
+   "add": [
+    "Affect on Damage::Deal Less Damage"
+   ],
+   "approved": "2026-10-03"
+  },
+  "988": {
+   "name": "Hangover Cure",
+   "replace": [
+    {
+     "from": [
+      "Activates When::Ally is Healed"
+     ],
+     "to": "Activates When::Enemy is Healed"
+    }
+   ],
+   "add": [],
+   "approved": "2026-10-03"
+  },
+  "1022": {
+   "name": "Best Kind of Weather",
+   "replace": [],
+   "add": [
+    "Affect on Damage::Deal More Damage"
+   ],
+   "approved": "2026-10-03"
+  },
+  "1305": {
+   "name": "Cornered",
+   "replace": [],
+   "add": [
+    "Activates When::Enemy Indirectly Damaged"
+   ],
+   "approved": "2026-10-03"
+  },
+  "1559": {
+   "name": "Doom and Gloom",
+   "replace": [
+    {
+     "from": [
+      "Activates When::Enemy is Debuffed"
+     ],
+     "to": "Activates When::Ally is Debuffed"
+    }
+   ],
+   "add": [],
+   "approved": "2026-10-03"
+  },
+  "1984": {
+   "name": "Boundless Creativity",
+   "replace": [],
+   "add": [
+    "Affect on Stats::Stat is Decreased"
+   ],
+   "approved": "2026-10-03"
   }
+ },
+ "rejected": {
+  "Affect on Attacks::Automatic/Extra Attack on boss parts (1619,1620,1626,1636,1637,1638,1643,1644)": "2026-10-03 user: an attack chosen by bc_ArtificialIntelligence is the part's normal turn action, not a trait-triggered extra attack; Action/Mechanic::Attack suffices. Builder now skips AI-turn actions."
  }
 }

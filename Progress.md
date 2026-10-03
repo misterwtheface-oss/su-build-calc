@@ -1294,6 +1294,15 @@ MAPPING not for asserting PRESENCE; no inventing entities from the community-CSV
       runtime id {replace:[{from,to}], add:[]}). They are applied before the confirm pass, so a regenerated
       code_taxo.json can't undo them. Bug fixed: phase 2 computed proposals against already-corrected app data, which
       silently reverted the 24 approved fixes.
+    - **Review round 2 (2026-10-03):**
+      - **APPROVED (7):** side fixes Hangover Cure → Enemy is Healed, Doom and Gloom → Ally is Debuffed; Shadow Hook Deal Less
+        Damage; Best Kind of Weather + Solar Flare Deal More Damage; Boundless Creativity Stat is Decreased; Cornered Enemy
+        Indirectly Damaged.
+      - **REJECTED:** boss-part attacks as Automatic/Extra Attack. A `bc_ArtificialIntelligence` action is the part's normal
+        turn action, and Action/Mechanic::Attack is enough. The builder now skips AI-turn Attack/Cast/Defend/Provoke for the
+        Automatic/Extra values (rule recorded in `code_taxo_approved.json` `rejected`).
+      - **Second circular bug fixed:** the builder skipped confirming tags already marked `code` in app data, so every
+        rebuild lost them. Confirms are now unconditional and stable across rebuilds (≈3,044).
 - [ ] **Capped effects with no app surface yet** (keep in context — user 2026-10-02). `_su_extract data/model/dr_caps.json`
   has 6 entries that `build-data` can't attach a note to, because the app has no place for them: **Life Guild bonus 1**
   (attack/spell damage taken), **Nature Guild bonus 3** (indirect damage taken), and the **4 Race Mastery lines**.
