@@ -1309,6 +1309,18 @@ MAPPING not for asserting PRESENCE; no inventing entities from the community-CSV
       approved changes come from `code_taxo_approved.json` `perkChanges`.
     - **Coverage:** 644 perk tags code-confirmed; perk provenance is now llm 71% (was 92%) · code 24%.
     - **Pending review:** 9 proposals, plus the Pusillanimity drop-only call and 10 Related Minion vocabulary candidates.
+    - **Review round 3 (2026-10-03):**
+      - **APPROVED:** Overload + Ally Casts; Voodoo + Enemy Casts; Judgment Day + Take Less Damage; Hedge Magic / Maledict
+        + Take More Damage; Immaculate Recovery + Related Buff Invisible/Shelled + Ally Takes Damage.
+      - **Changed:** Massacre gets **More Powerful Buff** (user), not "Creature is Damaged".
+      - **REJECTED:** Overrun Related Stat::Maximum Health (healing is not a Max Health effect).
+      - **Pusillanimity KEEPS** Enemy Defends / Dodges. Policy: conditional events tied to a trigger are valid Activates
+        When tags (`code_taxo_approved.json` `policy`).
+      - **Related Minion +10 values** (Unstable Horror, Doppelganger, Amalgamation, the 7 sin demons), token-grounded
+        across all entity kinds (+23 tags).
+      - **Display rule (user):** build the FULL taxonomy and map everything that fits. "More than one object" is a display
+        toggle, not a build filter. Single-use values are hidden in ＋Filter / Appendix / perk pickers until **Show
+        single-use tags** is on (per-viewer, localStorage). Facet pickers now take `idxFn` so the toggle applies live.
 - [ ] **Capped effects with no app surface yet** (keep in context — user 2026-10-02). `_su_extract data/model/dr_caps.json`
   has 6 entries that `build-data` can't attach a note to, because the app has no place for them: **Life Guild bonus 1**
   (attack/spell damage taken), **Nature Guild bonus 3** (indirect damage taken), and the **4 Race Mastery lines**.

@@ -490,8 +490,24 @@
   // index of taxonomy values that match ≥1 member of a source list, grouped by category
   // (counts only hide empty values — never displayed, per minimal-chrome). Source-parameterized so
   // creatures, trait-items, (later) spell gems / perks can each reuse the same drill-down picker.
+  // DISPLAY RULE (user, 2026-10-03): the data carries the full taxonomy; a value used by only ONE object
+  // (across traits / perks / spells / relics / cards) is hidden from the filter + Appendix pickers unless the viewer
+  // turns on "Show single-use tags". Per-viewer convenience → localStorage.
+  let taxoShowSingles = (() => { try { return localStorage.getItem("subc.taxoSingles") === "1"; } catch { return false; } })();
+  let _taxoUse = null;
+  function taxoUse() {
+    if (_taxoUse) return _taxoUse;
+    _taxoUse = new Map();
+    const res = appendixResults([]);
+    for (const arr of [res.traits, res.perks, res.spells, res.relics, res.cards])
+      for (const it of arr) for (const k of new Set(it.taxo || [])) _taxoUse.set(k, (_taxoUse.get(k) || 0) + 1);
+    return _taxoUse;
+  }
+  const taxoValVisible = (k) => taxoShowSingles || (taxoUse().get(k) || 0) >= 2;
+  const singlesToggle = () => `<button class="facet ${taxoShowSingles ? "on" : ""}" data-action="taxo-singles" title="Tags used by only one trait, perk, spell, relic or card">Show single-use tags</button>`;
   const TAXO_IDX_CACHE = {};
-  function taxoIndexFor(key, items, getTags) {
+  function taxoIndexFor(key0, items, getTags) {
+    const key = key0 + (taxoShowSingles ? ":all" : "");
     if (TAXO_IDX_CACHE[key]) return TAXO_IDX_CACHE[key];
     const counts = new Map();
     for (const it of items) for (const k of getTags(it)) counts.set(k, (counts.get(k) || 0) + 1);
@@ -500,7 +516,7 @@
       const rows = [];
       for (const val of catObj.values) {
         const kk = catObj.category + "::" + val;
-        if (counts.get(kk)) rows.push({ val, key: kk });
+        if (counts.get(kk) && taxoValVisible(kk)) rows.push({ val, key: kk });
       }
       if (rows.length) byCat.set(catObj.category, rows);
     }
@@ -1357,12 +1373,12 @@
   // opts.idx = taxonomy index to browse (defaults to creatures); opts.onPick = callback for taxo-val
   function openFacetPicker(kind, opts = {}) {
     dovState = { kind: "facet", facet: kind, search: "", render: renderFacetPicker,
-                 idx: opts.idx || null, onPick: opts.onPick || null };
+                 idxFn: opts.idxFn || null, onPick: opts.onPick || null };   // idxFn: recomputed so display toggles apply live
     openDetail(dovState.render()); maybeFocusSearch(DOV);
   }
   function renderFacetPicker() {
     const st = dovState, q = st.search.trim().toLowerCase();
-    const idx = st.idx || taxoIndex();
+    const idx = st.idxFn ? st.idxFn() : taxoIndex();
     let opts, title, back = "";
     if (st.facet === "class") { title = "Filter by Class"; opts = D.classes.map(c => ({ v: c.key, label: c.key, color: c.color })); }
     else if (st.facet === "anoint-spec") { title = "Filter by Specialization"; opts = anointSpecs().map(s => ({ v: s, label: s })); }
@@ -1382,7 +1398,7 @@
         <input class="ovl-search" placeholder="Search…" value="${esc(st.search)}" data-action="facet-search">
         <button class="ovl-close" data-action="close-detail">✕</button></div>
       <div class="overlay-body"><div class="ovl-center">
-        ${back ? `<div class="ovl-filterbar">${back}</div>` : ""}
+        ${(back || st.facet === "taxo-cat") ? `<div class="ovl-filterbar">${back}${(st.facet === "taxo-cat" || st.facet === "taxo-val") ? singlesToggle() : ""}</div>` : ""}
         <div class="ovl-center-scroll"><div class="opt-list">${rows}</div>
         ${opts.length > 400 ? `<div class="slot-sub" style="margin-top:8px">Showing 400 of ${opts.length}.</div>` : ""}</div></div></div>
     </div></div>`;
@@ -1519,6 +1535,7 @@
     // inline taxonomy drill-down over THIS spec's perks (values with ≥1 member only)
     const valsByCat = new Map();
     for (const p of spec.perks) for (const k of (p.taxo || [])) {
+      if (!taxoValVisible(k)) continue;
       const c = taxoCatName(k); if (!valsByCat.has(c)) valsByCat.set(c, new Set()); valsByCat.get(c).add(k);
     }
     // taxonomy filter — mirrors the standard facet-picker drill-down (Category → Value as opt-rows,
@@ -1526,8 +1543,8 @@
     const perkBrowsing = st.perkBrowse || !!st.perkCat;
     let taxobar, browseBody = "";
     if (st.perkTaxo) taxobar = `<button class="facet on tag" data-action="perk-taxo-clear">${esc(taxoCatName(st.perkTaxo))}: <b>${esc(taxoValName(st.perkTaxo))}</b> <span class="facet-x">✕</span></button>`;
-    else if (st.perkCat) taxobar = `<button class="facet" data-action="perk-taxo-back">‹ Categories</button><span class="facet on">${esc(st.perkCat)}</span>`;
-    else if (st.perkBrowse) taxobar = `<button class="facet" data-action="perk-taxo-back">‹ Perks</button><span class="facet on">Filter by mechanic</span>`;
+    else if (st.perkCat) taxobar = `<button class="facet" data-action="perk-taxo-back">‹ Categories</button><span class="facet on">${esc(st.perkCat)}</span>${singlesToggle()}`;
+    else if (st.perkBrowse) taxobar = `<button class="facet" data-action="perk-taxo-back">‹ Perks</button><span class="facet on">Filter by mechanic</span>${singlesToggle()}`;
     else taxobar = `<button class="facet add" data-action="perk-taxo-open">＋ Filter</button>`;
     if (st.perkCat) browseBody = `<div class="opt-list">${[...valsByCat.get(st.perkCat) || []].sort((a, b) => taxoValName(a).localeCompare(taxoValName(b))).map(k =>
       `<button class="opt-row" data-action="perk-taxo-val" data-v="${esc(k)}"><span>${esc(taxoValName(k))}</span></button>`).join("")}</div>`;
@@ -1765,7 +1782,7 @@
         const key = catObj.category + "::" + val;
         if (tagSet.has(key)) continue;                          // already applied
         const n = counts.get(key) || 0;
-        if (n > 0) rows.push({ key, val, n });
+        if (n > 0 && taxoValVisible(key)) rows.push({ key, val, n });
       }
       if (rows.length) byCat.set(catObj.category, rows);
     }
@@ -1825,7 +1842,7 @@
             <span class="apx-sec-caret">${open ? "▾" : "▸"}</span>${esc(cat)}</button>${rows}`);
       }
       placeholder = "Search categories & tags…";
-      sub = `<div class="ovl-filterbar">${backToResults}${tagChips}</div>`;
+      sub = `<div class="ovl-filterbar">${backToResults}${tagChips}${singlesToggle()}</div>`;
       body = parts.join("") || `<div class="slot-sub" style="padding:10px">No categories or tags match.</div>`;
     } else {
       const res = appendixResults(tags);
@@ -4131,13 +4148,18 @@
         if (sc[k] > 0) { sc[k]--; if (!sc[k]) delete sc[k]; refreshOverlay(); } break; }
       case "facet-class": openFacetPicker("class"); break;
       case "facet-race": openFacetPicker("race"); break;
+      case "taxo-singles": {
+        taxoShowSingles = !taxoShowSingles;
+        try { localStorage.setItem("subc.taxoSingles", taxoShowSingles ? "1" : "0"); } catch {}
+        if (dovState) refreshDetail(); if (ovState) refreshOverlay(); break;
+      }
       case "facet-taxo": {
         const idxByKind = { cards: cardTaxoIndex, relic: relicTaxoIndex };
         const f = idxByKind[ovState.kind];
-        openFacetPicker("taxo-cat", f ? { idx: f() } : {});   // creature default = taxoIndex()
+        openFacetPicker("taxo-cat", f ? { idxFn: f } : {});   // creature default = taxoIndex()
         break;
       }
-      case "anoint-taxo": openFacetPicker("taxo-cat", { idx: anointTaxoIndex() }); break;
+      case "anoint-taxo": openFacetPicker("taxo-cat", { idxFn: anointTaxoIndex }); break;
       case "anoint-bkonly": ovState.bkOnly = !ovState.bkOnly; refreshOverlay(); break;
       case "anoint-spec": openFacetPicker("anoint-spec"); break;
       case "anoint-spec-clear": e.stopPropagation(); ovState.specFilter = null; refreshOverlay(); break;
@@ -4193,13 +4215,13 @@
       case "artb-back": ovState.step = ovState.step === "name" ? "slots" : "type"; ovState.pickType = null; ovState.preview = null; ovState.search = ""; refreshOverlay(true); break;
       case "artb-closecat": ovState.pickType = null; ovState.preview = null; ovState.search = ""; ovState.bkOnly = false; refreshOverlay(true); break;
       case "artb-traitfilter": openFacetPicker("taxo-cat", {
-        idx: taxoIndexFor("titem", D.traitItems, ti => ti.taxo || []),
+        idxFn: () => taxoIndexFor("titem", D.traitItems, ti => ti.taxo || []),
         onPick: (v) => { ovState.traitTaxo = v; } }); break;
       case "artb-traitfilter-clear": ovState.traitTaxo = null; refreshOverlay(); break;
       case "artb-bkonly": ovState.bkOnly = !ovState.bkOnly; refreshOverlay(); break;
       // spell-gem builder spell picker filter (reuses the facet detail picker)
       case "sg-taxofilter": openFacetPicker("taxo-cat", {
-        idx: taxoIndexFor("spell", D.spells, s => s.taxo || []),
+        idxFn: () => taxoIndexFor("spell", D.spells, s => s.taxo || []),
         onPick: (v) => { ovState.spellTaxo = v; } }); break;
       case "sg-taxofilter-clear": ovState.spellTaxo = null; refreshOverlay(); break;
       case "sgb-bkonly": ovState.bkOnly = !ovState.bkOnly; refreshOverlay(); break;

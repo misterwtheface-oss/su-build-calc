@@ -2275,6 +2275,33 @@ for (const rl of relics) applyAudit('relic:' + rl.id, rl);
 for (const cd of cards) applyAudit('card:' + cd.id, cd);
 console.log(`  audit overrides: ${Object.keys(auditOv).length} defined · ${auditHits} matched · +${auditAdds} tags · -${auditRems} tags (src=audit)`);
 
+// ── Related Minion — values added 2026-10-03 from the perk decode (minions the taxonomy lacked). Grounded on the game's
+// own {CONDNAME_MINION_<KEY>} description token (or the minion's exact name) across traits/perks/spells/relics/cards.
+// The data carries EVERY value; the app's "hide single-object tags" toggle decides what is displayed (user rule).
+const NEW_MINIONS = { 'Unstable Horror': 'UNSTABLEHORROR', Doppelganger: 'DOPPELGANGER', Asmodeus: 'ASMODEUS',
+  Beelzebub: 'BEELZEBUB', Mammon: 'MAMMON', Leviathan: 'LEVIATHAN', Belphegor: 'BELPHEGOR', Amalgamation: 'AMALGAMATION',
+  Satanachia: 'SATANACHIA', Lucifer: 'LUCIFER' };
+{
+  let added = 0;
+  const tagMinions = (e, text) => {
+    const t = e.taxo || (e.taxo = []), s2 = e.taxoSrc || (e.taxoSrc = t.map(() => 'derived'));
+    const flat = String(text || '').toUpperCase().replace(/[\s_]/g, '');
+    for (const [name, key] of Object.entries(NEW_MINIONS)) {
+      if (!flat.includes('MINION' + key) && !new RegExp(`\\b${name}\\b`, 'i').test(String(text || ''))) continue;
+      const tag = 'Related Minion::' + name;
+      if (!t.includes(tag)) { t.push(tag); s2.push('token'); added++; }
+    }
+  };
+  for (const tr of Object.values(traits)) tagMinions(tr, tr.desc);
+  for (const sp of spells) tagMinions(sp, sp.desc);
+  for (const sc of specs) for (const pk of sc.perks || []) tagMinions(pk, pk.desc);
+  for (const rl of relics) tagMinions(rl, JSON.stringify(rl.ranks || rl.effects || rl.desc || ''));
+  for (const cd of cards) tagMinions(cd, JSON.stringify(cd.levels || cd.effects || cd.desc || ''));
+  const cat = taxonomy.categories.find(c => c.category === 'Related Minion');
+  if (cat) for (const name of Object.keys(NEW_MINIONS)) if (!cat.values.includes(name)) cat.values.push(name);
+  console.log(`  related minion (new values): +${added} tags across ${Object.keys(NEW_MINIONS).length} minions`);
+}
+
 // ── CODE-GROUNDED taxonomy (_su_extract code/build_code_taxo.py → data/model/code_taxo.json, from the decoded trait
 // signatures).
 //   1. APPROVED changes (data/reference/code_taxo_approved.json `changes`: explicit {replace:[{from,to}], add:[]} per
@@ -2307,6 +2334,7 @@ console.log(`  audit overrides: ${Object.keys(auditOv).length} defined · ${audi
   // perks — same policy, keyed "<specId>:<perkKey>" (code_taxo.json `perks`; approvals in code_taxo_approved.json `perkChanges`)
   const CTP = readJSON(path.join(MODEL, 'code_taxo.json')).perks || {};
   const APPROVED_P = fs.existsSync(APPROVED_PATH) ? (readJSON(APPROVED_PATH).perkChanges || {}) : {};
+  const REJECTED_P = fs.existsSync(APPROVED_PATH) ? (readJSON(APPROVED_PATH).perkRejections || {}) : {};
   let pconf = 0, prepl = 0, padds = 0, ppend = 0; const ppendList = [];
   for (const sc of specs) for (const p of sc.perks || []) {
     const key = `${sc.id}:${p.key}`, t = p.taxo || (p.taxo = []), s2 = p.taxoSrc || (p.taxoSrc = t.map(() => 'derived'));
@@ -2320,7 +2348,8 @@ console.log(`  audit overrides: ${Object.keys(auditOv).length} defined · ${audi
     }
     const c = CTP[key]; if (!c) continue;
     for (const tag of c.confirm) { const i = t.indexOf(tag); if (i >= 0 && s2[i] !== 'code') { s2[i] = 'code'; pconf++; } }
-    const open = [...c.replace.filter(r => !(r.to && t.includes(r.to))), ...c.add.filter(tag => !t.includes(tag))];
+    const rej = new Set(REJECTED_P[key] || []);   // user-rejected proposals never resurface as pending
+    const open = [...c.replace.filter(r => !(r.to && (t.includes(r.to) || rej.has(r.to)))), ...c.add.filter(tag => !t.includes(tag) && !rej.has(tag))];
     if (open.length) { ppend += open.length; ppendList.push(`${key} ${p.name}`); }
   }
   console.log(`  code taxonomy (perks): ${Object.keys(APPROVED_P).length} approved · ${prepl} replaced · +${padds} added · ${pconf} tags code-confirmed · ${ppend} proposals awaiting review${ppendList.length ? ` (${ppendList.slice(0, 12).join('; ')})` : ''}`);

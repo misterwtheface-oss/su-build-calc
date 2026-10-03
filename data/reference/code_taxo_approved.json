@@ -342,6 +342,82 @@
   }
  },
  "rejected": {
-  "Affect on Attacks::Automatic/Extra Attack on boss parts (1619,1620,1626,1636,1637,1638,1643,1644)": "2026-10-03 user: an attack chosen by bc_ArtificialIntelligence is the part's normal turn action, not a trait-triggered extra attack; Action/Mechanic::Attack suffices. Builder now skips AI-turn actions."
+  "Affect on Attacks::Automatic/Extra Attack on boss parts (1619,1620,1626,1636,1637,1638,1643,1644)": "2026-10-03 user: an attack chosen by bc_ArtificialIntelligence is the part's normal turn action, not a trait-triggered extra attack; Action/Mechanic::Attack suffices. Builder now skips AI-turn actions.",
+  "25:OVERRUN Related Stat::Maximum Health": "2026-10-03 user: healing is not a Maximum Health effect.",
+  "Pusillanimity: drop Enemy Defends / Enemy Dodges": "2026-10-03 user: KEEP. Conditional events attached to a trigger are valid Activates When tags (no other category tracks them; if they never fire, Ally Attacks is irrelevant)."
+ },
+ "perkChanges": {
+  "4:OVERLOAD": {
+   "name": "Overload",
+   "replace": [],
+   "add": [
+    "Activates When::Ally Casts"
+   ],
+   "approved": "2026-10-03"
+  },
+  "29:VOODOO": {
+   "name": "Voodoo",
+   "replace": [],
+   "add": [
+    "Activates When::Enemy Casts"
+   ],
+   "approved": "2026-10-03"
+  },
+  "6:JUDGMENTDAY": {
+   "name": "Judgment Day",
+   "replace": [],
+   "add": [
+    "Affect on Damage::Take Less Damage"
+   ],
+   "approved": "2026-10-03"
+  },
+  "29:HEDGEMAGIC": {
+   "name": "Hedge Magic",
+   "replace": [],
+   "add": [
+    "Affect on Damage::Take More Damage"
+   ],
+   "approved": "2026-10-03"
+  },
+  "29:MALEDICT": {
+   "name": "Maledict",
+   "replace": [],
+   "add": [
+    "Affect on Damage::Take More Damage"
+   ],
+   "approved": "2026-10-03"
+  },
+  "5:MASSACRE": {
+   "name": "Massacre",
+   "replace": [],
+   "add": [
+    "Affect on Status::More Powerful Buff"
+   ],
+   "approved": "2026-10-03",
+   "note": "user: Splash buffs damaging all enemies = a more powerful buff (code proposed Creature is Damaged)"
+  },
+  "14:IMMACULATERECOVERY": {
+   "name": "Immaculate Recovery",
+   "replace": [],
+   "add": [
+    "Related Buff::Invisible",
+    "Related Buff::Shelled",
+    "Activates When::Ally Takes Damage"
+   ],
+   "approved": "2026-10-03"
+  }
+ },
+ "policy": {
+  "conditional_triggers": "An event that must occur for a trigger to matter (e.g. 'after an ally attacks an enemy that dodged') is a valid Activates When tag; the builder must not treat it as wrong.",
+  "vocab": "The data carries the FULL taxonomy (every value that fits any object). The 'more than one object' rule is a DISPLAY toggle in the app (Hide single-object tags), never a build-time filter.",
+  "ai_turn_actions": "Actions chosen in bc_ArtificialIntelligence are normal turn actions, never Automatic/Extra."
+ },
+ "perkRejections": {
+  "5:MASSACRE": [
+   "Affect on Life::Creature is Damaged"
+  ],
+  "25:OVERRUN": [
+   "Related Stat::Maximum Health"
+  ]
  }
 }

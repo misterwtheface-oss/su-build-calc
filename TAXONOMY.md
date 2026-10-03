@@ -8,6 +8,11 @@ The taxonomy classifies every **trait, spell, perk, relic, and realm card** so `
 Synergy can slice a build by what effects actually *do*. **23 categories** (Effect Limitation retired). Each
 entity carries parallel `taxo` (`["Category::Value"]`) and `taxoSrc` arrays.
 
+## Display rule — single-use tags
+The data carries the **full** taxonomy: every value that fits any object. A value used by only **one** object (across
+traits, perks, spells, relics and cards) is hidden from the ＋Filter / Appendix / perk pickers by default. The viewer's
+**Show single-use tags** toggle (localStorage `subc.taxoSingles`) reveals it. Never filter vocabulary at build time.
+
 ## How tags are derived (`taxoSrc`)
 
 | src | meaning |
@@ -275,7 +280,9 @@ Inverted · Mania · Poisoned · Scorned · Silenced · Sleeping · Snared · St
 ## Related Minion
 Each value = references that specific **minion**. `Random Minion` = random/unspecified; `Four Horsemen` =
 the Death/War/Famine/Conquest set. Values: Animated Gem · Animated Weapon · Dire Wolves · Four Horsemen ·
-Spiderlings · Writhelings · Zombies · Littletorun · Illusion · Random Minion.
+Spiderlings · Writhelings · Zombies · Littletorun · Illusion · Random Minion · Unstable Horror · Doppelganger ·
+Amalgamation · Asmodeus · Beelzebub · Mammon · Leviathan · Belphegor · Satanachia · Lucifer (last 10 added 2026-10-03
+from the perk decode; grounded on {CONDNAME_MINION_*} tokens).
 
 ## Related Spells
 Which spell **class / kind / named spell** an effect references.
