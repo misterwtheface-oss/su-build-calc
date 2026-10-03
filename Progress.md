@@ -1343,7 +1343,8 @@ MAPPING not for asserting PRESENCE; no inventing entities from the community-CSV
     - **APPROVED 2026-10-03 (all 40):** 17 Minion Spells, 10 Damaging Spells, 6 Active If, 2 Gain a Trait, Arcane Fallacy
       Single-Target, Eaten Alive Healing (user: keep as healing), and cards Paragon / Effigy / Spelljuggler. The user
       confirmed Abomination's power order (15% more dmg → 10% less dodge → 35% less healing) = app + code. The flagged
-      Animation powers 1↔3 are probably not swapped (Inverted flips damage↔healing); left unchanged.
+      Animation order also user-confirmed (recover 50% more Health → take 10% more dmg → take 20% more dmg) = app. The
+      code hooks (damage / damage / heal handler) fit Inverted's damage↔healing flip: NOT swapped; anomaly closed.
     - **Spells decoded too** (per-spell switch in bc_CreatureCast; 82% agreement with app spell tags); taxonomy
       integration is next.
 - [ ] **Capped effects with no app surface yet** (keep in context — user 2026-10-02). `_su_extract data/model/dr_caps.json`
