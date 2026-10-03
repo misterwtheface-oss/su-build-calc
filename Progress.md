@@ -1327,6 +1327,8 @@ MAPPING not for asserting PRESENCE; no inventing entities from the community-CSV
   - **2026-10-03 Action/Mechanic implied from exact tags** (new src `implied`; inputs = code/token/field/audit only).
     885 existing LLM Action tags are now backed (+33 added); LLM Action tags fell 3,915 → 3,047, the rest mostly spells
     (1,448). Spell decode research is running.
+  - **Provenance chips hidden (user, 2026-10-03):** the per-tag source chip (code/token/implied/llm…) in the taxonomy detail
+    is behind `FEATURES.taxoSource` (app.js, default false). The data keeps `taxoSrc`; flip one flag to surface it.
 - [ ] **Capped effects with no app surface yet** (keep in context — user 2026-10-02). `_su_extract data/model/dr_caps.json`
   has 6 entries that `build-data` can't attach a note to, because the app has no place for them: **Life Guild bonus 1**
   (attack/spell damage taken), **Nature Guild bonus 3** (indirect damage taken), and the **4 Race Mastery lines**.

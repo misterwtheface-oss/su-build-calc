@@ -9,7 +9,7 @@
   // Feature flags — flip to true to re-enable. Macros (battle-AI proposal) is WIP: hidden for now.
   // nyi: content that is in the data but NOT live in the game yet (e.g. the Misery False God). Stripped from D here —
   // before anything indexes D.traits / D.falseGods — so with the flag off the app sees exactly the live-game data.
-  const FEATURES = { macros: false, nyi: false };
+  const FEATURES = { macros: false, nyi: false, taxoSource: false };   // taxoSource: show each tag's provenance chip (code / token / implied / llm …)
   if (!FEATURES.nyi) {
     for (const id of Object.keys(D.traits)) if (D.traits[id].nyi) delete D.traits[id];
     D.falseGods = (D.falseGods || []).filter(g => !g.nyi);
@@ -1987,7 +1987,7 @@
     if (!groups.size) return `<div class="slot-sub" style="padding:10px">No taxonomy tags on this entry.</div>`;
     return [...groups].map(([cat, vals]) => `<div class="etax-group">
       <div class="etax-cat">${esc(cat)}</div>
-      <div class="etax-vals">${vals.map(v => `<button class="etax-tag" data-action="etax-filter" data-k="${esc(v.key)}" title="Filter the Appendix to “${esc(v.val)}”">${esc(v.val)}${v.src ? `<span class="apx-src s-${esc(v.src)}">${esc(v.src)}</span>` : ""}</button>`).join("")}</div>
+      <div class="etax-vals">${vals.map(v => `<button class="etax-tag" data-action="etax-filter" data-k="${esc(v.key)}" title="Filter the Appendix to “${esc(v.val)}”">${esc(v.val)}${FEATURES.taxoSource && v.src ? `<span class="apx-src s-${esc(v.src)}">${esc(v.src)}</span>` : ""}</button>`).join("")}</div>
     </div>`).join("");
   }
   // trait provenance sections for the detail page: the granting material (or "No Material Exists"),
