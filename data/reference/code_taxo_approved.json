@@ -405,6 +405,54 @@
     "Activates When::Ally Takes Damage"
    ],
    "approved": "2026-10-03"
+  },
+  "6:HERESY": {
+   "name": "Heresy",
+   "replace": [],
+   "add": [
+    "Action/Mechanic::Spell Gems"
+   ],
+   "approved": "2026-10-03"
+  },
+  "11:UNCONTROLLABLEANGER": {
+   "name": "Uncontrollable Anger",
+   "replace": [],
+   "add": [
+    "Action/Mechanic::Turn Counter"
+   ],
+   "approved": "2026-10-03"
+  },
+  "13:GONEBUTNOTFORGOTTEN": {
+   "name": "Gone But Not Forgotten",
+   "replace": [],
+   "add": [
+    "Action/Mechanic::Creature Race"
+   ],
+   "approved": "2026-10-03"
+  },
+  "38:TOTALDEPRIVATION": {
+   "name": "Total Deprivation",
+   "replace": [],
+   "add": [
+    "Action/Mechanic::Relic"
+   ],
+   "approved": "2026-10-03"
+  },
+  "43:LASTOFTHEANCIENTS": {
+   "name": "Last of the Ancients",
+   "replace": [],
+   "add": [
+    "Action/Mechanic::Relic"
+   ],
+   "approved": "2026-10-03"
+  },
+  "43:DIVINEDUALWIELD": {
+   "name": "Divine Dualwield",
+   "replace": [],
+   "add": [
+    "Action/Mechanic::Relic"
+   ],
+   "approved": "2026-10-03"
   }
  },
  "policy": {
@@ -419,5 +467,15 @@
   "25:OVERRUN": [
    "Related Stat::Maximum Health"
   ]
+ },
+ "relicChanges": {
+  "9": {
+   "name": "Fatum & Fortuna, Loaded Dice of Reclusa",
+   "replace": [],
+   "add": [
+    "Action/Mechanic::Turn Counter"
+   ],
+   "approved": "2026-10-03"
+  }
  }
 }

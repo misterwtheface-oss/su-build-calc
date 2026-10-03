@@ -1334,7 +1334,8 @@ MAPPING not for asserting PRESENCE; no inventing entities from the community-CSV
     - **Relics decoded** via `scr_CritHasRelicPerk(creature, relic, k)` gates (rank = 10·k): 295/310 rank perks;
       validation trigger 95%, side 100%, conditions 93%.
     - **Applied in build-data:** relic confirms (326) with `relicChanges` approvals. Trait confirms 3,347, perks 695.
-    - **Pending review:** 6 perk + 1 relic proposal.
+    - **APPROVED 2026-10-03:** all 7 — Action/Mechanic Relic (Total Deprivation, Last of the Ancients, Divine Dualwield),
+      Spell Gems (Heresy), Turn Counter (Uncontrollable Anger; relic Fatum & Fortuna), Creature Race (Gone But Not Forgotten).
     - **Spells decoded too** (per-spell switch in bc_CreatureCast; 82% agreement with app spell tags); taxonomy
       integration is next.
 - [ ] **Capped effects with no app surface yet** (keep in context — user 2026-10-02). `_su_extract data/model/dr_caps.json`
