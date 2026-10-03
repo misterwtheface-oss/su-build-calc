@@ -2330,6 +2330,15 @@ console.log(`  audit overrides: ${Object.keys(auditOv).length} defined · ${audi
   const traitByName = new Map(Object.values(traits).map(t => [norm(t.name), t]));
   const relicRank = (name, rank) => { const r = relics.find(x => norm(String(x.name).split(',')[0]) === norm(String(name).split(',')[0]));
     return r ? r.ranks.find(k => +k.rank === +rank) : null; };
+  // the chip is the single source for the cap → drop any cap wording from the prose (game text says "Maximum of
+  // 95%" on Blink of an Eye; the compendium adds "(up to 90%)"; code clamps every one of these at dr_cap)
+  let capStripped = 0;
+  const stripCap = (o) => { if (!o.desc) return; const d = o.desc
+      .replace(/\s*\(up to \d+(?:\.\d+)?%\)/gi, '')
+      .replace(/,?\s*up to \d+(?:\.\d+)?% (?:reduced damage|damage reduction)/gi, '')
+      .replace(/\s*Maximum of \d+(?:\.\d+)?% damage reduction\./gi, '')
+      .replace(/ {2,}/g, ' ').trim();
+    if (d !== o.desc) { o.desc = d; capStripped++; } };
   const capsF = path.join(MODEL, 'dr_caps.json');
   if (fs.existsSync(capsF)) {
     const caps = readJSON(capsF), capTxt = `Max ${Math.round(caps.dr_cap * 100)}% damage reduction`;
@@ -2340,9 +2349,9 @@ console.log(`  audit overrides: ${Object.keys(auditOv).length} defined · ${audi
         : e.kind === 'relic' ? relicRank(e.relic_name || e.name, e.rank)
         : e.kind === 'condition' && e.source_perk_key ? perkByKey.get(e.source_perk_key)   // minion granted by a perk (Mammon)
         : undefined;   // guild bonuses / race mastery: no app surface yet
-      if (tgt) { addNote(tgt, capTxt); hit++; } else if (tgt === null) miss.push(`${e.kind}:${e.name}`);
+      if (tgt) { addNote(tgt, capTxt); stripCap(tgt); hit++; } else if (tgt === null) miss.push(`${e.kind}:${e.name}`);
     }
-    console.log(`  dr-cap notes: ${hit}/${(caps.effects || []).length} effects tagged "${capTxt}"`);
+    console.log(`  dr-cap notes: ${hit}/${(caps.effects || []).length} effects tagged "${capTxt}" · ${capStripped} prose cap phrase(s) removed`);
     if (miss.length) warn(`dr-cap notes: ${miss.length} effect(s) not joined to app data: ${miss.join(', ')}`);
   } else warn('dr_caps.json missing — no damage-reduction cap notes');
   const runeF = path.join(MODEL, 'rune_knight_perks.json');
@@ -2359,9 +2368,8 @@ console.log(`  audit overrides: ${Object.keys(auditOv).length} defined · ${audi
         for (const x of common) addNote(tgt, x);
         const odd = new Map();                                                   // property → runes that get it
         pk.per_rune.forEach(r => r.properties.filter(x => !common.includes(x)).forEach(x => odd.set(x, [...(odd.get(x) || []), short(r.rune)])));
-        const sorted = [...odd].sort((x, y) => y[1].length - x[1].length);      // majority variant first
-        if (sorted.length === 2) addNote(tgt, `${sorted[0][0]} (${sorted[1][1].join('/')}: ${sorted[1][0]})`);
-        else for (const [x, rs] of sorted) addNote(tgt, `${x} (${rs.join('/')})`);
+        // one chip per variant property, naming the runes that get it (majority first)
+        for (const [x, rs] of [...odd].sort((x, y) => y[1].length - x[1].length)) addNote(tgt, `${x} (${rs.join('/')})`);
       }
     }
   }

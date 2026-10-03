@@ -910,7 +910,7 @@ button.apx-owner:hover .apx-owner-ico { border-color: var(--accent); }
 /* code-grounded mechanics the game text omits (cap / per-rune effects) — chips beside the prose */
 .fx-notes { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
 .fx-note { font-size: 10.5px; line-height: 1.3; padding: 1px 6px; border-radius: 4px; color: var(--accent2);
-  border: 1px solid var(--border-dim); background: var(--surface); white-space: nowrap; }
+  border: 1px solid var(--border-dim); background: var(--surface); }
 /* Ascension perks (perk.ascension) get a subtle gold left edge in both the spec list and the picker */
 .perk-line.asc { box-shadow: inset 3px 0 0 var(--accent); }
 .perk-row.asc { box-shadow: inset 3px 0 0 var(--accent); }
