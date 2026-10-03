@@ -597,6 +597,7 @@ h1, h2, h3 { margin: 0; }
 .apx-src { font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: .3px;
   padding: 1px 5px; border-radius: 4px; margin-left: 4px; color: var(--text-mute); background: rgba(255,255,255,.06); }
 .apx-src.s-token { color: #7fd08a; background: rgba(91,214,116,.14); }
+.apx-src.s-code { color: #5bd6c4; background: rgba(91,214,196,.16); }
 .apx-src.s-keyword { color: #9fd0ff; background: rgba(159,208,255,.14); }
 .apx-src.s-llm { color: var(--accent2); background: rgba(154,123,214,.16); }
 .apx-src.s-correction, .apx-src.s-field, .apx-src.s-phrase { color: var(--accent); background: rgba(201,162,75,.14); }

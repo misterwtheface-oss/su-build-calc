@@ -12,6 +12,7 @@ entity carries parallel `taxo` (`["Category::Value"]`) and `taxoSrc` arrays.
 
 | src | meaning |
 |---|---|
+| `code` | Backed by the decoded game code (trait effect signatures: event handler × whose event × effect × condition id; `_su_extract` `code_taxo.json`). Strongest source. Currently Activates When/at + Related Buff/Debuff. |
 | `token` | Structured description markup (`{CONDNAME_*}`,`{STAT_*}`,`{ACTION_*}`,`{RACE_*}`,`{SPELL_*}`). Exact. |
 | `field` | A structured data field (e.g. spell target from `Spell_REF`). Ground truth. |
 | `keyword` | Word-boundaried domain keyword. |

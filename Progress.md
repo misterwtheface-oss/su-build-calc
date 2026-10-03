@@ -1276,6 +1276,13 @@ MAPPING not for asserting PRESENCE; no inventing entities from the community-CSV
       creatures are attacked" should be Enemy Attacks; "after this creature kills" should be Enemy Dies.
     - **Next:** map signatures → the existing Category/Value system (code-certain values replace llm tags; keep llm
       where code is silent, flagged).
+  - **2026-10-03 phase 1 SHIPPED (provenance only).** `build_code_taxo.py` → `code_taxo.json`, applied in build-data after
+    the audit overrides.
+    - **Code-confirmed:** 1,372 trait tags now carry src `code`: Activates When 655/860, Activates at 417/488, Related
+      Buff/Debuff 287 (token tags the code agrees with).
+    - **Held for review:** 24 corrections/additions (description + code agree; e.g. "after your creatures are attacked"
+      Ally Takes Damage → Enemy Attacks, "after this creature kills" Ally Attacks → Enemy Dies). They apply only for
+      runtime ids listed in `data/reference/code_taxo_approved.json`.
 - [ ] **Capped effects with no app surface yet** (keep in context — user 2026-10-02). `_su_extract data/model/dr_caps.json`
   has 6 entries that `build-data` can't attach a note to, because the app has no place for them: **Life Guild bonus 1**
   (attack/spell damage taken), **Nature Guild bonus 3** (indirect damage taken), and the **4 Race Mastery lines**.
