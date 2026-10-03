@@ -2304,6 +2304,26 @@ console.log(`  audit overrides: ${Object.keys(auditOv).length} defined · ${audi
     }
   }
   console.log(`  code taxonomy: ${Object.keys(APPROVED).length} approved traits (${repl} replaced · +${adds} added) · ${conf} tags code-confirmed · ${pending} proposals awaiting review${pendingTraits.length ? ` (${pendingTraits.slice(0, 20).join('; ')})` : ''}`);
+  // perks — same policy, keyed "<specId>:<perkKey>" (code_taxo.json `perks`; approvals in code_taxo_approved.json `perkChanges`)
+  const CTP = readJSON(path.join(MODEL, 'code_taxo.json')).perks || {};
+  const APPROVED_P = fs.existsSync(APPROVED_PATH) ? (readJSON(APPROVED_PATH).perkChanges || {}) : {};
+  let pconf = 0, prepl = 0, padds = 0, ppend = 0; const ppendList = [];
+  for (const sc of specs) for (const p of sc.perks || []) {
+    const key = `${sc.id}:${p.key}`, t = p.taxo || (p.taxo = []), s2 = p.taxoSrc || (p.taxoSrc = t.map(() => 'derived'));
+    const ap = APPROVED_P[key];
+    if (ap) {
+      for (const r of ap.replace || []) {
+        for (const from of r.from) { const i = t.indexOf(from); if (i >= 0) { t.splice(i, 1); s2.splice(i, 1); } }
+        if (r.to && !t.includes(r.to)) { t.push(r.to); s2.push('code'); prepl++; }
+      }
+      for (const tag of ap.add || []) if (!t.includes(tag)) { t.push(tag); s2.push('code'); padds++; }
+    }
+    const c = CTP[key]; if (!c) continue;
+    for (const tag of c.confirm) { const i = t.indexOf(tag); if (i >= 0 && s2[i] !== 'code') { s2[i] = 'code'; pconf++; } }
+    const open = [...c.replace.filter(r => !(r.to && t.includes(r.to))), ...c.add.filter(tag => !t.includes(tag))];
+    if (open.length) { ppend += open.length; ppendList.push(`${key} ${p.name}`); }
+  }
+  console.log(`  code taxonomy (perks): ${Object.keys(APPROVED_P).length} approved · ${prepl} replaced · +${padds} added · ${pconf} tags code-confirmed · ${ppend} proposals awaiting review${ppendList.length ? ` (${ppendList.slice(0, 12).join('; ')})` : ''}`);
 }
 
 // ── Shops: icon + drill-in joins (needs creatures / spells / traitItems / spellProps / skins) ──

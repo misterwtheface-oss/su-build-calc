@@ -1303,6 +1303,12 @@ MAPPING not for asserting PRESENCE; no inventing entities from the community-CSV
         Automatic/Extra values (rule recorded in `code_taxo_approved.json` `rejected`).
       - **Second circular bug fixed:** the builder skipped confirming tags already marked `code` in app data, so every
         rebuild lost them. Confirms are now unconditional and stable across rebuilds (≈3,044).
+  - **2026-10-03 PERKS SHIPPED (confirms).** `_su_extract` `perk_signatures.json` decodes 1,223 `scr_PerkLevel` sites
+    (side vs description 98.5%, per-rank values 97%).
+    - **Pipeline:** `build_code_taxo.py` emits `perks` keyed "<specId>:<perkKey>"; build-data applies the confirms, and
+      approved changes come from `code_taxo_approved.json` `perkChanges`.
+    - **Coverage:** 644 perk tags code-confirmed; perk provenance is now llm 71% (was 92%) · code 24%.
+    - **Pending review:** 9 proposals, plus the Pusillanimity drop-only call and 10 Related Minion vocabulary candidates.
 - [ ] **Capped effects with no app surface yet** (keep in context — user 2026-10-02). `_su_extract data/model/dr_caps.json`
   has 6 entries that `build-data` can't attach a note to, because the app has no place for them: **Life Guild bonus 1**
   (attack/spell damage taken), **Nature Guild bonus 3** (indirect damage taken), and the **4 Race Mastery lines**.
