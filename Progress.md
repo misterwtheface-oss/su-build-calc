@@ -1340,7 +1340,10 @@ MAPPING not for asserting PRESENCE; no inventing entities from the community-CSV
     - **Spells:** 3,112 tags code-confirmed (per-spell blocks in bc_CreatureCast).
     - **Cards:** realm card powers decoded via `inv_CardSetPowerUnlocked(family, power)` (423/465 slots; validation event
       93.5%, side 96%); 78 card tags confirmed.
-    - **Pending review:** 37 spell + 3 card proposals; approvals go in `spellChanges` / `cardChanges`.
+    - **APPROVED 2026-10-03 (all 40):** 17 Minion Spells, 10 Damaging Spells, 6 Active If, 2 Gain a Trait, Arcane Fallacy
+      Single-Target, Eaten Alive Healing (user: keep as healing), and cards Paragon / Effigy / Spelljuggler. The user
+      confirmed Abomination's power order (15% more dmg → 10% less dodge → 35% less healing) = app + code. The flagged
+      Animation powers 1↔3 are probably not swapped (Inverted flips damage↔healing); left unchanged.
     - **Spells decoded too** (per-spell switch in bc_CreatureCast; 82% agreement with app spell tags); taxonomy
       integration is next.
 - [ ] **Capped effects with no app surface yet** (keep in context — user 2026-10-02). `_su_extract data/model/dr_caps.json`

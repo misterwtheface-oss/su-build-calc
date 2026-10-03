@@ -477,5 +477,330 @@
    ],
    "approved": "2026-10-03"
   }
- }
+ },
+ "spellChanges": {
+  "190": {
+   "name": "Sudden Death",
+   "replace": [],
+   "add": [
+    "Related Spells::Damaging Spells"
+   ],
+   "approved": "2026-10-03"
+  },
+  "194": {
+   "name": "Shadow Crash",
+   "replace": [],
+   "add": [
+    "Related Spells::Damaging Spells"
+   ],
+   "approved": "2026-10-03"
+  },
+  "204": {
+   "name": "Vacuum",
+   "replace": [],
+   "add": [
+    "Affect on Traits::Gain a Trait"
+   ],
+   "approved": "2026-10-03"
+  },
+  "220": {
+   "name": "Mutilate",
+   "replace": [],
+   "add": [
+    "Related Spells::Damaging Spells"
+   ],
+   "approved": "2026-10-03"
+  },
+  "229": {
+   "name": "Summon Conquest",
+   "replace": [],
+   "add": [
+    "Related Spells::Minion Spells"
+   ],
+   "approved": "2026-10-03"
+  },
+  "230": {
+   "name": "Summon Death",
+   "replace": [],
+   "add": [
+    "Related Spells::Minion Spells"
+   ],
+   "approved": "2026-10-03"
+  },
+  "231": {
+   "name": "Summon Famine",
+   "replace": [],
+   "add": [
+    "Related Spells::Minion Spells"
+   ],
+   "approved": "2026-10-03"
+  },
+  "232": {
+   "name": "Summon War",
+   "replace": [],
+   "add": [
+    "Related Spells::Minion Spells"
+   ],
+   "approved": "2026-10-03"
+  },
+  "298": {
+   "name": "Illusion",
+   "replace": [],
+   "add": [
+    "Related Spells::Minion Spells"
+   ],
+   "approved": "2026-10-03"
+  },
+  "360": {
+   "name": "Mind Crunch",
+   "replace": [],
+   "add": [
+    "Related Spells::Damaging Spells"
+   ],
+   "approved": "2026-10-03"
+  },
+  "369": {
+   "name": "Vitality Explosion",
+   "replace": [],
+   "add": [
+    "Related Spells::Damaging Spells"
+   ],
+   "approved": "2026-10-03"
+  },
+  "376": {
+   "name": "Double Strike",
+   "replace": [],
+   "add": [
+    "Active If::Buffed with X"
+   ],
+   "approved": "2026-10-03"
+  },
+  "382": {
+   "name": "Spectral Crash",
+   "replace": [],
+   "add": [
+    "Active If::Buffed with X"
+   ],
+   "approved": "2026-10-03"
+  },
+  "385": {
+   "name": "False Beliefs",
+   "replace": [],
+   "add": [
+    "Related Spells::Damaging Spells"
+   ],
+   "approved": "2026-10-03"
+  },
+  "387": {
+   "name": "Insight",
+   "replace": [],
+   "add": [
+    "Active If::Buffed with X"
+   ],
+   "approved": "2026-10-03"
+  },
+  "431": {
+   "name": "Rune of Dun",
+   "replace": [],
+   "add": [
+    "Related Spells::Minion Spells"
+   ],
+   "approved": "2026-10-03"
+  },
+  "434": {
+   "name": "Rune of Sah",
+   "replace": [],
+   "add": [
+    "Related Spells::Minion Spells"
+   ],
+   "approved": "2026-10-03"
+  },
+  "454": {
+   "name": "Haunt",
+   "replace": [],
+   "add": [
+    "Active If::Debuffed with X"
+   ],
+   "approved": "2026-10-03"
+  },
+  "455": {
+   "name": "Zombie Clap",
+   "replace": [],
+   "add": [
+    "Related Spells::Minion Spells"
+   ],
+   "approved": "2026-10-03"
+  },
+  "468": {
+   "name": "Fortify",
+   "replace": [],
+   "add": [
+    "Active If::Buffed with X"
+   ],
+   "approved": "2026-10-03"
+  },
+  "479": {
+   "name": "Expel",
+   "replace": [],
+   "add": [
+    "Related Spells::Damaging Spells"
+   ],
+   "approved": "2026-10-03"
+  },
+  "506": {
+   "name": "Spirit Bond",
+   "replace": [],
+   "add": [
+    "Affect on Traits::Gain a Trait"
+   ],
+   "approved": "2026-10-03"
+  },
+  "520": {
+   "name": "Call Help",
+   "replace": [],
+   "add": [
+    "Related Spells::Minion Spells"
+   ],
+   "approved": "2026-10-03"
+  },
+  "534": {
+   "name": "Arcane Fallacy",
+   "replace": [],
+   "add": [
+    "Related Spells::Single-Target Spells"
+   ],
+   "approved": "2026-10-03"
+  },
+  "595": {
+   "name": "Graveyard Shift",
+   "replace": [],
+   "add": [
+    "Related Spells::Minion Spells"
+   ],
+   "approved": "2026-10-03"
+  },
+  "608": {
+   "name": "Divulging Bark",
+   "replace": [],
+   "add": [
+    "Related Spells::Minion Spells"
+   ],
+   "approved": "2026-10-03"
+  },
+  "610": {
+   "name": "Ritual of Summoning",
+   "replace": [],
+   "add": [
+    "Related Spells::Minion Spells"
+   ],
+   "approved": "2026-10-03"
+  },
+  "624": {
+   "name": "Horrible Howl",
+   "replace": [],
+   "add": [
+    "Related Spells::Minion Spells"
+   ],
+   "approved": "2026-10-03"
+  },
+  "628": {
+   "name": "Summon Horde",
+   "replace": [],
+   "add": [
+    "Related Spells::Minion Spells"
+   ],
+   "approved": "2026-10-03"
+  },
+  "653": {
+   "name": "Work of Art",
+   "replace": [],
+   "add": [
+    "Related Spells::Minion Spells"
+   ],
+   "approved": "2026-10-03"
+  },
+  "657": {
+   "name": "Quietus",
+   "replace": [],
+   "add": [
+    "Related Spells::Minion Spells"
+   ],
+   "approved": "2026-10-03"
+  },
+  "658": {
+   "name": "Virus",
+   "replace": [],
+   "add": [
+    "Related Spells::Damaging Spells"
+   ],
+   "approved": "2026-10-03"
+  },
+  "662": {
+   "name": "Short Fuse",
+   "replace": [],
+   "add": [
+    "Related Spells::Damaging Spells"
+   ],
+   "approved": "2026-10-03"
+  },
+  "704": {
+   "name": "Necromancy",
+   "replace": [],
+   "add": [
+    "Related Spells::Minion Spells"
+   ],
+   "approved": "2026-10-03"
+  },
+  "712": {
+   "name": "Cluster Bomb",
+   "replace": [],
+   "add": [
+    "Related Spells::Damaging Spells"
+   ],
+   "approved": "2026-10-03"
+  },
+  "728": {
+   "name": "Deep Freeze",
+   "replace": [],
+   "add": [
+    "Active If::Debuffed with X"
+   ],
+   "approved": "2026-10-03"
+  },
+  "743": {
+   "name": "Eaten Alive",
+   "replace": [],
+   "add": [
+    "Related Spells::Healing Spells"
+   ],
+   "approved": "2026-10-03"
+  }
+ },
+ "cardChanges": {
+  "88": {
+   "name": "Paragon",
+   "replace": [],
+   "add": [
+    "Activates When::Enemy is Debuffed"
+   ],
+   "approved": "2026-10-03"
+  },
+  "145": {
+   "name": "Effigy",
+   "replace": [],
+   "add": [
+    "Affect on Damage::Take Less Damage"
+   ],
+   "approved": "2026-10-03"
+  },
+  "153": {
+   "name": "Spelljuggler",
+   "replace": [],
+   "add": [
+    "Affect on Damage::Deal More Damage"
+   ],
+   "approved": "2026-10-03"
+  }
+ },
+ "notes_2026_10_03": "User: keep Eaten Alive as Healing Spells (judgement call approved). Abomination card power order confirmed (15% more damage, 10% less dodge, 35% less healing) = app + code."
 }
