@@ -2361,6 +2361,61 @@ const MINION_PHRASE = { 'Greater Demons': /\bgreater demons?\b/i, 'Lesser Demons
   console.log(`  code taxonomy (perks): ${Object.keys(APPROVED_P).length} approved · ${prepl} replaced · +${padds} added · ${pconf} tags code-confirmed · ${ppend} proposals awaiting review${ppendList.length ? ` (${ppendList.slice(0, 12).join('; ')})` : ''}`);
 }
 
+// ── Action/Mechanic IMPLIED from exact tags (2026-10-03). Action/Mechanic is the broad "what mechanic does this touch"
+// layer; most of it follows deterministically from tags that are already exact. Sources that may imply: code, token,
+// field, audit, code_boss (NEVER llm/keyword/correction), plus the game's own {ACTION_*}/{RACE_*} description tokens.
+//   existing LLM Action/Mechanic tag that an exact tag implies → provenance 'implied'
+//   missing Action/Mechanic tag that an exact tag implies       → added with provenance 'implied'
+// LLM Action/Mechanic tags with no implication are left as-is (no drop-only).
+{
+  const EXACT = new Set(['code', 'token', 'field', 'audit', 'code_boss']);
+  const BUFF_VALS = ['Apply/Gain a Buff', 'Limit/Prevent Buff Gain', 'Buffs Persist', 'More Powerful Buff', 'Remove Buff', 'Share/Gain Copy of Buff'];
+  const DEBUFF_VALS = ['Afflict with/Gain a Debuff', 'Increase Debuff Potency', 'Avoid/Immune to Debuff', 'Debuffs Persist', 'Remove Debuff', 'Resistant to Debuff', 'Cannot be Immune'];
+  const GEM_VALS = ['Extra/Gain a Spell Gem', 'Modify Spell Gem Property', 'Seal Spell Gem', 'Cannot be Sealed', 'Modify Charges/Behavior', 'Equip from Other Classes'];
+  const ev = (verb) => [`Activates When::Ally ${verb}`, `Activates When::Enemy ${verb}`];
+  const RULES = {   // Action/Mechanic value -> exact tags (or "prefix*") that imply it
+    Attack: [...ev('Attacks'), 'Affect on Attacks::*'],
+    Cast: [...ev('Casts'), 'Affect on Spells::Automatic/Extra Cast', "Affect on Spells::Can't Manually Cast"],
+    Defend: [...ev('Defends'), 'Affect on Mitigation::Automatically Defend', "Affect on Mitigation::Can't Manually Defend"],
+    Provoke: [...ev('Provokes'), 'Affect on Mitigation::Automatically Provoke', "Affect on Mitigation::Can't Manually Provoke"],
+    Dodge: [...ev('Dodges'), "Affect on Mitigation::Can't Dodge Attacks", 'Affect on Mitigation::More Dodge Chance'],
+    Buff: ['Related Buff::*', ...ev('is Buffed'), ...BUFF_VALS.map(v => 'Affect on Status::' + v)],
+    Debuff: ['Related Debuff::*', ...ev('is Debuffed'), ...DEBUFF_VALS.map(v => 'Affect on Status::' + v)],
+    Minion: ['Related Minion::*', 'Affect on Minions::*', ...ev('Minion Gain/Action')],
+    Healing: [...ev('is Healed'), 'Affect on Life::Creature is Healed', 'Affect on Life::More Healing', 'Affect on Life::Less Healing'],
+    Resurrection: [...ev('Resurrects'), 'Affect on Life::Creature is Resurrected', 'Affect on Life::Cannot Be Resurrected'],
+    Critical: ev('Critically Hits'),
+    'Indirect Damage': ev('Indirectly Damaged'),
+    Stats: ['Affect on Stats::*', ...ev('Gains Stats'), ...ev('Loses Stats')],
+    Timeline: ['Affect on Timeline::*', ...ev('Moves on Timeline')],
+    'Spell Gems': GEM_VALS.map(v => 'Affect on Spells::' + v),
+  };
+  const TOKEN_RULES = { Attack: /\{ACTION_attack/, Cast: /\{ACTION_cast/, Defend: /\{ACTION_defend/, Provoke: /\{ACTION_provok/,
+                        'Creature Race': /\{RACE_/ };
+  const matches = (pat, tag) => pat.endsWith('*') ? tag.startsWith(pat.slice(0, -1)) : tag === pat;
+  const tokDesc = new Map(consolidated.map(r => [r.id, r.desc_tokenized || '']));
+  const stat = {}; let conf = 0, add = 0;
+  const imply = (e, tokenized) => {
+    const t = e.taxo || (e.taxo = []), s2 = e.taxoSrc || (e.taxoSrc = t.map(() => 'derived'));
+    const exact = t.filter((x, i) => EXACT.has(s2[i]));
+    for (const [val, pats] of Object.entries(RULES).concat(Object.keys(TOKEN_RULES).filter(k => !RULES[k]).map(k => [k, []]))) {
+      const byTag = exact.some(x => pats.some(p => matches(p, x)));
+      const byTok = TOKEN_RULES[val] ? TOKEN_RULES[val].test(tokenized || '') : false;
+      if (!byTag && !byTok) continue;
+      const tag = 'Action/Mechanic::' + val, i = t.indexOf(tag);
+      if (i >= 0) { if (!EXACT.has(s2[i]) && s2[i] !== 'implied') { s2[i] = 'implied'; conf++; (stat[val] ||= [0, 0])[0]++; } }
+      else { t.push(tag); s2.push('implied'); add++; (stat[val] ||= [0, 0])[1]++; }
+    }
+  };
+  for (const tr of Object.values(traits)) imply(tr, tokDesc.get(tr.id) || tr.desc);
+  for (const sc of specs) for (const p of sc.perks || []) imply(p, p.desc);
+  for (const sp of spells) imply(sp, sp.desc);
+  for (const rl of relics) imply(rl, '');
+  for (const cd of cards) imply(cd, '');
+  console.log(`  action/mechanic implied: ${conf} llm tags now implied by exact tags · +${add} added · ` +
+    Object.entries(stat).map(([k, [c, a]]) => `${k} ${c}/+${a}`).join(', '));
+}
+
 // ── Shops: icon + drill-in joins (needs creatures / spells / traitItems / spellProps / skins) ──
 {
   const critBy = new Map(creatures.map(c => [norm(c.name), c]));

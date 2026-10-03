@@ -18,6 +18,7 @@ traits, perks, spells, relics and cards) is hidden from the ＋Filter / Appendix
 | src | meaning |
 |---|---|
 | `code` | Backed by the decoded game code (trait effect signatures: event handler × whose event × effect × condition id; `_su_extract` `code_taxo.json`). Strongest source. Currently Activates When/at + Related Buff/Debuff. |
+| `implied` | Action/Mechanic value implied by an EXACT tag on the same object (code/token/field/audit — never llm), e.g. *Activates When::Ally Attacks* ⇒ *Attack*, any *Related Buff* ⇒ *Buff*, `{ACTION_cast}` ⇒ *Cast*. Rules in build-data "Action/Mechanic IMPLIED". |
 | `token` | Structured description markup (`{CONDNAME_*}`,`{STAT_*}`,`{ACTION_*}`,`{RACE_*}`,`{SPELL_*}`). Exact. |
 | `field` | A structured data field (e.g. spell target from `Spell_REF`). Ground truth. |
 | `keyword` | Word-boundaried domain keyword. |
