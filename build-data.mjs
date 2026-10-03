@@ -703,6 +703,11 @@ const catalogPerks = readJSON(path.join(SRC, 'data', 'catalog', 'perks.json'));
 const catalogPerkArr = Array.isArray(catalogPerks) ? catalogPerks : (catalogPerks.records || Object.values(catalogPerks));
 const perkDescByKey = new Map(catalogPerkArr.map(p => [p.key, p.desc || '']));
 const perkStatByKey = new Map(readJSON(path.join(MODEL, 'perk_stats.json')).records.map(p => [p.key, p]));
+// Perk_REF.csv cost/ranks — fallback ONLY where code (perk_stats) has no value (11 perks; user-confirmed in-game
+// 2026-10-02 incl. Pilfer 2×50). Code wins whenever it has a number.
+const perkCsvByName = new Map(parseCSVRaw(fs.readFileSync(path.join(REF, '_raw_csv', 'Perk_REF.csv'), 'utf8')).slice(1)
+  .filter(r => r[0]).map(r => [norm(r[0]), { ranks: /^\d+$/.test(r[2]) ? +r[2] : null, cost: /^\d+$/.test(r[3]) ? +r[3] : null }]));
+let perkCsvFilled = 0;
 // perk KEY -> icon sprite name, code-certain from scr_DatabasePerks (see _su_extract/code/extract_perk_icons.py)
 const perkIconByKey = new Map(readJSON(path.join(MODEL, 'perk_icons.json')).records.map(p => [p.key, p.icon]));
 const perkNameByKey = new Map();
@@ -790,7 +795,13 @@ for (const s of specRecs) {
     if (anointment) anointFlagged++;
     const pTaxo = correctTaxo(taxoStrs(perkTaxoByKey[p.key]), pdesc, 'perk');
     return { key: p.key, name, desc: pdesc,
-             cost: st ? st.cost : (p.cost ?? null), ranks: st ? st.ranks : (p.ranks || 1), icon,
+             ...(() => { const pc = perkCsvByName.get(norm(name)) || {};
+               let cost = st ? st.cost : (p.cost ?? null), ranks = st ? st.ranks : (p.ranks || 1), src;
+               if (cost == null && pc.cost != null) { cost = pc.cost; src = 'community'; }
+               if (ranks == null && pc.ranks != null) { ranks = pc.ranks; src = 'community'; }
+               if (src) perkCsvFilled++;
+               return src ? { cost, ranks, costSrc: src } : { cost, ranks }; })(),
+             icon,
              anointment, ascension: !!p.ascension,
              taxo: pTaxo, taxoSrc: taxoSrcArr(perkTaxoByKey[p.key], pTaxo) };
   });
@@ -2042,6 +2053,7 @@ console.log(`✓ ${checked} records checked · ${creatures.length} playable crea
 if (statFilled.length) console.log(`  base-stat null-fill from Creature_REF.csv: ${statFilled.length} — ${statFilled.join('; ')}`);
 console.log(`  cards w/ art ${cardArt}/${cards.length} · artifact-type icons ${artGroup.primary.filter(p => p.icon).length}/5 · gem icons ${gemIcons.length} · class bgs ${Object.keys(classBg).length}`);
 console.log(`  spec sprites: ${specSkins} real skins + ${specs.filter(s => s.spriteKind === 'icon').length} emblem icons · ${emblemCount}/${specs.length} 16×16 emblems · terms ${Object.keys(terms).length}`);
+  console.log(`  perk cost/ranks: ${perkCsvFilled} perk(s) filled from Perk_REF.csv where code has no value`);
   console.log(`  perk icons: ${perkIconsCopied} copied (code-certain from perk_icons.json)${perkIconsMissing ? ` · ${perkIconsMissing} missing` : ' · 100%'}`);
   console.log(`  perk flags (code): ${anointFlagged} anointable · ${specs.reduce((n, s) => n + s.perks.filter(p => p.ascension).length, 0)} ascension`);
   console.log(`  False Gods: ${falseGods.length} with specs · ${specs.length - specGodMisses}/${specs.length} specs mapped${fgodImgMisses ? ` · ${fgodImgMisses} composites MISSING (run tools/build_falsegods.py)` : ' · composites ✓'}`);
