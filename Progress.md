@@ -1283,6 +1283,8 @@ MAPPING not for asserting PRESENCE; no inventing entities from the community-CSV
     - **Held for review:** 24 corrections/additions (description + code agree; e.g. "after your creatures are attacked"
       Ally Takes Damage → Enemy Attacks, "after this creature kills" Ally Attacks → Enemy Dies). They apply only for
       runtime ids listed in `data/reference/code_taxo_approved.json`.
+    - **APPROVED + SHIPPED 2026-10-03:** all 24 (user). 22 replaced (14 Ally Takes Damage → Enemy Attacks, 8 Ally Attacks →
+      Enemy Dies) + 2 added (Rapid Digestion Enemy Dies, Superfluidity Ally Casts).
 - [ ] **Capped effects with no app surface yet** (keep in context — user 2026-10-02). `_su_extract data/model/dr_caps.json`
   has 6 entries that `build-data` can't attach a note to, because the app has no place for them: **Life Guild bonus 1**
   (attack/spell damage taken), **Nature Guild bonus 3** (indirect damage taken), and the **4 Race Mastery lines**.
