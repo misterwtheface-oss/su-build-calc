@@ -507,33 +507,18 @@ const creatureRefStats = new Map();
 // trait NAME -> id (traits_consolidated) so a ref creature resolves its innate trait id
 const traitIdByName = new Map();
 for (const t of consolidated) { const k = norm(t.name); if (k && !traitIdByName.has(k)) traitIdByName.set(k, t.id); }
-// community-spelling reconciliation (Grey->Gray, Shepard->Shepherd, Scoundrel Strike->Scoundrel's
-// Strike, Trolboar->Trollboar, Impedence->Impedance…) so a creature's misspelled innate trait name
-// still resolves to its game trait id. Without this, ~7 creatures show a trait with no synergy tags.
-const traitNameRecon = new Map();
-for (const x of readJSON(path.join(REF, 'name_reconciliation.json'))) traitNameRecon.set(norm(x.your_name), norm(x.game_name));
-const resolveTraitId = (name) => {
-  if (!name) return null;
-  const k = norm(name);
-  return traitIdByName.get(k) ?? traitIdByName.get(traitNameRecon.get(k)) ?? null;
-};
+// innate trait name → id, exact (normalized). The community CSVs were corrected to the game's trait names
+// (2026-10-02 audit), so the old name_reconciliation.json spelling bridge is retired; a miss warns below.
+const resolveTraitId = (name) => (name ? traitIdByName.get(norm(name)) ?? null : null);
 const traitUnresolved = [];  // playable creatures whose innate trait name never resolves to an id
 
 fs.rmSync(OUT_CRIT, { recursive: true, force: true });
 fs.mkdirSync(OUT_CRIT, { recursive: true });
 
-// CSV typos in the roster spine (creatures_ref) — the community CSV misspells 4 creatures whose
-// CODE-authoritative spelling (catalog + creature_stats + creature_data all agree) is different.
-// Correcting the name at the source fixes the code-join (stats + battle sprite resolve naturally),
-// so these no longer need a sprite-frame override. No alias — the wrong spelling is replaced outright.
 // CODE-GROUNDED asset maps (_su_extract code/extract_asset_maps.py): conditions / relics / spec emblems / god battle /
 // artifact tiers, each decoded from the game's own sprite switch. Replaces the hand-curated tables that used to live here.
 const ASSET_MAPS = readJSON(path.join(MODEL, 'asset_maps.json'));
 const FUSE_CREATURE_FRAME = {}, FUSE_SKIN_FRAME = {};   // creature id / skin id → code spr_crits_battle frame (fusion.json)
-const CREATURE_SPELLING_FIX = {
-  'Manticore Conquerer': 'Manticore Conqueror', 'Phenominal Possum': 'Phenomenal Possum',
-  'Maionette Charlatan': 'Marionette Charlatan', 'Gloopidator': 'Gloopdiator',
-};
 // Battle-sprite frame = the code creature DB record's battle_frame (creature_data, code-named since 2026-10-01).
 // The former SPRITE_FRAME_OVERRIDE / creature_frame_overrides.json manual picks are retired (8/15 already equalled
 // code; the other 7 now follow code by user decision) — see _su_extract creature_frame_overrides.json overrides_retired.
@@ -563,7 +548,6 @@ let spriteCopied = 0, codeStats = 0, spriteOverrides = 0;
 const statFilled = [];   // creatures whose null base stat was filled from Creature_REF.csv
 creaturesRef.forEach((r, i) => {
   const id = i;
-  if (CREATURE_SPELLING_FIX[r.name]) r.name = CREATURE_SPELLING_FIX[r.name];   // correct CSV typo → code spelling
   const cd = cdByName.get(norm(r.name));                    // capstone twin (best stats + battle_frame)
   const cs = csByName.get(norm(r.name));                    // legacy twin (frame + stats, wider coverage)
   const cls = CLASS_SET.has(r.class) ? r.class
@@ -594,7 +578,7 @@ creaturesRef.forEach((r, i) => {
   // ALERT: every playable creature must have a trait that resolves to a trait record (else it
   // carries no synergy tags). Missing name = hard gap; unresolved = spelling not yet reconciled.
   if (!traitName) { warn(`creature "${r.name}" has NO innate trait name`); traitUnresolved.push(`${r.name} (no name)`); }
-  else if (traitId == null) { warn(`creature "${r.name}" innate trait "${traitName}" does not resolve to a trait id (add to name_reconciliation.json)`); traitUnresolved.push(`${r.name} -> "${traitName}"`); }
+  else if (traitId == null) { warn(`creature "${r.name}" innate trait "${traitName}" does not resolve to a trait id (fix the name in Creature_REF.csv)`); traitUnresolved.push(`${r.name} -> "${traitName}"`); }
 
   // battle sprite — spr_crits_battle frame from the capstone battle_frame, else legacy field0,
   // else a name-mismatch override (roster spelling ≠ sprite-catalog spelling)
@@ -917,23 +901,11 @@ const spellChargesByKey = new Map();
   const st = readJSON(path.join(MODEL, 'spell_stats.json'));
   for (const r of (st.records || st)) if (r.key && r.charges != null) spellChargesByKey.set(r.key, r.charges);
 }
-// fuzzy fallback for ref typos (e.g. "Lucious Lager"/"Ignus Fatuus" vs catalog spelling)
-const lev = (a, b) => { const m = a.length, n = b.length; if (Math.abs(m - n) > 2) return 9;
-  const d = Array.from({ length: m + 1 }, (_, i) => [i, ...Array(n).fill(0)]);
-  for (let j = 0; j <= n; j++) d[0][j] = j;
-  for (let i = 1; i <= m; i++) for (let j = 1; j <= n; j++) d[i][j] = Math.min(d[i-1][j]+1, d[i][j-1]+1, d[i-1][j-1]+(a[i-1]===b[j-1]?0:1));
-  return d[m][n]; };
-const refDetailEntries = [...spellRefByName.entries()];
-// exact-or-fuzzy compendium lookup (recovers the 2 community-CSV spelling typos "Lucious Lager"/
-// "Ignus Fatuus" vs the code-authoritative catalog spelling) → returns the whole ref entry.
-function spellRef(name) {
-  const n = norm(name);
-  if (spellRefByName.has(n)) return spellRefByName.get(n);
-  let best = null, bd = 3;
-  for (const [rn, e] of refDetailEntries) { const dd = lev(n, rn); if (dd < bd) { bd = dd; best = e; } }
-  return best || {};
-}
-const spellClass = (name) => { const n = norm(name); return spellClassByName.get(n) || (spellRef(name), (() => { let best = null, bd = 3; for (const [rn, cls] of [...spellClassByName.entries()]) { const dd = lev(n, rn); if (dd < bd) { bd = dd; best = cls; } } return best; })()); };
+// compendium lookup by exact (normalized) spell name — the CSV now uses the game's spelling (2026-10-02 audit),
+// so the old fuzzy/Levenshtein typo bridge is retired. Unmatched spells warn once.
+const spellRefMiss = [];
+const spellRef = (name) => spellRefByName.get(norm(name)) || (spellRefMiss.push(name), {});
+const spellClass = (name) => spellClassByName.get(norm(name)) || null;
 // per-class spell-gem icons: user-authored gems (assets/sprites/<class>_tier15.png), replacing the wrong gem_*_lvl4 sprites
 const GEM_SRC = { Nature: 'nature_tier15', Chaos: 'chaos_tier15', Sorcery: 'sorcery_tier15', Death: 'death_tier15', Life: 'life_tier15' };
 fs.rmSync(OUT_SPELLGEM, { recursive: true, force: true });
@@ -993,6 +965,7 @@ const spells = spellArr.map((s, i) => {
     depth: sDepth, ...(sGate ? { gate: sGate } : {}),
     taxo: sTaxo, taxoSrc: srcArr };
 }).filter(s => s.name);
+if (spellRefMiss.length) warn(`spells with no Spell_REF row (exact name): ${spellRefMiss.length} — ${spellRefMiss.slice(0, 8).join(', ')}`);
 console.log(`  spell availability: ${spellFavor} favor + ${spellGuild} guild spells carry depth+gate (rest = Standard/Starter/False God — none)`);
 console.log(`  spells: ${spells.length} · charges ${spells.filter(s => s.chargesSrc === 'code').length} code + ${spells.filter(s => s.chargesSrc === 'community').length} community · ${spells.filter(s => s.potency).length} w/ potency · ${spellTargetGrounded} single/multi-target from Spell_REF field · potency/target/source from Spell_REF.csv`);
 console.log(`  taxonomy fixes: Innate-Trait stripped ${innateTagStripped} · Animatus retagged ${animatusRetagged} · Persist→Extend-Duration retagged ${persistRetagged} (duration, not death)`);
@@ -1022,9 +995,6 @@ const matIcon = (m) => {                                    // copy a material's
 // material_stats.trait_id is NOT used here (it drifts ~1 block — e.g. Flubris's Ichor says 567, CSV 565).
 {
   const normP = (s) => String(s || '').toLowerCase().replace(/'s?\b/g, '').replace(/[^a-z0-9]+/g, '');
-  // genuine CSV item-name errors → the game's material name
-  const ITEM_ALIAS = { "sigil of the leeche": 'Sigil of the Leech', "sigil of the sphinxe": 'Sigil of the Sphinx',
-    'faded garnet': 'Fading Garnet', "cyhra's adamance": "Cyhra's Tattered Ear" };
   const matByName = new Map(), matByPoss = new Map();
   // punctuation/space/case-insensitive key: strip everything but [a-z0-9]. Built with collision
   // detection so an ambiguous key (2+ distinct materials) is DROPPED — we only canonicalize to an
@@ -1077,8 +1047,7 @@ const matIcon = (m) => {                                    // copy a material's
     if (tid == null) tid = traitIdByLoose.get(normL(traitName));  // last resort: unambiguous plural-tolerant match
     if (tid == null) continue;                                   // trait not shipped
     if (creaTraitIds.has(tid) || preLinked.has(tid)) continue;   // only truly-blank traits (no creature, no item)
-    const alias = ITEM_ALIAS[item.toLowerCase()];
-    const m = (alias && matByName.get(alias)) || matByName.get(item) || matByPoss.get(normP(item));
+    const m = matByName.get(item) || matByPoss.get(normP(item));
     if (!m) { refUnresolved.push(`${traitName} ⟵ "${item}"`); continue; }
     if (!traitIdByItemName.has(m.name)) { traitIdByItemName.set(m.name, tid); refLinked++; }
   }
@@ -1767,7 +1736,7 @@ function parseFavorCSV(file) {
 const favCell = (v) => { v = (v || '').trim(); if (!v || v === '-') return null; if (v === 'X') return 1;
   const m = v.match(/^(-?\d+(?:\.\d+)?)%?$/); return m ? +m[1] : null; };
 const favUnit = (v) => /%/.test(v || '') ? '%' : (v || '').trim() === 'X' ? 'bool' : '';
-const cleanColLabel = (h) => h.replace(/\s*\(.*$/, '').replace(/Embem/i, 'Emblem').trim();
+const cleanColLabel = (h) => h.replace(/\s*\(.*$/, '').trim();
 const _mtx = parseFavorCSV('Favor_MTX.csv'); const _mh = _mtx[0].map(h => h.trim());
 // column defs from the MTX header: cols 4..22 = Unique group, 24..39 = Generic group (23 is the group label)
 const favorColDefs = (a, b, group) => { const out = [];
