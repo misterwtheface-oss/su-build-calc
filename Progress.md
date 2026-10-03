@@ -1345,6 +1345,13 @@ MAPPING not for asserting PRESENCE; no inventing entities from the community-CSV
       confirmed Abomination's power order (15% more dmg → 10% less dodge → 35% less healing) = app + code. The flagged
       Animation order also user-confirmed (recover 50% more Health → take 10% more dmg → take 20% more dmg) = app. The
       code hooks (damage / damage / heal handler) fit Inverted's damage↔healing flip: NOT swapped; anomaly closed.
+  - **2026-10-03 "work through everything" pass (confirms SHIPPED):**
+    - **New decodes:** census fixes (6 unscanned hosts + 107 wrong trait ids) → 82/161 hidden traits decoded; 58/64
+      state-editing spells decoded; effect magnitudes / direction / scaling (`effect_magnitudes.json`); card power
+      targets; perk host-mechanics.
+    - **Overall provenance:** code 42% · llm 31% (was 56% llm this morning). LLM share by entity: traits 29% · perks 50% ·
+      spells 22% · relics 36% · cards 54%.
+    - **Pending review:** 16 proposals (4 Multiplied by, 4 card Active If, 8 card stat/potency tags on 3 cards).
     - **Spells decoded too** (per-spell switch in bc_CreatureCast; 82% agreement with app spell tags); taxonomy
       integration is next.
 - [ ] **Capped effects with no app surface yet** (keep in context — user 2026-10-02). `_su_extract data/model/dr_caps.json`
