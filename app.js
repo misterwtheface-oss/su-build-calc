@@ -480,7 +480,10 @@
   const perkText = (desc, rank) => richText(stripCondDesc(desc), rank);
   // code-grounded mechanics the game text omits (e.g. the 80% damage-reduction cap, per-rune effects) —
   // shipped as `notes` on traits / perks / relic ranks and shown beside, never inside, the prose
-  const fxNotes = (o) => o && o.notes && o.notes.length ? `<div class="fx-notes">${o.notes.map(n => `<span class="fx-note">${esc(n)}</span>`).join("")}</div>` : "";
+  // + `clarify`: code-grounded "what it actually does" lines for vague/misleading game text (separate from `desc`)
+  const fxNotes = (o) => !o ? "" :
+    (o.notes && o.notes.length ? `<div class="fx-notes">${o.notes.map(n => `<span class="fx-note">${esc(n)}</span>`).join("")}</div>` : "") +
+    (o.clarify && o.clarify.length ? o.clarify.map(c => `<div class="fx-clarify">${esc(c)}</div>`).join("") : "");
 
   // taxonomy filter: a creature's innate trait's human-facing tags ("Category::Value")
   const creatureTaxo = (c) => {

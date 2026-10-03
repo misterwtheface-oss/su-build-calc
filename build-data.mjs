@@ -2522,6 +2522,22 @@ const MINION_PHRASE = { 'Greater Demons': /\bgreater demons?\b/i, 'Lesser Demons
     console.log(`  dr-cap notes: ${hit}/${(caps.effects || []).length} effects tagged "${capTxt}" · ${capStripped} prose cap phrase(s) removed`);
     if (miss.length) warn(`dr-cap notes: ${miss.length} effect(s) not joined to app data: ${miss.join(', ')}`);
   } else warn('dr_caps.json missing — no damage-reduction cap notes');
+  // effect_clarifications.json — code-grounded "what it actually does" text, shipped as a SEPARATE `clarify: string[]`
+  // field (the localization `desc` stays verbatim game text). Joined trait→runtime id, perk→key, relic→name+rank.
+  const clarF = path.join(MODEL, 'effect_clarifications.json');
+  if (fs.existsSync(clarF)) {
+    const traitByRuntime = new Map(); for (const t of Object.values(traits)) for (const r of t.runtimeIds || []) traitByRuntime.set(r, t);
+    let hit = 0; const miss = [];
+    for (const e of readJSON(clarF).entries || []) {
+      const tgt = e.kind === 'trait' ? traitByRuntime.get(e.trait_runtime_id)
+        : e.kind === 'perk' ? perkByKey.get(e.perk_key)
+        : e.kind === 'relic' ? relicRank(e.relic_name || e.name, e.rank) : null;
+      if (tgt && (!e.name || e.kind !== 'trait' || norm(tgt.name) === norm(e.name))) { ((tgt.clarify ||= []).includes(e.text)) || tgt.clarify.push(e.text); hit++; }
+      else miss.push(`${e.kind}:${e.name}`);
+    }
+    console.log(`  effect clarifications: ${hit} attached`);
+    if (miss.length) warn(`effect clarifications not joined to app data: ${miss.join(', ')}`);
+  }
   const runeF = path.join(MODEL, 'rune_knight_perks.json');
   if (fs.existsSync(runeF)) {
     const short = (r) => String(r).replace(/^Rune of /, '');
