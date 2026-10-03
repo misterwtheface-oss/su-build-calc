@@ -1285,6 +1285,15 @@ MAPPING not for asserting PRESENCE; no inventing entities from the community-CSV
       runtime ids listed in `data/reference/code_taxo_approved.json`.
     - **APPROVED + SHIPPED 2026-10-03:** all 24 (user). 22 replaced (14 Ally Takes Damage → Enemy Attacks, 8 Ally Attacks →
       Enemy Dies) + 2 added (Rapid Digestion Enemy Dies, Superfluidity Ally Casts).
+  - **2026-10-03 phase 2 SHIPPED (confirms).** Side-sensitive Affect-on-* categories, Related Stat/Minion, Active If
+    and more event mappings (`_su_extract code/CODE_TAXO.md`).
+    - **Coverage:** trait tag provenance is now code 29% · token 29% · llm 35% (was 56% llm).
+    - **No deal/take-damage side errors found:** the code agreed with every Deal/Take tag it could check.
+    - **15 proposals pending review**, incl. 2 ally/enemy side errors (Hangover Cure, Doom and Gloom).
+    - **Durable approvals.** Approvals are stored as explicit changes in `code_taxo_approved.json` (`changes`: per
+      runtime id {replace:[{from,to}], add:[]}). They are applied before the confirm pass, so a regenerated
+      code_taxo.json can't undo them. Bug fixed: phase 2 computed proposals against already-corrected app data, which
+      silently reverted the 24 approved fixes.
 - [ ] **Capped effects with no app surface yet** (keep in context — user 2026-10-02). `_su_extract data/model/dr_caps.json`
   has 6 entries that `build-data` can't attach a note to, because the app has no place for them: **Life Guild bonus 1**
   (attack/spell damage taken), **Nature Guild bonus 3** (indirect damage taken), and the **4 Race Mastery lines**.

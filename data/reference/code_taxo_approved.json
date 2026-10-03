@@ -1,55 +1,283 @@
 {
- "_note": "Runtime trait ids whose code_taxo.json replace/add proposals are user-approved (2026-10-03: all 24 initial proposals).",
- "approved": [
-  35,
-  67,
-  68,
-  102,
-  103,
-  104,
-  105,
-  106,
-  107,
-  326,
-  329,
-  367,
-  471,
-  473,
-  474,
-  539,
-  823,
-  1035,
-  1041,
-  1043,
-  1189,
-  1662,
-  1759,
-  2025
- ],
- "names": {
-  "35": "Soulstone Splinter",
-  "67": "Thorns",
-  "68": "Second Wind",
-  "102": "Midnight Feast",
-  "103": "Consumption",
-  "104": "Deadly Instincts",
-  "105": "Demoralize",
-  "106": "Augmentation",
-  "107": "Rend and Tear",
-  "326": "Cataclysm",
-  "329": "Chip Off the Block",
-  "367": "Shock Aura",
-  "471": "Optimism",
-  "473": "Sacred Bark",
-  "474": "Unscathed",
-  "539": "Animated Treasure",
-  "823": "Rapid Digestion",
-  "1035": "Solar Flare",
-  "1041": "Ovular Barrage",
-  "1043": "Boing, Boing, Boing",
-  "1189": "Relish the Kill",
-  "1662": "Superfluidity",
-  "1759": "Ninetails's Revenge",
-  "2025": "Souls of the Damned"
+ "_note": "USER-APPROVED code-grounded taxonomy changes, stored EXPLICITLY (durable: applied by build-data before the code_taxo confirm pass, independent of code_taxo.json regeneration). Key = runtime trait id.",
+ "changes": {
+  "35": {
+   "name": "Soulstone Splinter",
+   "replace": [
+    {
+     "from": [
+      "Activates When::Ally Takes Damage"
+     ],
+     "to": "Activates When::Enemy Attacks"
+    }
+   ],
+   "add": []
+  },
+  "67": {
+   "name": "Thorns",
+   "replace": [
+    {
+     "from": [
+      "Activates When::Ally Takes Damage"
+     ],
+     "to": "Activates When::Enemy Attacks"
+    }
+   ],
+   "add": []
+  },
+  "68": {
+   "name": "Second Wind",
+   "replace": [
+    {
+     "from": [
+      "Activates When::Ally Takes Damage"
+     ],
+     "to": "Activates When::Enemy Attacks"
+    }
+   ],
+   "add": []
+  },
+  "102": {
+   "name": "Midnight Feast",
+   "replace": [
+    {
+     "from": [
+      "Activates When::Ally Attacks"
+     ],
+     "to": "Activates When::Enemy Dies"
+    }
+   ],
+   "add": []
+  },
+  "103": {
+   "name": "Consumption",
+   "replace": [
+    {
+     "from": [
+      "Activates When::Ally Attacks"
+     ],
+     "to": "Activates When::Enemy Dies"
+    }
+   ],
+   "add": []
+  },
+  "104": {
+   "name": "Deadly Instincts",
+   "replace": [
+    {
+     "from": [
+      "Activates When::Ally Attacks"
+     ],
+     "to": "Activates When::Enemy Dies"
+    }
+   ],
+   "add": []
+  },
+  "105": {
+   "name": "Demoralize",
+   "replace": [
+    {
+     "from": [
+      "Activates When::Ally Attacks"
+     ],
+     "to": "Activates When::Enemy Dies"
+    }
+   ],
+   "add": []
+  },
+  "106": {
+   "name": "Augmentation",
+   "replace": [
+    {
+     "from": [
+      "Activates When::Ally Attacks"
+     ],
+     "to": "Activates When::Enemy Dies"
+    }
+   ],
+   "add": []
+  },
+  "107": {
+   "name": "Rend and Tear",
+   "replace": [
+    {
+     "from": [
+      "Activates When::Ally Attacks"
+     ],
+     "to": "Activates When::Enemy Dies"
+    }
+   ],
+   "add": []
+  },
+  "326": {
+   "name": "Cataclysm",
+   "replace": [
+    {
+     "from": [
+      "Activates When::Ally Takes Damage"
+     ],
+     "to": "Activates When::Enemy Attacks"
+    }
+   ],
+   "add": []
+  },
+  "329": {
+   "name": "Chip Off the Block",
+   "replace": [
+    {
+     "from": [
+      "Activates When::Ally Takes Damage"
+     ],
+     "to": "Activates When::Enemy Attacks"
+    }
+   ],
+   "add": []
+  },
+  "367": {
+   "name": "Shock Aura",
+   "replace": [
+    {
+     "from": [
+      "Activates When::Ally Takes Damage"
+     ],
+     "to": "Activates When::Enemy Attacks"
+    }
+   ],
+   "add": []
+  },
+  "471": {
+   "name": "Optimism",
+   "replace": [
+    {
+     "from": [
+      "Activates When::Ally Takes Damage"
+     ],
+     "to": "Activates When::Enemy Attacks"
+    }
+   ],
+   "add": []
+  },
+  "473": {
+   "name": "Sacred Bark",
+   "replace": [
+    {
+     "from": [
+      "Activates When::Ally Takes Damage"
+     ],
+     "to": "Activates When::Enemy Attacks"
+    }
+   ],
+   "add": []
+  },
+  "474": {
+   "name": "Unscathed",
+   "replace": [
+    {
+     "from": [
+      "Activates When::Ally Takes Damage"
+     ],
+     "to": "Activates When::Enemy Attacks"
+    }
+   ],
+   "add": []
+  },
+  "539": {
+   "name": "Animated Treasure",
+   "replace": [
+    {
+     "from": [
+      "Activates When::Ally Takes Damage"
+     ],
+     "to": "Activates When::Enemy Attacks"
+    }
+   ],
+   "add": []
+  },
+  "823": {
+   "name": "Rapid Digestion",
+   "replace": [],
+   "add": [
+    "Activates When::Enemy Dies"
+   ]
+  },
+  "1035": {
+   "name": "Solar Flare",
+   "replace": [
+    {
+     "from": [
+      "Activates When::Ally Takes Damage"
+     ],
+     "to": "Activates When::Enemy Attacks"
+    }
+   ],
+   "add": []
+  },
+  "1041": {
+   "name": "Ovular Barrage",
+   "replace": [
+    {
+     "from": [
+      "Activates When::Ally Takes Damage"
+     ],
+     "to": "Activates When::Enemy Attacks"
+    }
+   ],
+   "add": []
+  },
+  "1043": {
+   "name": "Boing, Boing, Boing",
+   "replace": [
+    {
+     "from": [
+      "Activates When::Ally Takes Damage"
+     ],
+     "to": "Activates When::Enemy Attacks"
+    }
+   ],
+   "add": []
+  },
+  "1189": {
+   "name": "Relish the Kill",
+   "replace": [
+    {
+     "from": [
+      "Activates When::Ally Attacks"
+     ],
+     "to": "Activates When::Enemy Dies"
+    }
+   ],
+   "add": []
+  },
+  "1662": {
+   "name": "Superfluidity",
+   "replace": [],
+   "add": [
+    "Activates When::Ally Casts"
+   ]
+  },
+  "1759": {
+   "name": "Ninetails's Revenge",
+   "replace": [
+    {
+     "from": [
+      "Activates When::Ally Takes Damage"
+     ],
+     "to": "Activates When::Enemy Attacks"
+    }
+   ],
+   "add": []
+  },
+  "2025": {
+   "name": "Souls of the Damned",
+   "replace": [
+    {
+     "from": [
+      "Activates When::Ally Attacks"
+     ],
+     "to": "Activates When::Enemy Dies"
+    }
+   ],
+   "add": []
+  }
  }
 }

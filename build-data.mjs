@@ -2276,32 +2276,34 @@ for (const cd of cards) applyAudit('card:' + cd.id, cd);
 console.log(`  audit overrides: ${Object.keys(auditOv).length} defined · ${auditHits} matched · +${auditAdds} tags · -${auditRems} tags (src=audit)`);
 
 // ── CODE-GROUNDED taxonomy (_su_extract code/build_code_taxo.py → data/model/code_taxo.json, from the decoded trait
-// signatures). Scope: Activates When / Activates at / Related Buff / Related Debuff.
-//   confirm  tag the code backs → provenance becomes 'code' (tag unchanged)
-//   replace / add  description + code agree on a trigger the app has wrong / lacks → applied ONLY for traits listed in
-//            data/reference/code_taxo_approved.json (user-reviewed); unapproved proposals are reported, not shipped.
+// signatures).
+//   1. APPROVED changes (data/reference/code_taxo_approved.json `changes`: explicit {replace:[{from,to}], add:[]} per
+//      runtime trait id) are applied FIRST and stored explicitly, so regenerating code_taxo.json can never undo them.
+//   2. confirm: every tag the code backs → provenance 'code' (tag unchanged).
+//   3. replace/add proposals in code_taxo.json not yet in the approved file are REPORTED (pending review), not shipped.
 {
   const CT = readJSON(path.join(MODEL, 'code_taxo.json')).traits;
   const APPROVED_PATH = path.join(ROOT, 'data', 'reference', 'code_taxo_approved.json');
-  const approved = new Set(fs.existsSync(APPROVED_PATH) ? (readJSON(APPROVED_PATH).approved || []).map(String) : []);
-  let conf = 0, repl = 0, adds = 0, pending = 0;
+  const APPROVED = fs.existsSync(APPROVED_PATH) ? (readJSON(APPROVED_PATH).changes || {}) : {};
+  let conf = 0, repl = 0, adds = 0, pending = 0, pendingTraits = [];
   for (const tr of Object.values(traits)) {
+    const t = tr.taxo, s2 = tr.taxoSrc;
     for (const rid of tr.runtimeIds || []) {
-      const c = CT[String(rid)]; if (!c) continue;
-      const t = tr.taxo, s2 = tr.taxoSrc;
-      for (const tag of c.confirm) { const i = t.indexOf(tag); if (i >= 0 && s2[i] !== 'code') { s2[i] = 'code'; conf++; } }
-      const changes = c.replace.length + c.add.length;
-      if (!changes) continue;
-      if (!approved.has(String(rid))) { pending += changes; continue; }
-      for (const r of c.replace) {
-        for (const from of r.from) { const i = t.indexOf(from); if (i >= 0) { t.splice(i, 1); s2.splice(i, 1); } }
-        if (r.to && !t.includes(r.to)) { t.push(r.to); s2.push('code'); }
-        repl++;
+      const ap = APPROVED[String(rid)];
+      if (ap) {
+        for (const r of ap.replace || []) {
+          for (const from of r.from) { const i = t.indexOf(from); if (i >= 0) { t.splice(i, 1); s2.splice(i, 1); } }
+          if (r.to && !t.includes(r.to)) { t.push(r.to); s2.push('code'); repl++; }
+        }
+        for (const tag of ap.add || []) if (!t.includes(tag)) { t.push(tag); s2.push('code'); adds++; }
       }
-      for (const tag of c.add) if (!t.includes(tag)) { t.push(tag); s2.push('code'); adds++; }
+      const c = CT[String(rid)]; if (!c) continue;
+      for (const tag of c.confirm) { const i = t.indexOf(tag); if (i >= 0 && s2[i] !== 'code') { s2[i] = 'code'; conf++; } }
+      const open = [...c.replace.filter(r => !(r.to && t.includes(r.to))), ...c.add.filter(tag => !t.includes(tag))];
+      if (open.length) { pending += open.length; pendingTraits.push(`${rid} ${tr.name}`); }
     }
   }
-  console.log(`  code taxonomy: ${conf} tags code-confirmed · ${repl} replaced · +${adds} added · ${pending} proposals awaiting review (code_taxo_approved.json)`);
+  console.log(`  code taxonomy: ${Object.keys(APPROVED).length} approved traits (${repl} replaced · +${adds} added) · ${conf} tags code-confirmed · ${pending} proposals awaiting review${pendingTraits.length ? ` (${pendingTraits.slice(0, 20).join('; ')})` : ''}`);
 }
 
 // ── Shops: icon + drill-in joins (needs creatures / spells / traitItems / spellProps / skins) ──
