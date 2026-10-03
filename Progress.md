@@ -1352,6 +1352,12 @@ MAPPING not for asserting PRESENCE; no inventing entities from the community-CSV
     - **Overall provenance:** code 42% · llm 31% (was 56% llm this morning). LLM share by entity: traits 29% · perks 50% ·
       spells 22% · relics 36% · cards 54%.
     - **APPROVED + SHIPPED:** all 16 (4 Multiplied by, 4 card Active If, 8 card stat/potency tags).
+  - **2026-10-03 final decode pass** (D: loop counts / damage-type / race-class compares / intercept; E: card rehost +
+    Memento / Thoughts and Prayers / Time Stop):
+    - **Results:** all "irreducible" gaps proved decodable. Cards 451/465 powers (Construct = dead text). Provenance now
+      code 44% · llm 31%.
+    - **Pending review:** 13 proposals (10 class Related Types on perks, Total Deprivation Avatar, 2 Mireling card tags)
+      + the Time Stop tag question.
     - **Spells decoded too** (per-spell switch in bc_CreatureCast; 82% agreement with app spell tags); taxonomy
       integration is next.
 - [ ] **Capped effects with no app surface yet** (keep in context — user 2026-10-02). `_su_extract data/model/dr_caps.json`
