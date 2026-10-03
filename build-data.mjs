@@ -2379,6 +2379,32 @@ const MINION_PHRASE = { 'Greater Demons': /\bgreater demons?\b/i, 'Lesser Demons
     if (open.length) { rpend += open.length; rpendList.push(`${key} ${rl.name}`); }
   }
   console.log(`  code taxonomy (relics): ${Object.keys(APPROVED_R).length} approved · +${radds} added · ${rconf} tags code-confirmed · ${rpend} proposals awaiting review${rpendList.length ? ` (${rpendList.join('; ')})` : ''}`);
+  // spells + cards — same mechanism, keyed by app id (code_taxo.json `spells` / `cards`; approvals `spellChanges` / `cardChanges`)
+  const applySection = (label, list, section, approvalKey, rejectKey) => {
+    const CTX = readJSON(path.join(MODEL, 'code_taxo.json'))[section] || {};
+    const AF = fs.existsSync(APPROVED_PATH) ? readJSON(APPROVED_PATH) : {};
+    const AP = AF[approvalKey] || {}, RJ = AF[rejectKey] || {};
+    let conf = 0, adds = 0, pend = 0; const pendList = [];
+    for (const e of list) {
+      const key = String(e.id), t = e.taxo || (e.taxo = []), s2 = e.taxoSrc || (e.taxoSrc = t.map(() => 'derived'));
+      const ap = AP[key];
+      if (ap) {
+        for (const r of ap.replace || []) {
+          for (const from of r.from) { const i = t.indexOf(from); if (i >= 0) { t.splice(i, 1); s2.splice(i, 1); } }
+          if (r.to && !t.includes(r.to)) { t.push(r.to); s2.push('code'); }
+        }
+        for (const tag of ap.add || []) if (!t.includes(tag)) { t.push(tag); s2.push('code'); adds++; }
+      }
+      const c = CTX[key]; if (!c) continue;
+      for (const tag of c.confirm) { const i = t.indexOf(tag); if (i >= 0 && s2[i] !== 'code') { s2[i] = 'code'; conf++; } }
+      const rej = new Set(RJ[key] || []);
+      const open = [...c.replace.filter(r => !(r.to && (t.includes(r.to) || rej.has(r.to)))), ...c.add.filter(tag => !t.includes(tag) && !rej.has(tag))];
+      if (open.length) { pend += open.length; pendList.push(`${key} ${e.name}`); }
+    }
+    console.log(`  code taxonomy (${label}): ${Object.keys(AP).length} approved · +${adds} added · ${conf} tags code-confirmed · ${pend} proposals awaiting review`);
+  };
+  applySection('spells', spells, 'spells', 'spellChanges', 'spellRejections');
+  applySection('cards', cards, 'cards', 'cardChanges', 'cardRejections');
 }
 
 // ── Action/Mechanic IMPLIED from exact tags (2026-10-03). Action/Mechanic is the broad "what mechanic does this touch"

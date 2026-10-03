@@ -1336,6 +1336,11 @@ MAPPING not for asserting PRESENCE; no inventing entities from the community-CSV
     - **Applied in build-data:** relic confirms (326) with `relicChanges` approvals. Trait confirms 3,347, perks 695.
     - **APPROVED 2026-10-03:** all 7 — Action/Mechanic Relic (Total Deprivation, Last of the Ancients, Divine Dualwield),
       Spell Gems (Heresy), Turn Counter (Uncontrollable Anger; relic Fatum & Fortuna), Creature Race (Gone But Not Forgotten).
+  - **2026-10-03 spells + cards SHIPPED (confirms).**
+    - **Spells:** 3,112 tags code-confirmed (per-spell blocks in bc_CreatureCast).
+    - **Cards:** realm card powers decoded via `inv_CardSetPowerUnlocked(family, power)` (423/465 slots; validation event
+      93.5%, side 96%); 78 card tags confirmed.
+    - **Pending review:** 37 spell + 3 card proposals; approvals go in `spellChanges` / `cardChanges`.
     - **Spells decoded too** (per-spell switch in bc_CreatureCast; 82% agreement with app spell tags); taxonomy
       integration is next.
 - [ ] **Capped effects with no app surface yet** (keep in context — user 2026-10-02). `_su_extract data/model/dr_caps.json`
