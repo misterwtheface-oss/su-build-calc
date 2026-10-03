@@ -339,6 +339,30 @@
     "Affect on Stats::Stat is Decreased"
    ],
    "approved": "2026-10-03"
+  },
+  "365": {
+   "name": "Blood Magic",
+   "replace": [],
+   "add": [
+    "Multiplied by::Amount of X Stat"
+   ],
+   "approved": "2026-10-03"
+  },
+  "771": {
+   "name": "Pandemonium Life",
+   "replace": [],
+   "add": [
+    "Multiplied by::Current/Missing Health %"
+   ],
+   "approved": "2026-10-03"
+  },
+  "776": {
+   "name": "Pandemonium Alacrity",
+   "replace": [],
+   "add": [
+    "Multiplied by::Amount of X Stat"
+   ],
+   "approved": "2026-10-03"
   }
  },
  "rejected": {
@@ -451,6 +475,14 @@
    "replace": [],
    "add": [
     "Action/Mechanic::Relic"
+   ],
+   "approved": "2026-10-03"
+  },
+  "16:BLOODRAGE": {
+   "name": "Bloodrage",
+   "replace": [],
+   "add": [
+    "Multiplied by::Amount of X Stat"
    ],
    "approved": "2026-10-03"
   }
@@ -781,7 +813,8 @@
    "name": "Paragon",
    "replace": [],
    "add": [
-    "Activates When::Enemy is Debuffed"
+    "Activates When::Enemy is Debuffed",
+    "Active If::Debuffed with X"
    ],
    "approved": "2026-10-03"
   },
@@ -798,6 +831,52 @@
    "replace": [],
    "add": [
     "Affect on Damage::Deal More Damage"
+   ],
+   "approved": "2026-10-03"
+  },
+  "37": {
+   "name": "Doomguard",
+   "replace": [],
+   "add": [
+    "Active If::Buffed with X"
+   ],
+   "approved": "2026-10-03"
+  },
+  "70": {
+   "name": "Leper",
+   "replace": [],
+   "add": [
+    "Active If::Debuffed with X"
+   ],
+   "approved": "2026-10-03"
+  },
+  "148": {
+   "name": "Lucanian",
+   "replace": [],
+   "add": [
+    "Affect on Stats::Stat is Increased",
+    "Related Stat::Attack (Stat)",
+    "Related Stat::Intelligence"
+   ],
+   "approved": "2026-10-03"
+  },
+  "152": {
+   "name": "Spacecat",
+   "replace": [],
+   "add": [
+    "Affect on Spells::More Spell Potency"
+   ],
+   "approved": "2026-10-03"
+  },
+  "154": {
+   "name": "Underdweller",
+   "replace": [],
+   "add": [
+    "Active If::Debuffed with X",
+    "Affect on Stats::Stat is Decreased",
+    "Related Debuff::Feared",
+    "Related Stat::Attack (Stat)",
+    "Related Stat::Intelligence"
    ],
    "approved": "2026-10-03"
   }

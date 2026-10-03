@@ -1351,7 +1351,7 @@ MAPPING not for asserting PRESENCE; no inventing entities from the community-CSV
       targets; perk host-mechanics.
     - **Overall provenance:** code 42% · llm 31% (was 56% llm this morning). LLM share by entity: traits 29% · perks 50% ·
       spells 22% · relics 36% · cards 54%.
-    - **Pending review:** 16 proposals (4 Multiplied by, 4 card Active If, 8 card stat/potency tags on 3 cards).
+    - **APPROVED + SHIPPED:** all 16 (4 Multiplied by, 4 card Active If, 8 card stat/potency tags).
     - **Spells decoded too** (per-spell switch in bc_CreatureCast; 82% agreement with app spell tags); taxonomy
       integration is next.
 - [ ] **Capped effects with no app surface yet** (keep in context — user 2026-10-02). `_su_extract data/model/dr_caps.json`
