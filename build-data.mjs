@@ -2278,16 +2278,22 @@ console.log(`  audit overrides: ${Object.keys(auditOv).length} defined · ${audi
 // ── Related Minion — values added 2026-10-03 from the perk decode (minions the taxonomy lacked). Grounded on the game's
 // own {CONDNAME_MINION_<KEY>} description token (or the minion's exact name) across traits/perks/spells/relics/cards.
 // The data carries EVERY value; the app's "hide single-object tags" toggle decides what is displayed (user rule).
-const NEW_MINIONS = { 'Unstable Horror': 'UNSTABLEHORROR', Doppelganger: 'DOPPELGANGER', Asmodeus: 'ASMODEUS',
-  Beelzebub: 'BEELZEBUB', Mammon: 'MAMMON', Leviathan: 'LEVIATHAN', Belphegor: 'BELPHEGOR', Amalgamation: 'AMALGAMATION',
-  Satanachia: 'SATANACHIA', Lucifer: 'LUCIFER' };
+// Single minions keep their own value; demon sets collapse into one value each, like Four Horsemen. The game classifies
+// them itself: each minion's description ends "This minion is a Greater/Lesser Demon."
+const NEW_MINIONS = { 'Unstable Horror': ['UNSTABLEHORROR'], Doppelganger: ['DOPPELGANGER'], Amalgamation: ['AMALGAMATION'],
+  'Greater Demons': ['ASMODEUS', 'BEELZEBUB', 'MAMMON', 'LEVIATHAN', 'BELPHEGOR', 'SATANACHIA', 'LUCIFER'],
+  'Lesser Demons': ['BRIMFIEND', 'FIREIMP', 'CHAOSSATYR'] };
+// exact game wording also references a whole set ("your creatures' Greater Demons", "Lesser or Greater Demons")
+const MINION_PHRASE = { 'Greater Demons': /\bgreater demons?\b/i, 'Lesser Demons': /\blesser (or greater )?demons?\b/i };
 {
   let added = 0;
   const tagMinions = (e, text) => {
     const t = e.taxo || (e.taxo = []), s2 = e.taxoSrc || (e.taxoSrc = t.map(() => 'derived'));
-    const flat = String(text || '').toUpperCase().replace(/[\s_]/g, '');
-    for (const [name, key] of Object.entries(NEW_MINIONS)) {
-      if (!flat.includes('MINION' + key) && !new RegExp(`\\b${name}\\b`, 'i').test(String(text || ''))) continue;
+    const raw = String(text || ''), flat = raw.toUpperCase().replace(/[\s_]/g, '');
+    for (const [name, keys] of Object.entries(NEW_MINIONS)) {
+      const viaToken = keys.some(k => flat.includes('CONDNAMEMINION' + k));
+      const viaPhrase = MINION_PHRASE[name] ? MINION_PHRASE[name].test(raw) : new RegExp(`\\b${name}\\b`, 'i').test(raw);
+      if (!viaToken && !viaPhrase) continue;
       const tag = 'Related Minion::' + name;
       if (!t.includes(tag)) { t.push(tag); s2.push('token'); added++; }
     }
@@ -2299,7 +2305,7 @@ const NEW_MINIONS = { 'Unstable Horror': 'UNSTABLEHORROR', Doppelganger: 'DOPPEL
   for (const cd of cards) tagMinions(cd, JSON.stringify(cd.levels || cd.effects || cd.desc || ''));
   const cat = taxonomy.categories.find(c => c.category === 'Related Minion');
   if (cat) for (const name of Object.keys(NEW_MINIONS)) if (!cat.values.includes(name)) cat.values.push(name);
-  console.log(`  related minion (new values): +${added} tags across ${Object.keys(NEW_MINIONS).length} minions`);
+  console.log(`  related minion (new values): +${added} tags across ${Object.keys(NEW_MINIONS).length} values`);
 }
 
 // ── CODE-GROUNDED taxonomy (_su_extract code/build_code_taxo.py → data/model/code_taxo.json, from the decoded trait

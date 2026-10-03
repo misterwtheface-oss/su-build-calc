@@ -281,8 +281,9 @@ Inverted · Mania · Poisoned · Scorned · Silenced · Sleeping · Snared · St
 Each value = references that specific **minion**. `Random Minion` = random/unspecified; `Four Horsemen` =
 the Death/War/Famine/Conquest set. Values: Animated Gem · Animated Weapon · Dire Wolves · Four Horsemen ·
 Spiderlings · Writhelings · Zombies · Littletorun · Illusion · Random Minion · Unstable Horror · Doppelganger ·
-Amalgamation · Asmodeus · Beelzebub · Mammon · Leviathan · Belphegor · Satanachia · Lucifer (last 10 added 2026-10-03
-from the perk decode; grounded on {CONDNAME_MINION_*} tokens).
+Amalgamation · **Greater Demons** (Asmodeus/Beelzebub/Mammon/Leviathan/Belphegor/Satanachia/Lucifer) · **Lesser Demons**
+(Brim Fiends/Fire Imps/Chaos Satyrs). Sets collapse like Four Horsemen — the game's own minion text says "This minion is a
+Greater/Lesser Demon"; tagged from the member's {CONDNAME_MINION_*} token or the exact phrase "Greater/Lesser Demon(s)".
 
 ## Related Spells
 Which spell **class / kind / named spell** an effect references.
