@@ -1329,6 +1329,14 @@ MAPPING not for asserting PRESENCE; no inventing entities from the community-CSV
     (1,448). Spell decode research is running.
   - **Provenance chips hidden (user, 2026-10-03):** the per-tag source chip (code/token/implied/llm…) in the taxonomy detail
     is behind `FEATURES.taxoSource` (app.js, default false). The data keeps `taxoSrc`; flip one flag to surface it.
+  - **2026-10-03 mechanics + relics:** helper calls/vars inside each gate block (inv_Artifact*, scr_Relic*,
+    bc_GetAdjacentCreatures, race/class counters, battleturns, spell-gem fields) now ground Action/Mechanic values.
+    - **Relics decoded** via `scr_CritHasRelicPerk(creature, relic, k)` gates (rank = 10·k): 295/310 rank perks;
+      validation trigger 95%, side 100%, conditions 93%.
+    - **Applied in build-data:** relic confirms (326) with `relicChanges` approvals. Trait confirms 3,347, perks 695.
+    - **Pending review:** 6 perk + 1 relic proposal.
+    - **Spells decoded too** (per-spell switch in bc_CreatureCast; 82% agreement with app spell tags); taxonomy
+      integration is next.
 - [ ] **Capped effects with no app surface yet** (keep in context — user 2026-10-02). `_su_extract data/model/dr_caps.json`
   has 6 entries that `build-data` can't attach a note to, because the app has no place for them: **Life Guild bonus 1**
   (attack/spell damage taken), **Nature Guild bonus 3** (indirect damage taken), and the **4 Race Mastery lines**.

@@ -2359,6 +2359,26 @@ const MINION_PHRASE = { 'Greater Demons': /\bgreater demons?\b/i, 'Lesser Demons
     if (open.length) { ppend += open.length; ppendList.push(`${key} ${p.name}`); }
   }
   console.log(`  code taxonomy (perks): ${Object.keys(APPROVED_P).length} approved · ${prepl} replaced · +${padds} added · ${pconf} tags code-confirmed · ${ppend} proposals awaiting review${ppendList.length ? ` (${ppendList.slice(0, 12).join('; ')})` : ''}`);
+  // relics — keyed by the app relic id (code_taxo.json `relics`, from scr_CritHasRelicPerk gates); approvals in `relicChanges`
+  const CTR = readJSON(path.join(MODEL, 'code_taxo.json')).relics || {};
+  const APPROVED_R = fs.existsSync(APPROVED_PATH) ? (readJSON(APPROVED_PATH).relicChanges || {}) : {};
+  let rconf = 0, radds = 0, rpend = 0; const rpendList = [];
+  for (const rl of relics) {
+    const key = String(rl.id), t = rl.taxo || (rl.taxo = []), s2 = rl.taxoSrc || (rl.taxoSrc = t.map(() => 'derived'));
+    const ap = APPROVED_R[key];
+    if (ap) {
+      for (const r of ap.replace || []) {
+        for (const from of r.from) { const i = t.indexOf(from); if (i >= 0) { t.splice(i, 1); s2.splice(i, 1); } }
+        if (r.to && !t.includes(r.to)) { t.push(r.to); s2.push('code'); }
+      }
+      for (const tag of ap.add || []) if (!t.includes(tag)) { t.push(tag); s2.push('code'); radds++; }
+    }
+    const c = CTR[key]; if (!c) continue;
+    for (const tag of c.confirm) { const i = t.indexOf(tag); if (i >= 0 && s2[i] !== 'code') { s2[i] = 'code'; rconf++; } }
+    const open = [...c.replace.filter(r => !(r.to && t.includes(r.to))), ...c.add.filter(tag => !t.includes(tag))];
+    if (open.length) { rpend += open.length; rpendList.push(`${key} ${rl.name}`); }
+  }
+  console.log(`  code taxonomy (relics): ${Object.keys(APPROVED_R).length} approved · +${radds} added · ${rconf} tags code-confirmed · ${rpend} proposals awaiting review${rpendList.length ? ` (${rpendList.join('; ')})` : ''}`);
 }
 
 // ── Action/Mechanic IMPLIED from exact tags (2026-10-03). Action/Mechanic is the broad "what mechanic does this touch"
