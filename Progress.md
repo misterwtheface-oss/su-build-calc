@@ -1387,6 +1387,11 @@ MAPPING not for asserting PRESENCE; no inventing entities from the community-CSV
     `taxo_residual.json` as (a) decodable-not-done / (b) REVIEW / (c) no static code.
     - **REVIEW totals:** Stats-only-scales 86, Attack on kill triggers 4, Multiplied by on threshold text 4, triggers on
       passive "activate N more times" 5, Vision Quest Illusion → Doppelganger 1.
+  - **2026-10-03 Task L** (residual "decodable" bucket): detokenised descriptions; condition-type matching; new code
+    semantics (redid = another turn, turnspeed at setup = starting placement, passive/passive2 = innate/fused trait, …).
+    - **Result:** residual decodable 3,451 → 2,812.
+    - **New REVIEW:** B8 Automatic/Extra on AI-turn boss parts (16), B9 Creeping Doom Race → Class (1), B10 Harbingers
+      Timeline → turns-taken (9).
     - **Spells decoded too** (per-spell switch in bc_CreatureCast; 82% agreement with app spell tags); taxonomy
       integration is next.
 - [ ] **Capped effects with no app surface yet** (keep in context — user 2026-10-02). `_su_extract data/model/dr_caps.json`
