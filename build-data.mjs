@@ -239,6 +239,9 @@ for (const e of tc.entities) {
 }
 // human-facing 2-level tag taxonomy (Category -> Value) + per-trait assignments
 const taxonomy = readJSON(path.join(MODEL, 'tag_taxonomy.json'));
+// Action/Mechanic::Damage (user ruling 2026-10-04): damage where the code does NOT make Attack or Spell/Cast explicit
+// (generic damage handler gates, DoT, damage effects). Replaces the old Attack+Cast pair used to mean "any damage".
+{ const am = taxonomy.categories.find(c => c.category === 'Action/Mechanic'); if (am && !am.values.includes('Damage')) am.values.push('Damage'); }
 const taxoTags = readJSON(path.join(MODEL, 'trait_taxonomy_tags.json')).by_trait;
 // "Animatus" (the golem race) isn't in the Related Types vocab, so the classifier snapped
 // Animatus-referencing effects to the nearest value "Animation" (a different race). Add Animatus
@@ -2340,7 +2343,7 @@ const MINION_PHRASE = { 'Greater Demons': /\bgreater demons?\b/i, 'Lesser Demons
       }
       const c = CT[String(rid)]; if (!c) continue;
       for (const tag of c.confirm) { const i = t.indexOf(tag); if (i >= 0 && s2[i] !== 'code') { s2[i] = 'code'; conf++; } }
-      const open = [...c.replace.filter(r => !(r.to && t.includes(r.to))), ...c.add.filter(tag => !t.includes(tag))];
+      const open = [...c.replace.filter(r => r.to !== 'Action/Mechanic::Damage' && !(r.to && t.includes(r.to))), ...c.add.filter(tag => tag !== 'Action/Mechanic::Damage' && !t.includes(tag))];
       if (open.length) { pending += open.length; pendingTraits.push(`${rid} ${tr.name}`); }
     }
   }
@@ -2363,7 +2366,7 @@ const MINION_PHRASE = { 'Greater Demons': /\bgreater demons?\b/i, 'Lesser Demons
     const c = CTP[key]; if (!c) continue;
     for (const tag of c.confirm) { const i = t.indexOf(tag); if (i >= 0 && s2[i] !== 'code') { s2[i] = 'code'; pconf++; } }
     const rej = new Set(REJECTED_P[key] || []);   // user-rejected proposals never resurface as pending
-    const open = [...c.replace.filter(r => !(r.to && (t.includes(r.to) || rej.has(r.to)))), ...c.add.filter(tag => !t.includes(tag) && !rej.has(tag))];
+    const open = [...c.replace.filter(r => r.to !== 'Action/Mechanic::Damage' && !(r.to && (t.includes(r.to) || rej.has(r.to)))), ...c.add.filter(tag => tag !== 'Action/Mechanic::Damage' && !t.includes(tag) && !rej.has(tag))];
     if (open.length) { ppend += open.length; ppendList.push(`${key} ${p.name}`); }
   }
   console.log(`  code taxonomy (perks): ${Object.keys(APPROVED_P).length} approved · ${prepl} replaced · +${padds} added · ${pconf} tags code-confirmed · ${ppend} proposals awaiting review${ppendList.length ? ` (${ppendList.slice(0, 12).join('; ')})` : ''}`);
@@ -2383,7 +2386,7 @@ const MINION_PHRASE = { 'Greater Demons': /\bgreater demons?\b/i, 'Lesser Demons
     }
     const c = CTR[key]; if (!c) continue;
     for (const tag of c.confirm) { const i = t.indexOf(tag); if (i >= 0 && s2[i] !== 'code') { s2[i] = 'code'; rconf++; } }
-    const open = [...c.replace.filter(r => !(r.to && t.includes(r.to))), ...c.add.filter(tag => !t.includes(tag))];
+    const open = [...c.replace.filter(r => r.to !== 'Action/Mechanic::Damage' && !(r.to && t.includes(r.to))), ...c.add.filter(tag => tag !== 'Action/Mechanic::Damage' && !t.includes(tag))];
     if (open.length) { rpend += open.length; rpendList.push(`${key} ${rl.name}`); }
   }
   console.log(`  code taxonomy (relics): ${Object.keys(APPROVED_R).length} approved · +${radds} added · ${rconf} tags code-confirmed · ${rpend} proposals awaiting review${rpendList.length ? ` (${rpendList.join('; ')})` : ''}`);
@@ -2406,13 +2409,33 @@ const MINION_PHRASE = { 'Greater Demons': /\bgreater demons?\b/i, 'Lesser Demons
       const c = CTX[key]; if (!c) continue;
       for (const tag of c.confirm) { const i = t.indexOf(tag); if (i >= 0 && s2[i] !== 'code') { s2[i] = 'code'; conf++; } }
       const rej = new Set(RJ[key] || []);
-      const open = [...c.replace.filter(r => !(r.to && (t.includes(r.to) || rej.has(r.to)))), ...c.add.filter(tag => !t.includes(tag) && !rej.has(tag))];
+      const open = [...c.replace.filter(r => r.to !== 'Action/Mechanic::Damage' && !(r.to && (t.includes(r.to) || rej.has(r.to)))), ...c.add.filter(tag => tag !== 'Action/Mechanic::Damage' && !t.includes(tag) && !rej.has(tag))];
       if (open.length) { pend += open.length; pendList.push(`${key} ${e.name}`); }
     }
     console.log(`  code taxonomy (${label}): ${Object.keys(AP).length} approved · +${adds} added · ${conf} tags code-confirmed · ${pend} proposals awaiting review`);
   };
   applySection('spells', spells, 'spells', 'spellChanges', 'spellRejections');
   applySection('cards', cards, 'cards', 'cardChanges', 'cardRejections');
+  // Action/Mechanic::Damage (user ruling 2026-10-04, PRE-APPROVED): damage where code doesn't make attack vs spell explicit.
+  // code_taxo.json damage_ruling_replacements ({section,key,from:[Attack,Cast],to:Damage}) + damage_ruling_adds.
+  {
+    const CTD = readJSON(path.join(MODEL, 'code_taxo.json'));
+    const objFor = new Map();
+    for (const tr of Object.values(traits)) for (const rid of tr.runtimeIds || []) objFor.set('traits:' + rid, tr);
+    for (const sc of specs) for (const p of sc.perks || []) objFor.set(`perks:${sc.id}:${p.key}`, p);
+    for (const r of relics) objFor.set('relics:' + r.id, r);
+    for (const c of cards) objFor.set('cards:' + c.id, c);
+    for (const sp of spells) objFor.set('spells:' + sp.id, sp);
+    let dRep = 0, dAdd = 0, dMiss = 0;
+    const put = (e, tag) => { const t = e.taxo || (e.taxo = []), s2 = e.taxoSrc || (e.taxoSrc = t.map(() => 'derived')); if (!t.includes(tag)) { t.push(tag); s2.push('code'); return true; } return false; };
+    for (const r of CTD.damage_ruling_replacements || []) {
+      const e = objFor.get(`${r.section}:${r.key}`); if (!e) { dMiss++; continue; }
+      for (const from of r.from) { const i = e.taxo.indexOf(from); if (i >= 0) { e.taxo.splice(i, 1); e.taxoSrc.splice(i, 1); } }
+      put(e, r.to); dRep++;
+    }
+    for (const r of CTD.damage_ruling_adds || []) { const e = objFor.get(`${r.section}:${r.key}`); if (!e) { dMiss++; continue; } if (put(e, 'Action/Mechanic::Damage')) dAdd++; }
+    console.log(`  damage ruling: ${dRep} Attack/Cast → Damage replacements · +${dAdd} Damage added${dMiss ? ` · ${dMiss} unmatched` : ''}`);
+  }
 }
 
 // ── Action/Mechanic IMPLIED from exact tags (2026-10-03). Action/Mechanic is the broad "what mechanic does this touch"

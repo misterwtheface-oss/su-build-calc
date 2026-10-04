@@ -1408,6 +1408,12 @@ MAPPING not for asserting PRESENCE; no inventing entities from the community-CSV
   - **2026-10-04 Task O:** code-fact rules from gates + 2-level callees (DoT → Indirect Damage, heal → Healing, count
     scaling…), host + text rules, event side, counters.
     - **Result:** residual decodable 2,232 → 2,116; returns are diminishing (~120 per round).
+  - **2026-10-04 Task P + DAMAGE RULING:**
+    - **New value:** Action/Mechanic::**Damage** = damage where the code doesn't make attack vs spell explicit.
+    - **Applied (pre-approved):** 18 Attack+Cast → Damage replacements (Touch of Darkness, Cold Snap, Deterioration…;
+      relics keep their code-explicit Attack) + 474 Damage adds, from `damage_ruling_*` in code_taxo.json.
+    - **Also:** Ghidra gate-body decompiles of 16 functions (+196 confirms); Total Deprivation + Creature Race;
+      a LOOSE-tag diagnostic (334, in `_su_extract` `taxo_loose.json`).
     - **Spells decoded too** (per-spell switch in bc_CreatureCast; 82% agreement with app spell tags); taxonomy
       integration is next.
 - [ ] **Capped effects with no app surface yet** (keep in context — user 2026-10-02). `_su_extract data/model/dr_caps.json`

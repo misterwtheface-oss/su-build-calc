@@ -850,7 +850,8 @@
    "replace": [],
    "add": [
     "Action/Mechanic::Relic",
-    "Related Types::Avatar"
+    "Related Types::Avatar",
+    "Action/Mechanic::Creature Race"
    ],
    "approved": "2026-10-03"
   },
@@ -2110,5 +2111,6 @@
    }
   ]
  },
- "notes_2026_10_03_review": "User: fix wrong mappings incl. False God parts (Automatic/Extra on AI-turn parts removed; they keep Action/Mechanic Attack/Cast); Turn Counter is used for turns-taken traits (Timeline → Turn Counter); Creeping Doom Race→Class; Vision Quest Illusion→Doppelganger; Mindful Awareness → Enemy Attacks."
+ "notes_2026_10_03_review": "User: fix wrong mappings incl. False God parts (Automatic/Extra on AI-turn parts removed; they keep Action/Mechanic Attack/Cast); Turn Counter is used for turns-taken traits (Timeline → Turn Counter); Creeping Doom Race→Class; Vision Quest Illusion→Doppelganger; Mindful Awareness → Enemy Attacks.",
+ "damageRuling": "2026-10-04 user: add Action/Mechanic::Damage where Attack and Spell/Cast are not explicit in the code. Code-backed Attack+Cast → Damage replacements (code_taxo.json damage_ruling_replacements) and Damage adds (damage_ruling_adds) are PRE-APPROVED."
 }

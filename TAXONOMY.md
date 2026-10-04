@@ -46,6 +46,7 @@ traits, perks, spells, relics and cards) is hidden from the ＋Filter / Appendix
 | Value | Covers |
 |---|---|
 | Attack | The Attack action — attacking, on-attack effects, attack damage. |
+| Damage | Damage where the code does NOT make attack vs spell explicit: generic damage-handler effects, damage over time, "damage an enemy". Use Attack / Cast only when the effect is explicitly attack- or spell-specific (user ruling 2026-10-04). |
 | Cast | The Cast action — casting a spell (the action itself, not spell modifiers). |
 | Defend | The Defend action. |
 | Provoke | The Provoke action (forcing enemies to target it). |
