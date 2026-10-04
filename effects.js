@@ -109,10 +109,13 @@
     }
     const raceOf = (slot) => { const c = env.CREA.get(slot.cid); return c ? c.race : null; };
     const targets = (t, slot) => !t || (t.race == null || raceOf(slot) === t.race);
-    // spell-gem slots: base 3 + perk grants (targeted by race) + trait grants on the bearer
+    // spell-gem slots: base 3 + the equipped artifact's "Spell Gem Slots" property (trick slot or a socketed nether
+    // stone; flat +N by rank) + perk grants (targeted by race) + trait grants on the bearer
+    const SLOT_STAT = "Spell Gem Slot";
     function gemSlotMax(slot) {
       if (!env.CREA.get(slot.cid)) return GEM_SLOT_BASE;
       let max = GEM_SLOT_BASE;
+      for (const c of artifactContribs(env.resolveArtifact(slot))) if (c.stat === SLOT_STAT) max += c.value || 0;
       for (const r of rules) {
         if (r.op !== "gemSlots") continue;
         if (r.src.kind === "perk") { const rank = perkRuleRank(r.src); if (rank > 0 && targets(r.target, slot)) max += r.perRank * rank; }

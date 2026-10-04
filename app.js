@@ -4610,7 +4610,7 @@
           if (arr.length < ctx.max) arr.push(id);
           else if (ctx.max === 1) arr[0] = id;
         }
-        persistBuild(); persistArtifacts(); refreshOverlay(); break;
+        persistBuild(); persistArtifacts(); render(); refreshOverlay(); break;   // render(): home "Spells n/m" chip
       }
       case "lib-deselect": if (ovState && ovState.sel != null) { ovState.sel = null; refreshOverlay(); } break;
 

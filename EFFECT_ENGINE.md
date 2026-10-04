@@ -42,7 +42,7 @@ live on a party slot that carries the trait (innate / fusion / artifact / nether
 |---|---|---|
 | `cap` | `cap` (anoints/creatures/avatars), `mode` add\|set, `value`, `perRank` | `FX.cap(name)` — base `CAP_BASE`, adds, then sets |
 | `ignore` | `what` (relics / fusionTraits) | `FX.ignores(what)` |
-| `gemSlots` | `perRank` (perk) / `value` (trait), `target` | `FX.gemSlotMax(slot)` — base 3 |
+| `gemSlots` | `perRank` (perk) / `value` (trait), `target` | `FX.gemSlotMax(slot)` — base 3 + the equipped artifact's "Spell Gem Slots" property (trick slot or socketed nether stone, stat `Spell Gem Slot`, flat) |
 | `equip.anyClass` | `scope` self\|party | `FX.equipClasses(slot, ownClass)` → null = any |
 | `equip.addClass` | `cls` | `FX.equipClasses` |
 | `stat.share` | `target`, `from`, `stats`, `pctPerRank`, `phase` | `FX.battleStart()` → per slot `{gain, ledger}` |

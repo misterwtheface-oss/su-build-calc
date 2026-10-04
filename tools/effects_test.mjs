@@ -80,6 +80,17 @@ eq('spec-only perks are NOT honoured as anointments (pre-engine behaviour)', (e 
 
 console.log('spell-gem slots + class permissions');
 eq('Gray Matter rank 3 → Animatus 6 slots, others 3', (e => [e.gemSlotMax(slot(ANIMATUS)), e.gemSlotMax(slot(OTHER))])(engine(B(1, party(), { perkAlloc: { 1: { GRAYMATTER: 3 } } }))), [6, 3]);
+{
+  const pump = { id: 9, rank: 50, primary: 'Helmet', stat: [], trick: ['Spell Gem Slots'], netherIds: [] };
+  const pump25 = { ...pump, id: 10, rank: 25 };
+  const stoneArt = { id: 11, rank: 50, primary: 'Helmet', stat: [], trick: [], netherIds: [7] };
+  const nether = [{ id: 7, props: [{ cat: 'trick', key: 'Spell Gem Slots', value: 2 }] }];
+  const e = engine(B(1, party(), { perkAlloc: { 1: { GRAYMATTER: 3 } } }), { artifacts: [pump, pump25, stoneArt], nether });
+  eq('artifact "Spell Gem Slots" trick r50 → +3 (base 3 → 6)', e.gemSlotMax(slot(OTHER, { artifactId: 9 })), 6);
+  eq('… r25 → +2', e.gemSlotMax(slot(OTHER, { artifactId: 10 })), 5);
+  eq('socketed nether stone with +2 Spell Gem Slots', e.gemSlotMax(slot(OTHER, { artifactId: 11 })), 5);
+  eq('stacks with Gray Matter on the Animatus (3 + 3 + 3)', e.gemSlotMax(slot(ANIMATUS, { artifactId: 9 })), 9);
+}
 eq('Evoker masteries (anointed) add classes', [...engine(B(12, party(), { anoints: [{ specId: 4, key: 'LIFEMASTERY' }] })).equipClasses(slot(ANIMATUS), 'Death')].sort(), ['Death', 'Life']);
 eq('Pandora (Aurum) in party → any class for everyone', engine(B(null, party(slot(OTHER), slot(ANIMATUS)))).equipClasses(slot(ANIMATUS), 'Death'), null);
 
