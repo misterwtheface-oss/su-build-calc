@@ -17,7 +17,10 @@ No verify-before-push ceremony (no real users yet) — but every change is check
   (ARTIFACT_SPELL_TARGETING_FINDINGS L279-283). build-data now fills BLANK CSV targets from the code scope
   (`spell_signatures.json` `target_scope`; `targetSrc` = ref|code): 82 filled = 55 Self + 10 Your Creatures +
   9 Enemies + 7 All Creatures + 1 Target. CSV-vs-code agree on 642.
-- [ ] **Open (user call):** 18 spells where CSV and code DISAGREE keep the CSV value — mostly CSV "Enemies" vs code
+- [x] **Caster-targeted → Self (user-approved):** the 5 spells the code casts on the caster alone (scope 4) now use
+  Self over the CSV label: Inner Destruction, Adrenaline Rush, Feeling Lucky, Magnification, Treasonous Mind (Self = 60).
+- Menu dropdown reordered: Artifacts · Nether Stones · Spell Gems · Cards, then Builds · Synergy · RI/Runes (· Macros).
+- [ ] **Open (user call):** the remaining 13 of the 18 spells where CSV and code DISAGREE keep the CSV value — mostly CSV "Enemies" vs code
   "All Creatures" for spells that hit enemies and also affect your side (True Light, Holy Nova, Radiant Sunfire,
   Resplendence, Greater Dispel, Balance In All Things, Quietus), plus code-Self (Inner Destruction, Adrenaline Rush,
   Feeling Lucky, Magnification, Treasonous Mind), Stampede, Black Ice, Eagle Claws, Spicy Suds, Ritual of Summoning,

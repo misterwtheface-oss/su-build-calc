@@ -903,7 +903,7 @@ const spellSigByKey = new Map();
 { const f = path.join(MODEL, 'spell_signatures.json');
   if (fs.existsSync(f)) { let d = readJSON(f); d = Array.isArray(d) ? d : (d.records || Object.values(d)); for (const r of d) if (r && r.key) spellSigByKey.set(r.key, r); }
   else warn('spell_signatures.json missing — spell targets fall back to Spell_REF only'); }
-let spellTargetFromCode = 0;
+let spellTargetFromCode = 0, spellTargetSelfFix = 0;
 // name -> class + compendium details (potency/target/source) from the user ref
 const spellClassByName = new Map();
 const spellRefByName = new Map();
@@ -988,15 +988,19 @@ const spells = spellArr.map((s, i) => {
   // bc_CreatureCastSpellGem builds the cast list from it; 4 = the caster alone → "Self", a value the CSV never has).
   // Where the two DISAGREE the CSV value is kept (user call pending; see SPELL_TARGET_SCOPE note in Progress.md).
   const codeTarget = SPELL_SCOPE_TARGET[(spellSigByKey.get(s.key) || {}).target_scope] || null;
-  const target = ref.target || codeTarget, targetSrc = ref.target ? 'ref' : (codeTarget ? 'code' : null);
+  // code-Self wins over the CSV (user-approved 2026-10-04): scope 4 casts on the caster alone, and the CSV mislabels
+  // those few as Enemies/Target (Inner Destruction, Adrenaline Rush, Feeling Lucky, Magnification, Treasonous Mind)
+  const selfFix = codeTarget === 'Self' && ref.target && ref.target !== 'Self';
+  const target = selfFix ? 'Self' : (ref.target || codeTarget), targetSrc = selfFix || !ref.target ? (codeTarget ? 'code' : null) : 'ref';
   if (!ref.target && codeTarget) spellTargetFromCode++;
+  if (selfFix) spellTargetSelfFix++;
   return { id: i, key: s.key, name: s.name, desc: s.desc || '', cls,
     charges, chargesSrc, potency: ref.potency || null, target, targetSrc, source: ref.source || null,
     depth: sDepth, ...(sGate ? { gate: sGate } : {}),
     taxo: sTaxo, taxoSrc: srcArr };
 }).filter(s => s.name);
 if (spellRefMiss.length) warn(`spells with no Spell_REF row (exact name): ${spellRefMiss.length} — ${spellRefMiss.slice(0, 8).join(', ')}`);
-console.log(`  spell targets: ${spellTargetFromCode} blank Spell_REF targets filled from code scope (field 5; incl. Self)`);
+console.log(`  spell targets: ${spellTargetFromCode} blank Spell_REF targets filled from code scope (field 5; incl. Self) · ${spellTargetSelfFix} caster-targeted CSV labels corrected to Self`);
 console.log(`  spell availability: ${spellFavor} favor + ${spellGuild} guild spells carry depth+gate (rest = Standard/Starter/False God — none)`);
 console.log(`  spells: ${spells.length} · charges ${spells.filter(s => s.chargesSrc === 'code').length} code + ${spells.filter(s => s.chargesSrc === 'community').length} community · ${spells.filter(s => s.potency).length} w/ potency · ${spellTargetGrounded} single/multi-target from Spell_REF field · potency/target/source from Spell_REF.csv`);
 console.log(`  taxonomy fixes: Innate-Trait stripped ${innateTagStripped} · Animatus retagged ${animatusRetagged} · Persist→Extend-Duration retagged ${persistRetagged} (duration, not death)`);
