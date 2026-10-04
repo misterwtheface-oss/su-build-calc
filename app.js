@@ -706,6 +706,13 @@
   // Party "at a glance" roster row: sprite (+ identity/stats/equip) on the left, all resolved traits
   // (innate + fusion + artifact/nether) stacked to the right, every row sharing one container. Mirrors
   // renderSlot's data-actions so editing (pick / remove / artifact / relic / spells / detail) still works.
+  // artifact + relic badges (same size as the class/race emblems); each opens its equip flow
+  function gearBadges(slot, i) {
+    const a = resolveArtifact(slot), rel = slot.relic ? RELIC.get(slot.relic.id) : null;
+    const artB = a && artIcon(a) ? `<span class="tile-badge gear" data-action="equip-artifact" data-slot="${i}" title="${esc(a.name)} · Rank ${a.rank || 50}">${spriteImg(artIcon(a), "px")}</span>` : "";
+    const relB = rel && rel.icon ? `<span class="tile-badge gear" data-action="build-relic" data-slot="${i}" title="${esc(relicShortName(rel))} · Rank ${slot.relic.rank}">${spriteImg(rel.icon, "px")}</span>` : "";
+    return artB + relB;
+  }
   function renderRosterRow(slot, i) {
     const c = CREA.get(slot.cid);
     const locked = i >= creatureCap();   // Pariah caps the party at 3 creatures
@@ -739,8 +746,9 @@
       <div class="roster-identity">
         <button class="slot-remove" data-action="remove-creature" data-slot="${i}" title="Remove">✕</button>
         <div class="roster-sprite-row">
+          <div class="tile-badges roster-badges left">${clsIco}${raceIco}</div>
           <div class="roster-sprite" data-action="creature-detail" data-slot="${i}">${slotFace(slot, c)}</div>
-          <div class="tile-badges roster-badges">${clsIco}${raceIco}</div>
+          <div class="tile-badges roster-badges">${gearBadges(slot, i)}</div>
         </div>
         <div class="roster-head">
           <div class="roster-name">${esc(c.name)}${f ? ` <span style="color:var(--accent2)">⚭</span>` : ""}</div>
@@ -781,6 +789,7 @@
     return `<div class="slot filled ${locked ? "locked" : ""}" data-slot="${i}" title="Right-click to change creature / fusion">
       ${locked ? `<div class="slot-ignored" title="Pariah allows only 3 creatures — this slot is ignored">Ignored</div>` : ""}
       <div class="tile-badges">${clsIco}${raceIco}</div>
+      <div class="tile-badges gear-badges">${gearBadges(slot, i)}</div>
       <button class="slot-remove" data-action="remove-creature" data-slot="${i}" title="Remove">✕</button>
       <div class="slot-sprite-wrap" data-action="creature-detail" data-slot="${i}">${slotFace(slot, c)}</div>
       <div class="slot-name">${esc(c.name)}${f ? ` <span style="color:var(--accent2)">⚭</span>` : ""}</div>
@@ -2864,6 +2873,21 @@
       <div class="section-label" ${traits || spells ? `style="margin-top:12px"` : ""}>Stat bonuses · rank ${a.rank || 50}</div>
       ${bonusTableHtml(core, extra)}`;
   }
+  // equipped artifacts (other than `exceptArtId`) that hold nether stone `nid` → [{art, slotIdx}]
+  const netherUsers = (nid, exceptArtId) => {
+    const out = [];
+    build.slots.forEach((s, i) => { const b = resolveArtifact(s); if (b && b.id !== exceptArtId && (b.netherIds || []).includes(nid)) out.push({ art: b, slotIdx: i }); });
+    return out;
+  };
+  // first socketed stone of `a` already in use by ANOTHER artifact equipped in the loadout → {nid, art, slotIdx} | null
+  const artNetherClash = (a) => {
+    for (const nid of (a && a.netherIds) || []) { const u = netherUsers(nid, a.id); if (u.length) return { nid, ...u[0] }; }
+    return null;
+  };
+  const clashText = (cl) => {
+    const n = nether.find(x => x.id === cl.nid), cr = CREA.get(build.slots[cl.slotIdx].cid);
+    return `${n ? n.name : "Its Nether Stone"} is already socketed in ${cl.art.name}${cr ? ` (equipped by ${cr.name})` : ""}`;
+  };
   function renderArtifactLibrary() {
     const st = ovState, manage = st.slotIdx == null;
     const slot = manage ? null : build.slots[st.slotIdx], c = slot ? CREA.get(slot.cid) : null;
@@ -2879,9 +2903,11 @@
       const eqOtherRaw = !eqHere && artifactEquippedInBuild(a.id);
       const blocked = !manage && eqOtherRaw;    // equip wizard: on another creature → can't equip here
       const eqOther = manage && eqOtherRaw;     // library marker only
-      const title = eqHere ? "Equipped by this creature" : blocked ? "Equipped by another creature — not available" : eqOther ? "Equipped by another creature" : "";
+      const clash = artNetherClash(a);
+      const title = [eqHere ? "Equipped by this creature" : blocked ? "Equipped by another creature — not available" : eqOther ? "Equipped by another creature" : "",
+        clash ? clashText(clash) : ""].filter(Boolean).join(" · ");
       return `
-      <div class="pick-tile ${st.sel === a.id ? "selected" : ""}${eqHere ? " eq-here" : ""}${blocked ? " disabled" : ""}${eqOther ? " eq-other" : ""}" data-action="artlib-sel" data-id="${a.id}"${title ? ` title="${esc(title)}"` : ""}>
+      <div class="pick-tile ${st.sel === a.id ? "selected" : ""}${eqHere ? " eq-here" : ""}${blocked ? " disabled" : ""}${eqOther ? " eq-other" : ""}${clash ? " nether-clash" : ""}" data-action="artlib-sel" data-id="${a.id}"${title ? ` title="${esc(title)}"` : ""}>
         <div class="pt-sprite">${spriteImg(artIcon(a), "px")}</div>
         <div class="pt-name">${esc(a.name)}</div></div>`; }).join("")
       || `<div class="slot-sub" style="padding:10px">No artifacts${st.hideEquipped ? " match" : " yet — build one"}.</div>`;
@@ -2895,8 +2921,10 @@
         <span class="av-pipe">|</span>
         <button class="av-tab ${view === "sockets" ? "on" : ""}" data-action="art-view" data-v="sockets">Sockets</button></div>`;
       const viewBody = view === "sockets" ? `<div class="prop-list">${artContentRows(sel)}</div>` : artifactBonusView(sel);
-      const otherNote = !manage && !equippedHere && artifactEquippedInBuild(sel.id)
-        ? `<div class="slot-sub sg-clsnote" style="padding:8px 0">Equipped by another creature — unequip it there first to use it here.</div>` : "";
+      const selClash = artNetherClash(sel);
+      const otherNote = (!manage && !equippedHere && artifactEquippedInBuild(sel.id)
+        ? `<div class="slot-sub sg-clsnote" style="padding:8px 0">Equipped by another creature — unequip it there first to use it here.</div>` : "")
+        + (selClash ? `<div class="slot-sub sg-clsnote clash-note">${esc(clashText(selClash))}.</div>` : "");
       info = `<div class="ns-info-head"><span class="ns-info-icon">${spriteImg(artIcon(sel), "px")}</span><h3>${esc(sel.name)}</h3></div>
         ${otherNote}${toggle}${viewBody}`;
     }
@@ -2925,6 +2953,42 @@
     </div></div>`;
   }
 
+  // full-screen artifact page (detail overlay on top of the library list; ‹ Artifacts backs out to the list)
+  function openArtifactPage(artId, slotIdx) {
+    dovState = { kind: "artpage", artId, slotIdx, view: "bonuses", render: renderArtifactPage };
+    openDetail(dovState.render());
+  }
+  function renderArtifactPage() {
+    const st = dovState, a = artifacts.find(x => x.id === st.artId);
+    if (!a) { closeDetail(); return ""; }
+    const slot = st.slotIdx != null ? build.slots[st.slotIdx] : null;
+    const equippedHere = !!slot && slot.artifactId === a.id;
+    const holder = build.slots.findIndex(s => s.artifactId === a.id), holderC = holder >= 0 ? CREA.get(build.slots[holder].cid) : null;
+    const view = st.view === "sockets" ? "sockets" : "bonuses";
+    const toggle = `<div class="art-view-toggle">
+      <button class="av-tab ${view === "bonuses" ? "on" : ""}" data-action="artpage-view" data-v="bonuses">Bonuses</button>
+      <span class="av-pipe">|</span>
+      <button class="av-tab ${view === "sockets" ? "on" : ""}" data-action="artpage-view" data-v="sockets">Sockets</button></div>`;
+    const clash = artNetherClash(a);
+    const p = PRIMARY.find(x => x.property === a.primary);
+    return `<div class="ovl-backdrop" data-action="detail-backdrop"><div class="overlay-panel detail">
+      <div class="overlay-header"><button class="btn-ghost" data-action="artpage-back">‹ Artifacts</button>
+        <h2 style="flex:1">${esc(a.name)}</h2><button class="ovl-close" data-action="close-detail">✕</button></div>
+      <div class="overlay-body"><div class="ovl-center">
+        <div class="gs-detail-head">
+          <div class="gs-god-sprite">${spriteImg(artIcon(a), "px")}</div>
+          <div class="gs-god-name">${esc(a.name)}</div>
+          <div class="slot-sub">${esc(a.primary || "—")}${p ? ` · ${esc(p.stat)} +${p.perRank[a.rank || 50] || 0}%` : ""} · Rank ${a.rank || 50}${holderC ? ` · equipped by ${esc(holderC.name)}` : ""}</div></div>
+        <div class="ovl-center-scroll artpage-body">
+          ${clash ? `<div class="slot-sub sg-clsnote clash-note">${esc(clashText(clash))}.</div>` : ""}
+          ${toggle}${view === "sockets" ? `<div class="prop-list">${artContentRows(a)}</div>` : artifactBonusView(a)}</div>
+      </div></div>
+      <div class="overlay-footer"><button class="btn-ghost" data-action="artpage-back">‹ Back</button>
+        <div><button class="btn-ghost" data-action="artpage-edit">Edit</button>
+        ${equippedHere ? `<button class="btn-confirm" data-action="artpage-unequip">Unequip</button>` : ""}</div></div>
+    </div></div>`;
+  }
+
   // ── artifact builder — guided wizard: 1) pick artifact  2) fill slots  3) name ──
   function openArtifactBuilder(artId, slotIdx) {
     let draft;
@@ -2937,6 +3001,19 @@
   // artifact slots step — right-hand info panel: picker list › item preview (confirm) › live bonus
   const artSlotKey = (type) => (ART_SLOTS.find(s => s.pick === type) || {}).key;
   const artHas = (a, type, v) => (a[artSlotKey(type)] || []).includes(v);
+  const ART_PICK_CAP = 300;
+  // one-line nether stone summary for list rows: core %s, other properties, trait + spell names
+  function netherListSummary(n) {
+    const { core, extra } = netherBonusRows(n), parts = [];
+    for (const k of STAT_KEYS) if (core[k]) parts.push(`+${core[k]}% ${STAT_LABEL[k].slice(0, 3)}`);
+    for (const [prop, { value, unit }] of extra) parts.push(`+${value}${unit === "%" ? "%" : ""} ${prop}`);
+    for (const p of n.props || []) {
+      if (p.cat === "trait") { const t = TRAITITEM.get(p.key); if (t) parts.push(t.traitName || t.name); }
+      else if (p.cat === "spell") { const sp = SPELL.get(p.key); if (sp) parts.push(sp.name); }
+    }
+    return parts.join(" · ") || "No properties";
+  }
+  const netherSearchText = (n) => [n.name, netherListSummary(n)].join(" ").toLowerCase();
   function renderArtPicker(st, a, rank) {
     const type = st.pickType, q = st.search.trim().toLowerCase();
     // only single-slot types (trait/spell/nether) mark a row "chosen"; multi-slot types
@@ -2962,14 +3039,40 @@
           && (!st.bkOnly || bookmarks.traits.includes(t.traitId))).slice(0, 300)
         .map(t => traitPickCard(t, has(t.id), `data-action="art-confirm-add" data-t="trait" data-v="${t.id}"`)).join("");
     } else if (type === "spell") {   // raw spells (no sockets), like nether stones
-      rows = (D.spells || []).filter(sp => (!q || sp.name.toLowerCase().includes(q) || (sp.desc || "").toLowerCase().includes(q) || matchTaxo(sp.taxo))
-          && (!st.bkOnly || bookmarks.spells.includes(sp.id))).slice(0, 300)
-        .map(sp => spellPickCard(sp, has(sp.id), `data-action="art-confirm-add" data-t="spell" data-v="${sp.id}"`)).join("");
+      const list = (D.spells || []).filter(sp => (!q || sp.name.toLowerCase().includes(q) || (sp.desc || "").toLowerCase().includes(q) || matchTaxo(sp.taxo))
+          && (!st.spellCls || sp.cls === st.spellCls)
+          && (!st.spellTaxo || (sp.taxo || []).includes(st.spellTaxo))
+          && (!st.bkOnly || bookmarks.spells.includes(sp.id)))
+        .sort((x, y) => (st.spellSort === "class" ? SPELL_CLASSES.indexOf(x.cls) - SPELL_CLASSES.indexOf(y.cls) : 0) || x.name.localeCompare(y.name));
+      const shown = list.slice(0, ART_PICK_CAP);
+      // class sort → a section label per class so the list reads as 5 groups
+      rows = shown.map((sp, i) => (st.spellSort === "class" && (i === 0 || shown[i - 1].cls !== sp.cls)
+          ? `<div class="section-label art-pick-sec" style="color:${clsColor(sp.cls)}">${esc(sp.cls || "—")}</div>` : "")
+        + spellPickCard(sp, has(sp.id), `data-action="art-confirm-add" data-t="spell" data-v="${sp.id}"`)).join("")
+        + (list.length > shown.length ? `<div class="slot-sub" style="padding:8px">Showing ${shown.length} of ${list.length} — narrow with search, class or a filter.</div>` : "")
+        || `<div class="slot-sub" style="padding:8px">No spells match.</div>`;
     } else {
-      rows = nether.filter(n => !q || n.name.toLowerCase().includes(q)).map(n => `<div class="prop-row ${has(n.id) ? "chosen" : ""}" data-action="art-preview" data-t="nether" data-v="${n.id}">
+      // nether stones: filters (has trait / has spell / hide in use) + sort (recent · name · a core stat %)
+      const sum = (n) => netherBonusRows(n).core;
+      const inUse = (n) => netherUsers(n.id, a.id);
+      const list = nether.filter(n => (!q || netherSearchText(n).includes(q))
+          && (!st.nsTrait || (n.props || []).some(p => p.cat === "trait"))
+          && (!st.nsSpell || (n.props || []).some(p => p.cat === "spell"))
+          && (!st.nsHideUsed || !inUse(n).length));
+      const sortK = st.nsSort || "recent";
+      list.sort(sortK === "name" ? (x, y) => x.name.localeCompare(y.name)
+        : STAT_KEYS.includes(sortK) ? (x, y) => (sum(y)[sortK] - sum(x)[sortK]) || x.name.localeCompare(y.name)
+        : (x, y) => y.id - x.id);
+      rows = list.map(n => {
+        const used = inUse(n), core = STAT_KEYS.includes(sortK) ? sum(n) : null;
+        const usedTitle = used.length ? `Already socketed in ${used.map(u => u.art.name).join(", ")}` : "";
+        return `<div class="prop-row rich ${has(n.id) ? "chosen" : ""}${used.length ? " nether-clash" : ""}" data-action="art-preview" data-t="nether" data-v="${n.id}"${usedTitle ? ` title="${esc(usedTitle)}"` : ""}>
           <span class="prop-ico">${spriteImg(gemSrc(n), "px")}</span>
-          <span class="prop-name">${esc(n.name)}</span></div>`).join("")
-        || `<div class="slot-sub" style="padding:8px">No Nether Stones yet — add them from the top-bar “Nether Stones” button.</div>`;
+          <div class="prop-body"><div class="prop-name">${esc(n.name)}${core && core[sortK] ? `<span class="prop-metatag">+${core[sortK]}% ${esc(STAT_LABEL[sortK])}</span>` : ""}${used.length ? `<span class="prop-metatag clash">in use</span>` : ""}</div>
+            <div class="prop-sub">${esc(netherListSummary(n))}</div></div></div>`;
+      }).join("")
+        || (nether.length ? `<div class="slot-sub" style="padding:8px">No Nether Stones match.</div>`
+          : `<div class="slot-sub" style="padding:8px">No Nether Stones yet — add them from the top-bar “Nether Stones” button.</div>`);
     }
     const traitFilter = type === "trait"
       ? (st.traitTaxo
@@ -2979,10 +3082,26 @@
     const bkKind = type === "trait" ? "traits" : type === "spell" ? "spells" : null;
     const bkFilter = bkKind && bookmarks[bkKind].length
       ? `<button class="facet ${st.bkOnly ? "on" : ""}" data-action="artb-bkonly" title="Show only bookmarked ${type === "trait" ? "traits" : "spells"}">★ Bookmarked</button>` : "";
+    const seg = (act, cur, opts) => `<div class="seg">${opts.map(([v, lbl]) => `<button class="seg-btn ${cur === v ? "on" : ""}" data-action="${act}" data-v="${v}">${lbl}</button>`).join("")}</div>`;
+    let extra = "";
+    if (type === "spell") {
+      const clsChips = SPELL_CLASSES.map(cl => `<button class="facet cls-chip-btn ${st.spellCls === cl ? "on" : ""}" data-action="artb-spellcls" data-c="${cl}" title="${cl} spells" style="--cc:${clsColor(cl)}">${D.classIcons && D.classIcons[cl] ? spriteImg(D.classIcons[cl], "px") : esc(cl.slice(0, 3))}</button>`).join("");
+      const sTaxo = st.spellTaxo
+        ? `<button class="facet on tag" data-action="sg-taxofilter-clear">${esc(taxoCatName(st.spellTaxo))}: <b>${esc(taxoValName(st.spellTaxo))}</b> <span class="facet-x">✕</span></button>`
+        : `<button class="facet add" data-action="sg-taxofilter">＋ Filter</button>`;
+      extra = `<div class="art-side-filter art-cls-row">${clsChips}</div>
+        <div class="art-side-filter">${sTaxo}${bkFilter}${seg("artb-spellsort", st.spellSort === "class" ? "class" : "name", [["name", "A–Z"], ["class", "Class"]])}</div>`;
+    } else if (type === "nether") {
+      extra = `<div class="art-side-filter">
+          <button class="facet ${st.nsTrait ? "on" : ""}" data-action="artb-nsfilter" data-f="nsTrait">Has trait</button>
+          <button class="facet ${st.nsSpell ? "on" : ""}" data-action="artb-nsfilter" data-f="nsSpell">Has spell</button>
+          <button class="facet ${st.nsHideUsed ? "on" : ""}" data-action="artb-nsfilter" data-f="nsHideUsed" title="Hide stones already socketed in another equipped artifact">Hide in use</button></div>
+        <div class="art-side-filter">${seg("artb-nssort", st.nsSort || "recent", [["recent", "Recent"], ["name", "A–Z"], ...STAT_KEYS.map(k => [k, STAT_LABEL[k].slice(0, 3)])])}</div>`;
+    } else if (traitFilter || bkFilter) extra = `<div class="art-side-filter">${traitFilter}${bkFilter}</div>`;
     const label = (ART_SLOTS.find(s => s.pick === type) || {}).label || "";
     return `<div class="art-side-head"><b>Add ${esc(label)}</b><button class="chip" data-action="artb-closecat">Done</button></div>
-      <input class="ovl-search art-side-search" placeholder="Search by name or tag…" value="${esc(st.search)}" data-action="artb-search">
-      ${traitFilter || bkFilter ? `<div class="art-side-filter">${traitFilter}${bkFilter}</div>` : ""}
+      <input class="ovl-search art-side-search" placeholder="${type === "nether" ? "Search by name, property, trait or spell…" : "Search by name or tag…"}" value="${esc(st.search)}" data-action="artb-search">
+      ${extra}
       <div class="art-side-list">${rows}</div>`;
   }
   // item preview with an explicit confirm — socketing never applies silently (shows the effect first)
@@ -3157,8 +3276,9 @@
   }
   // Second full-screen overlay: rank slider + per-rank effects for the picked relic.
   function openRelicDetail(relicId) {
-    const equipped = build.slots[ovState.slotIdx].relic;
-    const rank = equipped && equipped.id === relicId ? equipped.rank : 50;
+    const equipped = build.slots[ovState.slotIdx].relic, rel = RELIC.get(relicId);
+    const maxRank = rel ? Math.max(...rel.ranks.map(r => r.rank), 10) : 100;
+    const rank = equipped && equipped.id === relicId ? equipped.rank : maxRank;   // new picks default to max rank
     dovState = { kind: "relic-detail", slotIdx: ovState.slotIdx, sel: relicId, rank, render: renderRelicDetail };
     openDetail(dovState.render());
   }
@@ -3187,7 +3307,8 @@
         <div class="ovl-center-scroll">${ranks}</div>
       </div></div>
       <div class="overlay-footer"><button class="btn-ghost" data-action="relic-back">‹ Back</button>
-        <button class="btn-confirm" data-action="relic-confirm">Save Relic</button></div>
+        <div>${(build.slots[st.slotIdx].relic || {}).id === sel.id ? `<button class="btn-ghost" data-action="relic-unequip">Unequip</button>` : ""}
+        <button class="btn-confirm" data-action="relic-confirm">Save Relic</button></div></div>
     </div></div>`;
   }
 
@@ -3431,6 +3552,18 @@
     const traitHtml = traitIds.map(tid => `<div class="primary-traits" style="margin-bottom:6px">${traitBanner(tid)}
       <div class="trait-desc">${richText((TRAIT[tid] || {}).desc || "")}</div></div>`).join("");
     const relic = slot.relic ? RELIC.get(slot.relic.id) : null;
+    // equipped artifact: header row + spell gems + resolved stat bonuses. Its traits are already listed
+    // under Traits above (labelled "+ artifact"), so they aren't repeated here.
+    const art = resolveArtifact(slot);
+    const artHtml = art ? (() => {
+      const { core, extra } = artifactBonusRows(art), spells = artifactSpellContainers(art), clash = artNetherClash(art);
+      return `<div class="section-label" style="margin-top:14px">Artifact — Rank ${art.rank || 50}</div>
+        <div class="prop-list"><div class="prop-row static"><span class="prop-ico">${spriteImg(artIcon(art), "px")}</span>
+          <span class="prop-name"><b>${esc(art.name)}</b></span><span class="prop-stat">${esc(art.primary || "")}</span></div></div>
+        ${clash ? `<div class="slot-sub sg-clsnote clash-note">${esc(clashText(clash))}.</div>` : ""}
+        ${spells ? `<div class="art-spellcards" style="margin-top:6px">${spells}</div>` : ""}
+        <div style="margin-top:6px">${bonusTableHtml(core, extra)}</div>`;
+    })() : "";
     // party navigation — step between filled creature slots (wraps); chevrons flank the sprite on
     // mobile, sit below it on web. Hidden entirely when there's only one creature.
     const filled = build.slots.map((s, i) => i).filter(i => build.slots[i].cid != null);
@@ -3456,6 +3589,7 @@
               <span class="stat-val art"></span><span class="stat-val total">${fs.total}</span></div></div>
           <div class="section-label" style="margin-top:14px">Traits (innate${f ? " + fusion" : ""}${hasArtifactTrait ? " + artifact" : ""})</div>
           ${traitHtml || `<div class="slot-sub">No traits.</div>`}
+          ${artHtml}
           ${relic ? `<div class="section-label" style="margin-top:14px">Relic — Rank ${slot.relic.rank}${FX.ignores("relics") ? ` <span style="color:var(--bad);font-weight:700">· ignored (Deprived)</span>` : ""}</div>
             <div class="prop-list">
               <div class="prop-row static apx-clickable" data-action="apx-open" data-ek="relic" data-eid="${slot.relic.id}" title="View taxonomy"><span class="prop-ico">${relic.icon ? spriteImg(relic.icon, "px") : ""}</span><span class="prop-name"><b>${esc(relic.name)}</b> <span class="etax-hint">tags ›</span></span></div>
@@ -3896,8 +4030,16 @@
     switch (A) {
       // home
       case "pick-creature": { const si = +t.dataset.slot; if (si >= creatureCap()) break; openCreaturePicker(si); break; }
-      case "equip-artifact": openArtifactLibrary(+t.dataset.slot); break;
-      case "build-relic": openRelicBuilder(+t.dataset.slot); break;
+      // with something equipped, open its page first; backing out lands on the list to pick another
+      case "equip-artifact": { const si = +t.dataset.slot; openArtifactLibrary(si);
+        const a = resolveArtifact(build.slots[si]); if (a) { ovState.sel = a.id; refreshOverlay(); openArtifactPage(a.id, si); } break; }
+      case "build-relic": { const si = +t.dataset.slot; openRelicBuilder(si);
+        const r = build.slots[si].relic; if (r && RELIC.get(r.id)) openRelicDetail(r.id); break; }
+      case "artpage-back": closeDetail(); break;
+      case "artpage-view": dovState.view = t.dataset.v; refreshDetail(); break;
+      case "artpage-edit": { const { artId, slotIdx } = dovState; closeDetail(); openArtifactBuilder(artId, slotIdx); break; }
+      case "artpage-unequip": build.slots[dovState.slotIdx].artifactId = null; persistBuild(); closeDetail(); closeOverlay(); render(); break;
+      case "relic-unequip": build.slots[dovState.slotIdx].relic = null; persistBuild(); closeDetail(); closeOverlay(); render(); break;
       case "creature-detail": openCreatureDetail(+t.dataset.slot); break;
       case "crea-info": e.stopPropagation(); openCreaturePreview(+t.dataset.cid); break;
       case "crea-edit": { const si = +t.dataset.slot; closeDetail(); openCreaturePicker(si); break; }
@@ -4155,6 +4297,10 @@
         onPick: (v) => { ovState.traitTaxo = v; } }); break;
       case "artb-traitfilter-clear": ovState.traitTaxo = null; refreshOverlay(); break;
       case "artb-bkonly": ovState.bkOnly = !ovState.bkOnly; refreshOverlay(); break;
+      case "artb-spellcls": ovState.spellCls = ovState.spellCls === t.dataset.c ? null : t.dataset.c; refreshOverlay(); break;
+      case "artb-spellsort": ovState.spellSort = t.dataset.v; refreshOverlay(); break;
+      case "artb-nsfilter": ovState[t.dataset.f] = !ovState[t.dataset.f]; refreshOverlay(); break;
+      case "artb-nssort": ovState.nsSort = t.dataset.v; refreshOverlay(); break;
       // spell-gem builder spell picker filter (reuses the facet detail picker)
       case "sg-taxofilter": openFacetPicker("taxo-cat", {
         idxFn: () => taxoIndexFor("spell", D.spells, s => s.taxo || []),

@@ -6,6 +6,25 @@ Pages on `master`/root, Cloudflare analytics active with the shared github.io to
 No verify-before-push ceremony (no real users yet) — but every change is checked with the jsdom smoke suite
 (scratchpad `smoke.mjs`, ~84 assertions across all flows) before commit.
 
+## 2026-10-04 (cont.) — UI hygiene batch
+1. Artifact wizard **Spell** list: class chips (5, toggle), ＋ Filter (spell taxonomy), A–Z | Class sort (Class sort
+   adds per-class section labels), "showing N of M" note past the 300 cap.
+2. Artifact wizard **Nether** list: Has trait / Has spell / Hide in use filters; Recent | A–Z | per-stat sort (row shows
+   that stat's %); each row has a one-line summary (core %, other properties, trait + spell names) that search
+   also matches; stones already socketed in another equipped artifact are red-tinted + "in use".
+3. **Relic** button with a relic equipped → opens that relic's page first (‹ Relics backs out to the list); the page
+   has Unequip. New relic picks default to **rank 100** (the relic's max), not 50.
+4. **Artifact** button with an artifact equipped → full-screen artifact page (detail overlay: big icon, primary +
+   rank + holder, Bonuses | Sockets, Edit / Unequip); ‹ Artifacts backs out to the library list (selection kept).
+5. Creature detail: new **Artifact — Rank N** section (name row, spell gems, stat bonus table; traits stay in Traits).
+6. Artifact selector: an artifact whose Nether Stone is already socketed in ANOTHER artifact equipped in the loadout
+   gets a low-alpha **red tint** (`.nether-clash`, still selectable) + tooltip and a red note in its info panel/page.
+7. Home: class/race emblems moved LEFT of the sprite (List view); new **artifact + relic badges** (same size) where
+   the emblems were (right of the sprite; grid view: stacked under the ✕). Badges are clickable → items 3/4.
+- Relic mechanics research (question, no app change) — see the session summary: relics act as pseudo-creature 967
+  (`scr_RelicBattleCreate`), base 50 HP / 30 other stats, scaled ceil(base·(1+0.3·(L−1))) by the BEARER's level;
+  relic rank only gates perks and the bearer's 0.1%/rank stat bonus (`scr_RelicStatBonus`).
+
 ## 2026-10-04 — Effect engine (invisible backend refactor; no UI change)
 New `effects.js` (`SU_EFFECTS`, see **EFFECT_ENGINE.md**) centralises every source-driven computation that was
 scattered through app.js: artifact/nether/relic stat contributions (3 duplicate aggregators → 1 contribution list +
