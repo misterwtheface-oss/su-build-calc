@@ -481,10 +481,10 @@
   const perkText = (desc, rank) => richText(stripCondDesc(desc), rank);
   // code-grounded mechanics the game text omits (e.g. the 80% damage-reduction cap, per-rune effects) —
   // shipped as `notes` on traits / perks / relic ranks and shown beside, never inside, the prose
-  // + `clarify`: code-grounded "what it actually does" lines for vague/misleading game text (separate from `desc`)
-  const fxNotes = (o) => !o ? "" :
-    (o.notes && o.notes.length ? `<div class="fx-notes">${o.notes.map(n => `<span class="fx-note">${esc(n)}</span>`).join("")}</div>` : "") +
-    (o.clarify && o.clarify.length ? o.clarify.map(c => `<div class="fx-clarify">${esc(c)}</div>`).join("") : "");
+  const fxNotes = (o) => o && o.notes && o.notes.length ? `<div class="fx-notes">${o.notes.map(n => `<span class="fx-note">${esc(n)}</span>`).join("")}</div>` : "";
+  // `clarify`: code-grounded "what it actually does" lines for vague/misleading game text (separate from `desc`) —
+  // shown ONLY on the entity taxonomy detail page
+  const fxClarify = (o) => o && o.clarify && o.clarify.length ? o.clarify.map(c => `<div class="fx-clarify">${esc(c)}</div>`).join("") : "";
 
   // taxonomy filter: a creature's innate trait's human-facing tags ("Category::Value")
   const creatureTaxo = (c) => {
@@ -1961,8 +1961,8 @@
   // trait icon = its trait-item's icon (traits carry no icon of their own)
   const traitItemIcon = (tid) => { const items = traitSources().itemsByTrait.get(+tid) || []; return (items.find(i => i.icon) || {}).icon || null; };
   // relic ranks → one line per rank ("Rank 10 · …"), not an illegible " · "-joined block
-  const relicRanksHtml = (ranks) => (ranks || []).length
-    ? `<div class="apx-ranklist">${ranks.map(r => `<div class="apx-rank"><span class="apx-rank-n">Rank ${r.rank}</span><span class="apx-rank-d">${richText(r.desc || "")}${fxNotes(r)}</span></div>`).join("")}</div>`
+  const relicRanksHtml = (ranks, detail) => (ranks || []).length
+    ? `<div class="apx-ranklist">${ranks.map(r => `<div class="apx-rank"><span class="apx-rank-n">Rank ${r.rank}</span><span class="apx-rank-d">${richText(r.desc || "")}${fxNotes(r)}${detail ? fxClarify(r) : ""}</span></div>`).join("")}</div>`
     : "";
   // card effects → one line per tier, labelled by the card count that unlocks it (effects legitimately
   // repeat per tier — they stack, they're not duplicates); tiers[i] = cards needed for effects[i]
@@ -1972,11 +1972,11 @@
     : "";
   // resolve (kind,id) → { e, icon, name, descHtml, kindLabel } for the detail view
   function resolveEntity(kind, id) {
-    if (kind === "trait") { const e = TRAIT[+id]; return { e, icon: traitItemIcon(id), name: e && e.name, descHtml: e && richText(e.desc || "") + fxNotes(e), kindLabel: "Trait" }; }
+    if (kind === "trait") { const e = TRAIT[+id]; return { e, icon: traitItemIcon(id), name: e && e.name, descHtml: e && richText(e.desc || "") + fxNotes(e) + fxClarify(e), kindLabel: "Trait" }; }
     if (kind === "spell") { const e = SPELL.get(+id); return { e, icon: e && spellIcon(e), name: e && e.name, descHtml: e && perkText(e.desc || ""), kindLabel: "Spell" }; }
-    if (kind === "relic") { const e = RELIC.get(+id); return { e, icon: e && e.icon, name: e && e.name, descHtml: e && relicRanksHtml(e.ranks), kindLabel: "Relic" }; }
+    if (kind === "relic") { const e = RELIC.get(+id); return { e, icon: e && e.icon, name: e && e.name, descHtml: e && relicRanksHtml(e.ranks, true), kindLabel: "Relic" }; }
     if (kind === "card") { const e = CARD.get(+id); return { e, icon: e && e.sprite, name: e && e.family, descHtml: e && cardTiersHtml(e.effects, e.tiers), kindLabel: "Realm Card" }; }
-    if (kind === "perk") { const e = perkByKey(id); return { e, icon: e && e.icon, name: e && e.name, descHtml: e && perkText(e.desc, e.ranks) + fxNotes(e), kindLabel: "Perk" }; }
+    if (kind === "perk") { const e = perkByKey(id); return { e, icon: e && e.icon, name: e && e.name, descHtml: e && perkText(e.desc, e.ranks) + fxNotes(e) + fxClarify(e), kindLabel: "Perk" }; }
     if (kind === "condition") { const e = CONDITION.get(id); return { e, icon: e && e.icon, name: e && e.name, descHtml: e && richText(e.desc || ""), kindLabel: e && e.cat }; }
     return { e: null };
   }
