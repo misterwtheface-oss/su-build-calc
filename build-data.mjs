@@ -2495,13 +2495,13 @@ const MINION_PHRASE = { 'Greater Demons': /\bgreater demons?\b/i, 'Lesser Demons
   for (const [k, set] of Object.entries(miss)) warn(`shop ${k} items without a join/icon: ${[...set].slice(0, 8).join(', ')}${set.size > 8 ? ' …' : ''}`);
 }
 
-// ── code-grounded effect notes (mechanics the game's own text omits) ─────────────────────────────
-// Shipped as `notes: string[]` on traits / spec perks / relic ranks; the app renders them as chips BESIDE the
-// prose (never edited into it). Sources (_su_extract code/DR_CAPS_AND_RUNES_FINDINGS.md):
+// ── code-grounded effect clarifications (mechanics the game's own text omits) ─────────────────────────
+// Shipped as `clarify: string[]` sentences on traits / spec perks / relic ranks (shown on the taxonomy detail page;
+// never edited into the game prose). Sources (_su_extract code/DR_CAPS_AND_RUNES_FINDINGS.md):
 //   dr_caps.json            — every per-effect damage-reduction clamp in bc_EventDamage (global.dr_cap = 0.8)
 //   rune_knight_perks.json  — Undermine / Inspirit per-rune condition + Ruse's rune-gem properties
 {
-  const addNote = (o, n) => { if (o && !(o.notes ||= []).includes(n)) o.notes.push(n); };
+  const addNote = (o, n) => { if (o && !(o.clarify ||= []).includes(n)) o.clarify.push(n); };   // → clarify (no chips)
   const perkByKey = new Map(); for (const sp of specs) for (const pk of sp.perks) perkByKey.set(pk.key, pk);
   const traitByName = new Map(Object.values(traits).map(t => [norm(t.name), t]));
   const relicRank = (name, rank) => { const r = relics.find(x => norm(String(x.name).split(',')[0]) === norm(String(name).split(',')[0]));
@@ -2517,7 +2517,7 @@ const MINION_PHRASE = { 'Greater Demons': /\bgreater demons?\b/i, 'Lesser Demons
     if (d !== o.desc) { o.desc = d; capStripped++; } };
   const capsF = path.join(MODEL, 'dr_caps.json');
   if (fs.existsSync(capsF)) {
-    const caps = readJSON(capsF), capTxt = `Max ${Math.round(caps.dr_cap * 100)}% damage reduction`;
+    const caps = readJSON(capsF), capTxt = `The damage reduction from this effect is capped at ${Math.round(caps.dr_cap * 100)}%.`;
     let hit = 0; const miss = [];
     for (const e of caps.effects || []) {
       const tgt = e.kind === 'perk' ? perkByKey.get(e.perk_key)
@@ -2551,17 +2551,16 @@ const MINION_PHRASE = { 'Greater Demons': /\bgreater demons?\b/i, 'Lesser Demons
     const short = (r) => String(r).replace(/^Rune of /, '');
     for (const pk of readJSON(runeF).perks || []) {
       const tgt = perkByKey.get(pk.perk_key); if (!tgt) { warn(`rune notes: perk ${pk.perk_key} not in app data`); continue; }
-      if (pk.per_rune && pk.per_rune[0] && pk.per_rune[0].condition)            // Undermine / Inspirit: one chip per rune
-        for (const r of pk.per_rune) addNote(tgt, `${short(r.rune)}: ${r.condition}`);
+      const list = (xs) => xs.length > 1 ? `${xs.slice(0, -1).join(', ')} and ${xs[xs.length - 1]}` : xs.join('');
+      if (pk.per_rune && pk.per_rune[0] && pk.per_rune[0].condition)            // Undermine / Inspirit: per-rune condition
+        addNote(tgt, `By Rune: ${pk.per_rune.map(r => `${short(r.rune)} → ${r.condition}`).join(', ')}.`);
       else if (pk.per_rune) {                                                    // Ruse: shared props + per-rune variant
-        if (pk.tier) addNote(tgt, `Rune gems: Tier ${pk.tier}`);
         const all = pk.per_rune.map(r => r.properties);
         const common = all[0].filter(x => all.every(l => l.includes(x)));
-        for (const x of common) addNote(tgt, x);
         const odd = new Map();                                                   // property → runes that get it
         pk.per_rune.forEach(r => r.properties.filter(x => !common.includes(x)).forEach(x => odd.set(x, [...(odd.get(x) || []), short(r.rune)])));
-        // one chip per variant property, naming the runes that get it (majority first)
-        for (const [x, rs] of [...odd].sort((x, y) => y[1].length - x[1].length)) addNote(tgt, `${x} (${rs.join('/')})`);
+        const variants = [...odd].sort((x, y) => y[1].length - x[1].length).map(([x, rs]) => `${x} (${rs.join('/')})`);
+        addNote(tgt, `Rune gems become${pk.tier ? ` Tier ${pk.tier}` : ''} with ${list(common)}${variants.length ? `, plus ${variants.join(' or ')}` : ''}.`);
       }
     }
   }
