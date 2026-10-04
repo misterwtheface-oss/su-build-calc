@@ -230,7 +230,16 @@
     return out;
   };
   const SPELLPROP = new Map((D.spellProps || []).map(p => [p.id, p]));   // spell-gem property items (Slates/Curios)
-  const SPELLGEM_MAX_PROPS = 3;                             // each spell gem holds up to 3 property items
+  const SPELLGEM_MAX_PROPS = 3;                             // each spell gem holds up to 3 property items (at level 15)
+  // spell gem LEVEL ("tier" in code, 1..15; D.spellGemTiers): drives property slots (0/1/2/3 at 1/5/10/15), the icon
+  // tier, and every property's amount. Gems saved before levels existed have no `tier` → treated as max (15).
+  const GT = D.spellGemTiers || { min: 1, max: 15, slots: Array(15).fill(3), iconTier: Array(15).fill(3), icons: {} };
+  const gemTier = (g) => Math.max(GT.min, Math.min(GT.max, (g && +g.tier) || GT.max));
+  const gemSlots = (g) => GT.slots[gemTier(g) - 1];
+  const slotUnlockLevel = (i) => GT.slots.findIndex(n => n > i) + 1;   // first level with more than i slots
+  // a property's effect at a gem level: the game's template ("{1}% Chance to Attack") filled from byTier
+  const propText = (p, tier) => !p ? "" : (p.tpl && p.byTier ? p.tpl.replace("{1}", p.byTier[(tier || GT.max) - 1]) : (p.effect || ""));
+  const propShort = (p, tier) => !p ? "" : (p.tpl && p.byTier ? propText(p, tier) : (p.swapClass ? p.effect : (p.effect || "").split(":")[0]));
   const SPELL_CLASSES = ["Nature", "Chaos", "Sorcery", "Death", "Life"];
   // built spell-gem helpers (a gem = {id,name,spellId,propIds[]})
   const gemSpell = (g) => g ? SPELL.get(g.spellId) : null;
@@ -238,7 +247,8 @@
   // driving both the equip check and the class-coloured icon. Returns null if no Class-Swap prop is set.
   const gemSwapClass = (g) => { for (const pid of (g && g.propIds || [])) { const p = SPELLPROP.get(pid); if (p && p.swapClass) return p.swapClass; } return null; };
   const gemClass = (g) => { const s = gemSpell(g); return gemSwapClass(g) || (s ? s.cls : null); };
-  const gemIcon = (g) => { const cls = gemClass(g); return cls ? SPELLGEM[cls] : null; };
+  const gemIcon = (g) => { const cls = gemClass(g); if (!cls) return null;
+    const ic = GT.icons[cls]; return (ic && ic[GT.iconTier[gemTier(g) - 1]]) || SPELLGEM[cls]; };   // icon tier follows level
   const gemName = (g) => g ? (g.name || (gemSpell(g) ? gemSpell(g).name : "Spell Gem")) : "";
   const gemSummary = (g) => { const s = gemSpell(g); const np = (g.propIds || []).length;
     return (s ? s.name : "—") + (np ? ` · ${np} propert${np === 1 ? "y" : "ies"}` : ""); };
@@ -3412,7 +3422,7 @@
           <div class="gs-god-name">${esc(sel.name)} <span class="etax-hint">tags ›</span></div>
           <div class="slot-sub">Boosts ${esc(sel.statBonus || "—")}</div></div>
         <div class="ovl-filterbar rank-picker"><span class="slot-sub">Rank</span>
-          <input type="range" min="10" max="${maxRank}" step="10" value="${st.rank}" data-action="relic-rank"><span class="rank-badge">${st.rank}</span></div>
+          <input type="range" min="1" max="${maxRank}" step="1" value="${st.rank}" data-action="relic-rank"><span class="rank-badge">${st.rank}</span></div>
         <div class="ovl-center-scroll">${ranks}</div>
       </div></div>
       <div class="overlay-footer"><button class="btn-ghost" data-action="relic-back">‹ Back</button>
@@ -3997,7 +4007,7 @@
     if (sel) {
       const sp = gemSpell(sel);
       const propRows = (sel.propIds || []).map(pid => { const p = SPELLPROP.get(pid);
-        return libRow(p && p.icon, p ? p.name : pid, p ? (p.effect || "").split(":")[0].slice(0, 28) : ""); }).join("");
+        return libRow(p && p.icon, p ? p.name : pid, p ? propShort(p, gemTier(sel)) : ""); }).join("");
       const spellBlock = sp
         ? `<div class="section-label" style="margin-top:6px">Spell</div>
            <div class="prop-row rich"><span class="prop-ico">${spellIcon(sp) ? spriteImg(spellIcon(sp), "px") : ""}</span>
@@ -4010,7 +4020,7 @@
         ? `<div class="slot-sub sg-clsnote" style="padding:8px 0">${esc(gcls || "This")}-class spell — a ${esc(creatureCls || "different")}-class creature can't equip it (an Opal or the right trait is needed).</div>`
         : (ctx && !equipped.has(sel.id) && spellGemEquippedInBuild(sel.id)
           ? `<div class="slot-sub sg-clsnote" style="padding:8px 0">Equipped on another creature — unequip it there first to use it here.</div>` : "");
-      info = `<div class="ns-info-head"><span class="ns-info-icon">${spriteImg(gemIcon(sel), "px")}</span><h3>${esc(gemName(sel))}</h3></div>
+      info = `<div class="ns-info-head"><span class="ns-info-icon">${spriteImg(gemIcon(sel), "px")}</span><h3>${esc(gemName(sel))}</h3><span class="rank-badge">Lv ${gemTier(sel)}</span></div>
         ${clsNote}${spellBlock}
         ${propRows ? `<div class="section-label">Enchants</div><div class="prop-list">${propRows}</div>` : ""}`;
     }
@@ -4041,7 +4051,7 @@
   }
   function openSpellGemBuilder(id) {
     const draft = id != null ? JSON.parse(JSON.stringify(spellGems.find(g => g.id === id)))
-      : { id: null, name: "", spellId: null, propIds: [] };
+      : { id: null, name: "", spellId: null, tier: GT.max, propIds: [] };
     ovState = { kind: "sgbuild", editId: id, draft, step: id != null ? "props" : "spell", search: "", render: renderSpellGemBuilder };
     openOverlay(ovState.render());
   }
@@ -4068,26 +4078,28 @@
       footer = `<button class="btn-ghost" data-action="sg-cancel">Cancel</button>
         <button class="btn-confirm" data-action="sgb-next" ${g.spellId != null ? "" : "disabled"}>Next: Properties ›</button>`;
     } else {
-      const propLabel = (p) => p ? (p.swapClass ? p.effect : (p.effect || "").split(":")[0]) : "";
+      const tier = gemTier(g), slots = gemSlots(g);
       const boxes = [];
       for (let i = 0; i < SPELLGEM_MAX_PROPS; i++) {
-        const pid = g.propIds[i];
+        const pid = g.propIds[i], over = i >= slots;   // a socketed property past this level's slot count
         if (pid !== undefined) { const p = SPELLPROP.get(pid);
-          boxes.push(`<div class="art-slot"><button class="as-rm" data-action="sg-prop-rm" data-i="${i}">✕</button>
+          boxes.push(`<div class="art-slot${over ? " over" : ""}"${p && p.textNote ? ` title="${esc(p.textNote)}"` : ""}><button class="as-rm" data-action="sg-prop-rm" data-i="${i}">✕</button>
             <div class="as-ico">${p && p.icon ? spriteImg(p.icon, "px") : "◆"}</div><div class="as-lab">${esc(p ? p.name : pid)}</div>
-            <div class="as-sub">${esc(propLabel(p).slice(0, 24))}</div></div>`); }
+            <div class="as-sub">${esc(propShort(p, tier))}</div></div>`); }
+        else if (over) boxes.push(`<div class="art-slot locked"><div class="as-ico glyph">🔒</div><div class="as-lab">Level ${slotUnlockLevel(i)}</div></div>`);
         else boxes.push(`<div class="art-slot add ${st.picking ? "picking" : ""}" data-action="sg-addprop"><div class="as-ico glyph">＋</div><div class="as-lab">Property</div></div>`);
       }
+      const overCount = Math.max(0, g.propIds.length - slots);
       let picker = "";
       if (st.picking) {
         // Opal's "Class Swap: <Class>" variants can't target the spell's own class → hide that one.
         const spellCls = gemSpell(g) ? gemSpell(g).cls : null;
         const pr = D.spellProps.filter(p => {
           if (p.swapClass && p.swapClass === spellCls) return false;
-          return !q || p.name.toLowerCase().includes(q) || (p.effect || "").toLowerCase().includes(q);
+          return !q || p.name.toLowerCase().includes(q) || propText(p, tier).toLowerCase().includes(q);
         }).map(p =>
-          `<div class="prop-row ${g.propIds.includes(p.id) ? "chosen" : ""}" data-action="sg-pickprop" data-id="${p.id}">
-            <span class="prop-ico">${p.icon ? spriteImg(p.icon, "px") : ""}</span><span class="prop-name">${esc(p.name)}</span><span class="prop-stat">${esc(p.effect || "")}</span></div>`).join("");
+          `<div class="prop-row ${g.propIds.includes(p.id) ? "chosen" : ""}" data-action="sg-pickprop" data-id="${p.id}"${p.textNote ? ` title="${esc(p.textNote)}"` : ""}>
+            <span class="prop-ico">${p.icon ? spriteImg(p.icon, "px") : ""}</span><span class="prop-name">${esc(p.name)}</span><span class="prop-stat">${esc(propText(p, tier))}</span></div>`).join("");
         picker = `<div class="sgb-picker">
           <div class="ovl-filterbar"><button class="chip" data-action="sg-closepick">‹ Done</button>
             <input class="ovl-search" placeholder="Search gemstone enchantments…" value="${esc(st.search)}" data-action="sg-search"></div>
@@ -4097,11 +4109,14 @@
         <div class="sgb-top">
           <div class="build-section"><h3>Name</h3>
             <input class="ovl-search name-field" placeholder="${esc(gemSpell(g) ? gemSpell(g).name : "Spell gem name")}" value="${esc(g.name)}" data-action="sg-name" style="max-width:320px"></div>
+          <div class="build-section"><h3>Level</h3>
+            <div class="rank-picker"><input type="range" min="${GT.min}" max="${GT.max}" value="${tier}" data-action="sg-tier"><span class="rank-badge">${tier}</span></div></div>
           <div class="art-slot-group"><div class="section-label">Property items</div><div class="art-slot-grid">${boxes.join("")}</div></div>
+          ${overCount ? `<div class="slot-sub ns-issue" style="text-align:left;padding-top:6px">⚠ Level ${tier} has ${slots} property slot${slots === 1 ? "" : "s"} — remove ${overCount} or raise the level.</div>` : ""}
         </div>
         ${picker}</div>`;
       footer = `<button class="btn-ghost" data-action="sgb-back">‹ Back</button>
-        <button class="btn-confirm" data-action="sg-save">Save Spell Gem</button>`;
+        <button class="btn-confirm" data-action="sg-save" ${overCount ? `disabled title="More properties than this level allows"` : ""}>Save Spell Gem</button>`;
     }
     return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel detail">
       <div class="overlay-header"><span class="hdr-ico">${spriteImg(gemIcon(g), "px")}</span>
@@ -4514,7 +4529,7 @@
       case "sg-spell": ovState.draft.spellId = ovState.draft.spellId === +t.dataset.id ? null : +t.dataset.id; refreshOverlay(); break;
       case "sgb-next": ovState.step = "props"; ovState.picking = false; ovState.search = ""; refreshOverlay(true); break;
       case "sgb-back": ovState.step = "spell"; ovState.picking = false; ovState.search = ""; refreshOverlay(true); break;
-      case "sg-addprop": ovState.picking = true; ovState.search = ""; refreshOverlay(true); break;
+      case "sg-addprop": if (ovState.draft.propIds.length >= gemSlots(ovState.draft)) break; ovState.picking = true; ovState.search = ""; refreshOverlay(true); break;
       case "sg-closepick": ovState.picking = false; refreshOverlay(true); break;
       case "sg-pickprop": { const id = +t.dataset.id, arr = ovState.draft.propIds, picked = SPELLPROP.get(id);
         const i = arr.indexOf(id);
@@ -4522,13 +4537,14 @@
         else {
           if (picked && picked.swapClass)   // only one Opal Class Swap per gem — replace any existing swap
             for (let j = arr.length - 1; j >= 0; j--) { const pp = SPELLPROP.get(arr[j]); if (pp && pp.swapClass) arr.splice(j, 1); }
-          if (arr.length < SPELLGEM_MAX_PROPS) arr.push(id);
+          if (arr.length < gemSlots(ovState.draft)) arr.push(id);
         }
-        if (arr.length >= SPELLGEM_MAX_PROPS) ovState.picking = false; refreshOverlay(); break; }
+        if (arr.length >= gemSlots(ovState.draft)) ovState.picking = false; refreshOverlay(); break; }
       case "sg-prop-rm": ovState.draft.propIds.splice(+t.dataset.i, 1); refreshOverlay(); break;
       case "sg-save": {
         const d = ovState.draft;
         if (d.spellId == null) break;
+        if (d.propIds.length > gemSlots(d)) break;   // more properties than the level allows
         if (!d.name || !d.name.trim()) d.name = (SPELL.get(d.spellId) || {}).name || `Spell Gem ${nextSpellGemId}`;
         if (ovState.editId != null) { const idx = spellGems.findIndex(g => g.id === ovState.editId); if (idx >= 0) spellGems[idx] = d; }
         else { d.id = nextSpellGemId++; spellGems.push(d); }
@@ -4571,6 +4587,8 @@
     const A = t.dataset.action, v = t.value;
     // range sliders / selects
     if (A === "artb-rank") { ovState.draft.rank = +v; refreshKeeping(OV, ovState.render(), t, () => refreshOverlay()); return; }
+    if (A === "sg-tier") { ovState.draft.tier = +v; if (ovState.draft.propIds.length >= gemSlots(ovState.draft)) ovState.picking = false;
+      refreshKeeping(OV, ovState.render(), t, () => refreshOverlay()); return; }
     if (A === "relic-rank") { dovState.rank = +v; refreshKeeping(DOV, dovState.render(), t, () => refreshDetail()); return; }
     // favor rank slider: live in-place update while dragging (no re-render → smooth); 'change' re-sorts (below).
     // In "My ranks" mode the detail slider edits THIS realm's tracked rank (persisted); otherwise the global rank.

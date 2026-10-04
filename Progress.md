@@ -6,6 +6,18 @@ Pages on `master`/root, Cloudflare analytics active with the shared github.io to
 No verify-before-push ceremony (no real users yet) — but every change is checked with the jsdom smoke suite
 (scratchpad `smoke.mjs`, ~84 assertions across all flows) before commit.
 
+## 2026-10-04 (cont.) — Relic rank slider steps by 1
+Relic detail slider: min 1, step 1 (was 10–100 in steps of 10). Perks still unlock at each multiple of 10; the stat
+bonus follows the exact rank (0.1% per rank).
+
+## 2026-10-04 (cont.) — FIX: {SPELL_*} tokens rendered as "Equipment" / "Alcohol" / "Ultimate"
+The token table had no {SPELL_*} entries, so the humanizer fell back to the raw token name. The game's
+`scr_LangSpellType` maps [equipment, alcohol, jewel, ultimate] → L_ARSENALSPELL / L_BOOZESPELL / L_PRISMSPELL /
+L_ULTIMATESPELL (vocabulary.csv: "Arsenal Spell" / "Booze Spell" / "Prism Spell" / "Ultimate Spell"; the same switch
+picks the inline icons [spell_artifact]/[spell_booze]/[spell_jewel]/[spell_ultimate]). build-data now puts those words in
+`D.terms`. Living Helmet → "This spell is an Arsenal Spell." Faithful quirk: Living Axe reads "each Arsenal Spell spell"
+(the game's own template is "{SPELL_equipment} spell").
+
 ## 2026-10-04 (cont.) — Spell Gem levels + property amounts (code-grounded)
 Source: _su_extract `data/model/spell_gem_properties.json` + `code/SPELL_GEM_PROPERTY_FINDINGS.md` (new research).
 - **Levels** = the game's gem `tier`, 1–15 (not the artifact 1–50 scale). Property slots by level: 0 at 1–4, 1 at 5–9,

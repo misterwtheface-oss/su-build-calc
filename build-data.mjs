@@ -939,6 +939,24 @@ for (const [cls, base] of Object.entries(GEM_SRC)) {
   if (copyNamedSprite(base, OUT_SPELLGEM, dest)) spellGems[cls] = `assets/spellgems/${dest}`;
   else warn(`spell-gem icon missing for class ${cls}`);
 }
+// spell gem LEVELS ("tier" in code, 1..15) — _su_extract data/model/spell_gem_properties.json (code-certain):
+// property slots by level (obj_gemmod: 0 below 5, 1 at 5–9, 2 at 10–14, 3 at 15) and the icon tier
+// (inv_SpellGemIcon: `icons` frame = class base + 0/1/2/3). Tiers 1–3 copy the code frames; tier 4 (level 15)
+// keeps the user-authored class icons above (same shape as the code frame, no outline).
+const gemPropModel = readJSON(path.join(MODEL, 'spell_gem_properties.json'));
+const spellGemTiers = (() => {
+  const L = gemPropModel.levels, lv = [];
+  for (let t = L.min; t <= L.max; t++) lv.push(t);
+  const icons = {};
+  for (const [cls, b] of Object.entries(L.icon_base_by_class)) {
+    const tiers = [0, 1, 2].map(k => { const dest = `${norm(cls)}_t${k + 1}.png`;
+      if (copySpriteFrame('icons', b + k, OUT_SPELLGEM, dest)) return `assets/spellgems/${dest}`;
+      err(`spell-gem tier icon missing: icons_${b + k} (${cls} tier ${k + 1})`); return null; });
+    icons[cls] = [...tiers, spellGems[cls] || null];
+  }
+  return { min: L.min, max: L.max, slots: lv.map(t => L.slots_by_level[t]), iconTier: lv.map(t => L.icon_offset_by_level[t]), icons };
+})();
+console.log(`  spell-gem levels: ${spellGemTiers.min}–${spellGemTiers.max} · slots ${[...new Set(spellGemTiers.slots)].join('/')} · ${Object.keys(spellGemTiers.icons).length} classes × 4 icon tiers`);
 // secondary gate for guild-reward spells (wiki) — spell name → {type:'guild', name, rank}
 const guildSpellGateByName = new Map();
 for (const r of readJSON(path.join(REF, 'guild_spell_ranks.json')).ranks)
@@ -1427,6 +1445,23 @@ let propGemIcons = 0, propGemGods = 0;
     }
   }
   for (const p of spellProps) if (p.id == null) p.id = idx++;   // Citrine's appended variants (stable ids)
+  // amounts by gem level (code: inv_SpellGemGetStat = f(gem.tier); nothing stored on the gem). `tpl` is the game's
+  // L_SPELLMOD template ("{1}% Chance to Attack"); `byTier[level-1]` fills {1}. Properties with no amount keep `effect`.
+  const GP = gemPropModel.properties;
+  let amounts = 0;
+  for (const p of spellProps) {
+    const m = GP[p.key];
+    if (!m) { err(`spell-gem property ${p.key} missing from spell_gem_properties.json`); continue; }
+    if (m.amount_by_tier) { p.tpl = m.label_template; p.byTier = Object.keys(m.amount_by_tier).sort((a, b) => a - b).map(k => m.amount_by_tier[k]); amounts++; }
+  }
+  // Cascading / Singular: the item text says 3% / 30%, the code applies 0.05 / 0.5 (bc_SpellDamage/Healing/Stat)
+  const CODE_PCT = { AQUAMARINE: ['3%', '5%'], AVENTURINE: ['30%', '50%'] };
+  for (const [key, [txt, code]] of Object.entries(CODE_PCT)) {
+    const p = spellProps.find(x => x.key === key);
+    if (!p || !p.effect.includes(txt)) { err(`${key}: expected item text with ${txt} to correct to the code value`); continue; }
+    p.effect = p.effect.replace(txt, code); p.textNote = `In-game item text says ${txt}; the game code applies ${code}.`;
+  }
+  console.log(`  spell-gem property amounts by level: ${amounts}/${spellProps.length} (rest are amount-less: Generous, Magnetic, Singular, Cascading, Extra Target, Class Swap)`);
   console.log(`  spell-gem properties: icons ${propGemIcons} (code frames) · gods ${propGemGods}/${spellProps.length} (code god-shop dust)`);
 }
 
@@ -1943,6 +1978,18 @@ const CONDNAME_OVERRIDE = {
 const terms = {};
 for (const [k, v] of Object.entries(labelsMap)) terms[k] = (v && v.name) || k;
 Object.assign(terms, CONDNAME_OVERRIDE);   // runtime {CONDNAME_*} tokens in trait/spell/perk text
+// {SPELL_*} spell-type tokens → the game's glossary words. scr_LangSpellType maps the token list
+// [equipment, alcohol, jewel, ultimate] to L_ARSENALSPELL / L_BOOZESPELL / L_PRISMSPELL / L_ULTIMATESPELL (same switch as
+// its [spell_artifact]/[spell_booze]/[spell_jewel]/[spell_ultimate] icon tags). Without this the humanizer fell back
+// to the raw token name ("Equipment", "Alcohol").
+{
+  const vocab = loadLoc('vocabulary.csv');
+  const SPELL_TYPE_TOKENS = { SPELL_equipment: 'L_ARSENALSPELL', SPELL_alcohol: 'L_BOOZESPELL', SPELL_jewel: 'L_PRISMSPELL', SPELL_ultimate: 'L_ULTIMATESPELL' };
+  for (const [tok, key] of Object.entries(SPELL_TYPE_TOKENS)) {
+    const word = vocab.get(key);
+    if (word) terms[tok] = word; else err(`spell-type token ${tok}: ${key} missing from vocabulary.csv`);
+  }
+}
 
 // ── damage / stat model (for fusion + future DPS sim) ──
 const damageModel = readJSON(path.join(MODEL, 'damage_model.json'));
@@ -2771,6 +2818,7 @@ const SU_DATA = {
   wardrobe,
   spells,
   spellGems,
+  spellGemTiers,            // spell gem levels 1..15: property slots + icon tier per level (code)
   spellProps,
   personalities: PERSONALITIES,
   runes,                    // False God difficulty runes (18) + authored theme counters
