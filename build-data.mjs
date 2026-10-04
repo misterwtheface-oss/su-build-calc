@@ -239,9 +239,12 @@ for (const e of tc.entities) {
 }
 // human-facing 2-level tag taxonomy (Category -> Value) + per-trait assignments
 const taxonomy = readJSON(path.join(MODEL, 'tag_taxonomy.json'));
+// tags whose code_taxo proposals are pre-approved via the damage-definition ledgers (user rulings 2026-10-04)
+const PREAPPROVED_TAGS = new Set(['Action/Mechanic::Damage', 'Activates When::Ally Deals Damage', 'Activates When::Enemy Deals Damage', 'Affect on Life::Creature is Damaged', 'Related Spells::Damaging Spells']);
 // Action/Mechanic::Damage (user ruling 2026-10-04): damage where the code does NOT make Attack or Spell/Cast explicit
 // (generic damage handler gates, DoT, damage effects). Replaces the old Attack+Cast pair used to mean "any damage".
 { const am = taxonomy.categories.find(c => c.category === 'Action/Mechanic'); if (am && !am.values.includes('Damage')) am.values.push('Damage'); }
+{ const aw = taxonomy.categories.find(c => c.category === 'Activates When'); if (aw) for (const v of ['Ally Deals Damage', 'Enemy Deals Damage']) if (!aw.values.includes(v)) aw.values.push(v); }   // user ruling 2026-10-04: triggered by damage
 const taxoTags = readJSON(path.join(MODEL, 'trait_taxonomy_tags.json')).by_trait;
 // "Animatus" (the golem race) isn't in the Related Types vocab, so the classifier snapped
 // Animatus-referencing effects to the nearest value "Animation" (a different race). Add Animatus
@@ -2343,7 +2346,7 @@ const MINION_PHRASE = { 'Greater Demons': /\bgreater demons?\b/i, 'Lesser Demons
       }
       const c = CT[String(rid)]; if (!c) continue;
       for (const tag of c.confirm) { const i = t.indexOf(tag); if (i >= 0 && s2[i] !== 'code') { s2[i] = 'code'; conf++; } }
-      const open = [...c.replace.filter(r => r.to !== 'Action/Mechanic::Damage' && !(r.to && t.includes(r.to))), ...c.add.filter(tag => tag !== 'Action/Mechanic::Damage' && !t.includes(tag))];
+      const open = [...c.replace.filter(r => !PREAPPROVED_TAGS.has(r.to) && !(r.to && t.includes(r.to))), ...c.add.filter(tag => !PREAPPROVED_TAGS.has(tag) && !t.includes(tag))];
       if (open.length) { pending += open.length; pendingTraits.push(`${rid} ${tr.name}`); }
     }
   }
@@ -2366,7 +2369,7 @@ const MINION_PHRASE = { 'Greater Demons': /\bgreater demons?\b/i, 'Lesser Demons
     const c = CTP[key]; if (!c) continue;
     for (const tag of c.confirm) { const i = t.indexOf(tag); if (i >= 0 && s2[i] !== 'code') { s2[i] = 'code'; pconf++; } }
     const rej = new Set(REJECTED_P[key] || []);   // user-rejected proposals never resurface as pending
-    const open = [...c.replace.filter(r => r.to !== 'Action/Mechanic::Damage' && !(r.to && (t.includes(r.to) || rej.has(r.to)))), ...c.add.filter(tag => tag !== 'Action/Mechanic::Damage' && !t.includes(tag) && !rej.has(tag))];
+    const open = [...c.replace.filter(r => !PREAPPROVED_TAGS.has(r.to) && !(r.to && (t.includes(r.to) || rej.has(r.to)))), ...c.add.filter(tag => !PREAPPROVED_TAGS.has(tag) && !t.includes(tag) && !rej.has(tag))];
     if (open.length) { ppend += open.length; ppendList.push(`${key} ${p.name}`); }
   }
   console.log(`  code taxonomy (perks): ${Object.keys(APPROVED_P).length} approved · ${prepl} replaced · +${padds} added · ${pconf} tags code-confirmed · ${ppend} proposals awaiting review${ppendList.length ? ` (${ppendList.slice(0, 12).join('; ')})` : ''}`);
@@ -2386,7 +2389,7 @@ const MINION_PHRASE = { 'Greater Demons': /\bgreater demons?\b/i, 'Lesser Demons
     }
     const c = CTR[key]; if (!c) continue;
     for (const tag of c.confirm) { const i = t.indexOf(tag); if (i >= 0 && s2[i] !== 'code') { s2[i] = 'code'; rconf++; } }
-    const open = [...c.replace.filter(r => r.to !== 'Action/Mechanic::Damage' && !(r.to && t.includes(r.to))), ...c.add.filter(tag => tag !== 'Action/Mechanic::Damage' && !t.includes(tag))];
+    const open = [...c.replace.filter(r => !PREAPPROVED_TAGS.has(r.to) && !(r.to && t.includes(r.to))), ...c.add.filter(tag => !PREAPPROVED_TAGS.has(tag) && !t.includes(tag))];
     if (open.length) { rpend += open.length; rpendList.push(`${key} ${rl.name}`); }
   }
   console.log(`  code taxonomy (relics): ${Object.keys(APPROVED_R).length} approved · +${radds} added · ${rconf} tags code-confirmed · ${rpend} proposals awaiting review${rpendList.length ? ` (${rpendList.join('; ')})` : ''}`);
@@ -2409,7 +2412,7 @@ const MINION_PHRASE = { 'Greater Demons': /\bgreater demons?\b/i, 'Lesser Demons
       const c = CTX[key]; if (!c) continue;
       for (const tag of c.confirm) { const i = t.indexOf(tag); if (i >= 0 && s2[i] !== 'code') { s2[i] = 'code'; conf++; } }
       const rej = new Set(RJ[key] || []);
-      const open = [...c.replace.filter(r => r.to !== 'Action/Mechanic::Damage' && !(r.to && (t.includes(r.to) || rej.has(r.to)))), ...c.add.filter(tag => tag !== 'Action/Mechanic::Damage' && !t.includes(tag) && !rej.has(tag))];
+      const open = [...c.replace.filter(r => !PREAPPROVED_TAGS.has(r.to) && !(r.to && (t.includes(r.to) || rej.has(r.to)))), ...c.add.filter(tag => !PREAPPROVED_TAGS.has(tag) && !t.includes(tag) && !rej.has(tag))];
       if (open.length) { pend += open.length; pendList.push(`${key} ${e.name}`); }
     }
     console.log(`  code taxonomy (${label}): ${Object.keys(AP).length} approved · +${adds} added · ${conf} tags code-confirmed · ${pend} proposals awaiting review`);
@@ -2433,7 +2436,17 @@ const MINION_PHRASE = { 'Greater Demons': /\bgreater demons?\b/i, 'Lesser Demons
       for (const from of r.from) { const i = e.taxo.indexOf(from); if (i >= 0) { e.taxo.splice(i, 1); e.taxoSrc.splice(i, 1); } }
       put(e, r.to); dRep++;
     }
-    for (const r of CTD.damage_ruling_adds || []) { const e = objFor.get(`${r.section}:${r.key}`); if (!e) { dMiss++; continue; } if (put(e, 'Action/Mechanic::Damage')) dAdd++; }
+    for (const r of CTD.damage_ruling_adds || []) { const e = objFor.get(`${r.section}:${r.key}`); if (!e) { dMiss++; continue; } if (put(e, r.tag || 'Action/Mechanic::Damage')) dAdd++; }
+    // Activates When::<Side> Deals Damage (user ruling: triggered by damage) — replaces Attacks/Casts stand-ins or adds
+    let ddRep = 0, ddAdd = 0, cdAdd = 0;
+    for (const r of CTD.deals_damage_ruling || []) {
+      const e = objFor.get(`${r.section}:${r.key}`); if (!e) { dMiss++; continue; }
+      if (r.from) { for (const from of r.from) { const i = e.taxo.indexOf(from); if (i >= 0) { e.taxo.splice(i, 1); e.taxoSrc.splice(i, 1); } } if (put(e, r.to)) ddRep++; }
+      else if (r.add && put(e, r.add)) ddAdd++;
+    }
+    // Affect on Life::Creature is Damaged (user ruling: deals damage)
+    for (const r of CTD.creature_damaged_adds || []) { const e = objFor.get(`${r.section}:${r.key}`); if (!e) { dMiss++; continue; } if (put(e, r.tag || 'Affect on Life::Creature is Damaged')) cdAdd++; }
+    console.log(`  deals-damage ruling: ${ddRep} trigger replacements · +${ddAdd} trigger adds · creature-damaged +${cdAdd}`);
     console.log(`  damage ruling: ${dRep} Attack/Cast → Damage replacements · +${dAdd} Damage added${dMiss ? ` · ${dMiss} unmatched` : ''}`);
   }
 }

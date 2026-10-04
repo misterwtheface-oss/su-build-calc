@@ -971,6 +971,92 @@
    ],
    "add": [],
    "approved": "2026-10-03"
+  },
+  "33:TOUCHOFDARKNESS": {
+   "name": "Touch of Darkness",
+   "replace": [
+    {
+     "from": [
+      "Activates When::Ally Attacks"
+     ],
+     "to": "Activates When::Ally Deals Damage"
+    }
+   ],
+   "add": [],
+   "approved": "2026-10-04",
+   "source": "text under the Deals Damage ruling (\"deal damage\"/\"damage an enemy\" trigger); perk decode had no trigger clause"
+  },
+  "12:GRAVITYSVOID": {
+   "name": "Gravity's Void",
+   "replace": [],
+   "add": [
+    "Activates When::Ally Deals Damage"
+   ],
+   "approved": "2026-10-04",
+   "source": "text under the Deals Damage ruling (\"deal damage\"/\"damage an enemy\" trigger); perk decode had no trigger clause"
+  },
+  "12:UNITY": {
+   "name": "Unity",
+   "replace": [],
+   "add": [
+    "Activates When::Ally Deals Damage"
+   ],
+   "approved": "2026-10-04",
+   "source": "text under the Deals Damage ruling (\"deal damage\"/\"damage an enemy\" trigger); perk decode had no trigger clause"
+  },
+  "10:ZEAL": {
+   "name": "Zeal",
+   "replace": [],
+   "add": [
+    "Activates When::Ally Deals Damage"
+   ],
+   "approved": "2026-10-04",
+   "source": "text under the Deals Damage ruling (\"deal damage\"/\"damage an enemy\" trigger); perk decode had no trigger clause"
+  },
+  "10:DIVINEWRATH": {
+   "name": "Divinewrath",
+   "replace": [],
+   "add": [
+    "Activates When::Ally Deals Damage"
+   ],
+   "approved": "2026-10-04",
+   "source": "text under the Deals Damage ruling (\"deal damage\"/\"damage an enemy\" trigger); perk decode had no trigger clause"
+  },
+  "10:ARTOFWAR": {
+   "name": "Artofwar",
+   "replace": [],
+   "add": [
+    "Activates When::Ally Deals Damage"
+   ],
+   "approved": "2026-10-04",
+   "source": "text under the Deals Damage ruling (\"deal damage\"/\"damage an enemy\" trigger); perk decode had no trigger clause"
+  },
+  "10:HANDOFLIGHT": {
+   "name": "Handoflight",
+   "replace": [],
+   "add": [
+    "Activates When::Ally Deals Damage"
+   ],
+   "approved": "2026-10-04",
+   "source": "text under the Deals Damage ruling (\"deal damage\"/\"damage an enemy\" trigger); perk decode had no trigger clause"
+  },
+  "10:GLORY": {
+   "name": "Glory",
+   "replace": [],
+   "add": [
+    "Activates When::Ally Deals Damage"
+   ],
+   "approved": "2026-10-04",
+   "source": "text under the Deals Damage ruling (\"deal damage\"/\"damage an enemy\" trigger); perk decode had no trigger clause"
+  },
+  "10:DIVINETOLL": {
+   "name": "Divinetoll",
+   "replace": [],
+   "add": [
+    "Activates When::Ally Deals Damage"
+   ],
+   "approved": "2026-10-04",
+   "source": "text under the Deals Damage ruling (\"deal damage\"/\"damage an enemy\" trigger); perk decode had no trigger clause"
   }
  },
  "policy": {
@@ -2112,5 +2198,11 @@
   ]
  },
  "notes_2026_10_03_review": "User: fix wrong mappings incl. False God parts (Automatic/Extra on AI-turn parts removed; they keep Action/Mechanic Attack/Cast); Turn Counter is used for turns-taken traits (Timeline → Turn Counter); Creeping Doom Race→Class; Vision Quest Illusion→Doppelganger; Mindful Awareness → Enemy Attacks.",
- "damageRuling": "2026-10-04 user: add Action/Mechanic::Damage where Attack and Spell/Cast are not explicit in the code. Code-backed Attack+Cast → Damage replacements (code_taxo.json damage_ruling_replacements) and Damage adds (damage_ruling_adds) are PRE-APPROVED."
+ "damageRuling": "2026-10-04 user: add Action/Mechanic::Damage where Attack and Spell/Cast are not explicit in the code. Code-backed Attack+Cast → Damage replacements (code_taxo.json damage_ruling_replacements) and Damage adds (damage_ruling_adds) are PRE-APPROVED.",
+ "damageDefinitions": {
+  "Action/Mechanic::Damage": "deals damage, triggered by damage, or modifies damage (any source); Attack/Cast added when explicit",
+  "Activates When::Ally/Enemy Deals Damage": "triggered by damage (replaces Attacks/Casts stand-ins where attack vs spell isn't explicit)",
+  "Affect on Life::Creature is Damaged": "deals damage",
+  "approved": "2026-10-04 user; code_taxo damage_ruling_adds / deals_damage_ruling / creature_damaged_adds are pre-approved"
+ }
 }

@@ -1414,6 +1414,20 @@ MAPPING not for asserting PRESENCE; no inventing entities from the community-CSV
       relics keep their code-explicit Attack) + 474 Damage adds, from `damage_ruling_*` in code_taxo.json.
     - **Also:** Ghidra gate-body decompiles of 16 functions (+196 confirms); Total Deprivation + Creature Race;
       a LOOSE-tag diagnostic (334, in `_su_extract` `taxo_loose.json`).
+  - **2026-10-04 DAMAGE DEFINITIONS (user) + Task Q:**
+    - **Definitions:**
+      - **Action/Mechanic::Damage** = deals damage, is triggered by damage, or modifies damage (any source; Attack/Cast
+        added when explicit).
+      - **NEW Activates When::Ally/Enemy Deals Damage** = triggered by damage (replaces Attacks/Casts stand-ins).
+      - **Affect on Life::Creature is Damaged** = deals damage.
+    - **Applied from pre-approved ledgers** (`damage_ruling_adds` incl. spell damage → Damage + Damaging Spells,
+      `deals_damage_ruling`, `creature_damaged_adds`): Damage on 730 traits, 194 perks, 338 spells, 29 relics, 80 cards;
+      14 trigger swaps + 8 adds; Creature is Damaged +131. Plus 9 perk Deals Damage triggers from explicit text (Touch of
+      Darkness, Unity, Gravity's Void, the Retribution perks).
+    - **Task Q:** region-split Ghidra decompiles (SuDecRange.java): bc_EventDamage, StartOfTurn, CreatureCast,
+      CreatureAttack, OnDeath and StartupTraits fully decompiled (gates with evidence 408 → 2,057). ExecuteEvents was
+      partial (low-memory kill); StartupGems / SpellDamage / BuffsDebuffs / EndOfTurn / StatGain not yet reached.
+    - **Provenance:** code 84% · llm 10%.
     - **Spells decoded too** (per-spell switch in bc_CreatureCast; 82% agreement with app spell tags); taxonomy
       integration is next.
 - [ ] **Capped effects with no app surface yet** (keep in context — user 2026-10-02). `_su_extract data/model/dr_caps.json`

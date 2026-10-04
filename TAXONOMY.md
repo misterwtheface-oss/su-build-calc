@@ -46,7 +46,7 @@ traits, perks, spells, relics and cards) is hidden from the ＋Filter / Appendix
 | Value | Covers |
 |---|---|
 | Attack | The Attack action — attacking, on-attack effects, attack damage. |
-| Damage | Damage where the code does NOT make attack vs spell explicit: generic damage-handler effects, damage over time, "damage an enemy". Use Attack / Cast only when the effect is explicitly attack- or spell-specific (user ruling 2026-10-04). |
+| Damage | **Deals damage, is triggered by damage, or modifies damage** (any source). Attack / Cast are added as well when the code makes the source explicit; the Attack+Cast pair is replaced by Damage only where neither is explicit (user rulings 2026-10-04). |
 | Cast | The Cast action — casting a spell (the action itself, not spell modifiers). |
 | Defend | The Defend action. |
 | Provoke | The Provoke action (forcing enemies to target it). |
@@ -96,6 +96,7 @@ Actor-split: **Ally** = bearer's side, **Enemy** = opposing side. The event set 
 | Moves on Timeline | is repositioned on the timeline. |
 | Minion Gain/Action | gains a minion or a minion acts. |
 | Trait Activates | one of its traits fires. |
+| Deals Damage | deals damage — any damage trigger where the code doesn't make attack vs spell explicit (user ruling 2026-10-04; replaces Attacks/Casts used as a stand-in). |
 
 ## Active If
 *Always-on effects gated by a persistent condition* (live **while** the condition holds).
@@ -154,7 +155,7 @@ Actor-split: **Ally** = bearer's side, **Enemy** = opposing side. The event set 
 
 | Value | Covers |
 |---|---|
-| Creature is Damaged | An effect keyed to a creature taking damage. |
+| Creature is Damaged | **Deals damage**: the effect damages a creature (user ruling 2026-10-04). |
 | Creature is Healed | Keyed to a creature being healed. |
 | More / Less Healing | Amplifies / reduces healing received. |
 | Creature is Killed | Keyed to a creature dying. |
