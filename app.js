@@ -4049,12 +4049,20 @@
         </div></div>
     </div></div>`;
   }
-  function openSpellGemBuilder(id) {
+  // retSlot = the creature whose equip list opened the builder (null = the plain library); Save / Cancel go back there
+  function openSpellGemBuilder(id, retSlot = null) {
     const draft = id != null ? JSON.parse(JSON.stringify(spellGems.find(g => g.id === id)))
       : { id: null, name: "", spellId: null, tier: GT.max, propIds: [] };
-    ovState = { kind: "sgbuild", editId: id, draft, step: id != null ? "props" : "spell", search: "", render: renderSpellGemBuilder };
+    ovState = { kind: "sgbuild", editId: id, retSlot, draft, step: id != null ? "props" : "spell", search: "", render: renderSpellGemBuilder };
     openOverlay(ovState.render());
   }
+  // back from the builder to the list it came from, optionally with a gem selected (a creature's list keeps its
+  // equip context, so a freshly built gem shows Equip straight away)
+  function backToGemList(retSlot, selId) {
+    if (retSlot != null && build.slots[retSlot] && build.slots[retSlot].cid != null) openCreatureSpells(retSlot); else openSpellGems();
+    if (selId != null) { ovState.sel = selId; refreshOverlay(); }
+  }
+  const gemListRetSlot = () => (ovState && ovState.equipCtx && ovState.equipCtx.kind === "creature" ? ovState.equipCtx.slotIdx : null);
   function renderSpellGemBuilder() {
     const st = ovState, g = st.draft, q = st.search.trim().toLowerCase();
     let body = "", footer = "";
@@ -4567,14 +4575,14 @@
       case "spellpage-sel": { const id = +t.dataset.id; closeDetail(); if (ovState) { ovState.sel = id; refreshOverlay(); } break; }
       case "sg-sel": { const id = +t.dataset.id; ovState.sel = ovState.sel === id ? null : id; refreshOverlay(); break; }
       case "sg-hide-equipped": e.stopPropagation(); ovState.hideEquipped = !ovState.hideEquipped; refreshOverlay(); break;
-      case "sg-new": openSpellGemBuilder(null); break;
-      case "sg-edit": openSpellGemBuilder(+t.dataset.id); break;
+      case "sg-new": openSpellGemBuilder(null, gemListRetSlot()); break;
+      case "sg-edit": openSpellGemBuilder(+t.dataset.id, gemListRetSlot()); break;
       case "sg-del": armOrDo(t, () => { const id = +t.dataset.id; spellGems = spellGems.filter(g => g.id !== id);
         artifacts.forEach(a => a.spells = (a.spells || []).filter(x => x !== id));
         build.slots.forEach(s => s.spellGemIds = (s.spellGemIds || []).filter(x => x !== id));
         if (ovState.sel === id) ovState.sel = spellGems[0] ? spellGems[0].id : null;
         persistSpellGems(); persistArtifacts(); persistBuild(); refreshOverlay(); }); break;
-      case "sg-cancel": openSpellGems(); break;
+      case "sg-cancel": backToGemList(ovState.retSlot, ovState.editId); break;
       case "sg-spell": ovState.draft.spellId = ovState.draft.spellId === +t.dataset.id ? null : +t.dataset.id; refreshOverlay(); break;
       case "sgb-next": ovState.step = "props"; ovState.picking = false; ovState.search = ""; refreshOverlay(true); break;
       case "sgb-back": ovState.step = "spell"; ovState.picking = false; ovState.search = ""; refreshOverlay(true); break;
@@ -4597,7 +4605,7 @@
         if (!d.name || !d.name.trim()) d.name = (SPELL.get(d.spellId) || {}).name || `Spell Gem ${nextSpellGemId}`;
         if (ovState.editId != null) { const idx = spellGems.findIndex(g => g.id === ovState.editId); if (idx >= 0) spellGems[idx] = d; }
         else { d.id = nextSpellGemId++; spellGems.push(d); }
-        persistSpellGems(); openSpellGems(); break;
+        persistSpellGems(); backToGemList(ovState.retSlot, d.id); break;
       }
       case "sg-equip": {
         const id = +t.dataset.id, ctx = ovState.equipCtx; if (!ctx) break;

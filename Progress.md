@@ -6,6 +6,11 @@ Pages on `master`/root, Cloudflare analytics active with the shared github.io to
 No verify-before-push ceremony (no real users yet) — but every change is checked with the jsdom smoke suite
 (scratchpad `smoke.mjs`, ~84 assertions across all flows) before commit.
 
+## 2026-10-04 (cont.) — FIX: building a gem from a creature lost the equip context
+Build new / Edit from a creature's spell list opened the builder, and Save/Cancel returned to the plain Menu library
+(`openSpellGems()`), so the new gem showed "＋ Build new" instead of Equip. The builder now carries `retSlot`;
+`backToGemList` reopens that creature's equip list (same header) with the saved/edited gem selected. Menu path unchanged.
+
 ## 2026-10-04 (cont.) — FIX: artifact "Spell Gem Slots" didn't add creature spell slots
 `FX.gemSlotMax` only counted base 3 + perk/trait grants; the artifact's "Spell Gem Slots" property (Pump Drill trick,
 flat +1/+2/+3 at rank 10/25/50, and the same property on a socketed nether stone) was never added. Now summed from the
