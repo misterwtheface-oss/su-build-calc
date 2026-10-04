@@ -1477,6 +1477,14 @@ Each is one rule edit in `data/reference/effect_rules.json` (or the generator in
     A ruling guard stops re-proposing tags a pre-approved ruling replaced.
     - **Residual (a) basically flat:** what's left is shared generic handlers, out-of-block scaling, callee status,
       spell-calc / gem fields, and the long tail.
+  - **2026-10-04 S1 + S2 (user: keep grinding; in-app compute coming):**
+    - **S1:** more region decompiles (OnAttack, crit_* getters, stat gain/lose, OnCast, EventHeal, battle step); gates
+      with evidence 2,570 → 4,085; residual decodable 2,054 → 1,858.
+    - **New REVIEW B13:** Zantai traits tagged Gain a Trait, but they gain a spell gem.
+    - **S2:** `_su_extract` `effect_formulas.json` + EFFECT_FORMULAS.md — per-object machine-evaluable effect records +
+      the global damage pipeline (spell tiers 0.9 / 1.1 / 1.2 / 1.3 / 1.5 potency with 0–40% defense pen; class ×2 / ×0.5;
+      defending ×0.65 + Def ×1.5). Validation 90–94% vs description numbers. Flagged: Transformation Mastery signature
+      is wrong.
     - **Spells decoded too** (per-spell switch in bc_CreatureCast; 82% agreement with app spell tags); taxonomy
       integration is next.
 - [ ] **Capped effects with no app surface yet** (keep in context — user 2026-10-02). `_su_extract data/model/dr_caps.json`
