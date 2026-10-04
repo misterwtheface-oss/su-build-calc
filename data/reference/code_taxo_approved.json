@@ -387,6 +387,331 @@
     "Affect on Attacks::Automatic/Extra Attack"
    ],
    "approved": "2026-10-03"
+  },
+  "287": {
+   "name": "Naxor Harbinger",
+   "replace": [
+    {
+     "from": [
+      "Action/Mechanic::Timeline"
+     ],
+     "to": "Action/Mechanic::Turn Counter"
+    }
+   ],
+   "add": [],
+   "approved": "2026-10-03"
+  },
+  "288": {
+   "name": "Mungus Harbinger",
+   "replace": [
+    {
+     "from": [
+      "Action/Mechanic::Timeline"
+     ],
+     "to": "Action/Mechanic::Turn Counter"
+    }
+   ],
+   "add": [],
+   "approved": "2026-10-03"
+  },
+  "289": {
+   "name": "Urdox Harbinger",
+   "replace": [
+    {
+     "from": [
+      "Action/Mechanic::Timeline"
+     ],
+     "to": "Action/Mechanic::Turn Counter"
+    }
+   ],
+   "add": [],
+   "approved": "2026-10-03"
+  },
+  "290": {
+   "name": "Quahn Harbinger",
+   "replace": [
+    {
+     "from": [
+      "Action/Mechanic::Timeline"
+     ],
+     "to": "Action/Mechanic::Turn Counter"
+    }
+   ],
+   "add": [],
+   "approved": "2026-10-03"
+  },
+  "291": {
+   "name": "Urh Harbinger",
+   "replace": [
+    {
+     "from": [
+      "Action/Mechanic::Timeline"
+     ],
+     "to": "Action/Mechanic::Turn Counter"
+    }
+   ],
+   "add": [],
+   "approved": "2026-10-03"
+  },
+  "881": {
+   "name": "Mindful Awareness",
+   "replace": [
+    {
+     "from": [
+      "Activates When::Ally Takes Damage"
+     ],
+     "to": "Activates When::Enemy Attacks"
+    }
+   ],
+   "add": [],
+   "approved": "2026-10-03"
+  },
+  "1245": {
+   "name": "Hand of Caliban",
+   "replace": [
+    {
+     "from": [
+      "Affect on Attacks::Automatic/Extra Attack"
+     ],
+     "to": null
+    }
+   ],
+   "add": [],
+   "approved": "2026-10-03"
+  },
+  "1398": {
+   "name": "Master of Apocalypses",
+   "replace": [
+    {
+     "from": [
+      "Action/Mechanic::Timeline"
+     ],
+     "to": "Action/Mechanic::Turn Counter"
+    }
+   ],
+   "add": [],
+   "approved": "2026-10-03"
+  },
+  "1609": {
+   "name": "Shoulder of Impington",
+   "replace": [
+    {
+     "from": [
+      "Affect on Spells::Automatic/Extra Cast"
+     ],
+     "to": null
+    }
+   ],
+   "add": [],
+   "approved": "2026-10-03"
+  },
+  "1610": {
+   "name": "Shoulder of Impington",
+   "replace": [
+    {
+     "from": [
+      "Affect on Spells::Automatic/Extra Cast"
+     ],
+     "to": null
+    }
+   ],
+   "add": [],
+   "approved": "2026-10-03"
+  },
+  "1589": {
+   "name": "Hand of Althea",
+   "replace": [
+    {
+     "from": [
+      "Affect on Spells::Automatic/Extra Cast"
+     ],
+     "to": null
+    }
+   ],
+   "add": [],
+   "approved": "2026-10-03"
+  },
+  "1590": {
+   "name": "Hand of Althea",
+   "replace": [
+    {
+     "from": [
+      "Affect on Spells::Automatic/Extra Cast"
+     ],
+     "to": null
+    }
+   ],
+   "add": [],
+   "approved": "2026-10-03"
+  },
+  "1592": {
+   "name": "Shoulder of Althea",
+   "replace": [
+    {
+     "from": [
+      "Affect on Spells::Automatic/Extra Cast"
+     ],
+     "to": null
+    }
+   ],
+   "add": [],
+   "approved": "2026-10-03"
+  },
+  "1633": {
+   "name": "Orbs of Mindwurm",
+   "replace": [
+    {
+     "from": [
+      "Affect on Spells::Automatic/Extra Cast"
+     ],
+     "to": null
+    }
+   ],
+   "add": [],
+   "approved": "2026-10-03"
+  },
+  "1634": {
+   "name": "Orbs of Mindwurm",
+   "replace": [
+    {
+     "from": [
+      "Affect on Spells::Automatic/Extra Cast"
+     ],
+     "to": null
+    }
+   ],
+   "add": [],
+   "approved": "2026-10-03"
+  },
+  "1627": {
+   "name": "Shoulder of Lost Construct",
+   "replace": [
+    {
+     "from": [
+      "Affect on Spells::Automatic/Extra Cast"
+     ],
+     "to": null
+    }
+   ],
+   "add": [],
+   "approved": "2026-10-03"
+  },
+  "1628": {
+   "name": "Shoulder of Lost Construct",
+   "replace": [
+    {
+     "from": [
+      "Affect on Spells::Automatic/Extra Cast"
+     ],
+     "to": null
+    }
+   ],
+   "add": [],
+   "approved": "2026-10-03"
+  },
+  "1639": {
+   "name": "Wing of Nebodar",
+   "replace": [
+    {
+     "from": [
+      "Affect on Spells::Automatic/Extra Cast"
+     ],
+     "to": null
+    }
+   ],
+   "add": [],
+   "approved": "2026-10-03"
+  },
+  "1640": {
+   "name": "Wing of Nebodar",
+   "replace": [
+    {
+     "from": [
+      "Affect on Spells::Automatic/Extra Cast"
+     ],
+     "to": null
+    }
+   ],
+   "add": [],
+   "approved": "2026-10-03"
+  },
+  "1597": {
+   "name": "Shoulder of The Ancestor",
+   "replace": [
+    {
+     "from": [
+      "Affect on Spells::Automatic/Extra Cast"
+     ],
+     "to": null
+    }
+   ],
+   "add": [],
+   "approved": "2026-10-03"
+  },
+  "1598": {
+   "name": "Shoulder of The Ancestor",
+   "replace": [
+    {
+     "from": [
+      "Affect on Spells::Automatic/Extra Cast"
+     ],
+     "to": null
+    }
+   ],
+   "add": [],
+   "approved": "2026-10-03"
+  },
+  "1645": {
+   "name": "Orbs of Caliban",
+   "replace": [
+    {
+     "from": [
+      "Affect on Spells::Automatic/Extra Cast"
+     ],
+     "to": null
+    }
+   ],
+   "add": [],
+   "approved": "2026-10-03"
+  },
+  "1646": {
+   "name": "Orbs of Caliban",
+   "replace": [
+    {
+     "from": [
+      "Affect on Spells::Automatic/Extra Cast"
+     ],
+     "to": null
+    }
+   ],
+   "add": [],
+   "approved": "2026-10-03"
+  },
+  "1724": {
+   "name": "Vengeful Rebound",
+   "replace": [
+    {
+     "from": [
+      "Action/Mechanic::Timeline"
+     ],
+     "to": "Action/Mechanic::Turn Counter"
+    }
+   ],
+   "add": [],
+   "approved": "2026-10-03"
+  },
+  "2118": {
+   "name": "Creeping Doom",
+   "replace": [
+    {
+     "from": [
+      "Action/Mechanic::Creature Race"
+     ],
+     "to": "Action/Mechanic::Creature Class"
+    }
+   ],
+   "add": [],
+   "approved": "2026-10-03"
   }
  },
  "rejected": {
@@ -590,6 +915,19 @@
     "Related Types::Sorcery Creature"
    ],
    "approved": "2026-10-03"
+  },
+  "29:VISIONQUEST": {
+   "name": "Vision Quest",
+   "replace": [
+    {
+     "from": [
+      "Related Minion::Illusion"
+     ],
+     "to": "Related Minion::Doppelganger"
+    }
+   ],
+   "add": [],
+   "approved": "2026-10-03"
   }
  },
  "policy": {
@@ -612,6 +950,19 @@
    "add": [
     "Action/Mechanic::Turn Counter"
    ],
+   "approved": "2026-10-03"
+  },
+  "16": {
+   "name": "Mutatias, War Scissors of Alexandria",
+   "replace": [
+    {
+     "from": [
+      "Action/Mechanic::Timeline"
+     ],
+     "to": "Action/Mechanic::Turn Counter"
+    }
+   ],
+   "add": [],
    "approved": "2026-10-03"
   }
  },
@@ -1018,5 +1369,704 @@
   }
  },
  "notes_2026_10_03": "User: keep Eaten Alive as Healing Spells (judgement call approved). Abomination card power order confirmed (15% more damage, 10% less dodge, 35% less healing) = app + code.",
- "notes_modifier_ruling": "2026-10-03 user: perk/trait spell-damage/attack-damage MODIFIERS ground Action/Mechanic Cast/Attack (Action/Mechanic = very general mechanic categories). Creature Class also applies when a creature's class derives the spell/gem class."
+ "notes_modifier_ruling": "2026-10-03 user: perk/trait spell-damage/attack-damage MODIFIERS ground Action/Mechanic Cast/Attack (Action/Mechanic = very general mechanic categories). Creature Class also applies when a creature's class derives the spell/gem class.",
+ "reviewKeep": {
+  "_note": "2026-10-03 user: KEEP these LLM tags (rejected the drop recommendations B1 Stats-scaling, B2 Attack on kill triggers, B3 Multiplied by on threshold text, B4 triggers on passive text). Do not re-flag.",
+  "items": [
+   {
+    "sec": "traits",
+    "key": "102",
+    "name": "Midnight Feast",
+    "tag": "Action/Mechanic::Attack",
+    "pattern": "B2"
+   },
+   {
+    "sec": "traits",
+    "key": "104",
+    "name": "Deadly Instincts",
+    "tag": "Action/Mechanic::Attack",
+    "pattern": "B2"
+   },
+   {
+    "sec": "traits",
+    "key": "105",
+    "name": "Demoralize",
+    "tag": "Action/Mechanic::Attack",
+    "pattern": "B2"
+   },
+   {
+    "sec": "traits",
+    "key": "106",
+    "name": "Augmentation",
+    "tag": "Action/Mechanic::Attack",
+    "pattern": "B2"
+   },
+   {
+    "sec": "traits",
+    "key": "604",
+    "name": "The End",
+    "tag": "Action/Mechanic::Stats",
+    "pattern": "B1"
+   },
+   {
+    "sec": "traits",
+    "key": "798",
+    "name": "Heartrage",
+    "tag": "Action/Mechanic::Stats",
+    "pattern": "B1"
+   },
+   {
+    "sec": "traits",
+    "key": "1003",
+    "name": "Extra Padding",
+    "tag": "Action/Mechanic::Stats",
+    "pattern": "B1"
+   },
+   {
+    "sec": "traits",
+    "key": "1023",
+    "name": "Infested With Ants",
+    "tag": "Action/Mechanic::Stats",
+    "pattern": "B1"
+   },
+   {
+    "sec": "traits",
+    "key": "1143",
+    "name": "The Walking Dead",
+    "tag": "Action/Mechanic::Stats",
+    "pattern": "B1"
+   },
+   {
+    "sec": "traits",
+    "key": "1316",
+    "name": "Shadowstep",
+    "tag": "Action/Mechanic::Stats",
+    "pattern": "B1"
+   },
+   {
+    "sec": "traits",
+    "key": "1317",
+    "name": "Shadowstep",
+    "tag": "Action/Mechanic::Stats",
+    "pattern": "B1"
+   },
+   {
+    "sec": "traits",
+    "key": "1337",
+    "name": "Tantalizing Temptation",
+    "tag": "Action/Mechanic::Stats",
+    "pattern": "B1"
+   },
+   {
+    "sec": "traits",
+    "key": "1338",
+    "name": "Tantalizing Temptation",
+    "tag": "Action/Mechanic::Stats",
+    "pattern": "B1"
+   },
+   {
+    "sec": "traits",
+    "key": "1256",
+    "name": "Kiichi's Onslaught",
+    "tag": "Multiplied by::Amount of Damage Taken",
+    "pattern": "B3"
+   },
+   {
+    "sec": "traits",
+    "key": "1267",
+    "name": "Vlora's Trick",
+    "tag": "Action/Mechanic::Stats",
+    "pattern": "B1"
+   },
+   {
+    "sec": "traits",
+    "key": "1524",
+    "name": "Gempocalypse",
+    "tag": "Action/Mechanic::Stats",
+    "pattern": "B1"
+   },
+   {
+    "sec": "traits",
+    "key": "1401",
+    "name": "Master of Asuras",
+    "tag": "Activates When::Ally Critically Hits",
+    "pattern": "B4"
+   },
+   {
+    "sec": "traits",
+    "key": "1443",
+    "name": "Master of Griffons",
+    "tag": "Activates When::Ally Attacks",
+    "pattern": "B4"
+   },
+   {
+    "sec": "traits",
+    "key": "1443",
+    "name": "Master of Griffons",
+    "tag": "Activates When::Ally Critically Hits",
+    "pattern": "B4"
+   },
+   {
+    "sec": "traits",
+    "key": "1531",
+    "name": "Treasure Golem's Secret",
+    "tag": "Action/Mechanic::Stats",
+    "pattern": "B1"
+   },
+   {
+    "sec": "traits",
+    "key": "1542",
+    "name": "Zantai's Stratagem",
+    "tag": "Action/Mechanic::Stats",
+    "pattern": "B1"
+   },
+   {
+    "sec": "traits",
+    "key": "1568",
+    "name": "What Is Left",
+    "tag": "Action/Mechanic::Stats",
+    "pattern": "B1"
+   },
+   {
+    "sec": "traits",
+    "key": "1623",
+    "name": "Body of Loid",
+    "tag": "Action/Mechanic::Stats",
+    "pattern": "B1"
+   },
+   {
+    "sec": "traits",
+    "key": "1619",
+    "name": "Hand of Loid",
+    "tag": "Action/Mechanic::Stats",
+    "pattern": "B1"
+   },
+   {
+    "sec": "traits",
+    "key": "1738",
+    "name": "Sword of Will",
+    "tag": "Action/Mechanic::Stats",
+    "pattern": "B1"
+   },
+   {
+    "sec": "traits",
+    "key": "1857",
+    "name": "Grubby Strength",
+    "tag": "Action/Mechanic::Stats",
+    "pattern": "B1"
+   },
+   {
+    "sec": "traits",
+    "key": "1868",
+    "name": "Black Fog",
+    "tag": "Action/Mechanic::Stats",
+    "pattern": "B1"
+   },
+   {
+    "sec": "traits",
+    "key": "1953",
+    "name": "Unbound Corruption",
+    "tag": "Action/Mechanic::Stats",
+    "pattern": "B1"
+   },
+   {
+    "sec": "traits",
+    "key": "1998",
+    "name": "Outgrow",
+    "tag": "Activates at::End of Ally Turn",
+    "pattern": "B4"
+   },
+   {
+    "sec": "traits",
+    "key": "2058",
+    "name": "Cut the Cheese",
+    "tag": "Action/Mechanic::Stats",
+    "pattern": "B1"
+   },
+   {
+    "sec": "traits",
+    "key": "2059",
+    "name": "Don't Touch My Garbage",
+    "tag": "Action/Mechanic::Stats",
+    "pattern": "B1"
+   },
+   {
+    "sec": "traits",
+    "key": "2114",
+    "name": "Scoundrel's Strike",
+    "tag": "Action/Mechanic::Stats",
+    "pattern": "B1"
+   },
+   {
+    "sec": "perks",
+    "key": "1:GRIMKEEPER",
+    "name": "Grimkeeper",
+    "tag": "Activates When::Ally Dies",
+    "pattern": "B4"
+   },
+   {
+    "sec": "perks",
+    "key": "5:INNERFOCUS",
+    "name": "Inner Focus",
+    "tag": "Action/Mechanic::Stats",
+    "pattern": "B1"
+   },
+   {
+    "sec": "perks",
+    "key": "5:BLAZINGSOUL",
+    "name": "Blazing Soul",
+    "tag": "Action/Mechanic::Stats",
+    "pattern": "B1"
+   },
+   {
+    "sec": "perks",
+    "key": "6:MIRACLE",
+    "name": "Miracle",
+    "tag": "Action/Mechanic::Stats",
+    "pattern": "B1"
+   },
+   {
+    "sec": "perks",
+    "key": "6:DEFYEVIL",
+    "name": "Defy Evil",
+    "tag": "Action/Mechanic::Stats",
+    "pattern": "B1"
+   },
+   {
+    "sec": "perks",
+    "key": "7:THYLACINESFURY",
+    "name": "Thylacine's Fury",
+    "tag": "Action/Mechanic::Stats",
+    "pattern": "B1"
+   },
+   {
+    "sec": "perks",
+    "key": "7:CROSSWINDS",
+    "name": "Crosswinds",
+    "tag": "Action/Mechanic::Stats",
+    "pattern": "B1"
+   },
+   {
+    "sec": "perks",
+    "key": "10:RETRIBUTION",
+    "name": "Retribution",
+    "tag": "Action/Mechanic::Stats",
+    "pattern": "B1"
+   },
+   {
+    "sec": "perks",
+    "key": "10:ARTOFWAR",
+    "name": "Art of War",
+    "tag": "Action/Mechanic::Stats",
+    "pattern": "B1"
+   },
+   {
+    "sec": "perks",
+    "key": "13:TIESTHATBIND",
+    "name": "Ties That Bind",
+    "tag": "Action/Mechanic::Stats",
+    "pattern": "B1"
+   },
+   {
+    "sec": "perks",
+    "key": "14:SUBTERFUGE",
+    "name": "Subterfuge",
+    "tag": "Action/Mechanic::Stats",
+    "pattern": "B1"
+   },
+   {
+    "sec": "perks",
+    "key": "16:BLOODRAGE",
+    "name": "Bloodrage",
+    "tag": "Action/Mechanic::Stats",
+    "pattern": "B1"
+   },
+   {
+    "sec": "perks",
+    "key": "18:DYINGSTARS",
+    "name": "Dying Stars",
+    "tag": "Multiplied by::Dead Creature Count",
+    "pattern": "B3"
+   },
+   {
+    "sec": "perks",
+    "key": "20:DESIGNATEDSURVIVOR",
+    "name": "Designated Survivor",
+    "tag": "Multiplied by::Living Creature Count",
+    "pattern": "B3"
+   },
+   {
+    "sec": "perks",
+    "key": "26:UNFURLINGNIGHTMARE",
+    "name": "Unfurling Nightmare",
+    "tag": "Action/Mechanic::Stats",
+    "pattern": "B1"
+   },
+   {
+    "sec": "perks",
+    "key": "28:VELOCITY",
+    "name": "Velocity",
+    "tag": "Action/Mechanic::Stats",
+    "pattern": "B1"
+   },
+   {
+    "sec": "perks",
+    "key": "28:SIDESTEP",
+    "name": "Sidestep",
+    "tag": "Action/Mechanic::Stats",
+    "pattern": "B1"
+   },
+   {
+    "sec": "perks",
+    "key": "29:INITIATIONRITE",
+    "name": "Initiation Rite",
+    "tag": "Action/Mechanic::Stats",
+    "pattern": "B1"
+   },
+   {
+    "sec": "perks",
+    "key": "30:THEBESTOFFENSE",
+    "name": "The Best Offense",
+    "tag": "Action/Mechanic::Stats",
+    "pattern": "B1"
+   },
+   {
+    "sec": "perks",
+    "key": "30:THORNS",
+    "name": "Thorns",
+    "tag": "Action/Mechanic::Stats",
+    "pattern": "B1"
+   },
+   {
+    "sec": "perks",
+    "key": "36:PROTOTYPE",
+    "name": "Prototype",
+    "tag": "Action/Mechanic::Stats",
+    "pattern": "B1"
+   },
+   {
+    "sec": "perks",
+    "key": "39:IMPENDINGVICTORY",
+    "name": "Impending Victory",
+    "tag": "Action/Mechanic::Stats",
+    "pattern": "B1"
+   },
+   {
+    "sec": "perks",
+    "key": "41:JUBILATION",
+    "name": "Jubilation",
+    "tag": "Action/Mechanic::Stats",
+    "pattern": "B1"
+   },
+   {
+    "sec": "perks",
+    "key": "42:ANAGNORISIS",
+    "name": "Anagnorisis",
+    "tag": "Action/Mechanic::Stats",
+    "pattern": "B1"
+   },
+   {
+    "sec": "spells",
+    "key": "50",
+    "name": "Elemental Barrier",
+    "tag": "Action/Mechanic::Stats",
+    "pattern": "B1"
+   },
+   {
+    "sec": "spells",
+    "key": "51",
+    "name": "Elemental Guard",
+    "tag": "Action/Mechanic::Stats",
+    "pattern": "B1"
+   },
+   {
+    "sec": "spells",
+    "key": "211",
+    "name": "Double Punch",
+    "tag": "Action/Mechanic::Stats",
+    "pattern": "B1"
+   },
+   {
+    "sec": "spells",
+    "key": "223",
+    "name": "Shield Bash",
+    "tag": "Action/Mechanic::Stats",
+    "pattern": "B1"
+   },
+   {
+    "sec": "spells",
+    "key": "224",
+    "name": "Shield Slam",
+    "tag": "Action/Mechanic::Stats",
+    "pattern": "B1"
+   },
+   {
+    "sec": "spells",
+    "key": "226",
+    "name": "Whiplash",
+    "tag": "Action/Mechanic::Stats",
+    "pattern": "B1"
+   },
+   {
+    "sec": "spells",
+    "key": "228",
+    "name": "Bone Spear",
+    "tag": "Action/Mechanic::Stats",
+    "pattern": "B1"
+   },
+   {
+    "sec": "spells",
+    "key": "233",
+    "name": "Clawing Shadows",
+    "tag": "Action/Mechanic::Stats",
+    "pattern": "B1"
+   },
+   {
+    "sec": "spells",
+    "key": "244",
+    "name": "Ghostly Scimitar",
+    "tag": "Action/Mechanic::Stats",
+    "pattern": "B1"
+   },
+   {
+    "sec": "spells",
+    "key": "270",
+    "name": "Entangling Arrow",
+    "tag": "Action/Mechanic::Stats",
+    "pattern": "B1"
+   },
+   {
+    "sec": "spells",
+    "key": "271",
+    "name": "Fire Arrow",
+    "tag": "Action/Mechanic::Stats",
+    "pattern": "B1"
+   },
+   {
+    "sec": "spells",
+    "key": "272",
+    "name": "Frost Arrow",
+    "tag": "Action/Mechanic::Stats",
+    "pattern": "B1"
+   },
+   {
+    "sec": "spells",
+    "key": "274",
+    "name": "Homing Arrow",
+    "tag": "Action/Mechanic::Stats",
+    "pattern": "B1"
+   },
+   {
+    "sec": "spells",
+    "key": "278",
+    "name": "Poison Arrow",
+    "tag": "Action/Mechanic::Stats",
+    "pattern": "B1"
+   },
+   {
+    "sec": "spells",
+    "key": "283",
+    "name": "Splitting Arrow",
+    "tag": "Action/Mechanic::Stats",
+    "pattern": "B1"
+   },
+   {
+    "sec": "spells",
+    "key": "290",
+    "name": "Crystal Shield",
+    "tag": "Action/Mechanic::Stats",
+    "pattern": "B1"
+   },
+   {
+    "sec": "spells",
+    "key": "295",
+    "name": "Ethereal Knives",
+    "tag": "Action/Mechanic::Stats",
+    "pattern": "B1"
+   },
+   {
+    "sec": "spells",
+    "key": "301",
+    "name": "Mind Explosion",
+    "tag": "Action/Mechanic::Stats",
+    "pattern": "B1"
+   },
+   {
+    "sec": "spells",
+    "key": "332",
+    "name": "Living Sword",
+    "tag": "Action/Mechanic::Stats",
+    "pattern": "B1"
+   },
+   {
+    "sec": "spells",
+    "key": "338",
+    "name": "Living Armor",
+    "tag": "Action/Mechanic::Stats",
+    "pattern": "B1"
+   },
+   {
+    "sec": "spells",
+    "key": "339",
+    "name": "Living Ring",
+    "tag": "Action/Mechanic::Stats",
+    "pattern": "B1"
+   },
+   {
+    "sec": "spells",
+    "key": "342",
+    "name": "Living Chaos Lance",
+    "tag": "Action/Mechanic::Stats",
+    "pattern": "B1"
+   },
+   {
+    "sec": "spells",
+    "key": "343",
+    "name": "Living Death Lance",
+    "tag": "Action/Mechanic::Stats",
+    "pattern": "B1"
+   },
+   {
+    "sec": "spells",
+    "key": "344",
+    "name": "Living Nature Lance",
+    "tag": "Action/Mechanic::Stats",
+    "pattern": "B1"
+   },
+   {
+    "sec": "spells",
+    "key": "345",
+    "name": "Living Sorcery Lance",
+    "tag": "Action/Mechanic::Stats",
+    "pattern": "B1"
+   },
+   {
+    "sec": "spells",
+    "key": "346",
+    "name": "Living Life Lance",
+    "tag": "Action/Mechanic::Stats",
+    "pattern": "B1"
+   },
+   {
+    "sec": "spells",
+    "key": "360",
+    "name": "Mind Crunch",
+    "tag": "Action/Mechanic::Stats",
+    "pattern": "B1"
+   },
+   {
+    "sec": "spells",
+    "key": "369",
+    "name": "Vitality Explosion",
+    "tag": "Action/Mechanic::Stats",
+    "pattern": "B1"
+   },
+   {
+    "sec": "spells",
+    "key": "380",
+    "name": "Explosive Arrow",
+    "tag": "Action/Mechanic::Stats",
+    "pattern": "B1"
+   },
+   {
+    "sec": "spells",
+    "key": "403",
+    "name": "Holy Blast",
+    "tag": "Action/Mechanic::Stats",
+    "pattern": "B1"
+   },
+   {
+    "sec": "spells",
+    "key": "429",
+    "name": "Bloodwave",
+    "tag": "Action/Mechanic::Stats",
+    "pattern": "B1"
+   },
+   {
+    "sec": "spells",
+    "key": "447",
+    "name": "Meat Grinder",
+    "tag": "Action/Mechanic::Stats",
+    "pattern": "B1"
+   },
+   {
+    "sec": "spells",
+    "key": "453",
+    "name": "Phantasm",
+    "tag": "Action/Mechanic::Stats",
+    "pattern": "B1"
+   },
+   {
+    "sec": "spells",
+    "key": "475",
+    "name": "Parasite Eve",
+    "tag": "Action/Mechanic::Stats",
+    "pattern": "B1"
+   },
+   {
+    "sec": "spells",
+    "key": "544",
+    "name": "Fragmenting Arrow",
+    "tag": "Action/Mechanic::Stats",
+    "pattern": "B1"
+   },
+   {
+    "sec": "spells",
+    "key": "546",
+    "name": "Disintegrating Arrow",
+    "tag": "Action/Mechanic::Stats",
+    "pattern": "B1"
+   },
+   {
+    "sec": "spells",
+    "key": "553",
+    "name": "Devastating Throw",
+    "tag": "Action/Mechanic::Stats",
+    "pattern": "B1"
+   },
+   {
+    "sec": "spells",
+    "key": "554",
+    "name": "Rolling Meteor",
+    "tag": "Action/Mechanic::Stats",
+    "pattern": "B1"
+   },
+   {
+    "sec": "spells",
+    "key": "561",
+    "name": "Unrighteous Fire",
+    "tag": "Action/Mechanic::Stats",
+    "pattern": "B1"
+   },
+   {
+    "sec": "spells",
+    "key": "586",
+    "name": "Unbound Combustion",
+    "tag": "Action/Mechanic::Stats",
+    "pattern": "B1"
+   },
+   {
+    "sec": "spells",
+    "key": "591",
+    "name": "Lead the Charge",
+    "tag": "Action/Mechanic::Stats",
+    "pattern": "B1"
+   },
+   {
+    "sec": "spells",
+    "key": "631",
+    "name": "Volatile Strike",
+    "tag": "Action/Mechanic::Stats",
+    "pattern": "B1"
+   },
+   {
+    "sec": "spells",
+    "key": "632",
+    "name": "Cross-Pollination",
+    "tag": "Multiplied by::Amount of X Stat",
+    "pattern": "B3"
+   }
+  ]
+ },
+ "notes_2026_10_03_review": "User: fix wrong mappings incl. False God parts (Automatic/Extra on AI-turn parts removed; they keep Action/Mechanic Attack/Cast); Turn Counter is used for turns-taken traits (Timeline → Turn Counter); Creeping Doom Race→Class; Vision Quest Illusion→Doppelganger; Mindful Awareness → Enemy Attacks."
 }

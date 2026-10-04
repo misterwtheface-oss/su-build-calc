@@ -1396,6 +1396,11 @@ MAPPING not for asserting PRESENCE; no inventing entities from the community-CSV
     spell-case membership; scr_SpellHasTag tests; damage perspective; event-side mapping.
     - **Result:** residual decodable 2,812 → 2,608.
     - **New REVIEW:** B11 Mindful Awareness Ally Takes Damage → Enemy Attacks (Thorns precedent).
+  - **REVIEW ROUND (user, 2026-10-03):**
+    - **Fixed (27 tags):** Turn Counter for the turns-taken traits (Harbingers, Master of Apocalypses, Vengeful Rebound,
+      relic Mutatias; was Timeline); Mindful Awareness → Enemy Attacks; Creeping Doom → Creature Class; Vision Quest →
+      Doppelganger; False God parts lose Automatic/Extra (keep Action/Mechanic Attack/Cast).
+    - **Drop recommendations REJECTED** (99 tags kept: B1/B2/B3/B4) → `code_taxo_approved.json` `reviewKeep`.
     - **Spells decoded too** (per-spell switch in bc_CreatureCast; 82% agreement with app spell tags); taxonomy
       integration is next.
 - [ ] **Capped effects with no app surface yet** (keep in context — user 2026-10-02). `_su_extract data/model/dr_caps.json`
