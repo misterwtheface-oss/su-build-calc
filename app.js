@@ -547,6 +547,17 @@
 
   // ── stat computation (fusion + artifact + socketed nether) ─────────────────
   function resolveArtifact(slot) { return slot.artifactId != null ? artifacts.find(a => a.id === slot.artifactId) : null; }
+  // effect engine (effects.js / EFFECT_ENGINE.md): every stat source + perk/trait rule lives there; the
+  // functions below are thin adapters so call sites stay unchanged.
+  const FX = window.SU_EFFECTS.create({
+    rules: (D.effects || {}).rules || [],
+    PRIMARY, propGroups, RELIC, TRAITITEM, CREA, SPEC,
+    hasTrait: (id) => !!TRAIT[id],
+    build: () => build, nether: () => nether,
+    resolveArtifact, perkRank: (spec, p) => perkRank(spec, p),
+    anointed: (specId, key) => build.anoints.some(a => a.specId === specId && a.key === key),
+    slotTraitIds: (slot) => slotTraitIds(slot), finalStats: (slot) => finalStats(slot),
+  });
   // "equipped in the current build" tests, for the saved-list Hide-equipped filter
   const artifactEquippedInBuild = (id) => build.slots.some(s => s.artifactId === id);
   const netherEquippedInBuild = (id) => build.slots.some(s => { const a = resolveArtifact(s); return a && (a.netherIds || []).includes(id); });
@@ -566,43 +577,13 @@
     return out;
   }
   // % contribution per base stat from an artifact object (primary + props + socketed nether)
-  function artifactPctOf(a) {
-    const out = { hp: 0, atk: 0, def: 0, int: 0, spd: 0 };
-    if (!a) return out;
-    const rank = a.rank || 50;
-    if (a.primary) { const p = PRIMARY.find(x => x.property === a.primary); if (p) { const k = PROP_STAT[p.stat]; if (k) out[k] += (p.perRank[rank] || 0); } }
-    for (const name of [...(a.stat || []), ...(a.trick || [])]) {
-      const grp = propGroups.get(name); if (!grp) continue;
-      for (const e of grp.entries) { const k = PROP_STAT[e.stat]; if (k) out[k] += (e.perRank[rank] || 0); }
-    }
-    for (const nid of a.netherIds || []) {
-      const n = nether.find(x => x.id === nid); if (!n) continue;
-      for (const pr of n.props || []) {
-        if (pr.cat !== "stat" && pr.cat !== "trick") continue;   // only stat/trick properties hit the stat table
-        const grp = propGroups.get(pr.key);
-        if (grp) { for (const e of grp.entries) { const k = PROP_STAT[e.stat]; if (k) out[k] += (Number(pr.value) || 0); } }
-        else { const k = PROP_STAT[pr.key]; if (k) out[k] += (Number(pr.value) || 0); }
-      }
-    }
-    return out;
-  }
-  const artifactPct = (slot) => artifactPctOf(resolveArtifact(slot));
-  // relic: 0.1% of its stat per rank (→ 10% at rank 100)
-  function relicPctOf(slot) {
-    const out = { hp: 0, atk: 0, def: 0, int: 0, spd: 0 };
-    const rel = slot.relic; if (!rel) return out;
-    const r = RELIC.get(rel.id); if (!r || !r.statBonus) return out;
-    const k = PROP_STAT[r.statBonus]; if (k) out[k] += 0.1 * (rel.rank || 0);
-    return out;
-  }
+  const artifactPctOf = (a) => FX.foldCore(FX.artifactContribs(a));
   // Personality = flat ±33% on the base stat: raised ×4/3 (+33%), lowered ×2/3 (−33%), others unchanged.
   const persRatio = (slot, k) => { const p = slot.personality ? PERS.get(slot.personality) : null; return p ? (p.raise === k ? 4 / 3 : p.lower === k ? 2 / 3 : 1) : 1; };
   function finalStats(slot) {
     const b = baseStats(slot); if (!b) return null;
     const sc = slot.scrolls || {};
-    const pct = artifactPct(slot);
-    const rp = deprivedActive() ? { hp: 0, atk: 0, def: 0, int: 0, spd: 0 } : relicPctOf(slot);   // Deprived ignores Relic effects
-    for (const k of STAT_KEYS) pct[k] = Math.round((pct[k] + rp[k]) * 100) / 100;   // fold relic % into the bonus column
+    const pct = FX.slotBonusPct(slot);   // artifact + socketed nether + relic % (Deprived ignores Relic effects)
     const adj = {}, final = {};
     for (const k of STAT_KEYS) {
       // Personality ±33% applies to the PURE base (b minus scrolls); scrolls (+1 each) are added flat after.
@@ -619,7 +600,7 @@
     const b = baseStats(slot); if (!b) return [];
     // Deprived ignores Fused traits → keep only the primary creature's innate trait (+ artifact-granted traits below)
     const c = CREA.get(slot.cid);
-    const ids = deprivedActive() ? [c ? c.traitId : null].filter(x => x != null) : [...b.traitIds];
+    const ids = FX.ignores("fusionTraits") ? [c ? c.traitId : null].filter(x => x != null) : [...b.traitIds];
     const a = resolveArtifact(slot);
     if (a) {
       // trait-item slot → its granted trait
@@ -644,45 +625,13 @@
     return out;
   }
   // creature spell-gem slot count: base + perk/trait grants (e.g. Animator's Gray Matter → Animatus +N)
-  const SPELL_SLOT_BASE = 3;
-  function creatureSlotMax(slot) {
-    const c = CREA.get(slot.cid); if (!c) return SPELL_SLOT_BASE;
-    let max = SPELL_SLOT_BASE;
-    for (const g of (D.spellSlotGrants || [])) {
-      if (g.kind === "perk") {
-        if (build.specId !== g.specId) continue;
-        const spec = SPEC.get(g.specId); if (!spec) continue;
-        const perk = spec.perks.find(p => p.key === g.key); if (!perk) continue;
-        const r = perkRank(spec, perk);
-        if (r > 0 && (!g.targetRace || c.race === g.targetRace)) max += g.perRank * r;
-      } else if (g.kind === "trait") {
-        if (slotTraitIds(slot).includes(g.traitId) && (g.self || !g.targetRace || c.race === g.targetRace)) max += g.perRank;
-      }
-    }
-    return max;
-  }
+  const creatureSlotMax = (slot) => FX.gemSlotMax(slot);
   // A creature can only equip Spell Gems whose (effective) class matches its own — unless a trait/perk
   // permits otherwise, or an Opal has re-classed the gem (handled by gemClass). Returns null when ANY
   // class is allowed (a full cross-class grant), otherwise the Set of allowed class names.
-  const traitDescs = (slot) => slotTraitIds(slot).map(id => (TRAIT[id] || {}).desc || "");
-  const ANYCLASS_RE = /equip (all |spell gems from any class|.*from any class)|regardless of (their|its) class/i;
-  // party-wide grants apply to every creature ("Your creatures can equip …"); self grants only the bearer
-  function allocatedPerkDescs() {                            // spec perks (ranked) + equipped anointments
-    const out = []; const spec = SPEC.get(build.specId);
-    if (spec) for (const p of spec.perks) if (perkRank(spec, p) > 0) out.push(p.desc || "");
-    for (const a of (build.anoints || [])) { const s = SPEC.get(a.specId); const p = s && s.perks.find(x => x.key === a.key); if (p) out.push(p.desc || ""); }
-    return out;
-  }
   function spellEquipClasses(slot) {
-    const base = baseStats(slot); const own = base && base.cls ? base.cls : null;
-    const set = new Set(own ? [own] : []);
-    // self any-class trait on this creature
-    if (traitDescs(slot).some(d => /this creature can (only )?equip.*(any class|from any class)/i.test(d) || (ANYCLASS_RE.test(d) && /this creature/i.test(d)))) return null;
-    // party-wide any-class trait on ANY party member (e.g. Pandora)
-    if (build.slots.some(s => traitDescs(s).some(d => /your creatures can equip all spell gems/i.test(d) || (/your creatures/i.test(d) && ANYCLASS_RE.test(d) && !/\{class_/i.test(d))))) return null;
-    // per-class party grants: "Your creatures can equip {CLASS_X} Spell Gems, regardless of their class" (Evoker)
-    for (const d of allocatedPerkDescs()) { const m = d.match(/\{CLASS_(\w+)\}\s*spell gems,\s*regardless of (their|its) class/i); if (m) { const cl = SPELL_CLASSES.find(c => c.toLowerCase() === m[1].toLowerCase()); if (cl) set.add(cl); } }
-    return set;
+    const base = baseStats(slot);
+    return FX.equipClasses(slot, base && base.cls ? base.cls : null);
   }
   const canEquipGemOn = (slot, g) => { const allowed = spellEquipClasses(slot); if (allowed === null) return true; const cls = gemClass(g); return !cls || allowed.has(cls); };
 
@@ -1431,15 +1380,11 @@
 
   // ── build-legality constraints (driven by the selected spec's allocated perks) ──────
   const curSpec = () => build.specId != null ? SPEC.get(build.specId) : null;
-  const specPerkRank = (spec, key) => { if (!spec) return 0; const p = spec.perks.find(x => x.key === key); return p ? perkRank(spec, p) : 0; };
-  const specPerkOn = (spec, key) => specPerkRank(spec, key) > 0;
-  // Royal: Master of All (+10) & Highborn (+5) push the anointment cap up to 20
-  function anointMax() { const s = curSpec(); let m = 5; if (s) { if (specPerkOn(s, "ROYALTY")) m += 10; if (specPerkOn(s, "HIGHBORN")) m += 5; } return m; }
-  // Pariah: Introversion limits the party to 3 creatures
-  const creatureCap = () => (specPerkOn(curSpec(), "INTROVERSION") ? 3 : 6);
-  // Avatars: 1 by default, +1 per Army of Gods rank (Fanatic → 3), 0 under Deprived's Total Deprivation
-  function avatarCap() { const s = curSpec(); if (!s) return 1; if (specPerkOn(s, "TOTALDEPRIVATION")) return 0; return 1 + specPerkRank(s, "ARMYOFGODS"); }
-  const deprivedActive = () => specPerkOn(curSpec(), "TOTALDEPRIVATION");
+  // caps come from effect rules (data/reference/effect_rules.json): Royal's Master of All (+10) & Highborn (+5)
+  // anointments, Pariah's Introversion (3 creatures), Army of Gods (+1 Avatar/rank), Deprived (0 Avatars)
+  const anointMax = () => FX.cap("anoints");
+  const creatureCap = () => FX.cap("creatures");
+  const avatarCap = () => FX.cap("avatars");
   const isAvatar = (c) => !!c && c.race === "Avatar";
   // count party creatures (by their primary) that are Avatars, optionally excluding one slot
   const avatarCount = (exceptSlot) => build.slots.reduce((n, s, i) => n + (i !== exceptSlot && isAvatar(CREA.get(s.cid)) ? 1 : 0), 0);
@@ -2089,7 +2034,7 @@
       for (const tid of slotTraitIds(slot)) { const tr = TRAIT[tid]; if (tr) addEffect(m, tr.name, tr.taxo, "trait"); }
       for (const gid of slot.spellGemIds || []) { const g = spellGems.find(x => x.id === gid); const sp = g ? gemSpell(g) : null; if (sp) addEffect(m, sp.name, sp.taxo, "spell gem"); }
       // relic (equipped per creature; Deprived ignores relics) + nether spell props
-      const rel = slot.relic && !deprivedActive() ? RELIC.get(slot.relic.id) : null;
+      const rel = slot.relic && !FX.ignores("relics") ? RELIC.get(slot.relic.id) : null;
       if (rel) addEffect(m, rel.name, rel.taxo, "relic");
       for (const sp of slotNetherSpells(slot)) addEffect(m, sp.name, sp.taxo, "nether spell");
       if (m.tags.size) members.push(m);
@@ -2106,7 +2051,7 @@
       const c = CREA.get(slot.cid); if (!c) continue;
       for (const tid of slotTraitIds(slot)) { const tr = TRAIT[tid]; if (tr) push(tr.name, richText(tr.desc || ""), tr.taxo, c.name, "Trait"); }
       for (const gid of slot.spellGemIds || []) { const g = spellGems.find(x => x.id === gid); const sp = g ? gemSpell(g) : null; if (sp) push(sp.name, richText(sp.desc || ""), sp.taxo, c.name, "Spell"); }
-      const rel = slot.relic && !deprivedActive() ? RELIC.get(slot.relic.id) : null;
+      const rel = slot.relic && !FX.ignores("relics") ? RELIC.get(slot.relic.id) : null;
       if (rel) push(rel.name, rel.ranks.map(r => r.desc).join(" · "), rel.taxo, c.name, "Relic");
       for (const sp of slotNetherSpells(slot)) push(sp.name, richText(sp.desc || ""), sp.taxo, c.name, "Spell");
     }
@@ -2861,20 +2806,7 @@
   const ART_TYPE_TRIGGER = { Helmet: "On Provoke", Sword: "On Attack", Staff: "On Cast", Shield: "On Defend", Boots: "On Turn" };
   // aggregate an artifact's stat contribution at its rank: core 5 stats (% each) + any non-core "trick"
   // effects, keyed by their full property name ("Snared On Damage") with their unit (% or flat count).
-  function artifactBonusRows(a) {
-    const rank = a.rank || 50, core = { hp: 0, atk: 0, def: 0, int: 0, spd: 0 }, extra = new Map();
-    const addEntry = (prop, stat, unit, val) => {
-      if (!val) return; const k = PROP_STAT[stat];
-      if (k) { core[k] += val; return; }
-      const cur = extra.get(prop) || { value: 0, unit: unit || "%" }; cur.value += val; extra.set(prop, cur);
-    };
-    if (a.primary) { const p = PRIMARY.find(x => x.property === a.primary); if (p) addEntry(a.primary, p.stat, "%", p.perRank[rank] || 0); }
-    for (const name of [...(a.stat || []), ...(a.trick || [])]) { const g = propGroups.get(name); if (g) for (const e of g.entries) addEntry(name, e.stat, e.unit, e.perRank[rank] || 0); }
-    for (const nid of a.netherIds || []) { const n = nether.find(x => x.id === nid); if (!n) continue;
-      for (const pr of n.props || []) { if (pr.cat !== "stat" && pr.cat !== "trick") continue; const g = propGroups.get(pr.key);
-        if (g) for (const e of g.entries) addEntry(pr.key, e.stat, e.unit, Number(pr.value) || 0); else addEntry(pr.key, pr.key, "%", Number(pr.value) || 0); } }
-    return { core, extra };
-  }
+  const artifactBonusRows = (a) => FX.foldBonus(FX.artifactContribs(a));
   // render a bonus stat table from a {core, extra} aggregate (shared by artifacts + nether stones)
   function bonusTableHtml(core, extra) {
     const coreRows = STAT_KEYS.map(k => `<div class="stat-row ${core[k] ? "hl-med" : ""}"><span class="stat-name">${STAT_LABEL[k]}</span>
@@ -3524,7 +3456,7 @@
               <span class="stat-val art"></span><span class="stat-val total">${fs.total}</span></div></div>
           <div class="section-label" style="margin-top:14px">Traits (innate${f ? " + fusion" : ""}${hasArtifactTrait ? " + artifact" : ""})</div>
           ${traitHtml || `<div class="slot-sub">No traits.</div>`}
-          ${relic ? `<div class="section-label" style="margin-top:14px">Relic — Rank ${slot.relic.rank}${deprivedActive() ? ` <span style="color:var(--bad);font-weight:700">· ignored (Deprived)</span>` : ""}</div>
+          ${relic ? `<div class="section-label" style="margin-top:14px">Relic — Rank ${slot.relic.rank}${FX.ignores("relics") ? ` <span style="color:var(--bad);font-weight:700">· ignored (Deprived)</span>` : ""}</div>
             <div class="prop-list">
               <div class="prop-row static apx-clickable" data-action="apx-open" data-ek="relic" data-eid="${slot.relic.id}" title="View taxonomy"><span class="prop-ico">${relic.icon ? spriteImg(relic.icon, "px") : ""}</span><span class="prop-name"><b>${esc(relic.name)}</b> <span class="etax-hint">tags ›</span></span></div>
 
@@ -3640,14 +3572,7 @@
     openOverlay(ovState.render());
   }
   // nether "Bonuses" view helpers — mirror the artifact panel (stat table + trait & spell-gem containers)
-  function netherBonusRows(n) {
-    const core = { hp: 0, atk: 0, def: 0, int: 0, spd: 0 }, extra = new Map();
-    const addEntry = (prop, stat, unit, val) => { if (!val) return; const k = PROP_STAT[stat];
-      if (k) { core[k] += val; return; } const cur = extra.get(prop) || { value: 0, unit: unit || "%" }; cur.value += val; extra.set(prop, cur); };
-    for (const p of n.props || []) { if (p.cat !== "stat" && p.cat !== "trick") continue; const g = propGroups.get(p.key);
-      if (g) for (const e of g.entries) addEntry(p.key, e.stat, e.unit, Number(p.value) || 0); else addEntry(p.key, p.key, "%", Number(p.value) || 0); }
-    return { core, extra };
-  }
+  const netherBonusRows = (n) => FX.foldBonus(FX.netherContribs(n));
   function netherTraitContainers(n) {
     return (n.props || []).filter(p => p.cat === "trait").map(p => { const ti = TRAITITEM.get(p.key), tid = ti ? ti.traitId : null; if (tid == null) return "";
       return `<div class="primary-traits" style="margin-bottom:6px">${traitBanner(tid)}<div class="trait-desc">${richText((TRAIT[tid] || {}).desc || "")}</div></div>`; }).join("");

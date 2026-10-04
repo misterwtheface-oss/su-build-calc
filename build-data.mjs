@@ -2601,6 +2601,55 @@ const MINION_PHRASE = { 'Greater Demons': /\bgreater demons?\b/i, 'Lesser Demons
     }
   }
 }
+// ── effect rules for effects.js (EFFECT_ENGINE.md) — hand-authored + generated, validated here ──
+// Every build-affecting perk/trait behaviour is a declarative rule, so the app has no per-perk/per-trait
+// branches. Generated rules are derived from the SHIPPED descriptions with the exact patterns the app used
+// before the engine existed (behaviour-preserving); hand-authored ones live in data/reference/effect_rules.json.
+const effects = (() => {
+  const rules = [];
+  const add = (r, prov) => rules.push({ ...r, prov });
+  // spell-slot grants (from SLOT_GRANT_RE above). Perk grants count only from the current spec;
+  // trait grants only on the bearer (unless `self`, filtered by the bearer's race).
+  for (const g of spellSlotGrants) {
+    if (g.kind === 'perk') add({ id: `gemslots-perk-${g.specId}-${g.key}`, src: { kind: 'perk', spec: g.specId, key: g.key, via: 'spec' },
+      op: 'gemSlots', perRank: g.perRank, target: g.targetRace ? { race: g.targetRace } : null }, 'generated');
+    else add({ id: `gemslots-trait-${g.traitId}`, src: { kind: 'trait', id: g.traitId }, op: 'gemSlots', value: g.perRank,
+      target: g.self || !g.targetRace ? null : { race: g.targetRace } }, 'generated');
+  }
+  // spell-gem class permissions (the app's former runtime regexes over trait/perk text)
+  const ANYCLASS_RE = /equip (all |spell gems from any class|.*from any class)|regardless of (their|its) class/i;
+  for (const id in traits) {
+    const d = traits[id].desc || '';
+    if (/this creature can (only )?equip.*(any class|from any class)/i.test(d) || (ANYCLASS_RE.test(d) && /this creature/i.test(d)))
+      add({ id: `equip-any-self-${id}`, src: { kind: 'trait', id: +id }, op: 'equip.anyClass', scope: 'self' }, 'generated');
+    if (/your creatures can equip all spell gems/i.test(d) || (/your creatures/i.test(d) && ANYCLASS_RE.test(d) && !/\{class_/i.test(d)))
+      add({ id: `equip-any-party-${id}`, src: { kind: 'trait', id: +id }, op: 'equip.anyClass', scope: 'party' }, 'generated');
+  }
+  for (const s of specs) for (const p of s.perks) {
+    const m = (p.desc || '').match(/\{CLASS_(\w+)\}\s*spell gems,\s*regardless of (their|its) class/i);
+    const cls = m && (CLASSES.find(c => c.key.toLowerCase() === m[1].toLowerCase()) || {}).key;
+    if (cls) add({ id: `equip-class-${s.id}-${p.key}`, src: { kind: 'perk', spec: s.id, key: p.key, via: 'spec+anoint' }, op: 'equip.addClass', cls }, 'generated');
+  }
+  for (const r of readJSON(path.join(ROOT, 'data', 'reference', 'effect_rules.json')).rules) {
+    const { _why, ...rule } = r; add(rule, 'manual');
+  }
+  // validation: every rule must name a live source and a known op (a typo would silently do nothing)
+  const OPS = new Set(['cap', 'ignore', 'gemSlots', 'equip.anyClass', 'equip.addClass', 'stat.share']);
+  const ids = new Set();
+  for (const r of rules) {
+    if (ids.has(r.id)) throw new Error(`effect rule id duplicated: ${r.id}`); ids.add(r.id);
+    if (!OPS.has(r.op)) throw new Error(`effect rule ${r.id}: unknown op ${r.op}`);
+    if (r.src.kind === 'perk') { const s = specs.find(x => x.id === r.src.spec);
+      if (!s || !s.perks.some(p => p.key === r.src.key)) throw new Error(`effect rule ${r.id}: perk ${r.src.spec}/${r.src.key} not found`);
+      if (!['spec', 'spec+anoint'].includes(r.src.via)) throw new Error(`effect rule ${r.id}: bad via ${r.src.via}`); }
+    else if (r.src.kind === 'trait') { if (!traits[r.src.id]) throw new Error(`effect rule ${r.id}: trait ${r.src.id} not found`); }
+    else throw new Error(`effect rule ${r.id}: unknown source kind ${r.src.kind}`);
+  }
+  const byOp = {}; for (const r of rules) byOp[r.op] = (byOp[r.op] || 0) + 1;
+  console.log(`  effect rules: ${rules.length} (${Object.entries(byOp).map(([k, v]) => `${k} ${v}`).join(' · ')}; manual ${rules.filter(r => r.prov === 'manual').length})`);
+  return { rules };
+})();
+
 const SU_DATA = {
   meta: {
     generated: new Date().toISOString(),
@@ -2619,7 +2668,7 @@ const SU_DATA = {
   specIdMigration: SPEC_ID_MIGRATION,   // old (mislabeled) spec id -> code spec id; app.js migrates saved builds once
   falseGods,
   bossSprites,              // normalized Deity owner name → bspr_ battle sprite (Appendix boss rows)
-  spellSlotGrants,
+  effects,                  // effect rules for effects.js (EFFECT_ENGINE.md)
   traits,
   tagLabels,
   taxonomy: { categories: taxonomy.categories

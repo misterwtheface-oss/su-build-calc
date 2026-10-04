@@ -1,0 +1,24 @@
+{
+  "_note": "Hand-authored effect rules for effects.js (see EFFECT_ENGINE.md). build-data.mjs validates every rule (source exists, op known) and merges these with the GENERATED rules (spell-slot grants + spell-gem class permissions) into D.effects.rules. via: 'spec' = only while the perk is allocated in the CURRENT specialization (rank > 0); 'spec+anoint' = also when equipped as an Anointment (an anointment counts at the perk's max rank). The 'spec'-only perks below preserve the app's pre-engine behaviour exactly (those perks were never honoured as anointments).",
+  "rules": [
+    { "id": "royal-royalty-anoint-cap", "src": { "kind": "perk", "spec": 27, "key": "ROYALTY", "via": "spec" },
+      "op": "cap", "cap": "anoints", "mode": "add", "value": 10 },
+    { "id": "royal-highborn-anoint-cap", "src": { "kind": "perk", "spec": 27, "key": "HIGHBORN", "via": "spec" },
+      "op": "cap", "cap": "anoints", "mode": "add", "value": 5,
+      "_why": "Desc says 3, or 5 once every other spec is ascended; the planner assumes the ascended (max) case." },
+    { "id": "pariah-introversion-creature-cap", "src": { "kind": "perk", "spec": 37, "key": "INTROVERSION", "via": "spec" },
+      "op": "cap", "cap": "creatures", "mode": "set", "value": 3 },
+    { "id": "fanatic-armyofgods-avatar-cap", "src": { "kind": "perk", "spec": 21, "key": "ARMYOFGODS", "via": "spec" },
+      "op": "cap", "cap": "avatars", "mode": "add", "perRank": 1 },
+    { "id": "deprived-no-avatars", "src": { "kind": "perk", "spec": 38, "key": "TOTALDEPRIVATION", "via": "spec" },
+      "op": "cap", "cap": "avatars", "mode": "set", "value": 0 },
+    { "id": "deprived-ignore-fusion-traits", "src": { "kind": "perk", "spec": 38, "key": "TOTALDEPRIVATION", "via": "spec" },
+      "op": "ignore", "what": "fusionTraits" },
+    { "id": "deprived-ignore-relics", "src": { "kind": "perk", "spec": 38, "key": "TOTALDEPRIVATION", "via": "spec" },
+      "op": "ignore", "what": "relics" },
+    { "id": "animator-molecular-betrayal", "src": { "kind": "perk", "spec": 1, "key": "MOLECULARBETRAYAL", "via": "spec+anoint" },
+      "op": "stat.share", "phase": "battleStart", "target": { "race": "Animatus" }, "from": { "slot": 2 },
+      "stats": ["hp", "atk", "def", "int", "spd"], "pctPerRank": 1,
+      "_why": "bc_StartupStatGain @0x14171b74d..0x14171cb67 (perk id 22): when party creature #3 exists, the Animatus does hp/hpmax/attack/intelligence/defense/realspeed += a share of that creature's stats. <1>% per rank (max 50)." }
+  ]
+}

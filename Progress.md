@@ -6,6 +6,17 @@ Pages on `master`/root, Cloudflare analytics active with the shared github.io to
 No verify-before-push ceremony (no real users yet) — but every change is checked with the jsdom smoke suite
 (scratchpad `smoke.mjs`, ~84 assertions across all flows) before commit.
 
+## 2026-10-04 — Effect engine (invisible backend refactor; no UI change)
+New `effects.js` (`SU_EFFECTS`, see **EFFECT_ENGINE.md**) centralises every source-driven computation that was
+scattered through app.js: artifact/nether/relic stat contributions (3 duplicate aggregators → 1 contribution list +
+2 folds), the 6 hard-coded perk checks (Royalty/Highborn/Introversion/Army of Gods/Total Deprivation ×3 uses),
+build-time spell-slot grants, and the runtime spell-gem class regexes. All are now declarative rules in
+`D.effects.rules` (29: 21 generated from descriptions + 8 hand-authored in `data/reference/effect_rules.json`),
+validated by build-data. **Behaviour preserved:** 195 UI surfaces × 14 fixture builds identical before/after
+(mutation check: a broken engine shows 55 diffs). **New case:** Animator's Molecular Betrayal (`stat.share`,
+code-grounded in `bc_StartupStatGain`) — computed by `FX.battleStart()`, tested in `tools/effects_test.mjs`
+(24/24), not surfaced in the UI yet. Preserved quirks worth a ground-truth check are listed in EFFECT_ENGINE.md.
+
 ## 2026-10-01 (night 4 → session close) — "runtime-only" systems cracked from static code + UI polish
 **Session summary.** Every system below was previously logged as runtime-only / not reproducible / heuristic.
 Each is now read from static code and validated against in-game ground truth. The lesson: a "runtime-built .bss"
@@ -1265,6 +1276,20 @@ MAPPING not for asserting PRESENCE; no inventing entities from the community-CSV
   traits/items/spells) is now complete.**
 
 ## Backlog
+### Effect-engine quirks — preserved pre-engine behaviour, tackle when needed (user, 2026-10-04)
+Each is one rule edit in `data/reference/effect_rules.json` (or the generator in build-data) — see EFFECT_ENGINE.md.
+- [ ] Gray Matter / Army of Gods / Introversion / Total Deprivation are anointable in data but only honoured from
+  the current spec (`via:"spec"`), never as anointments.
+- [ ] Introversion + Total Deprivation require rank > 0, though their text says "always active while your
+  specialization is …, even if you haven't allocated any Perk Points".
+- [ ] Highborn always +5 (assumes every other spec ascended; text says 3 otherwise).
+- [ ] Master of Gemlings ("If all … are Gemlings") grants no any-class permission (old text pattern misses it).
+- [ ] Spectrometry ("Your Spelljuggler creatures …") grants no any-class permission (same cause).
+- [ ] Powerful Draw grants any class without enforcing "only Arrow spells".
+- [ ] Molecular Betrayal battle-start gains: in-game rounding unverified (engine keeps exact shares); not surfaced in UI.
+- [ ] Animatus party rules NOT enforced by the app (user ground truth 2026-10-04): Animatus is a unique standalone
+  creature — never fusion material, always party slot 1, at most one. The picker currently allows any slot,
+  fusing, and duplicates. (User: "one of a few" such creatures — the others aren't identified yet.)
 ### ✅ DONE — Shops feature (user, 2026-10-01) — unified overlay shipped (see 2026-10-01 eve)
 - [x] Code-ground the per-perk **Anointment** flag — DONE 2026-10-01 pm.
 - [x] Spec costume tiers from `scr_SpecializationCostume` — DONE 2026-10-01 pm. [x] Spec emblem/icon from `scr_SpecializationIcon` — wired 2026-10-01 (asset_maps.spec_icons).
