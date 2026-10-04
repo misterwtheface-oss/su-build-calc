@@ -2800,14 +2800,23 @@
       <div class="prop-body"><span class="prop-name">${esc(name)}</span>
         ${tr ? `<span class="prop-stat">grants <b>${esc(tr.name)}</b></span><div class="trait-desc">${richText(tr.desc || "")}</div>` : ""}</div></div>`;
   };
-  function artContentRows(a) {
+  function artContentRows(a, opts = {}) {
     const r = [];
+    // opts.empties: after each slot group's filled rows, one dashed row per unfilled slot (opens that slot's picker)
+    const empty = (key) => { if (!opts.empties) return; const sl = ART_SLOTS.find(x => x.key === key);
+      for (let i = (a[key] || []).length; i < sl.max; i++) r.push(`<div class="prop-row art-empty-slot" data-action="artpage-edit" data-t="${sl.pick}" title="Add a ${esc(sl.label)}">
+        <span class="prop-ico">＋</span><span class="prop-name">Empty ${esc(sl.label)} slot</span></div>`); };
     if (a.primary) r.push(libRow(primaryIconAt(a.primary, a.rank), a.primary, "primary"));
     for (const n of a.stat || []) { const m = MAT_BY_PROP.get(n); r.push(libRow(m && m.icon, m ? m.name : n, n)); }
+    empty("stat");
     for (const n of a.trick || []) { const m = MAT_BY_PROP.get(n); r.push(libRow(m && m.icon, m ? m.name : n, n)); }
+    empty("trick");
     for (const id of a.traits || []) { const t = TRAITITEM.get(id); r.push(libTraitRow(t && t.icon, t ? t.name : id, t ? t.traitId : null)); }
+    empty("traits");
     for (const id of a.spells || []) { const sp = SPELL.get(id); r.push(libRow(spellIcon(sp), sp ? sp.name : id, sp ? (sp.cls || "spell") : "spell")); }
+    empty("spells");
     for (const id of a.netherIds || []) { const nn = nether.find(x => x.id === id); r.push(libRow(gemSrc(nn), nn ? nn.name : id, "nether")); }
+    empty("netherIds");
     return r.join("") || `<div class="slot-sub" style="padding:8px">Empty artifact.</div>`;
   }
   // artifact TYPE (its primary property) → the trigger its native spell-gem slot fires on.
@@ -2981,7 +2990,7 @@
           <div class="slot-sub">${esc(a.primary || "—")}${p ? ` · ${esc(p.stat)} +${p.perRank[a.rank || 50] || 0}%` : ""} · Rank ${a.rank || 50}${holderC ? ` · equipped by ${esc(holderC.name)}` : ""}</div></div>
         <div class="ovl-center-scroll artpage-body">
           ${clash ? `<div class="slot-sub sg-clsnote clash-note">${esc(clashText(clash))}.</div>` : ""}
-          ${toggle}${view === "sockets" ? `<div class="prop-list">${artContentRows(a)}</div>` : artifactBonusView(a)}</div>
+          ${toggle}${view === "sockets" ? `<div class="prop-list">${artContentRows(a, { empties: true })}</div>` : artifactBonusView(a)}</div>
       </div></div>
       <div class="overlay-footer"><button class="btn-ghost" data-action="artpage-back">‹ Back</button>
         <div><button class="btn-ghost" data-action="artpage-edit">Edit</button>
@@ -4037,7 +4046,8 @@
         const r = build.slots[si].relic; if (r && RELIC.get(r.id)) openRelicDetail(r.id); break; }
       case "artpage-back": closeDetail(); break;
       case "artpage-view": dovState.view = t.dataset.v; refreshDetail(); break;
-      case "artpage-edit": { const { artId, slotIdx } = dovState; closeDetail(); openArtifactBuilder(artId, slotIdx); break; }
+      case "artpage-edit": { const { artId, slotIdx } = dovState; closeDetail(); openArtifactBuilder(artId, slotIdx);
+        if (t.dataset.t) { ovState.pickType = t.dataset.t; refreshOverlay(true); } break; }   // empty-slot box → open that slot's picker
       case "artpage-unequip": build.slots[dovState.slotIdx].artifactId = null; persistBuild(); closeDetail(); closeOverlay(); render(); break;
       case "relic-unequip": build.slots[dovState.slotIdx].relic = null; persistBuild(); closeDetail(); closeOverlay(); render(); break;
       case "creature-detail": openCreatureDetail(+t.dataset.slot); break;
