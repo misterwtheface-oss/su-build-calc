@@ -1372,6 +1372,12 @@ MAPPING not for asserting PRESENCE; no inventing entities from the community-CSV
       category (Arsenal / Booze / Ultimate exact).
     - **REVIEW list:** (A) ~51 spells tagged Action/Mechanic::Stats where the stat only SCALES; (B) kill-trigger traits
       tagged Action/Mechanic::Attack.
+  - **2026-10-03 Task I:** the evidence was already decoded but being discarded. Spell-class compares, health/status
+    compares (Health is X%, Alive/Dead, Undamaged Turn, Stat Unmodified, Not Their Turn, Has taken X Action Once), crit and
+    dodge gates, "casts N more" (`casts +=` past the block), deal/take direction with a conflict veto, and stat/amount
+    scaling. Relics + cards now get the evidence layers. Action/Mechanic::Stats needs MANIPULATION (not a read).
+    - **Katarina's Asylum:** resolved, the code agrees with "35% more".
+    - **REVIEW (C):** 13 traits tagged Stats where the stat only scales damage.
     - **Spells decoded too** (per-spell switch in bc_CreatureCast; 82% agreement with app spell tags); taxonomy
       integration is next.
 - [ ] **Capped effects with no app surface yet** (keep in context — user 2026-10-02). `_su_extract data/model/dr_caps.json`
