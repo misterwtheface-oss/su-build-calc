@@ -1401,6 +1401,10 @@ MAPPING not for asserting PRESENCE; no inventing entities from the community-CSV
       relic Mutatias; was Timeline); Mindful Awareness → Enemy Attacks; Creeping Doom → Creature Class; Vision Quest →
       Doppelganger; False God parts lose Automatic/Extra (keep Action/Mechanic Attack/Cast).
     - **Drop recommendations REJECTED** (99 tags kept: B1/B2/B3/B4) → `code_taxo_approved.json` `reviewKeep`.
+  - **2026-10-04 Task N:** each object's own battle-message name string anchors effect code past the decoded block;
+    callee summaries; host + text rules; CONDNAME tokens.
+    - **Result:** residual decodable 2,608 → 2,232. Kept tags are now class "k" (never re-flagged), and the Turn Counter
+      ruling is built in.
     - **Spells decoded too** (per-spell switch in bc_CreatureCast; 82% agreement with app spell tags); taxonomy
       integration is next.
 - [ ] **Capped effects with no app surface yet** (keep in context — user 2026-10-02). `_su_extract data/model/dr_caps.json`

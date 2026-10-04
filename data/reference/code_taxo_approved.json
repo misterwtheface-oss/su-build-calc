@@ -712,6 +712,48 @@
    ],
    "add": [],
    "approved": "2026-10-03"
+  },
+  "1248": {
+   "name": "Head of Caliban",
+   "replace": [
+    {
+     "from": [
+      "Affect on Mitigation::Automatically Provoke"
+     ],
+     "to": null
+    }
+   ],
+   "add": [],
+   "approved": "2026-10-04",
+   "note": "False God part AI-turn action (user ruling 2026-10-03): keep Action/Mechanic::Provoke"
+  },
+  "1648": {
+   "name": "Head of Caliban",
+   "replace": [
+    {
+     "from": [
+      "Affect on Mitigation::Automatically Provoke"
+     ],
+     "to": null
+    }
+   ],
+   "add": [],
+   "approved": "2026-10-04",
+   "note": "False God part AI-turn action (user ruling 2026-10-03): keep Action/Mechanic::Provoke"
+  },
+  "1632": {
+   "name": "Tail of Mindwurm",
+   "replace": [
+    {
+     "from": [
+      "Affect on Mitigation::Automatically Provoke"
+     ],
+     "to": null
+    }
+   ],
+   "add": [],
+   "approved": "2026-10-04",
+   "note": "False God part AI-turn action (user ruling 2026-10-03): keep Action/Mechanic::Provoke"
   }
  },
  "rejected": {
