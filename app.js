@@ -4034,7 +4034,7 @@
     // only render the info panel when there's something selected (no empty placeholder panel)
     const infoPanel = sel ? `<div class="ovl-right lib-info">${info}</div>` : "";
     return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel">
-      <div class="overlay-header"><h2>Spell Gems${ctx ? " — equip" : ""}</h2><button class="ovl-close" data-action="close-ovl">✕</button></div>
+      <div class="overlay-header${creatureSlot ? " spells-hdr" : ""}">${creatureSlot ? spellsHeaderHtml(ctx.slotIdx) : `<h2>Spell Gems${ctx ? " — equip" : ""}</h2>`}<button class="ovl-close" data-action="close-ovl">✕</button></div>
       <div class="overlay-body">
         <div class="ovl-center" data-action="lib-deselect"><div class="ovl-center-scroll"><div class="pick-grid equip-grid">${tiles}</div></div></div>
         ${infoPanel}
@@ -4124,6 +4124,51 @@
         <button class="ovl-close" data-action="close-ovl">✕</button></div>
       <div class="overlay-body">${body}</div>
       <div class="overlay-footer"><span class="foot-info"></span><div>${footer}</div></div>
+    </div></div>`;
+  }
+
+  // creature spell-slot header: one circle per equipped gem in its spell's base class colour, then an outlined
+  // "empty" circle per open slot (total = the creature's slot count incl. perk/trait grants). Shared by the Spells
+  // page and the equip list opened from a creature's Spells button.
+  function spellSlotDots(slot) {
+    const max = creatureSlotMax(slot), ids = slot.spellGemIds || [];
+    const dots = ids.map(id => { const sp = gemSpell(spellGems.find(x => x.id === id)), cls = sp ? sp.cls : null;
+      return `<span class="sdot" style="--dc:${clsColor(cls)}" title="${esc(sp ? `${sp.name} · ${cls || "—"}` : "Spell gem")}"></span>`; });
+    for (let i = ids.length; i < max; i++) dots.push(`<span class="sdot empty" title="Empty spell slot"></span>`);
+    return `<span class="spell-dots" title="${ids.length}/${max} spell slots">${dots.join("")}</span>`;
+  }
+  const spellsHeaderHtml = (slotIdx, lead = "") => {
+    const slot = build.slots[slotIdx], c = CREA.get(slot.cid);
+    return `${lead}<h2 class="spells-hdr-title">Spells — ${esc(c ? c.name : "")}</h2>${spellSlotDots(slot)}`;
+  };
+  // full-screen Spells page (detail overlay over the equip list): one tile per equipped gem — spell description,
+  // spell stats and the gem's properties at its level. ‹ Spell Gems backs out to the list.
+  function openSpellsPage(slotIdx) {
+    dovState = { kind: "spellpage", slotIdx, render: renderSpellsPage };
+    openDetail(dovState.render());
+  }
+  function renderSpellsPage() {
+    const st = dovState, slot = build.slots[st.slotIdx];
+    const gems = (slot.spellGemIds || []).map(id => spellGems.find(g => g.id === id)).filter(Boolean);
+    if (!gems.length) { closeDetail(); return ""; }
+    const tiles = gems.map(g => {
+      const sp = gemSpell(g), tier = gemTier(g);
+      const props = (g.propIds || []).map(pid => { const p = SPELLPROP.get(pid); return p ? `<div class="prop-row static"${p.textNote ? ` title="${esc(p.textNote)}"` : ""}>
+        <span class="prop-ico">${p.icon ? spriteImg(p.icon, "px") : ""}</span><span class="prop-name">${esc(p.name)}</span><span class="prop-stat">${esc(propShort(p, tier))}</span></div>` : ""; }).join("");
+      const swapped = gemSwapClass(g);
+      return `<div class="art-spellcard spell-page-tile apx-clickable" data-action="spellpage-sel" data-id="${g.id}" title="Show in the Spell Gems list">
+        <div class="art-spellcard-head"><span class="prop-ico">${spriteImg(gemIcon(g), "px")}</span>
+          <b>${esc(gemName(g))}</b>${sp && gemName(g) !== sp.name ? `<span class="slot-sub">${esc(sp.name)}</span>` : ""}
+          <span class="spt-tags">${sp && sp.cls ? `<span class="anoint-spec-tag" style="color:${clsColor(sp.cls)}">${esc(sp.cls)}${swapped ? ` → ${esc(swapped)}` : ""}</span>` : ""}<span class="rank-badge">Lv ${tier}</span></span></div>
+        ${sp && sp.desc ? `<div class="trait-desc">${perkText(sp.desc)}</div>` : ""}
+        ${sp ? spellStatsHtml(sp) : ""}
+        ${props ? `<div class="prop-list spt-props">${props}</div>` : ""}</div>`;
+    }).join("");
+    return `<div class="ovl-backdrop" data-action="detail-backdrop"><div class="overlay-panel detail">
+      <div class="overlay-header spells-hdr">${spellsHeaderHtml(st.slotIdx, `<button class="btn-ghost" data-action="spellpage-back">‹ Spell Gems</button>`)}<button class="ovl-close" data-action="close-detail">✕</button></div>
+      <div class="overlay-body"><div class="ovl-center"><div class="ovl-center-scroll"><div class="spell-page-list">${tiles}</div></div></div></div>
+      <div class="overlay-footer"><button class="btn-ghost" data-action="spellpage-back">‹ Back</button>
+        <button class="btn-confirm" data-action="spellpage-done">Done</button></div>
     </div></div>`;
   }
 
@@ -4515,7 +4560,11 @@
 
       // spell gems: library + wizard + equip
       case "open-spellgems": openSpellGems(); break;
-      case "creature-spells": openCreatureSpells(+t.dataset.slot); break;
+      case "creature-spells": { const si = +t.dataset.slot; openCreatureSpells(si);
+        if ((build.slots[si].spellGemIds || []).some(id => spellGems.some(g => g.id === id))) openSpellsPage(si); break; }
+      case "spellpage-back": closeDetail(); break;
+      case "spellpage-done": closeDetail(); closeOverlay(); break;
+      case "spellpage-sel": { const id = +t.dataset.id; closeDetail(); if (ovState) { ovState.sel = id; refreshOverlay(); } break; }
       case "sg-sel": { const id = +t.dataset.id; ovState.sel = ovState.sel === id ? null : id; refreshOverlay(); break; }
       case "sg-hide-equipped": e.stopPropagation(); ovState.hideEquipped = !ovState.hideEquipped; refreshOverlay(); break;
       case "sg-new": openSpellGemBuilder(null); break;

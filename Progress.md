@@ -6,6 +6,14 @@ Pages on `master`/root, Cloudflare analytics active with the shared github.io to
 No verify-before-push ceremony (no real users yet) — but every change is checked with the jsdom smoke suite
 (scratchpad `smoke.mjs`, ~84 assertions across all flows) before commit.
 
+## 2026-10-04 (cont.) — Creature Spells page
+The creature Spells button opens a full-screen **Spells page** when gems are equipped (like Artifacts/Relics): one tile
+per equipped gem — gem icon/name (+ spell name if renamed), base class (→ Opal swap class), Lv, spell description +
+stats, and the gem's properties at its level; tapping a tile backs out to the equip list with that gem selected.
+Shared header `spellsHeaderHtml` / `spellSlotDots` on the page AND the equip list opened from a creature: one circle per
+equipped gem in its spell's BASE class colour, then an outlined dashed circle per open slot (total = `creatureSlotMax`,
+so Gray Matter etc. count). No gems → the list opens directly (all circles empty).
+
 ## 2026-10-04 (cont.) — Relic rank slider steps by 1
 Relic detail slider: min 1, step 1 (was 10–100 in steps of 10). Perks still unlock at each multiple of 10; the stat
 bonus follows the exact rank (0.1% per rank).
