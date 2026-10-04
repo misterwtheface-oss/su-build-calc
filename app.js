@@ -2882,16 +2882,26 @@
       <div class="section-label" ${traits || spells ? `style="margin-top:12px"` : ""}>Stat bonuses · rank ${a.rank || 50}</div>
       ${bonusTableHtml(core, extra)}`;
   }
-  // equipped artifacts (other than `exceptArtId`) that hold nether stone `nid` → [{art, slotIdx}]
-  const netherUsers = (nid, exceptArtId) => {
+  // Loadout rule (mirrors freely re-socketing stones in-game): a Nether Stone may sit in any number of saved
+  // artifacts, but only ONE artifact holding it can be equipped across the active party — same as an artifact
+  // itself can only be equipped by one creature.
+  // equipped artifacts holding stone `nid`, other than `exceptArtId` and other than the one on `exceptSlot`
+  // (the slot being equipped — its current artifact is about to be replaced) → [{art, slotIdx}]
+  const netherUsers = (nid, exceptArtId, exceptSlot = null) => {
     const out = [];
-    build.slots.forEach((s, i) => { const b = resolveArtifact(s); if (b && b.id !== exceptArtId && (b.netherIds || []).includes(nid)) out.push({ art: b, slotIdx: i }); });
+    build.slots.forEach((s, i) => { if (i === exceptSlot) return; const b = resolveArtifact(s);
+      if (b && b.id !== exceptArtId && (b.netherIds || []).includes(nid)) out.push({ art: b, slotIdx: i }); });
     return out;
   };
-  // first socketed stone of `a` already in use by ANOTHER artifact equipped in the loadout → {nid, art, slotIdx} | null
-  const artNetherClash = (a) => {
-    for (const nid of (a && a.netherIds) || []) { const u = netherUsers(nid, a.id); if (u.length) return { nid, ...u[0] }; }
+  // first socketed stone of `a` already in use by ANOTHER equipped artifact → {nid, art, slotIdx} | null
+  const artNetherClash = (a, exceptSlot = null) => {
+    for (const nid of (a && a.netherIds) || []) { const u = netherUsers(nid, a.id, exceptSlot); if (u.length) return { nid, ...u[0] }; }
     return null;
+  };
+  // the party slot an artifact being built/edited is (or will be, on save) equipped to; null = not in the loadout
+  const artTargetSlot = (artId, slotIdx) => {
+    const held = artId != null ? build.slots.findIndex(s => s.artifactId === artId) : -1;
+    return held >= 0 ? held : (slotIdx != null ? slotIdx : null);
   };
   const clashText = (cl) => {
     const n = nether.find(x => x.id === cl.nid), cr = CREA.get(build.slots[cl.slotIdx].cid);
@@ -2912,11 +2922,12 @@
       const eqOtherRaw = !eqHere && artifactEquippedInBuild(a.id);
       const blocked = !manage && eqOtherRaw;    // equip wizard: on another creature → can't equip here
       const eqOther = manage && eqOtherRaw;     // library marker only
-      const clash = artNetherClash(a);
+      const clash = artNetherClash(a, manage ? null : st.slotIdx);
+      const clashBlocked = !manage && !eqHere && !blocked && !!clash;   // its stone is in use on another creature
       const title = [eqHere ? "Equipped by this creature" : blocked ? "Equipped by another creature — not available" : eqOther ? "Equipped by another creature" : "",
-        clash ? clashText(clash) : ""].filter(Boolean).join(" · ");
+        clash ? clashText(clash) + (clashBlocked ? " — not available" : "") : ""].filter(Boolean).join(" · ");
       return `
-      <div class="pick-tile ${st.sel === a.id ? "selected" : ""}${eqHere ? " eq-here" : ""}${blocked ? " disabled" : ""}${eqOther ? " eq-other" : ""}${clash ? " nether-clash" : ""}" data-action="artlib-sel" data-id="${a.id}"${title ? ` title="${esc(title)}"` : ""}>
+      <div class="pick-tile ${st.sel === a.id ? "selected" : ""}${eqHere ? " eq-here" : ""}${blocked || clashBlocked ? " disabled" : ""}${eqOther ? " eq-other" : ""}${clash ? " nether-clash" : ""}" data-action="artlib-sel" data-id="${a.id}"${title ? ` title="${esc(title)}"` : ""}>
         <div class="pt-sprite">${spriteImg(artIcon(a), "px")}</div>
         <div class="pt-name">${esc(a.name)}</div></div>`; }).join("")
       || `<div class="slot-sub" style="padding:10px">No artifacts${st.hideEquipped ? " match" : " yet — build one"}.</div>`;
@@ -2930,16 +2941,18 @@
         <span class="av-pipe">|</span>
         <button class="av-tab ${view === "sockets" ? "on" : ""}" data-action="art-view" data-v="sockets">Sockets</button></div>`;
       const viewBody = view === "sockets" ? `<div class="prop-list">${artContentRows(sel)}</div>` : artifactBonusView(sel);
-      const selClash = artNetherClash(sel);
+      const selClash = artNetherClash(sel, manage ? null : st.slotIdx);
       const otherNote = (!manage && !equippedHere && artifactEquippedInBuild(sel.id)
         ? `<div class="slot-sub sg-clsnote" style="padding:8px 0">Equipped by another creature — unequip it there first to use it here.</div>` : "")
-        + (selClash ? `<div class="slot-sub sg-clsnote clash-note">${esc(clashText(selClash))}.</div>` : "");
+        + (selClash ? `<div class="slot-sub sg-clsnote clash-note">${esc(clashText(selClash))}${!manage && !equippedHere ? " — unequip that artifact first to use this one here" : ""}.</div>` : "");
       info = `<div class="ns-info-head"><span class="ns-info-icon">${spriteImg(artIcon(sel), "px")}</span><h3>${esc(sel.name)}</h3></div>
         ${otherNote}${toggle}${viewBody}`;
     }
     // footer selector bar (mirrors Builds): Edit/Delete act on the selection; the confirm button
     // switches between Equip (artifact selected, equip mode) and ＋ Build new artifact (none selected).
-    const selBlocked = !manage && sel && !equippedHere && artifactEquippedInBuild(sel.id);   // on another creature
+    const selOnOther = !manage && sel && !equippedHere && artifactEquippedInBuild(sel.id);   // on another creature
+    const selStoneClash = !manage && sel && !equippedHere && !!artNetherClash(sel, st.slotIdx);   // a stone is in use elsewhere
+    const selBlocked = selOnOther || selStoneClash;
     const canEquip = !manage && sel && !selBlocked;
     // single context-aware primary button: Unequip (this one is equipped) / Equip (a different selection) /
     // Build (manage mode, or nothing selected to equip).
@@ -2956,7 +2969,7 @@
           <button class="btn-ghost" data-action="art-edit" data-id="${sel ? sel.id : ""}" ${sel ? "" : "disabled"}>Edit</button>
           <button class="btn-ghost danger" data-action="art-del" data-id="${sel ? sel.id : ""}" ${sel ? "" : "disabled"}>Delete</button>
           ${selBlocked
-            ? `<button class="btn-confirm" style="min-width:96px" disabled title="Equipped by another creature">Can't equip</button>`
+            ? `<button class="btn-confirm" style="min-width:96px" disabled title="${selOnOther ? "Equipped by another creature" : "Its Nether Stone is socketed in an artifact equipped on another creature"}">Can't equip</button>`
             : `<button class="btn-confirm" style="min-width:96px" data-action="${confAction}"${confAction === "art-equip" ? ` data-id="${sel.id}"` : ""}>${confLabel}</button>`}
         </div></div>
     </div></div>`;
@@ -3063,7 +3076,8 @@
     } else {
       // nether stones: filters (has trait / has spell / hide in use) + sort (recent · name · a core stat %)
       const sum = (n) => netherBonusRows(n).core;
-      const inUse = (n) => netherUsers(n.id, a.id);
+      const tgt = artTargetSlot(a.id, st.slotIdx);
+      const inUse = (n) => netherUsers(n.id, a.id, tgt);
       const list = nether.filter(n => (!q || netherSearchText(n).includes(q))
           && (!st.nsTrait || (n.props || []).some(p => p.cat === "trait"))
           && (!st.nsSpell || (n.props || []).some(p => p.cat === "spell"))
@@ -3074,8 +3088,9 @@
         : (x, y) => y.id - x.id);
       rows = list.map(n => {
         const used = inUse(n), core = STAT_KEYS.includes(sortK) ? sum(n) : null;
-        const usedTitle = used.length ? `Already socketed in ${used.map(u => u.art.name).join(", ")}` : "";
-        return `<div class="prop-row rich ${has(n.id) ? "chosen" : ""}${used.length ? " nether-clash" : ""}" data-action="art-preview" data-t="nether" data-v="${n.id}"${usedTitle ? ` title="${esc(usedTitle)}"` : ""}>
+        const lock = used.length && tgt != null && !has(n.id);   // this artifact is in the loadout → can't double up
+        const usedTitle = used.length ? `Already socketed in ${used.map(u => u.art.name).join(", ")} (equipped)${lock ? " — unequip it there first" : ""}` : "";
+        return `<div class="prop-row rich ${has(n.id) ? "chosen" : ""}${used.length ? " nether-clash" : ""}${lock ? " locked" : ""}"${lock ? "" : ` data-action="art-preview" data-t="nether" data-v="${n.id}"`}${usedTitle ? ` title="${esc(usedTitle)}"` : ""}>
           <span class="prop-ico">${spriteImg(gemSrc(n), "px")}</span>
           <div class="prop-body"><div class="prop-name">${esc(n.name)}${core && core[sortK] ? `<span class="prop-metatag">+${core[sortK]}% ${esc(STAT_LABEL[sortK])}</span>` : ""}${used.length ? `<span class="prop-metatag clash">in use</span>` : ""}</div>
             <div class="prop-sub">${esc(netherListSummary(n))}</div></div></div>`;
@@ -4294,6 +4309,7 @@
       case "art-view": ovState.artView = t.dataset.v; refreshOverlay(); break;
       case "artlib-hide-equipped": e.stopPropagation(); ovState.hideEquipped = !ovState.hideEquipped; refreshOverlay(); break;
       case "art-equip": { const id = +t.dataset.id; if (artifactEquippedInBuild(id)) break;   // exclusive: already on another creature
+        if (artNetherClash(artifacts.find(a => a.id === id), ovState.slotIdx)) break;          // exclusive: its stone is in use elsewhere
         build.slots[ovState.slotIdx].artifactId = id; persistBuild(); closeOverlay(); render(); break; }
       case "art-unequip": build.slots[ovState.slotIdx].artifactId = null; persistBuild(); closeOverlay(); render(); break;
       case "art-new": openArtifactBuilder(null, ovState.slotIdx); break;
@@ -4335,6 +4351,9 @@
       case "art-confirm-add": {
         const type = t.dataset.t, sl = ART_SLOTS.find(s => s.pick === type), arr = ovState.draft[sl.key];
         const v = (type === "stat" || type === "trick") ? t.dataset.v : +t.dataset.v;
+        // a stone in use on another creature can't join an artifact that is (or will be) in the loadout
+        if (type === "nether" && arr[0] !== v) { const tgt = artTargetSlot(ovState.draft.id, ovState.slotIdx);
+          if (tgt != null && netherUsers(v, ovState.draft.id, tgt).length) break; }
         if (sl.max === 1) { arr[0] === v ? (arr.length = 0) : (arr[0] = v); }   // single slot toggles/replaces
         else if (arr.length < sl.max) arr.push(v);                              // multi slot: independent, duplicates OK
         ovState.preview = null;
@@ -4504,14 +4523,30 @@
       if (A === "iconpick-search") state.limit = ICON_PAGE;
       const panel = root.querySelector(".overlay-panel");
       const saved = SCROLLERS.map(sel => { const e = panel && panel.querySelector(sel); return e ? e.scrollTop : 0; });
-      const caret = t.selectionStart;
-      panel.outerHTML = state.render();
-      const p2 = root.querySelector(".overlay-panel");
-      const inp = p2 && p2.querySelector(".ovl-search");
-      if (inp) { inp.focus(); try { inp.setSelectionRange(caret, caret); } catch {} }
-      SCROLLERS.forEach((sel, k) => { const e = p2 && p2.querySelector(sel); if (e) e.scrollTop = saved[k]; });
+      const restoreScroll = () => { const p2 = root.querySelector(".overlay-panel");
+        SCROLLERS.forEach((sel, k) => { const e = p2 && p2.querySelector(sel); if (e) e.scrollTop = saved[k]; }); };
+      // full re-render (old path): replaces the input, so refocus + restore the caret
+      const replaceAll = () => {
+        const caret = t.selectionStart;
+        const cur = root.querySelector(".overlay-panel"); if (!cur) return;
+        cur.outerHTML = state.render();
+        const inp = root.querySelector(".overlay-panel .ovl-search");
+        if (inp) { inp.focus(); try { inp.setSelectionRange(caret, caret); } catch {} }
+        restoreScroll();
+      };
+      // Patch everything EXCEPT the input being typed in. Phone keyboards type inside an IME composition;
+      // replacing the focused <input> mid-composition made the keyboard re-insert the whole composing word on
+      // every keystroke ("Aft" → "AAfAftAft"). If the layout changed too much to patch while a word is still
+      // composing, hold the full re-render until the composition ends.
+      refreshKeeping(root, state.render(), t, () => {
+        if (e.isComposing) { pendingSearchRender = replaceAll; return; }
+        replaceAll();
+      });
+      restoreScroll();   // patched scrollers were replaced → put their scroll position back
     }
   }
+  let pendingSearchRender = null;
+  document.addEventListener("compositionend", () => { const f = pendingSearchRender; pendingSearchRender = null; if (f) f(); });
 
   document.addEventListener("click", onClick);
 

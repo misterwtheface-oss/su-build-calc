@@ -439,6 +439,7 @@ h1, h2, h3 { margin: 0; }
 /* artifact whose Nether Stone is already socketed in another equipped artifact: low-alpha RED tint
    (counterpart of the grey .disabled tint) — still selectable */
 .prop-row.nether-clash { opacity: .55; border-color: var(--bad); background: rgba(224,107,107,.12); }
+.prop-row.nether-clash.locked { opacity: .4; cursor: not-allowed; }
 .clash-note { color: var(--bad); text-align: left; padding: 6px 0; }
 .artpage-body { padding-top: 10px; }
 .prop-row.art-empty-slot { border-style: dashed; background: transparent; color: var(--accent2); cursor: pointer; }
@@ -454,6 +455,7 @@ h1, h2, h3 { margin: 0; }
 .equip-grid .pick-tile.selected .pt-sprite { background: none; filter: none; }
 .equip-grid .pick-tile.nether-clash, .pick-tile.nether-clash { opacity: .5; border-color: var(--bad); box-shadow: inset 0 0 0 1px var(--bad); }
 .equip-grid .pick-tile.nether-clash .pt-sprite, .pick-tile.nether-clash .pt-sprite { background: rgba(224,107,107,.30); border-radius: 8px; }
+.pick-tile.disabled.nether-clash { filter: none; opacity: .4; }   /* blocked by a stone clash: red, not grey */
 .equip-grid .pick-tile.eq-here { border-color: var(--accent2); box-shadow: inset 0 0 0 2px var(--accent2); }
 .equip-grid .pick-tile.eq-here .pt-sprite { background: rgba(154,123,214,.22); border-radius: 8px; filter: brightness(1.12); }
 .equip-grid .pick-tile.eq-other { border-color: var(--accent); box-shadow: inset 0 0 0 2px var(--accent); }

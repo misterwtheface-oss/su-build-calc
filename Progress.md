@@ -6,6 +6,16 @@ Pages on `master`/root, Cloudflare analytics active with the shared github.io to
 No verify-before-push ceremony (no real users yet) — but every change is checked with the jsdom smoke suite
 (scratchpad `smoke.mjs`, ~84 assertions across all flows) before commit.
 
+## 2026-10-04 (cont.) — FIX: search text duplicated on phones ("Aft" → "AAftAftAft")
+**RCA:** every search box shares `onInput`'s `searchMap` path, which re-rendered the whole overlay panel
+(`panel.outerHTML = render()`) on each keystroke — replacing the focused `<input>`. Phone keyboards (Gboard etc.) type
+inside an IME composition; destroying the input mid-composition made the keyboard re-insert the whole composing word on
+the new element each keystroke (A + Af + Aft + commit). Desktop keystrokes don't compose → never seen there. All 18
+search boxes were affected, not just the Appendix. Reproduced headless via CDP `Input.imeSetComposition`
+("AAfAftAft"). **Fix:** search re-renders go through `refreshKeeping` (patches everything except the input being typed
+in); if the layout can't be patched mid-composition, the full re-render waits for `compositionend`. Scroll positions
+restored as before. Verified: IME typing on 13 reachable search boxes → exact text, live filtering, focus kept.
+
 ## 2026-10-04 (cont.) — Nether Stone loadout exclusivity
 Rule (user, mirrors free re-socketing in-game): a stone may be socketed in any number of saved artifacts, but only ONE
 artifact holding it can be equipped across the 6 active creatures — same as an artifact can only be equipped once.
