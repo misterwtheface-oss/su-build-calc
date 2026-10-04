@@ -2822,6 +2822,43 @@
   // artifact TYPE (its primary property) → the trigger its native spell-gem slot fires on.
   // Nether-stone spells socketed into the artifact carry their own stored trigger instead.
   const ART_TYPE_TRIGGER = { Helmet: "On Provoke", Sword: "On Attack", Staff: "On Cast", Shield: "On Defend", Boots: "On Turn" };
+  // ── Spell Gem Slot activation chance (code-grounded model D.slotChance; _su_extract SPELL_GEM_SLOT_CHANCE_FINDINGS.md).
+  // Artifact slot: base[type] → Smith p3 ×1.1 → (stone carries ANY spell ⇒ reset to base, or 100 with The Truth) →
+  // + Hidden Hand 2/rank → + Battle Born 10; Ferro (rank ≥ 80) = second roll; Celebrate Decline = casts twice.
+  // Nether spell: base[trigger], or 100 with The Truth. Luck re-rolls (Sleight of Hand / realm Luck) intentionally
+  // not applied. Party = the player's side, so every player-only modifier applies.
+  const SC = D.slotChance;
+  const partyHasTrait = (tid) => tid != null && build.slots.some(s => s && s.cid != null && slotTraitIds(s).includes(tid));
+  const hiddenHandRank = () => {
+    const s = curSpec(), sp = s && s.perks.find(x => x.key === "HIDDENHAND"); let r = sp ? perkRank(s, sp) : 0;
+    if ((build.anoints || []).some(x => x.key === "HIDDENHAND")) { const p = perkByKey("HIDDENHAND"); r = Math.max(r, p ? p.ranks : 0); }
+    return r;
+  };
+  const artHasStoneSpell = (a) => (a.netherIds || []).some(nid => { const n = nether.find(x => x.id === nid); return n && (n.props || []).some(p => p.cat === "spell"); });
+  function artSlotChance(a, slot) {
+    if (!SC || !a || SC.base[a.primary] == null) return null;
+    const base = SC.base[a.primary], parts = [`${a.primary} base ${base}%`];
+    const truth = SC.truth && partyHasTrait(SC.truth.traitId);
+    let c;
+    if (artHasStoneSpell(a)) { c = truth ? SC.truth.value : base; parts.push(truth ? "The Truth → 100%" : "nether stone spell: chance resets to base"); }
+    else { c = base; if (SC.smith && cardLevel(SC.smith.cardId) >= SC.smith.power) { c *= SC.smith.mult; parts.push("Smith card set ×1.1"); } }
+    const hh = SC.hiddenHand ? hiddenHandRank() : 0;
+    if (hh) { c += SC.hiddenHand.perRank * hh; parts.push(`Hidden Hand +${SC.hiddenHand.perRank * hh}%`); }
+    if (SC.battleBorn && partyHasTrait(SC.battleBorn.traitId)) { c += SC.battleBorn.add; parts.push(`Battle Born +${SC.battleBorn.add}%`); }
+    const p = Math.max(0, Math.min(100, Math.round(c)));
+    const ferro = !!(SC.ferro && slot && slot.relic && slot.relic.id === SC.ferro.relicId && (+slot.relic.rank || 0) >= SC.ferro.minRank);
+    const eff = ferro ? Math.round((1 - (1 - p / 100) ** 2) * 100) : p;
+    if (ferro) parts.push(`Ferro: second roll (${p}% → ${eff}%)`);
+    const twice = !!(SC.celebrateDecline && partyHasTrait(SC.celebrateDecline.traitId));
+    if (twice) parts.push("Celebrate Decline: casts twice");
+    return { pct: eff, twice, title: parts.join(" · ") };
+  }
+  const netherSpellChance = (trigger) => {
+    if (!SC || SC.baseByTrigger[trigger] == null) return null;
+    const truth = SC.truth && partyHasTrait(SC.truth.traitId);
+    return { pct: truth ? 100 : SC.baseByTrigger[trigger], twice: false, title: truth ? "The Truth → 100%" : `${trigger} base ${SC.baseByTrigger[trigger]}%` };
+  };
+  const chanceTxt = (ch) => ch ? ` · ${ch.pct}%${ch.twice ? " ×2" : ""}` : "";
   // aggregate an artifact's stat contribution at its rank: core 5 stats (% each) + any non-core "trick"
   // effects, keyed by their full property name ("Snared On Damage") with their unit (% or flat count).
   const artifactBonusRows = (a) => FX.foldBonus(FX.artifactContribs(a));
@@ -2844,9 +2881,9 @@
       .map(tid => `<div class="primary-traits" style="margin-bottom:6px">${traitBanner(tid)}<div class="trait-desc">${richText((TRAIT[tid] || {}).desc || "")}</div></div>`).join("");
   }
   // one spell-gem container: name + trigger + description (clickable to the spell's taxonomy)
-  const spellGemCard = (sp, trigger, src) => `<div class="art-spellcard apx-clickable" data-action="apx-open" data-ek="spell" data-eid="${sp.id}" title="View taxonomy">
+  const spellGemCard = (sp, trigger, src, ch) => `<div class="art-spellcard apx-clickable" data-action="apx-open" data-ek="spell" data-eid="${sp.id}" title="View taxonomy">
     <div class="art-spellcard-head"><span class="prop-ico">${spellIcon(sp) ? spriteImg(spellIcon(sp), "px") : ""}</span>
-      <b>${esc(sp.name)}</b>${trigger ? `<span class="art-trigger">${esc(trigger)}</span>` : ""}</div>
+      <b>${esc(sp.name)}</b>${trigger ? `<span class="art-trigger"${ch ? ` title="Activation chance: ${esc(ch.title)}"` : ""}>${esc(trigger)}${chanceTxt(ch)}</span>` : ""}</div>
     ${src ? `<div class="slot-sub">from ${esc(src)}</div>` : ""}
     ${sp.desc ? `<div class="trait-desc">${perkText(sp.desc)}</div>` : ""}</div>`;
   // Selectable "clean container" cards for the artifact / nether pickers: the full description shows
@@ -2866,11 +2903,12 @@
       <button class="pick-card-src plain" data-action="apx-open" data-ek="spell" data-eid="${sp.id}" title="View taxonomy">tags ›</button></div>
     ${sp.desc ? `<div class="trait-desc">${perkText(sp.desc)}</div>` : ""}</div>`;
   // spell-gem containers for an artifact: native slot fires on the type trigger; nether stones keep their own
-  function artifactSpellContainers(a) {
-    const rows = [], typeTrig = ART_TYPE_TRIGGER[a.primary];
-    for (const id of a.spells || []) { const sp = SPELL.get(id); if (sp) rows.push(spellGemCard(sp, typeTrig)); }
+  function artifactSpellContainers(a, slot) {
+    slot = slot || build.slots.find(s => s && s.artifactId === a.id) || null;   // equipped → that creature's relic counts
+    const rows = [], typeTrig = ART_TYPE_TRIGGER[a.primary], ach = artSlotChance(a, slot);
+    for (const id of a.spells || []) { const sp = SPELL.get(id); if (sp) rows.push(spellGemCard(sp, typeTrig, null, ach)); }
     for (const nid of a.netherIds || []) { const n = nether.find(x => x.id === nid); if (!n) continue;
-      for (const pr of n.props || []) if (pr.cat === "spell") { const sp = SPELL.get(pr.key); if (sp) rows.push(spellGemCard(sp, pr.trigger, n.name)); } }
+      for (const pr of n.props || []) if (pr.cat === "spell") { const sp = SPELL.get(pr.key); if (sp) rows.push(spellGemCard(sp, pr.trigger, n.name, netherSpellChance(pr.trigger))); } }
     return rows.join("");
   }
   // "Bonuses" view (vs the raw "Sockets" list): Traits → Spell Gems → stat table
@@ -3609,7 +3647,7 @@
     // under Traits above (labelled "+ artifact"), so they aren't repeated here.
     const art = resolveArtifact(slot);
     const artHtml = art ? (() => {
-      const { core, extra } = artifactBonusRows(art), spells = artifactSpellContainers(art), clash = artNetherClash(art);
+      const { core, extra } = artifactBonusRows(art), spells = artifactSpellContainers(art, slot), clash = artNetherClash(art);
       return `<div class="section-label" style="margin-top:14px">Artifact — Rank ${art.rank || 50}</div>
         <div class="prop-list"><div class="prop-row static"><span class="prop-ico">${spriteImg(artIcon(art), "px")}</span>
           <span class="prop-name"><b>${esc(art.name)}</b></span><span class="prop-stat">${esc(art.primary || "")}</span></div></div>

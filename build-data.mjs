@@ -2669,6 +2669,44 @@ const effects = (() => {
   return { rules };
 })();
 
+// ── Spell Gem Slot activation chance (artifact spell slot + nether-stone spells) ───────────────────
+// _su_extract data/model/spell_gem_slot_chance.json (code/SPELL_GEM_SLOT_CHANCE_FINDINGS.md). Shipped as a compact
+// model; the app computes the live chance from the build (perk ranks, party traits, relic rank, card levels, stones).
+// Re-roll luck effects (Sleight of Hand / Bad/Good Luck / Spin the Wheel) are deliberately NOT applied (user 2026-10-04).
+let slotChance = null;
+{
+  const f = path.join(MODEL, 'spell_gem_slot_chance.json');
+  if (fs.existsSync(f)) {
+    const m = readJSON(f), byKind = (k, pred) => (m.modifiers || []).find(x => x.kind === k && pred(x));
+    const typeName = { attack: 'Sword', defend: 'Shield', provoke: 'Helmet', cast: 'Staff', start_of_turn: 'Boots' };
+    const trigLabel = { attack: 'On Attack', defend: 'On Defend', provoke: 'On Provoke', cast: 'On Cast', start_of_turn: 'On Turn' };
+    const base = {}, baseByTrigger = {};
+    for (const t of m.triggers || []) { base[t.artifact_name || typeName[t.trigger]] = t.base; baseByTrigger[trigLabel[t.trigger]] = t.base; }
+    const smith = byKind('card_set', x => x.card_family === 'Smith'), truth = byKind('trait', x => x.name === 'The Truth');
+    const hh = byKind('perk', x => x.perk_key === 'HIDDENHAND'), bb = byKind('trait', x => x.name === 'Battle Born');
+    const ferro = byKind('relic', x => /Ferro/.test(x.relic || '')), cd = byKind('trait', x => x.name === 'Celebrate Decline');
+    slotChance = {
+      base, baseByTrigger,
+      smith: smith && { cardId: smith.card_id, power: smith.power, mult: smith.value },
+      truth: truth && { traitId: truth.app_trait_id, value: truth.value },
+      hiddenHand: hh && { perkKey: hh.perk_key, perRank: hh.value_per_rank },
+      battleBorn: bb && { traitId: bb.app_trait_id, add: bb.value },
+      ferro: ferro && { relicId: ferro.app_relic_id, minRank: ferro.effective_rank },
+      celebrateDecline: cd && { traitId: cd.app_trait_id },
+    };
+    // join guards: every id must still name the expected object in the shipped data
+    const chk = (ok, what) => { if (!ok) err(`slotChance: ${what} no longer joins to app data`); };
+    chk(slotChance.truth && traits[slotChance.truth.traitId]?.name === 'The Truth', 'The Truth');
+    chk(slotChance.battleBorn && traits[slotChance.battleBorn.traitId]?.name === 'Battle Born', 'Battle Born');
+    chk(slotChance.celebrateDecline && traits[slotChance.celebrateDecline.traitId]?.name === 'Celebrate Decline', 'Celebrate Decline');
+    chk(slotChance.ferro && /^Ferro/.test(relics[slotChance.ferro.relicId]?.name || ''), 'Ferro relic');
+    chk(slotChance.smith && cards[slotChance.smith.cardId]?.family === 'Smith', 'Smith card');
+    chk(slotChance.hiddenHand && specs.some(sp => sp.perks.some(pk => pk.key === 'HIDDENHAND')), 'Hidden Hand perk');
+    chk(Object.keys(base).length === 5, 'base chances (5 artifact types)');
+    console.log(`  spell-gem slot chance: base ${JSON.stringify(base)} · 6 modifiers joined`);
+  } else warn('spell_gem_slot_chance.json missing — no activation chance in the app');
+}
+
 const SU_DATA = {
   meta: {
     generated: new Date().toISOString(),
@@ -2680,6 +2718,7 @@ const SU_DATA = {
   classes: CLASSES,
   classBg,
   classFrame,
+  slotChance,                // Spell Gem Slot / nether-spell activation-chance model (code-grounded)
   classIcons,
   raceIcons,
   creatures,

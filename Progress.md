@@ -1558,6 +1558,15 @@ Each is one rule edit in `data/reference/effect_rules.json` (or the generator in
   Two of the four mastery lines are damage-DEALT bonuses that are also clamped at 0.8. If a Guild or Race Mastery feature
   is ever added, show the "Max 80% damage reduction" chip on these too. They are joined by `kind`
   (`guild`/`mastery`), so the notes block just needs a target.
+- [ ] **Luck re-rolls must be modelled if Realm Instability / realm-property computation is ever added** (user 2026-10-04).
+  The Spell Gem Slot activation chance shipped WITHOUT re-rolls (by design). The re-roll layer lives in `scr_Roll` and is
+  keyed on **whose turn it is** (`global.creatureturn`), not on who owns the artifact. Source:
+  `_su_extract data/model/spell_gem_slot_chance.json` `roll.luck_rerolls`.
+  - **Player turn:** Sleight of Hand (perk 33) re-rolls a failure, giving p+(1−p)p. Realm property **Bad Luck** (id 61)
+    makes a first-roll success pass a second roll, giving p·p.
+  - **Enemy turn:** realm property **Good Luck (Enemies)** (id 62) and the trait Spin the Wheel (1765) each re-roll a
+    failure.
+  - Realm Instability adds realm properties, so Bad Luck and Good Luck would change real activation odds.
 ### 🔬 Extract follow-ups (2026-10-01, triaged with user)
 - [x] **Threats / instability / race icons — DONE 2026-10-01** (_su_extract `code/extract_icon_maps2.py` / `ICON_MAPS.md`):
   - **Race icons:** `scr_LangRace` returns "[sprite] Race", 164/164 from code. This replaced the name-family heuristic
