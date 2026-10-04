@@ -6,6 +6,12 @@ Pages on `master`/root, Cloudflare analytics active with the shared github.io to
 No verify-before-push ceremony (no real users yet) — but every change is checked with the jsdom smoke suite
 (scratchpad `smoke.mjs`, ~84 assertions across all flows) before commit.
 
+## 2026-10-04 (cont.) — Sort toggles flip direction
+Every sort control (spell picker ×3 wizards, creature picker stats, Realms Realm|God, artifact-wizard nether list,
+Builds) now flips asc/desc when the ACTIVE sort is tapped again; a newly picked sort starts in its natural direction
+(name-style ▲; stats/potency/charges/recent/last-edited ▼). Active button shows ▲/▼. Missing values (no potency, no
+charges, no spec) stay last both ways; ties stay A–Z. Shared helpers `sortPick` / `sortSign` / `sortLbl`.
+
 ## 2026-10-04 (cont.) — One spell picker for all three wizards + "Self" target
 - **Shared spell picker** (`spellPickList` / `spellPickRows` / `spellFilterBar`, actions `spf-*`): the Spell Gem,
   Artifact and Nether Stone wizards render a byte-identical search + filter section — row 1 search · ＋ Filter ·

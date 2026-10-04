@@ -430,6 +430,14 @@
     return cards.levels[id] == null ? 3 : cards.levels[id];
   };
 
+  // ── sort toggles: tapping the ACTIVE sort flips its direction; picking another starts in its natural direction ──
+  // st[key] = active sort value, st[revKey] = true when flipped from natural. `natDesc` = that sort's natural order is
+  // descending (stats, potency, charges, recent, last-edited); name-style sorts are naturally ascending.
+  const sortPick = (st, key, revKey, v) => { if (st[key] === v) st[revKey] = !st[revKey]; else { st[key] = v; st[revKey] = false; } };
+  const sortSign = (rev) => (rev ? -1 : 1);
+  // button label with the live direction arrow on the active sort (▼ descending, ▲ ascending)
+  const sortLbl = (label, active, rev, natDesc) => active ? `${label} <span class="sort-dir">${(natDesc !== !!rev) ? "▼" : "▲"}</span>` : label;
+
   // ── util ─────────────────────────────────────────────────────────────────
   const el = (id) => document.getElementById(id);
   const esc = (s) => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
@@ -974,8 +982,8 @@
     { k: "def", lbl: "Def" }, { k: "spd", lbl: "Spd" }, { k: "total", lbl: "Total" }];
   const STAT_MAX = Object.fromEntries(CREA_STAT_COLS.map(c =>
     [c.k, Math.max(1, ...D.creatures.map(x => x[c.k] || 0))]));
-  const sortCreatures = (list, key) => key
-    ? list.slice().sort((a, b) => (b[key] || 0) - (a[key] || 0) || (a.name || "").localeCompare(b.name || ""))
+  const sortCreatures = (list, key, rev) => key
+    ? list.slice().sort((a, b) => sortSign(rev) * ((b[key] || 0) - (a[key] || 0)) || (a.name || "").localeCompare(b.name || ""))
     : list;
   function openCreaturePicker(slotIdx) {
     const slot = build.slots[slotIdx];
@@ -1042,7 +1050,7 @@
     }
     const fusion = st.step === "fusion";
     const sel = creaStepSel(st);
-    const list = sortCreatures(D.creatures.filter(c => creatureMatches(c, st)), st.sort);
+    const list = sortCreatures(D.creatures.filter(c => creatureMatches(c, st)), st.sort, st.sortRev);
     const limit = st.limit || CREA_PAGE;
     const shown = list.slice(0, limit);
     const selC = sel != null ? CREA.get(sel) : null;
@@ -1062,7 +1070,7 @@
     // stat sort — highest first; picking a stat draws a magnitude bar (value / roster max) on each tile
     const sortbar = `<div class="ovl-filterbar crea-sortbar"><span class="foot-info">Sort</span><div class="seg">
       <button class="seg-btn ${!st.sort ? "on" : ""}" data-action="crea-sort" data-k="">—</button>
-      ${CREA_STAT_COLS.map(c => `<button class="seg-btn ${st.sort === c.k ? "on" : ""}" data-action="crea-sort" data-k="${c.k}">${c.lbl}</button>`).join("")}
+      ${CREA_STAT_COLS.map(c => `<button class="seg-btn ${st.sort === c.k ? "on" : ""}" data-action="crea-sort" data-k="${c.k}">${sortLbl(c.lbl, st.sort === c.k, st.sortRev, true)}</button>`).join("")}
     </div></div>`;
 
     // fusion step leads with a "No fusion" tile so skipping is a first-class choice
@@ -1552,10 +1560,13 @@
     return spec ? esc(spec.label) : "No specialization";
   };
   const buildSpecLabel = (b) => { const s = (b.build && b.build.specId != null) ? SPEC.get(b.build.specId) : null; return s ? s.label : ""; };
-  function sortBuilds(list, mode) {
-    if (mode === "name") return list.sort((a, b) => (a.name || "").localeCompare(b.name || ""));
-    if (mode === "spec") return list.sort((a, b) => (buildSpecLabel(a) || "￿").localeCompare(buildSpecLabel(b) || "￿") || (a.name || "").localeCompare(b.name || ""));
-    return list.sort((a, b) => (b.ts || 0) - (a.ts || 0));   // "edited" (default)
+  function sortBuilds(list, mode, rev) {
+    const d = sortSign(rev);
+    if (mode === "name") return list.sort((a, b) => d * (a.name || "").localeCompare(b.name || ""));
+    if (mode === "spec") return list.sort((a, b) => { const sa = buildSpecLabel(a), sb = buildSpecLabel(b);
+      if (!sa !== !sb) return sa ? -1 : 1;                                // builds with no spec stay last either way
+      return (sa ? d * sa.localeCompare(sb) : 0) || (a.name || "").localeCompare(b.name || ""); });
+    return list.sort((a, b) => d * ((b.ts || 0) - (a.ts || 0)));   // "edited" (default): newest first
   }
   function openBuilds() {
     ovState = { kind: "builds", draft: null, sel: null, flash: null, sort: "edited", render: renderBuilds };
@@ -1600,7 +1611,7 @@
       </div></div>`;
     }
     const sel = st.sel != null ? builds.find(b => b.id === st.sel) : null;
-    const tiles = sortBuilds(builds.slice(), st.sort).map(b => {   // the SELECTED tile animates its costume
+    const tiles = sortBuilds(builds.slice(), st.sort, st.sortRev).map(b => {   // the SELECTED tile animates its costume
       const selB = st.sel === b.id, bframes = selB && b.icon ? wardrobeFramesFor(b.icon) : null;
       return `<div class="lib-tile ${selB ? "selected" : ""} ${st.flash === b.id ? "flash" : ""}" data-action="builds-sel" data-id="${b.id}">
         <div class="lib-icon"${bframes ? ` data-anim-frames='${JSON.stringify(bframes)}'` : ""}>${b.icon ? spriteImg(currentWardrobeImg(b.icon), "px") : `<span class="slot-empty-icon">✦</span>`}</div>
@@ -1608,9 +1619,9 @@
         <div class="lib-sub">${buildSummary(b.build || {})}</div>
       </div>`; }).join("") || `<div class="slot-sub" style="padding:10px">No saved builds yet — save your current party.</div>`;
     const sortBar = builds.length ? `<div class="ovl-filterbar"><span class="foot-info">Sort</span><div class="seg">
-      <button class="seg-btn ${st.sort === "edited" ? "on" : ""}" data-action="builds-sort" data-sort="edited">Last edited</button>
-      <button class="seg-btn ${st.sort === "name" ? "on" : ""}" data-action="builds-sort" data-sort="name">Name</button>
-      <button class="seg-btn ${st.sort === "spec" ? "on" : ""}" data-action="builds-sort" data-sort="spec">Spec</button>
+      <button class="seg-btn ${st.sort === "edited" ? "on" : ""}" data-action="builds-sort" data-sort="edited">${sortLbl("Last edited", st.sort === "edited", st.sortRev, true)}</button>
+      <button class="seg-btn ${st.sort === "name" ? "on" : ""}" data-action="builds-sort" data-sort="name">${sortLbl("Name", st.sort === "name", st.sortRev, false)}</button>
+      <button class="seg-btn ${st.sort === "spec" ? "on" : ""}" data-action="builds-sort" data-sort="spec">${sortLbl("Spec", st.sort === "spec", st.sortRev, false)}</button>
     </div></div>` : "";
     // right info panel: preview the selected build — spec emblem + equipped anointment icons, then a 2×3 creature grid
     const infoPanel = sel ? `<div class="ovl-right build-info">${renderBuildPreview(sel)}</div>` : "";
@@ -2370,9 +2381,10 @@
   function renderRealmList(rs) {
     const st = ovState, q = st.search.trim().toLowerCase();
     const match = (r) => !q || r.realm.toLowerCase().includes(q) || r.godName.toLowerCase().includes(q) || r.creatures.some(c => c.toLowerCase().includes(q));
+    const d = sortSign(st.sortRev);
     const list = rs.filter(match).sort((a, b) => st.sortBy === "god"
-      ? a.godName.localeCompare(b.godName) || a.realm.localeCompare(b.realm)
-      : a.realm.localeCompare(b.realm));
+      ? d * a.godName.localeCompare(b.godName) || a.realm.localeCompare(b.realm)
+      : d * a.realm.localeCompare(b.realm));
     // the Realm | God toggle also picks the icon: Realm → realm icon, God → god battle sprite
     const heroIco = (x) => st.sortBy === "god" ? (x.godBattle || x.icon) : (x.icon || x.godBattle);
     const rows = list.map(r => `<button class="realm-row" data-action="realm-sel" data-id="${r.id}">
@@ -2383,9 +2395,9 @@
       <span class="opt-chev">›</span></button>`).join("")
       || `<div class="slot-sub" style="padding:10px">No realms match.</div>`;
     const sortToggle = `<div class="art-view-toggle">
-      <button class="av-tab ${st.sortBy === "realm" ? "on" : ""}" data-action="realm-sort" data-v="realm">Realm</button>
+      <button class="av-tab ${st.sortBy === "realm" ? "on" : ""}" data-action="realm-sort" data-v="realm">${sortLbl("Realm", st.sortBy === "realm", st.sortRev, false)}</button>
       <span class="av-pipe">|</span>
-      <button class="av-tab ${st.sortBy === "god" ? "on" : ""}" data-action="realm-sort" data-v="god">God</button></div>`;
+      <button class="av-tab ${st.sortBy === "god" ? "on" : ""}" data-action="realm-sort" data-v="god">${sortLbl("God", st.sortBy === "god", st.sortRev, false)}</button></div>`;
     return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel">
       <div class="overlay-header"><h2>Realms</h2>
         <input class="ovl-search" placeholder="Search realm / god / race…" value="${esc(st.search)}" data-action="realm-search">
@@ -3078,9 +3090,15 @@
         && (st.spellTarget == null || sp.target === st.spellTarget)
         && (!st.spellTaxo || (sp.taxo || []).includes(st.spellTaxo))
         && (!st.bkOnly || bookmarks.spells.includes(sp.id)))
-      .sort(sort === "potency" ? (x, y) => potencyRank(x) - potencyRank(y) || x.name.localeCompare(y.name)
-        : sort === "charges" ? (x, y) => (y.charges ?? -1) - (x.charges ?? -1) || x.name.localeCompare(y.name)
-        : (x, y) => x.name.localeCompare(y.name));
+      .sort((x, y) => {
+        const d = sortSign(st.spellSortRev), byName = x.name.localeCompare(y.name);
+        if (sort === "potency") { const rx = potencyRank(x), ry = potencyRank(y), none = POTENCY_ORDER.length;
+          if ((rx === none) !== (ry === none)) return rx === none ? 1 : -1;   // no potency stays last either way
+          return d * (rx - ry) || byName; }
+        if (sort === "charges") { if ((x.charges == null) !== (y.charges == null)) return x.charges == null ? 1 : -1;
+          return d * ((y.charges || 0) - (x.charges || 0)) || byName; }
+        return d * byName;
+      });
   }
   // rows (capped) with potency-tier headings under the Potency sort, a "showing N of M" note, or an empty note
   function spellPickRows(st, list, rowFn) {
@@ -3105,7 +3123,7 @@
           <option value="" ${!st.spellCls ? "selected" : ""}>-</option>${SPELL_CLASSES.map(cl => `<option value="${cl}" ${st.spellCls === cl ? "selected" : ""}>${cl}</option>`).join("")}</select>
         <span class="sg-sort-gap"></span>
         <div class="seg">${[["name", "A–Z"], ["potency", "Potency"], ["charges", "Charges"]].map(([v, l]) =>
-          `<button class="seg-btn ${sort === v ? "on" : ""}" data-action="spf-sort" data-v="${v}">${l}</button>`).join("")}</div></div>`;
+          `<button class="seg-btn ${sort === v ? "on" : ""}" data-action="spf-sort" data-v="${v}">${sortLbl(l, sort === v, st.spellSortRev, v !== "name")}</button>`).join("")}</div></div>`;
   }
   // one-line nether stone summary for list rows: core %s, other properties, trait + spell names
   function netherListSummary(n) {
@@ -3154,10 +3172,10 @@
           && (!st.nsTrait || (n.props || []).some(p => p.cat === "trait"))
           && (!st.nsSpell || (n.props || []).some(p => p.cat === "spell"))
           && (!st.nsHideUsed || !inUse(n).length));
-      const sortK = st.nsSort || "recent";
-      list.sort(sortK === "name" ? (x, y) => x.name.localeCompare(y.name)
-        : STAT_KEYS.includes(sortK) ? (x, y) => (sum(y)[sortK] - sum(x)[sortK]) || x.name.localeCompare(y.name)
-        : (x, y) => y.id - x.id);
+      const sortK = st.nsSort || "recent", nd = sortSign(st.nsSortRev);
+      list.sort(sortK === "name" ? (x, y) => nd * x.name.localeCompare(y.name)
+        : STAT_KEYS.includes(sortK) ? (x, y) => nd * (sum(y)[sortK] - sum(x)[sortK]) || x.name.localeCompare(y.name)
+        : (x, y) => nd * (y.id - x.id));
       rows = list.map(n => {
         const used = inUse(n), core = STAT_KEYS.includes(sortK) ? sum(n) : null;
         const lock = used.length && tgt != null && !has(n.id);   // this artifact is in the loadout → can't double up
@@ -3178,7 +3196,7 @@
     const bkKind = type === "trait" ? "traits" : type === "spell" ? "spells" : null;
     const bkFilter = bkKind && bookmarks[bkKind].length
       ? `<button class="facet ${st.bkOnly ? "on" : ""}" data-action="artb-bkonly" title="Show only bookmarked ${type === "trait" ? "traits" : "spells"}">★ Bookmarked</button>` : "";
-    const seg = (act, cur, opts) => `<div class="seg">${opts.map(([v, lbl]) => `<button class="seg-btn ${cur === v ? "on" : ""}" data-action="${act}" data-v="${v}">${lbl}</button>`).join("")}</div>`;
+    const seg = (act, cur, opts, rev) => `<div class="seg">${opts.map(([v, lbl]) => `<button class="seg-btn ${cur === v ? "on" : ""}" data-action="${act}" data-v="${v}">${sortLbl(lbl, cur === v, rev, v !== "name")}</button>`).join("")}</div>`;
     let extra = "";
     if (type === "spell") {
       extra = "";   // spell list uses the shared search + filter bar (rendered in place of the plain search below)
@@ -3187,7 +3205,7 @@
           <button class="facet ${st.nsTrait ? "on" : ""}" data-action="artb-nsfilter" data-f="nsTrait">Has trait</button>
           <button class="facet ${st.nsSpell ? "on" : ""}" data-action="artb-nsfilter" data-f="nsSpell">Has spell</button>
           <button class="facet ${st.nsHideUsed ? "on" : ""}" data-action="artb-nsfilter" data-f="nsHideUsed" title="Hide stones already socketed in another equipped artifact">Hide in use</button></div>
-        <div class="art-side-filter">${seg("artb-nssort", st.nsSort || "recent", [["recent", "Recent"], ["name", "A–Z"], ...STAT_KEYS.map(k => [k, STAT_LABEL[k].slice(0, 3)])])}</div>`;
+        <div class="art-side-filter">${seg("artb-nssort", st.nsSort || "recent", [["recent", "Recent"], ["name", "A–Z"], ...STAT_KEYS.map(k => [k, STAT_LABEL[k].slice(0, 3)])], st.nsSortRev)}</div>`;
     } else if (traitFilter || bkFilter) extra = `<div class="art-side-filter">${traitFilter}${bkFilter}</div>`;
     const label = (ART_SLOTS.find(s => s.pick === type) || {}).label || "";
     return `<div class="art-side-head"><b>Add ${esc(label)}</b><button class="chip" data-action="artb-closecat">Done</button></div>
@@ -4157,7 +4175,7 @@
       case "builds-cancel": ovState.draft = null; refreshOverlay(); break;
       case "builds-pick-icon": openIconPicker((w) => { ovState.draft.icon = w.img; }); break;
       case "builds-sel": ovState.sel = ovState.sel === +t.dataset.id ? null : +t.dataset.id; refreshOverlay(); break;
-      case "builds-sort": if (ovState.sort !== t.dataset.sort) { ovState.sort = t.dataset.sort; refreshOverlay(); } break;
+      case "builds-sort": sortPick(ovState, "sort", "sortRev", t.dataset.sort); refreshOverlay(); break;
       case "builds-save": {
         const d = ovState.draft;
         const nb = { id: nextBuildId++, name: (d.name || "").trim() || `Build ${builds.length + 1}`, icon: d.icon, ts: Date.now(), build: JSON.parse(JSON.stringify(build)) };
@@ -4196,7 +4214,7 @@
       case "realm-sel": ovState.sel = +t.dataset.id; ovState.view = "detail"; ovState.detailIco = ovState.sortBy === "god" ? "god" : "realm"; refreshOverlay(true); break;
       case "realm-swapico": ovState.detailIco = (ovState.detailIco === "god" ? "realm" : "god"); refreshOverlay(); break;
       case "realm-back": ovState.view = "list"; refreshOverlay(true); maybeFocusSearch(OV); break;
-      case "realm-sort": ovState.sortBy = t.dataset.v; refreshOverlay(); break;
+      case "realm-sort": sortPick(ovState, "sortBy", "sortRev", t.dataset.v); refreshOverlay(); break;
       case "realm-mode": ovState.mode = t.dataset.v; ovState.search = ""; refreshOverlay(true); maybeFocusSearch(OV); break;
       case "realm-favview": ovState.favorView = t.dataset.v; refreshOverlay(); break;
       case "realm-usecustom": ovState.useCustom = t.dataset.v === "1"; favorPrefs.use = ovState.useCustom; persistFavorPrefs(); refreshOverlay(); break;
@@ -4288,7 +4306,7 @@
       case "crea-more": ovState.limit = (ovState.limit || CREA_PAGE) + CREA_PAGE; refreshOverlay(); break;
       case "crea-view": ovState.view = t.dataset.v === "traits" ? "traits" : "grid"; refreshOverlay(true); break;
       case "crea-bkonly": ovState.bkOnly = !ovState.bkOnly; resetCreaPage(); refreshOverlay(); break;
-      case "crea-sort": ovState.sort = t.dataset.k || null; resetCreaPage(); refreshOverlay(); break;
+      case "crea-sort": { const k = t.dataset.k || null; if (k) sortPick(ovState, "sort", "sortRev", k); else { ovState.sort = null; ovState.sortRev = false; } resetCreaPage(); refreshOverlay(); break; }
       case "crea-confirm": {
         if (ovState.primaryId == null) break;
         const s = build.slots[ovState.slotIdx];
@@ -4385,10 +4403,10 @@
       case "artb-traitfilter-clear": ovState.traitTaxo = null; refreshOverlay(); break;
       case "artb-bkonly": ovState.bkOnly = !ovState.bkOnly; refreshOverlay(); break;
       // shared spell picker bar (Spell Gem / Artifact / Nether Stone wizards)
-      case "spf-sort": ovState.spellSort = t.dataset.v; refreshOverlay(); break;
+      case "spf-sort": if (!ovState.spellSort) ovState.spellSort = "name"; sortPick(ovState, "spellSort", "spellSortRev", t.dataset.v); refreshOverlay(); break;
       case "spf-bk": ovState.bkOnly = !ovState.bkOnly; refreshOverlay(); break;
       case "artb-nsfilter": ovState[t.dataset.f] = !ovState[t.dataset.f]; refreshOverlay(); break;
-      case "artb-nssort": ovState.nsSort = t.dataset.v; refreshOverlay(); break;
+      case "artb-nssort": if (!ovState.nsSort) ovState.nsSort = "recent"; sortPick(ovState, "nsSort", "nsSortRev", t.dataset.v); refreshOverlay(); break;
       // spell-gem builder spell picker filter (reuses the facet detail picker)
       case "sg-taxofilter": openFacetPicker("taxo-cat", {
         idxFn: () => taxoIndexFor("spell", D.spells, s => s.taxo || []),

@@ -685,6 +685,7 @@ h1, h2, h3 { margin: 0; }
 .seg-btn { background: var(--surface); color: var(--text-dim); border: none; padding: 4px 12px; font-size: 12px; cursor: pointer; }
 .seg-btn + .seg-btn { border-left: 1px solid var(--border-dim); }
 .seg-btn.on { background: var(--accent); color: var(--surface3); font-weight: 700; }
+.sort-dir { font-size: .85em; margin-left: 2px; }
 
 /* ── mobile reflow ──────────────────────────────────────────────────────── */
 @media (max-width: 820px) {
