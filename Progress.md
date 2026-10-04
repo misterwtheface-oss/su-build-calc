@@ -1550,6 +1550,11 @@ Each is one rule edit in `data/reference/effect_rules.json` (or the generator in
     - **S6:** def-use formula binding (unattached trait numbers 364 → 57; 31 per-count factors); amplifier traits as
       amplify_innate records; Rune spells' branches settled from code. Upstream limit: only 324 / 1,147 trait
       description % numbers are extracted from code (many are runtime variables).
+  - **2026-10-04 S7:** handler-branch finder (attack/spell/indirect inside the damage handler), pre-gate lookback,
+    more field evidence; +208 confirms; residual decodable 1,543 → 1,415. Provenance code 88% · llm 7%.
+    - **REVIEW:** 18 Attack on generic damage modifiers (have Damage), 8 Stats→Related Stat (reads only), 4 cards
+      Race→Class, Blazing Soul side, Uncharted Buff→Minion Count.
+    - **Proposals:** 24 Multi-Target Spells adds.
     - **Spells decoded too** (per-spell switch in bc_CreatureCast; 82% agreement with app spell tags); taxonomy
       integration is next.
 - [ ] **Capped effects with no app surface yet** (keep in context — user 2026-10-02). `_su_extract data/model/dr_caps.json`
