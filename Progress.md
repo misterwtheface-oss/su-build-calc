@@ -1378,6 +1378,10 @@ MAPPING not for asserting PRESENCE; no inventing entities from the community-CSV
     scaling. Relics + cards now get the evidence layers. Action/Mechanic::Stats needs MANIPULATION (not a read).
     - **Katarina's Asylum:** resolved, the code agrees with "35% more".
     - **REVIEW (C):** 13 traits tagged Stats where the stat only scales damage.
+  - **2026-10-03 Task J:** stack-slot flags (crit flag in bc_EventDamage, dodge flag in bc_CreatureAttack); stat
+    redistribution via the game's own battle-message keys (L_B_PREVENTED / L_B_STAT_GAIN_STOLEN / L_B_TURN_SKIPPED /
+    L_B_CAST_FIZZLED…); spell raw-evidence layer (+153). The 7 runtime-id traits have NO effect code in static (Seethe
+    = renamed twin of Tellur's Fangs).
     - **Spells decoded too** (per-spell switch in bc_CreatureCast; 82% agreement with app spell tags); taxonomy
       integration is next.
 - [ ] **Capped effects with no app surface yet** (keep in context — user 2026-10-02). `_su_extract data/model/dr_caps.json`
