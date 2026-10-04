@@ -9,7 +9,7 @@
   // Feature flags — flip to true to re-enable. Macros (battle-AI proposal) is WIP: hidden for now.
   // nyi: content that is in the data but NOT live in the game yet (e.g. the Misery False God). Stripped from D here —
   // before anything indexes D.traits / D.falseGods — so with the flag off the app sees exactly the live-game data.
-  const FEATURES = { macros: false, nyi: false, taxoSource: false };   // taxoSource: show each tag's provenance chip (code / token / implied / llm …)
+  const FEATURES = { macros: false, nyi: false, taxoSource: false, taxoSinglesToggle: false };   // taxoSinglesToggle: "Show single-use tags" button   // taxoSource: show each tag's provenance chip (code / token / implied / llm …)
   if (!FEATURES.nyi) {
     for (const id of Object.keys(D.traits)) if (D.traits[id].nyi) delete D.traits[id];
     D.falseGods = (D.falseGods || []).filter(g => !g.nyi);
@@ -497,7 +497,8 @@
   // DISPLAY RULE (user, 2026-10-03): the data carries the full taxonomy; a value used by only ONE object
   // (across traits / perks / spells / relics / cards) is hidden from the filter + Appendix pickers unless the viewer
   // turns on "Show single-use tags". Per-viewer convenience → localStorage.
-  let taxoShowSingles = (() => { try { return localStorage.getItem("subc.taxoSingles") === "1"; } catch { return false; } })();
+  // feature off → singles stay hidden (ignore any stored "on" so nobody is stuck with no way to turn it back off)
+  let taxoShowSingles = FEATURES.taxoSinglesToggle && (() => { try { return localStorage.getItem("subc.taxoSingles") === "1"; } catch { return false; } })();
   let _taxoUse = null;
   function taxoUse() {
     if (_taxoUse) return _taxoUse;
@@ -508,7 +509,7 @@
     return _taxoUse;
   }
   const taxoValVisible = (k) => taxoShowSingles || (taxoUse().get(k) || 0) >= 2;
-  const singlesToggle = () => `<button class="facet ${taxoShowSingles ? "on" : ""}" data-action="taxo-singles" title="Tags used by only one trait, perk, spell, relic or card">Show single-use tags</button>`;
+  const singlesToggle = () => !FEATURES.taxoSinglesToggle ? "" : `<button class="facet ${taxoShowSingles ? "on" : ""}" data-action="taxo-singles" title="Tags used by only one trait, perk, spell, relic or card">Show single-use tags</button>`;
   const TAXO_IDX_CACHE = {};
   function taxoIndexFor(key0, items, getTags) {
     const key = key0 + (taxoShowSingles ? ":all" : "");
