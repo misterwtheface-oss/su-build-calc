@@ -6,6 +6,16 @@ Pages on `master`/root, Cloudflare analytics active with the shared github.io to
 No verify-before-push ceremony (no real users yet) — but every change is checked with the jsdom smoke suite
 (scratchpad `smoke.mjs`, ~84 assertions across all flows) before commit.
 
+## 2026-10-04 (cont.) — Nether Stone loadout exclusivity
+Rule (user, mirrors free re-socketing in-game): a stone may be socketed in any number of saved artifacts, but only ONE
+artifact holding it can be equipped across the 6 active creatures — same as an artifact can only be equipped once.
+- Equip wizard: an artifact whose stone is in an artifact equipped on ANOTHER creature is disabled (red tint, "Can't
+  equip", click guard). The artifact on the slot being equipped never counts (it's about to be replaced).
+- Artifact builder: when the artifact is (or will be, on save) in the loadout, stones in use on another creature are
+  locked in the Nether picker (+ guard); from Menu → Artifacts (not equipped) they stay selectable, tagged "in use".
+- Helpers `netherUsers(nid, exceptArtId, exceptSlot)` / `artNetherClash(a, exceptSlot)` / `artTargetSlot`. Saved builds
+  that already break the rule load as-is (red notes on the artifact page + creature detail); nothing auto-removed.
+
 ## 2026-10-04 (cont.) — UI hygiene batch
 1. Artifact wizard **Spell** list: class chips (5, toggle), ＋ Filter (spell taxonomy), A–Z | Class sort (Class sort
    adds per-class section labels), "showing N of M" note past the 300 cap.
@@ -1499,6 +1509,13 @@ Each is one rule edit in `data/reference/effect_rules.json` (or the generator in
       - Hellion + Deal More Damage.
       - Transformation Mastery drops Damage, via the new `damageRulingExclude` list in code_taxo_approved.json, which
         build-data honours when applying the pre-approved ledgers.
+  - **2026-10-04 S5 + S6:**
+    - **S5:** layer-9 region facts; battle-controller Step is a 13-stage switch (stage 2 tail = once-per-battle start of
+      battle → clock grounding); Ethereal/Booze grounded. Residual decodable 1,907 → 1,669.
+      REVIEW: Uncharted Multiplied by Buff Count → Minion Count (Direwolf stacks).
+    - **S6:** def-use formula binding (unattached trait numbers 364 → 57; 31 per-count factors); amplifier traits as
+      amplify_innate records; Rune spells' branches settled from code. Upstream limit: only 324 / 1,147 trait
+      description % numbers are extracted from code (many are runtime variables).
     - **Spells decoded too** (per-spell switch in bc_CreatureCast; 82% agreement with app spell tags); taxonomy
       integration is next.
 - [ ] **Capped effects with no app surface yet** (keep in context — user 2026-10-02). `_su_extract data/model/dr_caps.json`
