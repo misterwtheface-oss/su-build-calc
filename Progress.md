@@ -1357,6 +1357,11 @@ MAPPING not for asserting PRESENCE; no inventing entities from the community-CSV
     - **Results:** all "irreducible" gaps proved decodable. Cards 451/465 powers (Construct = dead text). Provenance now
       code 44% · llm 31%.
     - **APPROVED:** all 13. Time Stop keeps Action/Mechanic::Timeline but drops Affect on Timeline::Additional Turn (user).
+  - **2026-10-03 pass 3 (F: "would" events typed via the bc_ExecuteEvents action-string switch, pure-condition effects,
+    expanded mechanics; G: 12 hidden traits recovered via static-RValue ids, Construct confirmed unimplemented in code;
+    loop-membership ruling):**
+    - **Provenance:** code 58% · llm 28%. Per-entity LLM: traits 26% · perks 47% · spells 19% · relics 36% · cards 49%.
+    - **Pending:** 4 proposals + the user's decision on perk/trait damage MODIFIERS → Cast/Attack (would confirm 119 tags).
     - **Spells decoded too** (per-spell switch in bc_CreatureCast; 82% agreement with app spell tags); taxonomy
       integration is next.
 - [ ] **Capped effects with no app surface yet** (keep in context — user 2026-10-02). `_su_extract data/model/dr_caps.json`
