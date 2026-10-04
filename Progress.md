@@ -6,6 +6,22 @@ Pages on `master`/root, Cloudflare analytics active with the shared github.io to
 No verify-before-push ceremony (no real users yet) — but every change is checked with the jsdom smoke suite
 (scratchpad `smoke.mjs`, ~84 assertions across all flows) before commit.
 
+## 2026-10-04 (cont.) — Spell Gem levels + property amounts (code-grounded)
+Source: _su_extract `data/model/spell_gem_properties.json` + `code/SPELL_GEM_PROPERTY_FINDINGS.md` (new research).
+- **Levels** = the game's gem `tier`, 1–15 (not the artifact 1–50 scale). Property slots by level: 0 at 1–4, 1 at 5–9,
+  2 at 10–14, 3 at 15 (`obj_gemmod`). Icon tier by level (`inv_SpellGemIcon`: `icons` frame = class base 1965/69/73/77/81
+  + 0/1/2/3) → `assets/spellgems/<class>_t1..t3.png` from code frames; level 15 keeps the user-authored class icons.
+  `D.spellGemTiers` = {min,max,slots[],iconTier[],icons{class:[4]}}.
+- **Amounts**: fixed per level, not rolled or stored (`inv_SpellGemGetStat` = f(tier)); 18/28 properties carry
+  `tpl` (game L_SPELLMOD template) + `byTier[15]`, e.g. Bloodstone 10→24% Chance to Attack, Citrine 5→19%,
+  Moonstone/Obsidian/Malachite 35→105%, Onyx/Sapphire/Topaz/Tourmaline 25→67%, Garnet 58→100%, Jasper +1→+6 turns.
+- **Cascading / Singular use the CODE values** (user call): +5% per missing charge / +50% per empty slot (item text
+  says 3% / 30%); a `textNote` tooltip says so. Magnetic 15% matches its text.
+- Wizard: Level slider (default 15 for new gems; saved gems without a level load as 15), slots past the level are
+  locked ("Level 5/10/15"); over-full gems show ⚠ and can't be saved; picker + slots + library show amounts at the
+  gem's level; library info shows "Lv N"; gem icons follow level everywhere `gemIcon` is used.
+- Open: in-game check of Cascading/Singular; which potency side is Int-based; upgrade cost→tier mapping.
+
 ## 2026-10-04 (cont.) — Sort toggles flip direction
 Every sort control (spell picker ×3 wizards, creature picker stats, Realms Realm|God, artifact-wizard nether list,
 Builds) now flips asc/desc when the ACTIVE sort is tapped again; a newly picked sort starts in its natural direction
@@ -323,6 +339,11 @@ Verified: headless Chrome load (no JS errors), spec labels/perks, shops present,
    2-frame front walk (others stay still), "Use this icon"/tap-again commits (`syncIconAnim`, mirrors the spec-costume
    animation). +693 `<sprite>_1.png` frames shipped; precache 6364→7057.
 
+
+
+### 2026-10-04 — taxonomy S9 (layer 11) shipped
+- New confirm-only layer from _su_extract S9: attack/cast repeat-counter and defense-reduction accumulators, nested-trait gates (Master of X / Transformation Mastery etc.), true-branch-only reach. +150 S9 confirms, 0 lost, 0 new proposals.
+- Provenance now code 87.7% · llm 6.5% · implied 2.0%. Pending review: the 24 Related Spells::Multi-Target Spells spell proposals only.
 
 ### 2026-10-04 — taxonomy review S7 (A–E) applied
 - **A:** dropped Action/Mechanic::Attack from 17 traits + Sparktail card (no attack reference; Damage kept).
