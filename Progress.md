@@ -1494,6 +1494,11 @@ Each is one rule edit in `data/reference/effect_rules.json` (or the generator in
       Perk damage gates that read the source now decode as Deals Damage (27 perks; Hedge Magic looks off).
       Constant-arg layer for spell ids/tags/classes + condition ids (residual spell class/tag 74 → 41, condition id
       82 → 40).
+    - **APPROVED 2026-10-04:**
+      - Zantai traits ×10: Gain a Trait → Extra/Gain a Spell Gem (erroneous; they gain a spell gem).
+      - Hellion + Deal More Damage.
+      - Transformation Mastery drops Damage, via the new `damageRulingExclude` list in code_taxo_approved.json, which
+        build-data honours when applying the pre-approved ledgers.
     - **Spells decoded too** (per-spell switch in bc_CreatureCast; 82% agreement with app spell tags); taxonomy
       integration is next.
 - [ ] **Capped effects with no app surface yet** (keep in context — user 2026-10-02). `_su_extract data/model/dr_caps.json`

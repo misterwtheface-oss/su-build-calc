@@ -754,6 +754,146 @@
    "add": [],
    "approved": "2026-10-04",
    "note": "False God part AI-turn action (user ruling 2026-10-03): keep Action/Mechanic::Provoke"
+  },
+  "1535": {
+   "name": "Zantai's Havoc",
+   "replace": [
+    {
+     "from": [
+      "Affect on Traits::Gain a Trait"
+     ],
+     "to": "Affect on Spells::Extra/Gain a Spell Gem"
+    }
+   ],
+   "add": [],
+   "approved": "2026-10-04",
+   "note": "user: Gain a Trait is erroneous; Zantai traits gain a spell gem (mega magic)"
+  },
+  "1536": {
+   "name": "Zantai's Embrace",
+   "replace": [
+    {
+     "from": [
+      "Affect on Traits::Gain a Trait"
+     ],
+     "to": "Affect on Spells::Extra/Gain a Spell Gem"
+    }
+   ],
+   "add": [],
+   "approved": "2026-10-04",
+   "note": "user: Gain a Trait is erroneous; Zantai traits gain a spell gem (mega magic)"
+  },
+  "1537": {
+   "name": "Zantai's Inhibition",
+   "replace": [
+    {
+     "from": [
+      "Affect on Traits::Gain a Trait"
+     ],
+     "to": "Affect on Spells::Extra/Gain a Spell Gem"
+    }
+   ],
+   "add": [],
+   "approved": "2026-10-04",
+   "note": "user: Gain a Trait is erroneous; Zantai traits gain a spell gem (mega magic)"
+  },
+  "1538": {
+   "name": "Zantai's Reign",
+   "replace": [
+    {
+     "from": [
+      "Affect on Traits::Gain a Trait"
+     ],
+     "to": "Affect on Spells::Extra/Gain a Spell Gem"
+    }
+   ],
+   "add": [],
+   "approved": "2026-10-04",
+   "note": "user: Gain a Trait is erroneous; Zantai traits gain a spell gem (mega magic)"
+  },
+  "1539": {
+   "name": "Zantai's Envy",
+   "replace": [
+    {
+     "from": [
+      "Affect on Traits::Gain a Trait"
+     ],
+     "to": "Affect on Spells::Extra/Gain a Spell Gem"
+    }
+   ],
+   "add": [],
+   "approved": "2026-10-04",
+   "note": "user: Gain a Trait is erroneous; Zantai traits gain a spell gem (mega magic)"
+  },
+  "1540": {
+   "name": "Zantai's Boon",
+   "replace": [
+    {
+     "from": [
+      "Affect on Traits::Gain a Trait"
+     ],
+     "to": "Affect on Spells::Extra/Gain a Spell Gem"
+    }
+   ],
+   "add": [],
+   "approved": "2026-10-04",
+   "note": "user: Gain a Trait is erroneous; Zantai traits gain a spell gem (mega magic)"
+  },
+  "1541": {
+   "name": "Zantai's Call",
+   "replace": [
+    {
+     "from": [
+      "Affect on Traits::Gain a Trait"
+     ],
+     "to": "Affect on Spells::Extra/Gain a Spell Gem"
+    }
+   ],
+   "add": [],
+   "approved": "2026-10-04",
+   "note": "user: Gain a Trait is erroneous; Zantai traits gain a spell gem (mega magic)"
+  },
+  "1542": {
+   "name": "Zantai's Stratagem",
+   "replace": [
+    {
+     "from": [
+      "Affect on Traits::Gain a Trait"
+     ],
+     "to": "Affect on Spells::Extra/Gain a Spell Gem"
+    }
+   ],
+   "add": [],
+   "approved": "2026-10-04",
+   "note": "user: Gain a Trait is erroneous; Zantai traits gain a spell gem (mega magic)"
+  },
+  "1543": {
+   "name": "Zantai's Cunning",
+   "replace": [
+    {
+     "from": [
+      "Affect on Traits::Gain a Trait"
+     ],
+     "to": "Affect on Spells::Extra/Gain a Spell Gem"
+    }
+   ],
+   "add": [],
+   "approved": "2026-10-04",
+   "note": "user: Gain a Trait is erroneous; Zantai traits gain a spell gem (mega magic)"
+  },
+  "1544": {
+   "name": "Zantai's Perfection",
+   "replace": [
+    {
+     "from": [
+      "Affect on Traits::Gain a Trait"
+     ],
+     "to": "Affect on Spells::Extra/Gain a Spell Gem"
+    }
+   ],
+   "add": [],
+   "approved": "2026-10-04",
+   "note": "user: Gain a Trait is erroneous; Zantai traits gain a spell gem (mega magic)"
   }
  },
  "rejected": {
@@ -1057,6 +1197,14 @@
    ],
    "approved": "2026-10-04",
    "source": "text under the Deals Damage ruling (\"deal damage\"/\"damage an enemy\" trigger); perk decode had no trigger clause"
+  },
+  "5:HELLION": {
+   "name": "Hellion",
+   "replace": [],
+   "add": [
+    "Affect on Damage::Deal More Damage"
+   ],
+   "approved": "2026-10-04"
   }
  },
  "policy": {
@@ -2204,5 +2352,14 @@
   "Activates When::Ally/Enemy Deals Damage": "triggered by damage (replaces Attacks/Casts stand-ins where attack vs spell isn't explicit)",
   "Affect on Life::Creature is Damaged": "deals damage",
   "approved": "2026-10-04 user; code_taxo damage_ruling_adds / deals_damage_ruling / creature_damaged_adds are pre-approved"
- }
+ },
+ "damageRulingExclude": [
+  {
+   "section": "traits",
+   "key": "530",
+   "tag": "Action/Mechanic::Damage",
+   "name": "Transformation Mastery",
+   "note": "user 2026-10-04: drop Damage (amplifier, not a damage effect)"
+  }
+ ]
 }

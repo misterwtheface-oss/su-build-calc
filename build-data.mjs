@@ -2430,7 +2430,12 @@ const MINION_PHRASE = { 'Greater Demons': /\bgreater demons?\b/i, 'Lesser Demons
     for (const c of cards) objFor.set('cards:' + c.id, c);
     for (const sp of spells) objFor.set('spells:' + sp.id, sp);
     let dRep = 0, dAdd = 0, dMiss = 0;
-    const put = (e, tag) => { const t = e.taxo || (e.taxo = []), s2 = e.taxoSrc || (e.taxoSrc = t.map(() => 'derived')); if (!t.includes(tag)) { t.push(tag); s2.push('code'); return true; } return false; };
+    // user exclusions: ledger tags the user ruled off a specific object (code_taxo_approved.json damageRulingExclude)
+    const AF2 = fs.existsSync(APPROVED_PATH) ? readJSON(APPROVED_PATH) : {};
+    const EXCL = new Set((AF2.damageRulingExclude || []).map(x => `${x.section}:${x.key}|${x.tag}`));
+    const keyOf = new Map(); for (const [k, e] of objFor) keyOf.set(e, k);
+    const put0 = (e, tag) => { const t = e.taxo || (e.taxo = []), s2 = e.taxoSrc || (e.taxoSrc = t.map(() => 'derived')); if (!t.includes(tag)) { t.push(tag); s2.push('code'); return true; } return false; };
+    const put = (e, tag) => EXCL.has(`${keyOf.get(e)}|${tag}`) ? false : put0(e, tag);
     for (const r of CTD.damage_ruling_replacements || []) {
       const e = objFor.get(`${r.section}:${r.key}`); if (!e) { dMiss++; continue; }
       for (const from of r.from) { const i = e.taxo.indexOf(from); if (i >= 0) { e.taxo.splice(i, 1); e.taxoSrc.splice(i, 1); } }
