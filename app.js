@@ -3024,13 +3024,51 @@
   const artSlotKey = (type) => (ART_SLOTS.find(s => s.pick === type) || {}).key;
   const artHas = (a, type, v) => (a[artSlotKey(type)] || []).includes(v);
   const ART_PICK_CAP = 300;
-  // one toggle chip per spell class (class emblem, class-coloured underline when on); `action` gets data-c
-  const spellClsChips = (cur, action) => SPELL_CLASSES.map(cl => `<button class="facet cls-chip-btn ${cur === cl ? "on" : ""}" data-action="${action}" data-c="${cl}" title="${cl} spells" style="--cc:${clsColor(cl)}">${D.classIcons && D.classIcons[cl] ? spriteImg(D.classIcons[cl], "px") : esc(cl.slice(0, 3))}</button>`).join("");
   // spell potency tiers strongest-first (codex order); spells without a potency sort last
   const POTENCY_ORDER = ["Devastating", "Massive", "Large", "Moderate", "Small"];
   const potencyRank = (sp) => { const i = POTENCY_ORDER.indexOf(sp.potency); return i < 0 ? POTENCY_ORDER.length : i; };
-  // spell `target` values (Spell_REF) → dropdown labels; "" = spells with no target field
-  const SPELL_TARGETS = [["Target", "Single target"], ["Enemies", "Enemies"], ["Your Creatures", "Your creatures"], ["All Creatures", "All creatures"], ["", "No target"]];
+  // spell `target` values (Spell_REF, blanks filled from the code's target scope) → dropdown labels; only values present
+  const SPELL_TARGETS = [["Target", "Single target"], ["Enemies", "Enemies"], ["Your Creatures", "Your creatures"], ["All Creatures", "All creatures"], ["Self", "Self"]]
+    .filter(([v]) => (D.spells || []).some(sp => sp.target === v));
+  // ── shared spell picker (Spell Gem, Artifact and Nether Stone wizards) ──
+  // state on the wizard's ovState: search, spellTarget, spellCls, spellSort, spellTaxo, bkOnly
+  function spellPickList(st, exclude) {
+    const q = (st.search || "").trim().toLowerCase(), sort = st.spellSort || "name";
+    return (D.spells || []).filter(sp => !(exclude && exclude.has(sp.id))
+        && (!q || sp.name.toLowerCase().includes(q) || (sp.desc || "").toLowerCase().includes(q) || (sp.taxo || []).some(k => taxoValName(k).toLowerCase().includes(q)))
+        && (!st.spellCls || sp.cls === st.spellCls)
+        && (st.spellTarget == null || sp.target === st.spellTarget)
+        && (!st.spellTaxo || (sp.taxo || []).includes(st.spellTaxo))
+        && (!st.bkOnly || bookmarks.spells.includes(sp.id)))
+      .sort(sort === "potency" ? (x, y) => potencyRank(x) - potencyRank(y) || x.name.localeCompare(y.name)
+        : sort === "charges" ? (x, y) => (y.charges ?? -1) - (x.charges ?? -1) || x.name.localeCompare(y.name)
+        : (x, y) => x.name.localeCompare(y.name));
+  }
+  // rows (capped) with potency-tier headings under the Potency sort, a "showing N of M" note, or an empty note
+  function spellPickRows(st, list, rowFn) {
+    const shown = list.slice(0, ART_PICK_CAP), pot = st.spellSort === "potency";
+    return shown.map((sp, i) => (pot && (i === 0 || potencyRank(shown[i - 1]) !== potencyRank(sp))
+        ? `<div class="section-label sg-sort-sec">${esc(sp.potency || "No potency")}</div>` : "") + rowFn(sp)).join("")
+      + (list.length > shown.length ? `<div class="slot-sub" style="padding:8px">Showing ${shown.length} of ${list.length} — narrow with search or a filter.</div>` : "")
+      || `<div class="slot-sub" style="padding:10px">No spells match.</div>`;
+  }
+  // the identical two-row bar: [lead] search · ＋ Filter · ★ Bookmarked  /  Target ▾ · Class ▾ · A–Z | Potency | Charges
+  function spellFilterBar(st, searchAction, lead = "") {
+    const sort = st.spellSort || "name";
+    const taxo = st.spellTaxo
+      ? `<button class="facet on tag" data-action="sg-taxofilter-clear">${esc(taxoCatName(st.spellTaxo))}: <b>${esc(taxoValName(st.spellTaxo))}</b> <span class="facet-x">✕</span></button>`
+      : `<button class="facet add" data-action="sg-taxofilter">＋ Filter</button>`;
+    const bk = bookmarks.spells.length ? `<button class="facet ${st.bkOnly ? "on" : ""}" data-action="spf-bk" title="Show only bookmarked spells">★ Bookmarked</button>` : "";
+    return `<div class="ovl-filterbar spf-row">${lead}<input class="ovl-search" placeholder="Search spells…" value="${esc(st.search || "")}" data-action="${searchAction}">${taxo}${bk}</div>
+      <div class="ovl-filterbar sg-dropbar">
+        <select class="app-select${st.spellTarget != null ? " on" : ""}" data-action="spf-target" title="Filter by target">
+          <option value="*" ${st.spellTarget == null ? "selected" : ""}>-</option>${SPELL_TARGETS.map(([v, l]) => `<option value="${esc(v)}" ${st.spellTarget === v ? "selected" : ""}>${esc(l)}</option>`).join("")}</select>
+        <select class="app-select${st.spellCls ? " on" : ""}" data-action="spf-cls" title="Filter by class">
+          <option value="" ${!st.spellCls ? "selected" : ""}>-</option>${SPELL_CLASSES.map(cl => `<option value="${cl}" ${st.spellCls === cl ? "selected" : ""}>${cl}</option>`).join("")}</select>
+        <span class="sg-sort-gap"></span>
+        <div class="seg">${[["name", "A–Z"], ["potency", "Potency"], ["charges", "Charges"]].map(([v, l]) =>
+          `<button class="seg-btn ${sort === v ? "on" : ""}" data-action="spf-sort" data-v="${v}">${l}</button>`).join("")}</div></div>`;
+  }
   // one-line nether stone summary for list rows: core %s, other properties, trait + spell names
   function netherListSummary(n) {
     const { core, extra } = netherBonusRows(n), parts = [];
@@ -3067,19 +3105,8 @@
           && (!st.traitTaxo || (t.taxo || []).includes(st.traitTaxo))
           && (!st.bkOnly || bookmarks.traits.includes(t.traitId))).slice(0, 300)
         .map(t => traitPickCard(t, has(t.id), `data-action="art-confirm-add" data-t="trait" data-v="${t.id}"`)).join("");
-    } else if (type === "spell") {   // raw spells (no sockets), like nether stones
-      const list = (D.spells || []).filter(sp => (!q || sp.name.toLowerCase().includes(q) || (sp.desc || "").toLowerCase().includes(q) || matchTaxo(sp.taxo))
-          && (!st.spellCls || sp.cls === st.spellCls)
-          && (!st.spellTaxo || (sp.taxo || []).includes(st.spellTaxo))
-          && (!st.bkOnly || bookmarks.spells.includes(sp.id)))
-        .sort((x, y) => (st.spellSort === "class" ? SPELL_CLASSES.indexOf(x.cls) - SPELL_CLASSES.indexOf(y.cls) : 0) || x.name.localeCompare(y.name));
-      const shown = list.slice(0, ART_PICK_CAP);
-      // class sort → a section label per class so the list reads as 5 groups
-      rows = shown.map((sp, i) => (st.spellSort === "class" && (i === 0 || shown[i - 1].cls !== sp.cls)
-          ? `<div class="section-label art-pick-sec" style="color:${clsColor(sp.cls)}">${esc(sp.cls || "—")}</div>` : "")
-        + spellPickCard(sp, has(sp.id), `data-action="art-confirm-add" data-t="spell" data-v="${sp.id}"`)).join("")
-        + (list.length > shown.length ? `<div class="slot-sub" style="padding:8px">Showing ${shown.length} of ${list.length} — narrow with search, class or a filter.</div>` : "")
-        || `<div class="slot-sub" style="padding:8px">No spells match.</div>`;
+    } else if (type === "spell") {   // raw spells (no sockets), like nether stones — shared spell picker
+      rows = spellPickRows(st, spellPickList(st), sp => spellPickCard(sp, has(sp.id), `data-action="art-confirm-add" data-t="spell" data-v="${sp.id}"`));
     } else {
       // nether stones: filters (has trait / has spell / hide in use) + sort (recent · name · a core stat %)
       const sum = (n) => netherBonusRows(n).core;
@@ -3116,12 +3143,7 @@
     const seg = (act, cur, opts) => `<div class="seg">${opts.map(([v, lbl]) => `<button class="seg-btn ${cur === v ? "on" : ""}" data-action="${act}" data-v="${v}">${lbl}</button>`).join("")}</div>`;
     let extra = "";
     if (type === "spell") {
-      const clsChips = spellClsChips(st.spellCls, "artb-spellcls");
-      const sTaxo = st.spellTaxo
-        ? `<button class="facet on tag" data-action="sg-taxofilter-clear">${esc(taxoCatName(st.spellTaxo))}: <b>${esc(taxoValName(st.spellTaxo))}</b> <span class="facet-x">✕</span></button>`
-        : `<button class="facet add" data-action="sg-taxofilter">＋ Filter</button>`;
-      extra = `<div class="art-side-filter art-cls-row">${clsChips}</div>
-        <div class="art-side-filter">${sTaxo}${bkFilter}${seg("artb-spellsort", st.spellSort === "class" ? "class" : "name", [["name", "A–Z"], ["class", "Class"]])}</div>`;
+      extra = "";   // spell list uses the shared search + filter bar (rendered in place of the plain search below)
     } else if (type === "nether") {
       extra = `<div class="art-side-filter">
           <button class="facet ${st.nsTrait ? "on" : ""}" data-action="artb-nsfilter" data-f="nsTrait">Has trait</button>
@@ -3131,8 +3153,8 @@
     } else if (traitFilter || bkFilter) extra = `<div class="art-side-filter">${traitFilter}${bkFilter}</div>`;
     const label = (ART_SLOTS.find(s => s.pick === type) || {}).label || "";
     return `<div class="art-side-head"><b>Add ${esc(label)}</b><button class="chip" data-action="artb-closecat">Done</button></div>
-      <input class="ovl-search art-side-search" placeholder="${type === "nether" ? "Search by name, property, trait or spell…" : "Search by name or tag…"}" value="${esc(st.search)}" data-action="artb-search">
-      ${extra}
+      ${type === "spell" ? spellFilterBar(st, "artb-search") : `<input class="ovl-search art-side-search" placeholder="${type === "nether" ? "Search by name, property, trait or spell…" : "Search by name or tag…"}" value="${esc(st.search)}" data-action="artb-search">
+      ${extra}`}
       <div class="art-side-list">${rows}</div>`;
   }
   // item preview with an explicit confirm — socketing never applies silently (shows the effect first)
@@ -3850,14 +3872,14 @@
           const haveT = new Set(s.props.filter(p => p.cat === "trait").map(p => (TRAITITEM.get(p.key) || {}).traitId));
           rowsHtml = D.traitItems.filter(t => t.traitName && !haveT.has(t.traitId) && (!q || t.name.toLowerCase().includes(q) || (t.traitName || "").toLowerCase().includes(q))).slice(0, 300)
             .map(t => traitPickCard(t, false, `data-action="nether-pickprop" data-k="${t.id}"`)).join("");
-        } else {   // spell: raw spells (no property modifiers)
+        } else {   // spell: raw spells (no property modifiers) — shared spell picker
           const haveS = new Set(s.props.filter(p => p.cat === "spell").map(p => p.key));
-          rowsHtml = D.spells.filter(sp => !haveS.has(sp.id)).filter(sp => !q || sp.name.toLowerCase().includes(q) || (sp.desc || "").toLowerCase().includes(q)).slice(0, 300)
-            .map(sp => spellPickCard(sp, false, `data-action="nether-pickprop" data-k="${sp.id}"`)).join("");
+          rowsHtml = spellPickRows(st, spellPickList(st, haveS), sp => spellPickCard(sp, false, `data-action="nether-pickprop" data-k="${sp.id}"`));
         }
+        const back = `<button class="chip" data-action="nether-addprop">‹ Category</button>`;
         picker = `<div class="art-picker">
-          <div class="ovl-filterbar"><button class="chip" data-action="nether-addprop">‹ Category</button>
-            <input class="ovl-search" placeholder="Search…" value="${esc(st.search)}" data-action="nether-search"></div>
+          ${st.picking === "spell" ? spellFilterBar(st, "nether-search", back)
+            : `<div class="ovl-filterbar">${back}<input class="ovl-search" placeholder="Search…" value="${esc(st.search)}" data-action="nether-search"></div>`}
           <div class="art-pick-scroll">${rowsHtml}</div></div>`;
       }
     // ── 3) ICON — the game's 16 pre-coloured nether-stone icons ──
@@ -3971,30 +3993,10 @@
     const st = ovState, g = st.draft, q = st.search.trim().toLowerCase();
     let body = "", footer = "";
     if (st.step === "spell") {
-      const sort = st.spellSort || "name";
-      const list = D.spells.filter(s => (!q || s.name.toLowerCase().includes(q) || (s.desc || "").toLowerCase().includes(q))
-          && (!st.spellCls || s.cls === st.spellCls)
-          && (st.spellTarget == null || (s.target || "") === st.spellTarget)
-          && (!st.spellTaxo || (s.taxo || []).includes(st.spellTaxo))
-          && (!st.bkOnly || bookmarks.spells.includes(s.id)))
-        .sort(sort === "potency" ? (x, y) => potencyRank(x) - potencyRank(y) || x.name.localeCompare(y.name)
-          : sort === "charges" ? (x, y) => (y.charges ?? -1) - (x.charges ?? -1) || x.name.localeCompare(y.name)
-          : (x, y) => x.name.localeCompare(y.name));
-      const shown = list.slice(0, ART_PICK_CAP);
-      // potency sort → a section label per tier ("No potency" last)
-      const rows = shown.map((s, i) => (sort === "potency" && (i === 0 || potencyRank(shown[i - 1]) !== potencyRank(s))
-          ? `<div class="section-label sg-sort-sec">${esc(s.potency || "No potency")}</div>` : "")
-        + `<div class="prop-row rich ${g.spellId === s.id ? "chosen" : ""}" data-action="sg-spell" data-id="${s.id}">
+      const rows = spellPickRows(st, spellPickList(st), s => `<div class="prop-row rich ${g.spellId === s.id ? "chosen" : ""}" data-action="sg-spell" data-id="${s.id}">
           <span class="prop-ico">${spellIcon(s) ? spriteImg(spellIcon(s), "px") : ""}</span>
           <div class="prop-body"><div class="prop-name">${esc(s.name)}${spellMeta(s) ? `<span class="prop-metatag">${esc(spellMeta(s))}</span>` : ""}</div>
-            ${s.desc ? `<div class="prop-sub clamp">${perkText(s.desc)}</div>` : ""}</div></div>`).join("")
-        + (list.length > shown.length ? `<div class="slot-sub" style="padding:8px">Showing ${shown.length} of ${list.length} — narrow with search, class or a filter.</div>` : "")
-        || `<div class="slot-sub" style="padding:10px">No spells match.</div>`;
-      const sortSeg = `<div class="seg">${[["name", "A–Z"], ["potency", "Potency"], ["charges", "Charges"]].map(([v, l]) =>
-        `<button class="seg-btn ${sort === v ? "on" : ""}" data-action="sgb-sort" data-v="${v}">${l}</button>`).join("")}</div>`;
-      const sTaxo = st.spellTaxo
-        ? `<button class="facet on tag" data-action="sg-taxofilter-clear">${esc(taxoCatName(st.spellTaxo))}: <b>${esc(taxoValName(st.spellTaxo))}</b> <span class="facet-x">✕</span></button>`
-        : `<button class="facet add" data-action="sg-taxofilter">＋ Filter</button>`;
+            ${s.desc ? `<div class="prop-sub clamp">${perkText(s.desc)}</div>` : ""}</div></div>`);
       // right info panel — preview the highlighted spell's full effect + stats before committing to it
       // (only shown once a spell is chosen; no empty placeholder panel)
       const chosen = g.spellId != null ? SPELL.get(g.spellId) : null;
@@ -4004,13 +4006,7 @@
            ${spellStatsHtml(chosen)}`
         : "";
       body = `<div class="ovl-center">
-        <div class="ovl-filterbar"><input class="ovl-search" placeholder="Search spells…" value="${esc(st.search)}" data-action="sg-search">${sTaxo}${bookmarks.spells.length ? `<button class="facet ${st.bkOnly ? "on" : ""}" data-action="sgb-bkonly" title="Show only bookmarked spells">★ Bookmarked</button>` : ""}</div>
-        <div class="ovl-filterbar sg-dropbar">
-          <select class="app-select${st.spellTarget != null ? " on" : ""}" data-action="sgb-target" title="Filter by target">
-            <option value="*" ${st.spellTarget == null ? "selected" : ""}>-</option>${SPELL_TARGETS.map(([v, l]) => `<option value="${esc(v)}" ${st.spellTarget === v ? "selected" : ""}>${esc(l)}</option>`).join("")}</select>
-          <select class="app-select${st.spellCls ? " on" : ""}" data-action="sgb-cls" title="Filter by class">
-            <option value="" ${!st.spellCls ? "selected" : ""}>-</option>${SPELL_CLASSES.map(cl => `<option value="${cl}" ${st.spellCls === cl ? "selected" : ""}>${cl}</option>`).join("")}</select>
-          <span class="sg-sort-gap"></span>${sortSeg}</div>
+        ${spellFilterBar(st, "sg-search")}
         <div class="ovl-center-scroll">${rows}</div></div>
         ${chosen ? `<div class="ovl-right lib-info">${info}</div>` : ""}`;
       footer = `<button class="btn-ghost" data-action="sg-cancel">Cancel</button>
@@ -4350,8 +4346,9 @@
         onPick: (v) => { ovState.traitTaxo = v; } }); break;
       case "artb-traitfilter-clear": ovState.traitTaxo = null; refreshOverlay(); break;
       case "artb-bkonly": ovState.bkOnly = !ovState.bkOnly; refreshOverlay(); break;
-      case "artb-spellcls": ovState.spellCls = ovState.spellCls === t.dataset.c ? null : t.dataset.c; refreshOverlay(); break;
-      case "artb-spellsort": ovState.spellSort = t.dataset.v; refreshOverlay(); break;
+      // shared spell picker bar (Spell Gem / Artifact / Nether Stone wizards)
+      case "spf-sort": ovState.spellSort = t.dataset.v; refreshOverlay(); break;
+      case "spf-bk": ovState.bkOnly = !ovState.bkOnly; refreshOverlay(); break;
       case "artb-nsfilter": ovState[t.dataset.f] = !ovState[t.dataset.f]; refreshOverlay(); break;
       case "artb-nssort": ovState.nsSort = t.dataset.v; refreshOverlay(); break;
       // spell-gem builder spell picker filter (reuses the facet detail picker)
@@ -4359,8 +4356,6 @@
         idxFn: () => taxoIndexFor("spell", D.spells, s => s.taxo || []),
         onPick: (v) => { ovState.spellTaxo = v; } }); break;
       case "sg-taxofilter-clear": ovState.spellTaxo = null; refreshOverlay(); break;
-      case "sgb-bkonly": ovState.bkOnly = !ovState.bkOnly; refreshOverlay(); break;
-      case "sgb-sort": ovState.spellSort = t.dataset.v; refreshOverlay(true); break;
       // perk picker inline taxonomy filter
       case "perk-taxo-open": dovState.perkBrowse = true; refreshDetail(); break;
       case "perk-taxo-cat": dovState.perkCat = t.dataset.c; refreshDetail(); break;
@@ -4606,9 +4601,9 @@
       for (const g of OV.querySelectorAll(".syn-group")) if (g.dataset.key === k) { g.scrollIntoView({ block: "start" }); break; }
     }
     else if (A === "threat-navsel") { ovState.themeSel = t.value || null; refreshOverlay(); }
-    // spell gem wizard dropdowns ("*" / "" = no filter; target "" is a real value = spells with no target)
-    else if (A === "sgb-target") { ovState.spellTarget = t.value === "*" ? null : t.value; refreshOverlay(true); }
-    else if (A === "sgb-cls") { ovState.spellCls = t.value || null; refreshOverlay(true); }
+    // shared spell picker dropdowns ("*" / "" = "-" = no filter)
+    else if (A === "spf-target") { ovState.spellTarget = t.value === "*" ? null : t.value; refreshOverlay(); }
+    else if (A === "spf-cls") { ovState.spellCls = t.value || null; refreshOverlay(); }
     else if (A === "nether-propval" && ovState && ovState.kind === "netherbuild") {   // commit: clamp to the code range, refresh score
       const p = ovState.draft.props[+t.dataset.i]; if (!p) return;
       const lo = ngMin(p.key), hi = ngMax(p.key);

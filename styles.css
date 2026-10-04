@@ -1377,22 +1377,17 @@ select.app-select:hover { border-color: var(--accent2); }
 .art-side .ovl-search.art-side-search { flex: 0 0 auto; width: 100%; max-width: none; margin-bottom: 8px; }
 .art-side-filter { flex: 0 0 auto; margin-bottom: 8px; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
 .art-side-filter .seg { display: inline-flex; flex-wrap: wrap; }
-/* spell class chips: one per class, class-coloured border when on */
-.cls-chip-btn { padding: 4px 8px; }
-.cls-chip-btn img { width: 18px; height: 18px; object-fit: contain; image-rendering: pixelated; }
-.cls-chip-btn.on { border-color: var(--accent2); background: var(--surface3); box-shadow: inset 0 -3px 0 var(--cc); }
-/* spell gem wizard: Target + Class dropdowns, then the sort switch (one row, also on phones) */
-.sg-dropbar .sg-sort-gap { flex: 1 1 8px; }
+/* shared spell picker bar (Spell Gem / Artifact / Nether Stone wizards) — one compact look everywhere, so it also
+   fits the narrow artifact side panel and phones: row 1 search · ＋ Filter · ★, row 2 Target ▾ · Class ▾ · sort */
+.ovl-filterbar.spf-row .ovl-search { max-width: none; }
+.ovl-filterbar.sg-dropbar { flex-wrap: nowrap; gap: 4px; }
+.sg-dropbar select.app-select { flex: 0 1 auto; min-width: 0; max-width: 118px; padding: 4px 4px; font-size: 12px; }
 .sg-dropbar select.app-select.on { border-color: var(--accent2); color: var(--text); background: var(--surface3); }
-@media (max-width: 560px) {
-  .ovl-filterbar.sg-dropbar { flex-wrap: nowrap; gap: 4px; }
-  .sg-dropbar select.app-select { flex: 0 1 auto; min-width: 0; max-width: 112px; padding: 4px 4px; font-size: 12px; }
-  .sg-dropbar .sg-sort-gap { flex: 1 1 2px; }
-  .sg-dropbar .seg { flex: 0 0 auto; }
-  .sg-dropbar .seg-btn { padding: 4px 6px; font-size: 11px; }
-}
+.sg-dropbar .sg-sort-gap { flex: 1 1 2px; }
+.sg-dropbar .seg { flex: 0 0 auto; }
+.sg-dropbar .seg-btn { padding: 4px 7px; font-size: 11px; }
+.art-side .ovl-filterbar { padding-left: 0; padding-right: 0; }
 .sg-sort-sec { margin: 10px 0 6px; }
-.art-pick-sec { margin: 10px 0 6px; }
 .prop-metatag.clash { color: var(--bad); border-color: var(--bad); }
 .art-side-list { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
 .art-side .prop-row .prop-ico { width: 20px; height: 20px; flex: 0 0 auto; }

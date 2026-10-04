@@ -6,6 +6,23 @@ Pages on `master`/root, Cloudflare analytics active with the shared github.io to
 No verify-before-push ceremony (no real users yet) — but every change is checked with the jsdom smoke suite
 (scratchpad `smoke.mjs`, ~84 assertions across all flows) before commit.
 
+## 2026-10-04 (cont.) — One spell picker for all three wizards + "Self" target
+- **Shared spell picker** (`spellPickList` / `spellPickRows` / `spellFilterBar`, actions `spf-*`): the Spell Gem,
+  Artifact and Nether Stone wizards render a byte-identical search + filter section — row 1 search · ＋ Filter ·
+  ★ Bookmarked (Nether keeps its ‹ Category chip in front), row 2 Target ▾ · Class ▾ · A–Z | Potency | Charges.
+  Search matches name, description or tag in all three. The artifact wizard's class chips / A–Z|Class sort are gone.
+- **Why there was no "Self":** `spell.target` came only from the user's Spell_REF.csv Target column, which never uses
+  Self (values: Target / Enemies / Your Creatures / All Creatures, 82 blank). The game code DOES have it — spell record
+  field 5 = target scope, and `bc_CreatureCastSpellGem` builds the cast list `[1, caster]` for scope 4
+  (ARTIFACT_SPELL_TARGETING_FINDINGS L279-283). build-data now fills BLANK CSV targets from the code scope
+  (`spell_signatures.json` `target_scope`; `targetSrc` = ref|code): 82 filled = 55 Self + 10 Your Creatures +
+  9 Enemies + 7 All Creatures + 1 Target. CSV-vs-code agree on 642.
+- [ ] **Open (user call):** 18 spells where CSV and code DISAGREE keep the CSV value — mostly CSV "Enemies" vs code
+  "All Creatures" for spells that hit enemies and also affect your side (True Light, Holy Nova, Radiant Sunfire,
+  Resplendence, Greater Dispel, Balance In All Things, Quietus), plus code-Self (Inner Destruction, Adrenaline Rush,
+  Feeling Lucky, Magnification, Treasonous Mind), Stampede, Black Ice, Eagle Claws, Spicy Suds, Ritual of Summoning,
+  Witchcraft. Code scope = who the cast TARGETS; the CSV often describes who the EFFECT hits.
+
 ## 2026-10-04 (cont.) — Spell Gem wizard: sort + Target/Class filters
 Spell step gets an A–Z | Potency | Charges sort (Potency = Devastating→Small with tier headings, no-potency last;
 Charges = most first; ties by name; A–Z is now the default — was data order) and two dropdowns, Target (Single
