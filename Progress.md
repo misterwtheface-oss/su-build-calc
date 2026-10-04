@@ -1365,6 +1365,13 @@ MAPPING not for asserting PRESENCE; no inventing entities from the community-CSV
       Class — user: the creature's class derives the spell class).
     - **USER RULING:** damage MODIFIERS ground Action/Mechanic Cast/Attack (general mechanic categories), applied in
       build_code_taxo → +119 confirms.
+  - **2026-10-03 Task H (residual audit, confirm-only):**
+    - **New evidence layer:** dtype (0/1/−1) → Attack / Cast / Indirect Damage; handler-based values; Modify direction;
+      fields written; Active If from race/class/all-same/defend-provoke.
+    - **Also:** count-hook loop membership (+165 Multiplied by), and spell record field 4 = the game's own spell
+      category (Arsenal / Booze / Ultimate exact).
+    - **REVIEW list:** (A) ~51 spells tagged Action/Mechanic::Stats where the stat only SCALES; (B) kill-trigger traits
+      tagged Action/Mechanic::Attack.
     - **Spells decoded too** (per-spell switch in bc_CreatureCast; 82% agreement with app spell tags); taxonomy
       integration is next.
 - [ ] **Capped effects with no app surface yet** (keep in context — user 2026-10-02). `_su_extract data/model/dr_caps.json`
