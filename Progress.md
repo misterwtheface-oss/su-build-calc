@@ -326,7 +326,7 @@ Verified: headless Chrome load (no JS errors), spec labels/perks, shops present,
 
 ### 2026-10-04 — taxonomy review S7 (A–E) applied
 - **A:** dropped Action/Mechanic::Attack from 17 traits + Sparktail card (no attack reference; Damage kept).
-- **B:** stat-reading perks (Solar/Lunar Eclipse, Stellar Blessing, Synastry, Transit, Ascendant), Secret Stuff, Amalgam: Action/Mechanic::Stats dropped; Related Stat covers stat reads/multipliers.
+- **B (corrected):** Action/Mechanic is a SUPERSET of the narrower groupings — overlap required. The implied pass now carries every parent by extension (Related Stat/Amount of X Stat→Stats, Buff/Debuff/Minion counts & Active If→Buff/Debuff/Minion, Affect on Damage/Creature is Damaged/Deals Damage→Damage, Related Types→Creature Race/Class, Turns Taken→Turn Counter, Artifact Trait→Artifact, …). Exact child→`implied`; non-exact child→parent inherits its src. Build: +226 implied, +92 by extension, 192 llm→implied. Stat-reading perks keep Stats.
 - **C:** Angel/Carnage/Carver/Centaur cards Creature Race → Creature Class.
 - **D:** Blazing Soul Ally is Debuffed → Enemy is Debuffed (also the "enemy has a debuff" gate).
 - **E:** Minions ≠ Buffs: Uncharted → Minion Count / Minion / Related Minion::Dire Wolves; bidirectional sweep found no other bleed. Rules in TAXONOMY.md §Boundary rulings + approval policy.

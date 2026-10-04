@@ -332,7 +332,7 @@ Which kind of trait an effect references.
 
 ## Boundary rulings (2026-10-04)
 - **Action/Mechanic::Attack** only where the object references an attack (prose, or an explicit attack damage-type branch in code). Damage from any source with no attack reference = **Damage** only.
-- **Related Stat** covers effects that *read* a stat — highest-stat selection, or being multiplied by a stat. **Action/Mechanic::Stats** is reserved for effects that change stats.
+- **Action/Mechanic is a superset.** Each Action/Mechanic value is a catch-all pool for its narrower groupings, so overlap is *required*: any object with a narrower tag also carries the parent (Related Stat / Affect on Stats / Amount of X Stat → **Stats**; Related Buff / Buff Count → **Buff**; Affect on Damage / Creature is Damaged / Deals Damage → **Damage**; Related Types → **Creature Race** or **Creature Class**; Turns Taken Count → **Turn Counter**; etc.). Related Stat itself covers effects that *read* a stat, including being multiplied by one.
 - **Activates When::Enemy is Debuffed** doubles as the conditional gate "the enemy has a debuff". Afflicter-side hooks are never *Ally is Debuffed*.
 - **Minions are not Buffs.** Minion conditions (`{CONDNAME_MINION_*}`, e.g. Direwolf) produce Minion / Minion Count / Related Minion tags, never Buff / Buff Count / Related Buff, and vice versa.
 

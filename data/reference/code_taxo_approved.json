@@ -1461,84 +1461,6 @@
    ],
    "add": [],
    "approved": "2026-10-04"
-  },
-  "18:SOLARECLIPSE": {
-   "name": "Solar Eclipse",
-   "replace": [
-    {
-     "from": [
-      "Action/Mechanic::Stats"
-     ],
-     "to": null
-    }
-   ],
-   "add": [],
-   "approved": "2026-10-04"
-  },
-  "18:LUNARECLIPSE": {
-   "name": "Lunar Eclipse",
-   "replace": [
-    {
-     "from": [
-      "Action/Mechanic::Stats"
-     ],
-     "to": null
-    }
-   ],
-   "add": [],
-   "approved": "2026-10-04"
-  },
-  "18:STELLARBLESSING": {
-   "name": "Stellar Blessing",
-   "replace": [
-    {
-     "from": [
-      "Action/Mechanic::Stats"
-     ],
-     "to": null
-    }
-   ],
-   "add": [],
-   "approved": "2026-10-04"
-  },
-  "18:SYNASTRY": {
-   "name": "Synastry",
-   "replace": [
-    {
-     "from": [
-      "Action/Mechanic::Stats"
-     ],
-     "to": null
-    }
-   ],
-   "add": [],
-   "approved": "2026-10-04"
-  },
-  "18:TRANSIT": {
-   "name": "Transit",
-   "replace": [
-    {
-     "from": [
-      "Action/Mechanic::Stats"
-     ],
-     "to": null
-    }
-   ],
-   "add": [],
-   "approved": "2026-10-04"
-  },
-  "18:ASCENDANT": {
-   "name": "Ascendant",
-   "replace": [
-    {
-     "from": [
-      "Action/Mechanic::Stats"
-     ],
-     "to": null
-    }
-   ],
-   "add": [],
-   "approved": "2026-10-04"
   }
  },
  "policy": {
@@ -1546,9 +1468,10 @@
   "vocab": "The data carries the FULL taxonomy (every value that fits any object). The 'more than one object' rule is a DISPLAY toggle in the app (Hide single-object tags), never a build-time filter.",
   "ai_turn_actions": "Actions chosen in bc_ArtificialIntelligence are normal turn actions, never Automatic/Extra.",
   "attack_requires_reference": "Action/Mechanic::Attack only where the object references an attack (text or explicit dtype-0/attack code). Generic sourced damage = Damage only.",
-  "related_stat_reads": "Related Stat covers effects that READ a stat (highest-stat selection, multiplied by a stat). Action/Mechanic::Stats is for effects that change stats.",
+  "related_stat_reads": "Related Stat covers effects that READ a stat (highest-stat selection, multiplied by a stat). Action/Mechanic::Stats is carried by extension (superset rule).",
   "debuffed_gate": "Activates When::Enemy is Debuffed doubles as the conditional gate 'enemy has a debuff'; never Ally is Debuffed for afflicter-side hooks.",
-  "minions_not_buffs": "Minions are Minions, not Buffs: minion conditions (CONDNAME_MINION_*) never produce Buff/Buff Count/Related Buff tags, and buffs never produce Minion tags."
+  "minions_not_buffs": "Minions are Minions, not Buffs: minion conditions (CONDNAME_MINION_*) never produce Buff/Buff Count/Related Buff tags, and buffs never produce Minion tags.",
+  "action_mechanic_superset": "user 2026-10-04: Action/Mechanic values are catch-all pools of the narrower groupings; overlap is required. Any object with a narrower tag carries its Action/Mechanic parent (build-data implied pass)."
  },
  "perkRejections": {
   "5:MASSACRE": [
@@ -1579,19 +1502,6 @@
    ],
    "add": [],
    "approved": "2026-10-03"
-  },
-  "2": {
-   "name": "Amalgam, Warped Mirror of T'mere M'rgo",
-   "replace": [
-    {
-     "from": [
-      "Action/Mechanic::Stats"
-     ],
-     "to": null
-    }
-   ],
-   "add": [],
-   "approved": "2026-10-04"
   }
  },
  "spellChanges": {
@@ -1912,19 +1822,6 @@
     "Action/Mechanic::Creature Class"
    ],
    "approved": "2026-10-03"
-  },
-  "317": {
-   "name": "Secret Stuff",
-   "replace": [
-    {
-     "from": [
-      "Action/Mechanic::Stats"
-     ],
-     "to": null
-    }
-   ],
-   "add": [],
-   "approved": "2026-10-04"
   }
  },
  "cardChanges": {

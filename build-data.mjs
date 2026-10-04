@@ -2480,42 +2480,60 @@ const MINION_PHRASE = { 'Greater Demons': /\bgreater demons?\b/i, 'Lesser Demons
 //   existing LLM Action/Mechanic tag that an exact tag implies → provenance 'implied'
 //   missing Action/Mechanic tag that an exact tag implies       → added with provenance 'implied'
 // LLM Action/Mechanic tags with no implication are left as-is (no drop-only).
+// SUPERSET RULE (user 2026-10-04): Action/Mechanic values are catch-all pools of the narrower groupings — overlap is
+// REQUIRED. Any object carrying a narrower tag carries its Action/Mechanic parent by extension, whatever the narrower
+// tag's provenance: exact child → 'implied'; otherwise the parent inherits the child's provenance (llm stays llm).
 {
   const EXACT = new Set(['code', 'token', 'field', 'audit', 'code_boss']);
   const BUFF_VALS = ['Apply/Gain a Buff', 'Limit/Prevent Buff Gain', 'Buffs Persist', 'More Powerful Buff', 'Remove Buff', 'Share/Gain Copy of Buff'];
   const DEBUFF_VALS = ['Afflict with/Gain a Debuff', 'Increase Debuff Potency', 'Avoid/Immune to Debuff', 'Debuffs Persist', 'Remove Debuff', 'Resistant to Debuff', 'Cannot be Immune'];
   const GEM_VALS = ['Extra/Gain a Spell Gem', 'Modify Spell Gem Property', 'Seal Spell Gem', 'Cannot be Sealed', 'Modify Charges/Behavior', 'Equip from Other Classes'];
+  const CLASS_TYPES = ['Fused Class', 'Parent Class', 'Chaos Creature', 'Death Creature', 'Life Creature', 'Nature Creature', 'Sorcery Creature'];
   const ev = (verb) => [`Activates When::Ally ${verb}`, `Activates When::Enemy ${verb}`];
   const RULES = {   // Action/Mechanic value -> exact tags (or "prefix*") that imply it
-    Attack: [...ev('Attacks'), 'Affect on Attacks::*'],
-    Cast: [...ev('Casts'), 'Affect on Spells::Automatic/Extra Cast', "Affect on Spells::Can't Manually Cast"],
-    Defend: [...ev('Defends'), 'Affect on Mitigation::Automatically Defend', "Affect on Mitigation::Can't Manually Defend"],
-    Provoke: [...ev('Provokes'), 'Affect on Mitigation::Automatically Provoke', "Affect on Mitigation::Can't Manually Provoke"],
+    Attack: [...ev('Attacks'), 'Affect on Attacks::*', 'Multiplied by::Attack Count'],
+    Cast: [...ev('Casts'), 'Affect on Spells::Automatic/Extra Cast', "Affect on Spells::Can't Manually Cast", 'Multiplied by::Cast Count'],
+    Defend: [...ev('Defends'), 'Affect on Mitigation::Automatically Defend', "Affect on Mitigation::Can't Manually Defend", 'Multiplied by::Defend Count', 'Active If::Defending'],
+    Provoke: [...ev('Provokes'), 'Affect on Mitigation::Automatically Provoke', "Affect on Mitigation::Can't Manually Provoke", 'Multiplied by::Provoke Count', 'Active If::Provoking'],
     Dodge: [...ev('Dodges'), "Affect on Mitigation::Can't Dodge Attacks", 'Affect on Mitigation::More Dodge Chance'],
-    Buff: ['Related Buff::*', ...ev('is Buffed'), ...BUFF_VALS.map(v => 'Affect on Status::' + v)],
-    Debuff: ['Related Debuff::*', ...ev('is Debuffed'), ...DEBUFF_VALS.map(v => 'Affect on Status::' + v)],
-    Minion: ['Related Minion::*', 'Affect on Minions::*', ...ev('Minion Gain/Action')],
-    Healing: [...ev('is Healed'), 'Affect on Life::Creature is Healed', 'Affect on Life::More Healing', 'Affect on Life::Less Healing'],
-    Resurrection: [...ev('Resurrects'), 'Affect on Life::Creature is Resurrected', 'Affect on Life::Cannot Be Resurrected'],
-    Critical: ev('Critically Hits'),
+    Buff: ['Related Buff::*', ...ev('is Buffed'), ...BUFF_VALS.map(v => 'Affect on Status::' + v), 'Multiplied by::Buff Count', 'Multiplied by::Buff Potency', 'Active If::Buffed with X'],
+    Debuff: ['Related Debuff::*', ...ev('is Debuffed'), ...DEBUFF_VALS.map(v => 'Affect on Status::' + v), 'Multiplied by::Debuff Count', 'Multiplied by::Debuff Potency', 'Active If::Debuffed with X'],
+    Minion: ['Related Minion::*', 'Affect on Minions::*', ...ev('Minion Gain/Action'), 'Multiplied by::Minion Count'],
+    Healing: [...ev('is Healed'), 'Affect on Life::Creature is Healed', 'Affect on Life::More Healing', 'Affect on Life::Less Healing', 'Multiplied by::Amount Healed'],
+    Resurrection: [...ev('Resurrects'), 'Affect on Life::Creature is Resurrected', 'Affect on Life::Cannot Be Resurrected', 'Multiplied by::Resurrect Count'],
+    Critical: [...ev('Critically Hits'), 'Affect on Damage::More Critical Chance'],
     'Indirect Damage': ev('Indirectly Damaged'),
-    Stats: ['Affect on Stats::*', ...ev('Gains Stats'), ...ev('Loses Stats')],
-    Timeline: ['Affect on Timeline::*', ...ev('Moves on Timeline')],
-    'Spell Gems': GEM_VALS.map(v => 'Affect on Spells::' + v),
+    Damage: ['Affect on Damage::Deal Less Damage', 'Affect on Damage::Take Less Damage', 'Affect on Damage::Deal More Damage',
+             'Affect on Damage::Take More Damage', 'Affect on Damage::Ignore Defense', 'Affect on Life::Creature is Damaged',
+             ...ev('Deals Damage'), 'Multiplied by::Amount of Damage Dealt', 'Multiplied by::Amount of Damage Taken', 'Multiplied by::Damage Taken Count'],
+    Stats: ['Affect on Stats::*', ...ev('Gains Stats'), ...ev('Loses Stats'), 'Related Stat::*', 'Multiplied by::Amount of X Stat',
+            'Multiplied by::Amount of Stat Change', 'Active If::Stat is Unmodified'],
+    Timeline: ['Affect on Timeline::*', ...ev('Moves on Timeline'), 'Multiplied by::Above/Below on TL Count'],
+    'Turn Counter': ['Multiplied by::Turns Taken Count'],
+    'Spell Gems': [...GEM_VALS.map(v => 'Affect on Spells::' + v), 'Multiplied by::Spell Gem/Charge Count'],
+    'Creature Class': [...CLASS_TYPES.map(v => 'Related Types::' + v), 'Affect on Type::Change Class', 'Affect on Type::Count Additional (Class)'],
+    'Creature Race': ['Related Types::*', 'Affect on Type::Change Race', 'Affect on Type::Count Additional (Race)'],
+    Artifact: ['Related Trait::Artifact Trait'],
   };
+  const RULE_EXCEPT = { 'Creature Race': CLASS_TYPES.map(v => 'Related Types::' + v) };
   const TOKEN_RULES = { Attack: /\{ACTION_attack/, Cast: /\{ACTION_cast/, Defend: /\{ACTION_defend/, Provoke: /\{ACTION_provok/,
                         'Creature Race': /\{RACE_/ };
   const matches = (pat, tag) => pat.endsWith('*') ? tag.startsWith(pat.slice(0, -1)) : tag === pat;
   const tokDesc = new Map(consolidated.map(r => [r.id, r.desc_tokenized || '']));
-  const stat = {}; let conf = 0, add = 0;
+  const stat = {}; let conf = 0, add = 0, ext = 0;
   const imply = (e, tokenized) => {
     const t = e.taxo || (e.taxo = []), s2 = e.taxoSrc || (e.taxoSrc = t.map(() => 'derived'));
     const exact = t.filter((x, i) => EXACT.has(s2[i]));
     for (const [val, pats] of Object.entries(RULES).concat(Object.keys(TOKEN_RULES).filter(k => !RULES[k]).map(k => [k, []]))) {
-      const byTag = exact.some(x => pats.some(p => matches(p, x)));
+      const hit = (x) => pats.some(p => matches(p, x)) && !(RULE_EXCEPT[val] || []).includes(x);
+      const byTag = exact.some(hit);
       const byTok = TOKEN_RULES[val] ? TOKEN_RULES[val].test(tokenized || '') : false;
-      if (!byTag && !byTok) continue;
       const tag = 'Action/Mechanic::' + val, i = t.indexOf(tag);
+      if (!byTag && !byTok) {   // superset by extension from a non-exact child: parent inherits the child's provenance
+        const ci = t.findIndex(hit);
+        if (ci >= 0 && i < 0) { t.push(tag); s2.push(s2[ci]); ext++; const st = (stat[val] ||= [0, 0, 0]); st[2] = (st[2] || 0) + 1; }
+        continue;
+      }
       if (i >= 0) { if (!EXACT.has(s2[i]) && s2[i] !== 'implied') { s2[i] = 'implied'; conf++; (stat[val] ||= [0, 0])[0]++; } }
       else { t.push(tag); s2.push('implied'); add++; (stat[val] ||= [0, 0])[1]++; }
     }
@@ -2525,8 +2543,8 @@ const MINION_PHRASE = { 'Greater Demons': /\bgreater demons?\b/i, 'Lesser Demons
   for (const sp of spells) imply(sp, sp.desc);
   for (const rl of relics) imply(rl, '');
   for (const cd of cards) imply(cd, '');
-  console.log(`  action/mechanic implied: ${conf} llm tags now implied by exact tags · +${add} added · ` +
-    Object.entries(stat).map(([k, [c, a]]) => `${k} ${c}/+${a}`).join(', '));
+  console.log(`  action/mechanic implied: ${conf} llm tags now implied by exact tags · +${add} added · +${ext} by extension (inherited src) · ` +
+    Object.entries(stat).map(([k, [c, a, x]]) => `${k} ${c}/+${a}/+${x || 0}`).join(', '));
 }
 
 // ── Shops: icon + drill-in joins (needs creatures / spells / traitItems / spellProps / skins) ──
