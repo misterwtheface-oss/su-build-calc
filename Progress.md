@@ -6,6 +6,13 @@ Pages on `master`/root, Cloudflare analytics active with the shared github.io to
 No verify-before-push ceremony (no real users yet) — but every change is checked with the jsdom smoke suite
 (scratchpad `smoke.mjs`, ~84 assertions across all flows) before commit.
 
+## 2026-10-04 (cont.) — Spell Gem wizard: sort + Target/Class filters
+Spell step gets an A–Z | Potency | Charges sort (Potency = Devastating→Small with tier headings, no-potency last;
+Charges = most first; ties by name; A–Z is now the default — was data order) and two dropdowns, Target (Single
+target / Enemies / Your creatures / All creatures / No target, from `spell.target`) and Class, both defaulting to
+"-" (no filter). Dropdowns + sort share one row, also at 360px. Artifact wizard's spell list keeps its class chips
+(shared `spellClsChips` helper). List is still capped at 300 rows ("Showing 300 of N" note).
+
 ## 2026-10-04 (cont.) — FIX: search text duplicated on phones ("Aft" → "AAftAftAft")
 **RCA:** every search box shares `onInput`'s `searchMap` path, which re-rendered the whole overlay panel
 (`panel.outerHTML = render()`) on each keystroke — replacing the focused `<input>`. Phone keyboards (Gboard etc.) type
