@@ -1,0 +1,16 @@
+{
+  "appId": "io.github.misterwtheface.subuildcalc",
+  "appName": "SU Build Calc",
+  "webDir": "www",
+  "server": {
+    "//": "OPTION B — the shell loads the LIVE GitHub Pages site, so content updates ship via a normal `git push` (no store re-release). Native layer (ads/billing) still needs a release only when IT changes. Switch to a bundled build by removing this `server` block and pointing webDir at the copied site.",
+    "url": "https://misterwtheface-oss.github.io/su-build-calc/",
+    "androidScheme": "https",
+    "cleartext": false
+  },
+  "plugins": {
+    "AdMob": {
+      "//": "The AdMob *App ID* (not the ad-unit id) also has to go in android/app/src/main/AndroidManifest.xml — see app/README.md."
+    }
+  }
+}

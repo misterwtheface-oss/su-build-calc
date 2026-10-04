@@ -330,6 +330,12 @@ Which kind of trait an effect references.
 
 ---
 
+## Boundary rulings (2026-10-04)
+- **Action/Mechanic::Attack** only where the object references an attack (prose, or an explicit attack damage-type branch in code). Damage from any source with no attack reference = **Damage** only.
+- **Related Stat** covers effects that *read* a stat — highest-stat selection, or being multiplied by a stat. **Action/Mechanic::Stats** is reserved for effects that change stats.
+- **Activates When::Enemy is Debuffed** doubles as the conditional gate "the enemy has a debuff". Afflicter-side hooks are never *Ally is Debuffed*.
+- **Minions are not Buffs.** Minion conditions (`{CONDNAME_MINION_*}`, e.g. Direwolf) produce Minion / Minion Count / Related Minion tags, never Buff / Buff Count / Related Buff, and vice versa.
+
 ## Retired / dropped
 - **Effect Limitation** (category) — dropped entirely (Does not stack · Don't Have this Trait · First Time X
   Occurs · Limit Actions per Turn). No tracking value.

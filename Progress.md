@@ -323,6 +323,14 @@ Verified: headless Chrome load (no JS errors), spec labels/perks, shops present,
    2-frame front walk (others stay still), "Use this icon"/tap-again commits (`syncIconAnim`, mirrors the spec-costume
    animation). +693 `<sprite>_1.png` frames shipped; precache 6364→7057.
 
+
+### 2026-10-04 — taxonomy review S7 (A–E) applied
+- **A:** dropped Action/Mechanic::Attack from 17 traits + Sparktail card (no attack reference; Damage kept).
+- **B:** stat-reading perks (Solar/Lunar Eclipse, Stellar Blessing, Synastry, Transit, Ascendant), Secret Stuff, Amalgam: Action/Mechanic::Stats dropped; Related Stat covers stat reads/multipliers.
+- **C:** Angel/Carnage/Carver/Centaur cards Creature Race → Creature Class.
+- **D:** Blazing Soul Ally is Debuffed → Enemy is Debuffed (also the "enemy has a debuff" gate).
+- **E:** Minions ≠ Buffs: Uncharted → Minion Count / Minion / Related Minion::Dire Wolves; bidirectional sweep found no other bleed. Rules in TAXONOMY.md §Boundary rulings + approval policy.
+
 ### ⚠ Cache-bust is ENFORCED by a git pre-commit hook (do not bypass)
 The service worker serves `app.js`/`styles.css`/`data.js` **cache-first**, keyed by their `?v=` token
 (only `index.html` is network-first). So editing a sub-resource without re-stamping its `?v=` ships a

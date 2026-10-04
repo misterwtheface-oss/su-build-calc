@@ -894,6 +894,249 @@
    "add": [],
    "approved": "2026-10-04",
    "note": "user: Gain a Trait is erroneous; Zantai traits gain a spell gem (mega magic)"
+  },
+  "44": {
+   "name": "Emerald Attunement",
+   "replace": [
+    {
+     "from": [
+      "Action/Mechanic::Attack"
+     ],
+     "to": null
+    }
+   ],
+   "add": [],
+   "approved": "2026-10-04"
+  },
+  "86": {
+   "name": "Deafening Roar",
+   "replace": [
+    {
+     "from": [
+      "Action/Mechanic::Attack"
+     ],
+     "to": null
+    }
+   ],
+   "add": [],
+   "approved": "2026-10-04"
+  },
+  "164": {
+   "name": "Breaker",
+   "replace": [
+    {
+     "from": [
+      "Action/Mechanic::Attack"
+     ],
+     "to": null
+    }
+   ],
+   "add": [],
+   "approved": "2026-10-04"
+  },
+  "165": {
+   "name": "Through the Gloom",
+   "replace": [
+    {
+     "from": [
+      "Action/Mechanic::Attack"
+     ],
+     "to": null
+    }
+   ],
+   "add": [],
+   "approved": "2026-10-04"
+  },
+  "185": {
+   "name": "Reign of Pain",
+   "replace": [
+    {
+     "from": [
+      "Action/Mechanic::Attack"
+     ],
+     "to": null
+    }
+   ],
+   "add": [],
+   "approved": "2026-10-04"
+  },
+  "397": {
+   "name": "Baffle",
+   "replace": [
+    {
+     "from": [
+      "Action/Mechanic::Attack"
+     ],
+     "to": null
+    }
+   ],
+   "add": [],
+   "approved": "2026-10-04"
+  },
+  "399": {
+   "name": "Subjugation",
+   "replace": [
+    {
+     "from": [
+      "Action/Mechanic::Attack"
+     ],
+     "to": null
+    }
+   ],
+   "add": [],
+   "approved": "2026-10-04"
+  },
+  "400": {
+   "name": "Gulper",
+   "replace": [
+    {
+     "from": [
+      "Action/Mechanic::Attack"
+     ],
+     "to": null
+    }
+   ],
+   "add": [],
+   "approved": "2026-10-04"
+  },
+  "401": {
+   "name": "Sycophant",
+   "replace": [
+    {
+     "from": [
+      "Action/Mechanic::Attack"
+     ],
+     "to": null
+    }
+   ],
+   "add": [],
+   "approved": "2026-10-04"
+  },
+  "402": {
+   "name": "Prowess",
+   "replace": [
+    {
+     "from": [
+      "Action/Mechanic::Attack"
+     ],
+     "to": null
+    }
+   ],
+   "add": [],
+   "approved": "2026-10-04"
+  },
+  "443": {
+   "name": "Powershift",
+   "replace": [
+    {
+     "from": [
+      "Action/Mechanic::Attack"
+     ],
+     "to": null
+    }
+   ],
+   "add": [],
+   "approved": "2026-10-04"
+  },
+  "911": {
+   "name": "Outnumbered",
+   "replace": [
+    {
+     "from": [
+      "Action/Mechanic::Attack"
+     ],
+     "to": null
+    }
+   ],
+   "add": [],
+   "approved": "2026-10-04"
+  },
+  "1168": {
+   "name": "Mesmer",
+   "replace": [
+    {
+     "from": [
+      "Action/Mechanic::Attack"
+     ],
+     "to": null
+    }
+   ],
+   "add": [],
+   "approved": "2026-10-04"
+  },
+  "1348": {
+   "name": "Shadows Converge",
+   "replace": [
+    {
+     "from": [
+      "Action/Mechanic::Attack"
+     ],
+     "to": null
+    }
+   ],
+   "add": [],
+   "approved": "2026-10-04"
+  },
+  "1771": {
+   "name": "Unrelenting Fury",
+   "replace": [
+    {
+     "from": [
+      "Action/Mechanic::Attack"
+     ],
+     "to": null
+    }
+   ],
+   "add": [],
+   "approved": "2026-10-04"
+  },
+  "1846": {
+   "name": "Breakneck",
+   "replace": [
+    {
+     "from": [
+      "Action/Mechanic::Attack"
+     ],
+     "to": null
+    }
+   ],
+   "add": [],
+   "approved": "2026-10-04"
+  },
+  "2035": {
+   "name": "Atmospheric Interference",
+   "replace": [
+    {
+     "from": [
+      "Action/Mechanic::Attack"
+     ],
+     "to": null
+    }
+   ],
+   "add": [],
+   "approved": "2026-10-04"
+  },
+  "855": {
+   "name": "Uncharted",
+   "replace": [
+    {
+     "from": [
+      "Multiplied by::Buff Count"
+     ],
+     "to": "Multiplied by::Minion Count"
+    },
+    {
+     "from": [
+      "Action/Mechanic::Buff"
+     ],
+     "to": "Action/Mechanic::Minion"
+    }
+   ],
+   "add": [
+    "Related Minion::Dire Wolves"
+   ],
+   "approved": "2026-10-04",
+   "note": "user 2026-10-04: Direwolf is a minion ({CONDNAME_MINION_DIREWOLF}), not a buff"
   }
  },
  "rejected": {
@@ -1205,12 +1448,107 @@
     "Affect on Damage::Deal More Damage"
    ],
    "approved": "2026-10-04"
+  },
+  "5:BLAZINGSOUL": {
+   "name": "Blazing Soul",
+   "replace": [
+    {
+     "from": [
+      "Activates When::Ally is Debuffed"
+     ],
+     "to": "Activates When::Enemy is Debuffed"
+    }
+   ],
+   "add": [],
+   "approved": "2026-10-04"
+  },
+  "18:SOLARECLIPSE": {
+   "name": "Solar Eclipse",
+   "replace": [
+    {
+     "from": [
+      "Action/Mechanic::Stats"
+     ],
+     "to": null
+    }
+   ],
+   "add": [],
+   "approved": "2026-10-04"
+  },
+  "18:LUNARECLIPSE": {
+   "name": "Lunar Eclipse",
+   "replace": [
+    {
+     "from": [
+      "Action/Mechanic::Stats"
+     ],
+     "to": null
+    }
+   ],
+   "add": [],
+   "approved": "2026-10-04"
+  },
+  "18:STELLARBLESSING": {
+   "name": "Stellar Blessing",
+   "replace": [
+    {
+     "from": [
+      "Action/Mechanic::Stats"
+     ],
+     "to": null
+    }
+   ],
+   "add": [],
+   "approved": "2026-10-04"
+  },
+  "18:SYNASTRY": {
+   "name": "Synastry",
+   "replace": [
+    {
+     "from": [
+      "Action/Mechanic::Stats"
+     ],
+     "to": null
+    }
+   ],
+   "add": [],
+   "approved": "2026-10-04"
+  },
+  "18:TRANSIT": {
+   "name": "Transit",
+   "replace": [
+    {
+     "from": [
+      "Action/Mechanic::Stats"
+     ],
+     "to": null
+    }
+   ],
+   "add": [],
+   "approved": "2026-10-04"
+  },
+  "18:ASCENDANT": {
+   "name": "Ascendant",
+   "replace": [
+    {
+     "from": [
+      "Action/Mechanic::Stats"
+     ],
+     "to": null
+    }
+   ],
+   "add": [],
+   "approved": "2026-10-04"
   }
  },
  "policy": {
   "conditional_triggers": "An event that must occur for a trigger to matter (e.g. 'after an ally attacks an enemy that dodged') is a valid Activates When tag; the builder must not treat it as wrong.",
   "vocab": "The data carries the FULL taxonomy (every value that fits any object). The 'more than one object' rule is a DISPLAY toggle in the app (Hide single-object tags), never a build-time filter.",
-  "ai_turn_actions": "Actions chosen in bc_ArtificialIntelligence are normal turn actions, never Automatic/Extra."
+  "ai_turn_actions": "Actions chosen in bc_ArtificialIntelligence are normal turn actions, never Automatic/Extra.",
+  "attack_requires_reference": "Action/Mechanic::Attack only where the object references an attack (text or explicit dtype-0/attack code). Generic sourced damage = Damage only.",
+  "related_stat_reads": "Related Stat covers effects that READ a stat (highest-stat selection, multiplied by a stat). Action/Mechanic::Stats is for effects that change stats.",
+  "debuffed_gate": "Activates When::Enemy is Debuffed doubles as the conditional gate 'enemy has a debuff'; never Ally is Debuffed for afflicter-side hooks.",
+  "minions_not_buffs": "Minions are Minions, not Buffs: minion conditions (CONDNAME_MINION_*) never produce Buff/Buff Count/Related Buff tags, and buffs never produce Minion tags."
  },
  "perkRejections": {
   "5:MASSACRE": [
@@ -1241,6 +1579,19 @@
    ],
    "add": [],
    "approved": "2026-10-03"
+  },
+  "2": {
+   "name": "Amalgam, Warped Mirror of T'mere M'rgo",
+   "replace": [
+    {
+     "from": [
+      "Action/Mechanic::Stats"
+     ],
+     "to": null
+    }
+   ],
+   "add": [],
+   "approved": "2026-10-04"
   }
  },
  "spellChanges": {
@@ -1561,6 +1912,19 @@
     "Action/Mechanic::Creature Class"
    ],
    "approved": "2026-10-03"
+  },
+  "317": {
+   "name": "Secret Stuff",
+   "replace": [
+    {
+     "from": [
+      "Action/Mechanic::Stats"
+     ],
+     "to": null
+    }
+   ],
+   "add": [],
+   "approved": "2026-10-04"
   }
  },
  "cardChanges": {
@@ -1643,6 +2007,71 @@
     "Affect on Damage::Deal More Damage"
    ],
    "approved": "2026-10-03"
+  },
+  "3": {
+   "name": "Angel",
+   "replace": [
+    {
+     "from": [
+      "Action/Mechanic::Creature Race"
+     ],
+     "to": "Action/Mechanic::Creature Class"
+    }
+   ],
+   "add": [],
+   "approved": "2026-10-04"
+  },
+  "19": {
+   "name": "Carnage",
+   "replace": [
+    {
+     "from": [
+      "Action/Mechanic::Creature Race"
+     ],
+     "to": "Action/Mechanic::Creature Class"
+    }
+   ],
+   "add": [],
+   "approved": "2026-10-04"
+  },
+  "20": {
+   "name": "Carver",
+   "replace": [
+    {
+     "from": [
+      "Action/Mechanic::Creature Race"
+     ],
+     "to": "Action/Mechanic::Creature Class"
+    }
+   ],
+   "add": [],
+   "approved": "2026-10-04"
+  },
+  "21": {
+   "name": "Centaur",
+   "replace": [
+    {
+     "from": [
+      "Action/Mechanic::Creature Race"
+     ],
+     "to": "Action/Mechanic::Creature Class"
+    }
+   ],
+   "add": [],
+   "approved": "2026-10-04"
+  },
+  "116": {
+   "name": "Sparktail",
+   "replace": [
+    {
+     "from": [
+      "Action/Mechanic::Attack"
+     ],
+     "to": null
+    }
+   ],
+   "add": [],
+   "approved": "2026-10-04"
   }
  },
  "notes_2026_10_03": "User: keep Eaten Alive as Healing Spells (judgement call approved). Abomination card power order confirmed (15% more damage, 10% less dodge, 35% less healing) = app + code.",

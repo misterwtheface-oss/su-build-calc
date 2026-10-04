@@ -19,7 +19,7 @@ const md5 = (buf) => crypto.createHash('md5').update(buf).digest('hex').slice(0,
 // Re-stamp index.html ?v= tokens + sw.js BUILD from the current content of the shipped bundle.
 // Only writes files that actually change; returns the list of files it touched.
 export function stampCache(root) {
-  const bundle = ['data.js', 'effects.js', 'app.js', 'styles.css'].filter((f) => fs.existsSync(path.join(root, f)));
+  const bundle = ['data.js', 'effects.js', 'app.js', 'styles.css', 'native-bridge.js'].filter((f) => fs.existsSync(path.join(root, f)));
   const touched = [];
 
   const idxPath = path.join(root, 'index.html');

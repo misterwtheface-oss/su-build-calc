@@ -1,0 +1,20 @@
+{
+  "name": "su-build-calc-app",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Capacitor Android shell for the Siralim Ultimate Build Calculator — thin webview over the live site, with AdMob ads and a one-time 'remove ads' in-app purchase.",
+  "scripts": {
+    "setup": "npm install && npx cap add android && npx cap sync",
+    "sync": "npx cap sync",
+    "open": "npx cap open android",
+    "build:aab": "cd android && gradlew.bat bundleRelease"
+  },
+  "dependencies": {
+    "@capacitor/android": "^6.1.0",
+    "@capacitor/core": "^6.1.0",
+    "@capacitor-community/admob": "^6.0.0"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^6.1.0"
+  }
+}
