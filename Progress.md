@@ -1382,6 +1382,11 @@ MAPPING not for asserting PRESENCE; no inventing entities from the community-CSV
     redistribution via the game's own battle-message keys (L_B_PREVENTED / L_B_STAT_GAIN_STOLEN / L_B_TURN_SKIPPED /
     L_B_CAST_FIZZLED…); spell raw-evidence layer (+153). The 7 runtime-id traits have NO effect code in static (Seethe
     = renamed twin of Tellur's Fangs).
+  - **2026-10-03 Task K:** card + relic raw evidence; spell calc-block formulas; loop-header resolution
+    (`loop_resolution.json`); a text-supplies-side layer. Every residual tag is classified in `_su_extract`
+    `taxo_residual.json` as (a) decodable-not-done / (b) REVIEW / (c) no static code.
+    - **REVIEW totals:** Stats-only-scales 86, Attack on kill triggers 4, Multiplied by on threshold text 4, triggers on
+      passive "activate N more times" 5, Vision Quest Illusion → Doppelganger 1.
     - **Spells decoded too** (per-spell switch in bc_CreatureCast; 82% agreement with app spell tags); taxonomy
       integration is next.
 - [ ] **Capped effects with no app surface yet** (keep in context — user 2026-10-02). `_su_extract data/model/dr_caps.json`
