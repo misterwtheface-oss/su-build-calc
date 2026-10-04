@@ -1392,6 +1392,10 @@ MAPPING not for asserting PRESENCE; no inventing entities from the community-CSV
     - **Result:** residual decodable 3,451 → 2,812.
     - **New REVIEW:** B8 Automatic/Extra on AI-turn boss parts (16), B9 Creeping Doom Race → Class (1), B10 Harbingers
       Timeline → turns-taken (9).
+  - **2026-10-03 Task M:** potency stat decoded from bc_SpellDamage's prologue stat locals (24/27 match);
+    spell-case membership; scr_SpellHasTag tests; damage perspective; event-side mapping.
+    - **Result:** residual decodable 2,812 → 2,608.
+    - **New REVIEW:** B11 Mindful Awareness Ally Takes Damage → Enemy Attacks (Thorns precedent).
     - **Spells decoded too** (per-spell switch in bc_CreatureCast; 82% agreement with app spell tags); taxonomy
       integration is next.
 - [ ] **Capped effects with no app surface yet** (keep in context — user 2026-10-02). `_su_extract data/model/dr_caps.json`
