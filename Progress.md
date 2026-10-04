@@ -1485,6 +1485,15 @@ Each is one rule edit in `data/reference/effect_rules.json` (or the generator in
       the global damage pipeline (spell tiers 0.9 / 1.1 / 1.2 / 1.3 / 1.5 potency with 0–40% defense pen; class ×2 / ×0.5;
       defending ×0.65 + Def ×1.5). Validation 90–94% vs description numbers. Flagged: Transformation Mastery signature
       is wrong.
+  - **2026-10-04 S3 + S4:**
+    - **S3 (formulas):** amounts bound to their triggers 21 → 356; spell amounts 558/559; perk chances moved to the
+      chance field. Flagged tier_conflicts vs description (Rune of Cor/Nax 0.6 vs "moderate", Smoke Bolt, Living
+      Helmet, Balance In All Things).
+    - **S4:** `sig_foreign.py` stops "amplifier" traits (Transformation Mastery, Master of X…) from inheriting the
+      effects they amplify (new `amplifies` field; 12 bogus Damage / Creature is Damaged ledger entries purged).
+      Perk damage gates that read the source now decode as Deals Damage (27 perks; Hedge Magic looks off).
+      Constant-arg layer for spell ids/tags/classes + condition ids (residual spell class/tag 74 → 41, condition id
+      82 → 40).
     - **Spells decoded too** (per-spell switch in bc_CreatureCast; 82% agreement with app spell tags); taxonomy
       integration is next.
 - [ ] **Capped effects with no app surface yet** (keep in context — user 2026-10-02). `_su_extract data/model/dr_caps.json`
