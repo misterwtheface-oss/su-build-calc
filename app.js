@@ -1849,7 +1849,6 @@
       body = parts.join("") || `<div class="slot-sub" style="padding:10px">No categories or tags match.</div>`;
     } else {
       const res = appendixResults(tags);
-      const CAP = 60;
       // provenance chips (token/llm/…) live ONLY on the taxonomy detail page now — the result rows stay clean.
       const section = (title, items, renderRow) => {
         let list = items;
@@ -1858,8 +1857,7 @@
         const collapsed = st.collapsed.has(title);
         return `<button class="apx-sec-head${collapsed ? " collapsed" : ""}" data-action="appendix-toggle-sec" data-sec="${esc(title)}">
             <span class="apx-sec-caret">${collapsed ? "▸" : "▾"}</span>${esc(title)} <span class="apx-sec-n">${list.length}</span></button>
-          ${collapsed ? "" : `<div class="perk-list">${list.slice(0, CAP).map(renderRow).join("")}
-          ${list.length > CAP ? `<div class="slot-sub" style="padding:6px">Showing ${CAP} of ${list.length}.</div>` : ""}</div>`}`;
+          ${collapsed ? "" : `<div class="perk-list">${list.map(renderRow).join("")}</div>`}`;
       };
       // Every result row now leads with a left-hand icon column of large (creature-sprite-sized) boxes,
       // vertically centred. Objects with an "owner" stack two boxes (object icon over owner icon).
@@ -2311,7 +2309,7 @@
     let body;
     if (q.length < 2) {
       body = `<div class="riddle-hint">The Riddle Dwarf gives you a name — type it to reveal the answer:
-        <ul><li><b>Class of</b> a spell or creature</li><li><b>Ruler of</b> a realm</li><li><b>Realm of</b> a ruler (god)</li></ul></div>`;
+        <ul><li><b>Ruler of</b> a realm</li><li><b>Realm of</b> a ruler (god)</li><li><b>Class of</b> a creature or spell</li></ul></div>`;
     } else {
       const byName = (k) => (a, b) => rank(a[k]) - rank(b[k]) || a[k].localeCompare(b[k]);
       const spells = D.spells.filter(s => nrm(s.name).includes(q)).sort(byName("name")).slice(0, CAP).map(s => row(s.name, clsAns(s.cls)));
@@ -2319,7 +2317,7 @@
       const creatures = D.creatures.filter(c => !isAvatar(c) && nrm(c.name).includes(q)).sort(byName("name")).slice(0, CAP).map(c => row(c.name, clsAns(c.cls)));
       const realms = D.realms.filter(r => nrm(r.realm).includes(q)).sort(byName("realm")).map(r => row(r.realm, `<span class="riddle-a">${esc(r.godName)}</span>`));
       const gods = D.realms.filter(r => nrm(r.godName).includes(q) || nrm(r.god).includes(q)).sort(byName("godName")).map(r => row(r.godName, `<span class="riddle-a">${esc(r.realm)}</span>`));
-      body = section("Class of Spell", spells) + section("Class of Creature", creatures) + section("Ruler of Realm", realms) + section("Realm of Ruler", gods)
+      body = section("Ruler of Realm", realms) + section("Realm of Ruler", gods) + section("Class of Creature", creatures) + section("Class of Spell", spells)
         || `<div class="slot-sub" style="padding:10px">No spell, creature, realm or god matches “${esc(st.search)}”.</div>`;
     }
     // compact popover anchored top-right — no full overlay, click-outside to close
@@ -4016,7 +4014,16 @@
         if (b) { build = normalizeBuild(JSON.parse(JSON.stringify(b.build))); clearBookmarks(); persistBuild(); closeOverlay(); render(); }
         break;
       }
-      case "builds-overwrite": { const b = builds.find(x => x.id === +t.dataset.id); if (b && build.slots.some(s => s && s.cid != null)) { b.build = JSON.parse(JSON.stringify(build)); b.ts = Date.now(); persistBuilds(); ovState.sel = b.id; flashBuild(b.id); } break; }
+      case "builds-overwrite": { const b = builds.find(x => x.id === +t.dataset.id); if (!b || !build.slots.some(s => s && s.cid != null)) break;
+        const doUpdate = () => { b.build = JSON.parse(JSON.stringify(build)); b.ts = Date.now(); persistBuilds(); ovState.sel = b.id; flashBuild(b.id); };
+        // guard: updating a saved build whose specialization differs from the current one needs a second press
+        if ((b.build && b.build.specId != null ? b.build.specId : null) !== (build.specId != null ? build.specId : null)) {
+          if (!t.classList.contains("armed")) { const label = t.textContent; t.textContent = "Confirm Update";
+            t.title = "This saved build uses a different specialization — press again to overwrite it";
+            setTimeout(() => { if (t.isConnected) { t.textContent = label; t.title = ""; } }, 2500); }
+          armOrDo(t, doUpdate);
+        } else doUpdate();
+        break; }
       case "builds-del": armOrDo(t, () => { const id = +t.dataset.id; builds = builds.filter(b => b.id !== id); if (ovState.sel === id) ovState.sel = null; persistBuilds(); refreshOverlay(); }); break;
       case "iconpick-cat": dovState.cat = t.dataset.c; dovState.limit = ICON_PAGE; refreshDetail(); break;
       case "iconpick-cat-clear": e.stopPropagation(); dovState.cat = null; dovState.limit = ICON_PAGE; refreshDetail(); break;
