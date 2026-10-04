@@ -1405,6 +1405,9 @@ MAPPING not for asserting PRESENCE; no inventing entities from the community-CSV
     callee summaries; host + text rules; CONDNAME tokens.
     - **Result:** residual decodable 2,608 → 2,232. Kept tags are now class "k" (never re-flagged), and the Turn Counter
       ruling is built in.
+  - **2026-10-04 Task O:** code-fact rules from gates + 2-level callees (DoT → Indirect Damage, heal → Healing, count
+    scaling…), host + text rules, event side, counters.
+    - **Result:** residual decodable 2,232 → 2,116; returns are diminishing (~120 per round).
     - **Spells decoded too** (per-spell switch in bc_CreatureCast; 82% agreement with app spell tags); taxonomy
       integration is next.
 - [ ] **Capped effects with no app surface yet** (keep in context — user 2026-10-02). `_su_extract data/model/dr_caps.json`
