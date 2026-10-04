@@ -1361,7 +1361,10 @@ MAPPING not for asserting PRESENCE; no inventing entities from the community-CSV
     expanded mechanics; G: 12 hidden traits recovered via static-RValue ids, Construct confirmed unimplemented in code;
     loop-membership ruling):**
     - **Provenance:** code 58% · llm 28%. Per-entity LLM: traits 26% · perks 47% · spells 19% · relics 36% · cards 49%.
-    - **Pending:** 4 proposals + the user's decision on perk/trait damage MODIFIERS → Cast/Attack (would confirm 119 tags).
+    - **APPROVED:** all 4 (Golden Aura Gain a Trait, Duality Extra Attack, Diabolic Celebration + Sorcery Orb Creature
+      Class — user: the creature's class derives the spell class).
+    - **USER RULING:** damage MODIFIERS ground Action/Mechanic Cast/Attack (general mechanic categories), applied in
+      build_code_taxo → +119 confirms.
     - **Spells decoded too** (per-spell switch in bc_CreatureCast; 82% agreement with app spell tags); taxonomy
       integration is next.
 - [ ] **Capped effects with no app surface yet** (keep in context — user 2026-10-02). `_su_extract data/model/dr_caps.json`

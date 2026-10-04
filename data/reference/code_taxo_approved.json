@@ -363,6 +363,30 @@
     "Multiplied by::Amount of X Stat"
    ],
    "approved": "2026-10-03"
+  },
+  "832": {
+   "name": "Diabolic Celebration",
+   "replace": [],
+   "add": [
+    "Action/Mechanic::Creature Class"
+   ],
+   "approved": "2026-10-03"
+  },
+  "1758": {
+   "name": "Golden Aura",
+   "replace": [],
+   "add": [
+    "Affect on Traits::Gain a Trait"
+   ],
+   "approved": "2026-10-03"
+  },
+  "2027": {
+   "name": "Duality",
+   "replace": [],
+   "add": [
+    "Affect on Attacks::Automatic/Extra Attack"
+   ],
+   "approved": "2026-10-03"
   }
  },
  "rejected": {
@@ -901,6 +925,14 @@
    "add": [],
    "approved": "2026-10-03",
    "note": "user: keep Action/Mechanic::Timeline, drop Additional Turn (code: the cast just ends; no extra turn)"
+  },
+  "531": {
+   "name": "Sorcery Orb",
+   "replace": [],
+   "add": [
+    "Action/Mechanic::Creature Class"
+   ],
+   "approved": "2026-10-03"
   }
  },
  "cardChanges": {
@@ -985,5 +1017,6 @@
    "approved": "2026-10-03"
   }
  },
- "notes_2026_10_03": "User: keep Eaten Alive as Healing Spells (judgement call approved). Abomination card power order confirmed (15% more damage, 10% less dodge, 35% less healing) = app + code."
+ "notes_2026_10_03": "User: keep Eaten Alive as Healing Spells (judgement call approved). Abomination card power order confirmed (15% more damage, 10% less dodge, 35% less healing) = app + code.",
+ "notes_modifier_ruling": "2026-10-03 user: perk/trait spell-damage/attack-damage MODIFIERS ground Action/Mechanic Cast/Attack (Action/Mechanic = very general mechanic categories). Creature Class also applies when a creature's class derives the spell/gem class."
 }
