@@ -76,6 +76,7 @@
   const TRAIT = D.traits;                                   // id -> {name,desc,cls,produces,consumes,labels}
   const CLS_COLOR = Object.fromEntries(D.classes.map(c => [c.key, c.color]));
   const CLASS_BG = D.classBg || {};
+  const CLASS_FRAME = D.classFrame || {};
   const GEM_ICONS = D.gemIcons || [];
   // Nether-stone icon = one of the game's 16 pre-coloured `icons` frames (2085–2100); no tint/colour data exists in game.
   const gemSrc = (stone) => gemPath(stone && stone.icon);
@@ -3561,7 +3562,7 @@
       const tierSummary = tiers.map((n, i) => `<span class="ct-seg ${i < lv ? "on" : "off"}">${n}</span>`).join(`<span class="ct-sep">/</span>`);
       return `<div class="card-tile lv${lv} ${applyAll ? "locked" : ""} ${c.cls === "Life" ? "cls-life" : ""}" style="--cardcls:${clsColor(c.cls)}">
         <div class="card-head">
-          <div class="card-art">${bg ? `<img class="card-bg" src="${esc(bg)}" alt="">` : ""}${c.sprite ? spriteImg(c.sprite, "card-crit") : ""}</div>
+          <div class="card-art">${bg ? `<img class="card-bg" src="${esc(bg)}" alt="">` : ""}${c.sprite ? spriteImg(c.sprite, "card-crit") : ""}${c.cls && CLASS_FRAME[c.cls] ? `<img class="card-frame" src="${esc(CLASS_FRAME[c.cls])}" alt="">` : ""}</div>
           <div class="card-title"><b>${esc(c.family)}</b><span class="cls-chip" style="color:${clsColor(c.cls)}">${esc(c.cls || "—")}</span></div>
         </div>
         ${tiers.length ? `<div class="card-tiers" title="Cards needed per tier">${tierSummary}</div>` : ""}

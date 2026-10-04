@@ -1464,6 +1464,14 @@ for (const cl of CLASSES) {
   const dest = `${norm(cl.key)}.png`;
   if (copyNamedSprite(`card_bg_${norm(cl.key)}`, OUT_CARDBG, dest)) classBg[cl.key] = `assets/cardbg/${dest}`;
 }
+// card BORDER frame_<class> — drawn untinted OVER bg + creature in obj_cardalbum_Draw_64 (80×120, transparent centre;
+// _su_extract code/CARD_BORDER_FINDINGS.md). Same class→sprite switch as the bg.
+const classFrame = {};
+for (const cl of CLASSES) {
+  const dest = `frame_${norm(cl.key)}.png`;
+  if (copyNamedSprite(`frame_${norm(cl.key)}`, OUT_CARDBG, dest)) classFrame[cl.key] = `assets/cardbg/${dest}`;
+  else err(`card frame sprite frame_${norm(cl.key)} missing`);
+}
 
 // ── God Shops reference (per-god favor shops) ─────────────────────────────────
 // god_shop_ref.json: flat {god,tier,item,price,type,description}; group per god, sorted by tier.
@@ -2081,7 +2089,7 @@ let shipped404 = 0;
 try {
   const paths = new Set();
   const collect = (v) => { if (typeof v === 'string') { if (/^assets\//.test(v)) paths.add(v); } else if (Array.isArray(v)) v.forEach(collect); else if (v && typeof v === 'object') Object.values(v).forEach(collect); };
-  collect([creatures, specs, raceIcons, classIcons, classBg, traitItems, statMats, trickMats, relics, cards, gemIcons, spellGems, wardrobe, artGroup]);
+  collect([creatures, specs, raceIcons, classIcons, classBg, classFrame, traitItems, statMats, trickMats, relics, cards, gemIcons, spellGems, wardrobe, artGroup]);
   for (const p of paths) if (!fs.existsSync(path.join(ROOT, p))) { if (shipped404 < 40) err(`404 shipped: data.js would reference '${p}' but no file exists`); shipped404++; }
 } catch (e) { warn(`asset 404-shipped guard skipped: ${e.message}`); }
 console.log(`  asset guards: ${assetUses.size} source sprites · ${crossUse} cross-usage alert(s) · ${assetCopy404.length} 404-source · ${shipped404} 404-shipped`);
@@ -2568,6 +2576,7 @@ const SU_DATA = {
   },
   classes: CLASSES,
   classBg,
+  classFrame,
   classIcons,
   raceIcons,
   creatures,
