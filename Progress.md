@@ -1428,6 +1428,11 @@ MAPPING not for asserting PRESENCE; no inventing entities from the community-CSV
       CreatureAttack, OnDeath and StartupTraits fully decompiled (gates with evidence 408 → 2,057). ExecuteEvents was
       partial (low-memory kill); StartupGems / SpellDamage / BuffsDebuffs / EndOfTurn / StatGain not yet reached.
     - **Provenance:** code 84% · llm 10%.
+  - **2026-10-04 Task R:** all 12 battle functions region-decompiled (ExecuteEvents, StartupGems, SpellDamage,
+    StartupBuffsDebuffs, EndOfTurn, StatGain finished; 4G heap, one JVM per function); gates with evidence 2,057 → 2,570.
+    A ruling guard stops re-proposing tags a pre-approved ruling replaced.
+    - **Residual (a) basically flat:** what's left is shared generic handlers, out-of-block scaling, callee status,
+      spell-calc / gem fields, and the long tail.
     - **Spells decoded too** (per-spell switch in bc_CreatureCast; 82% agreement with app spell tags); taxonomy
       integration is next.
 - [ ] **Capped effects with no app surface yet** (keep in context — user 2026-10-02). `_su_extract data/model/dr_caps.json`
