@@ -2918,6 +2918,9 @@ const SU_DATA = {
     const o = { value: a.base ?? null, unit: a.unit || null, apply: (a.application || {}).class || null };
     const q = (a.operand || {}).quantity; if (q && q.length) o.per = q;
     if ((a.operand || {}).role) o.role = a.operand.role;
+    if ((a.operand || {}).compare) o.compare = a.operand.compare;                 // threshold role: '>' | '<' | '>=' …
+    if ((a.operand || {}).constant_side) o.constantSide = a.operand.constant_side;
+    if ((a.operand || {}).subjects) o.subjects = a.operand.subjects;              // whose quantity (attacker / target / caster …)
     if (a.percent_of) o.percentOf = a.percent_of;
     if (a.capped_by) o.cappedBy = a.capped_by;
     if (a.per_count != null) o.perCount = a.per_count;
@@ -2927,6 +2930,7 @@ const SU_DATA = {
     if (a.formula) o.formula = a.formula;
     o.conf = { unit: a.unit_confidence || null, apply: (a.application || {}).confidence || null };
     if ((a.operand || {}).operand_check && a.operand.operand_check.ok === false) o.flag = 'operand_check_failed';
+    if (((a.operand || {}).operand_check || {}).merge) o.mergeBound = true;          // bound per path at a control-flow merge (S14)
     if (a.unit_description_conflict) o.flag = 'unit_description_conflict';
     if (a.code_site) o.site = a.code_site;
     return o;

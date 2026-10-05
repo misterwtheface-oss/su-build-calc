@@ -384,6 +384,12 @@ Verified: headless Chrome load (no JS errors), spec labels/perks, shops present,
 
 
 
+
+### 2026-10-05 — formulas S14 folded into the code tier
+- `_su_extract` S14: all 165 previously-undecompiled gate sites now decompiled; per-path reaching definitions bind 110 more amounts (Decapitation 0.35 = a Health THRESHOLD; bc_SpellDamage slot resolved per spell); slot 0 = enemy side is now code-certain; 121 handler argument roles grounded; Inner Strength = 0.8 (MASSIVE). Self-check 53/53, spot-check 0 wrong.
+- Adapter maps the new operand fields (`role`, `compare`, `constantSide`, `subjects`, `mergeBound`); 54 amounts are thresholds (gate values, not magnitudes). EFFECT_ENGINE.md updated.
+- New code-vs-text flags (code kept): Valkyrie p3 caps crits AGAINST enemies; Evil Eye 1000× Attack vs "10000%"; Coming Undone reads the attacked creature's stats; Powershift / Master of Storms use ≥ where text says "above".
+
 ### 2026-10-05 — S15 adoptions: trait-item code links, artifact tier slots, rune rewards
 - Trait items: new code-link pass (`material_trait_links.json`: mat[id] property 15 = Trait, value = runtime trait id) fills links the name join missed — +5 (Quivering Scorpion → Parry, Pristine Marble → Shock Aura, Misery ×3); all 1,717 existing links agree with code; Sinister/Negative Energy already correct (stale recon file only). 47 code links grant traits the app doesn't ship.
 - Artifact slots unlock by tier (code): stat 3/10/35 (+primary at 1), trick 5/25, trait 15, spell 50, nether 50 (awakening assumed). Locked boxes show their tier; lowering the tier drops items in boxes it no longer unlocks; saved artifacts with more filled slots than their tier allows are raised to the lowest legal tier on load (content kept).

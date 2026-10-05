@@ -38,7 +38,7 @@ Extensions this tier adds to the shared shape (all optional, so the existing tie
 | `src.kind` | adds `spell {id}`, `relic {id, minRank}` (relic perk unlocks at rank 10·k) and `card {id, power}` |
 | `when` | `{event, side}`: the trigger (`attack`, `cast`, `damage_taken`, `turn_start`, `battle_start`, `passive_stat`, …) |
 | `target` | `{side}` (`self`, `ally`, `enemy`, `event:<role>`, …); composes with the existing `{race}` |
-| `amount` | `{value, unit: fraction\|percent\|flat, apply: add\|multiply\|set\|cap\|compare, per: [quantity…], perRank, perCount, percentOf, cappedBy, tier/potency/defPen, conf, flag, site}` |
+| `amount` | `{value, unit: fraction\|percent\|flat, apply: add\|multiply\|set\|cap\|compare, per: [quantity…], role, compare, constantSide, subjects, perRank, perCount, percentOf, cappedBy, tier/potency/defPen, conf, flag, mergeBound, site}` — `role: threshold` + `compare` = a gate value (e.g. target Health below 35%), not a magnitude; `subjects` = whose quantity `per` reads |
 | `args` | op-specific parameters (`stat`, `direction`, `scope`, `condition`, `action`, …) |
 | `chance`, `thresholds`, `gateNegated`, `extraAmounts` | as decoded; `conf` = `code` \| `inferred` per rule |
 
