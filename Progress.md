@@ -383,6 +383,13 @@ Verified: headless Chrome load (no JS errors), spec labels/perks, shops present,
 
 
 
+
+### 2026-10-05 — S15 adoptions: trait-item code links, artifact tier slots, rune rewards
+- Trait items: new code-link pass (`material_trait_links.json`: mat[id] property 15 = Trait, value = runtime trait id) fills links the name join missed — +5 (Quivering Scorpion → Parry, Pristine Marble → Shock Aura, Misery ×3); all 1,717 existing links agree with code; Sinister/Negative Energy already correct (stale recon file only). 47 code links grant traits the app doesn't ship.
+- Artifact slots unlock by tier (code): stat 3/10/35 (+primary at 1), trick 5/25, trait 15, spell 50, nether 50 (awakening assumed). Locked boxes show their tier; lowering the tier drops items in boxes it no longer unlocks; saved artifacts with more filled slots than their tier allows are raised to the lowest legal tier on load (content kept).
+- RI/Runes: each False God rune shows its reward bonus ("+N% Rewards", scr_RuneBonusRep).
+- Game stores anointments per specialization; the app keeps them per build on purpose (memory: su_anointments_per_build).
+
 ### 2026-10-05 — stats rounded like the game (code-decoded)
 - `_su_extract code/STAT_ROUNDING.md`: fused base = floor((A+B)/2); stored stat after level/personality = max(1, ceil(…)); Atk/Def/Int/Spd floor once after all % bonuses; Health never floored as a whole (artifact share floors, relic share fractional, display floors). App `baseStats`/`finalStats` now match (was Math.round everywhere); many displayed stats shift by ±1.
 - Molecular Betrayal (`stat.share`) reads the third creature's STORED stat (pre-%), unrounded — engine fixed, test stub now distinguishes stored vs final.

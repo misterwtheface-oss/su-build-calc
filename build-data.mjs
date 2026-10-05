@@ -860,6 +860,15 @@ console.log(`  spell-slot grants: ${spellSlotGrants.length} (${spellSlotGrants.m
 // ── artifacts (container properties) ──
 const artRef = readJSON(path.join(REF, 'artifacts_ref.json')).records;
 const artGroup = { primary: [], stat: [], trick: [] };
+// artifact slot unlock tiers — CODE (_su_extract artifact_slots.json, S15: inv_ArtifactStatString / obj_bsupgrade).
+// Keys = the app's artifact slot groups; stat excludes the primary (stat1, tier 1). Nether also needs awakening.
+const artSlotUnlocks = (() => {
+  const f = path.join(MODEL, 'artifact_slots.json'); if (!fs.existsSync(f)) { err('artifact_slots.json missing'); return null; }
+  const by = (re) => readJSON(f).slots.filter(x => re.test(x.slot)).map(x => x.unlock_tier).sort((a, b) => a - b);
+  const u = { stat: by(/^stat[2-9]$/), trick: by(/^trick\d$/), traits: by(/^trait$/), spells: by(/^spell$/), netherIds: by(/^nether$/) };
+  console.log(`  artifact slot unlocks (code): ${Object.entries(u).map(([k, v]) => `${k} ${v.join('/')}`).join(' · ')}`);
+  return u;
+})();
 const SLOT_TO_GROUP = { Artifact: 'primary', Stat: 'stat', Trick: 'trick' };
 artRef.forEach((a, i) => {
   const g = SLOT_TO_GROUP[a.slot];
@@ -1124,6 +1133,27 @@ const matIcon = (m) => {                                    // copy a material's
 //   1  → trick material (Slate/Curio/Crippler/…)          → Trick slot
 //   null + trait_id → the 5 strays that ARE trait mats (Thrasher Tooth, Oni Fragment, …) → Trait slot
 //   null + no trait_id → Amber                            → Stat slot
+// CODE links (_su_extract material_trait_links.json, S15): global.mat[id] = [name, rarity, property, value, sprite];
+// property 15 = Trait and value = the granted trait's RUNTIME id (inv_MaterialValue) — the game's own item→trait link.
+// Every name-based link above agrees with it; this fills the items the name join left unlinked (e.g. Quivering
+// Scorpion → Parry, the Misery set). Traits not shipped in the app stay unlinked.
+{
+  const f = path.join(MODEL, 'material_trait_links.json');
+  if (fs.existsSync(f)) {
+    const appByRt = new Map(); for (const id in traits) for (const rt of traits[id].runtimeIds || []) appByRt.set(rt, +id);
+    const matNames = new Set(matRecs.map(m => m.name));
+    let added = 0, conflict = 0, notShipped = 0;
+    for (const r of readJSON(f).records || []) {
+      const tid = appByRt.get(r.trait_runtime_id);
+      if (tid == null) { notShipped++; continue; }
+      if (!matNames.has(r.name)) continue;
+      const cur = traitIdByItemName.get(r.name);
+      if (cur == null) { traitIdByItemName.set(r.name, tid); added++; }
+      else if (cur !== tid) { conflict++; warn(`trait item "${r.name}": name link → ${cur}, code link → ${tid} (code wins)`); traitIdByItemName.set(r.name, tid); }
+    }
+    console.log(`  trait-item code links: +${added} added · ${conflict} name/code conflicts (code wins) · ${notShipped} grant traits not shipped`);
+  }
+}
 const traitItems = [];
 for (const m of matRecs) {
   const tid = traitIdByItemName.get(m.name);               // the trait this material grants (game's own link)
@@ -2314,6 +2344,7 @@ const threatIcon = (sprite, what) => {
 };
 const runes = runesRaw.runes.map(r => ({
   key: r.key, name: RUNE_NAME[r.key] || r.key, effect: r.effect,
+  rewardPct: r.reward_bonus_pct ?? null,     // scr_RuneBonusRep (code, S15) — shown as the game's "+{1}% Rewards"
   icon: threatIcon((ICONS2.runes_app_join[r.key] || {}).sprite, `rune ${r.key}`),
   counters: RUNE_COUNTERS[r.key] || [], counterClass: null,
   general: !RUNE_COUNTERS[r.key],
@@ -2802,7 +2833,7 @@ const SU_DATA = {
       .filter(c => c.category !== 'Effect Limitation')
       .map(c => ({ ...c, values: c.values.filter(v => !KILLED_VALUES.has(c.category + '::' + v)) })),
     status: taxonomy.status },
-  artifact: artGroup,
+  artifact: { ...artGroup, slotUnlocks: artSlotUnlocks },
   artTierMinLevel,          // code (inv_ArtifactIcon): min level for artifact icon tiers 1..6
   traitItems,
   statMats,

@@ -269,13 +269,19 @@
   const spellMeta = (sp) => sp ? [sp.charges != null ? `${sp.charges} charge${sp.charges === 1 ? "" : "s"}` : null,
     sp.potency ? sp.potency : null].filter(Boolean).join(" · ") : "";
   // fixed artifact slot template (all artifacts, max level): 1 primary + these; nether = 1 slot
+  // unlock = the artifact tier (rank) each box opens at — code-grounded (_su_extract artifact_slots.json, S15:
+  // inv_ArtifactStatString / obj_bsupgrade); the nether slot also needs the post-50 awakening, taken as given at 50.
+  const SLOT_UNLOCK = (D.artifact && D.artifact.slotUnlocks) || {};
   const ART_SLOTS = [
-    { key: "stat", label: "Stat", max: 3, pick: "stat" },
-    { key: "trick", label: "Trick", max: 2, pick: "trick" },
-    { key: "traits", label: "Trait", max: 1, pick: "trait" },
-    { key: "spells", label: "Spell", max: 1, pick: "spell" },
-    { key: "netherIds", label: "Nether", max: 1, pick: "nether" },
+    { key: "stat", label: "Stat", max: 3, pick: "stat", unlock: SLOT_UNLOCK.stat || [3, 10, 35] },
+    { key: "trick", label: "Trick", max: 2, pick: "trick", unlock: SLOT_UNLOCK.trick || [5, 25] },
+    { key: "traits", label: "Trait", max: 1, pick: "trait", unlock: SLOT_UNLOCK.traits || [15] },
+    { key: "spells", label: "Spell", max: 1, pick: "spell", unlock: SLOT_UNLOCK.spells || [50] },
+    { key: "netherIds", label: "Nether", max: 1, pick: "nether", unlock: SLOT_UNLOCK.netherIds || [50] },
   ];
+  const artOpen = (sl, rank) => sl.unlock.filter(t => t <= (rank || 50)).length;   // boxes unlocked at this tier
+  // keep an artifact game-legal for its tier: drop anything sitting in a box the tier hasn't unlocked
+  const artTrim = (a) => { for (const sl of ART_SLOTS) if ((a[sl.key] || []).length > artOpen(sl, a.rank)) a[sl.key] = a[sl.key].slice(0, artOpen(sl, a.rank)); };
   const RELIC = new Map(D.relics.map(r => [r.id, r]));
   const CARD = new Map(D.cards.map(c => [c.id, c]));
   const CONDITION = new Map((D.conditions || []).map(c => [`${c.cat}:${c.key}`, c]));   // keyed "Buff:agile" for the taxonomy viewer
@@ -347,6 +353,11 @@
     }
     a.stat ||= []; a.trick ||= []; a.traits ||= []; a.spells ||= []; a.netherIds ||= [];
     if (!a._gemMigrated) { a.spells = []; a._gemMigrated = true; }   // artifact.spells now holds spell-GEM ids, not raw spells
+    // slot unlocks by tier (2026-10-05): an artifact saved before this with more filled slots than its tier allows is
+    // raised to the lowest tier that unlocks them (keeps the user's content, makes it game-legal)
+    let need = a.rank || 50;
+    for (const sl of ART_SLOTS) { const n = Math.min((a[sl.key] || []).length, sl.max); if (n) need = Math.max(need, sl.unlock[n - 1]); }
+    if (need !== (a.rank || 50)) a.rank = need;
   }
 
   // spell gems (built entities: 1 spell + up to 3 property items) — slottable into CREATURES only
@@ -2282,7 +2293,7 @@
     // same row layout as the Glossary: large icon column + name/effect body (perk-line / apx-iconcol)
     return `<div class="perk-line">
       <div class="apx-iconcol">${m.icon ? `<div class="apx-crea">${spriteImg(m.icon, "px")}</div>` : ""}</div>
-      <div class="perk-line-body"><div class="perk-line-head"><b>${esc(m.name)}</b>${chips}</div>
+      <div class="perk-line-body"><div class="perk-line-head"><b>${esc(m.name)}</b>${chips}${m.rewardPct != null ? `<span class="perk-line-meta">+${m.rewardPct}% Rewards</span>` : ""}</div>
         <div class="perk-desc">${esc(m.effect)}</div></div></div>`;
   }
   function renderThreats() {
@@ -3449,6 +3460,7 @@
           const arr = a[sl.key] || [];
           const boxes = [];
           for (let i = 0; i < sl.max; i++) boxes.push(arr[i] !== undefined ? filledBox(sl.pick, arr[i], i)
+            : i >= artOpen(sl, rank) ? `<div class="art-slot locked"><div class="as-ico glyph">🔒</div><div class="as-lab">Tier ${sl.unlock[i]}</div></div>`
             : `<div class="art-slot add ${st.pickType === sl.pick ? "picking" : ""}" data-action="art-slot" data-t="${sl.pick}"><div class="as-ico glyph">＋</div><div class="as-lab">${sl.label}</div></div>`);
           return `<div class="art-slot-group" style="--n:${sl.max}"><div class="section-label">${sl.label}</div><div class="art-slot-grid">${boxes.join("")}</div></div>`;
         })).join("") + `</div>`;
@@ -3459,7 +3471,7 @@
         const psl = ART_SLOTS.find(s => s.pick === st.preview.type) || {};
         const parr = a[psl.key] || [];
         const equipped = psl.max === 1 && parr[0] === st.preview.value;   // single-slot toggle-off
-        const full = parr.length >= psl.max && !equipped;
+        const full = parr.length >= artOpen(psl, rank) && !equipped;
         side = renderArtPreview(st.preview.type, st.preview.value, rank, { equipped, full });
       }
       else if (st.pickType) side = renderArtPicker(st, a, rank);
@@ -4648,10 +4660,12 @@
         // a stone in use on another creature can't join an artifact that is (or will be) in the loadout
         if (type === "nether" && arr[0] !== v) { const tgt = artTargetSlot(ovState.draft.id, ovState.slotIdx);
           if (tgt != null && netherUsers(v, ovState.draft.id, tgt).length) break; }
+        const open = artOpen(sl, ovState.draft.rank);
+        if (!open) break;                                                       // tier hasn't unlocked this group
         if (sl.max === 1) { arr[0] === v ? (arr.length = 0) : (arr[0] = v); }   // single slot toggles/replaces
-        else if (arr.length < sl.max) arr.push(v);                              // multi slot: independent, duplicates OK
+        else if (arr.length < open) arr.push(v);                                // multi slot: independent, duplicates OK
         ovState.preview = null;
-        if (arr.length >= sl.max) ovState.pickType = null;   // group full → back to the grid
+        if (arr.length >= open) ovState.pickType = null;     // group full → back to the grid
         refreshOverlay(); break;
       }
       case "art-rm": {
@@ -4790,7 +4804,7 @@
     const t = e.target.closest("[data-action]"); if (!t) return;
     const A = t.dataset.action, v = t.value;
     // range sliders / selects
-    if (A === "artb-rank") { ovState.draft.rank = +v; refreshKeeping(OV, ovState.render(), t, () => refreshOverlay()); return; }
+    if (A === "artb-rank") { ovState.draft.rank = +v; artTrim(ovState.draft); refreshKeeping(OV, ovState.render(), t, () => refreshOverlay()); return; }
     if (A === "sg-tier") { ovState.draft.tier = +v; if (ovState.draft.propIds.length >= gemSlots(ovState.draft)) ovState.picking = false;
       refreshKeeping(OV, ovState.render(), t, () => refreshOverlay()); return; }
     if (A === "relic-rank") { dovState.rank = +v; refreshKeeping(DOV, dovState.render(), t, () => refreshDetail()); return; }
