@@ -1653,6 +1653,135 @@
     </div></div>`;
   }
 
+  // ── build import / export (buildio.js, BUILD_IO.md) ─────────────────────────────────────────────────
+  // Export = readable game-style text (level 1 + the app's stats) + the SUC1 code line (the whole build, lossless).
+  // Import = paste either a game "Export Build" text or a Companion export; ALWAYS loads as the current party.
+  let BIO = null;
+  const bio = () => BIO || (BIO = window.SU_BUILDIO.create({ D, CREA, SPELL, SPELLPROP, RELIC, NETHER_TRIGGERS, anointList }));
+  const sameContent = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+  // per-slot readable pieces for the export text (the app's own level-1 numbers)
+  function exportViews(b) {
+    const sp = (id) => SPELL.get(id);
+    return b.slots.map(slot => {
+      if (!slot || slot.cid == null) return null;
+      const c = CREA.get(slot.cid), f = slot.fusion != null ? CREA.get(slot.fusion) : null, fs = finalStats(slot), base = baseStats(slot);
+      const traits = [["Innate Trait", c && c.traitId], ["Fused Trait", f && f.traitId]].filter(([, id]) => id != null && TRAIT[id])
+        .map(([label, id]) => ({ label, name: TRAIT[id].name, desc: TRAIT[id].desc || "" }));
+      const a = resolveArtifact(slot), artLines = [], stoneLines = [];
+      let traitSlot = null;
+      if (a) {
+        const rank = a.rank || 50, pr = PRIMARY.find(x => x.property === a.primary);
+        if (pr) artLines.push(`${pr.perRank[rank] || 0}% ${pr.stat}`);
+        for (const nm of [...(a.stat || []), ...(a.trick || [])]) { const g = propGroups.get(nm), e = g && g.entries[0];
+          if (e) artLines.push(`${e.perRank[rank] ?? 0}${e.unit === "%" ? "%" : ""} ${nm}`); }
+        for (const id of a.traits || []) { const ti = TRAITITEM.get(id), tr = ti && TRAIT[ti.traitId]; if (tr) { artLines.push(tr.name); traitSlot = { name: tr.name, desc: tr.desc || "" }; } }
+        for (const id of a.spells || []) { const s = sp(id); if (s) artLines.push(s.name); }
+        const n = nether.find(x => x.id === (a.netherIds || [])[0]);
+        if (n) {
+          artLines.push(`${n.name}${n.rarity != null ? ` (${n.rarity})` : ""}`);
+          for (const p of n.props || []) {
+            if (p.cat === "trait") { const ti = TRAITITEM.get(p.key); if (ti) stoneLines.push(`Trait: ${ti.traitName || ti.name}`); }
+            else if (p.cat === "spell") { const s = sp(p.key); if (s) stoneLines.push(`${s.name} ${p.trigger || "On Attack"}`); }
+            else { const g = propGroups.get(p.key), e = g && g.entries[0]; stoneLines.push(`${p.value}${e && e.unit !== "%" ? "" : "%"} ${p.key}`); }
+          }
+        }
+      }
+      const gemNames = (slot.spellGemIds || []).map(id => { const g = spellGems.find(x => x.id === id); return g && gemSpell(g) ? gemSpell(g).name : null; }).filter(Boolean);
+      return { final: fs.final, cls: base.cls, traits, artLines, stoneLines, traitSlot, gemNames };
+    });
+  }
+  async function exportBuildText(b) {
+    const libs = { artifacts, nether, spellGems };
+    return bio().exportText(bio().payloadFromApp(b, libs), exportViews(b));
+  }
+  // payload → current party. Artifacts / stones / gems are added to the libraries, reusing an identical existing item.
+  function applyImportedBuild(payload, warnings) {
+    const usedGems = new Set();
+    const spellId = (key) => { const s = bio().SPELL_BY_KEY.get(key); return s ? s.id : null; };
+    const ensureStone = (n) => {
+      if (!n) return null;
+      const props = (n.props || []).map(p => p.cat === "spell" ? { cat: "spell", key: spellId(p.spell), trigger: p.trigger || "On Attack" } : { cat: p.cat, key: p.key, value: p.value ?? 0 })
+        .filter(p => p.key != null && (p.cat !== "trait" || TRAITITEM.has(p.key)));
+      const body = { name: n.name || `Nether Stone ${nextNetherId}`, icon: GEM_ICONS.some(g => g.key === n.icon) ? n.icon : (GEM_ICONS[0] || {}).key, props, ...(n.rarity != null ? { rarity: n.rarity } : {}) };
+      const hit = nether.find(x => sameContent({ name: x.name, icon: x.icon, props: x.props, ...(x.rarity != null ? { rarity: x.rarity } : {}) }, body));
+      if (hit) return hit.id;
+      const id = nextNetherId++; nether.push({ id, ...body }); return id;
+    };
+    const ensureArtifact = (a) => {
+      if (!a || !a.primary) return null;
+      const stoneId = ensureStone(a.nether);
+      const body = { name: a.name || `Artifact ${nextArtId}`, rank: a.rank || 50, primary: a.primary, stat: (a.stat || []).slice(0, 3), trick: (a.trick || []).slice(0, 2),
+        traits: (a.traits || []).filter(id => TRAITITEM.has(id)).slice(0, 1), spells: (a.spells || []).map(spellId).filter(x => x != null).slice(0, 1), netherIds: stoneId != null ? [stoneId] : [] };
+      const hit = artifacts.find(x => sameContent({ name: x.name, rank: x.rank || 50, primary: x.primary, stat: x.stat, trick: x.trick, traits: x.traits, spells: x.spells, netherIds: x.netherIds }, body));
+      if (hit) return hit.id;
+      const id = nextArtId++; artifacts.push({ id, ...body, _gemMigrated: true, _rawSpell: true }); return id;
+    };
+    const ensureGem = (g) => {
+      const sid = spellId(g.spell); if (sid == null) { warnings.push(`Spell "${g.spell}" not found — gem skipped.`); return null; }
+      const propIds = (g.props || []).map(k => (bio().PROP_BY_KEY.get(k) || {}).id).filter(x => x != null);
+      const body = { name: g.name || "", spellId: sid, tier: g.tier ?? GT.max, propIds };
+      const hit = spellGems.find(x => !usedGems.has(x.id) && sameContent({ name: x.name || "", spellId: x.spellId, tier: x.tier ?? GT.max, propIds: x.propIds || [] }, body));
+      const id = hit ? hit.id : nextSpellGemId++;
+      if (!hit) spellGems.push({ id, ...body });
+      usedGems.add(id); return id;
+    };
+    const slots = (payload.slots || []).slice(0, 6).map(s => {
+      const slot = emptySlot();
+      if (!s || !CREA.has(s.cid)) return slot;
+      Object.assign(slot, { cid: s.cid, fusion: CREA.has(s.fusion) ? s.fusion : null, personality: s.personality && PERS.has(s.personality) ? s.personality : null,
+        scrolls: s.scrolls || {}, skinId: s.skinId ?? null, ...(s.fuseColor != null ? { fuseColor: s.fuseColor } : {}),
+        relic: s.relic && RELIC.has(s.relic.id) ? { id: s.relic.id, rank: s.relic.rank } : null });
+      slot.artifactId = ensureArtifact(s.artifact);
+      slot.spellGemIds = (s.gems || []).map(ensureGem).filter(x => x != null);
+      return slot;
+    });
+    build = normalizeBuild({ schema: 3, specIds: 2, skinIds: 2, specId: SPEC.has(payload.spec) ? payload.spec : null,
+      perkAlloc: payload.perkAlloc || {}, anoints: (payload.anoints || []).filter(a => SPEC.has(a.specId)), slots });
+    clearBookmarks(); persistNether(); persistArtifacts(); persistSpellGems(); persistBuild(); render();
+    return { creatures: slots.filter(s => s.cid != null).length };
+  }
+  async function copyText(text) {
+    try { await navigator.clipboard.writeText(text); return true; } catch {}
+    try { const ta = document.createElement("textarea"); ta.value = text; ta.style.position = "fixed"; ta.style.opacity = "0"; document.body.appendChild(ta); ta.select();
+      const ok = document.execCommand("copy"); ta.remove(); return ok; } catch { return false; }
+  }
+  // compact pop-out (Riddle Dwarf style, top-right): Import | Export toggle. Export = the current party.
+  function openBuildIO(mode = "import") {
+    ovState = { kind: "bio", mode, text: "", out: "", status: "", warnings: null, error: null, busy: false, render: renderBuildIO };
+    openOverlay(ovState.render());
+    if (mode === "export") runExport(); else maybeFocusSearch(OV);
+  }
+  function runExport() {
+    const st = ovState; st.busy = true; st.status = ""; refreshOverlay();
+    exportBuildText(build).then(t => { if (ovState === st) { st.out = t; st.busy = false; refreshOverlay(); } })
+      .catch(e => { if (ovState === st) { st.busy = false; st.error = String(e.message || e); refreshOverlay(); } });
+  }
+  function renderBuildIO() {
+    const st = ovState, exp = st.mode === "export";
+    const tabs = `<div class="seg bio-tabs"><button class="seg-btn ${!exp ? "on" : ""}" data-action="bio-mode" data-v="import">Import</button>
+      <button class="seg-btn ${exp ? "on" : ""}" data-action="bio-mode" data-v="export">Export</button></div>`;
+    let body, foot;
+    if (exp) {
+      body = st.busy ? `<div class="slot-sub" style="padding:12px">Preparing export…</div>`
+        : `<textarea class="bio-text" readonly>${esc(st.out)}</textarea>`;
+      foot = `<span class="foot-info">${esc(st.status || "")}</span><div><button class="btn-ghost" data-action="bio-copy" data-what="code" ${st.busy ? "disabled" : ""}>Copy code only</button>
+        <button class="btn-confirm" data-action="bio-copy" data-what="all" ${st.busy ? "disabled" : ""}>Copy</button></div>`;
+    } else if (st.warnings) {
+      body = `<div class="bio-result"><b>Loaded ${st.loaded} creature${st.loaded === 1 ? "" : "s"} into your party${st.source === "code" ? " (Companion build code)" : " (game export)"}.</b>
+        ${st.warnings.length ? `<ul class="bio-warn">${st.warnings.map(w => `<li>${esc(w)}</li>`).join("")}</ul>` : ""}</div>`;
+      foot = `<span class="foot-info"></span><div><button class="btn-confirm" data-action="bio-done">Done</button></div>`;
+    } else {
+      body = `<textarea class="bio-text ovl-search" data-action="bio-text" placeholder="Paste a Siralim Ultimate “Export Build” text or a Companion export…">${esc(st.text)}</textarea>`;
+      foot = `<span class="foot-info">${st.error ? `<span class="ns-issue">${esc(st.error)}</span>` : "Replaces your current party."}</span><div>
+        <button class="btn-confirm" data-action="bio-run">Import</button></div>`;
+    }
+    return `<div class="ovl-backdrop riddle-backdrop" data-action="backdrop"><div class="overlay-panel riddle-pop bio-pop">
+      <div class="riddle-pop-head"><span class="riddle-pop-title">Build</span>${tabs}<span class="bio-gap"></span><button class="ovl-close" data-action="close-ovl">✕</button></div>
+      <div class="riddle-pop-body bio-body">${body}</div>
+      <div class="bio-foot">${foot}</div>
+    </div></div>`;
+  }
+
   // wardrobe icon picker (detail overlay) — full 820 costumes, front-facing frame, search + category
   // 4 groups, every costume in exactly one (_su_extract code/classify_wardrobe.py: spec tiers / "Master of" / god / misc)
   const WARDROBE_CATS = ["specialization", "master", "god", "misc"];
@@ -4249,6 +4378,18 @@
         const nb = { id: nextBuildId++, name: (d.name || "").trim() || `Build ${builds.length + 1}`, icon: d.icon, ts: Date.now(), build: JSON.parse(JSON.stringify(build)) };
         builds.push(nb); persistBuilds(); ovState.draft = null; ovState.sel = nb.id; flashBuild(nb.id); break;
       }
+      case "open-bio": openBuildIO("import"); break;
+      case "bio-mode": { const st = ovState; if (!st || st.kind !== "bio" || st.mode === t.dataset.v) break;
+        st.mode = t.dataset.v; st.warnings = null; st.error = null; st.status = "";
+        if (st.mode === "export") runExport(); else { refreshOverlay(); maybeFocusSearch(OV); } break; }
+      case "bio-copy": { const st = ovState; if (!st || !st.out) break;
+        const txt = t.dataset.what === "code" ? (st.out.match(/SUC1:\S+/) || [""])[0] : st.out;
+        copyText(txt).then(ok => { st.status = ok ? (t.dataset.what === "code" ? "Code copied ✓" : "Copied ✓") : "Copy failed — select the text and copy it manually"; refreshOverlay(); }); break; }
+      case "bio-run": { const st = ovState; if (!st || !st.text.trim()) break;
+        bio().importText(st.text).then(r => { const warn = [...r.warnings]; const res = applyImportedBuild(r.payload, warn);
+          st.warnings = warn; st.loaded = res.creatures; st.source = r.source; st.error = null; refreshOverlay(); })
+          .catch(e => { st.error = String(e.message || e); refreshOverlay(); }); break; }
+      case "bio-done": closeOverlay(); break;
       case "builds-load": {
         const b = builds.find(x => x.id === +t.dataset.id);
         if (b) { build = normalizeBuild(JSON.parse(JSON.stringify(b.build))); clearBookmarks(); persistBuild(); closeOverlay(); render(); }
@@ -4668,6 +4809,7 @@
     if (A === "nether-name") { ovState.draft.name = v; return; }
     if (A === "sg-name") { ovState.draft.name = v; return; }
     if (A === "builds-name") { ovState.draft.name = v; return; }
+    if (A === "bio-text") { ovState.text = v; ovState.error = null; return; }
     // search fields — live filter without losing caret
     const searchMap = { "crea-search": [OV, ovState], "spec-search": [OV, ovState], "artb-search": [OV, ovState],
       "relic-search": [OV, ovState], "cards-search": [OV, ovState], "anoint-search": [OV, ovState], "nether-search": [OV, ovState], "sg-search": [OV, ovState], "appendix-search": [OV, ovState], "shop-search": [OV, ovState], "realm-search": [OV, ovState], "riddle-search": [OV, ovState], "gloss-search": [OV, ovState], "facet-search": [DOV, dovState], "perk-search": [DOV, dovState], "pers-search": [DOV, dovState], "iconpick-search": [DOV, dovState], "skin-search": [DOV, dovState] };

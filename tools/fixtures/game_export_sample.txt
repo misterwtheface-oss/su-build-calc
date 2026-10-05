@@ -1,0 +1,266 @@
+========== CHARACTER ==========
+Arutema, Animator
+Achievement Points: 1458 / 5285 (27%)
+Time Played: 394:50:59
+Game Version: 2.0.38
+
+Anointments: Dread Covenant, Executioner, Massacre, Enduring Rage, Mortal Vessel
+
+========== CREATURES ==========
+Level 6395 Animatus
+Personality: Brave
+ Animatus / Death
+
+Health: 76768
+Attack: 71511
+Intelligence: 47980
+Defense: 31995
+Speed (15) : 76768
+
+Innate Trait: Brilliant Creation
+This creature has 15% more {STAT_attack} and {STAT_intelligence} for each dead creature on your side, and 15% more {STAT_defense} and {STAT_speed} for each living creature on your side.
+
+Artifact: Dark Commander
+ 59% Attack
+ 59% Attack
+ 59% Attack
+ 59% Attack
+ 83% Attack Damage
+ 64% Life Strength
+ Charge
+ Aftermath
+ Battle From Within (354)
+
+ 5% Shelled On Damage
+ 22% Attack
+ 6% Vulnerable On Damage
+ 12% Intelligence / Defense
+ 7% Snared On Damage
+ 13% Attack / Speed
+ Trait: Battle From Within
+ Spectral Crash On Attack
+
+Trait Slot: Charge: At the start of each creature's turn, this creature has a 25% chance to {ACTION_attack} a random enemy.
+
+Spell Gems:
+Blood Burst
+Nightmare
+Death's Call
+
+Relic: Vitreous (Rank 100)
+------------------------------
+
+Level 6395 Valkyrie Scout
+Fused with Abyssal Spectre
+Personality: Brutal
+ Valkyrie / Death
+
+Health: 57576
+Attack (15) : 107267
+Intelligence: 17918
+Defense: 34546
+Speed: 36465
+
+Innate Trait: Fight or Flight
+After your other creatures are {ACTION_attacked} by an enemy, this creature {ACTION_attacks} the enemy for 50% normal damage.
+Fused Trait: Cold Touch
+After this creature {ACTION_attacks}, it decreases the target's highest stat by 20%.
+
+Artifact: Draining Blade
+ 59% Attack
+ 36% Attack / Speed
+ 36% Attack / Speed
+ 36% Health / Attack
+ 83% Attack Damage
+ 29% Critical Chance
+ Overcome
+ Demon's Judgment
+ Dragon Cannon Shot (321)
+
+ 25% Sorcery Strength
+ Trait: Deflective Dragon Armor
+ Trait: Cannon Shot
+
+Trait Slot: Overcome: After this creature {ACTION_attacks}, its Artifact's Spell Slot has an independent 50% chance to activate.
+
+Spell Gems:
+Impending Doom
+Summon Death
+Summon Famine
+
+Relic: Temptation (Rank 100)
+------------------------------
+
+Level 6395 Augmented Ossein
+Fused with Pegasus
+Personality: Brutal
+ Ossein / Life
+
+Health: 72930
+Attack (15) : 88014
+Intelligence: 20477
+Defense: 34546
+Speed: 34546
+
+Innate Trait: Lonesome Haze
+After your creatures are resurrected, they {ACTION_attack} random enemies 3 times.
+Fused Trait: Chrysaor's Ambition
+After this creature {ACTION_attacks}, it gives a random ally 2 random buffs.
+
+Artifact: Aegis Blade
+ 59% Attack
+ 36% Attack / Defense
+ 36% Health / Attack
+ 36% Health / Defense
+ 19% Rebirth On Damage
+ 19% Immune On Damage
+ Galvanization
+ Archangel's Blessing
+ Agility Aura (234)
+
+ 5% Rebirth On Damage
+ 19% Intelligence
+ 14% Attack / Defense
+ 25% Life Strength
+ Trait: Agility Aura
+
+Trait Slot: Galvanization: After this creature {ACTION_attacks}, it gains a {CONDNAME_BUFF_BARRIER} that absorbs damage equal to 50% of its {STAT_health}.
+
+Spell Gems:
+Covenant
+Saving Grace
+Resurrection
+
+Relic: Ferro (Rank 10)
+------------------------------
+
+Level 6395 Bhasa Cherub
+Fused with Whiptail Clutcher
+Personality: Careful
+ Cherub / Chaos
+
+Health: 65253
+Attack: 23037
+Intelligence (15) : 99016
+Defense: 21112
+Speed: 44142
+
+Innate Trait: Great Conjunction
+After your creatures are killed, they have a 25% chance to be resurrected with 50% {STAT_health} and gain a {CONDNAME_BUFF_BARRIER} that absorbs damage equal to 50% of their Maximum {STAT_health}. This trait does not stack.
+Fused Trait: Lash
+After an enemy dodges an attack, they take damage equal to 30% of their Current {STAT_health}. This trait does not stack.
+
+Artifact: Wabbajack
+ 59% Intelligence
+ 36% Intelligence / Defense
+ 36% Health / Intelligence
+ 36% Health / Intelligence
+ 3 Spell Gem Slots
+ 83% Spell Potency
+ Pandemonium Brilliance
+ Drain Power
+ Diabolic Side (388)
+
+ 6% Protected On Damage
+ 13% Intelligence / Defense
+ 13% Attack / Intelligence
+ 6% Repelling On Damage
+ Trait: Diabolic Power
+ Trait: Wrong Side
+
+Trait Slot: Pandemonium Brilliance: At the end of your creatures' turns, this creature {ACTION_casts} a random spell.
+
+Spell Gems:
+Blitz Howl
+Inner Destruction
+Saving Grace
+Affliction
+Panic Attack
+Infernal Charge
+
+Relic: Ribcracker (Rank 10)
+------------------------------
+
+Level 6395 Reclusive Wight
+Fused with Unicorn Vivifier
+Personality: Careful
+ Wight / Life
+
+Health: 69092
+Attack: 28156
+Intelligence: 44007
+Defense: 28788
+Speed: 36465
+
+Innate Trait: Resurrection Code
+After this creature dies, it has a 50% chance to resurrect its allies with 50% {STAT_health}.
+Fused Trait: Reinvigoration
+After this creature {ACTION_attacks}, it resurrects a random ally with 50% {STAT_health}.
+
+Artifact: Life & Death
+ 59% Attack
+ 36% Attack / Intelligence
+ 36% Health / Attack
+ 36% Health / Intelligence
+ 19% Rebirth On Damage
+ 3 Spell Gem Slots
+ Cradle to the Grave
+ Covenant
+ Proficient Shell (117)
+
+ 5% Shelled On Damage
+ 12% Intelligence / Defense
+ 13% Health / Defense
+ 12% Health / Attack
+ 10% Proficient On Damage
+
+Trait Slot: Cradle to the Grave: After your creatures are killed, they have a 15% chance to resurrect with 50% {STAT_health} for each dead creature on your side. This trait does not stack.
+
+Spell Gems:
+Schism
+Major Healing
+Resurrection
+
+Relic: Whisper (Rank 91)
+------------------------------
+
+Level 6395 Gravebane Wight
+Fused with Sparktail Student
+Personality: Lazy
+ Wight / Sorcery
+
+Health: 107267
+Attack: 28156
+Intelligence: 34546
+Defense: 30708
+Speed: 30708
+
+Innate Trait: Woe
+After this creature dies, enemies take damage equal to 30% of its Maximum {STAT_health}.
+Fused Trait: Bombshell
+Your creatures deal 75% more damage when it is not their turn. This trait does not stack.
+
+Artifact: Sceptre of the Martyr
+ 59% Intelligence
+ 36% Health / Defense
+ 36% Health / Defense
+ 36% Health / Defense
+ 29% Damage Reduction
+ 29% Dodge Chance
+ Savior
+ Covenant
+ Constant Concoction (127)
+
+ 7% Berserk On Damage
+ 17% Attack / Speed
+ Concoction On Turn
+
+Trait Slot: Savior: This creature takes 50% of the damage in place of your other creatures from attacks and spells. This trait does not stack.
+
+Spell Gems:
+Mind Control
+River Against the Current
+Rabid Dementia
+
+Relic: Brambleskin (Rank 10)
+------------------------------

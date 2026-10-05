@@ -6,6 +6,14 @@ Pages on `master`/root, Cloudflare analytics active with the shared github.io to
 No verify-before-push ceremony (no real users yet) — but every change is checked with the jsdom smoke suite
 (scratchpad `smoke.mjs`, ~84 assertions across all flows) before commit.
 
+## 2026-10-05 — Build Import / Export (see BUILD_IO.md)
+**Menu → Import / Export** (below Builds; compact Riddle-Dwarf-style pop-out with an Import | Export toggle; exports the current party). The game has NO build import (code-certain, `_su_extract/code/EXPORT_BUILD_FINDINGS.md`),
+so: Import accepts the game's English "Export Build" text OR a Companion export; Export writes a readable game-style
+text (level 1 + app stats) plus a `SUC1:` code line (whole build, compressed, lossless) for sharing between Companion
+users. Import always loads into the current party and reuses identical library items. Game exports default perk ranks
+to max, gems to level 15 with no properties, artifact level from the primary %. `buildio.js` + `tools/buildio_test.mjs`
+(20/20 on a real export); browser round trip game → app → export → wipe → import = identical party.
+
 ## 2026-10-04 (cont.) — FIX: building a gem from a creature lost the equip context
 Build new / Edit from a creature's spell list opened the builder, and Save/Cancel returned to the plain Menu library
 (`openSpellGems()`), so the new gem showed "＋ Build new" instead of Equip. The builder now carries `retSlot`;

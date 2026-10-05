@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>Siralim Ultimate — Companion</title>
   <meta name="description" content="Theorycraft Siralim Ultimate parties: 6 creature slots, fusion, artifacts, relics, nether stones and realm cards.">
-  <link rel="stylesheet" href="styles.css?v=b88e4a63">
+  <link rel="stylesheet" href="styles.css?v=0cb581a5">
 
   <!-- Favicon: desktop Chrome/Firefox tabs need an explicit rel="icon" (they don't fall back to the
        manifest icons the way mobile/installed does). Without this they request /favicon.ico at the
@@ -39,6 +39,7 @@
           <button class="menu-item" data-action="open-cards">Cards</button>
           <div class="menu-sep"></div>
           <button class="menu-item" data-action="open-builds">Builds</button>
+          <button class="menu-item" data-action="open-bio">Import / Export</button>
           <button class="menu-item" data-action="open-synergy">Synergy</button>
           <button class="menu-item" data-action="open-threats">RI/Runes</button>
           <button class="menu-item" data-action="open-macros">Macros</button>
@@ -67,7 +68,8 @@
 
   <script src="data.js?v=dc6181e0"></script>
   <script src="effects.js?v=b1ae98d6"></script>
-  <script src="app.js?v=b9c53e79" defer></script>
+  <script src="buildio.js?v=7ebfa788"></script>
+  <script src="app.js?v=873e65b4" defer></script>
 
   <!-- Native-shell bridge: ads + "remove ads" purchase. HARD no-op in a browser
        (first guard returns before touching anything) — only activates inside the

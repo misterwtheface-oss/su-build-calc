@@ -1488,3 +1488,17 @@ select.app-select:hover { border-color: var(--accent2); }
 .spell-page-tile .spt-tags { margin-left: auto; display: inline-flex; align-items: center; gap: 6px; }
 .spell-page-tile .rank-badge { min-width: 0; }
 .spell-page-tile .spt-props { margin-top: 6px; }
+
+/* build import / export pop-out (Riddle Dwarf style) */
+.bio-pop { width: 460px; }
+.bio-tabs .seg-btn { padding: 4px 10px; font-size: 12px; }
+.bio-gap { flex: 1 1 auto; }
+.bio-body { display: flex; flex-direction: column; padding: 10px; min-height: 0; }
+.bio-text { width: 100%; max-width: none; height: 44vh; min-height: 180px; resize: vertical; box-sizing: border-box;
+  font-family: ui-monospace, Consolas, monospace; font-size: 12px; line-height: 1.4; white-space: pre; overflow: auto;
+  background: var(--bg); color: var(--text); border: 1px solid var(--border-dim); border-radius: 8px; padding: 10px; }
+.bio-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 10px;
+  border-top: 1px solid var(--border-dim); }
+.bio-result { font-size: 13px; }
+.bio-warn { margin: 10px 0 0; padding-left: 18px; color: var(--text-dim); font-size: 12px; }
+.bio-warn li { margin: 3px 0; }
