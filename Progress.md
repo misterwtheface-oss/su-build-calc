@@ -381,6 +381,12 @@ Verified: headless Chrome load (no JS errors), spec labels/perks, shops present,
 
 
 
+
+### 2026-10-05 — decoded formulas conform to the effect engine (code tier)
+- `_su_extract` effect_formulas.json (S10–S13) now lands as a third rule tier (`prov: "code"`) in the effects.js rule shape: 6,418 rules (trait 3,548 · perk 791 · spell 1,287 · relic 298 · card 494) + the global combat pipeline, lazy-loaded from `effects-code.json` (`D.effects.codeFile`, `SU_EFFECTS.loadCodeRules`). Data only: no evaluator consumes the new ops yet, no UI change.
+- Shape extensions (optional fields): src kinds spell/relic{minRank}/card{power}; `when`, `target.side`, `amount{value,unit,apply,per,…,conf,site}`, `args`, `chance`. Documented in EFFECT_ENGINE.md §Code tier; tests 30/30.
+- Gap logged by the build: 14 manual/generated rules (spell-gem slots / equip-class permissions) have no code-tier counterpart (inventory logic, not battle blocks).
+
 ### 2026-10-04 — taxonomy S9 (layer 11) shipped
 - New confirm-only layer from _su_extract S9: attack/cast repeat-counter and defense-reduction accumulators, nested-trait gates (Master of X / Transformation Mastery etc.), true-branch-only reach. +150 S9 confirms, 0 lost, 0 new proposals.
 - Provenance now code 87.7% · llm 6.5% · implied 2.0%. Pending review: the 24 Related Spells::Multi-Target Spells spell proposals only.

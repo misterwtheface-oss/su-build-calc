@@ -106,5 +106,18 @@ console.log('stat contributions');
     engine(B(38, party())).slotBonusPct(slot(ANIMATUS, { relic: { id: 3, rank: 57 } })).hp], [5.7, 0]);
 }
 
+console.log('code tier (effects-code.json)');
+{
+  const C = JSON.parse(fs.readFileSync(path.join(ROOT, String(D.effects.codeFile || 'effects-code.json').split('?')[0]), 'utf8'));
+  const ops = new Set(D.effects.codeOps || []), ids = new Set();
+  let dup = 0, badOp = 0, badProv = 0;
+  for (const r of C.rules) { if (ids.has(r.id)) dup++; ids.add(r.id); if (!ops.has(r.op)) badOp++; if (r.prov !== 'code') badProv++; }
+  eq('code rules: unique ids, known ops, prov code', [dup, badOp, badProv], [0, 0, 0]);
+  const pp = C.rules.find(r => r.id === 'code-perk-7-PRESSUREPOINT-0');
+  eq('Pressure Point: +2 percent per rank on ally dodge', pp && [pp.op, pp.amount.value, pp.amount.unit, pp.amount.per[0], pp.when.event], ['value.mod', 2, 'percent', 'perk_rank', 'dodge']);
+  const crit = (C.pipeline.damage.order || []).find(s => s.step === 'crit');
+  eq('pipeline: crit multiplier at equal speed (code) = 2.25', crit && crit.multiplier_at_equal_speed_no_modifiers, 2.25);
+}
+
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

@@ -160,7 +160,16 @@
              ignores, cap, gemSlotMax, equipClasses, battleStart };
   }
 
-  const api = { create, STAT_KEYS, PROP_STAT, CAP_BASE, GEM_SLOT_BASE };
+  // Code-tier rules (prov 'code', decoded from the game's gated blocks) + the global combat pipeline ship lazily in
+  // effects-code.json (D.effects.codeFile). Data only until an op in D.effects.codeOps gets an evaluator here.
+  let _codeLoad = null;
+  function loadCodeRules(url) {
+    if (_codeLoad) return _codeLoad;
+    if (typeof fetch !== "function") return Promise.reject(new Error("no fetch"));
+    return (_codeLoad = fetch(url).then(r => r.json()));
+  }
+
+  const api = { create, loadCodeRules, STAT_KEYS, PROP_STAT, CAP_BASE, GEM_SLOT_BASE };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   else root.SU_EFFECTS = api;
 })(typeof window !== "undefined" ? window : globalThis);

@@ -2860,6 +2860,105 @@ const SU_DATA = {
   SU_DATA.fusionFile = `fusion.json?v=${crypto.createHash('md5').update(body).digest('hex').slice(0, 8)}`;
   console.log(`  fusion palettes: ${Object.keys(frames).length} frames · ${(body.length / 1e6).toFixed(2)} MB (fusion.json)`);
 }
+// ── CODE-TIER effect rules (prov 'code') — _su_extract data/model/effect_formulas.json (decompiled gated blocks,
+// S10–S13) adapted to the effects.js rule shape (EFFECT_ENGINE.md §Code tier). Same envelope as the hand-authored /
+// generated tiers ({id, src, op, target, …, prov}); ops are the engine names in CODE_OPS. These are DATA ONLY until an
+// evaluator claims the op (the engine's evaluated ops are unchanged). Shipped lazily in effects-code.json (like
+// fusion.json) with the global damage/crit/dodge pipeline, so data.js doesn't grow.
+{
+  const F = readJSON(path.join(MODEL, 'effect_formulas.json'));
+  const CODE_OPS = {
+    condition_apply: 'cond.apply', condition_remove: 'cond.remove', modify_condition: 'cond.mod',
+    stat_add: 'stat.add', stat_mult: 'stat.mult', stat_set: 'stat.set', modify_stat_change: 'stat.changeMod',
+    modify_value: 'value.mod', extra_action: 'action.extra', damage: 'dmg.deal', modify_damage: 'dmg.mod',
+    modify_dodge: 'dodge.mod', heal: 'heal.deal', modify_heal: 'heal.mod', summon: 'minion.summon',
+    resurrect: 'life.resurrect', kill: 'life.kill', spell_gem: 'gem.mod', grant_trait: 'trait.grant',
+    amplify_innate: 'trait.amplify', timeline: 'timeline.move', transform: 'type.transform',
+    change_class: 'type.changeClass', other: 'other',
+  };
+  const traitByRt = new Map();
+  for (const id in traits) for (const rt of traits[id].runtimeIds || []) traitByRt.set(rt, +id);
+  const perkSrc = new Map();
+  for (const s of specs) for (const p of s.perks) perkSrc.set(`${s.id}:${p.key}`, { kind: 'perk', spec: s.id, key: p.key, via: p.anointment ? 'spec+anoint' : 'spec' });
+  const relicIds = new Set(relics.map(r => r.id)), cardIds = new Set(cards.map(c => c.id)), spellIds = new Set(spells.map(s => s.id));
+  // amount → compact engine shape (audit trail kept as `site`; tracer internals dropped)
+  const amt = (a) => {
+    if (!a) return null;
+    const o = { value: a.base ?? null, unit: a.unit || null, apply: (a.application || {}).class || null };
+    const q = (a.operand || {}).quantity; if (q && q.length) o.per = q;
+    if ((a.operand || {}).role) o.role = a.operand.role;
+    if (a.percent_of) o.percentOf = a.percent_of;
+    if (a.capped_by) o.cappedBy = a.capped_by;
+    if (a.per_count != null) o.perCount = a.per_count;
+    if (a.per_rank != null) o.perRank = a.per_rank;
+    if (a.tier) { o.tier = a.tier; if (a.potency != null) o.potency = a.potency; if (a.defense_penetration != null) o.defPen = a.defense_penetration; }
+    if (a.stat) o.stat = a.stat;
+    if (a.formula) o.formula = a.formula;
+    o.conf = { unit: a.unit_confidence || null, apply: (a.application || {}).confidence || null };
+    if ((a.operand || {}).operand_check && a.operand.operand_check.ok === false) o.flag = 'operand_check_failed';
+    if (a.unit_description_conflict) o.flag = 'unit_description_conflict';
+    if (a.code_site) o.site = a.code_site;
+    return o;
+  };
+  const rules = [], skipped = {}, byOp = {}, bySrc = {};
+  const emit = (srcKey, src, effs, extra = {}) => {
+    effs.forEach((e, i) => {
+      const op = e.op || {}, name = CODE_OPS[op.kind];
+      if (!name) { skipped[`op:${op.kind}`] = (skipped[`op:${op.kind}`] || 0) + 1; return; }
+      const { kind, amount, extra_amounts, rejected_amounts, ...args } = op;
+      const r = { id: `code-${srcKey}-${extra.tag || ''}${i}`, src: { ...src, ...(extra.src || {}) }, op: name,
+        when: e.trigger ? { event: e.trigger.event || null, side: e.trigger.side || null } : null,
+        target: e.target && e.target.side ? { side: e.target.side } : null };
+      if (Object.keys(args).length) r.args = args;
+      const a = amt(amount); if (a) r.amount = a;
+      if (extra_amounts && extra_amounts.length) r.extraAmounts = extra_amounts.map(amt);
+      if (e.chance != null) r.chance = { value: e.chance, unit: e.chance_unit || null };
+      if (e.gate_negated) r.gateNegated = true;
+      if (e.thresholds) r.thresholds = e.thresholds;
+      r.conf = e.confidence || null;
+      r.prov = 'code';
+      rules.push(r); byOp[name] = (byOp[name] || 0) + 1; bySrc[src.kind] = (bySrc[src.kind] || 0) + 1;
+    });
+  };
+  for (const [rt, rec] of Object.entries(F.traits)) {
+    const id = traitByRt.get(+rt); if (id == null) { skipped['trait:not-in-app'] = (skipped['trait:not-in-app'] || 0) + 1; continue; }
+    emit(`trait-${id}-rt${rt}`, { kind: 'trait', id }, rec.effects || []);   // tier variants share an app id
+  }
+  for (const [k, rec] of Object.entries(F.perks)) {
+    const src = perkSrc.get(k); if (!src) { skipped['perk:not-in-app'] = (skipped['perk:not-in-app'] || 0) + 1; continue; }
+    emit(`perk-${k.replace(':', '-')}`, src, rec.effects || []);
+  }
+  for (const [k, rec] of Object.entries(F.spells)) {
+    if (!spellIds.has(+k)) { skipped['spell:not-in-app'] = (skipped['spell:not-in-app'] || 0) + 1; continue; }
+    emit(`spell-${k}`, { kind: 'spell', id: +k }, rec.effects || []);
+  }
+  // relic perks unlock at rank 10·k (scr_CritHasRelicPerk(creature, relic, k)); card powers via inv_CardSetPowerUnlocked
+  for (const [k, rec] of Object.entries(F.relics)) {
+    if (!relicIds.has(+k)) { skipped['relic:not-in-app'] = (skipped['relic:not-in-app'] || 0) + 1; continue; }
+    for (const [rank, effs] of Object.entries(rec.ranks || {})) emit(`relic-${k}`, { kind: 'relic', id: +k }, effs, { tag: `r${rank}-`, src: { minRank: +rank } });
+  }
+  for (const [k, rec] of Object.entries(F.cards)) {
+    if (!cardIds.has(+k)) { skipped['card:not-in-app'] = (skipped['card:not-in-app'] || 0) + 1; continue; }
+    for (const [pw, effs] of Object.entries(rec.powers || {})) emit(`card-${k}`, { kind: 'card', id: +k }, effs, { tag: `p${pw}-`, src: { power: +pw } });
+  }
+  // validation: same guarantees as the other tiers (unique id, known op, live source)
+  const ids = new Set(effects.rules.map(r => r.id)), OPSET = new Set(Object.values(CODE_OPS));
+  for (const r of rules) {
+    if (ids.has(r.id)) throw new Error(`code effect rule id duplicated: ${r.id}`); ids.add(r.id);
+    if (!OPSET.has(r.op)) throw new Error(`code effect rule ${r.id}: unknown op ${r.op}`);
+  }
+  // cross-tier coverage: every hand-authored / generated rule's source should also have code-tier rules
+  const srcKey = (s) => s.kind === 'perk' ? `perk:${s.spec}:${s.key}` : `${s.kind}:${s.id}`;
+  const codeSrc = new Set(rules.map(r => srcKey(r.src)));
+  const uncovered = effects.rules.filter(r => !codeSrc.has(srcKey(r.src))).map(r => r.id);
+  const body = JSON.stringify({ schema: 1, ops: CODE_OPS, pipeline: F.pipeline, rules });
+  fs.writeFileSync(path.join(ROOT, 'effects-code.json'), body);
+  effects.codeFile = `effects-code.json?v=${crypto.createHash('md5').update(body).digest('hex').slice(0, 8)}`;
+  effects.codeOps = [...OPSET];
+  console.log(`  code effect rules: ${rules.length} (${Object.entries(bySrc).map(([k, v]) => `${k} ${v}`).join(' · ')}) · ` +
+    `${(body.length / 1e6).toFixed(2)} MB (effects-code.json) · skipped ${JSON.stringify(skipped)} · ` +
+    `manual/generated sources without code rules: ${uncovered.length}${uncovered.length ? ' (' + uncovered.slice(0, 6).join(', ') + (uncovered.length > 6 ? ', …' : '') + ')' : ''}`);
+}
 // ── asset cache-busting: every shipped "assets/…" image URL in the data gets ?v=<content hash>. The service worker
 // caches assets cache-first BY URL, so an image whose CONTENT changes under the same filename (e.g. a corrected sprite)
 // would otherwise stay stale forever for returning visitors. Same hash scheme as the precache list below.
