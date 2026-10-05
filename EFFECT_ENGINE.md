@@ -97,7 +97,8 @@ naming a perk/trait that doesn't exist (a typo can never silently do nothing).
 ## Status / known gaps
 
 - `battleStart()` is computed but **not displayed** (no UI consumes it yet). Gains are exact, unrounded shares of the
-  source creature's STORED stats (before its % bonuses), code-verified (`_su_extract code/STAT_ROUNDING.md`).
+  source creature's STORED stats (before its % bonuses): code-verified and PROVEN in-game 2026-10-05 (exact match on 10 stats,
+  `_su_extract code/STAT_ROUNDING.md` §In-game verification).
 - Animatus (game rule): a unique standalone creature — never fusion material, always party slot 1, at most one.
   Molecular Betrayal / Gray Matter target it by race, which is equivalent under that rule. The app doesn't
   enforce the rule yet (Progress.md backlog).

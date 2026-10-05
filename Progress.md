@@ -385,6 +385,10 @@ Verified: headless Chrome load (no JS errors), spec labels/perks, shops present,
 
 
 
+
+### 2026-10-05 — Molecular Betrayal + stat rounding PROVEN in-game
+- User sandbox (level 1, cards off): predicted battle stats matched exactly on all 10 values (Zzyia 32/18/18/28/18, Animatus 56/34/49/34/49). Confirms: stored-stat source for Molecular Betrayal, gain multiplied by the Animatus's own % (Brilliant Creation), single floor at the end. With cards on, card powers add a shared per-stat % to the same pool.
+
 ### 2026-10-05 — formulas S14 folded into the code tier
 - `_su_extract` S14: all 165 previously-undecompiled gate sites now decompiled; per-path reaching definitions bind 110 more amounts (Decapitation 0.35 = a Health THRESHOLD; bc_SpellDamage slot resolved per spell); slot 0 = enemy side is now code-certain; 121 handler argument roles grounded; Inner Strength = 0.8 (MASSIVE). Self-check 53/53, spot-check 0 wrong.
 - Adapter maps the new operand fields (`role`, `compare`, `constantSide`, `subjects`, `mergeBound`); 54 amounts are thresholds (gate values, not magnitudes). EFFECT_ENGINE.md updated.
