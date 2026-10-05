@@ -22,7 +22,8 @@ const STAT_KEYS = SU_EFFECTS.STAT_KEYS;
 const slot = (cid, o = {}) => ({ cid, fusion: null, artifactId: null, relic: null, spellGemIds: [], scrolls: {}, ...o });
 const party = (...s) => [...s, ...Array(6).fill(0).map(() => slot(null))].slice(0, 6);
 
-// minimal env: final stats = the creature's base stats (enough to check the share arithmetic)
+// minimal env: stored (adj) stats = the creature's base stats; final is deliberately different (2×) so a share that
+// wrongly read the post-% final stat would fail
 function engine(build, { artifacts = [], nether = [] } = {}) {
   const perkRank = (spec, p) => { const m = build.perkAlloc[spec.id] || {}; return p.key in m ? m[p.key] : (p.ranks || 1); };
   return SU_EFFECTS.create({
@@ -33,7 +34,7 @@ function engine(build, { artifacts = [], nether = [] } = {}) {
     resolveArtifact: (s) => (s.artifactId != null ? artifacts.find(a => a.id === s.artifactId) : null),
     perkRank, anointed: (sid, key) => build.anoints.some(a => a.specId === sid && a.key === key),
     slotTraitIds: (s) => { const c = CREA.get(s.cid); return c ? [c.traitId] : []; },
-    finalStats: (s) => { const c = CREA.get(s.cid); return c ? { final: Object.fromEntries(STAT_KEYS.map(k => [k, c[k]])) } : null; },
+    finalStats: (s) => { const c = CREA.get(s.cid); if (!c) return null; const st = Object.fromEntries(STAT_KEYS.map(k => [k, c[k]])); return { adj: st, final: Object.fromEntries(STAT_KEYS.map(k => [k, c[k] * 2])) }; },   // final ≠ adj on purpose: the share must read the STORED (adj) stat
   });
 }
 const B = (specId, slots, o = {}) => ({ specId, perkAlloc: {}, anoints: [], slots, ...o });

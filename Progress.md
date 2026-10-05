@@ -382,6 +382,12 @@ Verified: headless Chrome load (no JS errors), spec labels/perks, shops present,
 
 
 
+
+### 2026-10-05 — stats rounded like the game (code-decoded)
+- `_su_extract code/STAT_ROUNDING.md`: fused base = floor((A+B)/2); stored stat after level/personality = max(1, ceil(…)); Atk/Def/Int/Spd floor once after all % bonuses; Health never floored as a whole (artifact share floors, relic share fractional, display floors). App `baseStats`/`finalStats` now match (was Math.round everywhere); many displayed stats shift by ±1.
+- Molecular Betrayal (`stat.share`) reads the third creature's STORED stat (pre-%), unrounded — engine fixed, test stub now distinguishes stored vs final.
+- 17 rounding rules ship in `effects-code.json` → `pipeline.rounding`. Open (in-game): fractional-Health display; stored-vs-final source check.
+
 ### 2026-10-05 — decoded formulas conform to the effect engine (code tier)
 - `_su_extract` effect_formulas.json (S10–S13) now lands as a third rule tier (`prov: "code"`) in the effects.js rule shape: 6,418 rules (trait 3,548 · perk 791 · spell 1,287 · relic 298 · card 494) + the global combat pipeline, lazy-loaded from `effects-code.json` (`D.effects.codeFile`, `SU_EFFECTS.loadCodeRules`). Data only: no evaluator consumes the new ops yet, no UI change.
 - Shape extensions (optional fields): src kinds spell/relic{minRank}/card{power}; `when`, `target.side`, `amount{value,unit,apply,per,…,conf,site}`, `args`, `chance`. Documented in EFFECT_ENGINE.md §Code tier; tests 30/30.

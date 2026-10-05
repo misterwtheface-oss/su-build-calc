@@ -135,7 +135,7 @@
 
     // ── 4. battle-start stat gains ──────────────────────────────────────────
     // Per party slot: the flat gains rules add at the start of battle, with a ledger naming each source.
-    // Read-only (no UI consumes it yet); gains are exact (unrounded) shares of the source's final stats.
+    // Read-only (no UI consumes it yet); gains are exact (unrounded) shares of the source's STORED stats (pre-%; code-verified).
     function battleStart() {
       const slots = env.build().slots;
       const out = slots.map(() => ({ gain: zero(), ledger: [] }));
@@ -147,7 +147,7 @@
         slots.forEach((s, i) => {
           if (!env.CREA.get(s.cid) || !targets(rule.target, s)) return;
           for (const k of rule.stats) {
-            const v = fs.final[k] * pct / 100;
+            const v = fs.adj[k] * pct / 100;   // game reads the source's STORED stat (before its % bonuses), unrounded
             out[i].gain[k] += v;
             out[i].ledger.push({ rule: rule.id, stat: k, value: v, pct, fromSlot: rule.from.slot });
           }

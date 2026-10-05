@@ -583,7 +583,7 @@
   function baseStats(slot) {
     const c = CREA.get(slot.cid); if (!c) return null;
     const f = slot.fusion != null ? CREA.get(slot.fusion) : null;
-    const avg = (a, b) => f ? Math.round((a + b) / 2) : a;
+    const avg = (a, b) => f ? Math.floor((a + b) / 2) : a;   // game: fused base = floor((A+B)/2) (scr_UpdateCreature)
     const out = { fused: !!f };
     const sc = slot.scrolls || {};
     // BASE stats are level-1 and personality-independent (round). Scrolls (+1 base each) are part of BaseStat.
@@ -603,12 +603,18 @@
     const sc = slot.scrolls || {};
     const pct = FX.slotBonusPct(slot);   // artifact + socketed nether + relic % (Deprived ignores Relic effects)
     const adj = {}, final = {};
+    // Rounding = the game's (_su_extract code/STAT_ROUNDING.md): the stored stat after level growth CEILS (min 1);
+    // Atk/Def/Int/Spd FLOOR once after every % bonus; Health is never floored as a whole — the artifact share floors on
+    // its own, the relic share stays fractional, and the display floors. EPS absorbs float error (e.g. 59.999… → 60).
+    const EPS = 1e-9, artPct = FX.foldCore(FX.artifactContribs(resolveArtifact(slot))), relPct = FX.foldCore(FX.relicContribs(slot));
     for (const k of STAT_KEYS) {
       // Personality ±33% applies to the PURE base (b minus scrolls); scrolls (+1 each) are added flat after.
       const scroll = sc[k] || 0, rawBase = b[k] - scroll;
-      const eff = Math.round(rawBase * persRatio(slot, k)) + scroll;   // effective base before bonus %
+      const eff = Math.max(1, Math.ceil(rawBase * persRatio(slot, k) - EPS)) + scroll;   // stored stat before bonus %
       adj[k] = eff;
-      final[k] = Math.round(eff * (1 + pct[k] / 100));
+      final[k] = k === "hp"
+        ? Math.floor(eff + Math.floor(eff * artPct.hp / 100 + EPS) + eff * relPct.hp / 100 + EPS)
+        : Math.floor(eff * (1 + pct[k] / 100) + EPS);
     }
     return { base: b, pct, adj, final,
              baseTotal: STAT_KEYS.reduce((s, k) => s + b[k], 0),
