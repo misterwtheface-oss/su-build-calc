@@ -2694,7 +2694,8 @@ const MINION_PHRASE = { 'Greater Demons': /\bgreater demons?\b/i, 'Lesser Demons
     for (const e of readJSON(clarF).entries || []) {
       const tgt = e.kind === 'trait' ? traitByRuntime.get(e.trait_runtime_id)
         : e.kind === 'perk' ? perkByKey.get(e.perk_key)
-        : e.kind === 'relic' ? relicRank(e.relic_name || e.name, e.rank) : null;
+        : e.kind === 'relic' ? relicRank(e.relic_name || e.name, e.rank)
+        : e.kind === 'spell' ? spells.find(sp => sp.id === e.spell_id && (!e.name || norm(sp.name) === norm(e.name))) : null;
       if (tgt && (!e.name || e.kind !== 'trait' || norm(tgt.name) === norm(e.name))) { ((tgt.clarify ||= []).includes(e.text)) || tgt.clarify.push(e.text); hit++; }
       else miss.push(`${e.kind}:${e.name}`);
     }

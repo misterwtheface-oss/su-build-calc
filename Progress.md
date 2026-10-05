@@ -386,6 +386,10 @@ Verified: headless Chrome load (no JS errors), spec labels/perks, shops present,
 
 
 
+
+### 2026-10-05 — code-vs-text clarifications (Touch of Chaos, Counterspell, Spell Blast)
+- In-game text confirmed by the user; the code differs. Stored as `clarify` notes (shown under the game text on the detail page): Touch of Chaos rolls 4%/rank (text 1%), Counterspell +7% per missing charge (text 20%), Spell Blast +5% per MISSING charge (text 10% per charge it has). `effect_clarifications.json` gains kind `spell`; spell detail pages now render clarify notes.
+
 ### 2026-10-05 — Molecular Betrayal + stat rounding PROVEN in-game
 - User sandbox (level 1, cards off): predicted battle stats matched exactly on all 10 values (Zzyia 32/18/18/28/18, Animatus 56/34/49/34/49). Confirms: stored-stat source for Molecular Betrayal, gain multiplied by the Animatus's own % (Brilliant Creation), single floor at the end. With cards on, card powers add a shared per-stat % to the same pool.
 
