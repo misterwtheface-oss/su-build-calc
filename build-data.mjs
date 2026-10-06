@@ -240,7 +240,7 @@ for (const e of tc.entities) {
 // human-facing 2-level tag taxonomy (Category -> Value) + per-trait assignments
 const taxonomy = readJSON(path.join(MODEL, 'tag_taxonomy.json'));
 // tags whose code_taxo proposals are pre-approved via the damage-definition ledgers (user rulings 2026-10-04)
-const PREAPPROVED_TAGS = new Set(['Activates When::Ally Loses Buff/Debuff', 'Activates When::Enemy Loses Buff/Debuff', 'Action/Mechanic::Damage', 'Activates When::Ally Deals Damage', 'Activates When::Enemy Deals Damage', 'Affect on Life::Creature is Damaged', 'Related Spells::Damaging Spells']);
+const PREAPPROVED_TAGS = new Set(['Multiplied by::Missing Creature Count', 'Active If::Creatures Missing', 'Affect on Traits::Gain a Perk', 'Activates When::Ally Loses Buff/Debuff', 'Activates When::Enemy Loses Buff/Debuff', 'Action/Mechanic::Damage', 'Activates When::Ally Deals Damage', 'Activates When::Enemy Deals Damage', 'Affect on Life::Creature is Damaged', 'Related Spells::Damaging Spells']);
 // Action/Mechanic::Damage (user ruling 2026-10-04): damage where the code does NOT make Attack or Spell/Cast explicit
 // (generic damage handler gates, DoT, damage effects). Replaces the old Attack+Cast pair used to mean "any damage".
 { const am = taxonomy.categories.find(c => c.category === 'Action/Mechanic'); if (am && !am.values.includes('Damage')) am.values.push('Damage'); }
@@ -248,6 +248,9 @@ const PREAPPROVED_TAGS = new Set(['Activates When::Ally Loses Buff/Debuff', 'Act
 // debuff (destroyed, removed, expires, wears off) — distinct from "is Buffed"/"is Debuffed" (gaining one).
 { const aw = taxonomy.categories.find(c => c.category === 'Activates When');
   if (aw) for (const v of ['Ally Loses Buff/Debuff', 'Enemy Loses Buff/Debuff']) if (!aw.values.includes(v)) aw.values.push(v); }
+// user 2026-10-06: missing creatures (empty party slots) ≠ dead; perks/traits can grant perks
+for (const [cat, v] of [['Multiplied by', 'Missing Creature Count'], ['Active If', 'Creatures Missing'], ['Affect on Traits', 'Gain a Perk']]) {
+  const c = taxonomy.categories.find(x => x.category === cat); if (c && !c.values.includes(v)) c.values.push(v); }
 { const aw = taxonomy.categories.find(c => c.category === 'Activates When'); if (aw) for (const v of ['Ally Deals Damage', 'Enemy Deals Damage']) if (!aw.values.includes(v)) aw.values.push(v); }   // user ruling 2026-10-04: triggered by damage
 const taxoTags = readJSON(path.join(MODEL, 'trait_taxonomy_tags.json')).by_trait;
 // "Animatus" (the golem race) isn't in the Related Types vocab, so the classifier snapped

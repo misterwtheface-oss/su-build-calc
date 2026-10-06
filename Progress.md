@@ -392,6 +392,12 @@ Verified: headless Chrome load (no JS errors), spec labels/perks, shops present,
 
 
 
+
+### 2026-10-06 — Missing creatures, action counts, Gain a Perk
+- New `Multiplied by::Missing Creature Count` (replaces Dead Creature Count on 11 Hermit-style perks + Focused Magicks) and `Active If::Creatures Missing` (Reclusive Remedy, Ancestry, Final Stand — which keeps Dead Creature Count: dead and missing).
+- "For each time their on-X effects activated" → existing per-action counts: Juggernaut / Outburst = Attack + Cast + Defend + Provoke Count; Fable adds those + Resurrect Count. No generic activation value.
+- New `Affect on Traits::Gain a Perk` (Tools of Creation, Divine Dualwield). Like Sand stays in its spell-gem group.
+
 ### 2026-10-06 — Loses Buff/Debuff triggers; Timeline outliers
 - New Activates When values (bucketed by side): **Ally Loses Buff/Debuff** (Qila's Assurance, Noetherian's Adamance, Protective Wing ×3, Sanctus, Scapegoat) and **Enemy Loses Buff/Debuff** (Anagnorisis, Snuff, Lingering Frost, Black to White, Fractionation, Amalgam). Trait proposal rejections now supported (`traitRejections`).
 - Timeline removed from Defer Pain and Animated Treasure.

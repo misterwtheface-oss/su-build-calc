@@ -1567,7 +1567,9 @@
      "to": null
     }
    ],
-   "add": [],
+   "add": [
+    "Affect on Traits::Gain a Perk"
+   ],
    "approved": "2026-10-06"
   },
   "1849": {
@@ -1687,6 +1689,19 @@
    ],
    "add": [],
    "approved": "2026-10-06"
+  },
+  "2001": {
+   "name": "Focused Magicks",
+   "replace": [
+    {
+     "from": [
+      "Multiplied by::Dead Creature Count"
+     ],
+     "to": "Multiplied by::Missing Creature Count"
+    }
+   ],
+   "add": [],
+   "approved": "2026-10-06"
   }
  },
  "rejected": {
@@ -1801,9 +1816,10 @@
    "name": "Divine Dualwield",
    "replace": [],
    "add": [
-    "Action/Mechanic::Relic"
+    "Action/Mechanic::Relic",
+    "Affect on Traits::Gain a Perk"
    ],
-   "approved": "2026-10-03"
+   "approved": "2026-10-06"
   },
   "16:BLOODRAGE": {
    "name": "Bloodrage",
@@ -2107,7 +2123,9 @@
      "to": null
     }
    ],
-   "add": [],
+   "add": [
+    "Active If::Creatures Missing"
+   ],
    "approved": "2026-10-06"
   },
   "15:ANCESTRY": {
@@ -2120,7 +2138,9 @@
      "to": null
     }
    ],
-   "add": [],
+   "add": [
+    "Active If::Creatures Missing"
+   ],
    "approved": "2026-10-06"
   },
   "20:TRAUMA": {
@@ -2165,7 +2185,12 @@
      "to": null
     }
    ],
-   "add": [],
+   "add": [
+    "Multiplied by::Attack Count",
+    "Multiplied by::Cast Count",
+    "Multiplied by::Defend Count",
+    "Multiplied by::Provoke Count"
+   ],
    "approved": "2026-10-06"
   },
   "28:SINGLETON": {
@@ -2256,6 +2281,169 @@
    ],
    "add": [],
    "approved": "2026-10-06"
+  },
+  "15:CORNERED": {
+   "name": "Cornered",
+   "replace": [
+    {
+     "from": [
+      "Multiplied by::Dead Creature Count"
+     ],
+     "to": "Multiplied by::Missing Creature Count"
+    }
+   ],
+   "add": [],
+   "approved": "2026-10-06"
+  },
+  "15:SOLESURVIVOR": {
+   "name": "Solesurvivor",
+   "replace": [
+    {
+     "from": [
+      "Multiplied by::Dead Creature Count"
+     ],
+     "to": "Multiplied by::Missing Creature Count"
+    }
+   ],
+   "add": [],
+   "approved": "2026-10-06"
+  },
+  "15:BROOD": {
+   "name": "Brood",
+   "replace": [
+    {
+     "from": [
+      "Multiplied by::Dead Creature Count"
+     ],
+     "to": "Multiplied by::Missing Creature Count"
+    }
+   ],
+   "add": [],
+   "approved": "2026-10-06"
+  },
+  "15:LONEWOLF": {
+   "name": "Lonewolf",
+   "replace": [
+    {
+     "from": [
+      "Multiplied by::Dead Creature Count"
+     ],
+     "to": "Multiplied by::Missing Creature Count"
+    }
+   ],
+   "add": [],
+   "approved": "2026-10-06"
+  },
+  "15:SOVEREIGNTY": {
+   "name": "Sovereignty",
+   "replace": [
+    {
+     "from": [
+      "Multiplied by::Dead Creature Count"
+     ],
+     "to": "Multiplied by::Missing Creature Count"
+    }
+   ],
+   "add": [],
+   "approved": "2026-10-06"
+  },
+  "15:GUERILLATACTICS": {
+   "name": "Guerillatactics",
+   "replace": [
+    {
+     "from": [
+      "Multiplied by::Dead Creature Count"
+     ],
+     "to": "Multiplied by::Missing Creature Count"
+    }
+   ],
+   "add": [],
+   "approved": "2026-10-06"
+  },
+  "15:DISENGAGEMENT": {
+   "name": "Disengagement",
+   "replace": [
+    {
+     "from": [
+      "Multiplied by::Dead Creature Count"
+     ],
+     "to": "Multiplied by::Missing Creature Count"
+    }
+   ],
+   "add": [],
+   "approved": "2026-10-06"
+  },
+  "15:KILLERINSTINCT": {
+   "name": "Killerinstinct",
+   "replace": [
+    {
+     "from": [
+      "Multiplied by::Dead Creature Count"
+     ],
+     "to": "Multiplied by::Missing Creature Count"
+    }
+   ],
+   "add": [],
+   "approved": "2026-10-06"
+  },
+  "15:PACKOFONE": {
+   "name": "Packofone",
+   "replace": [
+    {
+     "from": [
+      "Multiplied by::Dead Creature Count"
+     ],
+     "to": "Multiplied by::Missing Creature Count"
+    }
+   ],
+   "add": [],
+   "approved": "2026-10-06"
+  },
+  "15:APTITUDE": {
+   "name": "Aptitude",
+   "replace": [
+    {
+     "from": [
+      "Multiplied by::Dead Creature Count"
+     ],
+     "to": "Multiplied by::Missing Creature Count"
+    }
+   ],
+   "add": [],
+   "approved": "2026-10-06"
+  },
+  "15:ADAPTATION": {
+   "name": "Adaptation",
+   "replace": [
+    {
+     "from": [
+      "Multiplied by::Dead Creature Count"
+     ],
+     "to": "Multiplied by::Missing Creature Count"
+    }
+   ],
+   "add": [],
+   "approved": "2026-10-06"
+  },
+  "15:FINALSTAND": {
+   "name": "Final Stand",
+   "replace": [],
+   "add": [
+    "Active If::Creatures Missing",
+    "Multiplied by::Dead Creature Count"
+   ],
+   "approved": "2026-10-06"
+  },
+  "24:OUTBURST": {
+   "name": "Outburst",
+   "replace": [],
+   "add": [
+    "Multiplied by::Attack Count",
+    "Multiplied by::Cast Count",
+    "Multiplied by::Defend Count",
+    "Multiplied by::Provoke Count"
+   ],
+   "approved": "2026-10-06"
   }
  },
  "policy": {
@@ -2267,7 +2455,8 @@
   "debuffed_gate": "Activates When::Enemy is Debuffed doubles as the conditional gate 'enemy has a debuff'; never Ally is Debuffed for afflicter-side hooks.",
   "minions_not_buffs": "Minions are Minions, not Buffs: minion conditions (CONDNAME_MINION_*) never produce Buff/Buff Count/Related Buff tags, and buffs never produce Minion tags.",
   "action_mechanic_superset": "user 2026-10-04: Action/Mechanic values are catch-all pools of the narrower groupings; overlap is required. Any object with a narrower tag carries its Action/Mechanic parent (build-data implied pass).",
-  "turns_vs_timeline": "user 2026-10-06: turn references (extra turns, lost turns, turns taken / turn counter) belong to Action/Mechanic::Turn Counter, not Timeline. Timeline = position/order on the timeline. Start of battle is never a Timeline effect."
+  "turns_vs_timeline": "user 2026-10-06: turn references (extra turns, lost turns, turns taken / turn counter) belong to Action/Mechanic::Turn Counter, not Timeline. Timeline = position/order on the timeline. Start of battle is never a Timeline effect.",
+  "action_counts": "user 2026-10-06: 'for each time their on-X effects activated' is tagged with the existing X Count (Attack/Cast/Defend/Provoke/Buff/…); no generic activation-count value."
  },
  "perkRejections": {
   "5:MASSACRE": [
@@ -2401,6 +2590,18 @@
    "replace": [],
    "add": [
     "Activates When::Enemy Loses Buff/Debuff"
+   ],
+   "approved": "2026-10-06"
+  },
+  "8": {
+   "name": "Fable, Mythical Stone of Shallan",
+   "replace": [],
+   "add": [
+    "Multiplied by::Attack Count",
+    "Multiplied by::Cast Count",
+    "Multiplied by::Defend Count",
+    "Multiplied by::Provoke Count",
+    "Multiplied by::Resurrect Count"
    ],
    "approved": "2026-10-06"
   }
@@ -3741,7 +3942,8 @@
  ],
  "notes_s17": {
   "2026-10-06": "User review of S17: A approved except Qila's Assurance (held: needs a 'loses a buff' trigger value) and Rift Dancer p2 (Resistance stays). B approved (Resin keeps Stats + Related Stat::Attack). C: turn references move from Timeline to Turn Counter; start of battle is never Timeline. D: code-proven drops approved, with replacements where a correct tag exists (Alementals → Extra/Gain a Spell Gem; Concoctions → Debuffed with X + Automatic/Extra Attack; Singleton → Limit Actions per Turn).",
-  "2026-10-06b": "New values Activates When::Ally/Enemy Loses Buff/Debuff (user: bucket by side). Ally: Qila's Assurance, Noetherian's Adamance, Protective Wing x3, Sanctus p3, Scapegoat. Enemy: Anagnorisis, Snuff, Lingering Frost, Black to White, Fractionation, Amalgam. S17's Qila 'Ally is Buffed' proposal rejected in favour of the new value. Timeline removed from Defer Pain and Animated Treasure."
+  "2026-10-06b": "New values Activates When::Ally/Enemy Loses Buff/Debuff (user: bucket by side). Ally: Qila's Assurance, Noetherian's Adamance, Protective Wing x3, Sanctus p3, Scapegoat. Enemy: Anagnorisis, Snuff, Lingering Frost, Black to White, Fractionation, Amalgam. S17's Qila 'Ally is Buffed' proposal rejected in favour of the new value. Timeline removed from Defer Pain and Animated Treasure.",
+  "2026-10-06c": "User: Missing creatures → new Multiplied by::Missing Creature Count (replaces Dead Creature Count where only missing; keep Dead where dead and/or missing, e.g. Final Stand) + Active If::Creatures Missing. Effect-activation counts use the existing per-action counts broadly (on-action = Attack/Cast/Defend/Provoke; Fable on-X = those + Resurrect). New Affect on Traits::Gain a Perk. Like Sand stays with its spell-gem group (no new tag)."
  },
  "traitRejections": {
   "1281": [

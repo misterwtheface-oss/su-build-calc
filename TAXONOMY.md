@@ -336,6 +336,9 @@ Which kind of trait an effect references.
 - **Activates When::Enemy is Debuffed** doubles as the conditional gate "the enemy has a debuff". Afflicter-side hooks are never *Ally is Debuffed*.
 - **Timeline vs Turn Counter (2026-10-06).** Turn references (taking extra turns, losing turns, turns taken / the turn counter) are **Action/Mechanic::Turn Counter**. **Timeline** is reserved for position and order on the timeline (top/bottom, shuffle, speed order). Start-of-battle effects are never Timeline. The Affect on Timeline values Additional Turn, Lose Turn and Count Additional (Turns) imply Turn Counter, not Timeline.
 - **Loses Buff/Debuff (2026-10-06).** `Activates When::Ally Loses Buff/Debuff` and `Activates When::Enemy Loses Buff/Debuff` = triggered when a creature on that side loses a buff or debuff (destroyed, removed, expires, wears off). Gaining one stays "is Buffed"/"is Debuffed".
+- **Missing vs dead creatures (2026-10-06).** `Multiplied by::Missing Creature Count` / `Active If::Creatures Missing` = empty party slots (the game's missing-creature count). `Dead Creature Count` stays where the effect counts dead creatures (or dead and missing, e.g. Final Stand).
+- **Action counts (2026-10-06).** "For each time their on-X effects activated" uses the existing X Count (on-action = Attack/Cast/Defend/Provoke Count); there is no generic activation-count value.
+- **Gain a Perk (2026-10-06).** `Affect on Traits::Gain a Perk` = the effect grants perks (Tools of Creation, Divine Dualwield).
 - **Minions are not Buffs.** Minion conditions (`{CONDNAME_MINION_*}`, e.g. Direwolf) produce Minion / Minion Count / Related Minion tags, never Buff / Buff Count / Related Buff, and vice versa.
 
 ## Retired / dropped
