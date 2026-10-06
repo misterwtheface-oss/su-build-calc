@@ -1494,6 +1494,27 @@ let propGemIcons = 0, propGemGods = 0;
   console.log(`  spell-gem property amounts by level: ${amounts}/${spellProps.length} (rest are amount-less: Generous, Magnetic, Singular, Cascading, Extra Target, Class Swap)`);
   console.log(`  spell-gem properties: icons ${propGemIcons} (code frames) · gods ${propGemGods}/${spellProps.length} (code god-shop dust)`);
 }
+// ── Spell Gem property COMPATIBILITY — code (_su_extract spell_property_compat.json, S18): scr_FixSpellGemProps rewrites
+// each spell's property flags at startup from its description/category/target; inv_SpellGemCanHaveProperty refuses a
+// property whose flag is 0, a duplicate, a second Class Swap (or the spell's own class), and a second potency-from-stat
+// property (Tourmaline/Onyx/Topaz/Sapphire). Code property id → app property via spell_gem_properties.json keys.
+const spellGemRules = (() => {
+  const gp = readJSON(path.join(MODEL, 'spell_gem_properties.json')).properties;
+  const appByCode = new Map();
+  for (const p of spellProps) { const c = (gp[p.key] || {}).property_id; if (c == null) err(`spell-gem property ${p.key}: no code property id`); else { p.code = c; appByCode.set(c, p.id); } }
+  const cf = readJSON(path.join(MODEL, 'spell_property_compat.json'));
+  const byKey = new Map(cf.records.map(r => [r.key, r]));
+  let joined = 0; const none = [];
+  for (const sp of spells) {
+    const r = byKey.get(sp.key); if (!r) { none.push(sp.name); continue; }
+    sp.gemOk = r.allowed_properties.map(c => appByCode.get(c)).filter(x => x != null).sort((x, y) => x - y); joined++;
+  }
+  if (none.length) warn(`spell-gem compat: ${none.length} spell(s) with no code record (left unrestricted): ${none.join(', ')}`);
+  const toApp = (ids) => ids.map(c => appByCode.get(c)).filter(x => x != null);
+  const rules = { potencyExclusive: toApp(cf.gem_rules.stat_potency_exclusive), classSwapExclusive: toApp(cf.gem_rules.class_swap_exclusive) };
+  console.log(`  spell-gem compatibility (code): ${joined}/${spells.length} spells · potency-exclusive ${rules.potencyExclusive.length} · class-swap ${rules.classSwapExclusive.length}`);
+  return rules;
+})();
 
 // ── relics ──
 const relicRef = readJSON(path.join(REF, 'relics_ref.json')).records;
@@ -1528,7 +1549,10 @@ console.log(`  relic icons: ${relicIconCopied}/${relics.length} copied`);
 const critByRace = new Map();
 for (const c of creatures) { const k = norm(c.race); if (c.sprite && k && !critByRace.has(k)) critByRace.set(k, c); }
 const cardRef = readJSON(path.join(REF, 'cards_ref.json')).records;
-let cardArt = 0;
+// card power unlock thresholds — CODE (_su_extract cards_code.json, S18): family = creature race; legal set excludes the
+// Avatar/Godspawn/Exotic races + 10 creature ids; powers unlock at round(0.33N) / round(0.66N) / N legal creatures.
+const cardCode = new Map(readJSON(path.join(MODEL, 'cards_code.json')).families.map(f => [norm(f.family), f]));
+let cardArt = 0, cardTierCode = 0;
 const cards = cardRef.map((c, i) => {
   const rep = critByRace.get(norm(c.family));
   if (rep) cardArt++; else warn(`card family "${c.family}" has no matching creature race for art`);
@@ -1539,7 +1563,11 @@ const cards = cardRef.map((c, i) => {
     family: c.family,
     cls: rep ? rep.cls : null,
     sprite: rep ? rep.sprite : null,
-    tiers: String(c.tiers || '').split('/').map(x => pct(x)).filter(x => x != null),
+    tiers: (() => { const f = cardCode.get(norm(c.family)); const csv = String(c.tiers || '').split('/').map(x => pct(x)).filter(x => x != null);
+      if (!f) { warn(`card family "${c.family}": no code record — CSV tiers kept`); return csv; }
+      if (JSON.stringify(csv) !== JSON.stringify(f.power_thresholds)) warn(`card family "${c.family}": CSV tiers ${csv} vs code ${f.power_thresholds} (code wins)`);
+      cardTierCode++; return f.power_thresholds; })(),
+    setSize: (cardCode.get(norm(c.family)) || {}).set_size ?? null,
     effects: cEffects,
     taxo: cTaxo,
     taxoSrc: taxoSrcArr(cardTaxo[String(i)], cTaxo),
@@ -2160,7 +2188,7 @@ const checked = creatures.length + specs.length + artRef.length + traitItems.len
 console.log('\n── Data hygiene report ──────────────────────────');
 console.log(`✓ ${checked} records checked · ${creatures.length} playable creatures (100% classed) · ${codeStats} w/ code stats · ${spriteCopied} w/ sprites (${spriteOverrides} name-override) · ${specs.length} spec sprites`);
 if (statFilled.length) console.log(`  base-stat null-fill from Creature_REF.csv: ${statFilled.length} — ${statFilled.join('; ')}`);
-console.log(`  cards w/ art ${cardArt}/${cards.length} · artifact-type icons ${artGroup.primary.filter(p => p.icon).length}/5 · gem icons ${gemIcons.length} · class bgs ${Object.keys(classBg).length}`);
+console.log(`  cards w/ art ${cardArt}/${cards.length} · power thresholds from code ${cardTierCode}/${cards.length} · artifact-type icons ${artGroup.primary.filter(p => p.icon).length}/5 · gem icons ${gemIcons.length} · class bgs ${Object.keys(classBg).length}`);
 console.log(`  spec sprites: ${specSkins} real skins + ${specs.filter(s => s.spriteKind === 'icon').length} emblem icons · ${emblemCount}/${specs.length} 16×16 emblems · terms ${Object.keys(terms).length}`);
   console.log(`  perk cost/ranks: ${perkCsvFilled} perk(s) filled from Perk_REF.csv where code has no value`);
   console.log(`  perk icons: ${perkIconsCopied} copied (code-certain from perk_icons.json)${perkIconsMissing ? ` · ${perkIconsMissing} missing` : ' · 100%'}`);
@@ -2808,6 +2836,43 @@ let slotChance = null;
   } else warn('spell_gem_slot_chance.json missing — no activation chance in the app');
 }
 
+// ── Projects — CODE (_su_extract projects.json, S18): proj[pid] fields decoded (required project items + qty, cost
+// multiplier → Resources ×1000 / Parts ×500 / Dust ×100, ×2 on Ruthless), availability from scr_ProjectsGetAvailable,
+// type from field 16. Required-item icons from project_items.json sprites. Grouped for the Menu › Projects overlay.
+const projects = (() => {
+  const f = path.join(MODEL, 'projects.json');
+  if (!fs.existsSync(f)) { warn('projects.json missing — no Projects overlay data'); return []; }
+  const OUT_PROJITEM = path.join(OUT_ASSETS, 'projitems');
+  fs.rmSync(OUT_PROJITEM, { recursive: true, force: true });
+  const itemSprite = new Map(readJSON(path.join(MODEL, 'project_items.json')).records.map(r => [r.name, r.sprite]));
+  let icons = 0, noIcon = new Set();
+  const icon = (name) => {
+    const sp = itemSprite.get(name);
+    if (sp && copyNamedSprite(sp, OUT_PROJITEM, `${sp}.png`)) { icons++; return `assets/projitems/${sp}.png`; }
+    noIcon.add(name); return null;
+  };
+  const group = (r) => r.type === 0 ? 'Castle' : r.type !== 10 ? 'Missions'
+    : /^Specialization:/.test(r.name) ? 'Specializations' : /^Godspawn:/.test(r.name) ? 'Godspawn' : 'Unlocks';
+  // requirement strings → display (state checks like "… NOT yet unlocked" are availability bookkeeping, not prerequisites)
+  const req = (s) => {
+    let m;
+    if (/NOT yet/i.test(s)) return null;
+    if ((m = /^project '(.+)' completed$/.exec(s))) return `Project: ${m[1]}`;
+    if ((m = /^quest \d+ completed \((.+)\)$/.exec(s))) return `Quest: ${m[1]}`;
+    if ((m = /^statistic (\d+) >= (\d+)$/.exec(s))) return `Statistic #${m[1]} ≥ ${m[2]}`;
+    return s;
+  };
+  const out = readJSON(f).records.map(r => ({
+    id: r.runtime_id, name: r.name, group: group(r),
+    desc: String(r.description || '').replace(/\\n/g, '\n').replace(/\{1\}/g, '').trim(),
+    cost: r.cost, costRuthless: r.cost_ruthless,
+    items: (r.required_items || []).map(it => ({ name: it.item, qty: it.qty, icon: icon(it.item) })),
+    reqs: [...new Set((r.availability || []).flatMap(a => a.readable || []).map(req).filter(Boolean))],
+  }));
+  if (noIcon.size) warn(`project items without an icon: ${[...noIcon].slice(0, 8).join(', ')}${noIcon.size > 8 ? ' …' : ''}`);
+  console.log(`  projects (code): ${out.length} · groups ${[...new Set(out.map(p => p.group))].join('/')} · item icons ${icons}`);
+  return out;
+})();
 const SU_DATA = {
   meta: {
     generated: new Date().toISOString(),
@@ -2837,6 +2902,8 @@ const SU_DATA = {
   artifact: { ...artGroup, slotUnlocks: artSlotUnlocks },
   artTierMinLevel,          // code (inv_ArtifactIcon): min level for artifact icon tiers 1..6
   traitItems,
+  projects,                 // code: Menu › Projects overlay
+  spellGemRules,            // code: mutually exclusive gem property groups (app property ids)
   statMats,
   trickMats,
   relics,

@@ -387,6 +387,12 @@ Verified: headless Chrome load (no JS errors), spec labels/perks, shops present,
 
 
 
+
+### 2026-10-05 — spell gem compatibility, code card thresholds, Projects overlay (S18 adoptions)
+- Spell Gem builder: the property picker offers only what the spell can take (code: scr_FixSpellGemProps flags + inv_SpellGemCanHaveProperty; 742/747 spells — the 5 "Morph:" variants have no code record and stay unrestricted). One Class Swap and one potency-from-stat property (Tourmaline/Onyx/Topaz/Sapphire) per gem — picking another replaces it; changing the spell drops properties the new spell can't take.
+- Cards: power-unlock thresholds now come from code (round(0.33N)/round(0.66N)/N legal creatures; 155/155 equal the old CSV values) + `setSize`.
+- Menu › Projects (new, last entry of the Realms/Shops/Glossary group): 129 projects grouped Castle / Missions / Specializations / Godspawn / Unlocks — cost (Resources/Parts/Dust, Normal|Ruthless), required items with icons and quantities, prerequisites (projects/quests). Mockup for review.
+
 ### 2026-10-05 — code-vs-text clarifications (Touch of Chaos, Counterspell, Spell Blast)
 - In-game text confirmed by the user; the code differs. Stored as `clarify` notes (shown under the game text on the detail page): Touch of Chaos rolls 4%/rank (text 1%), Counterspell +7% per missing charge (text 20%), Spell Blast +5% per MISSING charge (text 10% per charge it has). `effect_clarifications.json` gains kind `spell`; spell detail pages now render clarify notes.
 

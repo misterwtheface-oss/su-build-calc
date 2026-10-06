@@ -245,6 +245,11 @@
   const gemSpell = (g) => g ? SPELL.get(g.spellId) : null;
   // Opal "Class Swap: <Class>" reclasses the gem — the swapped class overrides the spell's own class,
   // driving both the equip check and the class-coloured icon. Returns null if no Class-Swap prop is set.
+  // code compatibility (scr_FixSpellGemProps / inv_SpellGemCanHaveProperty): a spell only takes the properties in its
+  // `gemOk` list, never an Opal swap to its own class; one Class Swap and one potency-from-stat property per gem
+  const GEM_RULES = D.spellGemRules || { potencyExclusive: [], classSwapExclusive: [] };
+  const gemPropOk = (spell, p) => !spell || ((!spell.gemOk || spell.gemOk.includes(p.id)) && !(p.swapClass && p.swapClass === spell.cls));
+  const gemExclusiveGroup = (id) => [GEM_RULES.potencyExclusive, GEM_RULES.classSwapExclusive].find(gr => gr.includes(id)) || null;
   const gemSwapClass = (g) => { for (const pid of (g && g.propIds || [])) { const p = SPELLPROP.get(pid); if (p && p.swapClass) return p.swapClass; } return null; };
   const gemClass = (g) => { const s = gemSpell(g); return gemSwapClass(g) || (s ? s.cls : null); };
   const gemIcon = (g) => { const cls = gemClass(g); if (!cls) return null;
@@ -2487,6 +2492,46 @@
     </div></div>`;
   }
 
+  // ── Projects — castle projects, missions and unlocks (code: cost, required items, prerequisites). ──
+  function openProjects() {
+    ovState = { kind: "projects", search: "", ruthless: false, collapsed: new Set(), render: renderProjects };
+    openOverlay(ovState.render()); maybeFocusSearch(OV);
+  }
+  const PROJECT_GROUPS = ["Castle", "Missions", "Specializations", "Godspawn", "Unlocks"];
+  const fmtInt = (n) => Number(n || 0).toLocaleString("en-US");
+  function renderProjects() {
+    const st = ovState, q = st.search.trim().toLowerCase(), all = D.projects || [];
+    const match = (p) => !q || p.name.toLowerCase().includes(q) || p.desc.toLowerCase().includes(q)
+      || p.items.some(i => i.name.toLowerCase().includes(q)) || p.reqs.some(r => r.toLowerCase().includes(q));
+    const list = all.filter(match);
+    const row = (p) => {
+      const c = st.ruthless ? p.costRuthless : p.cost;
+      const items = p.items.map(i => `<span class="proj-item">${i.icon ? spriteImg(i.icon, "px") : ""}<span>${esc(i.name)}</span><b>×${fmtInt(i.qty)}</b></span>`).join("");
+      return `<div class="perk-line">
+        <div class="perk-line-body"><div class="perk-line-head"><b>${esc(p.name)}</b>
+          <span class="perk-line-meta">${fmtInt(c.resources)} Resources · ${fmtInt(c.parts)} Parts · ${fmtInt(c.dust)} Dust</span></div>
+          ${p.desc ? `<div class="perk-desc">${esc(p.desc)}</div>` : ""}
+          ${items ? `<div class="proj-items">${items}</div>` : ""}
+          ${p.reqs.length ? `<div class="proj-reqs">${p.reqs.map(r => `<span class="thr-chip">${esc(r)}</span>`).join("")}</div>` : ""}</div></div>`;
+    };
+    const body = PROJECT_GROUPS.map(g => {
+      const items = list.filter(p => p.group === g);
+      if (!items.length) return "";
+      const open = q ? true : !st.collapsed.has(g);
+      return `<button class="apx-sec-head apx-cat${open ? "" : " collapsed"}" data-action="proj-group-toggle" data-g="${esc(g)}"><span class="apx-sec-caret">${open ? "▾" : "▸"}</span>${esc(g)}</button>${open ? `<div class="perk-list">${items.map(row).join("")}</div>` : ""}`;
+    }).join("") || `<div class="slot-sub" style="padding:10px">No project matches “${esc(st.search)}”.</div>`;
+    return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel">
+      <div class="overlay-header"><h2>Projects</h2>
+        <input class="ovl-search" placeholder="Search projects, items, quests…" value="${esc(st.search)}" data-action="proj-search">
+        <button class="ovl-close" data-action="close-ovl">✕</button></div>
+      <div class="ovl-filterbar"><div class="seg">
+        <button class="seg-btn ${st.ruthless ? "" : "on"}" data-action="proj-diff" data-v="normal">Normal</button>
+        <button class="seg-btn ${st.ruthless ? "on" : ""}" data-action="proj-diff" data-v="ruthless">Ruthless</button></div></div>
+      <div class="overlay-body"><div class="ovl-center"><div class="ovl-center-scroll">${body}</div></div></div>
+      <div class="overlay-footer"><span class="foot-info"></span><button class="btn-confirm" data-action="close-ovl">Done</button></div>
+    </div></div>`;
+  }
+
   // ── Realms reference ────────────────────────────────────────────────────────
   function openRealms(realmId) {
     ovState = { kind: "realms", search: "", sortBy: "realm", mode: "list", cmpExpanded: new Set(),
@@ -4247,10 +4292,10 @@
       const overCount = Math.max(0, g.propIds.length - slots);
       let picker = "";
       if (st.picking) {
-        // Opal's "Class Swap: <Class>" variants can't target the spell's own class → hide that one.
-        const spellCls = gemSpell(g) ? gemSpell(g).cls : null;
+        // only properties this spell can take (code compatibility; includes Opal's own-class swap)
+        const gsp = gemSpell(g);
         const pr = D.spellProps.filter(p => {
-          if (p.swapClass && p.swapClass === spellCls) return false;
+          if (!gemPropOk(gsp, p)) return false;
           return !q || p.name.toLowerCase().includes(q) || propText(p, tier).toLowerCase().includes(q);
         }).map(p =>
           `<div class="prop-row ${g.propIds.includes(p.id) ? "chosen" : ""}" data-action="sg-pickprop" data-id="${p.id}"${p.textNote ? ` title="${esc(p.textNote)}"` : ""}>
@@ -4437,6 +4482,10 @@
       case "riddle-search": break;   // handled in onInput
       case "open-glossary": openGlossary(); break;
       case "gloss-search": break;    // handled in onInput
+      case "open-projects": openProjects(); break;
+      case "proj-search": break;     // handled in onInput
+      case "proj-diff": ovState.ruthless = t.dataset.v === "ruthless"; refreshOverlay(true); break;
+      case "proj-group-toggle": { const g = t.dataset.g; ovState.collapsed.has(g) ? ovState.collapsed.delete(g) : ovState.collapsed.add(g); refreshOverlay(); break; }
       case "gloss-cat-toggle": { const c = t.dataset.c; ovState.collapsed.has(c) ? ovState.collapsed.delete(c) : ovState.collapsed.add(c); refreshOverlay(); break; }
       case "realm-sel": ovState.sel = +t.dataset.id; ovState.view = "detail"; ovState.detailIco = ovState.sortBy === "god" ? "god" : "realm"; refreshOverlay(true); break;
       case "realm-swapico": ovState.detailIco = (ovState.detailIco === "god" ? "realm" : "god"); refreshOverlay(); break;
@@ -4744,7 +4793,9 @@
         if (ovState.sel === id) ovState.sel = spellGems[0] ? spellGems[0].id : null;
         persistSpellGems(); persistArtifacts(); persistBuild(); refreshOverlay(); }); break;
       case "sg-cancel": backToGemList(ovState.retSlot, ovState.editId); break;
-      case "sg-spell": ovState.draft.spellId = ovState.draft.spellId === +t.dataset.id ? null : +t.dataset.id; refreshOverlay(); break;
+      case "sg-spell": { const d = ovState.draft; d.spellId = d.spellId === +t.dataset.id ? null : +t.dataset.id;
+        const sp = gemSpell(d); if (sp) d.propIds = d.propIds.filter(pid => { const p = SPELLPROP.get(pid); return p && gemPropOk(sp, p); });   // drop what the new spell can't take
+        refreshOverlay(); break; }
       case "sgb-next": ovState.step = "props"; ovState.picking = false; ovState.search = ""; refreshOverlay(true); break;
       case "sgb-back": ovState.step = "spell"; ovState.picking = false; ovState.search = ""; refreshOverlay(true); break;
       case "sg-addprop": if (ovState.draft.propIds.length >= gemSlots(ovState.draft)) break; ovState.picking = true; ovState.search = ""; refreshOverlay(true); break;
@@ -4753,8 +4804,9 @@
         const i = arr.indexOf(id);
         if (i >= 0) arr.splice(i, 1);
         else {
-          if (picked && picked.swapClass)   // only one Opal Class Swap per gem — replace any existing swap
-            for (let j = arr.length - 1; j >= 0; j--) { const pp = SPELLPROP.get(arr[j]); if (pp && pp.swapClass) arr.splice(j, 1); }
+          if (picked && !gemPropOk(gemSpell(ovState.draft), picked)) break;   // incompatible with this spell
+          const grp = gemExclusiveGroup(id);   // one Class Swap / one potency-from-stat per gem — replace the existing one
+          if (grp) for (let j = arr.length - 1; j >= 0; j--) if (grp.includes(arr[j])) arr.splice(j, 1);
           if (arr.length < gemSlots(ovState.draft)) arr.push(id);
         }
         if (arr.length >= gemSlots(ovState.draft)) ovState.picking = false; refreshOverlay(); break; }
@@ -4832,7 +4884,7 @@
     if (A === "bio-text") { ovState.text = v; ovState.error = null; return; }
     // search fields — live filter without losing caret
     const searchMap = { "crea-search": [OV, ovState], "spec-search": [OV, ovState], "artb-search": [OV, ovState],
-      "relic-search": [OV, ovState], "cards-search": [OV, ovState], "anoint-search": [OV, ovState], "nether-search": [OV, ovState], "sg-search": [OV, ovState], "appendix-search": [OV, ovState], "shop-search": [OV, ovState], "realm-search": [OV, ovState], "riddle-search": [OV, ovState], "gloss-search": [OV, ovState], "facet-search": [DOV, dovState], "perk-search": [DOV, dovState], "pers-search": [DOV, dovState], "iconpick-search": [DOV, dovState], "skin-search": [DOV, dovState] };
+      "relic-search": [OV, ovState], "cards-search": [OV, ovState], "anoint-search": [OV, ovState], "nether-search": [OV, ovState], "sg-search": [OV, ovState], "appendix-search": [OV, ovState], "shop-search": [OV, ovState], "realm-search": [OV, ovState], "riddle-search": [OV, ovState], "gloss-search": [OV, ovState], "proj-search": [OV, ovState], "facet-search": [DOV, dovState], "perk-search": [DOV, dovState], "pers-search": [DOV, dovState], "iconpick-search": [DOV, dovState], "skin-search": [DOV, dovState] };
     if (searchMap[A]) {
       const [root, state] = searchMap[A]; state.search = v;
       if (A === "crea-search") resetCreaPage();   // new query → back to page 1
