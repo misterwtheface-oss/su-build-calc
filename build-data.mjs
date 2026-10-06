@@ -240,10 +240,14 @@ for (const e of tc.entities) {
 // human-facing 2-level tag taxonomy (Category -> Value) + per-trait assignments
 const taxonomy = readJSON(path.join(MODEL, 'tag_taxonomy.json'));
 // tags whose code_taxo proposals are pre-approved via the damage-definition ledgers (user rulings 2026-10-04)
-const PREAPPROVED_TAGS = new Set(['Action/Mechanic::Damage', 'Activates When::Ally Deals Damage', 'Activates When::Enemy Deals Damage', 'Affect on Life::Creature is Damaged', 'Related Spells::Damaging Spells']);
+const PREAPPROVED_TAGS = new Set(['Activates When::Ally Loses Buff/Debuff', 'Activates When::Enemy Loses Buff/Debuff', 'Action/Mechanic::Damage', 'Activates When::Ally Deals Damage', 'Activates When::Enemy Deals Damage', 'Affect on Life::Creature is Damaged', 'Related Spells::Damaging Spells']);
 // Action/Mechanic::Damage (user ruling 2026-10-04): damage where the code does NOT make Attack or Spell/Cast explicit
 // (generic damage handler gates, DoT, damage effects). Replaces the old Attack+Cast pair used to mean "any damage".
 { const am = taxonomy.categories.find(c => c.category === 'Action/Mechanic'); if (am && !am.values.includes('Damage')) am.values.push('Damage'); }
+// Activates When::Ally/Enemy Loses Buff/Debuff (user 2026-10-06): triggered when a creature on that side LOSES a buff or
+// debuff (destroyed, removed, expires, wears off) — distinct from "is Buffed"/"is Debuffed" (gaining one).
+{ const aw = taxonomy.categories.find(c => c.category === 'Activates When');
+  if (aw) for (const v of ['Ally Loses Buff/Debuff', 'Enemy Loses Buff/Debuff']) if (!aw.values.includes(v)) aw.values.push(v); }
 { const aw = taxonomy.categories.find(c => c.category === 'Activates When'); if (aw) for (const v of ['Ally Deals Damage', 'Enemy Deals Damage']) if (!aw.values.includes(v)) aw.values.push(v); }   // user ruling 2026-10-04: triggered by damage
 const taxoTags = readJSON(path.join(MODEL, 'trait_taxonomy_tags.json')).by_trait;
 // "Animatus" (the golem race) isn't in the Related Types vocab, so the classifier snapped
@@ -2455,6 +2459,7 @@ const MINION_PHRASE = { 'Greater Demons': /\bgreater demons?\b/i, 'Lesser Demons
 {
   const CT = readJSON(path.join(MODEL, 'code_taxo.json')).traits;
   const APPROVED_PATH = path.join(ROOT, 'data', 'reference', 'code_taxo_approved.json');
+const TRAIT_REJECT = fs.existsSync(APPROVED_PATH) ? (readJSON(APPROVED_PATH).traitRejections || {}) : {};
   const APPROVED = fs.existsSync(APPROVED_PATH) ? (readJSON(APPROVED_PATH).changes || {}) : {};
   let conf = 0, repl = 0, adds = 0, pending = 0, pendingTraits = [];
   for (const tr of Object.values(traits)) {
@@ -2470,7 +2475,8 @@ const MINION_PHRASE = { 'Greater Demons': /\bgreater demons?\b/i, 'Lesser Demons
       }
       const c = CT[String(rid)]; if (!c) continue;
       for (const tag of c.confirm) { const i = t.indexOf(tag); if (i >= 0 && s2[i] !== 'code') { s2[i] = 'code'; conf++; } }
-      const open = [...c.replace.filter(r => !PREAPPROVED_TAGS.has(r.to) && !(r.to && t.includes(r.to))), ...c.add.filter(tag => !PREAPPROVED_TAGS.has(tag) && !t.includes(tag))];
+      const rejT = new Set((TRAIT_REJECT[String(rid)] || []));   // user-rejected trait proposals (by target tag)
+      const open = [...c.replace.filter(r => !PREAPPROVED_TAGS.has(r.to) && !(r.to && (t.includes(r.to) || rejT.has(r.to)))), ...c.add.filter(tag => !PREAPPROVED_TAGS.has(tag) && !t.includes(tag) && !rejT.has(tag))];
       if (open.length) { pending += open.length; pendingTraits.push(`${rid} ${tr.name}`); }
     }
   }

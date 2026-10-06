@@ -391,6 +391,11 @@ Verified: headless Chrome load (no JS errors), spec labels/perks, shops present,
 
 
 
+
+### 2026-10-06 — Loses Buff/Debuff triggers; Timeline outliers
+- New Activates When values (bucketed by side): **Ally Loses Buff/Debuff** (Qila's Assurance, Noetherian's Adamance, Protective Wing ×3, Sanctus, Scapegoat) and **Enemy Loses Buff/Debuff** (Anagnorisis, Snuff, Lingering Frost, Black to White, Fractionation, Amalgam). Trait proposal rejections now supported (`traitRejections`).
+- Timeline removed from Defer Pain and Animated Treasure.
+
 ### 2026-10-06 — formulas S16 folded in
 - `_su_extract` S16: description numbers decoded traits 1,117/1,227, perks 255/299 (each of the 154 still undecoded has a category + proof); all 12 ownership cases decided; handler roles proven from handler bodies; relic/card description-fallback amounts 22→16 / 82→47. Self-check 62/62.
 - Clarifications 15 → 22 (Evil Eye ×3, Coming Undone, Powershift, Master of Storms, Dusk & Dawn r70, Good Karma, Necessitarianism). Code tier: 6,465 rules; adapter accepts the S16 chance/threshold object shapes.

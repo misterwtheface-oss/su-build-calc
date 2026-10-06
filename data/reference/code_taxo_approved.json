@@ -189,9 +189,16 @@
       "Activates When::Ally Takes Damage"
      ],
      "to": "Activates When::Enemy Attacks"
+    },
+    {
+     "from": [
+      "Action/Mechanic::Timeline"
+     ],
+     "to": null
     }
    ],
-   "add": []
+   "add": [],
+   "approved": "2026-10-06"
   },
   "823": {
    "name": "Rapid Digestion",
@@ -1386,6 +1393,12 @@
       "Action/Mechanic::Debuff"
      ],
      "to": null
+    },
+    {
+     "from": [
+      "Activates When::Ally is Debuffed"
+     ],
+     "to": "Activates When::Ally Loses Buff/Debuff"
     }
    ],
    "add": [],
@@ -1589,6 +1602,85 @@
     {
      "from": [
       "Affect on Spells::Can't Manually Cast"
+     ],
+     "to": null
+    }
+   ],
+   "add": [],
+   "approved": "2026-10-06"
+  },
+  "971": {
+   "name": "Noetherian's Adamance",
+   "replace": [
+    {
+     "from": [
+      "Activates When::Ally is Buffed"
+     ],
+     "to": "Activates When::Ally Loses Buff/Debuff"
+    }
+   ],
+   "add": [],
+   "approved": "2026-10-06"
+  },
+  "1327": {
+   "name": "Protective Wing",
+   "replace": [],
+   "add": [
+    "Activates When::Ally Loses Buff/Debuff"
+   ],
+   "approved": "2026-10-06"
+  },
+  "1328": {
+   "name": "Protective Wing",
+   "replace": [],
+   "add": [
+    "Activates When::Ally Loses Buff/Debuff"
+   ],
+   "approved": "2026-10-06"
+  },
+  "1329": {
+   "name": "Protective Wing",
+   "replace": [],
+   "add": [
+    "Activates When::Ally Loses Buff/Debuff"
+   ],
+   "approved": "2026-10-06"
+  },
+  "339": {
+   "name": "Snuff",
+   "replace": [],
+   "add": [
+    "Activates When::Enemy Loses Buff/Debuff"
+   ],
+   "approved": "2026-10-06"
+  },
+  "386": {
+   "name": "Lingering Frost",
+   "replace": [],
+   "add": [
+    "Activates When::Enemy Loses Buff/Debuff"
+   ],
+   "approved": "2026-10-06"
+  },
+  "673": {
+   "name": "Black to White",
+   "replace": [
+    {
+     "from": [
+      "Activates When::Enemy is Debuffed"
+     ],
+     "to": "Activates When::Enemy Loses Buff/Debuff"
+    }
+   ],
+   "add": [],
+   "approved": "2026-10-06"
+  },
+  "501": {
+   "name": "Defer Pain",
+   "replace": [
+    {
+     "from": [
+      "Action/Mechanic::Timeline"
      ],
      "to": null
     }
@@ -2135,6 +2227,35 @@
    ],
    "add": [],
    "approved": "2026-10-06"
+  },
+  "42:SCAPEGOAT": {
+   "name": "Scapegoat",
+   "replace": [],
+   "add": [
+    "Activates When::Ally Loses Buff/Debuff"
+   ],
+   "approved": "2026-10-06"
+  },
+  "42:ANAGNORISIS": {
+   "name": "Anagnorisis",
+   "replace": [],
+   "add": [
+    "Activates When::Enemy Loses Buff/Debuff"
+   ],
+   "approved": "2026-10-06"
+  },
+  "42:FRACTIONATION": {
+   "name": "Fractionation",
+   "replace": [
+    {
+     "from": [
+      "Activates When::Enemy is Debuffed"
+     ],
+     "to": "Activates When::Enemy Loses Buff/Debuff"
+    }
+   ],
+   "add": [],
+   "approved": "2026-10-06"
   }
  },
  "policy": {
@@ -2273,6 +2394,14 @@
     }
    ],
    "add": [],
+   "approved": "2026-10-06"
+  },
+  "2": {
+   "name": "Amalgam, Warped Mirror of T'mere M'rgo",
+   "replace": [],
+   "add": [
+    "Activates When::Enemy Loses Buff/Debuff"
+   ],
    "approved": "2026-10-06"
   }
  },
@@ -2887,7 +3016,9 @@
      "to": null
     }
    ],
-   "add": [],
+   "add": [
+    "Activates When::Ally Loses Buff/Debuff"
+   ],
    "approved": "2026-10-06"
   }
  },
@@ -3609,6 +3740,12 @@
   }
  ],
  "notes_s17": {
-  "2026-10-06": "User review of S17: A approved except Qila's Assurance (held: needs a 'loses a buff' trigger value) and Rift Dancer p2 (Resistance stays). B approved (Resin keeps Stats + Related Stat::Attack). C: turn references move from Timeline to Turn Counter; start of battle is never Timeline. D: code-proven drops approved, with replacements where a correct tag exists (Alementals → Extra/Gain a Spell Gem; Concoctions → Debuffed with X + Automatic/Extra Attack; Singleton → Limit Actions per Turn)."
+  "2026-10-06": "User review of S17: A approved except Qila's Assurance (held: needs a 'loses a buff' trigger value) and Rift Dancer p2 (Resistance stays). B approved (Resin keeps Stats + Related Stat::Attack). C: turn references move from Timeline to Turn Counter; start of battle is never Timeline. D: code-proven drops approved, with replacements where a correct tag exists (Alementals → Extra/Gain a Spell Gem; Concoctions → Debuffed with X + Automatic/Extra Attack; Singleton → Limit Actions per Turn).",
+  "2026-10-06b": "New values Activates When::Ally/Enemy Loses Buff/Debuff (user: bucket by side). Ally: Qila's Assurance, Noetherian's Adamance, Protective Wing x3, Sanctus p3, Scapegoat. Enemy: Anagnorisis, Snuff, Lingering Frost, Black to White, Fractionation, Amalgam. S17's Qila 'Ally is Buffed' proposal rejected in favour of the new value. Timeline removed from Defer Pain and Animated Treasure."
+ },
+ "traitRejections": {
+  "1281": [
+   "Activates When::Ally is Buffed"
+  ]
  }
 }
