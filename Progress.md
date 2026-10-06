@@ -394,6 +394,10 @@ Verified: headless Chrome load (no JS errors), spec labels/perks, shops present,
 
 
 
+
+### 2026-10-06 — Multi-Target Spells rule
+- Rule: Multi-Target = the effect affects more than one creature (any targeting mechanism, either side); repeat hits on one target don't count; unpredictable random targets/outcomes aren't assigned. 20 pending spell proposals approved, 4 rejected (Secret Stuff, Awakened Nether Orbs, Nine Meteors, Euthanasia). Taxonomy review queue now empty.
+
 ### 2026-10-06 — Critical Count / Dodge Count
 - New `Multiplied by::Critical Count` (Recklessness, Mass Effect) and `Multiplied by::Dodge Count` (Recklessness, Windwalker); parents Critical / Dodge by extension. Two objects each, so they show without the single-use toggle. Rift Dancer card proposal now properly rejected (`cardRejections`).
 

@@ -339,6 +339,7 @@ Which kind of trait an effect references.
 - **Missing vs dead creatures (2026-10-06).** `Multiplied by::Missing Creature Count` / `Active If::Creatures Missing` = empty party slots (the game's missing-creature count). `Dead Creature Count` stays where the effect counts dead creatures (or dead and missing, e.g. Final Stand).
 - **Action counts (2026-10-06).** "For each time their on-X effects activated" uses the existing X Count (on-action = Attack/Cast/Defend/Provoke Count); there is no generic activation-count value.
 - **Gain a Perk (2026-10-06).** `Affect on Traits::Gain a Perk` = the effect grants perks (Tools of Creation, Divine Dualwield).
+- **Multi-Target Spells (2026-10-06).** The effect affects more than one creature, whatever the targeting mechanism and on either side. Hitting the same target repeatedly doesn't count; random targets or outcomes that can't be predicted aren't assigned (one random enemy, a random spell).
 - **Minions are not Buffs.** Minion conditions (`{CONDNAME_MINION_*}`, e.g. Direwolf) produce Minion / Minion Count / Related Minion tags, never Buff / Buff Count / Related Buff, and vice versa.
 
 ## Retired / dropped

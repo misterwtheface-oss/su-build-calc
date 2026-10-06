@@ -2475,7 +2475,8 @@
   "minions_not_buffs": "Minions are Minions, not Buffs: minion conditions (CONDNAME_MINION_*) never produce Buff/Buff Count/Related Buff tags, and buffs never produce Minion tags.",
   "action_mechanic_superset": "user 2026-10-04: Action/Mechanic values are catch-all pools of the narrower groupings; overlap is required. Any object with a narrower tag carries its Action/Mechanic parent (build-data implied pass).",
   "turns_vs_timeline": "user 2026-10-06: turn references (extra turns, lost turns, turns taken / turn counter) belong to Action/Mechanic::Turn Counter, not Timeline. Timeline = position/order on the timeline. Start of battle is never a Timeline effect.",
-  "action_counts": "user 2026-10-06: 'for each time their on-X effects activated' is tagged with the existing X Count (Attack/Cast/Defend/Provoke/Buff/…); no generic activation-count value."
+  "action_counts": "user 2026-10-06: 'for each time their on-X effects activated' is tagged with the existing X Count (Attack/Cast/Defend/Provoke/Buff/…); no generic activation-count value.",
+  "multi_target": "user 2026-10-06: Multi-Target = the effect affects MORE THAN ONE creature, whatever the targeting mechanism, side-agnostic. The same target hit repeatedly does not count. Random targets/outcomes that can't be predicted can't be assigned (e.g. one random enemy, a random spell)."
  },
  "perkRejections": {
   "5:MASSACRE": [
@@ -3032,6 +3033,166 @@
     }
    ],
    "add": [],
+   "approved": "2026-10-06"
+  },
+  "25": {
+   "name": "Confusion",
+   "replace": [],
+   "add": [
+    "Related Spells::Multi-Target Spells"
+   ],
+   "approved": "2026-10-06"
+  },
+  "39": {
+   "name": "Dense Fog",
+   "replace": [],
+   "add": [
+    "Related Spells::Multi-Target Spells"
+   ],
+   "approved": "2026-10-06"
+  },
+  "55": {
+   "name": "Entangle",
+   "replace": [],
+   "add": [
+    "Related Spells::Multi-Target Spells"
+   ],
+   "approved": "2026-10-06"
+  },
+  "67": {
+   "name": "Flash Freeze",
+   "replace": [],
+   "add": [
+    "Related Spells::Multi-Target Spells"
+   ],
+   "approved": "2026-10-06"
+  },
+  "113": {
+   "name": "Mass Dispel",
+   "replace": [],
+   "add": [
+    "Related Spells::Multi-Target Spells"
+   ],
+   "approved": "2026-10-06"
+  },
+  "120": {
+   "name": "Mind Storm",
+   "replace": [],
+   "add": [
+    "Related Spells::Multi-Target Spells"
+   ],
+   "approved": "2026-10-06"
+  },
+  "139": {
+   "name": "Pandemonium",
+   "replace": [],
+   "add": [
+    "Related Spells::Multi-Target Spells"
+   ],
+   "approved": "2026-10-06"
+  },
+  "164": {
+   "name": "Savage Spores",
+   "replace": [],
+   "add": [
+    "Related Spells::Multi-Target Spells"
+   ],
+   "approved": "2026-10-06"
+  },
+  "296": {
+   "name": "Exhaustion",
+   "replace": [],
+   "add": [
+    "Related Spells::Multi-Target Spells"
+   ],
+   "approved": "2026-10-06"
+  },
+  "315": {
+   "name": "Succulent Scotch",
+   "replace": [],
+   "add": [
+    "Related Spells::Multi-Target Spells"
+   ],
+   "approved": "2026-10-06"
+  },
+  "521": {
+   "name": "Brethren",
+   "replace": [],
+   "add": [
+    "Related Spells::Multi-Target Spells"
+   ],
+   "approved": "2026-10-06"
+  },
+  "525": {
+   "name": "Stonewall",
+   "replace": [],
+   "add": [
+    "Related Spells::Multi-Target Spells"
+   ],
+   "approved": "2026-10-06"
+  },
+  "526": {
+   "name": "Warning",
+   "replace": [],
+   "add": [
+    "Related Spells::Multi-Target Spells"
+   ],
+   "approved": "2026-10-06"
+  },
+  "529": {
+   "name": "Life Orb",
+   "replace": [],
+   "add": [
+    "Related Spells::Multi-Target Spells"
+   ],
+   "approved": "2026-10-06"
+  },
+  "570": {
+   "name": "Slaughter",
+   "replace": [],
+   "add": [
+    "Related Spells::Multi-Target Spells"
+   ],
+   "approved": "2026-10-06"
+  },
+  "589": {
+   "name": "Relight",
+   "replace": [],
+   "add": [
+    "Related Spells::Multi-Target Spells"
+   ],
+   "approved": "2026-10-06"
+  },
+  "621": {
+   "name": "Desperate Bid",
+   "replace": [],
+   "add": [
+    "Related Spells::Multi-Target Spells"
+   ],
+   "approved": "2026-10-06"
+  },
+  "674": {
+   "name": "Fate",
+   "replace": [],
+   "add": [
+    "Related Spells::Multi-Target Spells"
+   ],
+   "approved": "2026-10-06"
+  },
+  "692": {
+   "name": "Genesis",
+   "replace": [],
+   "add": [
+    "Related Spells::Multi-Target Spells"
+   ],
+   "approved": "2026-10-06"
+  },
+  "735": {
+   "name": "Co-Ray",
+   "replace": [],
+   "add": [
+    "Related Spells::Multi-Target Spells"
+   ],
    "approved": "2026-10-06"
   }
  },
@@ -3963,7 +4124,8 @@
   "2026-10-06": "User review of S17: A approved except Qila's Assurance (held: needs a 'loses a buff' trigger value) and Rift Dancer p2 (Resistance stays). B approved (Resin keeps Stats + Related Stat::Attack). C: turn references move from Timeline to Turn Counter; start of battle is never Timeline. D: code-proven drops approved, with replacements where a correct tag exists (Alementals → Extra/Gain a Spell Gem; Concoctions → Debuffed with X + Automatic/Extra Attack; Singleton → Limit Actions per Turn).",
   "2026-10-06b": "New values Activates When::Ally/Enemy Loses Buff/Debuff (user: bucket by side). Ally: Qila's Assurance, Noetherian's Adamance, Protective Wing x3, Sanctus p3, Scapegoat. Enemy: Anagnorisis, Snuff, Lingering Frost, Black to White, Fractionation, Amalgam. S17's Qila 'Ally is Buffed' proposal rejected in favour of the new value. Timeline removed from Defer Pain and Animated Treasure.",
   "2026-10-06c": "User: Missing creatures → new Multiplied by::Missing Creature Count (replaces Dead Creature Count where only missing; keep Dead where dead and/or missing, e.g. Final Stand) + Active If::Creatures Missing. Effect-activation counts use the existing per-action counts broadly (on-action = Attack/Cast/Defend/Provoke; Fable on-X = those + Resurrect). New Affect on Traits::Gain a Perk. Like Sand stays with its spell-gem group (no new tag).",
-  "2026-10-06d": "Critical Count (Recklessness, Mass Effect) and Dodge Count (Recklessness, Windwalker) added per user; parents Critical / Dodge by extension."
+  "2026-10-06d": "Critical Count (Recklessness, Mass Effect) and Dodge Count (Recklessness, Windwalker) added per user; parents Critical / Dodge by extension.",
+  "2026-10-06e": "Multi-Target spells: 20 approved, 4 rejected (Secret Stuff, Awakened Nether Orbs, Nine Meteors, Euthanasia) per the multi-target rule."
  },
  "traitRejections": {
   "1281": [
@@ -3973,6 +4135,20 @@
  "cardRejections": {
   "99": [
    "Affect on Status::Avoid/Immune to Debuff"
+  ]
+ },
+ "spellRejections": {
+  "317": [
+   "Related Spells::Multi-Target Spells"
+  ],
+  "441": [
+   "Related Spells::Multi-Target Spells"
+  ],
+  "592": [
+   "Related Spells::Multi-Target Spells"
+  ],
+  "718": [
+   "Related Spells::Multi-Target Spells"
   ]
  }
 }
