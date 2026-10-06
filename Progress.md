@@ -393,6 +393,10 @@ Verified: headless Chrome load (no JS errors), spec labels/perks, shops present,
 
 
 
+
+### 2026-10-06 — Critical Count / Dodge Count
+- New `Multiplied by::Critical Count` (Recklessness, Mass Effect) and `Multiplied by::Dodge Count` (Recklessness, Windwalker); parents Critical / Dodge by extension. Two objects each, so they show without the single-use toggle. Rift Dancer card proposal now properly rejected (`cardRejections`).
+
 ### 2026-10-06 — Missing creatures, action counts, Gain a Perk
 - New `Multiplied by::Missing Creature Count` (replaces Dead Creature Count on 11 Hermit-style perks + Focused Magicks) and `Active If::Creatures Missing` (Reclusive Remedy, Ancestry, Final Stand — which keeps Dead Creature Count: dead and missing).
 - "For each time their on-X effects activated" → existing per-action counts: Juggernaut / Outburst = Attack + Cast + Defend + Provoke Count; Fable adds those + Resurrect Count. No generic activation value.

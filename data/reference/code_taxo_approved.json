@@ -1702,6 +1702,14 @@
    ],
    "add": [],
    "approved": "2026-10-06"
+  },
+  "2084": {
+   "name": "Mass Effect",
+   "replace": [],
+   "add": [
+    "Multiplied by::Critical Count"
+   ],
+   "approved": "2026-10-06"
   }
  },
  "rejected": {
@@ -2166,7 +2174,10 @@
      "to": null
     }
    ],
-   "add": [],
+   "add": [
+    "Multiplied by::Critical Count",
+    "Multiplied by::Dodge Count"
+   ],
    "approved": "2026-10-06"
   },
   "24:JUGGERNAUT": {
@@ -2442,6 +2453,14 @@
     "Multiplied by::Cast Count",
     "Multiplied by::Defend Count",
     "Multiplied by::Provoke Count"
+   ],
+   "approved": "2026-10-06"
+  },
+  "7:WINDWALKER": {
+   "name": "Windwalker",
+   "replace": [],
+   "add": [
+    "Multiplied by::Dodge Count"
    ],
    "approved": "2026-10-06"
   }
@@ -3943,11 +3962,17 @@
  "notes_s17": {
   "2026-10-06": "User review of S17: A approved except Qila's Assurance (held: needs a 'loses a buff' trigger value) and Rift Dancer p2 (Resistance stays). B approved (Resin keeps Stats + Related Stat::Attack). C: turn references move from Timeline to Turn Counter; start of battle is never Timeline. D: code-proven drops approved, with replacements where a correct tag exists (Alementals → Extra/Gain a Spell Gem; Concoctions → Debuffed with X + Automatic/Extra Attack; Singleton → Limit Actions per Turn).",
   "2026-10-06b": "New values Activates When::Ally/Enemy Loses Buff/Debuff (user: bucket by side). Ally: Qila's Assurance, Noetherian's Adamance, Protective Wing x3, Sanctus p3, Scapegoat. Enemy: Anagnorisis, Snuff, Lingering Frost, Black to White, Fractionation, Amalgam. S17's Qila 'Ally is Buffed' proposal rejected in favour of the new value. Timeline removed from Defer Pain and Animated Treasure.",
-  "2026-10-06c": "User: Missing creatures → new Multiplied by::Missing Creature Count (replaces Dead Creature Count where only missing; keep Dead where dead and/or missing, e.g. Final Stand) + Active If::Creatures Missing. Effect-activation counts use the existing per-action counts broadly (on-action = Attack/Cast/Defend/Provoke; Fable on-X = those + Resurrect). New Affect on Traits::Gain a Perk. Like Sand stays with its spell-gem group (no new tag)."
+  "2026-10-06c": "User: Missing creatures → new Multiplied by::Missing Creature Count (replaces Dead Creature Count where only missing; keep Dead where dead and/or missing, e.g. Final Stand) + Active If::Creatures Missing. Effect-activation counts use the existing per-action counts broadly (on-action = Attack/Cast/Defend/Provoke; Fable on-X = those + Resurrect). New Affect on Traits::Gain a Perk. Like Sand stays with its spell-gem group (no new tag).",
+  "2026-10-06d": "Critical Count (Recklessness, Mass Effect) and Dodge Count (Recklessness, Windwalker) added per user; parents Critical / Dodge by extension."
  },
  "traitRejections": {
   "1281": [
    "Activates When::Ally is Buffed"
+  ]
+ },
+ "cardRejections": {
+  "99": [
+   "Affect on Status::Avoid/Immune to Debuff"
   ]
  }
 }
