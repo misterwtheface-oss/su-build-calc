@@ -390,6 +390,11 @@ Verified: headless Chrome load (no JS errors), spec labels/perks, shops present,
 
 
 
+
+### 2026-10-06 — formulas S16 folded in
+- `_su_extract` S16: description numbers decoded traits 1,117/1,227, perks 255/299 (each of the 154 still undecoded has a category + proof); all 12 ownership cases decided; handler roles proven from handler bodies; relic/card description-fallback amounts 22→16 / 82→47. Self-check 62/62.
+- Clarifications 15 → 22 (Evil Eye ×3, Coming Undone, Powershift, Master of Storms, Dusk & Dawn r70, Good Karma, Necessitarianism). Code tier: 6,465 rules; adapter accepts the S16 chance/threshold object shapes.
+
 ### 2026-10-06 — S17 review applied; Timeline vs Turn Counter
 - A: 19 replacements approved (Qila's Assurance held for a new "loses a buff" trigger value; Rift Dancer p2 stays Resistant). B: Attack dropped where nothing attacks (Resin keeps Stats + Related Stat::Attack). D: code-proven drops approved with replacements where a correct tag exists (Master of Alementals → Extra/Gain a Spell Gem; Master of Concoctions → Debuffed with X + Automatic/Extra Attack; Singleton → Limit Actions per Turn).
 - C (new ruling): turn references → Action/Mechanic::Turn Counter; Timeline = position/order only; start of battle is never Timeline. Additional Turn / Lose Turn / Count Additional (Turns) now imply Turn Counter; 19 turn-only Timeline tags moved. Master of Apocalypses → Count Additional (Turns) + Turn Counter.

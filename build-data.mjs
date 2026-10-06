@@ -3034,9 +3034,12 @@ const SU_DATA = {
       if (Object.keys(args).length) r.args = args;
       const a = amt(amount); if (a) r.amount = a;
       if (extra_amounts && extra_amounts.length) r.extraAmounts = extra_amounts.map(amt);
-      if (e.chance != null) r.chance = { value: e.chance, unit: e.chance_unit || null };
+      if (e.chance != null) {   // S16: chance may be a bare number or {value, source_site, binding, phi_resolved}
+        const c = typeof e.chance === 'object' ? e.chance : { value: e.chance };
+        r.chance = { value: c.value ?? null, unit: e.chance_unit || c.unit || null, ...(c.source_site ? { site: c.source_site } : {}) };
+      }
       if (e.gate_negated) r.gateNegated = true;
-      if (e.thresholds) r.thresholds = e.thresholds;
+      if (e.thresholds) r.thresholds = e.thresholds.map(t => typeof t === 'object' ? { value: t.value ?? null, compare: t.compare || null, ...(t.site ? { site: t.site } : {}) } : { value: t });
       r.conf = e.confidence || null;
       r.prov = 'code';
       rules.push(r); byOp[name] = (byOp[name] || 0) + 1; bySrc[src.kind] = (bySrc[src.kind] || 0) + 1;
