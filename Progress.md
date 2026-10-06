@@ -388,6 +388,11 @@ Verified: headless Chrome load (no JS errors), spec labels/perks, shops present,
 
 
 
+
+### 2026-10-05 — taxonomy S17: remaining LLM tags decided from code
+- `_su_extract` S17 layer: ~1,190 per-object code rulings; code-confirmed tags +1,346 (0 lost). App provenance now code 92.6% · llm 2.9% (traits 2.9 / perks 4.9 / spells 1.1 / relics 5.1 / cards 5.1%).
+- Review list pending with the user: 21 replacements + 59 code-proven drops (never auto-applied).
+
 ### 2026-10-05 — spell gem compatibility, code card thresholds, Projects overlay (S18 adoptions)
 - Spell Gem builder: the property picker offers only what the spell can take (code: scr_FixSpellGemProps flags + inv_SpellGemCanHaveProperty; 742/747 spells — the 5 "Morph:" variants have no code record and stay unrestricted). One Class Swap and one potency-from-stat property (Tourmaline/Onyx/Topaz/Sapphire) per gem — picking another replaces it; changing the spell drops properties the new spell can't take.
 - Cards: power-unlock thresholds now come from code (round(0.33N)/round(0.66N)/N legal creatures; 155/155 equal the old CSV values) + `setSize`.
