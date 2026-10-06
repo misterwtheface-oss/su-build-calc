@@ -2476,7 +2476,7 @@
   "action_mechanic_superset": "user 2026-10-04: Action/Mechanic values are catch-all pools of the narrower groupings; overlap is required. Any object with a narrower tag carries its Action/Mechanic parent (build-data implied pass).",
   "turns_vs_timeline": "user 2026-10-06: turn references (extra turns, lost turns, turns taken / turn counter) belong to Action/Mechanic::Turn Counter, not Timeline. Timeline = position/order on the timeline. Start of battle is never a Timeline effect.",
   "action_counts": "user 2026-10-06: 'for each time their on-X effects activated' is tagged with the existing X Count (Attack/Cast/Defend/Provoke/Buff/…); no generic activation-count value.",
-  "multi_target": "user 2026-10-06: Multi-Target = the effect affects MORE THAN ONE creature, whatever the targeting mechanism, side-agnostic. The same target hit repeatedly does not count. Random targets/outcomes that can't be predicted can't be assigned (e.g. one random enemy, a random spell)."
+  "multi_target": "user 2026-10-06: Multi-Target = the effect affects MORE THAN ONE creature, whatever the targeting mechanism, side-agnostic. Random targeting that is likely to hit more than one creature (random enemies continuously, N random hits, cast-count scaling like Pop) counts as multi. Not multi: one target hit repeatedly, a single random target (Euthanasia), or an unpredictable random spell (Awakened Nether Orbs)."
  },
  "perkRejections": {
   "5:MASSACRE": [
