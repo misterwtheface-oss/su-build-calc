@@ -389,6 +389,12 @@ Verified: headless Chrome load (no JS errors), spec labels/perks, shops present,
 
 
 
+
+### 2026-10-06 — S17 review applied; Timeline vs Turn Counter
+- A: 19 replacements approved (Qila's Assurance held for a new "loses a buff" trigger value; Rift Dancer p2 stays Resistant). B: Attack dropped where nothing attacks (Resin keeps Stats + Related Stat::Attack). D: code-proven drops approved with replacements where a correct tag exists (Master of Alementals → Extra/Gain a Spell Gem; Master of Concoctions → Debuffed with X + Automatic/Extra Attack; Singleton → Limit Actions per Turn).
+- C (new ruling): turn references → Action/Mechanic::Turn Counter; Timeline = position/order only; start of battle is never Timeline. Additional Turn / Lose Turn / Count Additional (Turns) now imply Turn Counter; 19 turn-only Timeline tags moved. Master of Apocalypses → Count Additional (Turns) + Turn Counter.
+- Provenance: code 92.9% · llm 2.5%.
+
 ### 2026-10-05 — taxonomy S17: remaining LLM tags decided from code
 - `_su_extract` S17 layer: ~1,190 per-object code rulings; code-confirmed tags +1,346 (0 lost). App provenance now code 92.6% · llm 2.9% (traits 2.9 / perks 4.9 / spells 1.1 / relics 5.1 / cards 5.1%).
 - Review list pending with the user: 21 replacements + 59 code-proven drops (never auto-applied).

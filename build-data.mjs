@@ -2594,6 +2594,7 @@ const MINION_PHRASE = { 'Greater Demons': /\bgreater demons?\b/i, 'Lesser Demons
   const BUFF_VALS = ['Apply/Gain a Buff', 'Limit/Prevent Buff Gain', 'Buffs Persist', 'More Powerful Buff', 'Remove Buff', 'Share/Gain Copy of Buff'];
   const DEBUFF_VALS = ['Afflict with/Gain a Debuff', 'Increase Debuff Potency', 'Avoid/Immune to Debuff', 'Debuffs Persist', 'Remove Debuff', 'Resistant to Debuff', 'Cannot be Immune'];
   const GEM_VALS = ['Extra/Gain a Spell Gem', 'Modify Spell Gem Property', 'Seal Spell Gem', 'Cannot be Sealed', 'Modify Charges/Behavior', 'Equip from Other Classes'];
+  const TURN_VALS = ['Affect on Timeline::Additional Turn', 'Affect on Timeline::Lose Turn', 'Affect on Timeline::Count Additional (Turns)'];
   const CLASS_TYPES = ['Fused Class', 'Parent Class', 'Chaos Creature', 'Death Creature', 'Life Creature', 'Nature Creature', 'Sorcery Creature'];
   const ev = (verb) => [`Activates When::Ally ${verb}`, `Activates When::Enemy ${verb}`];
   const RULES = {   // Action/Mechanic value -> exact tags (or "prefix*") that imply it
@@ -2615,13 +2616,14 @@ const MINION_PHRASE = { 'Greater Demons': /\bgreater demons?\b/i, 'Lesser Demons
     Stats: ['Affect on Stats::*', ...ev('Gains Stats'), ...ev('Loses Stats'), 'Related Stat::*', 'Multiplied by::Amount of X Stat',
             'Multiplied by::Amount of Stat Change', 'Active If::Stat is Unmodified'],
     Timeline: ['Affect on Timeline::*', ...ev('Moves on Timeline'), 'Multiplied by::Above/Below on TL Count'],
-    'Turn Counter': ['Multiplied by::Turns Taken Count'],
+    // user 2026-10-06: turn references (extra / lost turns, turns taken) are Turn Counter, not Timeline
+    'Turn Counter': ['Multiplied by::Turns Taken Count', ...TURN_VALS],
     'Spell Gems': [...GEM_VALS.map(v => 'Affect on Spells::' + v), 'Multiplied by::Spell Gem/Charge Count'],
     'Creature Class': [...CLASS_TYPES.map(v => 'Related Types::' + v), 'Affect on Type::Change Class', 'Affect on Type::Count Additional (Class)'],
     'Creature Race': ['Related Types::*', 'Affect on Type::Change Race', 'Affect on Type::Count Additional (Race)'],
     Artifact: ['Related Trait::Artifact Trait'],
   };
-  const RULE_EXCEPT = { 'Creature Race': CLASS_TYPES.map(v => 'Related Types::' + v) };
+  const RULE_EXCEPT = { 'Creature Race': CLASS_TYPES.map(v => 'Related Types::' + v), Timeline: TURN_VALS };
   const TOKEN_RULES = { Attack: /\{ACTION_attack/, Cast: /\{ACTION_cast/, Defend: /\{ACTION_defend/, Provoke: /\{ACTION_provok/,
                         'Creature Race': /\{RACE_/ };
   const matches = (pat, tag) => pat.endsWith('*') ? tag.startsWith(pat.slice(0, -1)) : tag === pat;
@@ -2649,6 +2651,23 @@ const MINION_PHRASE = { 'Greater Demons': /\bgreater demons?\b/i, 'Lesser Demons
   for (const sp of spells) imply(sp, sp.desc);
   for (const rl of relics) imply(rl, '');
   for (const cd of cards) imply(cd, '');
+  // Timeline → Turn Counter (user 2026-10-06): an Action/Mechanic::Timeline tag that rests only on turn values (no
+  // timeline wording, no position/order tag) is a turn reference → Turn Counter (provenance kept).
+  let tl2tc = 0;
+  const TL_POS = (x) => (x.startsWith('Affect on Timeline::') && !TURN_VALS.includes(x)) || /Moves on Timeline|Above\/Below on TL Count/.test(x);
+  const tlFix = (e, text) => {
+    const t = e.taxo || [], i = t.indexOf('Action/Mechanic::Timeline'); if (i < 0) return;
+    if (/\{TIMELINE\}|timeline/i.test(text || '') || t.some(TL_POS) || !t.some(x => TURN_VALS.includes(x))) return;
+    const src = e.taxoSrc[i]; t.splice(i, 1); e.taxoSrc.splice(i, 1);
+    if (!t.includes('Action/Mechanic::Turn Counter')) { t.push('Action/Mechanic::Turn Counter'); e.taxoSrc.push(src); }
+    tl2tc++;
+  };
+  for (const tr of Object.values(traits)) tlFix(tr, tr.desc);
+  for (const sc of specs) for (const pk of sc.perks || []) tlFix(pk, pk.desc);
+  for (const sp of spells) tlFix(sp, sp.desc);
+  for (const rl of relics) tlFix(rl, (rl.ranks || []).map(r => r.desc).join(' '));
+  for (const cd of cards) tlFix(cd, (cd.effects || []).join(' '));
+  console.log(`  timeline → turn counter: ${tl2tc} turn-only Timeline tags moved`);
   console.log(`  action/mechanic implied: ${conf} llm tags now implied by exact tags · +${add} added · +${ext} by extension (inherited src) · ` +
     Object.entries(stat).map(([k, [c, a, x]]) => `${k} ${c}/+${a}/+${x || 0}`).join(', '));
 }

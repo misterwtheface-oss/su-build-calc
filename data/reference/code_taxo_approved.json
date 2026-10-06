@@ -342,11 +342,18 @@
   },
   "365": {
    "name": "Blood Magic",
-   "replace": [],
+   "replace": [
+    {
+     "from": [
+      "Multiplied by::Current/Missing Health %"
+     ],
+     "to": null
+    }
+   ],
    "add": [
     "Multiplied by::Amount of X Stat"
    ],
-   "approved": "2026-10-03"
+   "approved": "2026-10-06"
   },
   "771": {
    "name": "Pandemonium Life",
@@ -487,10 +494,22 @@
       "Action/Mechanic::Timeline"
      ],
      "to": "Action/Mechanic::Turn Counter"
+    },
+    {
+     "from": [
+      "Action/Mechanic::Timeline"
+     ],
+     "to": null
+    },
+    {
+     "from": [
+      "Affect on Timeline::Additional Turn"
+     ],
+     "to": "Affect on Timeline::Count Additional (Turns)"
     }
    ],
    "add": [],
-   "approved": "2026-10-03"
+   "approved": "2026-10-06"
   },
   "1609": {
    "name": "Shoulder of Impington",
@@ -1137,12 +1156,452 @@
    ],
    "approved": "2026-10-04",
    "note": "user 2026-10-04: Direwolf is a minion ({CONDNAME_MINION_DIREWOLF}), not a buff"
+  },
+  "382": {
+   "name": "Deterioration",
+   "replace": [
+    {
+     "from": [
+      "Multiplied by::Creature of X Type Count"
+     ],
+     "to": "Multiplied by::Debuff Count"
+    }
+   ],
+   "add": [],
+   "approved": "2026-10-06"
+  },
+  "425": {
+   "name": "Admire the Gods",
+   "replace": [
+    {
+     "from": [
+      "Multiplied by::Current/Missing Health %"
+     ],
+     "to": "Multiplied by::Amount of X Stat"
+    }
+   ],
+   "add": [],
+   "approved": "2026-10-06"
+  },
+  "1339": {
+   "name": "Fragile Immortality",
+   "replace": [
+    {
+     "from": [
+      "Multiplied by::Current/Missing Health %"
+     ],
+     "to": "Multiplied by::Amount of X Stat"
+    }
+   ],
+   "add": [],
+   "approved": "2026-10-06"
+  },
+  "1340": {
+   "name": "Fragile Immortality",
+   "replace": [
+    {
+     "from": [
+      "Multiplied by::Current/Missing Health %"
+     ],
+     "to": "Multiplied by::Amount of X Stat"
+    }
+   ],
+   "add": [],
+   "approved": "2026-10-06"
+  },
+  "1341": {
+   "name": "Fragile Immortality",
+   "replace": [
+    {
+     "from": [
+      "Multiplied by::Current/Missing Health %"
+     ],
+     "to": "Multiplied by::Amount of X Stat"
+    }
+   ],
+   "add": [],
+   "approved": "2026-10-06"
+  },
+  "2130": {
+   "name": "Negative Charge",
+   "replace": [
+    {
+     "from": [
+      "Multiplied by::Creature of X Type Count"
+     ],
+     "to": "Multiplied by::Debuff Count"
+    }
+   ],
+   "add": [],
+   "approved": "2026-10-06"
+  },
+  "173": {
+   "name": "Wrath",
+   "replace": [
+    {
+     "from": [
+      "Action/Mechanic::Attack"
+     ],
+     "to": null
+    }
+   ],
+   "add": [],
+   "approved": "2026-10-06"
+  },
+  "269": {
+   "name": "Cold Blood",
+   "replace": [
+    {
+     "from": [
+      "Action/Mechanic::Attack"
+     ],
+     "to": null
+    }
+   ],
+   "add": [],
+   "approved": "2026-10-06"
+  },
+  "488": {
+   "name": "Resin",
+   "replace": [
+    {
+     "from": [
+      "Action/Mechanic::Attack"
+     ],
+     "to": null
+    }
+   ],
+   "add": [],
+   "approved": "2026-10-06"
+  },
+  "625": {
+   "name": "Like Sand",
+   "replace": [
+    {
+     "from": [
+      "Active If::Health is X%"
+     ],
+     "to": null
+    }
+   ],
+   "add": [],
+   "approved": "2026-10-06"
+  },
+  "1237": {
+   "name": "Soul Reaver",
+   "replace": [
+    {
+     "from": [
+      "Action/Mechanic::Attack"
+     ],
+     "to": null
+    }
+   ],
+   "add": [],
+   "approved": "2026-10-06"
+  },
+  "1239": {
+   "name": "Lingering Essence",
+   "replace": [
+    {
+     "from": [
+      "Action/Mechanic::Stats"
+     ],
+     "to": null
+    }
+   ],
+   "add": [],
+   "approved": "2026-10-06"
+  },
+  "1354": {
+   "name": "Evil Eye",
+   "replace": [
+    {
+     "from": [
+      "Action/Mechanic::Attack"
+     ],
+     "to": null
+    }
+   ],
+   "add": [],
+   "approved": "2026-10-06"
+  },
+  "922": {
+   "name": "Evil Eye",
+   "replace": [
+    {
+     "from": [
+      "Action/Mechanic::Attack"
+     ],
+     "to": null
+    }
+   ],
+   "add": [],
+   "approved": "2026-10-06"
+  },
+  "1379": {
+   "name": "Unjustified Expectations",
+   "replace": [
+    {
+     "from": [
+      "Affect on Type::Change Race"
+     ],
+     "to": null
+    }
+   ],
+   "add": [],
+   "approved": "2026-10-06"
+  },
+  "1380": {
+   "name": "Unjustified Expectations",
+   "replace": [
+    {
+     "from": [
+      "Affect on Type::Change Race"
+     ],
+     "to": null
+    }
+   ],
+   "add": [],
+   "approved": "2026-10-06"
+  },
+  "1257": {
+   "name": "Kiichi's Persistence",
+   "replace": [
+    {
+     "from": [
+      "Affect on Status::Always Has X Buff/Debuff"
+     ],
+     "to": null
+    }
+   ],
+   "add": [],
+   "approved": "2026-10-06"
+  },
+  "1281": {
+   "name": "Qila's Assurance",
+   "replace": [
+    {
+     "from": [
+      "Action/Mechanic::Debuff"
+     ],
+     "to": null
+    }
+   ],
+   "add": [],
+   "approved": "2026-10-06"
+  },
+  "1393": {
+   "name": "Master of Alementals",
+   "replace": [
+    {
+     "from": [
+      "Affect on Status::Apply/Gain a Buff"
+     ],
+     "to": null
+    },
+    {
+     "from": [
+      "Action/Mechanic::Buff"
+     ],
+     "to": null
+    }
+   ],
+   "add": [
+    "Affect on Spells::Extra/Gain a Spell Gem"
+   ],
+   "approved": "2026-10-06"
+  },
+  "1407": {
+   "name": "Master of Osseins",
+   "replace": [
+    {
+     "from": [
+      "Affect on Timeline::Modify Starting Placement"
+     ],
+     "to": null
+    },
+    {
+     "from": [
+      "Action/Mechanic::Timeline"
+     ],
+     "to": null
+    }
+   ],
+   "add": [],
+   "approved": "2026-10-06"
+  },
+  "1416": {
+   "name": "Master of Concoctions",
+   "replace": [
+    {
+     "from": [
+      "Affect on Status::Afflict with/Gain a Debuff"
+     ],
+     "to": null
+    }
+   ],
+   "add": [
+    "Active If::Debuffed with X",
+    "Affect on Attacks::Automatic/Extra Attack"
+   ],
+   "approved": "2026-10-06"
+  },
+  "1419": {
+   "name": "Master of Crusaders",
+   "replace": [
+    {
+     "from": [
+      "Affect on Timeline::Modify Starting Placement"
+     ],
+     "to": null
+    },
+    {
+     "from": [
+      "Action/Mechanic::Timeline"
+     ],
+     "to": null
+    }
+   ],
+   "add": [],
+   "approved": "2026-10-06"
+  },
+  "1420": {
+   "name": "Master of Demigods",
+   "replace": [
+    {
+     "from": [
+      "Active If::All Creatures Are X"
+     ],
+     "to": null
+    }
+   ],
+   "add": [],
+   "approved": "2026-10-06"
+  },
+  "1595": {
+   "name": "Hand of The Ancestor",
+   "replace": [
+    {
+     "from": [
+      "Action/Mechanic::Attack"
+     ],
+     "to": null
+    }
+   ],
+   "add": [],
+   "approved": "2026-10-06"
+  },
+  "1596": {
+   "name": "Hand of The Ancestor",
+   "replace": [
+    {
+     "from": [
+      "Action/Mechanic::Attack"
+     ],
+     "to": null
+    }
+   ],
+   "add": [],
+   "approved": "2026-10-06"
+  },
+  "1653": {
+   "name": "Power Trip",
+   "replace": [
+    {
+     "from": [
+      "Affect on Traits::More Activations/Potency"
+     ],
+     "to": null
+    }
+   ],
+   "add": [],
+   "approved": "2026-10-06"
+  },
+  "1704": {
+   "name": "Perishing Salvo",
+   "replace": [
+    {
+     "from": [
+      "Action/Mechanic::Attack"
+     ],
+     "to": null
+    }
+   ],
+   "add": [],
+   "approved": "2026-10-06"
+  },
+  "1763": {
+   "name": "Improbable Catapult",
+   "replace": [
+    {
+     "from": [
+      "Action/Mechanic::Timeline"
+     ],
+     "to": null
+    }
+   ],
+   "add": [],
+   "approved": "2026-10-06"
+  },
+  "1792": {
+   "name": "Tools of Creation",
+   "replace": [
+    {
+     "from": [
+      "Action/Mechanic::Personality"
+     ],
+     "to": null
+    }
+   ],
+   "add": [],
+   "approved": "2026-10-06"
+  },
+  "1849": {
+   "name": "Wrath of Krorena",
+   "replace": [
+    {
+     "from": [
+      "Related Types::Fused Class"
+     ],
+     "to": null
+    }
+   ],
+   "add": [],
+   "approved": "2026-10-06"
+  },
+  "2045": {
+   "name": "Agonizing Entrapment",
+   "replace": [
+    {
+     "from": [
+      "Action/Mechanic::Attack"
+     ],
+     "to": null
+    }
+   ],
+   "add": [],
+   "approved": "2026-10-06"
+  },
+  "2111": {
+   "name": "Conduit Strike",
+   "replace": [
+    {
+     "from": [
+      "Affect on Spells::Can't Manually Cast"
+     ],
+     "to": null
+    }
+   ],
+   "add": [],
+   "approved": "2026-10-06"
   }
  },
  "rejected": {
   "Affect on Attacks::Automatic/Extra Attack on boss parts (1619,1620,1626,1636,1637,1638,1643,1644)": "2026-10-03 user: an attack chosen by bc_ArtificialIntelligence is the part's normal turn action, not a trait-triggered extra attack; Action/Mechanic::Attack suffices. Builder now skips AI-turn actions.",
   "25:OVERRUN Related Stat::Maximum Health": "2026-10-03 user: healing is not a Maximum Health effect.",
-  "Pusillanimity: drop Enemy Defends / Enemy Dodges": "2026-10-03 user: KEEP. Conditional events attached to a trigger are valid Activates When tags (no other category tracks them; if they never fire, Ally Attacks is irrelevant)."
+  "Pusillanimity: drop Enemy Defends / Enemy Dodges": "2026-10-03 user: KEEP. Conditional events attached to a trigger are valid Activates When tags (no other category tracks them; if they never fire, Ally Attacks is irrelevant).",
+  "cards:99 Affect on Status::Resistant to Debuff -> Affect on Status::Avoid/Immune to Debuff": "2026-10-06 user: Rift Dancer power 2 is Resistance, not Immunity."
  },
  "perkChanges": {
   "4:OVERLOAD": {
@@ -1461,6 +1920,221 @@
    ],
    "add": [],
    "approved": "2026-10-04"
+  },
+  "5:DREADNAUGHT": {
+   "name": "Dreadnaught",
+   "replace": [
+    {
+     "from": [
+      "Affect on Damage::Ignore Defense"
+     ],
+     "to": "Affect on Mitigation::Can't Dodge Attacks"
+    },
+    {
+     "from": [
+      "Action/Mechanic::Damage"
+     ],
+     "to": null
+    }
+   ],
+   "add": [],
+   "approved": "2026-10-06"
+  },
+  "8:DEADLYVITALITY": {
+   "name": "Deadly Vitality",
+   "replace": [
+    {
+     "from": [
+      "Multiplied by::Current/Missing Health %"
+     ],
+     "to": "Multiplied by::Amount of X Stat"
+    }
+   ],
+   "add": [],
+   "approved": "2026-10-06"
+  },
+  "32:PULLTHEROPE": {
+   "name": "Pull the Rope",
+   "replace": [
+    {
+     "from": [
+      "Activates When::Enemy is Debuffed"
+     ],
+     "to": "Activates When::Ally is Debuffed"
+    }
+   ],
+   "add": [],
+   "approved": "2026-10-06"
+  },
+  "33:ARROGANCEISCONFIDENCE": {
+   "name": "Arrogance Is Confidence",
+   "replace": [
+    {
+     "from": [
+      "Affect on Traits::Trait Effect is Ignored"
+     ],
+     "to": "Affect on Status::Avoid/Immune to Debuff"
+    }
+   ],
+   "add": [],
+   "approved": "2026-10-06"
+  },
+  "8:CRUELCREATION": {
+   "name": "Cruel Creation",
+   "replace": [
+    {
+     "from": [
+      "Related Minion::Random Minion"
+     ],
+     "to": null
+    }
+   ],
+   "add": [],
+   "approved": "2026-10-06"
+  },
+  "9:IMPIETY": {
+   "name": "Impiety",
+   "replace": [
+    {
+     "from": [
+      "Affect on Status::Remove Buff"
+     ],
+     "to": null
+    }
+   ],
+   "add": [],
+   "approved": "2026-10-06"
+  },
+  "15:RECLUSIVEREMEDY": {
+   "name": "Reclusive Remedy",
+   "replace": [
+    {
+     "from": [
+      "Active If::All Creatures Are X"
+     ],
+     "to": null
+    }
+   ],
+   "add": [],
+   "approved": "2026-10-06"
+  },
+  "15:ANCESTRY": {
+   "name": "Ancestry",
+   "replace": [
+    {
+     "from": [
+      "Active If::All Creatures Are X"
+     ],
+     "to": null
+    }
+   ],
+   "add": [],
+   "approved": "2026-10-06"
+  },
+  "20:TRAUMA": {
+   "name": "Trauma",
+   "replace": [
+    {
+     "from": [
+      "Action/Mechanic::Stats"
+     ],
+     "to": null
+    }
+   ],
+   "add": [],
+   "approved": "2026-10-06"
+  },
+  "24:RECKLESSNESS": {
+   "name": "Recklessness",
+   "replace": [
+    {
+     "from": [
+      "Multiplied by::Damage Taken Count"
+     ],
+     "to": null
+    }
+   ],
+   "add": [],
+   "approved": "2026-10-06"
+  },
+  "24:JUGGERNAUT": {
+   "name": "Juggernaut",
+   "replace": [
+    {
+     "from": [
+      "Multiplied by::Turns Taken Count"
+     ],
+     "to": null
+    },
+    {
+     "from": [
+      "Action/Mechanic::Turn Counter"
+     ],
+     "to": null
+    }
+   ],
+   "add": [],
+   "approved": "2026-10-06"
+  },
+  "28:SINGLETON": {
+   "name": "Singleton",
+   "replace": [
+    {
+     "from": [
+      "Affect on Attacks::Can't Manually Attack"
+     ],
+     "to": null
+    },
+    {
+     "from": [
+      "Affect on Spells::Can't Manually Cast"
+     ],
+     "to": null
+    }
+   ],
+   "add": [
+    "Effect Limitation::Limit Actions per Turn"
+   ],
+   "approved": "2026-10-06"
+  },
+  "29:BACKBITE": {
+   "name": "Backbite",
+   "replace": [
+    {
+     "from": [
+      "Action/Mechanic::Attack"
+     ],
+     "to": null
+    }
+   ],
+   "add": [],
+   "approved": "2026-10-06"
+  },
+  "41:JUBILATION": {
+   "name": "Jubilation",
+   "replace": [
+    {
+     "from": [
+      "Active If::Health is X%"
+     ],
+     "to": null
+    }
+   ],
+   "add": [],
+   "approved": "2026-10-06"
+  },
+  "42:GESTALTINTELLIGENCE": {
+   "name": "Gestalt Intelligence",
+   "replace": [
+    {
+     "from": [
+      "Action/Mechanic::Adjacency"
+     ],
+     "to": null
+    }
+   ],
+   "add": [],
+   "approved": "2026-10-06"
   }
  },
  "policy": {
@@ -1471,7 +2145,8 @@
   "related_stat_reads": "Related Stat covers effects that READ a stat (highest-stat selection, multiplied by a stat). Action/Mechanic::Stats is carried by extension (superset rule).",
   "debuffed_gate": "Activates When::Enemy is Debuffed doubles as the conditional gate 'enemy has a debuff'; never Ally is Debuffed for afflicter-side hooks.",
   "minions_not_buffs": "Minions are Minions, not Buffs: minion conditions (CONDNAME_MINION_*) never produce Buff/Buff Count/Related Buff tags, and buffs never produce Minion tags.",
-  "action_mechanic_superset": "user 2026-10-04: Action/Mechanic values are catch-all pools of the narrower groupings; overlap is required. Any object with a narrower tag carries its Action/Mechanic parent (build-data implied pass)."
+  "action_mechanic_superset": "user 2026-10-04: Action/Mechanic values are catch-all pools of the narrower groupings; overlap is required. Any object with a narrower tag carries its Action/Mechanic parent (build-data implied pass).",
+  "turns_vs_timeline": "user 2026-10-06: turn references (extra turns, lost turns, turns taken / turn counter) belong to Action/Mechanic::Turn Counter, not Timeline. Timeline = position/order on the timeline. Start of battle is never a Timeline effect."
  },
  "perkRejections": {
   "5:MASSACRE": [
@@ -1502,6 +2177,103 @@
    ],
    "add": [],
    "approved": "2026-10-03"
+  },
+  "4": {
+   "name": "Blazefury, Flaming Soul of Vulcanar",
+   "replace": [
+    {
+     "from": [
+      "Multiplied by::Creature of X Type Count"
+     ],
+     "to": "Multiplied by::Debuff Count"
+    }
+   ],
+   "add": [],
+   "approved": "2026-10-06"
+  },
+  "7": {
+   "name": "Dusk & Dawn, Dual Pistols of Venedon",
+   "replace": [
+    {
+     "from": [
+      "Multiplied by::Creature of X Type Count"
+     ],
+     "to": "Multiplied by::Debuff Count"
+    }
+   ],
+   "add": [],
+   "approved": "2026-10-06"
+  },
+  "18": {
+   "name": "Prime & Ventus, Claws of Aeolian",
+   "replace": [
+    {
+     "from": [
+      "Affect on Traits::More Activations/Potency"
+     ],
+     "to": "Affect on Status::More Powerful Buff"
+    }
+   ],
+   "add": [],
+   "approved": "2026-10-06"
+  },
+  "21": {
+   "name": "Rosenthorne, Dark Blade of Erebyss",
+   "replace": [
+    {
+     "from": [
+      "Multiplied by::Creature of X Type Count"
+     ],
+     "to": "Multiplied by::Debuff Count"
+    },
+    {
+     "from": [
+      "Affect on Status::Increase Debuff Potency"
+     ],
+     "to": null
+    }
+   ],
+   "add": [],
+   "approved": "2026-10-06"
+  },
+  "30": {
+   "name": "Wintermaul, Great Hammer of Azural",
+   "replace": [
+    {
+     "from": [
+      "Multiplied by::Creature of X Type Count"
+     ],
+     "to": "Multiplied by::Debuff Count"
+    }
+   ],
+   "add": [],
+   "approved": "2026-10-06"
+  },
+  "6": {
+   "name": "Brambleskin, Spiked Carapace of Genaros",
+   "replace": [
+    {
+     "from": [
+      "Multiplied by::Amount of Damage Dealt"
+     ],
+     "to": null
+    }
+   ],
+   "add": [],
+   "approved": "2026-10-06"
+  },
+  "22": {
+   "name": "Salus, Jade Guardian of Lister",
+   "replace": [
+    {
+     "from": [
+      "Affect on Attacks::Automatic/Extra Attack"
+     ],
+     "to": null
+    }
+   ],
+   "add": [],
+   "approved": "2026-10-06"
   }
  },
  "spellChanges": {
@@ -1723,11 +2495,18 @@
   },
   "624": {
    "name": "Horrible Howl",
-   "replace": [],
+   "replace": [
+    {
+     "from": [
+      "Active If::Creature is X Type"
+     ],
+     "to": null
+    }
+   ],
    "add": [
     "Related Spells::Minion Spells"
    ],
-   "approved": "2026-10-03"
+   "approved": "2026-10-06"
   },
   "628": {
    "name": "Summon Horde",
@@ -1822,6 +2601,89 @@
     "Action/Mechanic::Creature Class"
    ],
    "approved": "2026-10-03"
+  },
+  "544": {
+   "name": "Fragmenting Arrow",
+   "replace": [
+    {
+     "from": [
+      "Affect on Attacks::Modify Attack Calculation"
+     ],
+     "to": "Affect on Spells::Modify Spell Calculation"
+    },
+    {
+     "from": [
+      "Action/Mechanic::Attack"
+     ],
+     "to": null
+    }
+   ],
+   "add": [],
+   "approved": "2026-10-06"
+  },
+  "546": {
+   "name": "Disintegrating Arrow",
+   "replace": [
+    {
+     "from": [
+      "Affect on Attacks::Modify Attack Calculation"
+     ],
+     "to": "Affect on Spells::Modify Spell Calculation"
+    },
+    {
+     "from": [
+      "Action/Mechanic::Attack"
+     ],
+     "to": null
+    }
+   ],
+   "add": [],
+   "approved": "2026-10-06"
+  },
+  "553": {
+   "name": "Devastating Throw",
+   "replace": [
+    {
+     "from": [
+      "Affect on Attacks::Modify Attack Calculation"
+     ],
+     "to": "Affect on Spells::Modify Spell Calculation"
+    },
+    {
+     "from": [
+      "Action/Mechanic::Attack"
+     ],
+     "to": null
+    }
+   ],
+   "add": [],
+   "approved": "2026-10-06"
+  },
+  "1": {
+   "name": "Aftermath",
+   "replace": [
+    {
+     "from": [
+      "Affect on Damage::Deal More Damage"
+     ],
+     "to": null
+    }
+   ],
+   "add": [],
+   "approved": "2026-10-06"
+  },
+  "208": {
+   "name": "Butcher",
+   "replace": [
+    {
+     "from": [
+      "Affect on Damage::Deal More Damage"
+     ],
+     "to": null
+    }
+   ],
+   "add": [],
+   "approved": "2026-10-06"
   }
  },
  "cardChanges": {
@@ -1969,6 +2831,64 @@
    ],
    "add": [],
    "approved": "2026-10-04"
+  },
+  "103": {
+   "name": "Sea Shambler",
+   "replace": [
+    {
+     "from": [
+      "Affect on Status::Resistant to Debuff"
+     ],
+     "to": "Affect on Status::Limit/Prevent Buff Gain"
+    }
+   ],
+   "add": [],
+   "approved": "2026-10-06"
+  },
+  "11": {
+   "name": "Automaton",
+   "replace": [
+    {
+     "from": [
+      "Affect on Stats::Stat is Increased"
+     ],
+     "to": null
+    },
+    {
+     "from": [
+      "Action/Mechanic::Stats"
+     ],
+     "to": null
+    }
+   ],
+   "add": [],
+   "approved": "2026-10-06"
+  },
+  "18": {
+   "name": "Carbuncle",
+   "replace": [
+    {
+     "from": [
+      "Affect on Traits::More Activations/Potency"
+     ],
+     "to": null
+    }
+   ],
+   "add": [],
+   "approved": "2026-10-06"
+  },
+  "101": {
+   "name": "Sanctus",
+   "replace": [
+    {
+     "from": [
+      "Affect on Status::Buffs Persist"
+     ],
+     "to": null
+    }
+   ],
+   "add": [],
+   "approved": "2026-10-06"
   }
  },
  "notes_2026_10_03": "User: keep Eaten Alive as Healing Spells (judgement call approved). Abomination card power order confirmed (15% more damage, 10% less dodge, 35% less healing) = app + code.",
@@ -2687,5 +3607,8 @@
    "name": "Transformation Mastery",
    "note": "user 2026-10-04: drop Damage (amplifier, not a damage effect)"
   }
- ]
+ ],
+ "notes_s17": {
+  "2026-10-06": "User review of S17: A approved except Qila's Assurance (held: needs a 'loses a buff' trigger value) and Rift Dancer p2 (Resistance stays). B approved (Resin keeps Stats + Related Stat::Attack). C: turn references move from Timeline to Turn Counter; start of battle is never Timeline. D: code-proven drops approved, with replacements where a correct tag exists (Alementals → Extra/Gain a Spell Gem; Concoctions → Debuffed with X + Automatic/Extra Attack; Singleton → Limit Actions per Turn)."
+ }
 }
