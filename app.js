@@ -9,7 +9,7 @@
   // Feature flags — flip to true to re-enable. Macros (battle-AI proposal) is WIP: hidden for now.
   // nyi: content that is in the data but NOT live in the game yet (e.g. the Misery False God). Stripped from D here —
   // before anything indexes D.traits / D.falseGods — so with the flag off the app sees exactly the live-game data.
-  const FEATURES = { macros: false, nyi: false, taxoSource: false, taxoSinglesToggle: false };   // taxoSinglesToggle: "Show single-use tags" button   // taxoSource: show each tag's provenance chip (code / token / implied / llm …)
+  const FEATURES = { macros: false, projects: false, nyi: false, taxoSource: false, taxoSinglesToggle: false };   // taxoSinglesToggle: "Show single-use tags" button   // taxoSource: show each tag's provenance chip (code / token / implied / llm …)
   if (!FEATURES.nyi) {
     for (const id of Object.keys(D.traits)) if (D.traits[id].nyi) delete D.traits[id];
     D.falseGods = (D.falseGods || []).filter(g => !g.nyi);
@@ -489,11 +489,19 @@
 
   // translate {PARAM} tokens to plain words (bolded) + drop [icon] tokens; escape the rest.
   const TERMS = D.terms || {};
+  // tokens not in D.terms must still read as a word in the sentence:
+  //   {SPEC_GRAVEBORN} → the spec's name · {ACTION_casts} / {STAT_charges} / {TIMELINE} → lower-case mid-sentence words
+  //   anything else → its stripped name in Title Case (never raw UPPERCASE)
+  const SPEC_BY_TOKEN = new Map((D.specs || []).map(sp => [String(sp.key || "").toUpperCase(), sp.label]));
   function termWord(tok) {
     if (TERMS[tok]) return TERMS[tok];
-    const m = tok.match(/^(?:CONDNAME_(?:BUFF|DEBUFF|MINION)_|CONDDESC_(?:BUFF|DEBUFF|MINION)_|CDESC_|CONDNAME_|STAT_|ACTION_|RACE_|SPELL_|CLASS_)(.+)$/);
+    const sp = tok.match(/^SPEC_(.+)$/);
+    if (sp && SPEC_BY_TOKEN.has(sp[1].toUpperCase())) return SPEC_BY_TOKEN.get(sp[1].toUpperCase());
+    const lower = tok.match(/^(?:ACTION_|STAT_)(.+)$/) || (tok === "TIMELINE" && [0, "timeline"]);
+    if (lower) return lower[1].replace(/_/g, " ").toLowerCase();
+    const m = tok.match(/^(?:CONDNAME_(?:BUFF|DEBUFF|MINION)_|CONDDESC_(?:BUFF|DEBUFF|MINION)_|CDESC_|CONDNAME_|RACE_|SPELL_|CLASS_|SPEC_)(.+)$/);
     const raw = m ? m[1] : tok;
-    return raw.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase()).trim() || tok;
+    return raw.replace(/_/g, " ").toLowerCase().replace(/\b\w/g, c => c.toUpperCase()).trim() || tok;
   }
   const fmtNum = (n) => Number.isInteger(n) ? String(n) : String(Math.round(n * 100) / 100);
   // richText: {TOKEN} → bold plain word, [icon] dropped, <N> → the value scaled by `rank`.
@@ -502,7 +510,8 @@
   function richText(str, rank) {
     if (!str) return "";
     // [icon] and [icons, 1984]-style sprite refs are dropped (leaves the following spell name as text)
-    const s = String(str), re = /\{([A-Za-z0-9_]+)\}|\[[a-z0-9_]+(?:\s*,\s*\d+)*\]|<(\d+(?:\.\d+)?)>/g;
+    // appended condition tooltips ({CONDDESC_*}/{CDESC_*} after the effect) are redundant everywhere — drop them
+    const s = String(str).replace(/(?:\n|\n|\s)*\{C(?:OND)?DESC_[A-Za-z0-9_]+\}/g, ""), re = /\{([A-Za-z0-9_]+)\}|\[[a-z0-9_]+(?:\s*,\s*\d+)*\]|<(\d+(?:\.\d+)?)>/g;
     let out = "", last = 0, m;
     while ((m = re.exec(s))) {
       out += esc(s.slice(last, m.index));
@@ -2436,7 +2445,7 @@
         const go = shopItemOpen(it), tr = it.kind === "trait_item" && it.traitId != null && D.traits[it.traitId];
         const nmTitle = it.nameSrc ? ` title="Not statically resolvable in code — name from the God Shop reference"` : "";
         return `<div class="perk-line${go ? " apx-clickable" : ""}"${go}>${shopItemIcon(it)}
-          <div class="perk-line-body"><div class="perk-line-head"><b${nmTitle}>${esc(it.name || "?")}</b>
+          <div class="perk-line-body"><div class="perk-line-head"><b${nmTitle}>${esc(shopItemName(it))}</b>
             <span class="perk-line-meta">${it.rank != null ? `<span class="anoint-spec-tag" title="Guild Reputation rank">Rank ${it.rank}</span>` : ""}${it.price != null ? `<span class="gs-price"${cur ? ` title="${esc(cur)}"` : ""}>${it.price}${curIco ? `<span class="gs-cur-ico">${spriteImg(curIco, "px")}</span>` : cur ? ` <span class="gs-cur">${esc(cur)}</span>` : ""}</span>` : ""}</span></div>
             ${tr ? `<div class="perk-desc">${esc(tr.name)}</div>` : ""}</div></div>`;
       }).join("") : "";
@@ -2609,19 +2618,20 @@
     const rows = resOrderRows().filter(r => !q || r.name.toLowerCase().includes(q) || (r.desc || "").toLowerCase().includes(q));
     if (!rows.length) return "";
     const key = "Resurrection", open = q ? true : !st.collapsed.has(key);
-    const BADGE = { free: ["Outside one-per-death", "Doesn't check or block the one-per-death rule"], stop: ["Skips the chain", "If this fires, the one-per-death chain below is skipped"],
-      rule: ["Blocks other resurrection", "While active, no other effect can resurrect your creatures"] };
     const row = (r) => `<div class="perk-line res-line${r.group === "rule" ? " res-rule" : ""}${r.enemy ? " res-enemy" : ""}${r.open ? " apx-clickable" : ""}"${r.open ? ` data-action="apx-open" data-ek="${r.open.ek}" data-eid="${esc(String(r.open.eid))}" title="View taxonomy"` : ""}>
         <div class="res-n">${r.n ?? "⛔"}</div>
         <div class="apx-iconcol">${r.icons.map(ic => `<div class="apx-crea">${ic}</div>`).join("")}</div>
         <div class="perk-line-body"><div class="perk-line-head"><b>${esc(r.name)}</b></div>
           ${r.desc ? `<div class="perk-desc">${richText(r.desc)}</div>` : ""}${r.note ? `<div class="perk-desc res-note">${esc(r.note)}</div>` : ""}
-          <div class="perk-line-meta">${BADGE[r.group] ? `<span class="res-badge ${r.group}" title="${esc(BADGE[r.group][1])}">${BADGE[r.group][0]}</span>` : ""}${r.chips.map(c => `<span class="anoint-spec-tag">${esc(c)}</span>`).join("")}</div></div></div>`;
+          <div class="perk-line-meta">${r.chips.map(c => `<span class="anoint-spec-tag">${esc(c)}</span>`).join("")}</div></div></div>`;
     const grp = (gs, label) => { const list = rows.filter(r => gs.includes(r.group));
       return list.length ? `<div class="res-sub">${label}</div><div class="perk-list">${list.map(row).join("")}</div>` : ""; };
-    const body = open ? grp(["rule"], "Overrides everything") + grp(["free", "stop"], "Checked first") + grp(["chain"], "Then one per death — the first that fires stops the rest") : "";
+    const body = open ? grp(["rule"], "Blocks other resurrection") + grp(["free", "stop"], "Checked first — outside once-per-death") + grp(["chain"], "Then once per death — the first that fires stops the rest") : "";
     return `<button class="apx-sec-head apx-cat${open ? "" : " collapsed"}" data-action="gloss-cat-toggle" data-c="${key}"><span class="apx-sec-caret">${open ? "▾" : "▸"}</span>Resurrection Order</button>${body}`;
   }
+
+  // L_IN_WEATHER's name is the runtime "{1}" (the weather is picked when you buy it) — show it as "Weather"
+  const shopItemName = (it) => /^\{\d\}$/.test(it.name || "") ? (it.key === "L_IN_WEATHER" ? "Weather" : "?") : (it.name || "?");
 
   // ── Nether Realm helpers (code-grounded: _su_extract code/NETHER_HELPERS_FINDINGS.md) ──
   // Faucet = room_nether_valves: 4 on/off valves form a code (left→right) that picks the single chest's contents;
@@ -4716,7 +4726,7 @@
       case "riddle-search": break;   // handled in onInput
       case "open-glossary": openGlossary(); break;
       case "gloss-search": break;    // handled in onInput
-      case "open-projects": openProjects(); break;
+      case "open-projects": if (FEATURES.projects) openProjects(); break;
       case "open-netherhelp": openNetherHelper(); break;
       case "nh-tab": ovState.tab = t.dataset.v; refreshOverlay(true); break;
       case "nh-valve": { const i = +t.dataset.i; ovState.valves[i] ^= 1; refreshOverlay(); break; }
@@ -5263,6 +5273,7 @@
 
   // Feature-flag gate: strip disabled entries from the menu so they're unreachable.
   if (!FEATURES.macros) document.querySelector('[data-action="open-macros"]')?.remove();
+  if (!FEATURES.projects) document.querySelector('[data-action="open-projects"]')?.remove();   // not ready yet — code + data kept
 
   syncLayoutMenu();
   render();
