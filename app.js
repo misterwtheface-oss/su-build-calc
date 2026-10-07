@@ -2596,7 +2596,7 @@
   // ── Realms reference ────────────────────────────────────────────────────────
   function openRealms(realmId) {
     ovState = { kind: "realms", search: "", sortBy: "realm", mode: "list", cmpExpanded: new Set(),
-      favorRank: 100, showCommon: false, favorView: "bars", useCustom: favorPrefs.use, editingRanks: false,
+      favorRank: 100, showCommon: false, favorView: "interactions", useCustom: favorPrefs.use, editingRanks: false,
       view: realmId != null ? "detail" : "list", sel: realmId != null ? realmId : null, detailIco: "realm", render: renderRealms };
     openOverlay(ovState.render()); maybeFocusSearch(OV);
   }
@@ -2604,7 +2604,7 @@
     const st = ovState, rs = D.realms || [];
     if (st.view === "detail") return renderRealmDetail(rs.find(r => r.id === st.sel));
     if (st.editingRanks) return renderRealmCustomize(rs);
-    return st.mode === "compare" ? renderRealmCompare(rs) : st.mode === "objects" ? renderRealmObjects(rs) : renderRealmList(rs);
+    return st.mode === "compare" ? renderRealmCompare(rs) : renderRealmList(rs);
   }
   // ── Favor-track helpers (values sourced from Favor_MTX via D.realms[].favor) ───────────────────
   const favUnique = () => (D.favorCols && D.favorCols.unique) || [];
@@ -2670,44 +2670,12 @@
       <div class="overlay-footer"><span class="foot-info"></span><button class="btn-confirm" data-action="close-ovl">Done</button></div>
     </div></div>`;
   }
-  // Browse (per-realm list) | Compare (cross-realm outcome comparison) | Objects (every realm's object blocks)
+  // Browse (per-realm list) | Compare (cross-realm outcome comparison)
   function realmModeToggle(mode) {
     return `<div class="art-view-toggle">
       <button class="av-tab ${mode === "list" ? "on" : ""}" data-action="realm-mode" data-v="list">Browse</button>
       <span class="av-pipe">|</span>
-      <button class="av-tab ${mode === "compare" ? "on" : ""}" data-action="realm-mode" data-v="compare">Compare</button>
-      <span class="av-pipe">|</span>
-      <button class="av-tab ${mode === "objects" ? "on" : ""}" data-action="realm-mode" data-v="objects">Objects</button></div>`;
-  }
-  // Realm Objects across every realm: one group per realm (tap the header to open the realm) with its objects as
-  // blocks (sprite · name · spawn count; the rank-0 base interaction on hover). Search matches object, realm or god;
-  // an object-name hit narrows that realm's blocks to the matching objects.
-  function renderRealmObjects(rs) {
-    const st = ovState, q = st.search.trim().toLowerCase();
-    const groups = rs.slice().sort((a, b) => a.realm.localeCompare(b.realm)).map(r => {
-      const realmHit = !q || r.realm.toLowerCase().includes(q) || r.godName.toLowerCase().includes(q);
-      const objs = (r.objects || []).filter(o => realmHit || o.name.toLowerCase().includes(q) || (o.base || "").toLowerCase().includes(q));
-      return { r, objs };
-    }).filter(g => g.objs.length);
-    const body = groups.map(({ r, objs }) => { const ico = r.icon || r.godBattle;
-      return `<div class="robj-grp">
-        <button class="realm-row robj-head" data-action="realm-sel" data-id="${r.id}">
-          <span class="realm-icon">${ico ? spriteImg(ico, "px") : ""}</span>
-          <span class="opt-dot" style="background:${clsColor(r.cls)}"></span>
-          <span class="realm-row-name">${esc(r.realm)}</span>
-          <span class="anoint-spec-tag">${esc(r.godName)}</span>
-          <span class="opt-chev">›</span></button>
-        <div class="realm-objs">${objs.map(o => `<span class="realm-obj" title="${esc(o.name)}${o.base ? ` — ${esc(o.base)}` : ""}">${o.sprite ? `<span class="realm-obj-ico">${spriteImg(o.sprite, "px")}</span>` : ""}<span class="realm-obj-name">${esc(o.name)}</span>${o.baseCount != null ? `<span class="realm-obj-ct">×${o.baseCount}</span>` : ""}</span>`).join("")}</div>
-      </div>`; }).join("") || `<div class="slot-sub" style="padding:10px">No realm objects match.</div>`;
-    return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel">
-      <div class="overlay-header"><h2>Realms</h2>
-        <input class="ovl-search" placeholder="Search object / realm / god…" value="${esc(st.search)}" data-action="realm-search">
-        <button class="ovl-close" data-action="close-ovl">✕</button></div>
-      <div class="overlay-body"><div class="ovl-center">${realmModeToggle("objects")}
-        <div class="ovl-center-scroll"><div class="robj-list">${body}</div></div>
-      </div></div>
-      <div class="overlay-footer"><span class="foot-info"></span><button class="btn-confirm" data-action="close-ovl">Done</button></div>
-    </div></div>`;
+      <button class="av-tab ${mode === "compare" ? "on" : ""}" data-action="realm-mode" data-v="compare">Compare</button></div>`;
   }
   // Cross-realm comparison: one collapsible accordion per Unique Bonus column; expand to rank every realm by
   // its value at the current favor rank, on a shared bar scale. The rank slider scrubs the whole comparison.
@@ -2798,34 +2766,33 @@
     const encounters = "";
     const resources = sel.resources.length ? `<div class="section-label">Resources</div>
       <div class="prop-list">${sel.resources.map(e => `<div class="prop-row static"><span class="prop-name">${esc(e.object)}</span><span class="prop-stat">${esc(e.resource)}</span></div>`).join("")}</div>` : "";
-    // Realm Objects — the interactable world objects (name + spawn count + rank-0 base interaction).
-    const objects = sel.objects.length ? `<div class="section-label">Realm Objects</div>
-      <div class="realm-objlist">${sel.objects.map(o => `<div class="realm-objrow">
-        <span class="realm-obj-ico">${o.sprite ? spriteImg(o.sprite, "px") : ""}</span>
-        <span class="realm-objrow-name">${esc(o.name)}${o.baseCount != null ? ` <span class="realm-obj-ct">×${o.baseCount}</span>` : ""}</span>
-        <span class="realm-objrow-base">${o.base ? esc(o.base) : ""}</span></div>`).join("")}</div>` : "";
-    // What makes this realm unique — the Favor_MTX Unique Bonuses at the selected favor rank. The rank slider
-    // scrubs 0→100; the common-bonuses toggle also shows the Generic Bonuses (shared by every realm).
-    // Two ways to read the favor track (toggle), both driven by the rank slider: BARS = magnitude values at the
-    // rank; LIST = the unlock schedule condensed to rank (unique blessing tiers interleaved with the common track).
-    // In "My ranks" mode the slider shows/edits THIS realm's tracked favor rank (persisted).
+    // ── three tabs: INTERACTIONS (creatures · resources · each object's rank-0 interaction + the favor-rank tiers that
+    // upgrade it) | FAVOR (the god's reward track condensed to the rank) | YIELD (unique-bonus magnitude bars).
+    // Favor tiers are attached to the object they name in build-data (objects[].favor); realm-wide tiers (boss rooms…)
+    // sit in favorOther. In "My ranks" mode the slider shows/edits THIS realm's tracked favor rank (persisted).
     const rank = rankFor(sel);
     const uCols = favUnique(), gCols = favGeneric();
-    const view = ovState.favorView || "bars";
+    const view = ["interactions", "list", "bars"].includes(ovState.favorView) ? ovState.favorView : "interactions";
+    const tab = (v, label) => `<button class="av-tab ${view === v ? "on" : ""}" data-action="realm-favview" data-v="${v}">${label}</button>`;
+    const viewToggle = `<div class="art-view-toggle realm-tabs">${tab("interactions", "Interactions")}<span class="av-pipe">|</span>${tab("list", "Favor")}<span class="av-pipe">|</span>${tab("bars", "Yield")}</div>`;
     const commonToggle = `<label class="fav-common"><input type="checkbox" data-action="realm-common" ${ovState.showCommon ? "checked" : ""}> Show common (all-realm) bonuses</label>`;
-    const viewToggle = `<div class="art-view-toggle" style="margin:2px 0 8px">
-      <button class="av-tab ${view === "bars" ? "on" : ""}" data-action="realm-favview" data-v="bars">Bars</button>
-      <span class="av-pipe">|</span>
-      <button class="av-tab ${view === "list" ? "on" : ""}" data-action="realm-favview" data-v="list">List</button></div>`;
     const rankNote = ovState.useCustom ? `<div class="slot-sub" style="margin:-4px 0 6px">Tracking <b>your</b> favor rank for this realm — drag to update it (saved).</div>` : "";
+    const tierRowsHtml = (tiers) => tiers.slice().sort((x, y) => x.at - y.at).map(t =>
+      `<div class="robj-tier"><span class="fav-tier-rk" title="Favor rank">${t.at}</span><span>${esc(t.effect)}</span></div>`).join("");
+    const objects = sel.objects.length ? `<div class="section-label">Objects</div>
+      <div class="robj-cards">${sel.objects.map(o => `<div class="robj-card">
+        <div class="robj-card-head"><span class="realm-obj-ico">${o.sprite ? spriteImg(o.sprite, "px") : ""}</span>
+          <b>${esc(o.name)}</b>${o.baseCount != null ? `<span class="realm-obj-ct">×${o.baseCount}</span>` : ""}${o.base ? `<span class="robj-base">${esc(o.base)}</span>` : ""}</div>
+        ${(o.favor || []).length ? `<div class="robj-tiers">${tierRowsHtml(o.favor)}</div>` : ""}</div>`).join("")}
+        ${(sel.favorOther || []).length ? `<div class="robj-card"><div class="robj-card-head"><b>Realm-wide</b></div><div class="robj-tiers">${tierRowsHtml(sel.favorOther)}</div></div>` : ""}</div>` : "";
+    const interactionsView = `${creatures}${resources}${objects}`;
     const barsView = `${favorSlider(rank)}${rankNote}${commonToggle}
       <div class="rcat-list">${uCols.map((c, i) => { const v = favVal(sel, i, rank);
         return `<div class="rcat-row rcat-static${v ? "" : " rcat-empty"}" data-rid="${sel.id}" data-ci="${i}"><span class="rcat-name">${esc(c.label)}</span>${favBar(c, v)}</div>`; }).join("")}</div>
       ${ovState.showCommon ? `<div class="section-label">Common bonuses (every realm)</div>
-        <div class="slot-sub" style="margin:-2px 0 6px">Shared favor-rank rewards from the generic track — identical across all realms.</div>
         <div class="rcat-list">${gCols.map((c, j) => { const i = uCols.length + j, v = favVal(sel, i, rank);
           return `<div class="rcat-row rcat-static rcat-generic${v ? "" : " rcat-empty"}" data-rid="${sel.id}" data-ci="${i}"><span class="rcat-name">${esc(c.label)}</span><span class="rcat-val rcat-val-wide">${fmtFav(c, v)}</span></div>`; }).join("")}</div>` : ""}`;
-    // LIST view: the god's Favor Reward track condensed to `rank`. Blessing ranks show this realm's unique effect
+    // FAVOR: the god's Favor Reward track condensed to `rank`. Blessing ranks show this realm's unique effect
     // (sel.traits joined by rank); every other rank shows the common bonus from Favor_REF (hidden unless toggled).
     const traitByAt = {}; (sel.traits || []).forEach(t => { traitByAt[t.at] = t.effect; });
     const tierRows = (D.favorCommon || []).filter(c => ovState.showCommon || c.blessing).map(c => {
@@ -2833,10 +2800,7 @@
       return `<div class="fav-tier${uniq ? " fav-tier-uniq" : ""}" data-rank="${c.rank}"${c.rank <= rank ? "" : ` style="display:none"`}><span class="fav-tier-rk">${c.rank}</span><span class="fav-tier-eff">${esc(eff)}</span>${uniq ? `<span class="fav-tier-tag">unique</span>` : ""}</div>`;
     }).join("");
     const listView = `${favorSlider(rank)}${rankNote}${commonToggle}
-      <div class="slot-sub" style="margin:-2px 0 6px">The god's favor reward track up to rank <b data-favrank-text>${rank}</b>. ${ovState.showCommon ? "Unique tiers highlighted; the rest are shared by every realm." : "Unique tiers only — enable common bonuses for the full track."}</div>
       <div class="fav-tiers">${tierRows}</div>`;
-    const profile = `<div class="section-label">What makes this realm unique</div>${viewToggle}${view === "list" ? listView : barsView}`;
-    const other = "";
     // complex-interaction combination table (5 realms have a combine-objects puzzle)
     const combos = sel.combinations ? `<div class="section-label" style="margin-top:12px">Complex Interaction — ${esc(sel.combinations.title)}</div>
       <div class="realm-combos">${sel.combinations.rows.map(c => `<div class="rc-row"><span class="rc-combo">${esc(c.combo)}</span><span class="rc-arrow">→</span><span class="rc-result">${esc(c.result)}</span></div>`).join("")}</div>
@@ -2852,7 +2816,7 @@
           const ico = useGod ? (sel.godBattle || sel.icon) : (sel.icon || sel.godBattle);
           return ico ? `<div class="realm-icon-lg${canSwap ? " swap" : ""}"${canSwap ? ` data-action="realm-swapico" title="Tap to swap icon"` : ""}>${spriteImg(ico, "px")}</div>` : ""; })()}
           <div class="spell-stats" style="flex:1">${facts}</div></div>
-        ${profile}${other}${objects}${creatures}${encounters}${resources}${combos}
+        ${viewToggle}${view === "interactions" ? interactionsView + combos : view === "list" ? listView : barsView}
       </div></div></div>
       <div class="overlay-footer"><button class="btn-ghost" data-action="realm-back">‹ Back to realms</button>
         <button class="btn-confirm" data-action="close-ovl">Done</button></div>
