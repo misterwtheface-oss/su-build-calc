@@ -1598,3 +1598,24 @@ select.app-select:hover { border-color: var(--accent2); }
 /* enemy-only resurrection sources (boss traits with no player source, realm properties): whole row tinted red */
 .res-line.res-enemy { background: linear-gradient(90deg, rgba(224,107,107,.20), rgba(224,107,107,.08)); border-color: rgba(224,107,107,.45); }
 .res-note { margin-top: 3px; font-style: italic; color: #ffb3b3; }
+/* RI/Runes: rewards bonus as a small chip at the top right of the row */
+.thr-reward { margin-left: auto; flex: 0 0 auto; font-size: 10px; font-weight: 700; color: var(--accent); white-space: nowrap;
+  background: rgba(201,162,75,.12); border: 1px solid rgba(201,162,75,.45); border-radius: 6px; padding: 1px 6px; }
+/* realm creature chips: colour-coded source instead of a type label (Roaming = plain chip) */
+.realm-race.cat-encounter { background: var(--surface3); border-color: rgba(154,123,214,.55); }
+.realm-race.cat-godshop { background: rgba(201,162,75,.12); border-color: var(--accent); }
+.rc-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.rc-legend { display: inline-flex; gap: 4px; margin-left: auto; text-transform: none; letter-spacing: 0; }
+.rc-key { font-size: 10px; font-weight: 600; color: var(--text-dim); padding: 0 6px; border-radius: 999px; border: 1px solid var(--border-dim); background: var(--surface); }
+.rc-key.cat-encounter { background: var(--surface3); border-color: rgba(154,123,214,.55); }
+.rc-key.cat-godshop { background: rgba(201,162,75,.12); border-color: var(--accent); }
+/* phones: library + spell filter/sort bars stay on ONE row — tighter controls instead of wrapping */
+@media (max-width: 480px) {
+  .lib-bar { flex-wrap: nowrap; gap: 4px; padding-left: 8px; padding-right: 8px; }
+  .lib-bar .facet { padding: 4px 8px; font-size: 12px; flex: 0 0 auto; }
+  .lib-bar .app-select { padding: 4px; font-size: 12px; min-width: 0; }
+  .lib-bar .seg-btn, .sg-dropbar .seg-btn { padding: 4px 5px; font-size: 11px; }
+  .lib-bar .sg-sort-gap { flex: 1 1 0; }
+  .sg-dropbar select.app-select { max-width: 76px; }
+}
+@media (max-width: 360px) { .lib-bar .seg-btn, .sg-dropbar .seg-btn { padding: 4px 3px; } .lib-bar .facet { padding: 4px 6px; } }

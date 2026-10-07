@@ -2361,8 +2361,9 @@
     // same row layout as the Glossary: large icon column + name/effect body (perk-line / apx-iconcol)
     return `<div class="perk-line">
       <div class="apx-iconcol">${m.icon ? `<div class="apx-crea">${spriteImg(m.icon, "px")}</div>` : ""}</div>
-      <div class="perk-line-body"><div class="perk-line-head"><b>${esc(m.name)}</b>${chips}${m.rewardPct != null ? `<span class="perk-line-meta">+${m.rewardPct}% Rewards</span>` : ""}</div>
-        <div class="perk-desc">${esc(m.effect)}</div></div></div>`;
+      <div class="perk-line-body"><div class="perk-line-head"><b>${esc(m.name)}</b>${m.rewardPct != null ? `<span class="thr-reward">+${m.rewardPct}% Rewards</span>` : ""}</div>
+        <div class="perk-desc">${esc(m.effect)}</div>
+        ${chips ? `<div class="perk-line-meta">${chips}</div>` : ""}</div></div>`;
   }
   function renderThreats() {
     const st = ovState, w = st.weights, heavy = heavyPartyClasses(), active = activeThemes();
@@ -2778,8 +2779,8 @@
     const rows = list.map(r => `<button class="realm-row" data-action="realm-sel" data-id="${r.id}">
       <span class="realm-icon">${heroIco(r) ? spriteImg(heroIco(r), "px") : ""}</span>
       <span class="opt-dot" style="background:${clsColor(r.cls)}"></span>
-      <span class="realm-row-name">${esc(r.realm)}</span>
-      <span class="anoint-spec-tag">${esc(r.godName)}</span>
+      <span class="realm-row-name">${esc(st.sortBy === "god" ? r.godName : r.realm)}</span>
+      <span class="anoint-spec-tag">${esc(st.sortBy === "god" ? r.realm : r.godName)}</span>
       <span class="opt-chev">›</span></button>`).join("")
       || `<div class="slot-sub" style="padding:10px">No realms match.</div>`;
     const sortToggle = `<div class="art-view-toggle">
@@ -2886,8 +2887,11 @@
       ...sel.encounters.map(e => ({ name: e.value, cat: e.name === "God Shop" ? "God Shop" : "Encounter", via: e.name === "God Shop" ? null : e.name })),
     ];
     const critChip = (e) => { const ic = D.raceIcons && D.raceIcons[e.name];
-      return `<span class="realm-race" title="${esc(e.via ? e.cat + " — " + e.via : e.cat)}">${ic ? spriteImg(ic, "px") : ""}<span>${esc(e.name)}</span><span class="realm-cat cat-${e.cat.replace(/\s+/g, "").toLowerCase()}">${esc(e.cat)}</span></span>`; };
-    const creatures = critEntries.length ? `<div class="section-label">Creatures</div>
+      // colour = how it appears: Roaming (plain) · Encounter (object-container violet) · God Shop (favor-track gold)
+      return `<span class="realm-race cat-${e.cat.replace(/\s+/g, "").toLowerCase()}" title="${esc(e.via ? e.cat + " — " + e.via : e.cat)}">${ic ? spriteImg(ic, "px") : ""}<span>${esc(e.name)}</span></span>`; };
+    const legend = [["Roaming", "roaming"], ["Encounter", "encounter"], ["God Shop", "godshop"]].filter(([c]) => critEntries.some(e => e.cat === c))
+      .map(([c, k]) => `<span class="rc-key cat-${k}">${c}</span>`).join("");
+    const creatures = critEntries.length ? `<div class="section-label rc-head">Creatures<span class="rc-legend">${legend}</span></div>
       <div class="realm-crits">${critEntries.map(critChip).join("")}</div>` : "";
     const encounters = "";
     const resources = sel.resources.length ? `<div class="section-label">Resources</div>
@@ -3355,12 +3359,13 @@
     if (st.hideEquipped) list = list.filter(a => !artifactEquippedInBuild(a.id) || a.id === equippedId);
     list = list.slice().sort(sortK === "name" ? (x, y) => d * x.name.localeCompare(y.name)
       : sortK === "rank" ? (x, y) => d * ((y.rank || 50) - (x.rank || 50)) || x.name.localeCompare(y.name)
+      : sortK === "type" ? (x, y) => d * String(x.primary || "").localeCompare(String(y.primary || "")) || x.name.localeCompare(y.name)
       : (x, y) => d * (y.id - x.id));
     const libBar = `<div class="ovl-filterbar lib-bar">
         <select class="app-select${st.libType ? " on" : ""}" data-action="lib-type" title="Filter by artifact type">
           <option value="" ${!st.libType ? "selected" : ""}>Type</option>${PRIMARY.map(p => `<option value="${esc(p.property)}" ${st.libType === p.property ? "selected" : ""}>${esc(p.property)}</option>`).join("")}</select>
         <span class="sg-sort-gap"></span>
-        ${libSortSeg(st, [["recent", "Recent", true], ["name", "A–Z", false], ["rank", "Rank", true]])}</div>`;
+        ${libSortSeg(st, [["recent", "Recent", true], ["name", "A–Z", false], ["rank", "Rank", true], ["type", "Type", false]])}</div>`;
     const sel = st.sel != null ? artifacts.find(a => a.id === st.sel) : null;
     // tile equip-state: purple = equipped by THIS creature. Equipped by ANOTHER creature is dimmed +
     // not equippable in the equip wizard (mirrors an off-class spell); in manage/Menu mode it keeps the
@@ -3489,7 +3494,8 @@
         && (!st.spellCls || sp.cls === st.spellCls)
         && (st.spellTarget == null || sp.target === st.spellTarget)
         && (!st.spellTaxo || (sp.taxo || []).includes(st.spellTaxo))
-        && (!st.bkOnly || bookmarks.spells.includes(sp.id)))
+        && (!st.bkOnly || bookmarks.spells.includes(sp.id))
+        && (!st.spellKind || (st.spellKind === "core" ? !spellKind(sp) : spellKind(sp) === st.spellKind)))
       .sort((x, y) => {
         const d = sortSign(st.spellSortRev), byName = x.name.localeCompare(y.name);
         if (sort === "potency") { const rx = potencyRank(x), ry = potencyRank(y), none = POTENCY_ORDER.length;
@@ -3508,6 +3514,8 @@
       + (list.length > shown.length ? `<div class="slot-sub" style="padding:8px">Showing ${shown.length} of ${list.length} — narrow with search or a filter.</div>` : "")
       || `<div class="slot-sub" style="padding:10px">No spells match.</div>`;
   }
+  // spell kind: Ultimate (Avatar ultimates, tagged "Related Spells::Ultimate Spells") · Rune (the Rune Knight's 5 runes)
+  const spellKind = (sp) => (sp.taxo || []).includes("Related Spells::Ultimate Spells") ? "ultimate" : sp.source === "Rune Knight" ? "rune" : null;
   // the identical two-row bar: [lead] search · ＋ Filter · ★ Bookmarked  /  Target ▾ · Class ▾ · A–Z | Potency | Charges
   function spellFilterBar(st, searchAction, lead = "") {
     const sort = st.spellSort || "name";
@@ -3521,6 +3529,8 @@
           <option value="*" ${st.spellTarget == null ? "selected" : ""}>-</option>${SPELL_TARGETS.map(([v, l]) => `<option value="${esc(v)}" ${st.spellTarget === v ? "selected" : ""}>${esc(l)}</option>`).join("")}</select>
         <select class="app-select${st.spellCls ? " on" : ""}" data-action="spf-cls" title="Filter by class">
           <option value="" ${!st.spellCls ? "selected" : ""}>-</option>${SPELL_CLASSES.map(cl => `<option value="${cl}" ${st.spellCls === cl ? "selected" : ""}>${cl}</option>`).join("")}</select>
+        <select class="app-select${st.spellKind ? " on" : ""}" data-action="spf-kind" title="Filter by spell kind">
+          ${[["", "-"], ["core", "No Ultimate / Rune"], ["ultimate", "Ultimate"], ["rune", "Rune"]].map(([v, l]) => `<option value="${v}" ${(st.spellKind || "") === v ? "selected" : ""}>${l}</option>`).join("")}</select>
         <span class="sg-sort-gap"></span>
         <div class="seg">${[["name", "A–Z"], ["potency", "Potency"], ["charges", "Charges"]].map(([v, l]) =>
           `<button class="seg-btn ${sort === v ? "on" : ""}" data-action="spf-sort" data-v="${v}">${sortLbl(l, sort === v, st.spellSortRev, v !== "name")}</button>`).join("")}</div></div>`;
@@ -3602,8 +3612,8 @@
       extra = "";   // spell list uses the shared search + filter bar (rendered in place of the plain search below)
     } else if (type === "nether") {
       extra = `<div class="art-side-filter">
-          <button class="facet ${st.nsTrait ? "on" : ""}" data-action="artb-nsfilter" data-f="nsTrait">Has trait</button>
-          <button class="facet ${st.nsSpell ? "on" : ""}" data-action="artb-nsfilter" data-f="nsSpell">Has spell</button>
+          <button class="facet ${st.nsTrait ? "on" : ""}" data-action="artb-nsfilter" data-f="nsTrait">Trait</button>
+          <button class="facet ${st.nsSpell ? "on" : ""}" data-action="artb-nsfilter" data-f="nsSpell">Spell</button>
           <button class="facet ${st.nsHideUsed ? "on" : ""}" data-action="artb-nsfilter" data-f="nsHideUsed" title="Hide stones already socketed in another equipped artifact">Hide in use</button></div>
         <div class="art-side-filter">${seg("artb-nssort", st.nsSort || "recent", [["recent", "Recent"], ["name", "A–Z"], ...STAT_KEYS.map(k => [k, STAT_LABEL[k].slice(0, 3)])], st.nsSortRev)}</div>`;
     } else if (traitFilter || bkFilter) extra = `<div class="art-side-filter">${traitFilter}${bkFilter}</div>`;
@@ -4245,8 +4255,8 @@
       : STAT_KEYS.includes(sortK) ? (x, y) => d * (core(y)[sortK] - core(x)[sortK]) || x.name.localeCompare(y.name)
       : (x, y) => d * (y.id - x.id));
     const libBar = `<div class="ovl-filterbar lib-bar">
-        <button class="facet ${st.nsTrait ? "on" : ""}" data-action="lib-flag" data-f="nsTrait">Has trait</button>
-        <button class="facet ${st.nsSpell ? "on" : ""}" data-action="lib-flag" data-f="nsSpell">Has spell</button>
+        <button class="facet ${st.nsTrait ? "on" : ""}" data-action="lib-flag" data-f="nsTrait">Trait</button>
+        <button class="facet ${st.nsSpell ? "on" : ""}" data-action="lib-flag" data-f="nsSpell">Spell</button>
         <span class="sg-sort-gap"></span>
         ${libSortSeg(st, [["recent", "Recent", true], ["name", "A–Z", false], ...STAT_KEYS.map(k => [k, STAT_LABEL[k].slice(0, 3), true])])}</div>`;
     // compact tiles: gem + name only; effects live in the info panel on selection
@@ -5257,6 +5267,7 @@
     // shared spell picker dropdowns ("*" / "" = "-" = no filter)
     else if (A === "spf-target") { ovState.spellTarget = t.value === "*" ? null : t.value; refreshOverlay(); }
     else if (A === "spf-cls") { ovState.spellCls = t.value || null; refreshOverlay(); }
+    else if (A === "spf-kind") { ovState.spellKind = t.value || null; refreshOverlay(); }
     else if (A === "lib-type") { ovState.libType = t.value || null; refreshOverlay(); }
     else if (A === "lib-cls") { ovState.libCls = t.value || null; refreshOverlay(); }
     else if (A === "nether-propval" && ovState && ovState.kind === "netherbuild") {   // commit: clamp to the code range, refresh score
