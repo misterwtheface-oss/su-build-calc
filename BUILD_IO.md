@@ -25,6 +25,12 @@ spells and gem properties travel by **key** so a data rebuild can't scramble a s
 **Import** = code line if present (exact restore), else the game text (best effort). **Always loads as the current
 party.** Artifacts / nether stones / spell gems are added to the libraries; an identical existing item is reused.
 
+## Share link
+Export → **Copy link** = `<site>#b=<SUC1 code body>` (~1.8 KB). On load `checkSharedLink()` (app.js) reads the hash,
+strips it from the address bar (refresh won't re-import) and opens a **Shared build** prompt (spec + creatures +
+name): **Load** = normal import into the current party; **Save to Builds** = import into a temporary party, snapshot
+it into `subc.builds`, restore the visitor's party. The hash never reaches the server, so the SW/Pages cache is unaffected.
+
 ## What a game export can't carry (defaults on import)
 Perk ranks → all max (warned) · spell gem level → 15, no properties (the export lists bare spell names) · artifact
 level → inferred from the primary % (59% → 50) · skins, fusion colour, nether stone icon → defaults. Stat "(n)" =

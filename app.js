@@ -1795,7 +1795,8 @@
     if (exp) {
       body = st.busy ? `<div class="slot-sub" style="padding:12px">Preparing export…</div>`
         : `<textarea class="bio-text" readonly>${esc(st.out)}</textarea>`;
-      foot = `<span class="foot-info">${esc(st.status || "")}</span><div><button class="btn-ghost" data-action="bio-copy" data-what="code" ${st.busy ? "disabled" : ""}>Copy code only</button>
+      foot = `<span class="foot-info">${esc(st.status || "")}</span><div><button class="btn-ghost" data-action="bio-copy" data-what="link" ${st.busy ? "disabled" : ""}>Copy link</button>
+        <button class="btn-ghost" data-action="bio-copy" data-what="code" ${st.busy ? "disabled" : ""}>Copy code only</button>
         <button class="btn-confirm" data-action="bio-copy" data-what="all" ${st.busy ? "disabled" : ""}>Copy</button></div>`;
     } else if (st.warnings) {
       body = `<div class="bio-result"><b>Loaded ${st.loaded} creature${st.loaded === 1 ? "" : "s"} into your party${st.source === "code" ? " (Companion build code)" : " (game export)"}.</b>
@@ -1808,6 +1809,50 @@
     }
     return `<div class="ovl-backdrop riddle-backdrop" data-action="backdrop"><div class="overlay-panel riddle-pop bio-pop">
       <div class="riddle-pop-head"><span class="riddle-pop-title">Build</span>${tabs}<span class="bio-gap"></span><button class="ovl-close" data-action="close-ovl">✕</button></div>
+      <div class="riddle-pop-body bio-body">${body}</div>
+      <div class="bio-foot">${foot}</div>
+    </div></div>`;
+  }
+
+  // ── shareable build link: <site>#b=<SUC1 code body>. Read once on load, then stripped from the address bar so a
+  // refresh doesn't re-import. The visitor chooses: load as the current party, or save it to Builds (party untouched).
+  const shareLink = (code) => `${location.origin}${location.pathname}#b=${code.replace(/^SUC1:/, "")}`;
+  function checkSharedLink() {
+    const m = location.hash.match(/^#b=([A-Za-z0-9_-]+)/);
+    if (!m) return;
+    history.replaceState(null, "", location.pathname + location.search);
+    bio().importText(`SUC1:${m[1]}`).then(r => {
+      ovState = { kind: "share", payload: r.payload, warnings: r.warnings, name: "Shared build", done: null, render: renderSharePrompt };
+      openOverlay(ovState.render());
+    }).catch(() => {
+      ovState = { kind: "share", error: "This build link is damaged or incomplete.", render: renderSharePrompt };
+      openOverlay(ovState.render());
+    });
+  }
+  function renderSharePrompt() {
+    const st = ovState;
+    let body, foot;
+    if (st.error) {
+      body = `<div class="bio-result"><span class="ns-issue">${esc(st.error)}</span></div>`;
+      foot = `<span class="foot-info"></span><div><button class="btn-confirm" data-action="close-ovl">Close</button></div>`;
+    } else if (st.done) {
+      body = `<div class="bio-result"><b>${st.done === "load" ? "Loaded into your party." : `Saved to Builds as “${esc(st.name)}”.`}</b>
+        ${st.warnings.length ? `<ul class="bio-warn">${st.warnings.map(w => `<li>${esc(w)}</li>`).join("")}</ul>` : ""}</div>`;
+      foot = `<span class="foot-info"></span><div><button class="btn-confirm" data-action="close-ovl">Done</button></div>`;
+    } else {
+      const p = st.payload, spec = p.spec != null ? SPEC.get(p.spec) : null;
+      const crits = (p.slots || []).filter(x => x && CREA.has(x.cid)).map(x => {
+        const c = CREA.get(x.cid), f = x.fusion != null ? CREA.get(x.fusion) : null;
+        return `<li>${esc(c.name)}${f ? ` <span class="slot-sub">+ ${esc(f.name)}</span>` : ""}</li>`; }).join("");
+      body = `<div class="bio-result">${spec ? `<b>${esc(spec.label)}</b>` : ""}${crits ? `<ul class="share-crits">${crits}</ul>` : ""}
+        <label class="share-name">Name <input class="ovl-search" data-action="share-name" value="${esc(st.name)}"></label>
+        <div class="slot-sub share-note">Load replaces your current party · Save to Builds keeps it.</div></div>`;
+      foot = `<span class="foot-info"></span><div class="share-btns">
+        <button class="btn-ghost" data-action="share-save">Save to Builds</button>
+        <button class="btn-confirm" data-action="share-load">Load</button></div>`;
+    }
+    return `<div class="ovl-backdrop riddle-backdrop" data-action="backdrop"><div class="overlay-panel riddle-pop bio-pop">
+      <div class="riddle-pop-head"><span class="riddle-pop-title">Shared build</span><span class="bio-gap"></span><button class="ovl-close" data-action="close-ovl">✕</button></div>
       <div class="riddle-pop-body bio-body">${body}</div>
       <div class="bio-foot">${foot}</div>
     </div></div>`;
@@ -4546,13 +4591,24 @@
         st.mode = t.dataset.v; st.warnings = null; st.error = null; st.status = "";
         if (st.mode === "export") runExport(); else { refreshOverlay(); maybeFocusSearch(OV); } break; }
       case "bio-copy": { const st = ovState; if (!st || !st.out) break;
-        const txt = t.dataset.what === "code" ? (st.out.match(/SUC1:\S+/) || [""])[0] : st.out;
-        copyText(txt).then(ok => { st.status = ok ? (t.dataset.what === "code" ? "Code copied ✓" : "Copied ✓") : "Copy failed — select the text and copy it manually"; refreshOverlay(); }); break; }
+        const w = t.dataset.what, code = (st.out.match(/SUC1:\S+/) || [""])[0];
+        const txt = w === "code" ? code : w === "link" ? shareLink(code) : st.out;
+        copyText(txt).then(ok => { st.status = ok ? (w === "code" ? "Code copied ✓" : w === "link" ? "Link copied ✓" : "Copied ✓") : "Copy failed — select the text and copy it manually"; refreshOverlay(); }); break; }
       case "bio-run": { const st = ovState; if (!st || !st.text.trim()) break;
         bio().importText(st.text).then(r => { const warn = [...r.warnings]; const res = applyImportedBuild(r.payload, warn);
           st.warnings = warn; st.loaded = res.creatures; st.source = r.source; st.error = null; refreshOverlay(); })
           .catch(e => { st.error = String(e.message || e); refreshOverlay(); }); break; }
       case "bio-done": closeOverlay(); break;
+      case "share-load": { const st = ovState; if (!st || st.kind !== "share") break;
+        applyImportedBuild(st.payload, st.warnings); st.done = "load"; refreshOverlay(); break; }
+      case "share-save": { const st = ovState; if (!st || st.kind !== "share") break;
+        // import into a temporary party, snapshot it into Builds, then put the visitor's party back
+        const prev = JSON.parse(JSON.stringify(build));
+        applyImportedBuild(st.payload, st.warnings);
+        const nb = { id: nextBuildId++, name: (st.name || "").trim() || `Build ${builds.length + 1}`, icon: buildDefaultIcon(), ts: Date.now(), build: JSON.parse(JSON.stringify(build)) };
+        builds.push(nb); persistBuilds();
+        build = normalizeBuild(prev); persistBuild(); render();
+        st.name = nb.name; st.done = "save"; refreshOverlay(); break; }
       case "builds-load": {
         const b = builds.find(x => x.id === +t.dataset.id);
         if (b) { build = normalizeBuild(JSON.parse(JSON.stringify(b.build))); clearBookmarks(); persistBuild(); closeOverlay(); render(); }
@@ -5020,6 +5076,7 @@
     if (A === "sg-name") { ovState.draft.name = v; return; }
     if (A === "builds-name") { ovState.draft.name = v; return; }
     if (A === "bio-text") { ovState.text = v; ovState.error = null; return; }
+    if (A === "share-name") { ovState.name = v; return; }
     // search fields — live filter without losing caret
     const searchMap = { "crea-search": [OV, ovState], "spec-search": [OV, ovState], "artb-search": [OV, ovState],
       "relic-search": [OV, ovState], "cards-search": [OV, ovState], "anoint-search": [OV, ovState], "nether-search": [OV, ovState], "sg-search": [OV, ovState], "appendix-search": [OV, ovState], "shop-search": [OV, ovState], "realm-search": [OV, ovState], "riddle-search": [OV, ovState], "gloss-search": [OV, ovState], "proj-search": [OV, ovState], "lib-search": [OV, ovState], "facet-search": [DOV, dovState], "perk-search": [DOV, dovState], "pers-search": [DOV, dovState], "iconpick-search": [DOV, dovState], "skin-search": [DOV, dovState] };
@@ -5127,4 +5184,5 @@
 
   syncLayoutMenu();
   render();
+  checkSharedLink();
 })();

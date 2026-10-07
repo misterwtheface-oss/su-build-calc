@@ -1575,3 +1575,9 @@ select.app-select:hover { border-color: var(--accent2); }
 }
 /* off valves read dimmer than on ones (the two sprites differ only by handle angle) */
 .nh-valve img.nh-off, .nh-row-valves img.nh-off { opacity: .4; }
+/* shared-build link prompt */
+.share-crits { margin: 6px 0 10px; padding-left: 18px; font-size: 13px; line-height: 1.5; }
+.share-name { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-dim); }
+.share-name input { flex: 1; min-width: 0; }
+.share-note { margin-top: 8px; }
+.share-btns { display: flex; gap: 8px; flex-wrap: nowrap; }
