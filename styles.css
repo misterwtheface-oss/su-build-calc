@@ -1591,7 +1591,7 @@ select.app-select:hover { border-color: var(--accent2); }
 .spt-mv:hover:not(:disabled) { border-color: var(--border); }
 .spt-mv:disabled { opacity: .3; cursor: default; }
 /* glossary: resurrection order */
-.res-line { align-items: center; }
+.res-line .res-n { align-self: center; }
 .res-n { flex: 0 0 28px; text-align: center; font-weight: 800; font-variant-numeric: tabular-nums; color: var(--accent); font-size: 15px; }
 .res-sub { margin: 10px 0 4px; font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--text-mute); }
 .res-badge { font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 4px; border: 1px solid; white-space: nowrap; }
@@ -1599,9 +1599,6 @@ select.app-select:hover { border-color: var(--accent2); }
 .res-badge.stop { color: var(--cap); border-color: rgba(255,210,74,.45); background: rgba(255,210,74,.10); }
 .res-badge.rule { color: var(--bad); border-color: rgba(224,107,107,.5); background: rgba(224,107,107,.12); }
 .res-rule .res-n { font-size: 14px; }
-/* resurrection rows: title on its own line, chips row below it, then the description */
-.res-chips { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 3px 0 4px; }
-.res-chips .anoint-spec-tag { margin-left: 0; }
 /* enemy-only resurrection sources (boss traits with no player source, realm properties): whole row tinted red */
 .res-line.res-enemy { background: linear-gradient(90deg, rgba(224,107,107,.20), rgba(224,107,107,.08)); border-color: rgba(224,107,107,.45); }
 .res-note { margin-top: 3px; font-style: italic; color: #ffb3b3; }

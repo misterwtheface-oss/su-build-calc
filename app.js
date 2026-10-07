@@ -2513,7 +2513,7 @@
 
   // ── Glossary — Buff / Debuff / Minion reference (name + prose + in-game status glyph from the game). ──
   function openGlossary() {
-    ovState = { kind: "glossary", search: "", collapsed: new Set(), render: renderGlossary };
+    ovState = { kind: "glossary", search: "", collapsed: new Set([...GLOSSARY_CATS, "Resurrection"]), render: renderGlossary };
     openOverlay(ovState.render()); maybeFocusSearch(OV);
   }
   const GLOSSARY_CATS = ["Buff", "Debuff", "Minion"];
@@ -2553,19 +2553,22 @@
     // or a realm property (enemies only).
     RES_ROWS = RES_ORDER.map(([group, kind, ref, rank], i) => {
       let r = null;
-      if (kind === "perk") { const h = perkBy.get(ref); if (h) r = { name: h.p.name, desc: h.p.desc, icon: h.p.icon && spriteImg(h.p.icon, "px"), tag: `Perk · ${h.spec.label}` }; }
+      // icons: up to two boxes like the Appendix (creature / boss sprite over the trait material); chips: source names
+      // only (no "Trait ·" / "Perk ·" prefix) — prose labels stay where there's no named source (Buff, Minion, Realm Property)
+      if (kind === "perk") { const h = perkBy.get(ref); if (h) r = { name: h.p.name, desc: h.p.desc, icons: [h.p.icon && spriteImg(h.p.icon, "px")], chips: [h.spec.label] }; }
       else if (kind === "trait") { const t = traitByRt.get(ref); if (t) {
-        const c = creatureByTrait.get(t.id), boss = bossSpriteFor(t), it = (itemsByTrait.get(t.id) || []).find(x => x.icon);
-        r = { name: t.name, desc: t.desc, icon: c ? critFace(c) : boss ? spriteImg(boss) : it ? spriteImg(it.icon, "px") : "", enemy: t.ownerType === "boss" && !c && !it,
-          tag: `Trait${c ? ` · ${c.name}` : t.owner ? ` · ${t.owner}` : ""}`, open: { ek: "trait", eid: t.id } }; } }
+        const c = creatureByTrait.get(t.id), boss = bossSpriteFor(t), its = itemsByTrait.get(t.id) || [], it = its.find(x => x.icon);
+        r = { name: t.name, desc: t.desc, icons: [c ? critFace(c) : boss ? spriteImg(boss) : "", it ? spriteImg(it.icon, "px") : ""],
+          enemy: t.ownerType === "boss" && !c && !it,
+          chips: [c ? c.name : t.owner || "", ...new Set(its.map(x => x.name))], open: { ek: "trait", eid: t.id } }; } }
       else if (kind === "relic") { const rl = D.relics.find(x => x.name.includes(ref)), rk = rl && rl.ranks.find(x => x.rank === rank);
-        if (rl && rk) r = { name: rl.name.split(",")[0], desc: rk.desc, icon: spriteImg(rl.icon, "px"), tag: `Relic · rank ${rank}` }; }
+        if (rl && rk) r = { name: rl.name.split(",")[0], desc: rk.desc, icons: [spriteImg(rl.icon, "px")], chips: [rl.name.split(",")[1].trim(), `Rank ${rank}`] }; }
       else if (kind === "cond") { const c = (D.conditions || []).find(x => `${x.cat}:${x.key}` === ref);
-        if (c) r = { name: c.name, desc: c.desc, icon: c.icon ? `<img src="${esc(c.icon)}" alt="">` : "", tag: c.cat, open: { ek: "condition", eid: ref } }; }
+        if (c) r = { name: c.name, desc: c.desc, icons: [c.icon ? `<img src="${esc(c.icon)}" alt="">` : ""], chips: [c.cat], open: { ek: "condition", eid: ref } }; }
       else if (kind === "realm") { const rp = (D.realmProps || []).find(x => x.key === ref);
-        if (rp) r = { name: rp.name, desc: rp.effect, icon: spriteImg(rp.icon, "px"), tag: "Realm property", enemy: true }; }
-      else if (kind === "static") r = { ...ref, icon: "" };
-      if (!r) { console.error("RESURRECTION ORDER: unresolved", kind, ref); r = { name: String(ref), desc: "", icon: "", tag: kind }; }
+        if (rp) r = { name: rp.name, desc: rp.effect, icons: [spriteImg(rp.icon, "px")], chips: ["Realm Property"], enemy: true }; }
+      if (!r) { console.error("RESURRECTION ORDER: unresolved", kind, ref); r = { name: String(ref), desc: "", icons: [], chips: [kind] }; }
+      r.icons = r.icons.filter(Boolean); r.chips = r.chips.filter(Boolean);
       // Angry Army's resurrect isn't in its in-game text (bc_OnDeath only: once per creature, full Health, "(HA! HA! HA!)")
       if (kind === "trait" && ref === 1335) r.note = "Not in the trait text: each enemy creature with Angry Army also resurrects once, at 100% Health.";
       return { group, ...r };
@@ -2610,10 +2613,10 @@
       rule: ["Blocks other resurrection", "While active, no other effect can resurrect your creatures"] };
     const row = (r) => `<div class="perk-line res-line${r.group === "rule" ? " res-rule" : ""}${r.enemy ? " res-enemy" : ""}${r.open ? " apx-clickable" : ""}"${r.open ? ` data-action="apx-open" data-ek="${r.open.ek}" data-eid="${esc(String(r.open.eid))}" title="View taxonomy"` : ""}>
         <div class="res-n">${r.n ?? "⛔"}</div>
-        <div class="apx-iconcol">${r.icon ? `<div class="apx-crea">${r.icon}</div>` : ""}</div>
+        <div class="apx-iconcol">${r.icons.map(ic => `<div class="apx-crea">${ic}</div>`).join("")}</div>
         <div class="perk-line-body"><div class="perk-line-head"><b>${esc(r.name)}</b></div>
-          <div class="res-chips">${BADGE[r.group] ? `<span class="res-badge ${r.group}" title="${esc(BADGE[r.group][1])}">${BADGE[r.group][0]}</span>` : ""}<span class="anoint-spec-tag">${esc(r.tag)}</span></div>
-          ${r.desc ? `<div class="perk-desc">${richText(r.desc)}</div>` : ""}${r.note ? `<div class="perk-desc res-note">${esc(r.note)}</div>` : ""}</div></div>`;
+          ${r.desc ? `<div class="perk-desc">${richText(r.desc)}</div>` : ""}${r.note ? `<div class="perk-desc res-note">${esc(r.note)}</div>` : ""}
+          <div class="perk-line-meta">${BADGE[r.group] ? `<span class="res-badge ${r.group}" title="${esc(BADGE[r.group][1])}">${BADGE[r.group][0]}</span>` : ""}${r.chips.map(c => `<span class="anoint-spec-tag">${esc(c)}</span>`).join("")}</div></div></div>`;
     const grp = (gs, label) => { const list = rows.filter(r => gs.includes(r.group));
       return list.length ? `<div class="res-sub">${label}</div><div class="perk-list">${list.map(row).join("")}</div>` : ""; };
     const body = open ? grp(["rule"], "Overrides everything") + grp(["free", "stop"], "Checked first") + grp(["chain"], "Then one per death — the first that fires stops the rest") : "";
