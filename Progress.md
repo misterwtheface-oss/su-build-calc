@@ -23,11 +23,9 @@ No verify-before-push ceremony (no real users yet) — but every change is check
   keyboard) and is swallowed. Touch/pen only — mouse clicks are untouched (desktop auto-focuses search fields).
 - **Realm page tabs: Interactions | Favor | Yield** (Realms list keeps Browse | Compare). Interactions (default) =
   Creatures, Resources, then one card per object: `Name ×count | rank-0 base interaction` + the favor-rank tiers that
-  upgrade it (rank · effect), then a Realm-wide card for tiers naming no object (boss rooms, "collecting all orbs");
-  complex-interaction combo tables stay here. Favor = the old List track (slider + common toggle + tiers). Yield = the old
-  Bars (slider + common toggle + bars). Tier → object attachment is done in build-data (`objects[].favor`,
-  `favorOther`): singularized word match both ways, then unique head noun / first word; 528/540 attached, 12 realm-wide,
-  every object has ≥2 tiers.
+  upgrade it (rank · effect) — taken straight from the user's grouping under "Unique Realm Objects" in Realm_REF.csv
+  (rows > 0 under each object; `parseRealmOther` → `objects[].favor`; build logs 540/540 favor tiers placed).
+  Combo tables stay here. Favor = the old List track (slider + common toggle + tiers). Yield = the old Bars.
 - **Menu → Nether Realm** helper (code-grounded, `_su_extract/code/NETHER_HELPERS_FINDINGS.md` → `D.netherHelpers`):
   **Faucet** = the valve room (`room_nether_valves`): 4 on/off valves form a code that picks the one chest's contents —
   tappable valves + all 16 codes (rewards, then the Mimic battle, then the 5 empty codes); tap a row to set the valves.

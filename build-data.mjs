@@ -1788,9 +1788,10 @@ function parseRealmOther(other) {
     if (/^Realm Creatures/i.test(lbl)) { sec = 'enc'; continue; }
     if (sec === 'obj') {
       // "<Name> [baseCount]" begins an object; numeric rows are its milestones — row "0" = base interaction.
-      if (/^\d+$/.test(lbl)) { if (lbl === '0' && cur && val) cur.base = val; continue; }
+      // rows > 0 = the favor ranks that upgrade THIS object (the user's grouping in Realm_REF.csv)
+      if (/^\d+$/.test(lbl)) { if (cur && val) { if (lbl === '0') cur.base = val; else cur.favor.push({ at: +lbl, effect: val }); } continue; }
       const m = lbl.match(/^(.*?)\s*\[(\d+)\]\s*$/); const name = (m ? m[1] : lbl).trim();
-      if (cleanRealmVal(name)) { cur = { name, baseCount: m ? +m[2] : null, base: null }; objects.push(cur); } else cur = null;
+      if (cleanRealmVal(name)) { cur = { name, baseCount: m ? +m[2] : null, base: null, favor: [] }; objects.push(cur); } else cur = null;
     } else if (sec === 'traits') {
       // the god's Favor Reward track: unlock threshold → effect (shared thresholds, realm-specific effects)
       if (/^\d+$/.test(lbl) && val) traits.push({ at: +lbl, effect: val });
@@ -1971,34 +1972,15 @@ for (const rm of realms) rm.hasShop = shopGods.has(rm.godName);   // cross-link 
   }
   console.log(`  realm combination tables: ${comboHits}/5 wired`);
 }
-// attach each Favor-track tier (rm.traits {at,effect}) to the realm object it names → objects[].favor; tiers that
-// name no single object (boss rooms, "collecting all orbs") stay realm-wide in rm.favorOther — nothing is dropped.
-// Matching compares singularized words both ways (Caches↔Cache, Oases↔Oasis, House of Cards↔Houses of Cards), then
-// falls back to an object's unique head noun (Totems → Corrupted Totem) or unique first word (Sewers → Sewer Boss).
+// every Favor-track tier should appear under exactly one object in Realm_REF — report any the CSV doesn't place
 {
-  const words = (s) => String(s).toLowerCase().replace(/[^a-z0-9 ]/g, ' ').split(/\s+/).filter(Boolean);
-  const sing = (w) => new Set([w, w.replace(/s$/, ''), w.replace(/es$/, ''), w.replace(/ies$/, 'y'), w.replace(/ves$/, 'f'),
-    w.replace(/ves$/, 'fe'), w.replace(/es$/, 'is')]);
-  const same = (a, b) => { const A = sing(a); for (const x of sing(b)) if (A.has(x)) return true; return false; };
-  const hasSeq = (ew, ow) => { for (let i = 0; i + ow.length <= ew.length; i++) if (ow.every((w, j) => same(ew[i + j], w))) return true; return false; };
-  const GENERIC = new Set(['large', 'small', 'giant', 'portal', 'the', 'of', 'red', 'blue', 'pile', 'piles']);
-  let matched = 0, other = 0;
+  let placed = 0; const loose = [];
   for (const rm of realms) {
-    const objs = rm.objects.map(o => ({ o, alts: o.name.split('/').map((p, i, a) => words(i && a[0].includes(' ') && !p.includes(' ') ? a[0].replace(/\S+$/, p) : p)) }));
-    objs.forEach(x => { x.o.favor = []; });
-    rm.favorOther = [];
-    const uniq = (pick) => { const m = new Map(); for (const x of objs) for (const al of x.alts) { const k = pick(al); if (k && !GENERIC.has(k)) m.set(k, m.has(k) && m.get(k) !== x ? null : x); } return m; };
-    const byHead = uniq(al => al[al.length - 1]), byFirst = uniq(al => al.length > 1 ? al[0] : null);
-    for (const t of rm.traits || []) {
-      const ew = words(t.effect);
-      let hit = objs.filter(x => x.alts.some(al => hasSeq(ew, al))).sort((a, b) => Math.max(...b.alts.map(l => l.length)) - Math.max(...a.alts.map(l => l.length)))[0];
-      if (!hit) for (const w of ew) { for (const [k, x] of byHead) if (x && same(w, k)) { hit = x; break; } if (hit) break; }
-      if (!hit) for (const w of ew) { for (const [k, x] of byFirst) if (x && same(w, k)) { hit = x; break; } if (hit) break; }
-      if (/\bboss rooms?\b/i.test(t.effect)) hit = null;   // "More Treasure From <Realm> Boss Rooms" is realm-wide
-      if (hit) { hit.o.favor.push({ at: t.at, effect: t.effect }); matched++; } else { rm.favorOther.push({ at: t.at, effect: t.effect }); other++; }
-    }
+    const ranks = new Set(rm.objects.flatMap(o => o.favor.map(t => t.at)));
+    for (const t of rm.traits || []) ranks.has(t.at) ? placed++ : loose.push(`${rm.realm} @${t.at}`);
   }
-  console.log(`  favor tiers → realm objects: ${matched} attached · ${other} realm-wide`);
+  console.log(`  favor tiers under realm objects (Realm_REF): ${placed}/${placed + loose.length}`);
+  if (loose.length) warn(`favor tiers not listed under any realm object: ${loose.join(', ')}`);
 }
 // join the Favor-track matrix to each realm by name (Favor_MTX realm names == D.realms[].realm)
 let favorJoined = 0;

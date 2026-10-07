@@ -2768,8 +2768,8 @@
       <div class="prop-list">${sel.resources.map(e => `<div class="prop-row static"><span class="prop-name">${esc(e.object)}</span><span class="prop-stat">${esc(e.resource)}</span></div>`).join("")}</div>` : "";
     // ── three tabs: INTERACTIONS (creatures · resources · each object's rank-0 interaction + the favor-rank tiers that
     // upgrade it) | FAVOR (the god's reward track condensed to the rank) | YIELD (unique-bonus magnitude bars).
-    // Favor tiers are attached to the object they name in build-data (objects[].favor); realm-wide tiers (boss rooms…)
-    // sit in favorOther. In "My ranks" mode the slider shows/edits THIS realm's tracked favor rank (persisted).
+    // Each object's favor ranks come straight from the user's grouping in Realm_REF.csv (objects[].favor).
+    // In "My ranks" mode the slider shows/edits THIS realm's tracked favor rank (persisted).
     const rank = rankFor(sel);
     const uCols = favUnique(), gCols = favGeneric();
     const view = ["interactions", "list", "bars"].includes(ovState.favorView) ? ovState.favorView : "interactions";
@@ -2783,8 +2783,7 @@
       <div class="robj-cards">${sel.objects.map(o => `<div class="robj-card">
         <div class="robj-card-head"><span class="realm-obj-ico">${o.sprite ? spriteImg(o.sprite, "px") : ""}</span>
           <b>${esc(o.name)}</b>${o.baseCount != null ? `<span class="realm-obj-ct">×${o.baseCount}</span>` : ""}${o.base ? `<span class="robj-base">${esc(o.base)}</span>` : ""}</div>
-        ${(o.favor || []).length ? `<div class="robj-tiers">${tierRowsHtml(o.favor)}</div>` : ""}</div>`).join("")}
-        ${(sel.favorOther || []).length ? `<div class="robj-card"><div class="robj-card-head"><b>Realm-wide</b></div><div class="robj-tiers">${tierRowsHtml(sel.favorOther)}</div></div>` : ""}</div>` : "";
+        ${(o.favor || []).length ? `<div class="robj-tiers">${tierRowsHtml(o.favor)}</div>` : ""}</div>`).join("")}</div>` : "";
     const interactionsView = `${creatures}${resources}${objects}`;
     const barsView = `${favorSlider(rank)}${rankNote}${commonToggle}
       <div class="rcat-list">${uCols.map((c, i) => { const v = favVal(sel, i, rank);
