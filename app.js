@@ -2508,47 +2508,41 @@
   const NH = D.netherHelpers || { faucet: { table: [] }, treasury: { table: [] } };
   const FAUCET_ORDER = { item: 0, materials: 0, emblem: 0, mimic: 1, empty: 2 };
   function openNetherHelper() {
-    ovState = { kind: "netherhelp", tab: "faucet", valves: [0, 0, 0, 0], mm: { opened: 0, bonus: 0, log: [] }, render: renderNetherHelper };
+    ovState = { kind: "netherhelp", tab: "faucet", valves: [0, 0, 0, 0], render: renderNetherHelper };
     openOverlay(ovState.render());
   }
-  const valveDots = (code) => `<span class="nh-dots">${[...code].map(d => `<span class="nh-dot${d === "1" ? " on" : ""}"></span>`).join("")}</span>`;
+  const valveImg = (on) => spriteImg(on ? NH.faucet.valveOn : NH.faucet.valveOff, on ? "px" : "px nh-off");
   function renderNetherHelper() {
     const st = ovState, faucet = st.tab === "faucet";
     const toggle = `<div class="art-view-toggle">
       <button class="av-tab ${faucet ? "on" : ""}" data-action="nh-tab" data-v="faucet">Faucet</button>
       <span class="av-pipe">|</span>
       <button class="av-tab ${!faucet ? "on" : ""}" data-action="nh-tab" data-v="mimic">Mimic Mike</button></div>`;
-    let body;
+    let head = "", body;
     if (faucet) {
+      // locked header: the 4 interactable valves + the chest they produce (defaults: all off → empty chest)
       const code = st.valves.join(""), cur = NH.faucet.table.find(r => r.code === code);
-      const valves = st.valves.map((v, i) => `<button class="nh-valve${v ? " on" : ""}" data-action="nh-valve" data-i="${i}" title="Valve ${i + 1}">${spriteImg(v ? NH.faucet.valveOn : NH.faucet.valveOff, "px")}<span>${v ? "On" : "Off"}</span></button>`).join("");
+      const valves = st.valves.map((v, i) => `<button class="nh-valve${v ? " on" : ""}" data-action="nh-valve" data-i="${i}" title="Faucet ${i + 1}">${valveImg(v)}</button>`).join("");
+      head = `<div class="nh-head"><div class="nh-valves">${valves}</div><span class="nh-arrow">→</span>
+        <div class="nh-result${cur && cur.kind === "mimic" ? " mimic" : ""}"><span class="nh-chest lg">${cur ? spriteImg(cur.img, "px") : ""}</span>
+          <b>${cur ? esc(cur.reward) : ""}</b></div></div>`;
       const rows = NH.faucet.table.slice().sort((a, b) => (FAUCET_ORDER[a.kind] ?? 0) - (FAUCET_ORDER[b.kind] ?? 0) || a.code.localeCompare(b.code))
         .map(r => `<button class="nh-row${r.code === code ? " on" : ""}${r.kind === "mimic" ? " mimic" : r.kind === "empty" ? " empty" : ""}" data-action="nh-code" data-c="${r.code}">
-          ${valveDots(r.code)}<span class="nh-chest">${spriteImg(r.img, "px")}</span><span class="nh-reward">${esc(r.reward)}</span></button>`).join("");
-      body = `<div class="nh-lock"><div class="nh-valves">${valves}</div>
-          ${cur ? `<div class="nh-result${cur.kind === "mimic" ? " mimic" : ""}"><span class="nh-chest lg">${spriteImg(cur.img, "px")}</span><b>${esc(cur.reward)}</b></div>` : ""}</div>
-        <div class="nh-list">${rows}</div>`;
+          <span class="nh-row-valves">${[...r.code].map(d => valveImg(d === "1")).join("")}</span>
+          <span class="nh-chest">${spriteImg(r.img, "px")}</span><span class="nh-reward">${esc(r.reward)}</span></button>`).join("");
+      body = `<div class="nh-list">${rows}</div>`;
     } else {
-      const T = NH.treasury, mm = st.mm, allowed = Math.min(T.chests, T.baseOpens + mm.bonus), left = Math.max(0, allowed - mm.opened);
+      // Mimic Mike: reference list only — chest icon, then what it holds
+      const T = NH.treasury;
       const pct = (r) => r.filling === 11 ? T.pStone * 100 : (1 - T.pStone) * 10;
-      const prio = (r) => r.filling === 10 ? 0 : r.filling === 11 ? 1 : 2;   // parchments first, then the Nether Stone
-      const rows = T.table.slice().sort((a, b) => prio(a) - prio(b) || a.filling - b.filling).map(r => {
-        const parch = r.filling === 10;
-        const act = parch ? `<span class="nh-parch">${[2, 3, 4].map(n => `<button class="chip" data-action="nh-open" data-f="10" data-n="${n}" ${left ? "" : "disabled"}>+${n}</button>`).join("")}</span>`
-          : `<button class="chip" data-action="nh-open" data-f="${r.filling}" ${left ? "" : "disabled"}>Opened</button>`;
-        const n = mm.log.filter(x => x.f === r.filling).length;
-        return `<div class="nh-row static${prio(r) < 2 ? " prio" : ""}"><span class="nh-chest">${spriteImg(r.img, "px")}</span>
-          <span class="nh-reward">${esc(r.reward)}<span class="nh-pct">${+pct(r).toFixed(1)}%</span></span>${n ? `<span class="nh-n">×${n}</span>` : ""}${act}</div>`;
-      }).join("");
-      body = `<div class="nh-mm-head"><span class="nh-chest lg">${spriteImg(T.host, "px")}</span>
-          <div class="nh-mm-count"><b>${left}</b> left<span class="slot-sub">${mm.opened}/${allowed} opened</span></div>
-          <div class="nh-mm-ctl"><button class="btn-ghost" data-action="nh-undo" ${mm.log.length ? "" : "disabled"}>Undo</button>
-          <button class="btn-ghost" data-action="nh-reset" ${mm.log.length ? "" : "disabled"}>Reset</button></div></div>
-        <div class="nh-list">${rows}</div>`;
+      const rows = T.table.slice().sort((a, b) => a.filling - b.filling).map(r =>
+        `<div class="nh-mm-row"><span class="nh-chest">${spriteImg(r.img, "px")}</span>
+          <div class="nh-mm-content"><span class="nh-reward">${esc(r.reward)}</span><span class="nh-pct">${+pct(r).toFixed(1)}%</span></div></div>`).join("");
+      body = `<div class="nh-list">${rows}</div>`;
     }
     return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel">
       <div class="overlay-header"><h2>Nether Realm</h2><button class="ovl-close" data-action="close-ovl">✕</button></div>
-      <div class="overlay-body"><div class="ovl-center">${toggle}<div class="ovl-center-scroll">${body}</div></div></div>
+      <div class="overlay-body"><div class="ovl-center">${toggle}${head}<div class="ovl-center-scroll">${body}</div></div></div>
       <div class="overlay-footer"><span class="foot-info"></span><button class="btn-confirm" data-action="close-ovl">Done</button></div>
     </div></div>`;
   }
@@ -2777,13 +2771,14 @@
     const viewToggle = `<div class="art-view-toggle realm-tabs">${tab("interactions", "Interactions")}<span class="av-pipe">|</span>${tab("list", "Favor")}<span class="av-pipe">|</span>${tab("bars", "Yield")}</div>`;
     const commonToggle = `<label class="fav-common"><input type="checkbox" data-action="realm-common" ${ovState.showCommon ? "checked" : ""}> Show common (all-realm) bonuses</label>`;
     const rankNote = ovState.useCustom ? `<div class="slot-sub" style="margin:-4px 0 6px">Tracking <b>your</b> favor rank for this realm — drag to update it (saved).</div>` : "";
-    const tierRowsHtml = (tiers) => tiers.slice().sort((x, y) => x.at - y.at).map(t =>
-      `<div class="robj-tier"><span class="fav-tier-rk" title="Favor rank">${t.at}</span><span>${esc(t.effect)}</span></div>`).join("");
+    // each Object = one container: header (icon · name · count), then one row per effect — the base interaction
+    // as favor rank 0, followed by every favor-rank tier that upgrades it
+    const objRow = (at, effect) => `<div class="robj-tier"><span class="fav-tier-rk" title="Favor rank">${at}</span><span>${esc(effect)}</span></div>`;
     const objects = sel.objects.length ? `<div class="section-label">Objects</div>
       <div class="robj-cards">${sel.objects.map(o => `<div class="robj-card">
         <div class="robj-card-head"><span class="realm-obj-ico">${o.sprite ? spriteImg(o.sprite, "px") : ""}</span>
-          <b>${esc(o.name)}</b>${o.baseCount != null ? `<span class="realm-obj-ct">×${o.baseCount}</span>` : ""}${o.base ? `<span class="robj-base">${esc(o.base)}</span>` : ""}</div>
-        ${(o.favor || []).length ? `<div class="robj-tiers">${tierRowsHtml(o.favor)}</div>` : ""}</div>`).join("")}</div>` : "";
+          <b>${esc(o.name)}</b>${o.baseCount != null ? `<span class="realm-obj-ct">×${o.baseCount}</span>` : ""}</div>
+        <div class="robj-tiers">${o.base ? objRow(0, o.base) : ""}${(o.favor || []).slice().sort((x, y) => x.at - y.at).map(t => objRow(t.at, t.effect)).join("")}</div></div>`).join("")}</div>` : "";
     const interactionsView = `${creatures}${resources}${objects}`;
     const barsView = `${favorSlider(rank)}${rankNote}${commonToggle}
       <div class="rcat-list">${uCols.map((c, i) => { const v = favVal(sel, i, rank);
@@ -4591,11 +4586,6 @@
       case "nh-tab": ovState.tab = t.dataset.v; refreshOverlay(true); break;
       case "nh-valve": { const i = +t.dataset.i; ovState.valves[i] ^= 1; refreshOverlay(); break; }
       case "nh-code": ovState.valves = [...t.dataset.c].map(Number); refreshOverlay(); break;
-      case "nh-open": { const mm = ovState.mm, T = NH.treasury;
-        if (mm.opened >= Math.min(T.chests, T.baseOpens + mm.bonus)) break;
-        const n = +(t.dataset.n || 0); mm.opened++; mm.bonus += n; mm.log.push({ f: +t.dataset.f, n }); refreshOverlay(); break; }
-      case "nh-undo": { const mm = ovState.mm, x = mm.log.pop(); if (x) { mm.opened--; mm.bonus -= x.n; } refreshOverlay(); break; }
-      case "nh-reset": ovState.mm = { opened: 0, bonus: 0, log: [] }; refreshOverlay(); break;
       case "proj-search": break;     // handled in onInput
       case "proj-diff": ovState.ruthless = t.dataset.v === "ruthless"; refreshOverlay(true); break;
       case "proj-group-toggle": { const g = t.dataset.g; ovState.collapsed.has(g) ? ovState.collapsed.delete(g) : ovState.collapsed.add(g); refreshOverlay(); break; }

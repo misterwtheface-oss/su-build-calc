@@ -155,16 +155,14 @@ h1, h2, h3 { margin: 0; }
 .slot {
   position: relative;
   background: linear-gradient(var(--surface), var(--bg2));
-  border: 1px solid var(--border-dim); border-radius: var(--radius);
+  border: 1px solid var(--border); border-radius: var(--radius);
   padding: 8px; min-height: 190px;
   display: flex; flex-direction: column; gap: 6px;
   transition: border-color .12s, box-shadow .12s;
 }
-.slot:hover { border-color: var(--border); }
-.slot.filled { border-color: var(--border); }
 .slot.slot-player { background: linear-gradient(#241a48, var(--bg2)); }
 /* Pariah-locked party slots: empty ones can't be filled; filled ones are dimmed + flagged "Ignored" */
-.slot.locked { border-style: dashed; border-color: var(--border-dim); }
+.slot.locked { border-style: dashed; }
 .slot.locked.filled { opacity: .5; }
 .slot.locked .slot-empty-icon { opacity: .5; }
 .slot-ignored { position: absolute; top: 6px; left: 50%; transform: translateX(-50%); z-index: 3;
@@ -754,10 +752,9 @@ h1, h2, h3 { margin: 0; }
 .spec-tile {
   position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
   padding: 8px; text-align: center;
-  background: linear-gradient(#241a48, var(--bg2)); border: 1px solid var(--border-dim);
+  background: linear-gradient(#241a48, var(--bg2)); border: 1px solid var(--border);
   border-radius: var(--radius); cursor: pointer;
 }
-.spec-tile.filled { border-color: var(--accent2); }
 .spec-tile-icon { width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; }
 .spec-tile-icon img { width: 100%; height: 100%; object-fit: contain; }
 .spec-tile-plus { font-size: 24px; color: var(--accent2); }
@@ -1531,11 +1528,50 @@ select.app-select:hover { border-color: var(--accent2); }
 
 /* ── realm page → Interactions: one card per object (sprite · name · ×count · rank-0 interaction) + its favor tiers ── */
 .realm-tabs { margin: 10px 0 8px; }
-.robj-cards { display: flex; flex-direction: column; gap: 6px; }
-.robj-card { background: var(--surface); border: 1px solid var(--border-dim); border-radius: 8px; padding: 6px 10px; }
-.robj-card-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 13.5px; }
-.robj-base { color: var(--text-dim); font-size: 12px; }
-.robj-base::before { content: "|"; margin-right: 8px; color: var(--text-mute); }
-.robj-tiers { display: flex; flex-direction: column; gap: 2px; margin: 4px 0 0 32px; font-size: 12.5px; color: var(--text); }
-.robj-tier { display: flex; gap: 8px; align-items: baseline; }
-.robj-tier .fav-tier-rk { flex: 0 0 auto; min-width: 26px; }
+.robj-cards { display: flex; flex-direction: column; gap: 8px; }
+/* one container per realm Object: header row, then a bordered row per effect (base = favor 0, then each tier) */
+.robj-card { background: linear-gradient(var(--surface), var(--bg2)); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+.robj-card-head { display: flex; align-items: center; gap: 8px; padding: 6px 10px; font-size: 13.5px;
+  background: rgba(201,162,75,.10); border-bottom: 1px solid var(--border-dim); }
+.robj-tiers { display: flex; flex-direction: column; font-size: 12.5px; color: var(--text); }
+.robj-tier { display: flex; gap: 10px; align-items: baseline; padding: 5px 10px; }
+.robj-tier + .robj-tier { border-top: 1px solid var(--border-dim); }
+.robj-tier .fav-tier-rk { flex: 0 0 auto; min-width: 26px; text-align: center; }
+
+/* ── Nether Realm helper (Faucet / Mimic Mike) ─────────────────────────────── */
+.nh-head { display: flex; align-items: center; justify-content: center; gap: 14px; flex-wrap: wrap;
+  padding: 10px 12px; border-bottom: 1px solid var(--border-dim); background: linear-gradient(#241a48, var(--bg2)); }
+.nh-valves { display: flex; gap: 6px; }
+.nh-valve { width: 52px; height: 52px; padding: 4px; display: flex; align-items: center; justify-content: center;
+  background: var(--surface2); border: 1px solid var(--border-dim); border-radius: 8px; cursor: pointer; }
+.nh-valve:hover { border-color: var(--border); }
+.nh-valve.on { border-color: var(--border); background: rgba(201,162,75,.14); }
+.nh-valve img, .nh-chest img, .nh-row-valves img { width: 100%; height: 100%; object-fit: contain; image-rendering: pixelated; }
+.nh-arrow { color: var(--text-mute); font-size: 18px; }
+.nh-result { display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 150px; text-align: center; font-size: 13px; }
+.nh-result.mimic b { color: var(--bad); }
+.nh-chest { flex: 0 0 auto; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; }
+.nh-chest.lg { width: 64px; height: 64px; }
+.nh-list { display: flex; flex-direction: column; border: 1px solid var(--border); border-radius: var(--radius);
+  background: linear-gradient(var(--surface), var(--bg2)); overflow: hidden; }
+.nh-row, .nh-mm-row { display: flex; align-items: center; gap: 12px; padding: 6px 10px; width: 100%;
+  background: transparent; border: 0; color: var(--text); font: inherit; text-align: left; }
+.nh-row + .nh-row, .nh-mm-row + .nh-mm-row { border-top: 1px solid var(--border-dim); }
+.nh-row { cursor: pointer; }
+.nh-row:hover { background: rgba(154,123,214,.08); }
+.nh-row.on { background: rgba(201,162,75,.14); box-shadow: inset 3px 0 0 var(--border); }
+.nh-row.empty { color: var(--text-mute); }
+.nh-row.mimic .nh-reward { color: var(--bad); }
+.nh-row-valves { flex: 0 0 auto; display: flex; gap: 2px; }
+.nh-row-valves img { width: 22px; height: 22px; }
+.nh-reward { flex: 1; min-width: 0; font-size: 13px; }
+.nh-mm-content { flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; padding: 6px 10px;
+  background: var(--surface2); border: 1px solid var(--border-dim); border-radius: 8px; }
+.nh-pct { flex: 0 0 auto; font-size: 11px; color: var(--text-mute); font-variant-numeric: tabular-nums; }
+@media (max-width: 480px) {
+  .nh-valve { width: 44px; height: 44px; }
+  .nh-arrow { display: none; }
+  .nh-row-valves img { width: 18px; height: 18px; }
+}
+/* off valves read dimmer than on ones (the two sprites differ only by handle angle) */
+.nh-valve img.nh-off, .nh-row-valves img.nh-off { opacity: .4; }
