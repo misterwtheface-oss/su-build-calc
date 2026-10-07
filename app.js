@@ -2518,13 +2518,17 @@
   }
   const GLOSSARY_CATS = ["Buff", "Debuff", "Minion"];
   // ── Resurrection order — bc_OnDeath, in execution order (_su_extract code/REVIVE_CHAIN_FINDINGS.md).
-  // "first": checked before the chain and not limited to one revive. "chain": only the first that fires resurrects,
-  // the rest are skipped. Refs: perk = name, trait = code runtime id, relic = name fragment + app rank (10–100 = extract perk 1–10),
+  // "rule": Somnus — not a resurrection source here; its own rule blocks every other resurrection (pinned, unnumbered).
+  // "free": checked before the chain, outside the one-per-death rule (neither checks nor blocks it).
+  // "stop": checked before the chain; if it fires, the chain is skipped. "chain": one per death — the first that fires
+  // resurrects, the rest are skipped. Only actual resurrection sources are listed (Breath of Death excluded: its gate
+  // is unresolved and its text resurrects nothing — _su_extract code/HANDOFF_resurrection_open_questions.md). Refs: perk = name, trait = code runtime id, relic = name fragment + app rank (10–100 = extract perk 1–10),
   // cond = glossary key, realm = realm-property key (matched by text: the only realm property that resurrects).
   const RES_ORDER = [
-    ["first", "perk", "Somnus"], ["first", "trait", 678], ["first", "perk", "Breath of Death", "unconfirmed"], ["first", "trait", 769],
-    ["first", "realm", "RESURRECT"], ["first", "trait", 1260], ["first", "trait", 1178], ["first", "trait", 891],
-    ["first", "trait", 372], ["first", "trait", 188], ["first", "perk", "Slam Shut"],
+    ["rule", "perk", "Somnus"],
+    ["stop", "trait", 678], ["free", "trait", 769],
+    ["stop", "realm", "RESURRECT"], ["free", "trait", 1260], ["free", "trait", 1178], ["free", "trait", 891],
+    ["free", "trait", 372], ["free", "trait", 188], ["stop", "perk", "Slam Shut"],
     ["chain", "perk", "Born Again"], ["chain", "trait", 839], ["chain", "trait", 1888], ["chain", "trait", 1927],
     ["chain", "trait", 1851], ["chain", "trait", 1993], ["chain", "relic", "Genaros", 100], ["chain", "trait", 1773],
     ["chain", "trait", 1715], ["chain", "trait", 1432], ["chain", "trait", 1461], ["chain", "perk", "Forbidden Magic"],
@@ -2561,8 +2565,9 @@
       else if (kind === "static") r = { ...ref, icon: "" };
       if (!r) { console.error("RESURRECTION ORDER: unresolved", kind, ref); r = { name: String(ref), desc: "", icon: "", tag: kind }; }
       if (rank === "unconfirmed") r.tag += " · gate unconfirmed";
-      return { n: i + 1, group, ...r };
+      return { group, ...r };
     });
+    let n = 0; for (const r of RES_ROWS) if (r.group !== "rule") r.n = ++n;   // execution order, Somnus unnumbered
     return RES_ROWS;
   }
   function renderGlossary() {
@@ -2598,14 +2603,16 @@
     const rows = resOrderRows().filter(r => !q || r.name.toLowerCase().includes(q) || (r.desc || "").toLowerCase().includes(q));
     if (!rows.length) return "";
     const key = "Resurrection", open = q ? true : !st.collapsed.has(key);
-    const row = (r) => `<div class="perk-line res-line${r.open ? " apx-clickable" : ""}"${r.open ? ` data-action="apx-open" data-ek="${r.open.ek}" data-eid="${esc(String(r.open.eid))}" title="View taxonomy"` : ""}>
-        <div class="res-n">${r.n}</div>
+    const BADGE = { free: ["Outside one-per-death", "Doesn't check or block the one-per-death rule"], stop: ["Skips the chain", "If this fires, the one-per-death chain below is skipped"],
+      rule: ["Blocks other resurrection", "While active, no other effect can resurrect your creatures"] };
+    const row = (r) => `<div class="perk-line res-line${r.group === "rule" ? " res-rule" : ""}${r.open ? " apx-clickable" : ""}"${r.open ? ` data-action="apx-open" data-ek="${r.open.ek}" data-eid="${esc(String(r.open.eid))}" title="View taxonomy"` : ""}>
+        <div class="res-n">${r.n ?? "⛔"}</div>
         <div class="apx-iconcol">${r.icon ? `<div class="apx-crea">${r.icon}</div>` : ""}</div>
-        <div class="perk-line-body"><div class="perk-line-head"><b>${esc(r.name)}</b><span class="anoint-spec-tag">${esc(r.tag)}</span></div>
+        <div class="perk-line-body"><div class="perk-line-head"><b>${esc(r.name)}</b>${BADGE[r.group] ? `<span class="res-badge ${r.group}" title="${esc(BADGE[r.group][1])}">${BADGE[r.group][0]}</span>` : ""}<span class="anoint-spec-tag">${esc(r.tag)}</span></div>
           ${r.desc ? `<div class="perk-desc">${richText(r.desc)}</div>` : ""}</div></div>`;
-    const grp = (g, label) => { const list = rows.filter(r => r.group === g);
+    const grp = (gs, label) => { const list = rows.filter(r => gs.includes(r.group));
       return list.length ? `<div class="res-sub">${label}</div><div class="perk-list">${list.map(row).join("")}</div>` : ""; };
-    const body = open ? grp("first", "Checked first — each can fire") + grp("chain", "Then in order — first one only") : "";
+    const body = open ? grp(["rule"], "Overrides everything") + grp(["free", "stop"], "Checked first") + grp(["chain"], "Then one per death — the first that fires stops the rest") : "";
     return `<button class="apx-sec-head apx-cat${open ? "" : " collapsed"}" data-action="gloss-cat-toggle" data-c="${key}"><span class="apx-sec-caret">${open ? "▾" : "▸"}</span>Resurrection Order</button>${body}`;
   }
 
