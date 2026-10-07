@@ -2876,6 +2876,16 @@
       <div class="overlay-footer"><span class="foot-info"></span><button class="btn-confirm" data-action="realm-editdone">Done</button></div>
     </div></div>`;
   }
+  // realm creature names don't always match the race key: plurals ("Modrons") and pairs ("Imler & Imling") →
+  // one icon per race. Unresolved names fail loudly (console) rather than rendering a silent icon-less chip.
+  function realmRaceIcons(name) {
+    const RI = D.raceIcons || {};
+    if (RI[name]) return [RI[name]];
+    const out = String(name).split(/\s*(?:&|,|\band\b)\s*/).map(part => RI[part] || RI[part.replace(/e?s$/, "")] || RI[part.replace(/s$/, "")]);
+    if (out.every(Boolean)) return out;
+    console.error("REALM RACE ICON: no race icon for", name);
+    return out.filter(Boolean);
+  }
   function renderRealmDetail(sel) {
     if (!sel) { ovState.view = "list"; return renderRealmList(D.realms || []); }
     const facts = [["God", esc(sel.god)], ["Class", sel.cls ? `<span style="color:${clsColor(sel.cls)};font-weight:700">${esc(sel.cls)}</span>` : "—"],
@@ -2886,9 +2896,9 @@
       ...sel.creatures.map(name => ({ name, cat: "Roaming", via: null })),
       ...sel.encounters.map(e => ({ name: e.value, cat: e.name === "God Shop" ? "God Shop" : "Encounter", via: e.name === "God Shop" ? null : e.name })),
     ];
-    const critChip = (e) => { const ic = D.raceIcons && D.raceIcons[e.name];
+    const critChip = (e) => { const ic = realmRaceIcons(e.name).map(src => spriteImg(src, "px")).join("");
       // colour = how it appears: Roaming (plain) · Encounter (object-container violet) · God Shop (favor-track gold)
-      return `<span class="realm-race cat-${e.cat.replace(/\s+/g, "").toLowerCase()}" title="${esc(e.via ? e.cat + " — " + e.via : e.cat)}">${ic ? spriteImg(ic, "px") : ""}<span>${esc(e.name)}</span></span>`; };
+      return `<span class="realm-race cat-${e.cat.replace(/\s+/g, "").toLowerCase()}" title="${esc(e.via ? e.cat + " — " + e.via : e.cat)}">${ic}<span>${esc(e.name)}</span></span>`; };
     const legend = [["Roaming", "roaming"], ["Encounter", "encounter"], ["God Shop", "godshop"]].filter(([c]) => critEntries.some(e => e.cat === c))
       .map(([c, k]) => `<span class="rc-key cat-${k}">${c}</span>`).join("");
     const creatures = critEntries.length ? `<div class="section-label rc-head">Creatures<span class="rc-legend">${legend}</span></div>
@@ -3187,7 +3197,7 @@
   // ── artifact library (equip) ───────────────────────────────────────────────
   function openArtifactLibrary(slotIdx) {
     // no auto-selection — tiles show equip state (purple = this creature, gold = another); user picks to act
-    ovState = { kind: "artlib", slotIdx, hideEquipped: false, sel: null, search: "", libType: null, libSort: "recent", render: renderArtifactLibrary };
+    ovState = { kind: "artlib", slotIdx, hideEquipped: false, sel: null, search: "", libType: null, libSort: "type", render: renderArtifactLibrary };
     openOverlay(ovState.render());
   }
   const libRow = (ico, name, sub) => `<div class="prop-row static"><span class="prop-ico">${ico ? spriteImg(ico, "px") : ""}</span><span class="prop-name">${esc(name)}</span>${sub ? `<span class="prop-stat">${esc(sub)}</span>` : ""}</div>`;

@@ -1619,3 +1619,4 @@ select.app-select:hover { border-color: var(--accent2); }
   .sg-dropbar select.app-select { max-width: 76px; }
 }
 @media (max-width: 360px) { .lib-bar .seg-btn, .sg-dropbar .seg-btn { padding: 4px 3px; } .lib-bar .facet { padding: 4px 6px; } }
+.realm-race img + img { margin-left: -4px; }
