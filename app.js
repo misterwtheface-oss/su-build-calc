@@ -2608,7 +2608,8 @@
     const row = (r) => `<div class="perk-line res-line${r.group === "rule" ? " res-rule" : ""}${r.open ? " apx-clickable" : ""}"${r.open ? ` data-action="apx-open" data-ek="${r.open.ek}" data-eid="${esc(String(r.open.eid))}" title="View taxonomy"` : ""}>
         <div class="res-n">${r.n ?? "⛔"}</div>
         <div class="apx-iconcol">${r.icon ? `<div class="apx-crea">${r.icon}</div>` : ""}</div>
-        <div class="perk-line-body"><div class="perk-line-head"><b>${esc(r.name)}</b>${BADGE[r.group] ? `<span class="res-badge ${r.group}" title="${esc(BADGE[r.group][1])}">${BADGE[r.group][0]}</span>` : ""}<span class="anoint-spec-tag">${esc(r.tag)}</span></div>
+        <div class="perk-line-body"><div class="perk-line-head"><b>${esc(r.name)}</b></div>
+          <div class="res-chips">${BADGE[r.group] ? `<span class="res-badge ${r.group}" title="${esc(BADGE[r.group][1])}">${BADGE[r.group][0]}</span>` : ""}<span class="anoint-spec-tag">${esc(r.tag)}</span></div>
           ${r.desc ? `<div class="perk-desc">${richText(r.desc)}</div>` : ""}</div></div>`;
     const grp = (gs, label) => { const list = rows.filter(r => gs.includes(r.group));
       return list.length ? `<div class="res-sub">${label}</div><div class="perk-list">${list.map(row).join("")}</div>` : ""; };

@@ -1599,3 +1599,6 @@ select.app-select:hover { border-color: var(--accent2); }
 .res-badge.stop { color: var(--cap); border-color: rgba(255,210,74,.45); background: rgba(255,210,74,.10); }
 .res-badge.rule { color: var(--bad); border-color: rgba(224,107,107,.5); background: rgba(224,107,107,.12); }
 .res-rule .res-n { font-size: 14px; }
+/* resurrection rows: title on its own line, chips row below it, then the description */
+.res-chips { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 3px 0 4px; }
+.res-chips .anoint-spec-tag { margin-left: 0; }
