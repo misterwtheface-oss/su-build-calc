@@ -2517,6 +2517,54 @@
     openOverlay(ovState.render()); maybeFocusSearch(OV);
   }
   const GLOSSARY_CATS = ["Buff", "Debuff", "Minion"];
+  // ── Resurrection order — bc_OnDeath, in execution order (_su_extract code/REVIVE_CHAIN_FINDINGS.md).
+  // "first": checked before the chain and not limited to one revive. "chain": only the first that fires resurrects,
+  // the rest are skipped. Refs: perk = name, trait = code runtime id, relic = name fragment + app rank (10–100 = extract perk 1–10),
+  // cond = glossary key, realm = realm-property key (matched by text: the only realm property that resurrects).
+  const RES_ORDER = [
+    ["first", "perk", "Somnus"], ["first", "trait", 678], ["first", "perk", "Breath of Death", "unconfirmed"], ["first", "trait", 769],
+    ["first", "realm", "RESURRECT"], ["first", "trait", 1260], ["first", "trait", 1178], ["first", "trait", 891],
+    ["first", "trait", 372], ["first", "trait", 188], ["first", "perk", "Slam Shut"],
+    ["chain", "perk", "Born Again"], ["chain", "trait", 839], ["chain", "trait", 1888], ["chain", "trait", 1927],
+    ["chain", "trait", 1851], ["chain", "trait", 1993], ["chain", "relic", "Genaros", 100], ["chain", "trait", 1773],
+    ["chain", "trait", 1715], ["chain", "trait", 1432], ["chain", "trait", 1461], ["chain", "perk", "Forbidden Magic"],
+    ["chain", "relic", "Vulcanar", 100], ["chain", "trait", 1658], ["chain", "perk", "Bleed Out"], ["chain", "cond", "Buff:rebirth"],
+    ["chain", "trait", 1286], ["chain", "trait", 2021], ["chain", "perk", "Martyr"], ["chain", "perk", "Soul Rending"],
+    ["chain", "trait", 1587, "unconfirmed"], ["chain", "perk", "New Moon"], ["chain", "perk", "From Ashes"], ["chain", "perk", "Gravewalker"],
+    ["chain", "cond", "Minion:guardianofsurathli"], ["chain", "relic", "Surathli", 80], ["chain", "perk", "Feign Death"],
+    ["chain", "trait", 354], ["chain", "trait", 331], ["chain", "trait", 97], ["chain", "trait", 486], ["chain", "trait", 454],
+    ["chain", "trait", 187], ["chain", "trait", 189],
+    // runtime 1231 isn't in the app's trait data (non-player) — name/text from passive_ids_true.json
+    ["chain", "static", { name: "Who Am I?", desc: "After this creature is killed, it transforms into one of the enemy creatures.", tag: "Trait" }],
+    ["chain", "trait", 1345], ["chain", "trait", 1297],
+  ];
+  let RES_ROWS = null;
+  function resOrderRows() {
+    if (RES_ROWS) return RES_ROWS;
+    const perkBy = new Map(); for (const sp of D.specs) for (const p of sp.perks) if (!perkBy.has(p.name)) perkBy.set(p.name, { p, spec: sp });
+    const traitByRt = new Map(); for (const t of Object.values(D.traits)) for (const r of t.runtimeIds || []) traitByRt.set(r, t);
+    const { creatureByTrait, itemsByTrait } = traitSources();
+    // 4th field: relic rank, or "unconfirmed" = the findings could not isolate this entry's gate (medium confidence)
+    RES_ROWS = RES_ORDER.map(([group, kind, ref, rank], i) => {
+      let r = null;
+      if (kind === "perk") { const h = perkBy.get(ref); if (h) r = { name: h.p.name, desc: h.p.desc, icon: h.p.icon && spriteImg(h.p.icon, "px"), tag: `Perk · ${h.spec.label}` }; }
+      else if (kind === "trait") { const t = traitByRt.get(ref); if (t) {
+        const c = creatureByTrait.get(t.id), boss = bossSpriteFor(t), it = (itemsByTrait.get(t.id) || []).find(x => x.icon);
+        r = { name: t.name, desc: t.desc, icon: c ? critFace(c) : boss ? spriteImg(boss) : it ? spriteImg(it.icon, "px") : "",
+          tag: `Trait${c ? ` · ${c.name}` : t.owner ? ` · ${t.owner}` : ""}`, open: { ek: "trait", eid: t.id } }; } }
+      else if (kind === "relic") { const rl = D.relics.find(x => x.name.includes(ref)), rk = rl && rl.ranks.find(x => x.rank === rank);
+        if (rl && rk) r = { name: rl.name.split(",")[0], desc: rk.desc, icon: spriteImg(rl.icon, "px"), tag: `Relic · rank ${rank}` }; }
+      else if (kind === "cond") { const c = (D.conditions || []).find(x => `${x.cat}:${x.key}` === ref);
+        if (c) r = { name: c.name, desc: c.desc, icon: c.icon ? `<img src="${esc(c.icon)}" alt="">` : "", tag: c.cat, open: { ek: "condition", eid: ref } }; }
+      else if (kind === "realm") { const rp = (D.realmProps || []).find(x => x.key === ref);
+        if (rp) r = { name: rp.name, desc: rp.effect, icon: spriteImg(rp.icon, "px"), tag: "Realm property" }; }
+      else if (kind === "static") r = { ...ref, icon: "" };
+      if (!r) { console.error("RESURRECTION ORDER: unresolved", kind, ref); r = { name: String(ref), desc: "", icon: "", tag: kind }; }
+      if (rank === "unconfirmed") r.tag += " · gate unconfirmed";
+      return { n: i + 1, group, ...r };
+    });
+    return RES_ROWS;
+  }
   function renderGlossary() {
     const st = ovState, q = st.search.trim().toLowerCase(), all = D.conditions || [];
     const match = (e) => !q || e.name.toLowerCase().includes(q) || e.desc.toLowerCase().includes(q);
@@ -2536,14 +2584,29 @@
         <div class="apx-iconcol">${e.icon ? `<div class="apx-crea"><img src="${esc(e.icon)}" alt=""></div>` : ""}${exclBox(e)}</div>
         <div class="perk-line-body"><div class="perk-line-head"><b>${esc(e.name)}</b></div><div class="perk-desc">${esc(e.desc)}</div></div></div>`).join("")}</div>` : "";
       return `<button class="apx-sec-head apx-cat${open ? "" : " collapsed"}" data-action="gloss-cat-toggle" data-c="${esc(c)}"><span class="apx-sec-caret">${open ? "▾" : "▸"}</span>${esc(c)}s</button>${rows}`;
-    }).join("") || `<div class="slot-sub" style="padding:10px">No buff, debuff or minion matches “${esc(st.search)}”.</div>`;
+    }).join("") + resOrderSection(st, q) || `<div class="slot-sub" style="padding:10px">No buff, debuff or minion matches “${esc(st.search)}”.</div>`;
     return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel">
       <div class="overlay-header"><h2>Glossary</h2>
-        <input class="ovl-search" placeholder="Search buffs / debuffs / minions…" value="${esc(st.search)}" data-action="gloss-search">
+        <input class="ovl-search" placeholder="Search buffs / debuffs / minions / resurrection…" value="${esc(st.search)}" data-action="gloss-search">
         <button class="ovl-close" data-action="close-ovl">✕</button></div>
       <div class="overlay-body"><div class="ovl-center"><div class="ovl-center-scroll">${body}</div></div></div>
       <div class="overlay-footer"><span class="foot-info"></span><button class="btn-confirm" data-action="close-ovl">Done</button></div>
     </div></div>`;
+  }
+
+  function resOrderSection(st, q) {
+    const rows = resOrderRows().filter(r => !q || r.name.toLowerCase().includes(q) || (r.desc || "").toLowerCase().includes(q));
+    if (!rows.length) return "";
+    const key = "Resurrection", open = q ? true : !st.collapsed.has(key);
+    const row = (r) => `<div class="perk-line res-line${r.open ? " apx-clickable" : ""}"${r.open ? ` data-action="apx-open" data-ek="${r.open.ek}" data-eid="${esc(String(r.open.eid))}" title="View taxonomy"` : ""}>
+        <div class="res-n">${r.n}</div>
+        <div class="apx-iconcol">${r.icon ? `<div class="apx-crea">${r.icon}</div>` : ""}</div>
+        <div class="perk-line-body"><div class="perk-line-head"><b>${esc(r.name)}</b><span class="anoint-spec-tag">${esc(r.tag)}</span></div>
+          ${r.desc ? `<div class="perk-desc">${richText(r.desc)}</div>` : ""}</div></div>`;
+    const grp = (g, label) => { const list = rows.filter(r => r.group === g);
+      return list.length ? `<div class="res-sub">${label}</div><div class="perk-list">${list.map(row).join("")}</div>` : ""; };
+    const body = open ? grp("first", "Checked first — each can fire") + grp("chain", "Then in order — first one only") : "";
+    return `<button class="apx-sec-head apx-cat${open ? "" : " collapsed"}" data-action="gloss-cat-toggle" data-c="${key}"><span class="apx-sec-caret">${open ? "▾" : "▸"}</span>Resurrection Order</button>${body}`;
   }
 
   // ── Nether Realm helpers (code-grounded: _su_extract code/NETHER_HELPERS_FINDINGS.md) ──
@@ -4496,13 +4559,15 @@
     const st = dovState, slot = build.slots[st.slotIdx];
     const gems = (slot.spellGemIds || []).map(id => spellGems.find(g => g.id === id)).filter(Boolean);
     if (!gems.length) { closeDetail(); return ""; }
-    const tiles = gems.map(g => {
+    const tiles = gems.map((g, gi) => {
       const sp = gemSpell(g), tier = gemTier(g);
       const props = (g.propIds || []).map(pid => { const p = SPELLPROP.get(pid); return p ? `<div class="prop-row static"${p.textNote ? ` title="${esc(p.textNote)}"` : ""}>
         <span class="prop-ico">${p.icon ? spriteImg(p.icon, "px") : ""}</span><span class="prop-name">${esc(p.name)}</span><span class="prop-stat">${esc(propShort(p, tier))}</span></div>` : ""; }).join("");
       const swapped = gemSwapClass(g);
+      // ‹ › reorder the equipped gems (the header's class-colour dots follow the same order)
+      const mv = gems.length > 1 ? `<span class="spt-move"><button class="spt-mv" data-action="spellpage-move" data-i="${gi}" data-d="-1" ${gi ? "" : "disabled"} title="Move earlier">‹</button><button class="spt-mv" data-action="spellpage-move" data-i="${gi}" data-d="1" ${gi < gems.length - 1 ? "" : "disabled"} title="Move later">›</button></span>` : "";
       return `<div class="art-spellcard spell-page-tile apx-clickable" data-action="spellpage-sel" data-id="${g.id}" title="Show in the Spell Gems list">
-        <div class="art-spellcard-head"><span class="prop-ico">${spriteImg(gemIcon(g), "px")}</span>
+        <div class="art-spellcard-head">${mv}<span class="prop-ico">${spriteImg(gemIcon(g), "px")}</span>
           <b>${esc(gemName(g))}</b>${sp && gemName(g) !== sp.name ? `<span class="slot-sub">${esc(sp.name)}</span>` : ""}
           <span class="spt-tags">${sp && sp.cls ? `<span class="anoint-spec-tag" style="color:${clsColor(sp.cls)}">${esc(sp.cls)}${swapped ? ` → ${esc(swapped)}` : ""}</span>` : ""}<span class="rank-badge">Lv ${tier}</span></span></div>
         ${sp && sp.desc ? `<div class="trait-desc">${perkText(sp.desc)}</div>` : ""}
@@ -4943,6 +5008,9 @@
         if ((build.slots[si].spellGemIds || []).some(id => spellGems.some(g => g.id === id))) openSpellsPage(si); break; }
       case "spellpage-back": closeDetail(); break;
       case "spellpage-done": closeDetail(); closeOverlay(); break;
+      case "spellpage-move": { const ids = build.slots[dovState.slotIdx].spellGemIds, i = +t.dataset.i, j = i + +t.dataset.d;
+        if (j < 0 || j >= ids.length) break;
+        [ids[i], ids[j]] = [ids[j], ids[i]]; persistBuild(); refreshDetail(); refreshOverlay(); render(); break; }
       case "spellpage-sel": { const id = +t.dataset.id; closeDetail(); if (ovState) { ovState.sel = id; refreshOverlay(); } break; }
       case "sg-sel": { const id = +t.dataset.id; ovState.sel = ovState.sel === id ? null : id; refreshOverlay(); break; }
       case "sg-hide-equipped": e.stopPropagation(); ovState.hideEquipped = !ovState.hideEquipped; refreshOverlay(); break;
