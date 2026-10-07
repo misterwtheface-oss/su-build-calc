@@ -1988,6 +1988,13 @@ full builder stays the high-fidelity path.
   still open.
 
 ## Session log
+
+### 2026-10-07 — `hasRoll` flags (data only)
+- `hasRoll` boolean on traits, spec perks, spells, conditions, cards (family) and relics. Relics carry it per rank, and on the relic if any rank has it.
+  It says whether any `scr_Roll` call site (a chance roll) belongs to the object. Source: `_su_extract/data/model/has_roll.json`
+  (the roll sites are listed in `_su_extract/code/ROLL_SITES.md`).
+- **No UI yet.** It is meant to drive membership of a future Luck/Roll glossary entry. Relic perk ids the extract couldn't map to a real rank
+  (19 sites) and 6 card sites with no family are not flagged. About 90 in-battle rolls have no owner, so `false` means "no attributed roll".
 - 2026-09-24: **ASSET OWNERSHIP INDEX + boss/skin reconciliation (source-of-truth layer).** Built a canonical,
   schema-validated relational index of every mapped object and used it to fix real asset-ownership bugs.
   **Sources of truth (all in `_su_extract/data/model/`, gitignored from this repo; consumed by `build-data.mjs`):**

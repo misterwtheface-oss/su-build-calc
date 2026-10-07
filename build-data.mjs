@@ -2797,6 +2797,31 @@ const TRAIT_REJECT = fs.existsSync(APPROVED_PATH) ? (readJSON(APPROVED_PATH).tra
     console.log(`  effect clarifications: ${hit} attached`);
     if (miss.length) warn(`effect clarifications not joined to app data: ${miss.join(', ')}`);
   }
+  // has_roll.json — `hasRoll` boolean per object: does any scr_Roll call site (a chance roll) belong to it
+  // (_su_extract code/ROLL_SITES.md). Data only, no UI yet; intended to drive a future Luck/Roll glossary entry.
+  // Relic rolls are rank-specific: the flag is on each rank and on the relic (any rank).
+  const rollF = path.join(MODEL, 'has_roll.json');
+  if (fs.existsSync(rollF)) {
+    const HR = readJSON(rollF), cnt = {};
+    const on = (kind) => Object.values(HR[kind] || {}).filter(v => v.hasRoll);
+    const rollTraitRt = new Set(Object.entries(HR.traits || {}).filter(([, v]) => v.hasRoll).map(([k]) => +k));
+    for (const t of Object.values(traits)) { t.hasRoll = (t.runtimeIds || []).some(r => rollTraitRt.has(r)); if (t.hasRoll) cnt.traits = (cnt.traits || 0) + 1; }
+    const perkKeys = new Set(on('perks').map(v => v.key).filter(Boolean));
+    for (const s of specs) for (const p of s.perks) { p.hasRoll = perkKeys.has(p.key); if (p.hasRoll) cnt.perks = (cnt.perks || 0) + 1; }
+    const spellKeys = new Set(on('spells').map(v => v.key).filter(Boolean));
+    for (const sp of spells) { sp.hasRoll = spellKeys.has(sp.key); if (sp.hasRoll) cnt.spells = (cnt.spells || 0) + 1; }
+    const condKeys = new Set(on('conditions').flatMap(v => [norm(v.key), norm(v.name)]));
+    for (const c of conditions) { c.hasRoll = condKeys.has(norm(c.key)) || condKeys.has(norm(c.name)); if (c.hasRoll) cnt.conditions = (cnt.conditions || 0) + 1; }
+    const relicRoll = new Set(Object.entries(HR.relics || {}).filter(([k, v]) => v.hasRoll && !v.note)
+      .map(([k]) => { const [nm, rk] = k.split(' | rank '); return norm(nm.split(',')[0]) + '|' + rk; }));
+    for (const r of relics) {
+      for (const k of r.ranks || []) k.hasRoll = relicRoll.has(norm(String(r.name).split(',')[0]) + '|' + k.rank);
+      r.hasRoll = (r.ranks || []).some(k => k.hasRoll); if (r.hasRoll) cnt.relics = (cnt.relics || 0) + 1;
+    }
+    const cardFam = new Set(Object.entries(HR.cards || {}).filter(([, v]) => v.hasRoll).map(([k]) => norm(k.split(' | power ')[0])));
+    for (const c of cards) { c.hasRoll = cardFam.has(norm(c.family)); if (c.hasRoll) cnt.cards = (cnt.cards || 0) + 1; }
+    console.log(`  hasRoll flags: ${Object.entries(cnt).map(([k, n]) => `${k} ${n}`).join(' · ')}`);
+  } else warn('has_roll.json missing — no hasRoll flags');
   const runeF = path.join(MODEL, 'rune_knight_perks.json');
   if (fs.existsSync(runeF)) {
     const short = (r) => String(r).replace(/^Rune of /, '');
