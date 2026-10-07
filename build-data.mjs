@@ -827,6 +827,30 @@ for (const s of specRecs) {
   });
 }
 
+// ── Nether Realm helpers (Faucet valve lock + Mimic Mike's treasury) — code-grounded tables from
+// _su_extract code/NETHER_HELPERS_FINDINGS.md (decomp/nether_helpers/nether_helpers.json). Chest sprites → assets/nether/.
+const netherHelpers = (() => {
+  const f = path.join(SRC, 'code', 'decomp', 'nether_helpers', 'nether_helpers.json');
+  if (!fs.existsSync(f)) { warn(`nether helper table missing (${f})`); return null; }
+  const j = JSON.parse(fs.readFileSync(f, 'utf8'));
+  // player-facing wording for rewards whose table text carries code names
+  const say = (t) => String(t)
+    .replace(/^Parchment: \+irandom_range\((\d+),(\d+)\) extra opens$/, 'Parchment: +$1–$2 extra opens')
+    .replace(/ \(inv_[A-Za-z]+\)$/, '')
+    .replace(/^5 random Legendary materials \(trait items.*\)$/, '5 random Legendary trait items')
+    .replace(/^1 random Legendary material \(trait item\)$/, '1 random Legendary trait item')
+    .replace(/^MIMIC battle \(Mimic \+ 5 random creatures\)$/, 'Mimic battle (Mimic + 5 random creatures)')
+    .replace(/^empty \(L_D_[A-Z_]+\)$|^empty$/, 'Empty');
+  const spr = (name) => { const rel = `assets/nether/${name}.png`;
+    if (!fs.existsSync(path.join(ROOT, rel))) warn(`nether helper sprite missing (${rel})`); return rel; };
+  return {
+    faucet: { table: j.faucet.table.map(r => ({ code: r.code, img: spr(r.chest_sprite), reward: say(r.reward), kind: r.kind || 'item' })),
+      valveOn: spr('spr_reactor_valve_usable'), valveOff: spr('spr_reactor_valve_unusable') },
+    treasury: { baseOpens: j.treasury.base_opens, chests: j.treasury.chests, pStone: j.treasury.p_nether_stone_base, host: spr('master_mimic'),
+      table: j.treasury.table.map(r => ({ filling: r.filling, img: spr(r.chest_sprite), reward: say(r.reward) })) },
+  };
+})();
+
 // ── False God output list (only gods that have ≥1 specialization present) + composite check ──
 const specGodKeys = new Set(specs.map(s => s.falseGod).filter(Boolean));
 const falseGods = [];
@@ -2924,6 +2948,7 @@ const SU_DATA = {
   specIdMigration: SPEC_ID_MIGRATION,   // old (mislabeled) spec id -> code spec id; app.js migrates saved builds once
   falseGods,
   // the game's own menu glyphs for empty home tiles (menu_character / codex_anointments; G = greyed variant)
+  netherHelpers,            // Nether Realm helper tables (Faucet / Mimic Mike), code-grounded
   uiIcons: { specEmpty: 'assets/ui/menu_characterG_0.png', anointEmpty: 'assets/ui/codex_anointmentsG_0.png' },
   bossSprites,              // normalized Deity owner name → bspr_ battle sprite (Appendix boss rows)
   effects,                  // effect rules for effects.js (EFFECT_ENGINE.md)

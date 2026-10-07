@@ -23,6 +23,12 @@ No verify-before-push ceremony (no real users yet) — but every change is check
   keyboard) and is swallowed. Touch/pen only — mouse clicks are untouched (desktop auto-focuses search fields).
 - **Realms → Objects** (third toggle after Browse | Compare): every realm's object blocks (sprite · name · ×count, base
   interaction on hover); realm header opens the realm; search matches object / realm / god.
+- **Menu → Nether Realm** helper (code-grounded, `_su_extract/code/NETHER_HELPERS_FINDINGS.md` → `D.netherHelpers`):
+  **Faucet** = the valve room (`room_nether_valves`): 4 on/off valves form a code that picks the one chest's contents —
+  tappable valves + all 16 codes (rewards, then the Mimic battle, then the 5 empty codes); tap a row to set the valves.
+  Digit order assumed left→right (creation order) — verify: only the LEFT valve on should show the gem chest (10 emblems).
+  **Mimic Mike** (`room_nether_treasurehuge`): 35 chests rolled at room creation, the closed sprite shows the contents;
+  legend (parchment + Nether Stone first) with odds + an opens tracker (7 base, parchment +2/+3/+4, cap 35, undo/reset).
 - **Icons beside names**: spec emblems on anointment spec chips, the Spec filter list + active chip, saved-build spec line;
   class icons in the Class filter list + active Class chip (creatures + cards); False God icons in the False God filter.
 

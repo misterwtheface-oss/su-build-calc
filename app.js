@@ -2501,6 +2501,58 @@
     </div></div>`;
   }
 
+  // ── Nether Realm helpers (code-grounded: _su_extract code/NETHER_HELPERS_FINDINGS.md) ──
+  // Faucet = room_nether_valves: 4 on/off valves form a code (left→right) that picks the single chest's contents;
+  // the closed chest's sprite already previews the result. Mimic Mike = room_nether_treasurehuge: 35 chests whose
+  // contents are rolled at room creation and shown by their sprite; 7 opens, each parchment adds 2–4 more.
+  const NH = D.netherHelpers || { faucet: { table: [] }, treasury: { table: [] } };
+  const FAUCET_ORDER = { item: 0, materials: 0, emblem: 0, mimic: 1, empty: 2 };
+  function openNetherHelper() {
+    ovState = { kind: "netherhelp", tab: "faucet", valves: [0, 0, 0, 0], mm: { opened: 0, bonus: 0, log: [] }, render: renderNetherHelper };
+    openOverlay(ovState.render());
+  }
+  const valveDots = (code) => `<span class="nh-dots">${[...code].map(d => `<span class="nh-dot${d === "1" ? " on" : ""}"></span>`).join("")}</span>`;
+  function renderNetherHelper() {
+    const st = ovState, faucet = st.tab === "faucet";
+    const toggle = `<div class="art-view-toggle">
+      <button class="av-tab ${faucet ? "on" : ""}" data-action="nh-tab" data-v="faucet">Faucet</button>
+      <span class="av-pipe">|</span>
+      <button class="av-tab ${!faucet ? "on" : ""}" data-action="nh-tab" data-v="mimic">Mimic Mike</button></div>`;
+    let body;
+    if (faucet) {
+      const code = st.valves.join(""), cur = NH.faucet.table.find(r => r.code === code);
+      const valves = st.valves.map((v, i) => `<button class="nh-valve${v ? " on" : ""}" data-action="nh-valve" data-i="${i}" title="Valve ${i + 1}">${spriteImg(v ? NH.faucet.valveOn : NH.faucet.valveOff, "px")}<span>${v ? "On" : "Off"}</span></button>`).join("");
+      const rows = NH.faucet.table.slice().sort((a, b) => (FAUCET_ORDER[a.kind] ?? 0) - (FAUCET_ORDER[b.kind] ?? 0) || a.code.localeCompare(b.code))
+        .map(r => `<button class="nh-row${r.code === code ? " on" : ""}${r.kind === "mimic" ? " mimic" : r.kind === "empty" ? " empty" : ""}" data-action="nh-code" data-c="${r.code}">
+          ${valveDots(r.code)}<span class="nh-chest">${spriteImg(r.img, "px")}</span><span class="nh-reward">${esc(r.reward)}</span></button>`).join("");
+      body = `<div class="nh-lock"><div class="nh-valves">${valves}</div>
+          ${cur ? `<div class="nh-result${cur.kind === "mimic" ? " mimic" : ""}"><span class="nh-chest lg">${spriteImg(cur.img, "px")}</span><b>${esc(cur.reward)}</b></div>` : ""}</div>
+        <div class="nh-list">${rows}</div>`;
+    } else {
+      const T = NH.treasury, mm = st.mm, allowed = Math.min(T.chests, T.baseOpens + mm.bonus), left = Math.max(0, allowed - mm.opened);
+      const pct = (r) => r.filling === 11 ? T.pStone * 100 : (1 - T.pStone) * 10;
+      const prio = (r) => r.filling === 10 ? 0 : r.filling === 11 ? 1 : 2;   // parchments first, then the Nether Stone
+      const rows = T.table.slice().sort((a, b) => prio(a) - prio(b) || a.filling - b.filling).map(r => {
+        const parch = r.filling === 10;
+        const act = parch ? `<span class="nh-parch">${[2, 3, 4].map(n => `<button class="chip" data-action="nh-open" data-f="10" data-n="${n}" ${left ? "" : "disabled"}>+${n}</button>`).join("")}</span>`
+          : `<button class="chip" data-action="nh-open" data-f="${r.filling}" ${left ? "" : "disabled"}>Opened</button>`;
+        const n = mm.log.filter(x => x.f === r.filling).length;
+        return `<div class="nh-row static${prio(r) < 2 ? " prio" : ""}"><span class="nh-chest">${spriteImg(r.img, "px")}</span>
+          <span class="nh-reward">${esc(r.reward)}<span class="nh-pct">${+pct(r).toFixed(1)}%</span></span>${n ? `<span class="nh-n">×${n}</span>` : ""}${act}</div>`;
+      }).join("");
+      body = `<div class="nh-mm-head"><span class="nh-chest lg">${spriteImg(T.host, "px")}</span>
+          <div class="nh-mm-count"><b>${left}</b> left<span class="slot-sub">${mm.opened}/${allowed} opened</span></div>
+          <div class="nh-mm-ctl"><button class="btn-ghost" data-action="nh-undo" ${mm.log.length ? "" : "disabled"}>Undo</button>
+          <button class="btn-ghost" data-action="nh-reset" ${mm.log.length ? "" : "disabled"}>Reset</button></div></div>
+        <div class="nh-list">${rows}</div>`;
+    }
+    return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel">
+      <div class="overlay-header"><h2>Nether Realm</h2><button class="ovl-close" data-action="close-ovl">✕</button></div>
+      <div class="overlay-body"><div class="ovl-center">${toggle}<div class="ovl-center-scroll">${body}</div></div></div>
+      <div class="overlay-footer"><span class="foot-info"></span><button class="btn-confirm" data-action="close-ovl">Done</button></div>
+    </div></div>`;
+  }
+
   // ── Projects — castle projects, missions and unlocks (code: cost, required items, prerequisites). ──
   function openProjects() {
     ovState = { kind: "projects", search: "", ruthless: false, collapsed: new Set(), render: renderProjects };
@@ -4572,6 +4624,15 @@
       case "open-glossary": openGlossary(); break;
       case "gloss-search": break;    // handled in onInput
       case "open-projects": openProjects(); break;
+      case "open-netherhelp": openNetherHelper(); break;
+      case "nh-tab": ovState.tab = t.dataset.v; refreshOverlay(true); break;
+      case "nh-valve": { const i = +t.dataset.i; ovState.valves[i] ^= 1; refreshOverlay(); break; }
+      case "nh-code": ovState.valves = [...t.dataset.c].map(Number); refreshOverlay(); break;
+      case "nh-open": { const mm = ovState.mm, T = NH.treasury;
+        if (mm.opened >= Math.min(T.chests, T.baseOpens + mm.bonus)) break;
+        const n = +(t.dataset.n || 0); mm.opened++; mm.bonus += n; mm.log.push({ f: +t.dataset.f, n }); refreshOverlay(); break; }
+      case "nh-undo": { const mm = ovState.mm, x = mm.log.pop(); if (x) { mm.opened--; mm.bonus -= x.n; } refreshOverlay(); break; }
+      case "nh-reset": ovState.mm = { opened: 0, bonus: 0, log: [] }; refreshOverlay(); break;
       case "proj-search": break;     // handled in onInput
       case "proj-diff": ovState.ruthless = t.dataset.v === "ruthless"; refreshOverlay(true); break;
       case "proj-group-toggle": { const g = t.dataset.g; ovState.collapsed.has(g) ? ovState.collapsed.delete(g) : ovState.collapsed.add(g); refreshOverlay(); break; }
