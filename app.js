@@ -2566,7 +2566,6 @@
         if (rp) r = { name: rp.name, desc: rp.effect, icon: spriteImg(rp.icon, "px"), tag: "Realm property", enemy: true }; }
       else if (kind === "static") r = { ...ref, icon: "" };
       if (!r) { console.error("RESURRECTION ORDER: unresolved", kind, ref); r = { name: String(ref), desc: "", icon: "", tag: kind }; }
-      if (kind === "perk" && ref === "Somnus") r.extra = "Not in the Arena";   // bc_EventResurrect skips battletype 10
       // Angry Army's resurrect isn't in its in-game text (bc_OnDeath only: once per creature, full Health, "(HA! HA! HA!)")
       if (kind === "trait" && ref === 1335) r.note = "Not in the trait text: each enemy creature with Angry Army also resurrects once, at 100% Health.";
       return { group, ...r };
@@ -2613,7 +2612,7 @@
         <div class="res-n">${r.n ?? "⛔"}</div>
         <div class="apx-iconcol">${r.icon ? `<div class="apx-crea">${r.icon}</div>` : ""}</div>
         <div class="perk-line-body"><div class="perk-line-head"><b>${esc(r.name)}</b></div>
-          <div class="res-chips">${BADGE[r.group] ? `<span class="res-badge ${r.group}" title="${esc(BADGE[r.group][1])}">${BADGE[r.group][0]}</span>` : ""}${r.enemy ? `<span class="res-badge enemy">Enemy only</span>` : ""}<span class="anoint-spec-tag">${esc(r.tag)}</span>${r.extra ? `<span class="anoint-spec-tag">${esc(r.extra)}</span>` : ""}</div>
+          <div class="res-chips">${BADGE[r.group] ? `<span class="res-badge ${r.group}" title="${esc(BADGE[r.group][1])}">${BADGE[r.group][0]}</span>` : ""}<span class="anoint-spec-tag">${esc(r.tag)}</span></div>
           ${r.desc ? `<div class="perk-desc">${richText(r.desc)}</div>` : ""}${r.note ? `<div class="perk-desc res-note">${esc(r.note)}</div>` : ""}</div></div>`;
     const grp = (gs, label) => { const list = rows.filter(r => gs.includes(r.group));
       return list.length ? `<div class="res-sub">${label}</div><div class="perk-list">${list.map(row).join("")}</div>` : ""; };
