@@ -1602,3 +1602,7 @@ select.app-select:hover { border-color: var(--accent2); }
 /* resurrection rows: title on its own line, chips row below it, then the description */
 .res-chips { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 3px 0 4px; }
 .res-chips .anoint-spec-tag { margin-left: 0; }
+/* enemy-only resurrection sources (boss traits with no player source, realm properties): whole row tinted red */
+.res-line.res-enemy { background: linear-gradient(90deg, rgba(224,107,107,.20), rgba(224,107,107,.08)); border-color: rgba(224,107,107,.45); }
+.res-badge.enemy { color: #ffb3b3; border-color: rgba(224,107,107,.55); background: rgba(224,107,107,.18); }
+.res-note { margin-top: 3px; font-style: italic; color: #ffb3b3; }

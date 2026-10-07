@@ -2526,7 +2526,8 @@
   // cond = glossary key, realm = realm-property key (matched by text: the only realm property that resurrects).
   const RES_ORDER = [
     ["rule", "perk", "Somnus"],
-    ["stop", "trait", 678], ["free", "trait", 769],
+    // Angry Army (Imp Impington, enemy-side) is the resurrect in the slot first read as Breath of Death (extract answer 1)
+    ["stop", "trait", 678], ["free", "trait", 1335], ["free", "trait", 769],
     ["stop", "realm", "RESURRECT"], ["free", "trait", 1260], ["free", "trait", 1178], ["free", "trait", 891],
     ["free", "trait", 372], ["free", "trait", 188], ["stop", "perk", "Slam Shut"],
     ["chain", "perk", "Born Again"], ["chain", "trait", 839], ["chain", "trait", 1888], ["chain", "trait", 1927],
@@ -2534,12 +2535,12 @@
     ["chain", "trait", 1715], ["chain", "trait", 1432], ["chain", "trait", 1461], ["chain", "perk", "Forbidden Magic"],
     ["chain", "relic", "Vulcanar", 100], ["chain", "trait", 1658], ["chain", "perk", "Bleed Out"], ["chain", "cond", "Buff:rebirth"],
     ["chain", "trait", 1286], ["chain", "trait", 2021], ["chain", "perk", "Martyr"], ["chain", "perk", "Soul Rending"],
-    ["chain", "trait", 1587, "unconfirmed"], ["chain", "perk", "New Moon"], ["chain", "perk", "From Ashes"], ["chain", "perk", "Gravewalker"],
+    ["chain", "trait", 1587], ["chain", "perk", "New Moon"], ["chain", "perk", "From Ashes"], ["chain", "perk", "Gravewalker"],
     ["chain", "cond", "Minion:guardianofsurathli"], ["chain", "relic", "Surathli", 80], ["chain", "perk", "Feign Death"],
     ["chain", "trait", 354], ["chain", "trait", 331], ["chain", "trait", 97], ["chain", "trait", 486], ["chain", "trait", 454],
     ["chain", "trait", 187], ["chain", "trait", 189],
-    // runtime 1231 isn't in the app's trait data (non-player) — name/text from passive_ids_true.json
-    ["chain", "static", { name: "Who Am I?", desc: "After this creature is killed, it transforms into one of the enemy creatures.", tag: "Trait" }],
+    // "Who Am I?" (runtime 1231) is suppressed: nothing in the data grants it (no creature / boss / item) — the
+    // pre-split original of Kraynaks' three "None Of Your Business" variants, shown here as one row.
     ["chain", "trait", 1345], ["chain", "trait", 1297],
   ];
   let RES_ROWS = null;
@@ -2548,23 +2549,26 @@
     const perkBy = new Map(); for (const sp of D.specs) for (const p of sp.perks) if (!perkBy.has(p.name)) perkBy.set(p.name, { p, spec: sp });
     const traitByRt = new Map(); for (const t of Object.values(D.traits)) for (const r of t.runtimeIds || []) traitByRt.set(r, t);
     const { creatureByTrait, itemsByTrait } = traitSources();
-    // 4th field: relic rank, or "unconfirmed" = the findings could not isolate this entry's gate (medium confidence)
+    // 4th field: relic rank (app scale). enemy = only enemies can have it: a boss trait with no creature/item source,
+    // or a realm property (enemies only).
     RES_ROWS = RES_ORDER.map(([group, kind, ref, rank], i) => {
       let r = null;
       if (kind === "perk") { const h = perkBy.get(ref); if (h) r = { name: h.p.name, desc: h.p.desc, icon: h.p.icon && spriteImg(h.p.icon, "px"), tag: `Perk · ${h.spec.label}` }; }
       else if (kind === "trait") { const t = traitByRt.get(ref); if (t) {
         const c = creatureByTrait.get(t.id), boss = bossSpriteFor(t), it = (itemsByTrait.get(t.id) || []).find(x => x.icon);
-        r = { name: t.name, desc: t.desc, icon: c ? critFace(c) : boss ? spriteImg(boss) : it ? spriteImg(it.icon, "px") : "",
+        r = { name: t.name, desc: t.desc, icon: c ? critFace(c) : boss ? spriteImg(boss) : it ? spriteImg(it.icon, "px") : "", enemy: t.ownerType === "boss" && !c && !it,
           tag: `Trait${c ? ` · ${c.name}` : t.owner ? ` · ${t.owner}` : ""}`, open: { ek: "trait", eid: t.id } }; } }
       else if (kind === "relic") { const rl = D.relics.find(x => x.name.includes(ref)), rk = rl && rl.ranks.find(x => x.rank === rank);
         if (rl && rk) r = { name: rl.name.split(",")[0], desc: rk.desc, icon: spriteImg(rl.icon, "px"), tag: `Relic · rank ${rank}` }; }
       else if (kind === "cond") { const c = (D.conditions || []).find(x => `${x.cat}:${x.key}` === ref);
         if (c) r = { name: c.name, desc: c.desc, icon: c.icon ? `<img src="${esc(c.icon)}" alt="">` : "", tag: c.cat, open: { ek: "condition", eid: ref } }; }
       else if (kind === "realm") { const rp = (D.realmProps || []).find(x => x.key === ref);
-        if (rp) r = { name: rp.name, desc: rp.effect, icon: spriteImg(rp.icon, "px"), tag: "Realm property" }; }
+        if (rp) r = { name: rp.name, desc: rp.effect, icon: spriteImg(rp.icon, "px"), tag: "Realm property", enemy: true }; }
       else if (kind === "static") r = { ...ref, icon: "" };
       if (!r) { console.error("RESURRECTION ORDER: unresolved", kind, ref); r = { name: String(ref), desc: "", icon: "", tag: kind }; }
-      if (rank === "unconfirmed") r.tag += " · gate unconfirmed";
+      if (kind === "perk" && ref === "Somnus") r.extra = "Not in the Arena";   // bc_EventResurrect skips battletype 10
+      // Angry Army's resurrect isn't in its in-game text (bc_OnDeath only: once per creature, full Health, "(HA! HA! HA!)")
+      if (kind === "trait" && ref === 1335) r.note = "Not in the trait text: each enemy creature with Angry Army also resurrects once, at 100% Health.";
       return { group, ...r };
     });
     let n = 0; for (const r of RES_ROWS) if (r.group !== "rule") r.n = ++n;   // execution order, Somnus unnumbered
@@ -2605,12 +2609,12 @@
     const key = "Resurrection", open = q ? true : !st.collapsed.has(key);
     const BADGE = { free: ["Outside one-per-death", "Doesn't check or block the one-per-death rule"], stop: ["Skips the chain", "If this fires, the one-per-death chain below is skipped"],
       rule: ["Blocks other resurrection", "While active, no other effect can resurrect your creatures"] };
-    const row = (r) => `<div class="perk-line res-line${r.group === "rule" ? " res-rule" : ""}${r.open ? " apx-clickable" : ""}"${r.open ? ` data-action="apx-open" data-ek="${r.open.ek}" data-eid="${esc(String(r.open.eid))}" title="View taxonomy"` : ""}>
+    const row = (r) => `<div class="perk-line res-line${r.group === "rule" ? " res-rule" : ""}${r.enemy ? " res-enemy" : ""}${r.open ? " apx-clickable" : ""}"${r.open ? ` data-action="apx-open" data-ek="${r.open.ek}" data-eid="${esc(String(r.open.eid))}" title="View taxonomy"` : ""}>
         <div class="res-n">${r.n ?? "⛔"}</div>
         <div class="apx-iconcol">${r.icon ? `<div class="apx-crea">${r.icon}</div>` : ""}</div>
         <div class="perk-line-body"><div class="perk-line-head"><b>${esc(r.name)}</b></div>
-          <div class="res-chips">${BADGE[r.group] ? `<span class="res-badge ${r.group}" title="${esc(BADGE[r.group][1])}">${BADGE[r.group][0]}</span>` : ""}<span class="anoint-spec-tag">${esc(r.tag)}</span></div>
-          ${r.desc ? `<div class="perk-desc">${richText(r.desc)}</div>` : ""}</div></div>`;
+          <div class="res-chips">${BADGE[r.group] ? `<span class="res-badge ${r.group}" title="${esc(BADGE[r.group][1])}">${BADGE[r.group][0]}</span>` : ""}${r.enemy ? `<span class="res-badge enemy">Enemy only</span>` : ""}<span class="anoint-spec-tag">${esc(r.tag)}</span>${r.extra ? `<span class="anoint-spec-tag">${esc(r.extra)}</span>` : ""}</div>
+          ${r.desc ? `<div class="perk-desc">${richText(r.desc)}</div>` : ""}${r.note ? `<div class="perk-desc res-note">${esc(r.note)}</div>` : ""}</div></div>`;
     const grp = (gs, label) => { const list = rows.filter(r => gs.includes(r.group));
       return list.length ? `<div class="res-sub">${label}</div><div class="perk-list">${list.map(row).join("")}</div>` : ""; };
     const body = open ? grp(["rule"], "Overrides everything") + grp(["free", "stop"], "Checked first") + grp(["chain"], "Then one per death — the first that fires stops the rest") : "";
