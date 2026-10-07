@@ -6,6 +6,26 @@ Pages on `master`/root, Cloudflare analytics active with the shared github.io to
 No verify-before-push ceremony (no real users yet) — but every change is checked with the jsdom smoke suite
 (scratchpad `smoke.mjs`, ~84 assertions across all flows) before commit.
 
+## 2026-10-06 — UI batch (libraries, selection, icons, Realms Objects)
+- **Empty home tiles** use the game's menu glyphs: Specialization = `menu_characterG_0`, Anointments =
+  `codex_anointmentsG_0` (G = greyed; non-G variants also copied to `assets/ui/`). Shipped as `D.uiIcons` (hashed + precached).
+- **Nether Stones library** mirrors Artifacts: no auto-selection, info panel only when a stone is selected, footer =
+  Hide equipped · Edit · Delete · **Build** (Edit/Delete moved out of the info panel).
+- **Library header bars** (Artifacts / Nether Stones / Spell Gems): header search + filter/sort row. Artifacts: Type ▾,
+  Recent | A–Z | Rank. Nether: Has trait / Has spell, Recent | A–Z | Hea…Spe. Spell Gems: Class ▾, Recent | A–Z | Level |
+  Potency. Shared `libSortSeg` + actions `lib-search` / `lib-sort` / `lib-flag` / `lib-type` / `lib-cls`.
+- **Held selections**: tapping the selected item again deselects, and tapping empty space in the list area deselects
+  (`clearHeldSelection`, `data-action="lib-deselect"` zones; `noop` marks pickers/blocked tiles). Covers creature picker,
+  spec picker, Builds, Artifacts / Nether / Spell Gem libraries, icon picker (tap-again now DESELECTS — "Use this icon"
+  commits), Spell Gem builder (spell + property picker), Artifact builder (type + open slot picker), Nether builder picker.
+  Deleting an artifact / stone / gem no longer auto-selects the first remaining one.
+- **Touch typing**: while a text field is focused, the first tap elsewhere only leaves the field (closes the phone
+  keyboard) and is swallowed. Touch/pen only — mouse clicks are untouched (desktop auto-focuses search fields).
+- **Realms → Objects** (third toggle after Browse | Compare): every realm's object blocks (sprite · name · ×count, base
+  interaction on hover); realm header opens the realm; search matches object / realm / god.
+- **Icons beside names**: spec emblems on anointment spec chips, the Spec filter list + active chip, saved-build spec line;
+  class icons in the Class filter list + active Class chip (creatures + cards); False God icons in the False God filter.
+
 ## 2026-10-05 — Build Import / Export (see BUILD_IO.md)
 **Menu → Import / Export** (below Builds; compact Riddle-Dwarf-style pop-out with an Import | Export toggle; exports the current party). The game has NO build import (code-certain, `_su_extract/code/EXPORT_BUILD_FINDINGS.md`),
 so: Import accepts the game's English "Export Build" text OR a Companion export; Export writes a readable game-style

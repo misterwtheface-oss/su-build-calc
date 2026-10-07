@@ -73,6 +73,10 @@
   // spec label → spec EMBLEM (the class icon). NOT s.sprite — that's the player-character costume, a different
   // asset used on the spec detail/picker. Sprite (costume) and emblem (icon) are not interchangeable.
   const SPEC_EMBLEM = new Map(D.specs.map(s => [s.label, s.emblem]));
+  // inline emblem / class icon shown in front of a spec or class name wherever those names are listed
+  const specEmblemIco = (label) => SPEC_EMBLEM.get(label) ? `<span class="tag-ico">${spriteImg(SPEC_EMBLEM.get(label), "px")}</span>` : "";
+  const specTagHtml = (label, extraCls) => `<span class="anoint-spec-tag spec-tag${extraCls ? " " + extraCls : ""}">${specEmblemIco(label)}${esc(label)}</span>`;
+  const classIco = (cls) => cls && D.classIcons && D.classIcons[cls] ? `<span class="tag-ico">${spriteImg(D.classIcons[cls], "px")}</span>` : "";
   const TRAIT = D.traits;                                   // id -> {name,desc,cls,produces,consumes,labels}
   const CLS_COLOR = Object.fromEntries(D.classes.map(c => [c.key, c.color]));
   const CLASS_BG = D.classBg || {};
@@ -463,6 +467,9 @@
   const sortSign = (rev) => (rev ? -1 : 1);
   // button label with the live direction arrow on the active sort (▼ descending, ▲ ascending)
   const sortLbl = (label, active, rev, natDesc) => active ? `${label} <span class="sort-dir">${(natDesc !== !!rev) ? "▼" : "▲"}</span>` : label;
+  // saved-library sort control (Artifacts / Nether Stones / Spell Gems): opts = [[value, label, naturallyDescending]]
+  const libSortSeg = (st, opts) => { const cur = st.libSort || opts[0][0];
+    return `<div class="seg">${opts.map(([v, l, nd]) => `<button class="seg-btn ${cur === v ? "on" : ""}" data-action="lib-sort" data-v="${v}">${sortLbl(l, cur === v, st.libSortRev, nd)}</button>`).join("")}</div>`; };
 
   // ── util ─────────────────────────────────────────────────────────────────
   const el = (id) => document.getElementById(id);
@@ -706,11 +713,13 @@
     app.scrollTop = scroll;
   }
 
+  // empty Specialization / Anointments tiles show the game's own menu glyphs (G = greyed variant)
+  const EMPTY_ICON = { spec: (D.uiIcons || {}).specEmpty, anoint: (D.uiIcons || {}).anointEmpty };
   function renderHome() {
     const spec = build.specId != null ? SPEC.get(build.specId) : null;
     const specTile = `
       <div class="spec-tile ${spec ? "filled" : ""}" data-action="${spec ? "spec-detail" : "pick-spec"}" title="Specialization">
-        <div class="spec-tile-icon">${spec ? spriteImg(spec.emblem || spec.sprite, "px") : `<span class="spec-tile-plus">✦</span>`}</div>
+        <div class="spec-tile-icon">${spec ? spriteImg(spec.emblem || spec.sprite, "px") : spriteImg(EMPTY_ICON.spec, "px tile-empty-ico")}</div>
         <div class="spec-tile-label">${spec ? esc(spec.label) : "Specialization"}</div>
         ${spec ? `<div class="spec-tile-sub">${allocatedPerks(spec).length}/${spec.perks.length} perks · ${specPoints(spec)} pts</div>` : ""}
         ${spec ? `<button class="slot-remove" data-action="clear-spec" title="Remove">✕</button>` : ""}
@@ -719,7 +728,7 @@
     const eqAnoints = equippedAnointObjs();
     const anointIcons = eqAnoints.length
       ? `<div class="anoint-tile-icons">${eqAnoints.map(a => `<span class="anoint-mini" title="${esc(a.name)}">${a.icon ? spriteImg(a.icon, "px") : "✦"}</span>`).join("")}</div>`
-      : `<span class="spec-tile-plus">✦</span>`;
+      : spriteImg(EMPTY_ICON.anoint, "px tile-empty-ico");
     const anointTile = `
       <div class="spec-tile anoint-tile ${build.anoints.length ? "filled" : ""}" data-action="${build.anoints.length ? "anoint-detail" : "open-anoint"}" title="Anointments">
         <div class="spec-tile-icon">${anointIcons}</div>
@@ -1089,7 +1098,7 @@
     const primaryC = st.primaryId != null ? CREA.get(st.primaryId) : null;
 
     const facet = (lbl, val, action) =>
-      `<button class="facet ${val ? "on" : ""}" data-action="${action}">${lbl}${val ? `: <b>${esc(val)}</b>` : ""}${val ? ` <span class="facet-x" data-action="${action}-clear">✕</span>` : " ▾"}</button>`;
+      `<button class="facet ${val ? "on" : ""}" data-action="${action}">${lbl}${val ? `: ${action === "facet-class" ? classIco(val) : action === "facet-race" && D.raceIcons && D.raceIcons[val] ? `<span class="tag-ico">${spriteImg(D.raceIcons[val], "px")}</span>` : ""}<b>${esc(val)}</b>` : ""}${val ? ` <span class="facet-x" data-action="${action}-clear">✕</span>` : " ▾"}</button>`;
     const taxoChips = st.taxoFilters.map((k, i) =>
       `<button class="facet on tag" data-action="rm-taxo" data-i="${i}">${esc(taxoCatName(k))}: <b>${esc(taxoValName(k))}</b> <span class="facet-x">✕</span></button>`).join("");
     const filterbar = `<div class="ovl-filterbar">
@@ -1116,7 +1125,7 @@
     const avBudget = avatarCap() - avatarCount(st.slotIdx);
     const avBlocked = (c) => !fusion && isAvatar(c) && avBudget < 1;
     const tiles = noFuseTile + shown.map(c => { const blk = avBlocked(c); return `
-      <div class="pick-tile ${sel === c.id ? "selected" : ""} ${blk ? "disabled" : ""}" ${blk ? `title="Avatar limit reached${avatarCap() === 0 ? " — Deprived can't use Avatars" : ""}"` : `data-action="crea-pick" data-id="${c.id}"`}>
+      <div class="pick-tile ${sel === c.id ? "selected" : ""} ${blk ? "disabled" : ""}" ${blk ? `data-action="noop" title="Avatar limit reached${avatarCap() === 0 ? " — Deprived can't use Avatars" : ""}"` : `data-action="crea-pick" data-id="${c.id}"`}>
         ${c.cls && D.classIcons && D.classIcons[c.cls]
           ? `<span class="pt-clsico" title="${esc(c.cls)}">${spriteImg(D.classIcons[c.cls], "px")}</span>`
           : `<span class="pt-cls" style="--pt-cls:${clsColor(c.cls)}"></span>`}
@@ -1140,7 +1149,7 @@
               ${c.cls ? `<span class="ctr-tag">${clsIco ? `<span class="ctr-ico">${clsIco}</span>` : ""}${esc(c.cls)}</span>` : ""}</span></div>
             <div class="ctr-stats">${STAT_KEYS.map(k => `<span class="ctr-stat"><span class="ctr-stat-k">${STAT_LABEL[k]}</span> <b>${c[k] ?? "—"}</b></span>`).join("")}
 </div></div>`;
-        return `<div class="crea-trait-row primary-traits ${sel === c.id ? "selected" : ""} ${blk ? "disabled" : ""}"${blk ? "" : ` data-action="crea-pick" data-id="${c.id}"`}>
+        return `<div class="crea-trait-row primary-traits ${sel === c.id ? "selected" : ""} ${blk ? "disabled" : ""}"${blk ? ` data-action="noop"` : ` data-action="crea-pick" data-id="${c.id}"`}>
           ${head}${traitBanner(c.traitId, { noNav: true })}<div class="trait-desc">${richText(tr ? tr.desc || "" : "")}</div></div>`; }).join("")}
     </div>` : "";
 
@@ -1165,7 +1174,7 @@
         <input class="ovl-search" placeholder="Search name / trait / race…" value="${esc(st.search)}" data-action="crea-search">
         <button class="ovl-close" data-action="close-ovl">✕</button></div>
       <div class="overlay-body">
-        <div class="ovl-center">${filterbar}${sortbar}
+        <div class="ovl-center" data-action="lib-deselect">${filterbar}${sortbar}
           <div class="ovl-center-scroll">${traitsView ? traitList : `<div class="pick-grid crea-grid">${tiles}</div>`}
             ${list.length > shown.length
               ? `<div class="crea-loadmore"><button class="btn-ghost" data-action="crea-more">Load more (${shown.length} of ${list.length})</button></div>`
@@ -1382,9 +1391,9 @@
     const st = dovState, q = st.search.trim().toLowerCase();
     const idx = st.idxFn ? st.idxFn() : taxoIndex();
     let opts, title, back = "";
-    if (st.facet === "class") { title = "Filter by Class"; opts = D.classes.map(c => ({ v: c.key, label: c.key, color: c.color })); }
-    else if (st.facet === "anoint-spec") { title = "Filter by Specialization"; opts = anointSpecs().map(s => ({ v: s, label: s })); }
-    else if (st.facet === "anoint-fgod") { title = "Filter by False God"; opts = (D.falseGods || []).map(g => ({ v: g.key, label: g.name })); }
+    if (st.facet === "class") { title = "Filter by Class"; opts = D.classes.map(c => ({ v: c.key, label: c.key, icon: D.classIcons && D.classIcons[c.key], color: D.classIcons && D.classIcons[c.key] ? null : c.color })); }
+    else if (st.facet === "anoint-spec") { title = "Filter by Specialization"; opts = anointSpecs().map(s => ({ v: s, label: s, icon: SPEC_EMBLEM.get(s) })); }
+    else if (st.facet === "anoint-fgod") { title = "Filter by False God"; opts = (D.falseGods || []).map(g => ({ v: g.key, label: g.name, icon: g.icon })); }
     else if (st.facet === "race") { title = "Filter by Race"; opts = raceOptions().map(r => ({ v: r, label: r, icon: D.raceIcons && D.raceIcons[r] })); }
     else if (st.facet === "taxo-cat") { title = "Filter by mechanic"; opts = [...idx.keys()].map(cat => ({ v: cat, label: cat })); }
     else { // taxo-val
@@ -1466,7 +1475,7 @@
         <input class="ovl-search" placeholder="Search…" value="${esc(st.search)}" data-action="spec-search">
         <button class="ovl-close" data-action="close-ovl">✕</button></div>
       <div class="overlay-body">
-        <div class="ovl-center"><div class="ovl-center-scroll"><div class="pick-grid spec-grid">${tiles}</div></div></div>
+        <div class="ovl-center" data-action="lib-deselect"><div class="ovl-center-scroll"><div class="pick-grid spec-grid">${tiles}</div></div></div>
         <div class="ovl-right spec-right">${info}</div>
       </div>
       <div class="overlay-footer"><span class="foot-info"></span>
@@ -1589,7 +1598,7 @@
   };
   const buildSummary = (b) => {
     const spec = b.specId != null ? SPEC.get(b.specId) : null;
-    return spec ? esc(spec.label) : "No specialization";
+    return spec ? `${specEmblemIco(spec.label)}${esc(spec.label)}` : "No specialization";
   };
   const buildSpecLabel = (b) => { const s = (b.build && b.build.specId != null) ? SPEC.get(b.build.specId) : null; return s ? s.label : ""; };
   function sortBuilds(list, mode, rev) {
@@ -1661,7 +1670,7 @@
     const loadoutBlank = !build.slots.some(s => s && s.cid != null);
     return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel">
       <div class="overlay-header"><h2>Builds</h2><button class="ovl-close" data-action="close-ovl">✕</button></div>
-      <div class="overlay-body"><div class="ovl-center">${sortBar}<div class="ovl-center-scroll">
+      <div class="overlay-body"><div class="ovl-center" data-action="lib-deselect">${sortBar}<div class="ovl-center-scroll">
         <div class="lib-grid">${tiles}</div></div></div>${infoPanel}</div>
       <div class="overlay-footer">
         <button class="btn-ghost danger" data-action="builds-del" data-id="${sel ? sel.id : ""}" ${sel ? "" : "disabled"}>Delete</button>
@@ -1836,7 +1845,7 @@
       <div class="overlay-header"><h2>Choose Icon</h2>
         <input class="ovl-search" placeholder="Search sprites…" value="${esc(st.search)}" data-action="iconpick-search">
         <button class="ovl-close" data-action="close-detail">✕</button></div>
-      <div class="overlay-body"><div class="ovl-center">
+      <div class="overlay-body"><div class="ovl-center" data-action="dlib-deselect">
         <div class="ovl-filterbar">${catChips}</div>
         <div class="ovl-center-scroll"><div class="pick-grid">${tiles}</div>
         ${list.length > shown.length
@@ -2543,7 +2552,7 @@
     const st = ovState, rs = D.realms || [];
     if (st.view === "detail") return renderRealmDetail(rs.find(r => r.id === st.sel));
     if (st.editingRanks) return renderRealmCustomize(rs);
-    return st.mode === "compare" ? renderRealmCompare(rs) : renderRealmList(rs);
+    return st.mode === "compare" ? renderRealmCompare(rs) : st.mode === "objects" ? renderRealmObjects(rs) : renderRealmList(rs);
   }
   // ── Favor-track helpers (values sourced from Favor_MTX via D.realms[].favor) ───────────────────
   const favUnique = () => (D.favorCols && D.favorCols.unique) || [];
@@ -2609,12 +2618,44 @@
       <div class="overlay-footer"><span class="foot-info"></span><button class="btn-confirm" data-action="close-ovl">Done</button></div>
     </div></div>`;
   }
-  // Browse (per-realm list) | Compare (cross-realm outcome comparison)
+  // Browse (per-realm list) | Compare (cross-realm outcome comparison) | Objects (every realm's object blocks)
   function realmModeToggle(mode) {
     return `<div class="art-view-toggle">
       <button class="av-tab ${mode === "list" ? "on" : ""}" data-action="realm-mode" data-v="list">Browse</button>
       <span class="av-pipe">|</span>
-      <button class="av-tab ${mode === "compare" ? "on" : ""}" data-action="realm-mode" data-v="compare">Compare</button></div>`;
+      <button class="av-tab ${mode === "compare" ? "on" : ""}" data-action="realm-mode" data-v="compare">Compare</button>
+      <span class="av-pipe">|</span>
+      <button class="av-tab ${mode === "objects" ? "on" : ""}" data-action="realm-mode" data-v="objects">Objects</button></div>`;
+  }
+  // Realm Objects across every realm: one group per realm (tap the header to open the realm) with its objects as
+  // blocks (sprite · name · spawn count; the rank-0 base interaction on hover). Search matches object, realm or god;
+  // an object-name hit narrows that realm's blocks to the matching objects.
+  function renderRealmObjects(rs) {
+    const st = ovState, q = st.search.trim().toLowerCase();
+    const groups = rs.slice().sort((a, b) => a.realm.localeCompare(b.realm)).map(r => {
+      const realmHit = !q || r.realm.toLowerCase().includes(q) || r.godName.toLowerCase().includes(q);
+      const objs = (r.objects || []).filter(o => realmHit || o.name.toLowerCase().includes(q) || (o.base || "").toLowerCase().includes(q));
+      return { r, objs };
+    }).filter(g => g.objs.length);
+    const body = groups.map(({ r, objs }) => { const ico = r.icon || r.godBattle;
+      return `<div class="robj-grp">
+        <button class="realm-row robj-head" data-action="realm-sel" data-id="${r.id}">
+          <span class="realm-icon">${ico ? spriteImg(ico, "px") : ""}</span>
+          <span class="opt-dot" style="background:${clsColor(r.cls)}"></span>
+          <span class="realm-row-name">${esc(r.realm)}</span>
+          <span class="anoint-spec-tag">${esc(r.godName)}</span>
+          <span class="opt-chev">›</span></button>
+        <div class="realm-objs">${objs.map(o => `<span class="realm-obj" title="${esc(o.name)}${o.base ? ` — ${esc(o.base)}` : ""}">${o.sprite ? `<span class="realm-obj-ico">${spriteImg(o.sprite, "px")}</span>` : ""}<span class="realm-obj-name">${esc(o.name)}</span>${o.baseCount != null ? `<span class="realm-obj-ct">×${o.baseCount}</span>` : ""}</span>`).join("")}</div>
+      </div>`; }).join("") || `<div class="slot-sub" style="padding:10px">No realm objects match.</div>`;
+    return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel">
+      <div class="overlay-header"><h2>Realms</h2>
+        <input class="ovl-search" placeholder="Search object / realm / god…" value="${esc(st.search)}" data-action="realm-search">
+        <button class="ovl-close" data-action="close-ovl">✕</button></div>
+      <div class="overlay-body"><div class="ovl-center">${realmModeToggle("objects")}
+        <div class="ovl-center-scroll"><div class="robj-list">${body}</div></div>
+      </div></div>
+      <div class="overlay-footer"><span class="foot-info"></span><button class="btn-confirm" data-action="close-ovl">Done</button></div>
+    </div></div>`;
   }
   // Cross-realm comparison: one collapsible accordion per Unique Bonus column; expand to rank every realm by
   // its value at the current favor rank, on a shared bar scale. The rank slider scrubs the whole comparison.
@@ -2913,10 +2954,10 @@
       (!st.bkOnly || bookmarks.perks.includes(a.key)) &&
       (!st.taxoFilters.length || st.taxoFilters.every(k => (a.taxo || []).includes(k))));
     const godChip = st.godFilter
-      ? `<button class="facet on" data-action="anoint-fgod">False God: <b>${esc(godName(st.godFilter))}</b> <span class="facet-x" data-action="anoint-fgod-clear">✕</span></button>`
+      ? `<button class="facet on" data-action="anoint-fgod">False God: ${(godByKey.get(st.godFilter) || {}).icon ? `<span class="tag-ico">${spriteImg(godByKey.get(st.godFilter).icon, "px")}</span>` : ""}<b>${esc(godName(st.godFilter))}</b> <span class="facet-x" data-action="anoint-fgod-clear">✕</span></button>`
       : `<button class="facet" data-action="anoint-fgod">False God ▾</button>`;
     const specChip = st.specFilter
-      ? `<button class="facet on" data-action="anoint-spec">Spec: <b>${esc(st.specFilter)}</b> <span class="facet-x" data-action="anoint-spec-clear">✕</span></button>`
+      ? `<button class="facet on" data-action="anoint-spec">Spec: ${specEmblemIco(st.specFilter)}<b>${esc(st.specFilter)}</b> <span class="facet-x" data-action="anoint-spec-clear">✕</span></button>`
       : `<button class="facet" data-action="anoint-spec">Spec ▾</button>`;
     const taxoChips = st.taxoFilters.map((k, i) =>
       `<button class="facet on tag" data-action="rm-taxo" data-i="${i}">${esc(taxoCatName(k))}: <b>${esc(taxoValName(k))}</b> <span class="facet-x">✕</span></button>`).join("");
@@ -2932,7 +2973,7 @@
         <div class="apx-iconcol">${a.icon ? `<div class="apx-crea">${spriteImg(a.icon, "px")}</div>` : ""}</div>
         <div class="perk-line-body">
           <div class="perk-line-head"><b>${esc(a.name)}</b>
-            <span class="perk-line-meta"><span class="anoint-spec-tag">${esc(a.spec)}</span>${inCur ? `<span class="anoint-badge">Current spec</span>` : ""}${a.ascension ? `<span class="anoint-badge asc">Ascension</span>` : ""}</span>${bkBtn("perks", a.key)}</div>
+            <span class="perk-line-meta">${specTagHtml(a.spec)}${inCur ? `<span class="anoint-badge">Current spec</span>` : ""}${a.ascension ? `<span class="anoint-badge asc">Ascension</span>` : ""}</span>${bkBtn("perks", a.key)}</div>
           ${a.desc ? `<div class="perk-desc">${perkText(a.desc, a.ranks)}</div>` : ""}
         </div>
         ${btn}
@@ -2981,7 +3022,7 @@
         <div class="apx-iconcol">${a.icon ? `<div class="apx-crea">${spriteImg(a.icon, "px")}</div>` : ""}</div>
         <div class="perk-line-body">
           <div class="perk-line-head"><b>${esc(a.name)}</b>
-            <span class="perk-line-meta"><span class="anoint-spec-tag">${esc(a.spec)}</span>${a.ascension ? `<span class="anoint-badge asc">Ascension</span>` : ""}</span></div>
+            <span class="perk-line-meta">${specTagHtml(a.spec)}${a.ascension ? `<span class="anoint-badge asc">Ascension</span>` : ""}</span></div>
           ${a.desc ? `<div class="perk-desc">${perkText(a.desc, a.ranks)}</div>` : ""}
         </div></div>`).join("")
       || `<div class="slot-sub" style="padding:10px">No anointments equipped.</div>`;
@@ -3000,7 +3041,7 @@
   // ── artifact library (equip) ───────────────────────────────────────────────
   function openArtifactLibrary(slotIdx) {
     // no auto-selection — tiles show equip state (purple = this creature, gold = another); user picks to act
-    ovState = { kind: "artlib", slotIdx, hideEquipped: false, sel: null, render: renderArtifactLibrary };
+    ovState = { kind: "artlib", slotIdx, hideEquipped: false, sel: null, search: "", libType: null, libSort: "recent", render: renderArtifactLibrary };
     openOverlay(ovState.render());
   }
   const libRow = (ico, name, sub) => `<div class="prop-row static"><span class="prop-ico">${ico ? spriteImg(ico, "px") : ""}</span><span class="prop-name">${esc(name)}</span>${sub ? `<span class="prop-stat">${esc(sub)}</span>` : ""}</div>`;
@@ -3158,12 +3199,26 @@
     const n = nether.find(x => x.id === cl.nid), cr = CREA.get(build.slots[cl.slotIdx].cid);
     return `${n ? n.name : "Its Nether Stone"} is already socketed in ${cl.art.name}${cr ? ` (equipped by ${cr.name})` : ""}`;
   };
+  const artSearchText = (a) => [a.name, a.primary,
+    ...[...(a.stat || []), ...(a.trick || [])].flatMap(n => { const m = MAT_BY_PROP.get(n); return [n, m ? m.name : ""]; }),
+    ...(a.traits || []).flatMap(id => { const t = TRAITITEM.get(id); return t ? [t.name, t.traitName || ""] : []; }),
+    ...(a.spells || []).map(id => (SPELL.get(id) || {}).name || ""),
+    ...(a.netherIds || []).map(id => { const n = nether.find(x => x.id === id); return n ? n.name : ""; })].join(" ").toLowerCase();
   function renderArtifactLibrary() {
     const st = ovState, manage = st.slotIdx == null;
     const slot = manage ? null : build.slots[st.slotIdx], c = slot ? CREA.get(slot.cid) : null;
     const equippedId = slot ? slot.artifactId : null;
-    let list = artifacts;
+    const q = (st.search || "").trim().toLowerCase(), sortK = st.libSort || "recent", d = sortSign(st.libSortRev);
+    let list = artifacts.filter(a => (!st.libType || a.primary === st.libType) && (!q || artSearchText(a).includes(q)));
     if (st.hideEquipped) list = list.filter(a => !artifactEquippedInBuild(a.id) || a.id === equippedId);
+    list = list.slice().sort(sortK === "name" ? (x, y) => d * x.name.localeCompare(y.name)
+      : sortK === "rank" ? (x, y) => d * ((y.rank || 50) - (x.rank || 50)) || x.name.localeCompare(y.name)
+      : (x, y) => d * (y.id - x.id));
+    const libBar = `<div class="ovl-filterbar lib-bar">
+        <select class="app-select${st.libType ? " on" : ""}" data-action="lib-type" title="Filter by artifact type">
+          <option value="" ${!st.libType ? "selected" : ""}>Type</option>${PRIMARY.map(p => `<option value="${esc(p.property)}" ${st.libType === p.property ? "selected" : ""}>${esc(p.property)}</option>`).join("")}</select>
+        <span class="sg-sort-gap"></span>
+        ${libSortSeg(st, [["recent", "Recent", true], ["name", "A–Z", false], ["rank", "Rank", true]])}</div>`;
     const sel = st.sel != null ? artifacts.find(a => a.id === st.sel) : null;
     // tile equip-state: purple = equipped by THIS creature. Equipped by ANOTHER creature is dimmed +
     // not equippable in the equip wizard (mirrors an off-class spell); in manage/Menu mode it keeps the
@@ -3181,7 +3236,7 @@
       <div class="pick-tile ${st.sel === a.id ? "selected" : ""}${eqHere ? " eq-here" : ""}${blocked || clashBlocked ? " disabled" : ""}${eqOther ? " eq-other" : ""}${clash ? " nether-clash" : ""}" data-action="artlib-sel" data-id="${a.id}"${title ? ` title="${esc(title)}"` : ""}>
         <div class="pt-sprite">${spriteImg(artIcon(a), "px")}</div>
         <div class="pt-name">${esc(a.name)}</div></div>`; }).join("")
-      || `<div class="slot-sub" style="padding:10px">No artifacts${st.hideEquipped ? " match" : " yet — build one"}.</div>`;
+      || `<div class="slot-sub" style="padding:10px">No artifacts${artifacts.length ? " match" : " yet — build one"}.</div>`;
     const equippedHere = sel && equippedId === sel.id;
     let info;
     if (sel) {
@@ -3210,9 +3265,11 @@
     const confAction = !canEquip ? "art-new" : equippedHere ? "art-unequip" : "art-equip";
     const confLabel = !canEquip ? "Build" : equippedHere ? "Unequip" : "Equip";
     return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel">
-      <div class="overlay-header"><h2>Artifacts${manage ? "" : " — " + esc(c ? c.name : "")}</h2><button class="ovl-close" data-action="close-ovl">✕</button></div>
+      <div class="overlay-header"><h2>Artifacts${manage ? "" : " — " + esc(c ? c.name : "")}</h2>
+        <input class="ovl-search" placeholder="Search name or socketed item…" value="${esc(st.search || "")}" data-action="lib-search">
+        <button class="ovl-close" data-action="close-ovl">✕</button></div>
       <div class="overlay-body">
-        <div class="ovl-center" data-action="lib-deselect"><div class="ovl-center-scroll"><div class="pick-grid equip-grid">${tiles}</div></div></div>
+        <div class="ovl-center" data-action="lib-deselect">${libBar}<div class="ovl-center-scroll"><div class="pick-grid equip-grid">${tiles}</div></div></div>
         ${sel ? `<div class="ovl-right lib-info">${info}</div>` : ""}
       </div>
       <div class="overlay-footer"><button class="facet ${st.hideEquipped ? "on" : ""}" data-action="artlib-hide-equipped">Hide equipped</button>
@@ -3476,7 +3533,7 @@
           <div class="att-ico">${spriteImg(primaryIconAt(p.property, a.rank), "px")}</div>
           <div class="att-name">${esc(p.property)}</div>
           <div class="att-stat">${esc(p.stat)} +${p.perRank[rank]}%</div></div>`).join("");
-      body = `<div class="ovl-center"><div class="ovl-center-scroll">
+      body = `<div class="ovl-center" data-action="lib-deselect"><div class="ovl-center-scroll">
         <div class="rank-picker" style="margin-bottom:12px"><span class="slot-sub">Rank</span>
           <input type="range" min="1" max="50" value="${rank}" data-action="artb-rank"><span class="rank-badge">${rank}</span></div>
         <div class="art-type-grid">${tiles}</div></div></div>`;
@@ -3521,7 +3578,7 @@
       }
       else if (st.pickType) side = renderArtPicker(st, a, rank);
       else side = renderArtLiveBonus(a, rank);
-      body = `<div class="ovl-center"><div class="ovl-center-scroll">${groupsHtml}</div></div>
+      body = `<div class="ovl-center" data-action="lib-deselect"><div class="ovl-center-scroll">${groupsHtml}</div></div>
         <div class="ovl-right art-side">${side}</div>`;
       footer = `<button class="btn-ghost" data-action="artb-back">‹ Back</button>
         <button class="btn-confirm" data-action="artb-next">Next: Name ›</button>`;
@@ -3924,7 +3981,7 @@
     const applyAll = cards.applyAll;
     const list = D.cards.filter(c => (!q || c.family.toLowerCase().includes(q)) && (!st.clsFilter || c.cls === st.clsFilter) && taxoMatch(st, c));
     const clsChip = st.clsFilter
-      ? `<button class="facet on" data-action="facet-class">Class: <b>${esc(st.clsFilter)}</b> <span class="facet-x" data-action="facet-class-clear">✕</span></button>`
+      ? `<button class="facet on" data-action="facet-class">Class: ${classIco(st.clsFilter)}<b>${esc(st.clsFilter)}</b> <span class="facet-x" data-action="facet-class-clear">✕</span></button>`
       : `<button class="facet" data-action="facet-class">Class ▾</button>`;
     const tiles = list.map(c => {
       const lv = cardLevel(c.id);
@@ -4013,7 +4070,7 @@
     return [...new Set(out)];
   }
   function openNether() {   // library
-    ovState = { kind: "nether", sel: nether[0] ? nether[0].id : null, hideEquipped: false, render: renderNether };
+    ovState = { kind: "nether", sel: null, hideEquipped: false, search: "", libSort: "recent", render: renderNether };
     openOverlay(ovState.render());
   }
   // nether "Bonuses" view helpers — mirror the artifact panel (stat table + trait & spell-gem containers)
@@ -4036,15 +4093,27 @@
   function renderNether() {
     const st = ovState;
     const sel = st.sel != null ? nether.find(n => n.id === st.sel) : null;
-    let list = nether;
+    const q = (st.search || "").trim().toLowerCase(), sortK = st.libSort || "recent", d = sortSign(st.libSortRev);
+    const core = (n) => netherBonusRows(n).core;
+    let list = nether.filter(n => (!q || netherSearchText(n).includes(q))
+      && (!st.nsTrait || (n.props || []).some(p => p.cat === "trait"))
+      && (!st.nsSpell || (n.props || []).some(p => p.cat === "spell")));
     if (st.hideEquipped) list = list.filter(n => !netherEquippedInBuild(n.id));
+    list = list.slice().sort(sortK === "name" ? (x, y) => d * x.name.localeCompare(y.name)
+      : STAT_KEYS.includes(sortK) ? (x, y) => d * (core(y)[sortK] - core(x)[sortK]) || x.name.localeCompare(y.name)
+      : (x, y) => d * (y.id - x.id));
+    const libBar = `<div class="ovl-filterbar lib-bar">
+        <button class="facet ${st.nsTrait ? "on" : ""}" data-action="lib-flag" data-f="nsTrait">Has trait</button>
+        <button class="facet ${st.nsSpell ? "on" : ""}" data-action="lib-flag" data-f="nsSpell">Has spell</button>
+        <span class="sg-sort-gap"></span>
+        ${libSortSeg(st, [["recent", "Recent", true], ["name", "A–Z", false], ...STAT_KEYS.map(k => [k, STAT_LABEL[k].slice(0, 3), true])])}</div>`;
     // compact tiles: gem + name only; effects live in the info panel on selection
     const tiles = list.map(n => `
       <div class="pick-tile ${st.sel === n.id ? "selected" : ""}" data-action="nether-sel" data-id="${n.id}">
         <div class="pt-sprite">${spriteImg(gemSrc(n), "px")}</div>
         <div class="pt-name">${esc(n.name)}</div></div>`).join("")
-      || `<div class="slot-sub" style="padding:10px">No Nether Stones${st.hideEquipped ? " match" : " yet — build one"}.</div>`;
-    let info;
+      || `<div class="slot-sub" style="padding:10px">No Nether Stones${nether.length ? " match" : " yet — build one"}.</div>`;
+    let info = "";
     if (sel) {
       const rows = (sel.props || []).map(p => {
         if (p.cat === "trait") { const t = TRAITITEM.get(p.key); return libTraitRow(netherPropIcon(p), t ? t.name : p.key, t ? t.traitId : null); }
@@ -4060,19 +4129,23 @@
         <button class="av-tab ${view === "sockets" ? "on" : ""}" data-action="ns-view" data-v="sockets">Sockets</button></div>`;
       const viewBody = view === "sockets" ? `<div class="prop-list">${rows}</div>` : netherBonusView(sel);
       info = `<div class="ns-info-head"><span class="ns-info-icon">${spriteImg(gemSrc(sel), "px")}</span><h3>${esc(sel.name)}</h3></div>
-        ${toggle}${viewBody}
-        <div class="ns-info-actions">
-          <button class="slot-mini" data-action="nether-edit" data-id="${sel.id}">Edit</button>
-          <button class="slot-mini danger" data-action="nether-del" data-id="${sel.id}">Delete</button></div>`;
-    } else info = `<div class="slot-sub" style="padding:12px">Select a stone to see its effects.</div>`;
+        ${toggle}${viewBody}`;
+    }
+    // footer mirrors the Artifacts library: Hide equipped · Edit / Delete (act on the selection) · Build
     return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel">
-      <div class="overlay-header"><h2>Nether Stones</h2><button class="ovl-close" data-action="close-ovl">✕</button></div>
+      <div class="overlay-header"><h2>Nether Stones</h2>
+        <input class="ovl-search" placeholder="Search name, property, trait or spell…" value="${esc(st.search || "")}" data-action="lib-search">
+        <button class="ovl-close" data-action="close-ovl">✕</button></div>
       <div class="overlay-body">
-        <div class="ovl-center"><div class="ovl-center-scroll"><div class="pick-grid equip-grid">${tiles}</div></div></div>
-        <div class="ovl-right lib-info">${info}</div>
+        <div class="ovl-center" data-action="lib-deselect">${libBar}<div class="ovl-center-scroll"><div class="pick-grid equip-grid">${tiles}</div></div></div>
+        ${sel ? `<div class="ovl-right lib-info">${info}</div>` : ""}
       </div>
       <div class="overlay-footer"><button class="facet ${st.hideEquipped ? "on" : ""}" data-action="nether-hide-equipped">Hide equipped</button>
-        <button class="btn-confirm" data-action="nether-new">＋ Build new stone</button></div>
+        <div>
+          <button class="btn-ghost" data-action="nether-edit" data-id="${sel ? sel.id : ""}" ${sel ? "" : "disabled"}>Edit</button>
+          <button class="btn-ghost danger" data-action="nether-del" data-id="${sel ? sel.id : ""}" ${sel ? "" : "disabled"}>Delete</button>
+          <button class="btn-confirm" style="min-width:96px" data-action="nether-new">Build</button>
+        </div></div>
     </div></div>`;
   }
 
@@ -4116,7 +4189,7 @@
         // Stat + Trick share the 6-property budget; traits and spells have their own 3 each
         const used = { stat: cnt.props, trick: cnt.props, trait: cnt.traits, spell: cnt.spells };
         const max = { stat: L.props_max, trick: L.props_max, trait: L.traits_max, spell: L.spells_max };
-        picker = `<div class="art-addmenu">${NETHER_CATS.map(x => `<button class="chip" ${full[x.c] ? "disabled" : `data-action="nether-pickcat" data-c="${x.c}"`}>${x.label} ${used[x.c]}/${max[x.c]}</button>`).join("")}</div>`;
+        picker = `<div class="art-addmenu" data-action="noop">${NETHER_CATS.map(x => `<button class="chip" ${full[x.c] ? "disabled" : `data-action="nether-pickcat" data-c="${x.c}"`}>${x.label} ${used[x.c]}/${max[x.c]}</button>`).join("")}</div>`;
       } else if (st.picking) {
         const q = st.search.trim().toLowerCase(); let rowsHtml = "";
         if (st.picking === "stat" || st.picking === "trick") {
@@ -4135,7 +4208,7 @@
           rowsHtml = spellPickRows(st, spellPickList(st, haveS), sp => spellPickCard(sp, false, `data-action="nether-pickprop" data-k="${sp.id}"`));
         }
         const back = `<button class="chip" data-action="nether-addprop">‹ Category</button>`;
-        picker = `<div class="art-picker">
+        picker = `<div class="art-picker" data-action="noop">
           ${st.picking === "spell" ? spellFilterBar(st, "nether-search", back)
             : `<div class="ovl-filterbar">${back}<input class="ovl-search" placeholder="Search…" value="${esc(st.search)}" data-action="nether-search"></div>`}
           <div class="art-pick-scroll">${rowsHtml}</div></div>`;
@@ -4143,7 +4216,7 @@
     // ── 3) ICON — the game's 16 pre-coloured nether-stone icons ──
     const shapeChoices = GEM_ICONS.map(g =>
       `<button class="gem-choice ${s.icon === g.key ? "on" : ""}" data-action="nether-icon" data-k="${g.key}">${spriteImg(g.path, "px")}</button>`).join("");
-    const body = `<div class="ovl-center"><div class="ovl-center-scroll">
+    const body = `<div class="ovl-center" data-action="lib-deselect"><div class="ovl-center-scroll">
       <div class="build-section"><h3>Traits &amp; properties</h3>${slotsBox}${picker}</div>
       <div class="build-section"><h3>Name</h3><input class="ovl-search name-field" style="max-width:none;width:100%" placeholder="Name" value="${esc(s.name)}" data-action="nether-name"></div>
       <div class="build-section"><h3>Icon</h3><div class="gem-picker">${shapeChoices}</div></div>
@@ -4162,14 +4235,29 @@
 
   // ── spell gems: library + stepped wizard (1 spell + up to 3 property items) ──
   function openSpellGems() {   // library (manage mode when equipCtx is null)
-    ovState = { kind: "spellgemlib", equipCtx: null, hideEquipped: false, sel: null, render: renderSpellGemLib };
+    ovState = { kind: "spellgemlib", equipCtx: null, hideEquipped: false, sel: null, search: "", libCls: null, libSort: "recent", render: renderSpellGemLib };
     openOverlay(ovState.render());
   }
   function renderSpellGemLib() {
     const st = ovState, ctx = st.equipCtx;   // {kind:'artifact'|'creature'} when equipping
     const equipped = ctx ? new Set(ctx.equipped()) : null;
-    let list = spellGems;
+    const q = (st.search || "").trim().toLowerCase(), sortK = st.libSort || "recent", d = sortSign(st.libSortRev);
+    const gemText = (g) => { const sp = gemSpell(g); return [gemName(g), sp ? sp.name : "", sp ? sp.desc || "" : "",
+      ...(g.propIds || []).map(pid => (SPELLPROP.get(pid) || {}).name || "")].join(" ").toLowerCase(); };
+    let list = spellGems.filter(g => (!st.libCls || gemClass(g) === st.libCls) && (!q || gemText(g).includes(q)));
     if (st.hideEquipped) list = list.filter(g => !spellGemEquippedInBuild(g.id) || (equipped && equipped.has(g.id)));
+    const potOf = (g) => { const sp = gemSpell(g); return sp ? potencyRank(sp) : POTENCY_ORDER.length; };
+    list = list.slice().sort(sortK === "name" ? (x, y) => d * gemName(x).localeCompare(gemName(y))
+      : sortK === "level" ? (x, y) => d * (gemTier(y) - gemTier(x)) || gemName(x).localeCompare(gemName(y))
+      : sortK === "potency" ? (x, y) => { const rx = potOf(x), ry = potOf(y), none = POTENCY_ORDER.length;
+          if ((rx === none) !== (ry === none)) return rx === none ? 1 : -1;   // no potency stays last either way
+          return d * (rx - ry) || gemName(x).localeCompare(gemName(y)); }
+      : (x, y) => d * (y.id - x.id));
+    const libBar = `<div class="ovl-filterbar lib-bar">
+        <select class="app-select${st.libCls ? " on" : ""}" data-action="lib-cls" title="Filter by class">
+          <option value="" ${!st.libCls ? "selected" : ""}>Class</option>${SPELL_CLASSES.map(cl => `<option value="${cl}" ${st.libCls === cl ? "selected" : ""}>${cl}</option>`).join("")}</select>
+        <span class="sg-sort-gap"></span>
+        ${libSortSeg(st, [["recent", "Recent", true], ["name", "A–Z", false], ["level", "Level", true], ["potency", "Potency", true]])}</div>`;
     const sel = st.sel != null ? spellGems.find(g => g.id === st.sel) : null;
     // when equipping onto a creature, gems of a class the creature can't use are blocked (unless a
     // trait/perk permits cross-class or an Opal has re-classed the gem) — matches the in-game rule.
@@ -4194,7 +4282,7 @@
       <div class="pick-tile ${st.sel === g.id ? "selected" : ""}${eqHere ? " eq-here" : ""}${blocked ? " disabled" : ""}${eqOtherMarker ? " eq-other" : ""}" data-action="sg-sel" data-id="${g.id}"${title ? ` title="${esc(title)}"` : ""}>
         <div class="pt-sprite">${spriteImg(gemIcon(g), "px")}</div>
         <div class="pt-name">${esc(gemName(g))}</div></div>`; }).join("")
-      || `<div class="slot-sub" style="padding:10px">No spell gems${st.hideEquipped ? " match" : " yet — build one"}.</div>`;
+      || `<div class="slot-sub" style="padding:10px">No spell gems${spellGems.length ? " match" : " yet — build one"}.</div>`;
     let info = "";
     if (sel) {
       const sp = gemSpell(sel);
@@ -4226,9 +4314,11 @@
     // only render the info panel when there's something selected (no empty placeholder panel)
     const infoPanel = sel ? `<div class="ovl-right lib-info">${info}</div>` : "";
     return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel">
-      <div class="overlay-header${creatureSlot ? " spells-hdr" : ""}">${creatureSlot ? spellsHeaderHtml(ctx.slotIdx) : `<h2>Spell Gems${ctx ? " — equip" : ""}</h2>`}<button class="ovl-close" data-action="close-ovl">✕</button></div>
+      <div class="overlay-header${creatureSlot ? " spells-hdr" : ""}">${creatureSlot ? spellsHeaderHtml(ctx.slotIdx) : `<h2>Spell Gems${ctx ? " — equip" : ""}</h2>`}
+        <input class="ovl-search" placeholder="Search gem, spell or enchant…" value="${esc(st.search || "")}" data-action="lib-search">
+        <button class="ovl-close" data-action="close-ovl">✕</button></div>
       <div class="overlay-body">
-        <div class="ovl-center" data-action="lib-deselect"><div class="ovl-center-scroll"><div class="pick-grid equip-grid">${tiles}</div></div></div>
+        <div class="ovl-center" data-action="lib-deselect">${libBar}<div class="ovl-center-scroll"><div class="pick-grid equip-grid">${tiles}</div></div></div>
         ${infoPanel}
       </div>
       <div class="overlay-footer"><button class="facet ${st.hideEquipped ? "on" : ""}" data-action="sg-hide-equipped">Hide equipped</button>
@@ -4271,7 +4361,7 @@
            ${chosen.desc ? `<div class="prop-sub" style="margin-bottom:4px">${perkText(chosen.desc)}</div>` : ""}
            ${spellStatsHtml(chosen)}`
         : "";
-      body = `<div class="ovl-center">
+      body = `<div class="ovl-center" data-action="lib-deselect">
         ${spellFilterBar(st, "sg-search")}
         <div class="ovl-center-scroll">${rows}</div></div>
         ${chosen ? `<div class="ovl-right lib-info">${info}</div>` : ""}`;
@@ -4300,12 +4390,12 @@
         }).map(p =>
           `<div class="prop-row ${g.propIds.includes(p.id) ? "chosen" : ""}" data-action="sg-pickprop" data-id="${p.id}"${p.textNote ? ` title="${esc(p.textNote)}"` : ""}>
             <span class="prop-ico">${p.icon ? spriteImg(p.icon, "px") : ""}</span><span class="prop-name">${esc(p.name)}</span><span class="prop-stat">${esc(propText(p, tier))}</span></div>`).join("");
-        picker = `<div class="sgb-picker">
+        picker = `<div class="sgb-picker" data-action="noop">
           <div class="ovl-filterbar"><button class="chip" data-action="sg-closepick">‹ Done</button>
             <input class="ovl-search" placeholder="Search gemstone enchantments…" value="${esc(st.search)}" data-action="sg-search"></div>
           <div class="sgb-pick-scroll">${pr}</div></div>`;
       }
-      body = `<div class="ovl-center">
+      body = `<div class="ovl-center" data-action="lib-deselect">
         <div class="sgb-top">
           <div class="build-section"><h3>Name</h3>
             <input class="ovl-search name-field" placeholder="${esc(gemSpell(g) ? gemSpell(g).name : "Spell gem name")}" value="${esc(g.name)}" data-action="sg-name" style="max-width:320px"></div>
@@ -4374,7 +4464,7 @@
 
   // creature spell slots (up to 3 equipped spell gems) — equip from the library
   function openCreatureSpells(slotIdx) {
-    ovState = { kind: "spellgemlib", hideEquipped: false, sel: null, equipCtx: {
+    ovState = { kind: "spellgemlib", hideEquipped: false, sel: null, search: "", libCls: null, libSort: "recent", equipCtx: {
       kind: "creature", slotIdx,
       equipped: () => build.slots[slotIdx].spellGemIds,
       max: creatureSlotMax(build.slots[slotIdx]),
@@ -4472,9 +4562,8 @@
       case "iconpick-cat": dovState.cat = t.dataset.c; dovState.limit = ICON_PAGE; refreshDetail(); break;
       case "iconpick-cat-clear": e.stopPropagation(); dovState.cat = null; dovState.limit = ICON_PAGE; refreshDetail(); break;
       case "iconpick-more": dovState.limit = (dovState.limit || ICON_PAGE) + ICON_PAGE; refreshDetail(); break;
-      case "iconpick-sel": { const k = t.dataset.k;   // first tap selects (+animates); tapping the selected tile again commits
-        if (dovState.sel === k) { const w = (D.wardrobe || []).find(x => x.sprite === k); if (w && dovState.onPick) dovState.onPick(w); closeDetail(); refreshOverlay(); }
-        else { dovState.sel = k; refreshDetail(); } break; }
+      case "iconpick-sel": { const k = t.dataset.k;   // tap selects (+animates); tapping the selected tile again deselects
+        dovState.sel = dovState.sel === k ? null : k; refreshDetail(); break; }
       case "iconpick-use": { const w = (D.wardrobe || []).find(x => x.sprite === dovState.sel); if (w && dovState.onPick) { dovState.onPick(w); closeDetail(); refreshOverlay(); } break; }
       case "open-appendix": openAppendix(); break;
       case "open-realms": openRealms(); break;
@@ -4669,7 +4758,7 @@
       case "art-unequip": build.slots[ovState.slotIdx].artifactId = null; persistBuild(); closeOverlay(); render(); break;
       case "art-new": openArtifactBuilder(null, ovState.slotIdx); break;
       case "art-edit": openArtifactBuilder(+t.dataset.id, ovState.slotIdx); break;
-      case "art-del": armOrDo(t, () => { const id = +t.dataset.id; artifacts = artifacts.filter(a => a.id !== id); build.slots.forEach(s => { if (s.artifactId === id) s.artifactId = null; }); if (ovState.sel === id) ovState.sel = artifacts[0] ? artifacts[0].id : null; persistArtifacts(); persistBuild(); refreshOverlay(); }); break;
+      case "art-del": armOrDo(t, () => { const id = +t.dataset.id; artifacts = artifacts.filter(a => a.id !== id); build.slots.forEach(s => { if (s.artifactId === id) s.artifactId = null; }); if (ovState.sel === id) ovState.sel = null; persistArtifacts(); persistBuild(); refreshOverlay(); }); break;
       case "artb-next": ovState.step = ovState.step === "type" ? "slots" : "name"; ovState.pickType = null; ovState.preview = null; ovState.search = ""; refreshOverlay(true); break;
       case "artb-back": ovState.step = ovState.step === "name" ? "slots" : "type"; ovState.pickType = null; ovState.preview = null; ovState.search = ""; refreshOverlay(true); break;
       case "artb-closecat": ovState.pickType = null; ovState.preview = null; ovState.search = ""; ovState.bkOnly = false; refreshOverlay(true); break;
@@ -4695,7 +4784,8 @@
       case "perk-taxo-clear": dovState.perkTaxo = null; dovState.perkCat = null; dovState.perkBrowse = false; refreshDetail(); break;
       case "perk-taxo-back": if (dovState.perkCat) dovState.perkCat = null; else dovState.perkBrowse = false; refreshDetail(); break;
       case "art-primary": ovState.draft.primary = ovState.draft.primary === t.dataset.p ? null : t.dataset.p; refreshOverlay(); break;
-      case "art-slot": ovState.pickType = t.dataset.t; ovState.preview = null; ovState.search = ""; ovState.bkOnly = false; refreshOverlay(true); break;
+      case "art-slot": ovState.pickType = ovState.pickType === t.dataset.t && !ovState.preview ? null : t.dataset.t;   // tap the open slot again → close
+        ovState.preview = null; ovState.search = ""; ovState.bkOnly = false; refreshOverlay(true); break;
       // socketing is a two-step: preview the item's effect, then confirm (never applies silently)
       case "art-preview": {
         const type = t.dataset.t;
@@ -4749,14 +4839,15 @@
 
       // nether library + wizard
       case "nether-new": openNetherBuilder(null); break;
-      case "nether-sel": ovState.sel = +t.dataset.id; refreshOverlay(); break;
+      case "nether-sel": { const id = +t.dataset.id; ovState.sel = ovState.sel === id ? null : id; refreshOverlay(); break; }
       case "ns-view": ovState.nsView = t.dataset.v; refreshOverlay(); break;
       case "nether-hide-equipped": e.stopPropagation(); ovState.hideEquipped = !ovState.hideEquipped; refreshOverlay(); break;
       case "nether-edit": openNetherBuilder(+t.dataset.id); break;
-      case "nether-del": armOrDo(t, () => { const id = +t.dataset.id; nether = nether.filter(n => n.id !== id); artifacts.forEach(a => a.netherIds = (a.netherIds || []).filter(x => x !== id)); if (ovState.sel === id) ovState.sel = nether[0] ? nether[0].id : null; persistNether(); persistArtifacts(); refreshOverlay(); }); break;
+      case "nether-del": armOrDo(t, () => { const id = +t.dataset.id; nether = nether.filter(n => n.id !== id); artifacts.forEach(a => a.netherIds = (a.netherIds || []).filter(x => x !== id)); if (ovState.sel === id) ovState.sel = null; persistNether(); persistArtifacts(); refreshOverlay(); }); break;
       case "nether-cancel": openNether(); break;
       case "nether-icon": ovState.draft.icon = t.dataset.k; refreshOverlay(); break;
-      case "nether-addprop": ovState.picking = "menu"; ovState.search = ""; refreshOverlay(); break;
+      case "nether-addprop": ovState.picking = ovState.picking && t.classList.contains("art-slot") ? false : "menu";   // the ＋ tile toggles; ‹ Category goes back
+        ovState.search = ""; refreshOverlay(); break;
       case "nether-pickcat": ovState.picking = t.dataset.c; ovState.search = ""; refreshOverlay(); break;
       case "nether-closepick": ovState.picking = false; refreshOverlay(); break;
       case "nether-pickprop": {
@@ -4790,7 +4881,7 @@
       case "sg-del": armOrDo(t, () => { const id = +t.dataset.id; spellGems = spellGems.filter(g => g.id !== id);
         artifacts.forEach(a => a.spells = (a.spells || []).filter(x => x !== id));
         build.slots.forEach(s => s.spellGemIds = (s.spellGemIds || []).filter(x => x !== id));
-        if (ovState.sel === id) ovState.sel = spellGems[0] ? spellGems[0].id : null;
+        if (ovState.sel === id) ovState.sel = null;
         persistSpellGems(); persistArtifacts(); persistBuild(); refreshOverlay(); }); break;
       case "sg-cancel": backToGemList(ovState.retSlot, ovState.editId); break;
       case "sg-spell": { const d = ovState.draft; d.spellId = d.spellId === +t.dataset.id ? null : +t.dataset.id;
@@ -4798,7 +4889,8 @@
         refreshOverlay(); break; }
       case "sgb-next": ovState.step = "props"; ovState.picking = false; ovState.search = ""; refreshOverlay(true); break;
       case "sgb-back": ovState.step = "spell"; ovState.picking = false; ovState.search = ""; refreshOverlay(true); break;
-      case "sg-addprop": if (ovState.draft.propIds.length >= gemSlots(ovState.draft)) break; ovState.picking = true; ovState.search = ""; refreshOverlay(true); break;
+      case "sg-addprop": if (ovState.picking) { ovState.picking = false; ovState.search = ""; refreshOverlay(); break; }   // tap again closes
+        if (ovState.draft.propIds.length >= gemSlots(ovState.draft)) break; ovState.picking = true; ovState.search = ""; refreshOverlay(true); break;
       case "sg-closepick": ovState.picking = false; refreshOverlay(true); break;
       case "sg-pickprop": { const id = +t.dataset.id, arr = ovState.draft.propIds, picked = SPELLPROP.get(id);
         const i = arr.indexOf(id);
@@ -4833,7 +4925,12 @@
         }
         persistBuild(); persistArtifacts(); render(); refreshOverlay(); break;   // render(): home "Spells n/m" chip
       }
-      case "lib-deselect": if (ovState && ovState.sel != null) { ovState.sel = null; refreshOverlay(); } break;
+      case "lib-deselect": clearHeldSelection(); break;
+      case "dlib-deselect": if (dovState && dovState.sel != null) { dovState.sel = null; refreshDetail(); } break;
+      case "noop": break;
+      // saved-library header bars (Artifacts / Nether Stones / Spell Gems)
+      case "lib-sort": sortPick(ovState, "libSort", "libSortRev", t.dataset.v); refreshOverlay(); break;
+      case "lib-flag": ovState[t.dataset.f] = !ovState[t.dataset.f]; refreshOverlay(); break;
 
       // entity taxonomy detail (trait / spell / perk / relic / card)
       case "nav-trait": openEntityDetail("trait", +t.dataset.tid); break;
@@ -4849,6 +4946,33 @@
     }
   }
 
+  // Click-away deselection: a tap on empty space inside a list area (an element with data-action="lib-deselect")
+  // drops the held selection of whichever overlay is open. Pickers/menus inside those areas are marked
+  // data-action="noop" so their blank space doesn't count as "away".
+  function clearHeldSelection() {
+    const st = ovState; if (!st) return;
+    switch (st.kind) {
+      case "artlib": case "spellgemlib": case "nether": case "builds": case "spec":
+        if (st.sel == null) return; st.sel = null; break;
+      case "creature":
+        if (st.step === "fusion") { if (st.fusionId == null) return; st.fusionId = null; }
+        else if (st.step === "primary") { if (st.primaryId == null) return; st.primaryId = null; }
+        else return;
+        break;
+      case "sgbuild":
+        if (st.step === "spell") { if (st.draft.spellId == null) return; st.draft.spellId = null; }
+        else { if (!st.picking) return; st.picking = false; st.search = ""; }
+        break;
+      case "artbuild":
+        if (st.step === "type") { if (!st.draft.primary) return; st.draft.primary = null; }
+        else if (st.step === "slots") { if (!st.pickType && !st.preview) return; st.pickType = null; st.preview = null; st.search = ""; st.bkOnly = false; }
+        else return;
+        break;
+      case "netherbuild": if (!st.picking) return; st.picking = false; st.search = ""; break;
+      default: return;
+    }
+    refreshOverlay();
+  }
   function armOrDo(t, fn) { if (t.classList.contains("armed")) { fn(); return; } t.classList.add("armed"); setTimeout(() => t.classList.remove("armed"), 2500); }
   function toggleArr(arr, v) { const i = arr.indexOf(v); if (i >= 0) arr.splice(i, 1); else arr.push(v); }
 
@@ -4884,7 +5008,7 @@
     if (A === "bio-text") { ovState.text = v; ovState.error = null; return; }
     // search fields — live filter without losing caret
     const searchMap = { "crea-search": [OV, ovState], "spec-search": [OV, ovState], "artb-search": [OV, ovState],
-      "relic-search": [OV, ovState], "cards-search": [OV, ovState], "anoint-search": [OV, ovState], "nether-search": [OV, ovState], "sg-search": [OV, ovState], "appendix-search": [OV, ovState], "shop-search": [OV, ovState], "realm-search": [OV, ovState], "riddle-search": [OV, ovState], "gloss-search": [OV, ovState], "proj-search": [OV, ovState], "facet-search": [DOV, dovState], "perk-search": [DOV, dovState], "pers-search": [DOV, dovState], "iconpick-search": [DOV, dovState], "skin-search": [DOV, dovState] };
+      "relic-search": [OV, ovState], "cards-search": [OV, ovState], "anoint-search": [OV, ovState], "nether-search": [OV, ovState], "sg-search": [OV, ovState], "appendix-search": [OV, ovState], "shop-search": [OV, ovState], "realm-search": [OV, ovState], "riddle-search": [OV, ovState], "gloss-search": [OV, ovState], "proj-search": [OV, ovState], "lib-search": [OV, ovState], "facet-search": [DOV, dovState], "perk-search": [DOV, dovState], "pers-search": [DOV, dovState], "iconpick-search": [DOV, dovState], "skin-search": [DOV, dovState] };
     if (searchMap[A]) {
       const [root, state] = searchMap[A]; state.search = v;
       if (A === "crea-search") resetCreaPage();   // new query → back to page 1
@@ -4916,6 +5040,27 @@
   let pendingSearchRender = null;
   document.addEventListener("compositionend", () => { const f = pendingSearchRender; pendingSearchRender = null; if (f) f(); });
 
+  // Typing on a phone: the first tap anywhere outside the focused text field only leaves the field (closing the
+  // on-screen keyboard) — it never also presses whatever was under the finger. Touch/pen only: a mouse has no
+  // keyboard to dismiss, and desktop auto-focuses search fields, so swallowing clicks there would cost every click.
+  const isTextEntry = (n) => !!n && (n.tagName === "TEXTAREA" || (n.tagName === "INPUT" && !/^(range|checkbox|radio|button|submit|color|file)$/i.test(n.type)));
+  let swallowTap = null;   // the field that was focused when the tap began
+  document.addEventListener("pointerdown", (e) => {
+    swallowTap = null;
+    if (e.pointerType === "mouse") return;
+    const f = document.activeElement;
+    if (!isTextEntry(f) || f.contains(e.target) || isTextEntry(e.target)) return;   // tapping into a field is fine
+    swallowTap = f;
+    // a drag/scroll fires no click — expire the flag shortly after release so it can never eat a later, unrelated tap
+    const done = () => { document.removeEventListener("pointerup", done, true); setTimeout(() => { if (swallowTap === f) swallowTap = null; }, 400); };
+    document.addEventListener("pointerup", done, true);
+  }, true);
+  document.addEventListener("click", (e) => {
+    if (!swallowTap) return;
+    const f = swallowTap; swallowTap = null;
+    e.preventDefault(); e.stopPropagation();
+    if (document.activeElement === f) f.blur();
+  }, true);
   document.addEventListener("click", onClick);
 
   // right-click a creature tile to (re)open the creature / fusion selector
@@ -4949,6 +5094,8 @@
     // shared spell picker dropdowns ("*" / "" = "-" = no filter)
     else if (A === "spf-target") { ovState.spellTarget = t.value === "*" ? null : t.value; refreshOverlay(); }
     else if (A === "spf-cls") { ovState.spellCls = t.value || null; refreshOverlay(); }
+    else if (A === "lib-type") { ovState.libType = t.value || null; refreshOverlay(); }
+    else if (A === "lib-cls") { ovState.libCls = t.value || null; refreshOverlay(); }
     else if (A === "nether-propval" && ovState && ovState.kind === "netherbuild") {   // commit: clamp to the code range, refresh score
       const p = ovState.draft.props[+t.dataset.i]; if (!p) return;
       const lo = ngMin(p.key), hi = ngMax(p.key);

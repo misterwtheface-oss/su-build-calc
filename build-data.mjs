@@ -830,7 +830,7 @@ for (const s of specRecs) {
 // ── False God output list (only gods that have ≥1 specialization present) + composite check ──
 const specGodKeys = new Set(specs.map(s => s.falseGod).filter(Boolean));
 const falseGods = [];
-let fgodImgMisses = 0;
+let fgodImgMisses = 0, fgodIconMisses = 0;
 for (const g of FALSE_GODS) {
   if (g.nyi) { falseGods.push({ key: g.key, name: g.name, img: null, nyi: true }); continue; }   // NYI: ships flagged, no portrait/specs
   if (!specGodKeys.has(g.key)) continue;
@@ -838,7 +838,11 @@ for (const g of FALSE_GODS) {
   if (!fs.existsSync(path.join(OUT_FGOD, `${g.key}.png`))) {
     fgodImgMisses++; warn(`False God "${g.name}" composite missing (${rel}) — run tools/build_falsegods.py`);
   }
-  falseGods.push({ key: g.key, name: g.name, img: rel });
+  // the god's small ICON (code-grounded per _su_extract code/FALSE_GOD_ICONS.md) — used where a False God is listed
+  const iconRel = `assets/falsegods/icons/${g.key}.png`;
+  const hasIcon = fs.existsSync(path.join(ROOT, iconRel));
+  if (!hasIcon) { fgodIconMisses++; warn(`False God "${g.name}" icon missing (${iconRel})`); }
+  falseGods.push({ key: g.key, name: g.name, img: rel, ...(hasIcon ? { icon: iconRel } : {}) });
 }
 
 // ── spell-slot grants — perks/traits that grant a creature EXTRA spell-gem slots ──
@@ -2919,6 +2923,8 @@ const SU_DATA = {
   specs,
   specIdMigration: SPEC_ID_MIGRATION,   // old (mislabeled) spec id -> code spec id; app.js migrates saved builds once
   falseGods,
+  // the game's own menu glyphs for empty home tiles (menu_character / codex_anointments; G = greyed variant)
+  uiIcons: { specEmpty: 'assets/ui/menu_characterG_0.png', anointEmpty: 'assets/ui/codex_anointmentsG_0.png' },
   bossSprites,              // normalized Deity owner name → bspr_ battle sprite (Appendix boss rows)
   effects,                  // effect rules for effects.js (EFFECT_ENGINE.md)
   traits,

@@ -761,6 +761,8 @@ h1, h2, h3 { margin: 0; }
 .spec-tile-icon { width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; }
 .spec-tile-icon img { width: 100%; height: 100%; object-fit: contain; }
 .spec-tile-plus { font-size: 24px; color: var(--accent2); }
+/* empty-tile placeholder = the game's 16px menu glyph at a crisp 2× */
+.spec-tile-icon img.tile-empty-ico { width: 32px; height: 32px; image-rendering: pixelated; opacity: .85; }
 /* equipped anointment perk icons shown in the Anointments tile */
 .anoint-tile .spec-tile-icon { width: auto; max-width: 100%; height: auto; min-height: 44px; }
 .anoint-tile-icons { display: flex; flex-wrap: wrap; gap: 3px; justify-content: center; }
@@ -1510,3 +1512,23 @@ select.app-select:hover { border-color: var(--accent2); }
 .proj-item img { width: 24px; height: 24px; image-rendering: pixelated; }
 .proj-item b { color: var(--accent2); font-weight: 600; }
 .proj-reqs { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+
+/* ── inline name icons: spec emblem / class icon / False God icon in front of a listed name ── */
+.tag-ico { display: inline-flex; width: 16px; height: 16px; margin-right: 4px; vertical-align: -3px; flex: 0 0 auto; }
+.tag-ico img { width: 100%; height: 100%; object-fit: contain; image-rendering: pixelated; }
+.spec-tag { display: inline-flex; align-items: center; }
+.spec-tag .tag-ico { width: 14px; height: 14px; margin-right: 3px; }
+.facet .tag-ico { width: 15px; height: 15px; margin: 0 3px 0 2px; }
+.lib-sub { display: flex; align-items: center; justify-content: center; gap: 0; }
+
+/* ── saved-library header bar (Artifacts / Nether Stones / Spell Gems): filters left, sort right ── */
+.lib-bar { flex-wrap: wrap; row-gap: 6px; }
+.lib-bar .sg-sort-gap { flex: 1 1 auto; }
+
+/* ── Realms → Objects: per-realm group header + object blocks (sprite · name · ×count) ── */
+.robj-list { display: flex; flex-direction: column; gap: 12px; }
+.robj-grp { display: flex; flex-direction: column; gap: 6px; }
+.realm-objs { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 2px 4px; }
+.realm-obj { display: inline-flex; align-items: center; gap: 6px; background: var(--surface2);
+  border: 1px solid var(--border-dim); border-radius: 8px; padding: 4px 9px 4px 5px; font-size: 13px; }
+.realm-obj-name { color: var(--text); }
