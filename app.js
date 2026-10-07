@@ -728,7 +728,7 @@
     const eqAnoints = equippedAnointObjs();
     const anointIcons = eqAnoints.length
       ? `<div class="anoint-tile-icons">${eqAnoints.map(a => `<span class="anoint-mini" title="${esc(a.name)}">${a.icon ? spriteImg(a.icon, "px") : "✦"}</span>`).join("")}</div>`
-      : spriteImg(EMPTY_ICON.anoint, "px tile-empty-ico");
+      : spriteImg(EMPTY_ICON.anoint, "px tile-empty-ico anoint-ph");
     const anointTile = `
       <div class="spec-tile anoint-tile ${build.anoints.length ? "filled" : ""}" data-action="${build.anoints.length ? "anoint-detail" : "open-anoint"}" title="Anointments">
         <div class="spec-tile-icon">${anointIcons}</div>

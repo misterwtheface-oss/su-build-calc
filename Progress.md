@@ -9,6 +9,9 @@ No verify-before-push ceremony (no real users yet) — but every change is check
 ## 2026-10-06 — UI batch (libraries, selection, icons, Realms Objects)
 - **Empty home tiles** use the game's menu glyphs: Specialization = `menu_characterG_0`, Anointments =
   `codex_anointmentsG_0` (G = greyed; non-G variants also copied to `assets/ui/`). Shipped as `D.uiIcons` (hashed + precached).
+  The hand glyph's art fills only 9×11 of its 16px canvas (character: 12×14), so it draws at 2.5× (40px) vs 32px to read
+  the same size. Equipped anointment icons = a fixed 5-wide grid of ≤32px cells: 5 = one row on every width (desktop
+  200px tile, phones 176/161px), Royal's 20 (5 + Master of All 10 + Highborn 5) = 4×5, tile ~170–190px tall.
 - **Nether Stones library** mirrors Artifacts: no auto-selection, info panel only when a stone is selected, footer =
   Hide equipped · Edit · Delete · **Build** (Edit/Delete moved out of the info panel).
 - **Library header bars** (Artifacts / Nether Stones / Spell Gems): header search + filter/sort row. Artifacts: Type ▾,
