@@ -1530,12 +1530,12 @@ select.app-select:hover { border-color: var(--accent2); }
 .realm-tabs { margin: 10px 0 8px; }
 .robj-cards { display: flex; flex-direction: column; gap: 8px; }
 /* one container per realm Object: header row, then a bordered row per effect (base = favor 0, then each tier) */
-.robj-card { background: linear-gradient(var(--surface), var(--bg2)); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+.robj-card { background: linear-gradient(var(--surface), var(--bg2)); border: 1px solid rgba(154,123,214,.45); border-radius: var(--radius); overflow: hidden; }
 .robj-card-head { display: flex; align-items: center; gap: 8px; padding: 6px 10px; font-size: 13.5px;
-  background: rgba(201,162,75,.10); border-bottom: 1px solid var(--border-dim); }
+  background: var(--surface3); border-bottom: 1px solid rgba(154,123,214,.35); }
 .robj-tiers { display: flex; flex-direction: column; font-size: 12.5px; color: var(--text); }
 .robj-tier { display: flex; gap: 10px; align-items: baseline; padding: 5px 10px; }
-.robj-tier + .robj-tier { border-top: 1px solid var(--border-dim); }
+.robj-tier + .robj-tier { border-top: 1px solid rgba(154,123,214,.2); }
 .robj-tier .fav-tier-rk { flex: 0 0 auto; min-width: 26px; text-align: center; }
 
 /* ── Nether Realm helper (Faucet / Mimic Mike) ─────────────────────────────── */
