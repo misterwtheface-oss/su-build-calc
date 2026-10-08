@@ -2980,12 +2980,16 @@ const startOfBattle = [], sobSeen = new Set(), sobSkipped = [], sobNameDiff = []
 const sobName = (n) => String(n || '').replace(/\s*\(\d+\)$/, '').trim();          // "In Formation (423)" → "In Formation"
 const sobTraitByRt = new Map(); for (const t of Object.values(traits)) for (const r of t.runtimeIds || []) sobTraitByRt.set(r, t);
 const sobPerkNames = new Set(specs.flatMap(sp => sp.perks.map(p => p.name)));
+// blacklisted traits (UNRECONCILED / NYI / legacy / duplicate copies) never ship — their start-of-battle entries are dropped too
+const sobRtToTraitId = new Map(); for (const [tid, rts] of Object.entries(RT_GROUPS)) for (const r of rts || []) sobRtToTraitId.set(r, +tid);
+const sobBlacklisted = [];
 for (const e of sobRaw) {
   if (/open/i.test(e.confidence) || ['tavern', 'tavern rule', 'system'].includes(e.family)) continue;
   let ref = null;
   if (e.family === 'passive' || e.family === 'trait') {
     const rt = e.ids[0], nm = sobName(e.name);
     if (rt == null) ref = null;                                                         // gate id held in a variable → open
+    else if (excludedTraitIds.has(sobRtToTraitId.get(rt))) { sobBlacklisted.push(nm); continue; }
     else if (sobTraitByRt.has(rt)) { ref = { k: 'trait', id: sobTraitByRt.get(rt).id }; if (sobTraitByRt.get(rt).name !== nm) sobNameDiff.push(`${rt}: ${nm} ≠ app ${sobTraitByRt.get(rt).name}`); }
     else { const byName = Object.values(traits).filter(t => t.name === nm);
       // not in the app under this runtime id: same-name app trait if unique, else a text-only row (real source, no app record)
@@ -3007,7 +3011,7 @@ for (const e of sobRaw) {
   startOfBattle.push({ phase: e.phase_num, sub: e.subphase || null, ref, name: e.name, effect: e.effect || '', enemy: !!e.enemy_only,
     ...(e.codex_note ? { note: e.codex_note } : {}) });
 }
-console.log(`  start-of-battle order: ${startOfBattle.length} rows from ${sobRaw.length} entries · text-only ${startOfBattle.filter(r => r.ref.k === 'text').length} · skipped (no app join) ${sobSkipped.length}: ${sobSkipped.join(' | ')}${sobNameDiff.length ? ` · ⚠ trait name mismatches ${sobNameDiff.length}: ${sobNameDiff.join(' | ')}` : ''}`);
+console.log(`  start-of-battle order: ${startOfBattle.length} rows from ${sobRaw.length} entries · text-only ${startOfBattle.filter(r => r.ref.k === 'text').length} · blacklisted ${sobBlacklisted.length} (${[...new Set(sobBlacklisted)].join(', ')}) · skipped (no app join) ${sobSkipped.length}: ${sobSkipped.join(' | ')}${sobNameDiff.length ? ` · ⚠ trait name mismatches ${sobNameDiff.length}: ${sobNameDiff.join(' | ')}` : ''}`);
 
 const SU_DATA = {
   meta: {
