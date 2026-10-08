@@ -1638,3 +1638,5 @@ select.app-select:hover { border-color: var(--accent2); }
   border: 1px solid rgba(154,123,214,.45); border-radius: 8px; }
 .sob-step:hover { border-color: var(--accent2); }
 .sob-step + .perk-list { margin-bottom: 8px; }
+.sob-mem-toggle { align-self: flex-start; margin-top: 4px; font-size: 11px; padding: 2px 8px; }
+.sob-members { margin-top: 4px; padding-top: 0; }

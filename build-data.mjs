@@ -2975,7 +2975,14 @@ const projects = (() => {
 //   relic_signatures app id, rank = index×10 · card = set family + power · condition / realm property / realm boost = code id.
 const sobRaw = readJSON(path.join(MODEL, 'start_of_battle_order.json')).entries.slice().sort((a, b) => a.global_order - b.global_order);
 const relicCodeToApp = new Map(readJSON(path.join(MODEL, 'relic_signatures.json')).records.map(r => [r.relic_code_id, r.app_relic_id]));
-const SOB_REALM_PROP = { 25: 'DEBUFF' };   // scr_RealmPropertyName case 25 = L_REALM_DEBUFF
+// scr_RealmPropertyName case → app realm-property key. 13 COPYTRAITS has no app record (not in realm_properties.json) → named
+// row with its code sprite (ICON_MAPS: realmprop_e_copytraits).
+const SOB_REALM_PROP = { 25: 'DEBUFF', 12: 'EXTRATRAITS', 67: 'SPELLSLOTS', 11: 'COPYGEMS' };
+const SOB_REALM_TEXT = { 13: { name: 'Copy Your Traits', sprite: 'realmprop_e_copytraits' } };
+// always-on member names that are blacklisted traits (and not also a shipped trait's name) never show
+const sobShippedNames = new Set(Object.values(traits).map(t => t.name));
+const sobBlackNames = new Set(consolidated.filter(t => excludedTraitIds.has(t.id)).map(t => t.name).filter(n => !sobShippedNames.has(n)));
+let sobAlways = null;
 const startOfBattle = [], sobSeen = new Set(), sobSkipped = [], sobNameDiff = [];
 const sobName = (n) => String(n || '').replace(/\s*\(\d+\)$/, '').trim();          // "In Formation (423)" → "In Formation"
 const sobTraitByRt = new Map(); for (const t of Object.values(traits)) for (const r of t.runtimeIds || []) sobTraitByRt.set(r, t);
@@ -2985,10 +2992,30 @@ const sobRtToTraitId = new Map(); for (const [tid, rts] of Object.entries(RT_GRO
 const sobBlacklisted = [];
 for (const e of sobRaw) {
   if (/open/i.test(e.confidence) || ['tavern', 'tavern rule', 'system'].includes(e.family)) continue;
+  if (/battle-wide rule/i.test(e.kind || '')) continue;                                 // set at setup, not a start-of-battle event
+  if (e.family === 'maintenance pass') {                                                // 0b: both always-on passes → ONE row
+    // raw code labels → app names: "realm 26 BUFF" → that realm property's name, "relic [idx, code]" → relic + rank;
+    // register-held ids and tavern rules have no name → dropped
+    const memberName = (n) => {
+      n = String(n).replace(/^condition\s+/, '');
+      if (/register-held|^tavern\b/i.test(n) || n === 'None') return null;
+      let m = n.match(/^realm \d+ ([A-Z_]+)$/);
+      if (m) { const rp = realmProps.find(x => x.key === m[1]); return rp ? rp.name : null; }
+      m = n.match(/^relic \[(\d+),\s*(\d+)\]$/);
+      if (m) { const rel = relics.find(r => r.id === relicCodeToApp.get(+m[2])), rk = +m[1] * 10;
+        return rel && rel.ranks.some(x => x.rank === rk) ? `${rel.name.split(',')[0]} (rank ${rk})` : null; }
+      return sobBlackNames.has(n) ? null : n;
+    };
+    const add = (e.members || []).filter(Boolean).map(memberName).filter(Boolean);
+    if (sobAlways) { for (const n of add) if (!sobAlways.ref.members.includes(n)) sobAlways.ref.members.push(n); continue; }
+    sobAlways = { phase: e.phase_num, sub: e.subphase || null, ref: { k: 'always', members: [...new Set(add)] }, name: 'Always-on effects', effect: '', enemy: false };
+    startOfBattle.push(sobAlways); continue;
+  }
   let ref = null;
   if (e.family === 'passive' || e.family === 'trait') {
     const rt = e.ids[0], nm = sobName(e.name);
-    if (rt == null) ref = null;                                                         // gate id held in a variable → open
+    if (rt == null) { const byName = Object.values(traits).filter(t => t.name === nm);   // no gate id: unique shipped name (Tools of Creation)
+      ref = byName.length === 1 && !/held in a variable/.test(e.name) ? { k: 'trait', id: byName[0].id } : null; }
     else if (excludedTraitIds.has(sobRtToTraitId.get(rt))) { sobBlacklisted.push(nm); continue; }
     else if (sobTraitByRt.has(rt)) { ref = { k: 'trait', id: sobTraitByRt.get(rt).id }; if (sobTraitByRt.get(rt).name !== nm) sobNameDiff.push(`${rt}: ${nm} ≠ app ${sobTraitByRt.get(rt).name}`); }
     else { const byName = Object.values(traits).filter(t => t.name === nm);
@@ -3002,7 +3029,9 @@ for (const e of sobRaw) {
   }
   else if (e.family === 'card') { const fam = e.name.replace(/ set power \d+$/, ''); ref = cards.some(c => c.family === fam) ? { k: 'card', family: fam, power: e.ids[0] } : null; }
   else if (e.family === 'condition') ref = { k: 'cond', name: e.name.replace(/\s*\(\d+\)$/, '') };
-  else if (e.family === 'realm') ref = SOB_REALM_PROP[e.ids[0]] ? { k: 'realm', key: SOB_REALM_PROP[e.ids[0]] } : null;
+  else if (e.family === 'realm') { const id = e.ids[0], tx = SOB_REALM_TEXT[id];
+    ref = SOB_REALM_PROP[id] ? { k: 'realm', key: SOB_REALM_PROP[id] }
+      : tx ? { k: 'text', name: tx.name, desc: e.effect || '', icon: threatIcon(tx.sprite, `start-of-battle realm property ${id}`), chip: 'Realm Property' } : null; }
   else if (e.family === 'realm boost') ref = { k: 'boost', id: e.ids[0], name: e.name.replace(/^Realm boost \d+:\s*/, '') };
   if (!ref) { sobSkipped.push(`${e.global_order} ${e.family} ${e.name}`); continue; }
   const key = `${e.phase_num}|${e.subphase || ''}|${JSON.stringify(ref)}`;

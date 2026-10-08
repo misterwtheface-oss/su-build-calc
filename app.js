@@ -2617,7 +2617,8 @@
 
   // ── Start-of-battle order (D.startOfBattle, built from _su_extract START_OF_BATTLE_FINDINGS.md). One collapsible group per
   // step, titled with the in-game codex wording; rows numbered in execution order across the whole sequence.
-  const SOB_STEPS = [["1a", "Traits are granted, then shared"], ["1b", "Classes and races are changed"], ["1c", "Trait sharing by class / race"],
+  const SOB_STEPS = [["0a", "Battle setup"], ["0b", "Always-on effects applied"], ["0c", "Just before traits"],
+    ["1a", "Traits are granted, then shared"], ["1b", "Classes and races are changed"], ["1c", "Trait sharing by class / race"],
     ["2", "Spell Gems are granted"], ["3", "Buffs, debuffs and minions are granted"], ["4", "Stats are increased"], ["5", "Stats are decreased"],
     ["6", "The battle starts"], ["7", "Creatures attack"], ["8", "Creatures cast spells"], ["9", "After all start-of-battle effects"]];
   let SOB_ROWS = null;
@@ -2627,7 +2628,9 @@
     const { creatureByTrait, itemsByTrait } = traitSources();
     SOB_ROWS = (D.startOfBattle || []).map((e, i) => {
       const ref = e.ref; let r = null;
-      if (ref.k === "text") r = { name: ref.name, desc: ref.desc, icons: [], chips: [] };   // real source with no app record
+      if (ref.k === "text") r = { name: ref.name, desc: ref.desc, icons: [ref.icon && spriteImg(ref.icon, "px")], chips: [ref.chip] };   // real source with no app record
+      else if (ref.k === "always") r = { name: e.name, members: ref.members, icons: [], chips: [],
+        desc: "Every “always” and “while” effect is applied here, after setup and before any trait is granted, so it doesn't yet see what the steps below change. It's re-checked only between steps and is fully up to date before the first turn." };
       else if (ref.k === "trait") { const t = D.traits[ref.id]; if (t) {
         const c = creatureByTrait.get(t.id), boss = bossSpriteFor(t), its = itemsByTrait.get(t.id) || [], it = its.find(x => x.icon);
         r = { name: t.name, desc: t.desc, icons: [c ? critFace(c) : boss ? spriteImg(boss) : "", it ? spriteImg(it.icon, "px") : ""],
@@ -2644,12 +2647,12 @@
       else if (ref.k === "boost") r = { name: "Realm Boost", desc: ref.name.charAt(0).toUpperCase() + ref.name.slice(1) + ".", icons: [], chips: [] };
       if (!r) { console.error("START OF BATTLE: unresolved", ref, e.name); r = { name: e.name, desc: e.effect, icons: [], chips: [] }; }
       r.icons = r.icons.filter(Boolean); r.chips = r.chips.filter(Boolean);
-      return { ...r, n: i + 1, step: e.phase === 1 ? e.sub : String(e.phase), enemy: e.enemy, note: e.note || null };
+      return { ...r, n: i + 1, step: e.sub || String(e.phase), enemy: e.enemy, note: e.note || null };
     });
     return SOB_ROWS;
   }
   function sobSection(st, q) {
-    const all = sobRows().filter(r => !q || r.name.toLowerCase().includes(q) || (r.desc || "").toLowerCase().includes(q));
+    const all = sobRows().filter(r => !q || r.name.toLowerCase().includes(q) || (r.desc || "").toLowerCase().includes(q) || (r.members || []).some(m => m.toLowerCase().includes(q)));
     if (!all.length) return "";
     const key = "StartOfBattle", open = q ? true : !st.collapsed.has(key);
     const row = (r) => `<div class="perk-line res-line${r.enemy ? " res-enemy" : ""}${r.open ? " apx-clickable" : ""}"${r.open ? ` data-action="apx-open" data-ek="${r.open.ek}" data-eid="${esc(String(r.open.eid))}" title="View taxonomy"` : ""}>
@@ -2657,6 +2660,8 @@
         <div class="apx-iconcol">${r.icons.map(ic => `<div class="apx-crea">${ic}</div>`).join("")}</div>
         <div class="perk-line-body"><div class="perk-line-head"><b>${esc(r.name)}</b></div>
           ${r.desc ? `<div class="perk-desc">${richText(r.desc)}</div>` : ""}${r.note ? `<div class="perk-desc res-note">${esc(r.note)}</div>` : ""}
+          ${r.members ? `<button class="facet sob-mem-toggle" data-action="sob-members">${st.sobMembers || q ? "▾" : "▸"} ${r.members.length} effects</button>
+            ${st.sobMembers || q ? `<div class="perk-line-meta sob-members">${r.members.filter(m => !q || m.toLowerCase().includes(q) || r.name.toLowerCase().includes(q)).map(m => `<span class="anoint-spec-tag">${esc(m)}</span>`).join("")}</div>` : ""}` : ""}
           <div class="perk-line-meta">${r.chips.map(c => `<span class="anoint-spec-tag">${esc(c)}</span>`).join("")}</div></div></div>`;
     const steps = SOB_STEPS.map(([k, title]) => {
       const list = all.filter(r => r.step === k); if (!list.length) return "";
@@ -4844,6 +4849,7 @@
       case "proj-search": break;     // handled in onInput
       case "proj-diff": ovState.ruthless = t.dataset.v === "ruthless"; refreshOverlay(true); break;
       case "proj-group-toggle": { const g = t.dataset.g; ovState.collapsed.has(g) ? ovState.collapsed.delete(g) : ovState.collapsed.add(g); refreshOverlay(); break; }
+      case "sob-members": ovState.sobMembers = !ovState.sobMembers; refreshOverlay(); break;
       case "sob-step": { const k = t.dataset.k; ovState.sobOpen = ovState.sobOpen || new Set(); ovState.sobOpen.has(k) ? ovState.sobOpen.delete(k) : ovState.sobOpen.add(k); refreshOverlay(); break; }
       case "nd-diff": ovState.ndDiff = t.dataset.v; refreshOverlay(); break;
       case "gloss-cat-toggle": { const c = t.dataset.c; ovState.collapsed.has(c) ? ovState.collapsed.delete(c) : ovState.collapsed.add(c); refreshOverlay(); break; }
