@@ -2967,6 +2967,48 @@ const projects = (() => {
   console.log(`  projects (code): ${out.length} · groups ${[...new Set(out.map(p => p.group))].join('/')} · item icons ${icons}`);
   return out;
 })();
+// ── Start-of-battle effect order (code: _su_extract code/START_OF_BATTLE_FINDINGS.md, data/model/start_of_battle_order.json) ──
+// One row per effect per phase in execution order (the player/enemy side blocks of the same effect collapse to the first).
+// Excluded like the resurrection order's unconfirmed rows: Open-confidence entries, the tavern-rule guards (name runtime-only),
+// the "timeline rebuilt" step (it's the phase itself), relic gates with no app rank. Ids → app refs:
+//   passive/trait = trait runtime id · perk = name (app perk names are unique) · relic = [perk_index, relic_code_id] →
+//   relic_signatures app id, rank = index×10 · card = set family + power · condition / realm property / realm boost = code id.
+const sobRaw = readJSON(path.join(MODEL, 'start_of_battle_order.json')).entries.slice().sort((a, b) => a.global_order - b.global_order);
+const relicCodeToApp = new Map(readJSON(path.join(MODEL, 'relic_signatures.json')).records.map(r => [r.relic_code_id, r.app_relic_id]));
+const SOB_REALM_PROP = { 25: 'DEBUFF' };   // scr_RealmPropertyName case 25 = L_REALM_DEBUFF
+const startOfBattle = [], sobSeen = new Set(), sobSkipped = [], sobNameDiff = [];
+const sobName = (n) => String(n || '').replace(/\s*\(\d+\)$/, '').trim();          // "In Formation (423)" → "In Formation"
+const sobTraitByRt = new Map(); for (const t of Object.values(traits)) for (const r of t.runtimeIds || []) sobTraitByRt.set(r, t);
+const sobPerkNames = new Set(specs.flatMap(sp => sp.perks.map(p => p.name)));
+for (const e of sobRaw) {
+  if (/open/i.test(e.confidence) || ['tavern', 'tavern rule', 'system'].includes(e.family)) continue;
+  let ref = null;
+  if (e.family === 'passive' || e.family === 'trait') {
+    const rt = e.ids[0], nm = sobName(e.name);
+    if (rt == null) ref = null;                                                         // gate id held in a variable → open
+    else if (sobTraitByRt.has(rt)) { ref = { k: 'trait', id: sobTraitByRt.get(rt).id }; if (sobTraitByRt.get(rt).name !== nm) sobNameDiff.push(`${rt}: ${nm} ≠ app ${sobTraitByRt.get(rt).name}`); }
+    else { const byName = Object.values(traits).filter(t => t.name === nm);
+      // not in the app under this runtime id: same-name app trait if unique, else a text-only row (real source, no app record)
+      ref = byName.length === 1 ? { k: 'trait', id: byName[0].id } : { k: 'text', name: nm, desc: e.effect || '' }; }
+  }
+  else if (e.family === 'perk') ref = sobPerkNames.has(sobName(e.name)) ? { k: 'perk', name: sobName(e.name) } : null;
+  else if (e.family === 'relic') {
+    const [idx, code] = e.ids, app = relicCodeToApp.get(code), rel = relics.find(r => r.id === app);
+    if (rel && rel.ranks.some(x => x.rank === idx * 10)) ref = { k: 'relic', id: app, rank: idx * 10 };
+  }
+  else if (e.family === 'card') { const fam = e.name.replace(/ set power \d+$/, ''); ref = cards.some(c => c.family === fam) ? { k: 'card', family: fam, power: e.ids[0] } : null; }
+  else if (e.family === 'condition') ref = { k: 'cond', name: e.name.replace(/\s*\(\d+\)$/, '') };
+  else if (e.family === 'realm') ref = SOB_REALM_PROP[e.ids[0]] ? { k: 'realm', key: SOB_REALM_PROP[e.ids[0]] } : null;
+  else if (e.family === 'realm boost') ref = { k: 'boost', id: e.ids[0], name: e.name.replace(/^Realm boost \d+:\s*/, '') };
+  if (!ref) { sobSkipped.push(`${e.global_order} ${e.family} ${e.name}`); continue; }
+  const key = `${e.phase_num}|${e.subphase || ''}|${JSON.stringify(ref)}`;
+  if (sobSeen.has(key)) continue;
+  sobSeen.add(key);
+  startOfBattle.push({ phase: e.phase_num, sub: e.subphase || null, ref, name: e.name, effect: e.effect || '', enemy: !!e.enemy_only,
+    ...(e.codex_note ? { note: e.codex_note } : {}) });
+}
+console.log(`  start-of-battle order: ${startOfBattle.length} rows from ${sobRaw.length} entries · text-only ${startOfBattle.filter(r => r.ref.k === 'text').length} · skipped (no app join) ${sobSkipped.length}: ${sobSkipped.join(' | ')}${sobNameDiff.length ? ` · ⚠ trait name mismatches ${sobNameDiff.length}: ${sobNameDiff.join(' | ')}` : ''}`);
+
 const SU_DATA = {
   meta: {
     generated: new Date().toISOString(),
@@ -2986,6 +3028,7 @@ const SU_DATA = {
   specIdMigration: SPEC_ID_MIGRATION,   // old (mislabeled) spec id -> code spec id; app.js migrates saved builds once
   falseGods,
   // the game's own menu glyphs for empty home tiles (menu_character / codex_anointments; G = greyed variant)
+  startOfBattle,            // start-of-battle effect order (Glossary), code-grounded
   netherHelpers,            // Nether Realm helper tables (Faucet / Mimic Mike), code-grounded
   uiIcons: { specEmpty: 'assets/ui/menu_characterG_0.png', anointEmpty: 'assets/ui/codex_anointmentsG_0.png' },
   bossSprites,              // normalized Deity owner name → bspr_ battle sprite (Appendix boss rows)

@@ -2523,7 +2523,7 @@
 
   // ── Glossary — Buff / Debuff / Minion reference (name + prose + in-game status glyph from the game). ──
   function openGlossary() {
-    ovState = { kind: "glossary", search: "", collapsed: new Set([...GLOSSARY_CATS, "Resurrection", "NetherDrops"]), ndDiff: "normal", render: renderGlossary };
+    ovState = { kind: "glossary", search: "", collapsed: new Set([...GLOSSARY_CATS, "Resurrection", "NetherDrops", "StartOfBattle"]), ndDiff: "normal", render: renderGlossary };
     openOverlay(ovState.render()); maybeFocusSearch(OV);
   }
   const GLOSSARY_CATS = ["Buff", "Debuff", "Minion"];
@@ -2605,7 +2605,7 @@
         <div class="apx-iconcol">${e.icon ? `<div class="apx-crea"><img src="${esc(e.icon)}" alt=""></div>` : ""}${exclBox(e)}</div>
         <div class="perk-line-body"><div class="perk-line-head"><b>${esc(e.name)}</b></div><div class="perk-desc">${esc(e.desc)}</div></div></div>`).join("")}</div>` : "";
       return `<button class="apx-sec-head apx-cat${open ? "" : " collapsed"}" data-action="gloss-cat-toggle" data-c="${esc(c)}"><span class="apx-sec-caret">${open ? "▾" : "▸"}</span>${esc(c)}s</button>${rows}`;
-    }).join("") + resOrderSection(st, q) + netherDropSection(st, q) || `<div class="slot-sub" style="padding:10px">No buff, debuff or minion matches “${esc(st.search)}”.</div>`;
+    }).join("") + resOrderSection(st, q) + sobSection(st, q) + netherDropSection(st, q) || `<div class="slot-sub" style="padding:10px">No buff, debuff or minion matches “${esc(st.search)}”.</div>`;
     return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel">
       <div class="overlay-header"><h2>Glossary</h2>
         <input class="ovl-search" placeholder="Search buffs / debuffs / minions / resurrection…" value="${esc(st.search)}" data-action="gloss-search">
@@ -2613,6 +2613,59 @@
       <div class="overlay-body"><div class="ovl-center"><div class="ovl-center-scroll">${body}</div></div></div>
       <div class="overlay-footer"><span class="foot-info"></span><button class="btn-confirm" data-action="close-ovl">Done</button></div>
     </div></div>`;
+  }
+
+  // ── Start-of-battle order (D.startOfBattle, built from _su_extract START_OF_BATTLE_FINDINGS.md). One collapsible group per
+  // step, titled with the in-game codex wording; rows numbered in execution order across the whole sequence.
+  const SOB_STEPS = [["1a", "Traits are granted, then shared"], ["1b", "Classes and races are changed"], ["1c", "Trait sharing by class / race"],
+    ["2", "Spell Gems are granted"], ["3", "Buffs, debuffs and minions are granted"], ["4", "Stats are increased"], ["5", "Stats are decreased"],
+    ["6", "The battle starts"], ["7", "Creatures attack"], ["8", "Creatures cast spells"], ["9", "After all start-of-battle effects"]];
+  let SOB_ROWS = null;
+  function sobRows() {
+    if (SOB_ROWS) return SOB_ROWS;
+    const perkBy = new Map(); for (const sp of D.specs) for (const p of sp.perks) if (!perkBy.has(p.name)) perkBy.set(p.name, { p, spec: sp });
+    const { creatureByTrait, itemsByTrait } = traitSources();
+    SOB_ROWS = (D.startOfBattle || []).map((e, i) => {
+      const ref = e.ref; let r = null;
+      if (ref.k === "text") r = { name: ref.name, desc: ref.desc, icons: [], chips: [] };   // real source with no app record
+      else if (ref.k === "trait") { const t = D.traits[ref.id]; if (t) {
+        const c = creatureByTrait.get(t.id), boss = bossSpriteFor(t), its = itemsByTrait.get(t.id) || [], it = its.find(x => x.icon);
+        r = { name: t.name, desc: t.desc, icons: [c ? critFace(c) : boss ? spriteImg(boss) : "", it ? spriteImg(it.icon, "px") : ""],
+          chips: [c ? c.name : t.owner || "", ...new Set(its.map(x => x.name))], open: { ek: "trait", eid: t.id } }; } }
+      else if (ref.k === "perk") { const h = perkBy.get(ref.name); if (h) r = { name: h.p.name, desc: h.p.desc, icons: [h.p.icon && spriteImg(h.p.icon, "px")], chips: [h.spec.label] }; }
+      else if (ref.k === "relic") { const rl = D.relics.find(x => x.id === ref.id), rk = rl && rl.ranks.find(x => x.rank === ref.rank);
+        if (rl && rk) r = { name: rl.name.split(",")[0], desc: rk.desc, icons: [spriteImg(rl.icon, "px")], chips: [(rl.name.split(",")[1] || "").trim(), `Rank ${ref.rank}`] }; }
+      else if (ref.k === "card") { const cd = (D.cards || []).find(x => x.family === ref.family);
+        if (cd) r = { name: `${cd.family} set`, desc: cd.effects[ref.power - 1] || "", icons: [spriteImg(cd.sprite)], chips: ["Card Set", `Power ${ref.power}`] }; }
+      else if (ref.k === "cond") { const c = (D.conditions || []).find(x => x.name === ref.name);
+        if (c) r = { name: c.name, desc: c.desc, icons: [c.icon ? `<img src="${esc(c.icon)}" alt="">` : ""], chips: [c.cat], open: { ek: "condition", eid: `${c.cat}:${c.key}` } }; }
+      else if (ref.k === "realm") { const rp = (D.realmProps || []).find(x => x.key === ref.key);
+        if (rp) r = { name: rp.name, desc: rp.effect, icons: [spriteImg(rp.icon, "px")], chips: ["Realm Property"] }; }
+      else if (ref.k === "boost") r = { name: "Realm Boost", desc: ref.name.charAt(0).toUpperCase() + ref.name.slice(1) + ".", icons: [], chips: [] };
+      if (!r) { console.error("START OF BATTLE: unresolved", ref, e.name); r = { name: e.name, desc: e.effect, icons: [], chips: [] }; }
+      r.icons = r.icons.filter(Boolean); r.chips = r.chips.filter(Boolean);
+      return { ...r, n: i + 1, step: e.phase === 1 ? e.sub : String(e.phase), enemy: e.enemy, note: e.note || null };
+    });
+    return SOB_ROWS;
+  }
+  function sobSection(st, q) {
+    const all = sobRows().filter(r => !q || r.name.toLowerCase().includes(q) || (r.desc || "").toLowerCase().includes(q));
+    if (!all.length) return "";
+    const key = "StartOfBattle", open = q ? true : !st.collapsed.has(key);
+    const row = (r) => `<div class="perk-line res-line${r.enemy ? " res-enemy" : ""}${r.open ? " apx-clickable" : ""}"${r.open ? ` data-action="apx-open" data-ek="${r.open.ek}" data-eid="${esc(String(r.open.eid))}" title="View taxonomy"` : ""}>
+        <div class="res-n">${r.n}</div>
+        <div class="apx-iconcol">${r.icons.map(ic => `<div class="apx-crea">${ic}</div>`).join("")}</div>
+        <div class="perk-line-body"><div class="perk-line-head"><b>${esc(r.name)}</b></div>
+          ${r.desc ? `<div class="perk-desc">${richText(r.desc)}</div>` : ""}${r.note ? `<div class="perk-desc res-note">${esc(r.note)}</div>` : ""}
+          <div class="perk-line-meta">${r.chips.map(c => `<span class="anoint-spec-tag">${esc(c)}</span>`).join("")}</div></div></div>`;
+    const steps = SOB_STEPS.map(([k, title]) => {
+      const list = all.filter(r => r.step === k); if (!list.length) return "";
+      const sk = "SOB:" + k, sopen = q ? true : st.sobOpen && st.sobOpen.has(sk);
+      return `<button class="sob-step${sopen ? " open" : ""}" data-action="sob-step" data-k="${sk}"><span class="apx-sec-caret">${sopen ? "▾" : "▸"}</span>${k.replace(/^1(?=[abc])/, "1")}. ${esc(title)}</button>
+        ${sopen ? `<div class="perk-list">${list.map(row).join("")}</div>` : ""}`;
+    }).join("");
+    const body = open ? `<div class="slot-sub sob-intro">Each step resolves fully before the next. Within a step, one effect at a time in this order — your side before the enemy's, and per-creature effects in timeline order (fastest first).</div>${steps}` : "";
+    return `<button class="apx-sec-head apx-cat${open ? "" : " collapsed"}" data-action="gloss-cat-toggle" data-c="${key}"><span class="apx-sec-caret">${open ? "▾" : "▸"}</span>Start of Battle Order</button>${body}`;
   }
 
   // ── Nether Stone drop breakpoints (code: inv_Loot, _su_extract code/DROP_RATES_FINDINGS.md +
@@ -4791,6 +4844,7 @@
       case "proj-search": break;     // handled in onInput
       case "proj-diff": ovState.ruthless = t.dataset.v === "ruthless"; refreshOverlay(true); break;
       case "proj-group-toggle": { const g = t.dataset.g; ovState.collapsed.has(g) ? ovState.collapsed.delete(g) : ovState.collapsed.add(g); refreshOverlay(); break; }
+      case "sob-step": { const k = t.dataset.k; ovState.sobOpen = ovState.sobOpen || new Set(); ovState.sobOpen.has(k) ? ovState.sobOpen.delete(k) : ovState.sobOpen.add(k); refreshOverlay(); break; }
       case "nd-diff": ovState.ndDiff = t.dataset.v; refreshOverlay(); break;
       case "gloss-cat-toggle": { const c = t.dataset.c; ovState.collapsed.has(c) ? ovState.collapsed.delete(c) : ovState.collapsed.add(c); refreshOverlay(); break; }
       case "realm-sel": ovState.sel = +t.dataset.id; ovState.view = "detail"; ovState.detailIco = ovState.sortBy === "god" ? "god" : "realm"; refreshOverlay(true); break;
