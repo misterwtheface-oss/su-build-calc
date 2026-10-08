@@ -3419,8 +3419,10 @@
     const canEquip = !manage && sel && !selBlocked;
     // single context-aware primary button: Unequip (this one is equipped) / Equip (a different selection) /
     // Build (manage mode, or nothing selected to equip).
-    const confAction = !canEquip ? "art-new" : equippedHere ? "art-unequip" : "art-equip";
-    const confLabel = !canEquip ? "Build" : equippedHere ? "Unequip" : "Equip";
+    const onCreature = manage && sel && artifactEquippedInBuild(sel.id);   // menu mode: can't equip, but can unequip
+    const holder = onCreature ? build.slots.map(s => s.artifactId === sel.id && CREA.get(s.cid)).find(Boolean) : null;
+    const confAction = onCreature ? "art-unequip-any" : !canEquip ? "art-new" : equippedHere ? "art-unequip" : "art-equip";
+    const confLabel = onCreature ? "Unequip" : !canEquip ? "Build" : equippedHere ? "Unequip" : "Equip";
     return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel">
       <div class="overlay-header"><h2>Artifacts${manage ? "" : " — " + esc(c ? c.name : "")}</h2>
         <input class="ovl-search" placeholder="Search name or socketed item…" value="${esc(st.search || "")}" data-action="lib-search">
@@ -3435,7 +3437,7 @@
           <button class="btn-ghost danger" data-action="art-del" data-id="${sel ? sel.id : ""}" ${sel ? "" : "disabled"}>Delete</button>
           ${selBlocked
             ? `<button class="btn-confirm" style="min-width:96px" disabled title="${selOnOther ? "Equipped by another creature" : "Its Nether Stone is socketed in an artifact equipped on another creature"}">Can't equip</button>`
-            : `<button class="btn-confirm" style="min-width:96px" data-action="${confAction}"${confAction === "art-equip" ? ` data-id="${sel.id}"` : ""}>${confLabel}</button>`}
+            : `<button class="btn-confirm" style="min-width:96px" data-action="${confAction}"${confAction === "art-equip" || confAction === "art-unequip-any" ? ` data-id="${sel.id}"` : ""}${holder ? ` title="Unequip from ${esc(holder.name)}"` : ""}>${confLabel}</button>`}
         </div></div>
     </div></div>`;
   }
@@ -3481,9 +3483,15 @@
     let draft;
     if (artId != null) draft = JSON.parse(JSON.stringify(artifacts.find(a => a.id === artId)));
     else draft = { id: null, name: `Artifact ${nextArtId}`, rank: 50, primary: null, stat: [], trick: [], traits: [], spells: [], netherIds: [] };
-    // editing an existing artifact jumps straight to the slots step
-    ovState = { kind: "artbuild", artId, slotIdx, draft, step: artId != null ? "slots" : "type", pickType: null, search: "", render: renderArtifactBuilder };
+    // editing an existing artifact jumps straight to the slots step. retLib = the library view we came from
+    // (filters / sort / selection), restored on Save or Cancel so the overlay never drops back to the home screen.
+    const retLib = ovState && ovState.kind === "artlib" ? ovState : null;
+    ovState = { kind: "artbuild", artId, slotIdx, draft, step: artId != null ? "slots" : "type", pickType: null, search: "", retLib, render: renderArtifactBuilder };
     openOverlay(ovState.render());
+  }
+  function backToArtLib(st, selId) {
+    if (st.retLib) { ovState = { ...st.retLib, sel: selId != null ? selId : st.retLib.sel }; openOverlay(ovState.render()); }
+    else { openArtifactLibrary(st.slotIdx); if (selId != null) { ovState.sel = selId; refreshOverlay(); } }
   }
   // artifact slots step — right-hand info panel: picker list › item preview (confirm) › live bonus
   const artSlotKey = (type) => (ART_SLOTS.find(s => s.pick === type) || {}).key;
@@ -4656,7 +4664,7 @@
       case "artpage-view": dovState.view = t.dataset.v; refreshDetail(); break;
       case "artpage-edit": { const { artId, slotIdx } = dovState; closeDetail(); openArtifactBuilder(artId, slotIdx);
         if (t.dataset.t) { ovState.pickType = t.dataset.t; refreshOverlay(true); } break; }   // empty-slot box → open that slot's picker
-      case "artpage-unequip": build.slots[dovState.slotIdx].artifactId = null; persistBuild(); closeDetail(); closeOverlay(); render(); break;
+      case "artpage-unequip": build.slots[dovState.slotIdx].artifactId = null; persistBuild(); closeDetail(); render(); refreshOverlay(); break;
       case "relic-unequip": build.slots[dovState.slotIdx].relic = null; persistBuild(); closeDetail(); closeOverlay(); render(); break;
       case "creature-detail": openCreatureDetail(+t.dataset.slot); break;
       case "crea-info": e.stopPropagation(); openCreaturePreview(+t.dataset.cid); break;
@@ -4934,7 +4942,9 @@
       case "art-equip": { const id = +t.dataset.id; if (artifactEquippedInBuild(id)) break;   // exclusive: already on another creature
         if (artNetherClash(artifacts.find(a => a.id === id), ovState.slotIdx)) break;          // exclusive: its stone is in use elsewhere
         build.slots[ovState.slotIdx].artifactId = id; persistBuild(); closeOverlay(); render(); break; }
-      case "art-unequip": build.slots[ovState.slotIdx].artifactId = null; persistBuild(); closeOverlay(); render(); break;
+      case "art-unequip": build.slots[ovState.slotIdx].artifactId = null; persistBuild(); render(); refreshOverlay(); break;   // stay → pick another
+      case "art-unequip-any": { const id = +t.dataset.id; build.slots.forEach(s => { if (s.artifactId === id) s.artifactId = null; });
+        persistBuild(); render(); refreshOverlay(); break; }
       case "art-new": openArtifactBuilder(null, ovState.slotIdx); break;
       case "art-edit": openArtifactBuilder(+t.dataset.id, ovState.slotIdx); break;
       case "art-del": armOrDo(t, () => { const id = +t.dataset.id; artifacts = artifacts.filter(a => a.id !== id); build.slots.forEach(s => { if (s.artifactId === id) s.artifactId = null; }); if (ovState.sel === id) ovState.sel = null; persistArtifacts(); persistBuild(); refreshOverlay(); }); break;
@@ -4992,15 +5002,16 @@
         if (i >= 0 && i < arr.length) arr.splice(i, 1);
         refreshOverlay(); break;
       }
-      case "artb-cancel": openArtifactLibrary(ovState.slotIdx); break;
+      case "artb-cancel": backToArtLib(ovState, ovState.artId); break;
       case "artb-save": {
         const d = ovState.draft;
         if (!d.name || !d.name.trim()) d.name = `Artifact ${nextArtId}`;
-        if (d.id == null) { d.id = nextArtId++; artifacts.push(d); }
+        const isNew = d.id == null;
+        if (isNew) { d.id = nextArtId++; artifacts.push(d); }
         else { const idx = artifacts.findIndex(a => a.id === d.id); if (idx >= 0) artifacts[idx] = d; }
         persistArtifacts();
-        if (ovState.slotIdx != null) { build.slots[ovState.slotIdx].artifactId = d.id; persistBuild(); }
-        closeOverlay(); render(); break;
+        if (isNew && ovState.slotIdx != null) { build.slots[ovState.slotIdx].artifactId = d.id; persistBuild(); closeOverlay(); render(); break; }
+        render(); backToArtLib(ovState, d.id); break;   // edits (and menu builds) go back to the library
       }
 
       // relic
