@@ -845,7 +845,9 @@ const netherHelpers = (() => {
     if (!fs.existsSync(path.join(ROOT, rel))) warn(`nether helper sprite missing (${rel})`); return rel; };
   return {
     faucet: { table: j.faucet.table.map(r => ({ code: r.code, img: spr(r.chest_sprite), reward: say(r.reward), kind: r.kind || 'item' })),
-      valveOn: spr('spr_reactor_valve_usable'), valveOff: spr('spr_reactor_valve_unusable') },
+      // obj_nether_valve_Step_0 @0x1472700a0: sprite_index = (status == 1) ? spr_reactor_valve_unusable (10769)
+      // : spr_reactor_valve_usable (10770); Create sets status = 0, so every valve starts on the "usable" sprite
+      valveOn: spr('spr_reactor_valve_unusable'), valveOff: spr('spr_reactor_valve_usable') },
     treasury: { baseOpens: j.treasury.base_opens, chests: j.treasury.chests, pStone: j.treasury.p_nether_stone_base, host: spr('master_mimic'),
       table: j.treasury.table.map(r => ({ filling: r.filling, img: spr(r.chest_sprite), reward: say(r.reward) })) },
   };
