@@ -2523,7 +2523,7 @@
 
   // ── Glossary — Buff / Debuff / Minion reference (name + prose + in-game status glyph from the game). ──
   function openGlossary() {
-    ovState = { kind: "glossary", search: "", collapsed: new Set([...GLOSSARY_CATS, "Resurrection"]), render: renderGlossary };
+    ovState = { kind: "glossary", search: "", collapsed: new Set([...GLOSSARY_CATS, "Resurrection", "NetherDrops"]), ndDiff: "normal", render: renderGlossary };
     openOverlay(ovState.render()); maybeFocusSearch(OV);
   }
   const GLOSSARY_CATS = ["Buff", "Debuff", "Minion"];
@@ -2605,7 +2605,7 @@
         <div class="apx-iconcol">${e.icon ? `<div class="apx-crea"><img src="${esc(e.icon)}" alt=""></div>` : ""}${exclBox(e)}</div>
         <div class="perk-line-body"><div class="perk-line-head"><b>${esc(e.name)}</b></div><div class="perk-desc">${esc(e.desc)}</div></div></div>`).join("")}</div>` : "";
       return `<button class="apx-sec-head apx-cat${open ? "" : " collapsed"}" data-action="gloss-cat-toggle" data-c="${esc(c)}"><span class="apx-sec-caret">${open ? "▾" : "▸"}</span>${esc(c)}s</button>${rows}`;
-    }).join("") + resOrderSection(st, q) || `<div class="slot-sub" style="padding:10px">No buff, debuff or minion matches “${esc(st.search)}”.</div>`;
+    }).join("") + resOrderSection(st, q) + netherDropSection(st, q) || `<div class="slot-sub" style="padding:10px">No buff, debuff or minion matches “${esc(st.search)}”.</div>`;
     return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel">
       <div class="overlay-header"><h2>Glossary</h2>
         <input class="ovl-search" placeholder="Search buffs / debuffs / minions / resurrection…" value="${esc(st.search)}" data-action="gloss-search">
@@ -2615,6 +2615,35 @@
     </div></div>`;
   }
 
+  // ── Nether Stone drop breakpoints (code: inv_Loot, _su_extract code/DROP_RATES_FINDINGS.md +
+  // HANDOFF_nether_stone_breakpoints.md). Each loot roll succeeds on 1..N ≤ X, X = (1 + realm bonus) × 1.25
+  // (× 1.25 again with Pariah ascended) → k = floor(X) chances in N. Rows = every k reachable by 600% realm bonus,
+  // found by running the game's own arithmetic over each whole percent.
+  const ND = { n: { normal: 5000, relaxed: 2000, ruthless: 8000 }, maxBonus: 600 };
+  let ND_ROWS = null;
+  function netherDropRows() {
+    if (ND_ROWS) return ND_ROWS;
+    const kAt = (rb, pariah) => { let x = 1; x += x * rb / 100; x += x * 0.25; if (pariah) x += x * 0.25; return Math.floor(x); };
+    const first = (pariah) => { const m = new Map(); for (let rb = 0; rb <= ND.maxBonus; rb++) { const k = kAt(rb, pariah); if (!m.has(k)) m.set(k, rb); } return m; };
+    const plain = first(false), par = first(true);
+    ND_ROWS = [...par.keys()].map(k => ({ k, plain: plain.get(k), pariah: par.get(k) }));
+    return ND_ROWS;
+  }
+  function netherDropSection(st, q) {
+    if (q && !"nether stone drop realm bonus pariah".includes(q)) return "";
+    const key = "NetherDrops", open = q ? true : !st.collapsed.has(key), diff = st.ndDiff || "normal", N = ND.n[diff];
+    const pct = (k) => `${+(k / N * 100).toFixed(3)}%`;
+    const body = open ? `<div class="nd-wrap">
+        <div class="seg nd-diff">${[["normal", "Normal"], ["relaxed", "Relaxed"], ["ruthless", "Ruthless"]].map(([v, l]) =>
+          `<button class="seg-btn ${diff === v ? "on" : ""}" data-action="nd-diff" data-v="${v}">${l}</button>`).join("")}</div>
+        <div class="nd-table">
+          <div class="nd-row nd-hd"><span>Drop chance</span><span>Realm bonus</span><span>With Pariah ascended</span></div>
+          ${netherDropRows().map(r => `<div class="nd-row"><span class="nd-pct">${pct(r.k)}<small>1 in ${Math.round(N / r.k).toLocaleString()}</small></span>
+            <span>${r.plain != null ? `${r.plain}%` : "—"}</span><span>${r.pariah}%</span></div>`).join("")}
+        </div>
+        <div class="slot-sub nd-note">Per loot roll · after The True Enemy · not in the castle</div></div>` : "";
+    return `<button class="apx-sec-head apx-cat${open ? "" : " collapsed"}" data-action="gloss-cat-toggle" data-c="${key}"><span class="apx-sec-caret">${open ? "▾" : "▸"}</span>Nether Stone Drops</button>${body}`;
+  }
   function resOrderSection(st, q) {
     const rows = resOrderRows().filter(r => !q || r.name.toLowerCase().includes(q) || (r.desc || "").toLowerCase().includes(q));
     if (!rows.length) return "";
@@ -4762,6 +4791,7 @@
       case "proj-search": break;     // handled in onInput
       case "proj-diff": ovState.ruthless = t.dataset.v === "ruthless"; refreshOverlay(true); break;
       case "proj-group-toggle": { const g = t.dataset.g; ovState.collapsed.has(g) ? ovState.collapsed.delete(g) : ovState.collapsed.add(g); refreshOverlay(); break; }
+      case "nd-diff": ovState.ndDiff = t.dataset.v; refreshOverlay(); break;
       case "gloss-cat-toggle": { const c = t.dataset.c; ovState.collapsed.has(c) ? ovState.collapsed.delete(c) : ovState.collapsed.add(c); refreshOverlay(); break; }
       case "realm-sel": ovState.sel = +t.dataset.id; ovState.view = "detail"; ovState.detailIco = ovState.sortBy === "god" ? "god" : "realm"; refreshOverlay(true); break;
       case "realm-swapico": ovState.detailIco = (ovState.detailIco === "god" ? "realm" : "god"); refreshOverlay(); break;

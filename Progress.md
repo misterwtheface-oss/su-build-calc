@@ -2251,3 +2251,8 @@ full builder stays the high-fidelity path.
 - `FEATURES.nyi` (app.js, default false) strips `nyi:true` traits/False Gods from D before anything indexes it. First user: **Misery** (Hand/Heart/Brain of Misery, legacy #568-570), shipped in data, hidden.
 - build-data.mjs reads extract tables: trait_runtime_groups, false_god_parts_true, passive_owners_true (see _su_extract/code/TRAIT_EFFECT_DECODE_FINDINGS.md). Build warns on owner disagreement (known: #1521 Torun vs Treasure Golem = user override).
 - Not yet done: browser smoke test of False God detail pages with the flag on/off; UI for part `count` (e.g. "Head ×5") deliberately NOT added.
+
+- 2026-10-08: **Glossary → Nether Stone Drops** (from _su_extract `code/HANDOFF_nether_stone_breakpoints.md`). Rows = every
+  chance step reachable by 600% realm bonus (k = floor((1+rb)·1.25[·1.25 Pariah ascended]) in N; N Normal 5000 / Relaxed
+  2000 / Ruthless 8000), computed in-app by running the game's arithmetic over each whole percent. ⚠ Confidence: both ×1.25
+  steps are unconditional in code (no gate found) — code-certain, not yet verified in-game.
