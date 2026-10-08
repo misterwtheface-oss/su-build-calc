@@ -2975,10 +2975,10 @@ const projects = (() => {
 //   relic_signatures app id, rank = index×10 · card = set family + power · condition / realm property / realm boost = code id.
 const sobRaw = readJSON(path.join(MODEL, 'start_of_battle_order.json')).entries.slice().sort((a, b) => a.global_order - b.global_order);
 const relicCodeToApp = new Map(readJSON(path.join(MODEL, 'relic_signatures.json')).records.map(r => [r.relic_code_id, r.app_relic_id]));
-// scr_RealmPropertyName case → app realm-property key. 13 COPYTRAITS has no app record (not in realm_properties.json) → named
-// row with its code sprite (ICON_MAPS: realmprop_e_copytraits).
+// scr_RealmPropertyName case → app realm-property key. 13 COPYTRAITS is never rolled (scr_RealmGetProperties redraws it;
+// _su_extract code/REALM_PROPERTY_POOL_FINDINGS.md) → dropped via never_rolled above.
 const SOB_REALM_PROP = { 25: 'DEBUFF', 12: 'EXTRATRAITS', 67: 'SPELLSLOTS', 11: 'COPYGEMS' };
-const SOB_REALM_TEXT = { 13: { name: 'Copy Your Traits', sprite: 'realmprop_e_copytraits' } };
+const SOB_REALM_TEXT = {};
 // always-on member names that are blacklisted traits (and not also a shipped trait's name) never show
 const sobShippedNames = new Set(Object.values(traits).map(t => t.name));
 const sobBlackNames = new Set(consolidated.filter(t => excludedTraitIds.has(t.id)).map(t => t.name).filter(n => !sobShippedNames.has(n)));
@@ -2991,7 +2991,7 @@ const sobPerkNames = new Set(specs.flatMap(sp => sp.perks.map(p => p.name)));
 const sobRtToTraitId = new Map(); for (const [tid, rts] of Object.entries(RT_GROUPS)) for (const r of rts || []) sobRtToTraitId.set(r, +tid);
 const sobBlacklisted = [];
 for (const e of sobRaw) {
-  if (/open/i.test(e.confidence) || ['tavern', 'tavern rule', 'system'].includes(e.family)) continue;
+  if (/open|unreachable/i.test(e.confidence) || e.never_rolled || ['tavern', 'tavern rule', 'system'].includes(e.family)) continue;
   if (/battle-wide rule/i.test(e.kind || '')) continue;                                 // set at setup, not a start-of-battle event
   if (e.family === 'maintenance pass') {                                                // 0b: both always-on passes → ONE row
     // raw code labels → app names: "realm 26 BUFF" → that realm property's name, "relic [idx, code]" → relic + rank;

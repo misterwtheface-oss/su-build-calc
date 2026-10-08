@@ -2256,3 +2256,5 @@ full builder stays the high-fidelity path.
   chance step reachable by 600% realm bonus (k = floor((1+rb)·1.25[·1.25 Pariah ascended]) in N; N Normal 5000 / Relaxed
   2000 / Ruthless 8000), computed in-app by running the game's arithmetic over each whole percent. ⚠ Confidence: both ×1.25
   steps are unconditional in code (no gate found) — code-certain, not yet verified in-game.
+
+- 2026-10-08: realm property 49 "No Additional Attacks/Casts" added (live in code, no codex text; effect text code-sourced, `effect_source: code`). Start-of-battle drops `never_rolled` rows (Copy Your Traits, realm 13, is never generated). Source: _su_extract code/REALM_PROPERTY_POOL_FINDINGS.md.
