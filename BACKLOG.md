@@ -87,6 +87,10 @@ Known limits + planned work, roughly in priority order (all now cheap to impleme
 - [ ] **Confirm class advantage in-game:** same attacker, no crit, two defenders with equal Defense — strong-vs takes exactly
   2×, weak-vs exactly 0.5× of neutral. Then use it as the DPS sim's class toggle.
 
+- [ ] **Spell target: CSV vs code (user call pending).** `build-data.mjs` fills a blank `Spell_REF` Target from the code's
+  spell record field 5 (target scope), and code "Self" (scope 4) wins (user-approved 2026-10-04). Where the CSV and the code
+  disagree otherwise, the CSV value is kept until the user decides. List the disagreements and ask.
+
 ## Pending extract hand-offs (from `_su_extract/RESUME.md`, waiting on the user)
 - [ ] Relic `hasRoll` flags: the extract read relic gate ids in the wrong order; after the extract fix, refresh the app's relic
   `hasRoll` flags.

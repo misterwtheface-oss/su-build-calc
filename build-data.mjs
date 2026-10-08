@@ -1050,7 +1050,7 @@ const spells = spellArr.map((s, i) => {
   else if (guildSpellGateByName.has(norm(s.name))) { sGate = guildSpellGateByName.get(norm(s.name)); sDepth = guildIntroDepth; spellGuild++; }
   // target: the Spell_REF column; where it's blank, fill from the CODE's spell record field 5 (target scope —
   // bc_CreatureCastSpellGem builds the cast list from it; 4 = the caster alone → "Self", a value the CSV never has).
-  // Where the two DISAGREE the CSV value is kept (user call pending; see SPELL_TARGET_SCOPE note in Progress.md).
+  // Where the two DISAGREE the CSV value is kept (user call pending; BACKLOG.md "Spell target: CSV vs code").
   const codeTarget = SPELL_SCOPE_TARGET[(spellSigByKey.get(s.key) || {}).target_scope] || null;
   // code-Self wins over the CSV (user-approved 2026-10-04): scope 4 casts on the caster alone, and the CSV mislabels
   // those few as Enemies/Target (Inner Destruction, Adrenaline Rush, Feeling Lucky, Magnification, Treasonous Mind)
@@ -3310,4 +3310,4 @@ console.log(`✓ wrote data.js (${(fs.statSync(path.join(ROOT, 'data.js')).size 
 console.log(`  creatures ${creatures.length} · specs ${specs.length} · traits ${Object.keys(traits).length} · trait-items ${traitItems.length} · relics ${relics.length} · cards ${cards.length}`);
 console.log(`  innate-trait coverage: ${creatures.length - traitUnresolved.length}/${creatures.length} resolved` +
   (traitUnresolved.length ? ` · ${traitUnresolved.length} UNRESOLVED (no synergy tags): ${traitUnresolved.join('; ')}` : ' ✓ every creature has a resolved trait'));
-if (warnings.length) console.log(`  (${warnings.length} warnings — recorded, non-fatal; see Progress.md)`);
+if (warnings.length) console.log(`  (${warnings.length} warnings — recorded, non-fatal; see Progress.md "Known data limitations")`);
