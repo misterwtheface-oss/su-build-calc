@@ -2258,3 +2258,4 @@ full builder stays the high-fidelity path.
   steps are unconditional in code (no gate found) — code-certain, not yet verified in-game.
 
 - 2026-10-08: realm property 49 "No Additional Attacks/Casts" added (live in code, no codex text; effect text code-sourced, `effect_source: code`). Start-of-battle drops `never_rolled` rows (Copy Your Traits, realm 13, is never generated). Source: _su_extract code/REALM_PROPERTY_POOL_FINDINGS.md.
+- 2026-10-08: Glossary → Start of Battle Order, step 0b: timer re-check detail + note that setup-through-step-5 uses last battle's timeline (crit_* return recorded recent_* stats while global.calc_stats is false during battle setup; timeline rebuilt in step 6). Source: _su_extract START_OF_BATTLE_FINDINGS.md (S26).

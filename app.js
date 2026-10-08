@@ -2632,7 +2632,8 @@
       const ref = e.ref; let r = null;
       if (ref.k === "text") r = { name: ref.name, desc: ref.desc, icons: [ref.icon && spriteImg(ref.icon, "px")], chips: [ref.chip] };   // real source with no app record
       else if (ref.k === "always") r = { name: e.name, members: ref.members, icons: [], chips: [],
-        desc: "Every “always” and “while” effect is applied here, after setup and before any trait is granted, so it doesn't yet see what the steps below change. It's re-checked only between steps and is fully up to date before the first turn." };
+        desc: "Every “always” and “while” effect is applied here, after setup and before any trait is granted, so it doesn't yet see what the steps below change. After this it's re-checked on a timer (about every 40 frames), only in the gaps between steps, never in the middle of one; whether a re-check lands between two particular steps depends on timing. The first re-check after step 6 brings everything up to date before the first turn, but stats already granted in steps 1–5 stay as they were granted.",
+        note: "Until step 6, the timeline is last battle's. Setup sorts creatures by the Speed recorded for them during the previous battle, and the order is only rebuilt from current Speed in step 6. So anything here or in steps 1–5 that looks at the top of the timeline sees last battle's leader: e.g. Ancient DNA copies that creature's race, and Master of Maniacs counts it in step 4. Speed changes made between battles reach the start of battle one battle later." };
       else if (ref.k === "trait") { const t = D.traits[ref.id]; if (t) {
         const c = creatureByTrait.get(t.id), boss = bossSpriteFor(t), its = itemsByTrait.get(t.id) || [], it = its.find(x => x.icon);
         r = { name: t.name, desc: t.desc, icons: [c ? critFace(c) : boss ? spriteImg(boss) : "", it ? spriteImg(it.icon, "px") : ""],
@@ -2649,7 +2650,7 @@
       else if (ref.k === "boost") r = { name: "Realm Boost", desc: ref.name.charAt(0).toUpperCase() + ref.name.slice(1) + ".", icons: [], chips: [] };
       if (!r) { console.error("START OF BATTLE: unresolved", ref, e.name); r = { name: e.name, desc: e.effect, icons: [], chips: [] }; }
       r.icons = r.icons.filter(Boolean); r.chips = r.chips.filter(Boolean);
-      return { ...r, n: i + 1, step: e.sub || String(e.phase), enemy: e.enemy, note: e.note || null };
+      return { ...r, n: i + 1, step: e.sub || String(e.phase), enemy: e.enemy, note: r.note || e.note || null };
     });
     return SOB_ROWS;
   }
@@ -2671,7 +2672,7 @@
       return `<button class="sob-step${sopen ? " open" : ""}" data-action="sob-step" data-k="${sk}"><span class="apx-sec-caret">${sopen ? "▾" : "▸"}</span>${k.replace(/^1(?=[abc])/, "1")}. ${esc(title)}</button>
         ${sopen ? `<div class="perk-list">${list.map(row).join("")}</div>` : ""}`;
     }).join("");
-    const body = open ? `<div class="slot-sub sob-intro">Each step resolves fully before the next. Within a step, one effect at a time in this order — your side before the enemy's, and per-creature effects in timeline order (fastest first).</div>${steps}` : "";
+    const body = open ? `<div class="slot-sub sob-intro">Each step resolves fully before the next. Within a step, one effect at a time in this order — your side before the enemy's, and per-creature effects in timeline order (fastest first; before step 6 that's last battle's order, see step 0b).</div>${steps}` : "";
     return `<button class="apx-sec-head apx-cat${open ? "" : " collapsed"}" data-action="gloss-cat-toggle" data-c="${key}"><span class="apx-sec-caret">${open ? "▾" : "▸"}</span>Start of Battle Order</button>${body}`;
   }
 
