@@ -2553,6 +2553,8 @@
     // pre-split original of Kraynaks' three "None Of Your Business" variants, shown here as one row.
     ["chain", "trait", 1345], ["chain", "trait", 1297],
   ];
+  const specIco = (spec) => { const em = SPEC_EMBLEM.get(spec.label); return em ? { h: spriteImg(em, "px"), cls: "apx-spec", title: spec.label } : ""; };
+  const icoBox = (ic) => typeof ic === "string" ? `<div class="apx-crea">${ic}</div>` : `<div class="apx-crea ${ic.cls || ""}"${ic.title ? ` title="${esc(ic.title)}"` : ""}>${ic.h}</div>`;
   let RES_ROWS = null;
   function resOrderRows() {
     if (RES_ROWS) return RES_ROWS;
@@ -2565,7 +2567,7 @@
       let r = null;
       // icons: up to two boxes like the Appendix (creature / boss sprite over the trait material); chips: source names
       // only (no "Trait ·" / "Perk ·" prefix) — prose labels stay where there's no named source (Buff, Minion, Realm Property)
-      if (kind === "perk") { const h = perkBy.get(ref); if (h) r = { name: h.p.name, desc: h.p.desc, icons: [h.p.icon && spriteImg(h.p.icon, "px")], chips: [h.spec.label] }; }
+      if (kind === "perk") { const h = perkBy.get(ref); if (h) r = { name: h.p.name, desc: h.p.desc, icons: [specIco(h.spec), h.p.icon && spriteImg(h.p.icon, "px")], chips: [h.spec.label] }; }
       else if (kind === "trait") { const t = traitByRt.get(ref); if (t) {
         const c = creatureByTrait.get(t.id), boss = bossSpriteFor(t), its = itemsByTrait.get(t.id) || [], it = its.find(x => x.icon);
         r = { name: t.name, desc: t.desc, icons: [c ? critFace(c) : boss ? spriteImg(boss) : "", it ? spriteImg(it.icon, "px") : ""],
@@ -2635,7 +2637,7 @@
         const c = creatureByTrait.get(t.id), boss = bossSpriteFor(t), its = itemsByTrait.get(t.id) || [], it = its.find(x => x.icon);
         r = { name: t.name, desc: t.desc, icons: [c ? critFace(c) : boss ? spriteImg(boss) : "", it ? spriteImg(it.icon, "px") : ""],
           chips: [c ? c.name : t.owner || "", ...new Set(its.map(x => x.name))], open: { ek: "trait", eid: t.id } }; } }
-      else if (ref.k === "perk") { const h = perkBy.get(ref.name); if (h) r = { name: h.p.name, desc: h.p.desc, icons: [h.p.icon && spriteImg(h.p.icon, "px")], chips: [h.spec.label] }; }
+      else if (ref.k === "perk") { const h = perkBy.get(ref.name); if (h) r = { name: h.p.name, desc: h.p.desc, icons: [specIco(h.spec), h.p.icon && spriteImg(h.p.icon, "px")], chips: [h.spec.label] }; }
       else if (ref.k === "relic") { const rl = D.relics.find(x => x.id === ref.id), rk = rl && rl.ranks.find(x => x.rank === ref.rank);
         if (rl && rk) r = { name: rl.name.split(",")[0], desc: rk.desc, icons: [spriteImg(rl.icon, "px")], chips: [(rl.name.split(",")[1] || "").trim(), `Rank ${ref.rank}`] }; }
       else if (ref.k === "card") { const cd = (D.cards || []).find(x => x.family === ref.family);
@@ -2657,7 +2659,7 @@
     const key = "StartOfBattle", open = q ? true : !st.collapsed.has(key);
     const row = (r) => `<div class="perk-line res-line${r.enemy ? " res-enemy" : ""}${r.open ? " apx-clickable" : ""}"${r.open ? ` data-action="apx-open" data-ek="${r.open.ek}" data-eid="${esc(String(r.open.eid))}" title="View taxonomy"` : ""}>
         <div class="res-n">${r.n}</div>
-        <div class="apx-iconcol">${r.icons.map(ic => `<div class="apx-crea">${ic}</div>`).join("")}</div>
+        <div class="apx-iconcol">${r.icons.map(icoBox).join("")}</div>
         <div class="perk-line-body"><div class="perk-line-head"><b>${esc(r.name)}</b></div>
           ${r.desc ? `<div class="perk-desc">${richText(r.desc)}</div>` : ""}${r.note ? `<div class="perk-desc res-note">${esc(r.note)}</div>` : ""}
           ${r.members ? `<button class="facet sob-mem-toggle" data-action="sob-members">${st.sobMembers || q ? "▾" : "▸"} ${r.members.length} effects</button>
@@ -2708,7 +2710,7 @@
     const key = "Resurrection", open = q ? true : !st.collapsed.has(key);
     const row = (r) => `<div class="perk-line res-line${r.group === "rule" ? " res-rule" : ""}${r.enemy ? " res-enemy" : ""}${r.open ? " apx-clickable" : ""}"${r.open ? ` data-action="apx-open" data-ek="${r.open.ek}" data-eid="${esc(String(r.open.eid))}" title="View taxonomy"` : ""}>
         <div class="res-n">${r.n ?? "⛔"}</div>
-        <div class="apx-iconcol">${r.icons.map(ic => `<div class="apx-crea">${ic}</div>`).join("")}</div>
+        <div class="apx-iconcol">${r.icons.map(icoBox).join("")}</div>
         <div class="perk-line-body"><div class="perk-line-head"><b>${esc(r.name)}</b></div>
           ${r.desc ? `<div class="perk-desc">${richText(r.desc)}</div>` : ""}${r.note ? `<div class="perk-desc res-note">${esc(r.note)}</div>` : ""}
           <div class="perk-line-meta">${r.chips.map(c => `<span class="anoint-spec-tag">${esc(c)}</span>`).join("")}</div></div></div>`;
