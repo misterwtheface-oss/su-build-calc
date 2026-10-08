@@ -1640,3 +1640,6 @@ select.app-select:hover { border-color: var(--accent2); }
 .sob-step + .perk-list { margin-bottom: 8px; }
 .sob-mem-toggle { align-self: flex-start; margin-top: 4px; font-size: 11px; padding: 2px 8px; }
 .sob-members { margin-top: 4px; padding-top: 0; }
+/* start-of-battle: unnumbered marker row (where setup sorts the timeline) */
+.sob-marker { background: var(--surface3); border: 1px dashed rgba(154,123,214,.55); }
+.sob-marker .res-n { font-size: 16px; }

@@ -2633,7 +2633,7 @@
       if (ref.k === "text") r = { name: ref.name, desc: ref.desc, icons: [ref.icon && spriteImg(ref.icon, "px")], chips: [ref.chip] };   // real source with no app record
       else if (ref.k === "always") r = { name: e.name, members: ref.members, icons: [], chips: [],
         desc: "Every “always” and “while” effect is applied here, after setup and before any trait is granted, so it doesn't yet see what the steps below change. After this it's re-checked on a timer (about every 40 frames), only in the gaps between steps, never in the middle of one; whether a re-check lands between two particular steps depends on timing. The first re-check after step 6 brings everything up to date before the first turn, but stats already granted in steps 1–5 stay as they were granted.",
-        note: "Until step 6, the timeline is last battle's. Setup sorts creatures by the Speed recorded for them during the previous battle, and the order is only rebuilt from current Speed in step 6. So anything here or in steps 1–5 that looks at the top of the timeline sees last battle's leader: e.g. Ancient DNA copies that creature's race, and Master of Maniacs counts it in step 4. Speed changes made between battles reach the start of battle one battle later." };
+        note: "The timeline here is still the one set during setup (step 0a), so Ancient DNA copies the race of last battle's leader, and Master of Maniacs counts that race in step 4. Speed changes made between battles reach the start of battle one battle later." };
       else if (ref.k === "trait") { const t = D.traits[ref.id]; if (t) {
         const c = creatureByTrait.get(t.id), boss = bossSpriteFor(t), its = itemsByTrait.get(t.id) || [], it = its.find(x => x.icon);
         r = { name: t.name, desc: t.desc, icons: [c ? critFace(c) : boss ? spriteImg(boss) : "", it ? spriteImg(it.icon, "px") : ""],
@@ -2652,14 +2652,20 @@
       r.icons = r.icons.filter(Boolean); r.chips = r.chips.filter(Boolean);
       return { ...r, n: i + 1, step: e.sub || String(e.phase), enemy: e.enemy, note: r.note || e.note || null };
     });
+    // setup sorts the timeline between Pact of the Gods and Lust (bc_CreateCreatureList @0x1469b346c) using each creature's
+    // RECORDED Speed (global.calc_stats off) — findings: "What the timeline is before phase 6" (S26). Unnumbered marker row.
+    const at = SOB_ROWS.findIndex(r => r.step === "0a" && r.name === "Pact of the Gods");
+    if (at >= 0) SOB_ROWS.splice(at + 1, 0, { marker: true, step: "0a", name: "Timeline set from last battle's Speed", icons: [], chips: [],
+      desc: "Creatures are sorted by the Speed each had at the start of the last turn it took in its previous battle, including any buffs, debuffs or Speed gains active at that moment. Enemies are new to the battle and count as 0 Speed, as does a creature that hasn't fought yet, so your creatures usually lead. This order holds through step 5; step 6 re-sorts by current Speed." });
+    else console.error("START OF BATTLE: timeline marker anchor (Pact of the Gods) not found");
     return SOB_ROWS;
   }
   function sobSection(st, q) {
     const all = sobRows().filter(r => !q || r.name.toLowerCase().includes(q) || (r.desc || "").toLowerCase().includes(q) || (r.members || []).some(m => m.toLowerCase().includes(q)));
     if (!all.length) return "";
     const key = "StartOfBattle", open = q ? true : !st.collapsed.has(key);
-    const row = (r) => `<div class="perk-line res-line${r.enemy ? " res-enemy" : ""}${r.open ? " apx-clickable" : ""}"${r.open ? ` data-action="apx-open" data-ek="${r.open.ek}" data-eid="${esc(String(r.open.eid))}" title="View taxonomy"` : ""}>
-        <div class="res-n">${r.n}</div>
+    const row = (r) => `<div class="perk-line res-line${r.enemy ? " res-enemy" : ""}${r.marker ? " sob-marker" : ""}${r.open ? " apx-clickable" : ""}"${r.open ? ` data-action="apx-open" data-ek="${r.open.ek}" data-eid="${esc(String(r.open.eid))}" title="View taxonomy"` : ""}>
+        <div class="res-n">${r.marker ? "⏱" : r.n}</div>
         <div class="apx-iconcol">${r.icons.map(icoBox).join("")}</div>
         <div class="perk-line-body"><div class="perk-line-head"><b>${esc(r.name)}</b></div>
           ${r.desc ? `<div class="perk-desc">${richText(r.desc)}</div>` : ""}${r.note ? `<div class="perk-desc res-note">${esc(r.note)}</div>` : ""}
@@ -2672,7 +2678,7 @@
       return `<button class="sob-step${sopen ? " open" : ""}" data-action="sob-step" data-k="${sk}"><span class="apx-sec-caret">${sopen ? "▾" : "▸"}</span>${k.replace(/^1(?=[abc])/, "1")}. ${esc(title)}</button>
         ${sopen ? `<div class="perk-list">${list.map(row).join("")}</div>` : ""}`;
     }).join("");
-    const body = open ? `<div class="slot-sub sob-intro">Each step resolves fully before the next. Within a step, one effect at a time in this order — your side before the enemy's, and per-creature effects in timeline order (fastest first; before step 6 that's last battle's order, see step 0b).</div>${steps}` : "";
+    const body = open ? `<div class="slot-sub sob-intro">Each step resolves fully before the next. Within a step, one effect at a time in this order — your side before the enemy's, and per-creature effects in timeline order (fastest first; before step 6 that's last battle's order, see step 0a).</div>${steps}` : "";
     return `<button class="apx-sec-head apx-cat${open ? "" : " collapsed"}" data-action="gloss-cat-toggle" data-c="${key}"><span class="apx-sec-caret">${open ? "▾" : "▸"}</span>Start of Battle Order</button>${body}`;
   }
 
