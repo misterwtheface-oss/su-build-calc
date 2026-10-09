@@ -1478,6 +1478,17 @@ select.app-select:hover { border-color: var(--accent2); }
   .att-name { font-size: 15px; }
   .art-pick-scroll { height: 38vh; }
   .ovl-right.art-side { flex: 0 0 50vh; height: 50vh; max-height: 50vh; }   /* roomier artifact side panel */
+  /* slots step: every slot on ONE locked row that scrolls sideways; the picker / preview / live bonus fills the rest */
+  .artb-slots { flex: 0 0 auto; }
+  .artb-slots .ovl-center-scroll { flex: 0 0 auto; overflow: visible; padding: 8px 0 6px; }
+  .artb-slots .art-slot-groups { display: flex; gap: 8px; overflow-x: auto; overflow-y: hidden; padding: 0 10px 4px;
+    overscroll-behavior-x: contain; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+  .artb-slots .art-slot-groups::-webkit-scrollbar { display: none; }
+  .artb-slots .art-slot-groups .art-slot-group { flex: 0 0 auto; margin-bottom: 0; }
+  .artb-slots .art-slot-groups .art-slot-grid { grid-template-columns: repeat(var(--n, 1), 68px); gap: 5px; }
+  .artb-slots .art-slot { min-height: 64px; }
+  .artb-slots .art-slot-groups .section-label { margin: 0 2px 4px; font-size: 10px; }
+  .artb-slots + .ovl-right.art-side { flex: 1 1 auto; height: auto; max-height: none; }
 }
 
 .ns-issue { color: var(--bad); font-size: 12px; }

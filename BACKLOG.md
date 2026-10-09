@@ -8,7 +8,7 @@ Extract-side research questions live in `_su_extract/RESUME.md`.
 ## ▶ ACTIVE BATCH (2026-10-09) — work one at a time, deploy all together when done
 Commit each item locally; push ONCE when the whole batch is finished. Anything that needs a decompile → don't attempt it,
 write the requirements to `_su_extract/code/HANDOFF_<topic>.md` for the extract session. Tick items here as they land.
-- [ ] 1. **Mobile Artifact wizard** — slots become a single-row header, locked, scrolling horizontally, so the rest of the
+- [x] 1. **Mobile Artifact wizard** — slots become a single-row header, locked, scrolling horizontally, so the rest of the
   screen is the selector list.
 - [ ] 2. **Nether stone spell filter** — toggle between the "On X" trigger variants; a stone counts if ANY of its spells
   meets the condition (stones can hold several spells).

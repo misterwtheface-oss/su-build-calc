@@ -902,7 +902,7 @@
     const w = (D.wardrobe || []).find(x => bare(x.img) === bare(imgOrSprite) || x.sprite === imgOrSprite);
     return w && Array.isArray(w.frames) && w.frames.length >= 2 ? w.frames : null;
   };
-  const SCROLLERS = [".ovl-center-scroll", ".ovl-left", ".ovl-right", ".art-side-list", ".art-side-scroll", ".art-pv-body", ".xref-wrap"];
+  const SCROLLERS = [".ovl-center-scroll", ".ovl-left", ".ovl-right", ".art-side-list", ".art-side-scroll", ".art-pv-body", ".xref-wrap", ".art-slot-groups"];   // top AND left are kept
 
   // ── Back-button handling (Android/browser) — LAYER-AWARE ───────────────────
   //    History depth mirrors the overlay STACK: one synthetic entry per open
@@ -975,10 +975,10 @@
   function refreshOverlay(resetTop) {
     if (!ovState) return;
     const panel = OV.querySelector(".overlay-panel"); if (!panel) return;
-    const saved = SCROLLERS.map(sel => { const e = panel.querySelector(sel); return e ? e.scrollTop : 0; });
+    const saved = SCROLLERS.map(sel => { const e = panel.querySelector(sel); return e ? [e.scrollTop, e.scrollLeft] : [0, 0]; });
     panel.outerHTML = ovState.render();
     const p2 = OV.querySelector(".overlay-panel");
-    if (!resetTop) SCROLLERS.forEach((sel, k) => { const e = p2 && p2.querySelector(sel); if (e) e.scrollTop = saved[k]; });
+    SCROLLERS.forEach((sel, k) => { const e = p2 && p2.querySelector(sel); if (!e) return; if (!resetTop) e.scrollTop = saved[k][0]; e.scrollLeft = saved[k][1]; });   // resetTop resets vertical only
     maybeFocusSearch(OV);
     syncSpecAnim(); syncWardrobeAnims();
   }
@@ -1007,10 +1007,10 @@
   function refreshDetail(resetTop) {
     if (!dovState) return;
     const panel = DOV.querySelector(".overlay-panel"); if (!panel) return;
-    const saved = SCROLLERS.map(sel => { const e = panel.querySelector(sel); return e ? e.scrollTop : 0; });
+    const saved = SCROLLERS.map(sel => { const e = panel.querySelector(sel); return e ? [e.scrollTop, e.scrollLeft] : [0, 0]; });
     panel.outerHTML = dovState.render();
     const p2 = DOV.querySelector(".overlay-panel");
-    if (!resetTop) SCROLLERS.forEach((sel, k) => { const e = p2 && p2.querySelector(sel); if (e) e.scrollTop = saved[k]; });
+    SCROLLERS.forEach((sel, k) => { const e = p2 && p2.querySelector(sel); if (!e) return; if (!resetTop) e.scrollTop = saved[k][0]; e.scrollLeft = saved[k][1]; });   // resetTop resets vertical only
     syncSpecAnim(); syncWardrobeAnims();
   }
   function maybeFocusSearch(root) {
@@ -3868,7 +3868,7 @@
       }
       else if (st.pickType) side = renderArtPicker(st, a, rank);
       else side = renderArtLiveBonus(a, rank);
-      body = `<div class="ovl-center" data-action="lib-deselect"><div class="ovl-center-scroll">${groupsHtml}</div></div>
+      body = `<div class="ovl-center artb-slots" data-action="lib-deselect"><div class="ovl-center-scroll">${groupsHtml}</div></div>
         <div class="ovl-right art-side">${side}</div>`;
       footer = `<button class="btn-ghost" data-action="artb-back">‹ Back</button>
         <button class="btn-confirm" data-action="artb-next">Next: Name ›</button>`;
@@ -5331,9 +5331,9 @@
       if (A === "crea-search") resetCreaPage();   // new query → back to page 1
       if (A === "iconpick-search") state.limit = ICON_PAGE;
       const panel = root.querySelector(".overlay-panel");
-      const saved = SCROLLERS.map(sel => { const e = panel && panel.querySelector(sel); return e ? e.scrollTop : 0; });
+      const saved = SCROLLERS.map(sel => { const e = panel && panel.querySelector(sel); return e ? [e.scrollTop, e.scrollLeft] : [0, 0]; });
       const restoreScroll = () => { const p2 = root.querySelector(".overlay-panel");
-        SCROLLERS.forEach((sel, k) => { const e = p2 && p2.querySelector(sel); if (e) e.scrollTop = saved[k]; }); };
+        SCROLLERS.forEach((sel, k) => { const e = p2 && p2.querySelector(sel); if (e) [e.scrollTop, e.scrollLeft] = saved[k]; }); };
       // full re-render (old path): replaces the input, so refocus + restore the caret
       const replaceAll = () => {
         const caret = t.selectionStart;
