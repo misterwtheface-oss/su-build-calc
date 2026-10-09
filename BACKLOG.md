@@ -24,7 +24,7 @@ write the requirements to `_su_extract/code/HANDOFF_<topic>.md` for the extract 
   grid) with the animated spec sprite, description prose and perk containers. One **Edit** button (replaces "Customize")
   turns the perk containers into their editable form. Tapping the Spec tile when a spec is active opens the SAME page
   (Edit available; back arrow → grid to pick a replacement). Confirm button becomes **Done** when reached from an active spec.
-- [ ] 7. **Anointment tile** — add the "✕" clear like the other Planner tiles; centre the perk icons horizontally without
+- [x] 7. **Anointment tile** — add the "✕" clear like the other Planner tiles; centre the perk icons horizontally without
   changing their size or wrapping (exactly 5 per row).
 - [ ] 8. **God Shop** — show Favor Rank requirements.
 - [ ] 9. **Guild Shop** — the list is always 5: lay it out as a row of 3 over a row of 2 (offset, gaps between).

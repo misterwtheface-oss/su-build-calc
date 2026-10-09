@@ -782,15 +782,17 @@ h1, h2, h3 { margin: 0; }
 /* the hand glyph's art fills only 9×11 of its 16px canvas (the character fills 12×14) — draw it at 2.5× so both read the same size */
 .spec-tile-icon img.tile-empty-ico.anoint-ph { width: 40px; height: 40px; }
 /* equipped anointment perk icons shown in the Anointments tile */
-.anoint-tile .spec-tile-icon { width: auto; max-width: 100%; height: auto; min-height: 44px; }
+.anoint-tile .spec-tile-icon { width: 100%; height: auto; min-height: 44px; }
 /* fixed 5-wide grid: 5 equipped = one row on every width; Royal's 20 = a 4×5 block. Icons are 2× the 16px perk art
    (32px, same as the empty-tile glyph) and shrink a little on narrow phones rather than wrap. */
-.anoint-tile-icons { display: grid; grid-template-columns: repeat(5, minmax(0, 32px)); gap: 2px; justify-content: center; width: 100%; }
-.anoint-mini { width: 100%; aspect-ratio: 1; display: flex; align-items: center; justify-content: center; }
+/* 5 per row at exactly the old grid-cell size (min(32px, a fifth of the row)); each row — a short last row too — is centred */
+.anoint-tile-icons { display: flex; flex-wrap: wrap; gap: 2px; justify-content: center; width: 100%; }
+.anoint-mini { flex: 0 0 min(32px, calc((100% - 8px) / 5)); aspect-ratio: 1; display: flex; align-items: center; justify-content: center; }
 .anoint-mini img { width: 100%; height: 100%; object-fit: contain; }
 .spec-tile-label { font-weight: 600; font-size: 13px; line-height: 1.15; }
 .spec-tile-sub { font-size: 11px; color: var(--text-dim); }
 .spec-tile .slot-remove { display: flex; top: 6px; right: 6px; }
+.anoint-tile.filled { padding-top: 24px; }   /* the ✕ gets its own band above the icon rows (no overlap with the 5th icon) */
 
 /* spec selector — bigger info panel, sprite above name */
 .spec-right { width: 340px; }

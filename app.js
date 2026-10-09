@@ -743,6 +743,7 @@
         <div class="spec-tile-icon">${anointIcons}</div>
         <div class="spec-tile-label">Anointments</div>
         ${build.anoints.length ? `<div class="spec-tile-sub">${build.anoints.length}/${anointMax()} equipped</div>` : ""}
+        ${build.anoints.length ? `<button class="slot-remove" data-action="clear-anoints" title="Remove all">✕</button>` : ""}
       </div>`;
 
     const body = homeView === "roster"
@@ -4844,6 +4845,7 @@
       case "specpage-confirm": { const id = dovState.specId; closeDetail(); applySpec(id); break; }
       case "remove-creature": armOrDo(t, () => { build.slots[+t.dataset.slot] = emptySlot(); persistBuild(); render(); }); break;
       case "clear-spec": e.stopPropagation(); build.specId = null; persistBuild(); render(); break;
+      case "clear-anoints": e.stopPropagation(); build.anoints = []; persistBuild(); render(); break;
       case "clear-party": armOrDo(t, () => { build = freshBuild(); clearBookmarks(); persistBuild(); render(); }); break;
       case "home-view": { const v = t.dataset.view; if (v === homeView) break; homeView = v; persistHomeView(); syncLayoutMenu(); render(); break; }
       case "open-artifacts": openArtifactLibrary(null); break;
