@@ -71,3 +71,11 @@ a flat modifier to base: raised **×4/3 (+33%)**, lowered **×2/3 (−33%)**, ot
   before the damage check (Corpse Shield/Divine Aegis/Holy Armor were wrongly Damaging).
 - **User rule:** an effect dealing "damage WITH attacks and spells" tags BOTH Attack and Cast — don't strip
   Cast there; only strip Cast when "spell" is a passive damage-source/immunity qualifier ("damage FROM an
+
+## Realm object treasure notation (2026-10-09)
+- Realm_REF `[N]` after an object name = number of that object per realm. Treasure lives in the rank-0 effect string as
+  `Treasure [n]` where n = code bundles for one interaction (no favor ranks, no other bonuses). An object whose treasure only
+  comes from a favor rank gets `[n]` on that favor row (its base bundles, nothing else).
+- Boss rooms: 2 chests × 6 bundles = `Treasure [12]`; Nether Boss rooms 18. The +5 boss-room blessing is a favor bonus, not
+  part of rank 0.
+

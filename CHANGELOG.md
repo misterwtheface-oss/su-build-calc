@@ -4,6 +4,18 @@ Every dated change entry, newest first (moved verbatim from Progress.md on 2026-
 to their own section and sorted by their date). Current state and open work: `Progress.md`, `BACKLOG.md`.
 New entries go at the TOP.
 
+## 2026-10-09 — realm object treasure counts grounded in code
+- Realm_REF rank-0 effects now carry the real treasure **bundle** count (one bundle = one full `inv_Loot` roll list):
+  `Simple Interaction - Treasure [3]` (piles, caches, tombs, cages, cairns…), `[5]` (fetch quests, LoBaB bookshelves,
+  generator), `[6]` (large chests in WDSD / Titan's Wound / Astral Gallery), `[10]` (Temple of Lies chest). Boss objects:
+  `Favor [50] & Treasure [12]` (2 chests × (3 + 3 boss-room)); a Nether Boss fight adds +3 per chest (18).
+- Favor rows that are an object's only treasure got their base count: "… Drop/Receive/Gain Treasure [3]" (Skull Candle [2]),
+  "50% Chance to Receive Treasure … [3]". Boss-room blessings: "[+5 per chest]"; Temple of Lies: "code applies at rank 70";
+  Blood Grove: "[not in chest code]". Victim `Treasure [3]`, Oasis `Treasure [3]` (spawns a realm chest), Mirrorball rank 0
+  has no treasure (only from rank 50). Combination_REF: Music Crystal / Chemistry Table "Treasure Reward [10]".
+- Source: `_su_extract/code/REALM_OBJECT_BUNDLES.md`; the CSVs were patched at the source (`Realm_REF.csv`,
+  `Combination_REF.csv`, backups in `_raw_csv/_backup_20261009/`) and re-ingested.
+
 ## 2026-10-09 — import: no duplicate artifacts / nether stones
 - Importing a build (text or share link) reuses an exact duplicate artifact or nether stone already in the library
   instead of adding a copy. Matching is order-insensitive and ignores fields a game export can't carry (stone icon, rarity
