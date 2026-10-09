@@ -779,11 +779,8 @@
         <div class="roster-identity"><div class="roster-sprite"><div class="slot-empty-icon">🔒</div></div>
           <div class="roster-name">Locked</div><div class="slot-sub">Pariah — 3 max</div></div>
         <div class="roster-traits empty"><span class="roster-empty">Party capped at 3 creatures.</span></div></div>`;
-      return `<div class="roster-row" data-slot="${i}">
-        <div class="roster-identity">
-          <div class="roster-sprite" data-action="pick-creature" data-slot="${i}"><div class="slot-empty-icon">＋</div></div>
-        </div>
-        <div class="roster-traits empty"></div></div>`;
+      return `<div class="roster-row empty" data-slot="${i}">
+        <div class="roster-sprite roster-add" data-action="pick-creature" data-slot="${i}"><div class="slot-empty-icon">＋</div></div></div>`;
     }
     const b = baseStats(slot);
     const f = slot.fusion != null ? CREA.get(slot.fusion) : null;
