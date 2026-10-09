@@ -3718,7 +3718,7 @@
       const inUse = (n) => netherUsers(n.id, a.id, tgt);
       const list = nether.filter(n => (!q || netherSearchText(n).includes(q))
           && (!st.nsTrait || (n.props || []).some(p => p.cat === "trait"))
-          && (!st.nsSpell || (n.props || []).some(p => p.cat === "spell"))
+          && nsSpellMatch(n, st.nsSpell)
           && (!st.nsHideUsed || !inUse(n).length));
       const sortK = st.nsSort || "recent", nd = sortSign(st.nsSortRev);
       list.sort(sortK === "name" ? (x, y) => nd * x.name.localeCompare(y.name)
@@ -3751,7 +3751,7 @@
     } else if (type === "nether") {
       extra = `<div class="art-side-filter">
           <button class="facet ${st.nsTrait ? "on" : ""}" data-action="artb-nsfilter" data-f="nsTrait">Trait</button>
-          <button class="facet ${st.nsSpell ? "on" : ""}" data-action="artb-nsfilter" data-f="nsSpell">Spell</button>
+          ${nsSpellChip(st.nsSpell, "ns-spellcycle")}
           <button class="facet ${st.nsHideUsed ? "on" : ""}" data-action="artb-nsfilter" data-f="nsHideUsed" title="Hide stones already socketed in another equipped artifact">Hide in use</button></div>
         <div class="art-side-filter">${seg("artb-nssort", st.nsSort || "recent", [["recent", "Recent"], ["name", "A–Z"], ...STAT_KEYS.map(k => [k, STAT_LABEL[k].slice(0, 3)])], st.nsSortRev)}</div>`;
     } else if (traitFilter || bkFilter) extra = `<div class="art-side-filter">${traitFilter}${bkFilter}</div>`;
@@ -4319,6 +4319,11 @@
   ];
   // a nether-socketed spell is a RAW spell (no property modifiers) fired on a trigger
   const NETHER_TRIGGERS = ["On Attack", "On Defend", "On Cast", "On Provoke", "On Turn"];
+  // stone "Spell" filter chip cycles: off → any spell → each trigger → off. A stone matches when ANY of its spells fits.
+  const NS_SPELL_CYCLE = [false, true, ...NETHER_TRIGGERS];
+  const nsSpellNext = (cur) => NS_SPELL_CYCLE[(NS_SPELL_CYCLE.indexOf(cur ?? false) + 1) % NS_SPELL_CYCLE.length];
+  const nsSpellMatch = (n, f) => !f || (n.props || []).some(p => p.cat === "spell" && (f === true || (p.trigger || "On Attack") === f));
+  const nsSpellChip = (f, action) => `<button class="facet ${f ? "on" : ""}" data-action="${action}">${f && f !== true ? `Spell: <b>${esc(f)}</b>` : "Spell"}</button>`;
   function netherPropLabel(p) {
     if (p.cat === "trait") { const t = TRAITITEM.get(p.key); return t ? t.name : p.key; }
     if (p.cat === "spell") { const s = SPELL.get(p.key); return `${s ? s.name : p.key} (${p.trigger || "?"})`; }
@@ -4387,14 +4392,14 @@
     const core = (n) => netherBonusRows(n).core;
     let list = nether.filter(n => (!q || netherSearchText(n).includes(q))
       && (!st.nsTrait || (n.props || []).some(p => p.cat === "trait"))
-      && (!st.nsSpell || (n.props || []).some(p => p.cat === "spell")));
+      && nsSpellMatch(n, st.nsSpell));
     if (st.hideEquipped) list = list.filter(n => !netherEquippedInBuild(n.id));
     list = list.slice().sort(sortK === "name" ? (x, y) => d * x.name.localeCompare(y.name)
       : STAT_KEYS.includes(sortK) ? (x, y) => d * (core(y)[sortK] - core(x)[sortK]) || x.name.localeCompare(y.name)
       : (x, y) => d * (y.id - x.id));
     const libBar = `<div class="ovl-filterbar lib-bar">
         <button class="facet ${st.nsTrait ? "on" : ""}" data-action="lib-flag" data-f="nsTrait">Trait</button>
-        <button class="facet ${st.nsSpell ? "on" : ""}" data-action="lib-flag" data-f="nsSpell">Spell</button>
+        ${nsSpellChip(st.nsSpell, "ns-spellcycle")}
         <span class="sg-sort-gap"></span>
         ${libSortSeg(st, [["recent", "Recent", true], ["name", "A–Z", false], ...STAT_KEYS.map(k => [k, STAT_LABEL[k].slice(0, 3), true])])}</div>`;
     // compact tiles: gem + name only; effects live in the info panel on selection
@@ -5247,6 +5252,7 @@
       // saved-library header bars (Artifacts / Nether Stones / Spell Gems)
       case "lib-sort": sortPick(ovState, "libSort", "libSortRev", t.dataset.v); refreshOverlay(); break;
       case "lib-flag": ovState[t.dataset.f] = !ovState[t.dataset.f]; refreshOverlay(); break;
+      case "ns-spellcycle": ovState.nsSpell = nsSpellNext(ovState.nsSpell); refreshOverlay(); break;
 
       // entity taxonomy detail (trait / spell / perk / relic / card)
       case "nav-trait": openEntityDetail("trait", +t.dataset.tid); break;

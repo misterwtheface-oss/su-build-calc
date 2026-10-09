@@ -10,7 +10,7 @@ Commit each item locally; push ONCE when the whole batch is finished. Anything t
 write the requirements to `_su_extract/code/HANDOFF_<topic>.md` for the extract session. Tick items here as they land.
 - [x] 1. **Mobile Artifact wizard** — slots become a single-row header, locked, scrolling horizontally, so the rest of the
   screen is the selector list.
-- [ ] 2. **Nether stone spell filter** — toggle between the "On X" trigger variants; a stone counts if ANY of its spells
+- [x] 2. **Nether stone spell filter** — toggle between the "On X" trigger variants; a stone counts if ANY of its spells
   meets the condition (stones can hold several spells).
 - [ ] 3. **Artifact library preview → Sockets tab** doesn't show EMPTY sockets (seen on a Helmet with empty spell + nether
   slots; probably not helmet-specific). The editor is fine.
