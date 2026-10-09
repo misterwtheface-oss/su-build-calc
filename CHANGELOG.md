@@ -4,6 +4,12 @@ Every dated change entry, newest first (moved verbatim from Progress.md on 2026-
 to their own section and sorted by their date). Current state and open work: `Progress.md`, `BACKLOG.md`.
 New entries go at the TOP.
 
+## 2026-10-09 — realm objects: code-grounded odds on random interactions
+- Rank-0 strings of random objects now carry the real odds: Oasis 25% each (Mirage / Favor / Treasure [3] / Nix; 33% each
+  once Mirages are removed), the favor-or-encounter objects 75% / 25% (Torture Device, Spider Eggs, Corrupted Totem, Totem,
+  Mask, Obelisk, Bloodstained Altar), Small Slot Machine ⅓ each, Victim ⅓ each (Treasure [3] / Mimic & Treasure [5] /
+  Encounter). Monolith rank 20 notes the code has no roll. Source: `_su_extract/code/CHANCE_INTERACTIONS.md`.
+
 ## 2026-10-09 — realm object treasure counts grounded in code
 - Realm_REF rank-0 effects now carry the real treasure **bundle** count (one bundle = one full `inv_Loot` roll list):
   `Simple Interaction - Treasure [3]` (piles, caches, tombs, cages, cairns…), `[5]` (fetch quests, LoBaB bookshelves,
