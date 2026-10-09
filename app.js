@@ -3332,10 +3332,14 @@
   };
   function artContentRows(a, opts = {}) {
     const r = [];
-    // opts.empties: after each slot group's filled rows, one dashed row per unfilled slot (opens that slot's picker)
-    const empty = (key) => { if (!opts.empties) return; const sl = ART_SLOTS.find(x => x.key === key);
-      for (let i = (a[key] || []).length; i < sl.max; i++) r.push(`<div class="prop-row art-empty-slot" data-action="artpage-edit" data-t="${sl.pick}" title="Add a ${esc(sl.label)}">
-        <span class="prop-ico">＋</span><span class="prop-name">Empty ${esc(sl.label)} slot</span></div>`); };
+    // opts.empties: after each slot group's filled rows, one dashed row per unfilled slot (opens the editor via
+    // opts.emptyAction) — or a locked row when the artifact's rank hasn't unlocked that slot yet
+    const empty = (key) => { if (!opts.empties) return; const sl = ART_SLOTS.find(x => x.key === key), open = artOpen(sl, a.rank || 50);
+      const act = opts.emptyAction || `data-action="artpage-edit"`;
+      for (let i = (a[key] || []).length; i < sl.max; i++) r.push(i < open
+        ? `<div class="prop-row art-empty-slot" ${act} data-t="${sl.pick}" title="Add a ${esc(sl.label)}">
+        <span class="prop-ico">＋</span><span class="prop-name">Empty ${esc(sl.label)} slot</span></div>`
+        : `<div class="prop-row art-empty-slot locked"><span class="prop-ico">🔒</span><span class="prop-name">${esc(sl.label)} slot</span><span class="prop-stat">Tier ${sl.unlock[i]}</span></div>`); };
     if (a.primary) r.push(libRow(primaryIconAt(a.primary, a.rank), a.primary, "primary"));
     for (const n of a.stat || []) { const m = MAT_BY_PROP.get(n); r.push(libRow(m && m.icon, m ? m.name : n, n)); }
     empty("stat");
@@ -3523,7 +3527,7 @@
         <button class="av-tab ${view === "bonuses" ? "on" : ""}" data-action="art-view" data-v="bonuses">Bonuses</button>
         <span class="av-pipe">|</span>
         <button class="av-tab ${view === "sockets" ? "on" : ""}" data-action="art-view" data-v="sockets">Sockets</button></div>`;
-      const viewBody = view === "sockets" ? `<div class="prop-list">${artContentRows(sel)}</div>` : artifactBonusView(sel);
+      const viewBody = view === "sockets" ? `<div class="prop-list">${artContentRows(sel, { empties: true, emptyAction: `data-action="art-edit" data-id="${sel.id}"` })}</div>` : artifactBonusView(sel);
       const selClash = artNetherClash(sel, manage ? null : st.slotIdx);
       const otherNote = (!manage && !equippedHere && artifactEquippedInBuild(sel.id)
         ? `<div class="slot-sub sg-clsnote" style="padding:8px 0">Equipped by another creature — unequip it there first to use it here.</div>` : "")

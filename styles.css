@@ -460,6 +460,9 @@ h1, h2, h3 { margin: 0; }
 .prop-row.art-empty-slot .prop-ico { justify-content: center; font-size: 16px; }
 .prop-row.art-empty-slot .prop-name { color: var(--accent2); font-weight: 500; }
 .prop-row.art-empty-slot:hover { border-color: var(--accent2); background: rgba(154,123,214,.10); }
+.prop-row.art-empty-slot.locked { opacity: .45; cursor: default; color: var(--text-mute); }
+.prop-row.art-empty-slot.locked .prop-name { color: var(--text-mute); }
+.prop-row.art-empty-slot.locked:hover { border-color: var(--border-dim); background: transparent; }
 .pick-tile.selected { border-color: var(--accent2); box-shadow: inset 0 0 0 2px var(--accent2); }
 .pick-tile.selected .pt-sprite { background: rgba(154,123,214,.2); border-radius: 8px; filter: brightness(1.12); }
 /* Equipment library grids (artifacts / spell gems / nether stones): equip-state fill (purple = this

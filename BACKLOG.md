@@ -12,7 +12,7 @@ write the requirements to `_su_extract/code/HANDOFF_<topic>.md` for the extract 
   screen is the selector list.
 - [x] 2. **Nether stone spell filter** — toggle between the "On X" trigger variants; a stone counts if ANY of its spells
   meets the condition (stones can hold several spells).
-- [ ] 3. **Artifact library preview → Sockets tab** doesn't show EMPTY sockets (seen on a Helmet with empty spell + nether
+- [x] 3. **Artifact library preview → Sockets tab** doesn't show EMPTY sockets (seen on a Helmet with empty spell + nether
   slots; probably not helmet-specific). The editor is fine.
 - [ ] 4. **Fusion colours need the internet** — offline (airplane mode) every build showed default colours and the 6 fusion
   colour options were all default. Find why (asset not precached / fetched from GitHub at runtime?) and fix.
