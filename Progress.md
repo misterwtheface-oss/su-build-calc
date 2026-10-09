@@ -17,6 +17,9 @@ source of truth), called by both `build-data.mjs` and the **`.githooks/pre-commi
 `index.html` (`?v=`) + `sw.js` (`BUILD`) and re-stages them on **every commit**. One-time per clone:
 `git config core.hooksPath .githooks`. Don't commit with `--no-verify` (skips the stamp).
 
+**Location (2026-10-08):** `claude_workspace/siralim/su-build-calc/` (old path is a junction); the extract is the sibling
+`../_su_extract`. Project context for both: `siralim/CLAUDE.md`.
+
 ## Session checklist
 - Start: read this, then `BACKLOG.md`; check `_su_extract/code/HANDOFF_*.md` for extract-side hand-offs.
 - Data comes from `_su_extract` via `node build-data.mjs` (never ship the extract; only `data.js` + copied assets).
