@@ -1729,6 +1729,25 @@ for (const g of shops[0].groups) for (const it of g.items) {
     if (ref) { it.name = ref.item; it.nameSrc = 'csv'; it.type = 'Crafting Material'; delete it.unresolved; }
   }
 }
+// Favor Rank that unlocks a God Shop item — community reference (god_shop_ref "tier", user-curated tracker; secondary info
+// like the Guild ranks). Joined by god + item name; scr_GodShopSetup itself carries no rank gate in the extract (verify:
+// _su_extract/code/HANDOFF_god_shop_favor_rank.md). Cosmetics (backgrounds/decorations/music) have no reference rank.
+{
+  // reference type → code item kind (a god can sell a spell and a decoration of the same name, e.g. Vulcanar's Inferno)
+  const KIND_OF_REF = { 'Mana': 'creature', 'Trait': 'trait_item', 'Inscription': 'spell', 'Heart': 'project_item', 'Crafting Material': 'dust' };
+  const favorByKey = new Map();
+  for (const [god, rows] of godShopMap) for (const r of rows) {
+    if (!r.tier) continue;
+    const kind = KIND_OF_REF[r.type]; if (!kind) { warn(`god shop ref type "${r.type}" has no code kind (${god} / ${r.item})`); continue; }
+    favorByKey.set([norm(god), kind, norm(r.item)].join('|'), r.tier);
+  }
+  let hits = 0;
+  for (const g of shops[0].groups) for (const it of g.items) {
+    const t = favorByKey.get([norm(g.name), it.kind, norm(it.name)].join('|')); if (t != null) { it.favorRank = t; hits++; }
+  }
+  if (hits < favorByKey.size) warn(`god shop favor ranks: ${favorByKey.size - hits} reference row(s) matched no code item`);
+  console.log(`  god shop favor ranks (community ref): ${hits}/${favorByKey.size} joined`);
+}
 for (const sh of shops) for (const g of (sh.groups || [sh])) { if (!g.currency) err(`shop ${sh.key}/${g.key || ''} has no currency`); if (!g.currencyIcon) err(`shop ${sh.key}/${g.key || ''} has no currency icon`); }
 console.log(`  shops (code): God ${shops[0].groups.length} gods · ${GUILD_ORDER.length} guilds (${guildBannerHits} banners) · Arena · Tavern · ${allShopItems().length} items`);
 

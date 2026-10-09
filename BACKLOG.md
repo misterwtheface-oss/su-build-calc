@@ -26,7 +26,7 @@ write the requirements to `_su_extract/code/HANDOFF_<topic>.md` for the extract 
   (Edit available; back arrow → grid to pick a replacement). Confirm button becomes **Done** when reached from an active spec.
 - [x] 7. **Anointment tile** — add the "✕" clear like the other Planner tiles; centre the perk icons horizontally without
   changing their size or wrapping (exactly 5 per row).
-- [ ] 8. **God Shop** — show Favor Rank requirements.
+- [x] 8. **God Shop** — show Favor Rank requirements. Shipped from the community reference (630/630 joined); code gate → `_su_extract/code/HANDOFF_god_shop_favor_rank.md`.
 - [ ] 9. **Guild Shop** — the list is always 5: lay it out as a row of 3 over a row of 2 (offset, gaps between).
 - [ ] 10. **All God Shop lists** — centre text vertically in each row.
 
