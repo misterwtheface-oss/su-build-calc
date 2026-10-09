@@ -33,6 +33,26 @@
     return p;
   }
 
+  // ── library dedupe (import reuses an exact duplicate instead of adding a copy) ──
+  // Both sides are in LIBRARY form (spell props carry the spell id). Order-insensitive; a stone's icon only counts
+  // when the incoming one carries it (game exports don't), rarity only when both have one (the app can't set it).
+  const sortedJoin = (arr) => (arr || []).map(String).sort().join(",");
+  const stonePropSig = (props) => sortedJoin((props || []).map(p => p.cat === "trait" ? `t|${p.key}`
+    : p.cat === "spell" ? `s|${p.key}|${p.trigger || "On Attack"}` : `${p.cat}|${p.key}|${Number(p.value) || 0}`));
+  function sameStone(lib, inc) {
+    if (!lib || !inc) return false;
+    if (String(lib.name || "").trim() !== String(inc.name || "").trim()) return false;
+    if (inc.icon && lib.icon !== inc.icon) return false;
+    if (lib.rarity != null && inc.rarity != null && lib.rarity !== inc.rarity) return false;
+    return stonePropSig(lib.props) === stonePropSig(inc.props);
+  }
+  // artifact body without its stone (the caller compares stones by content, never by id)
+  function sameArtifactBody(lib, inc) {
+    if (!lib || !inc) return false;
+    return String(lib.name || "").trim() === String(inc.name || "").trim() && (lib.rank || 50) === (inc.rank || 50) && lib.primary === inc.primary
+      && ["stat", "trick", "traits", "spells"].every(k => sortedJoin(lib[k]) === sortedJoin(inc[k]));
+  }
+
   function create(env) {
     const { D } = env;
     const CREA_BY_NAME = new Map(D.creatures.map(c => [norm(c.name), c]));
@@ -212,7 +232,7 @@
     return { payloadFromApp, parseGameText, readableText, exportText, importText, encodeCode, decodeCode, SPELL_BY_KEY, PROP_BY_KEY };
   }
 
-  const api = { create, encodeCode, decodeCode, findCode, CODE_PREFIX, COMPANION_HDR };
+  const api = { create, sameStone, sameArtifactBody, encodeCode, decodeCode, findCode, CODE_PREFIX, COMPANION_HDR };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   else root.SU_BUILDIO = api;
 })(typeof window !== "undefined" ? window : globalThis);

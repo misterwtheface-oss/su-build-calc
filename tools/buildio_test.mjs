@@ -61,5 +61,18 @@ eq('non-export text is rejected', !!msg, true);
 msg = null; try { await io.importText('SUC1:@@@not-base64@@@'); } catch (e) { msg = e.message; }
 eq('a damaged code is rejected', !!msg, true);
 
+console.log('library dedupe (sameStone / sameArtifactBody)');
+const st = { name: 'Rage Stone', icon: 'gem1', rarity: 300, props: [{ cat: 'stat', key: 'Attack', value: 22 }, { cat: 'spell', key: 7, trigger: 'On Attack' }, { cat: 'trait', key: 4 }] };
+eq('identical stone matches', IO.sameStone(st, { ...st }), true);
+eq('prop order and value type ignored', IO.sameStone(st, { ...st, props: [{ cat: 'trait', key: 4, value: null }, { cat: 'spell', key: 7, trigger: 'On Attack' }, { cat: 'stat', key: 'Attack', value: '22' }] }), true);
+eq('no icon on the incoming stone (game export) still matches', IO.sameStone(st, { ...st, icon: null }), true);
+eq('rarity only compared when both have one', [IO.sameStone({ ...st, rarity: undefined }, st), IO.sameStone(st, { ...st, rarity: 301 })], [true, false]);
+eq('different icon / name / value / trigger do not match', [IO.sameStone(st, { ...st, icon: 'gem2' }), IO.sameStone(st, { ...st, name: 'Other' }),
+  IO.sameStone(st, { ...st, props: [{ cat: 'stat', key: 'Attack', value: 23 }, st.props[1], st.props[2]] }),
+  IO.sameStone(st, { ...st, props: [st.props[0], { cat: 'spell', key: 7, trigger: 'On Damage' }, st.props[2]] })], [false, false, false, false]);
+const ar = { name: 'Dark Commander', rank: 50, primary: 'Sword', stat: ['Attack', 'Health', 'Attack'], trick: ['Life Strength'], traits: [3], spells: [9] };
+eq('identical artifact matches (stat order ignored, rank defaults to 50)', IO.sameArtifactBody({ ...ar, rank: undefined }, { ...ar, stat: ['Attack', 'Attack', 'Health'] }), true);
+eq('different rank / slot content do not match', [IO.sameArtifactBody(ar, { ...ar, rank: 60 }), IO.sameArtifactBody(ar, { ...ar, trick: [] }), IO.sameArtifactBody(ar, { ...ar, spells: [] })], [false, false, false]);
+
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

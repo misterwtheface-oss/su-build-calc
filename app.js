@@ -1731,27 +1731,40 @@
     const libs = { artifacts, nether, spellGems };
     return bio().exportText(bio().payloadFromApp(b, libs), exportViews(b));
   }
-  // payload → current party. Artifacts / stones / gems are added to the libraries, reusing an identical existing item.
+  // payload → current party. Artifacts / stones / gems are added to the libraries, reusing an exact duplicate
+  // already there (SU_BUILDIO.sameStone / sameArtifactBody) instead of adding a copy. Each library item is claimed
+  // at most once per import: the source party is assumed legal (one artifact per creature, no stone in two
+  // artifacts), so a second identical artifact / stone in the import gets its own library entry.
   function applyImportedBuild(payload, warnings) {
-    const usedGems = new Set();
+    const usedGems = new Set(), usedArts = new Set(), usedStones = new Set();
+    const { sameStone, sameArtifactBody } = window.SU_BUILDIO;
     const spellId = (key) => { const s = bio().SPELL_BY_KEY.get(key); return s ? s.id : null; };
-    const ensureStone = (n) => {
-      if (!n) return null;
+    const stoneBody = (n) => {
       const props = (n.props || []).map(p => p.cat === "spell" ? { cat: "spell", key: spellId(p.spell), trigger: p.trigger || "On Attack" } : { cat: p.cat, key: p.key, value: p.value ?? 0 })
         .filter(p => p.key != null && (p.cat !== "trait" || TRAITITEM.has(p.key)));
-      const body = { name: n.name || `Nether Stone ${nextNetherId}`, icon: GEM_ICONS.some(g => g.key === n.icon) ? n.icon : (GEM_ICONS[0] || {}).key, props, ...(n.rarity != null ? { rarity: n.rarity } : {}) };
-      const hit = nether.find(x => sameContent({ name: x.name, icon: x.icon, props: x.props, ...(x.rarity != null ? { rarity: x.rarity } : {}) }, body));
-      if (hit) return hit.id;
-      const id = nextNetherId++; nether.push({ id, ...body }); return id;
+      return { name: n.name || `Nether Stone ${nextNetherId}`, icon: GEM_ICONS.some(g => g.key === n.icon) ? n.icon : null, props, ...(n.rarity != null ? { rarity: n.rarity } : {}) };
+    };
+    const freeStone = (id) => !usedStones.has(id) && nether.some(x => x.id === id);
+    // an existing artifact's stone matches the incoming one (both empty, or same content and not yet claimed)
+    const stoneFits = (art, sb) => { const nid = (art.netherIds || [])[0];
+      if (nid == null || !nether.some(x => x.id === nid)) return !sb;
+      return !!sb && freeStone(nid) && sameStone(nether.find(x => x.id === nid), sb); };
+    const ensureStone = (sb) => {
+      const hit = nether.find(x => !usedStones.has(x.id) && sameStone(x, sb));
+      const id = hit ? hit.id : nextNetherId++;
+      if (!hit) nether.push({ id, ...sb, icon: sb.icon || (GEM_ICONS[0] || {}).key });
+      usedStones.add(id); return id;
     };
     const ensureArtifact = (a) => {
       if (!a || !a.primary) return null;
-      const stoneId = ensureStone(a.nether);
+      const sb = a.nether ? stoneBody(a.nether) : null;
       const body = { name: a.name || `Artifact ${nextArtId}`, rank: a.rank || 50, primary: a.primary, stat: (a.stat || []).slice(0, 3), trick: (a.trick || []).slice(0, 2),
-        traits: (a.traits || []).filter(id => TRAITITEM.has(id)).slice(0, 1), spells: (a.spells || []).map(spellId).filter(x => x != null).slice(0, 1), netherIds: stoneId != null ? [stoneId] : [] };
-      const hit = artifacts.find(x => sameContent({ name: x.name, rank: x.rank || 50, primary: x.primary, stat: x.stat, trick: x.trick, traits: x.traits, spells: x.spells, netherIds: x.netherIds }, body));
-      if (hit) return hit.id;
-      const id = nextArtId++; artifacts.push({ id, ...body, _gemMigrated: true, _rawSpell: true }); return id;
+        traits: (a.traits || []).filter(id => TRAITITEM.has(id)).slice(0, 1), spells: (a.spells || []).map(spellId).filter(x => x != null).slice(0, 1) };
+      const hit = artifacts.find(x => !usedArts.has(x.id) && sameArtifactBody(x, body) && stoneFits(x, sb));
+      if (hit) { usedArts.add(hit.id); (hit.netherIds || []).forEach(id => usedStones.add(id)); return hit.id; }
+      const stoneId = sb ? ensureStone(sb) : null;
+      const id = nextArtId++; artifacts.push({ id, ...body, netherIds: stoneId != null ? [stoneId] : [], _gemMigrated: true, _rawSpell: true });
+      usedArts.add(id); return id;
     };
     const ensureGem = (g) => {
       const sid = spellId(g.spell); if (sid == null) { warnings.push(`Spell "${g.spell}" not found — gem skipped.`); return null; }

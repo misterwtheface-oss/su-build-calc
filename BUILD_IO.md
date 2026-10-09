@@ -24,6 +24,12 @@ spells and gem properties travel by **key** so a data rebuild can't scramble a s
 **Export** = game-style text + `========== SU COMPANION ==========` + the code line.
 **Import** = code line if present (exact restore), else the game text (best effort). **Always loads as the current
 party.** Artifacts / nether stones / spell gems are added to the libraries; an identical existing item is reused.
+**Library dedupe** (`SU_BUILDIO.sameStone` / `sameArtifactBody`): a stone matches on name + properties (any order); its
+icon counts only when the import carries one (game exports don't), rarity only when both sides have one (the app can't
+set it). An artifact matches on name, rank, primary, slot contents and its stone's CONTENT (never the stone id). Each
+library item is claimed at most once per import — the source party is assumed legal (one artifact per creature, no stone
+in two artifacts), so a second identical artifact / stone in the same build gets its own library entry and every
+creature still ends up equipped.
 
 ## Share link
 Export → **Copy link** = `<site>#b=<SUC1 code body>` (~1.8 KB). On load `checkSharedLink()` (app.js) reads the hash,

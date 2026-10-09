@@ -4,6 +4,14 @@ Every dated change entry, newest first (moved verbatim from Progress.md on 2026-
 to their own section and sorted by their date). Current state and open work: `Progress.md`, `BACKLOG.md`.
 New entries go at the TOP.
 
+## 2026-10-09 — import: no duplicate artifacts / nether stones
+- Importing a build (text or share link) reuses an exact duplicate artifact or nether stone already in the library
+  instead of adding a copy. Matching is order-insensitive and ignores fields a game export can't carry (stone icon, rarity
+  when the library stone has none). Each library item is claimed once per import, so two identical artifacts in one build
+  still give each creature its own. Rules in `BUILD_IO.md`; helpers tested in `tools/buildio_test.mjs`; checked end to end
+  (re-imports add nothing; a build with two identical artifacts adds exactly one copy).
+- Roster layout: empty-slot "+" centred across the row; a fresh party stretches to fill the screen until a creature is picked.
+
 ## 2026-10-08 — data notes (bullets)
 - 2026-10-08: **Glossary → Nether Stone Drops** (from _su_extract `code/HANDOFF_nether_stone_breakpoints.md`). Rows = every
   chance step reachable by 600% realm bonus (k = floor((1+rb)·1.25[·1.25 Pariah ascended]) in N; N Normal 5000 / Relaxed
