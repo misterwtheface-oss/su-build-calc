@@ -279,11 +279,11 @@ h1, h2, h3 { margin: 0; }
 }
 .roster-sprite img { width: 82%; height: 82%; object-fit: contain; }
 .roster-sprite .slot-empty-icon { font-size: 30px; }
-/* empty row: the add target spans the whole row so the "+" sits centred, not stranded in the left column */
-.roster-row.empty { grid-template-columns: 1fr; }
-.roster-sprite.roster-add { width: 100%; height: 92px;
-  background: radial-gradient(ellipse 220px 44px at 50% 50%, rgba(154,123,214,.16), transparent); }
-.roster-sprite.roster-add .slot-empty-icon { width: auto; height: auto; font-size: 42px; }
+/* empty row: one centred square add target (same circular glow as the grid tile), not stranded in the left column */
+.roster-row.empty { grid-template-columns: 1fr; justify-items: center; }
+.roster-sprite.roster-add { width: 112px; height: 112px;
+  background: radial-gradient(circle closest-side, rgba(154,123,214,.18), transparent); }
+.roster-sprite.roster-add .slot-empty-icon { font-size: 38px; }
 .roster-sprite.roster-add:hover .slot-empty-icon { opacity: .6; }
 .roster-head { display: flex; flex-direction: column; align-items: center; gap: 2px; min-width: 0; max-width: 100%; }
 .roster-name {
@@ -318,8 +318,7 @@ h1, h2, h3 { margin: 0; }
   .roster-identity > .slot-sub { order: 2; }             /* standalone note (e.g. "Ignored (Pariah)") */
   .roster-sprite-row { order: 3; }
   .roster-sprite { width: 72px; height: 72px; }
-  .roster-sprite.roster-add { width: 100%; height: 72px;
-    background: radial-gradient(ellipse 160px 34px at 50% 50%, rgba(154,123,214,.16), transparent); }
+  .roster-sprite.roster-add { width: 96px; height: 96px; }
   .roster-stats { order: 5; }
   .roster-actions { order: 6; }
 }
