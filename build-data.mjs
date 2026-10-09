@@ -3316,6 +3316,9 @@ console.log(`✓ wrote data.js (${(fs.statSync(path.join(ROOT, 'data.js')).size 
         else { const rel = path.relative(ROOT, full).split(path.sep).join('/'); urls.push(`${rel}?v=${assetVer(rel)}`); }
       }
     })(ASSETS_DIR);
+    // fusion palettes are lazy-loaded by the app, so without this they were only cached if a fused creature happened to
+    // render online since the last deploy → offline, every fusion fell back to the plain primary colours
+    if (SU_DATA.fusionFile) urls.push(SU_DATA.fusionFile);
     urls.sort();
     const v = crypto.createHash('md5').update(urls.join('\n')).digest('hex').slice(0, 8);
     fs.writeFileSync(path.join(ROOT, 'precache-list.json'), JSON.stringify({ v, urls }));

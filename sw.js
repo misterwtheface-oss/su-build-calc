@@ -53,7 +53,8 @@ function isNavigation(req) {
     (req.method === "GET" && (req.headers.get("accept") || "").includes("text/html"))
   );
 }
-const isAsset = (url) => url.pathname.includes("/assets/");
+// fusion.json (content-hashed ?v=, lazy-loaded) rides with the sprites: precached, and NOT purged on every deploy
+const isAsset = (url) => url.pathname.includes("/assets/") || url.pathname.endsWith("/fusion.json");
 
 async function cacheFirst(request, cacheName) {
   const cache = await caches.open(cacheName);

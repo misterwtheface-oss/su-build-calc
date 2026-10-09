@@ -14,7 +14,7 @@ write the requirements to `_su_extract/code/HANDOFF_<topic>.md` for the extract 
   meets the condition (stones can hold several spells).
 - [x] 3. **Artifact library preview → Sockets tab** doesn't show EMPTY sockets (seen on a Helmet with empty spell + nether
   slots; probably not helmet-specific). The editor is fine.
-- [ ] 4. **Fusion colours need the internet** — offline (airplane mode) every build showed default colours and the 6 fusion
+- [x] 4. **Fusion colours need the internet** — offline (airplane mode) every build showed default colours and the 6 fusion
   colour options were all default. Find why (asset not precached / fetched from GitHub at runtime?) and fix.
 - [ ] 5. **Spell-gem property conflicts** — Jade / Generosity can't be added to spells the user expects. Audit every property's
   conflict/eligibility mapping; any property allowed on NO spell = a bug.
