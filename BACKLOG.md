@@ -20,7 +20,7 @@ write the requirements to `_su_extract/code/HANDOFF_<topic>.md` for the extract 
   extract's decompile forces its column (c13) to 0 for every spell, so the app is faithful to the code reading. Verification
   handed off → `_su_extract/code/HANDOFF_jade_generosity.md`; on its verdict rebuild data / add a clarify note. Original ask: — Jade / Generosity can't be added to spells the user expects. Audit every property's
   conflict/eligibility mapping; any property allowed on NO spell = a bug.
-- [ ] 6. **Mobile Spec selector redesign** — no info panel: tapping a spec opens a full-page screen (back arrow → selector
+- [x] 6. **Mobile Spec selector redesign** — no info panel: tapping a spec opens a full-page screen (back arrow → selector
   grid) with the animated spec sprite, description prose and perk containers. One **Edit** button (replaces "Customize")
   turns the perk containers into their editable form. Tapping the Spec tile when a spec is active opens the SAME page
   (Edit available; back arrow → grid to pick a replacement). Confirm button becomes **Done** when reached from an active spec.

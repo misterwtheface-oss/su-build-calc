@@ -798,6 +798,7 @@ h1, h2, h3 { margin: 0; }
 .spec-info-sprite { width: 118px; height: 118px; margin: 0 auto 4px; display: flex; align-items: center; justify-content: center; }
 .spec-info-sprite img { width: 100%; height: 100%; object-fit: contain; }
 .spec-info-name { font-size: 22px; margin-bottom: 8px; }
+.spec-info .perk-picker, .spec-info .spec-edit-bar { text-align: left; }
 .spec-play { text-align: left; }
 .spec-grid { grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); }
 /* Relic picker: fixed 3-wide grid per stat section (3×2 for a full 6-relic stat) */

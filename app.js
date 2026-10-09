@@ -875,8 +875,8 @@
   }
   function syncSpecAnim() {
     if (specAnimTimer) { clearInterval(specAnimTimer); specAnimTimer = null; }
-    if (ovState && ovState.kind === "spec" && ovState.sel != null) animateCostume(OV, SPEC.get(ovState.sel));
-    else if (dovState && dovState.kind === "spec-detail" && dovState.specId != null) animateCostume(DOV, SPEC.get(dovState.specId));
+    if (dovState && dovState.kind === "spec-detail" && dovState.specId != null) animateCostume(DOV, SPEC.get(dovState.specId));
+    else if (ovState && ovState.kind === "spec" && ovState.sel != null) animateCostume(OV, SPEC.get(ovState.sel));
   }
   // Generic wardrobe animation: any element carrying data-anim-frames='["f0","f1",…]' cycles its <img>
   // through those frames (300ms). Used by the icon-picker selected tile + the build save-form info panel.
@@ -1463,7 +1463,8 @@
       <div class="pick-tile spec-pick ${st.sel === s.id ? "selected" : ""}" data-action="spec-pick" data-id="${s.id}">
         <div class="pt-sprite emblem">${spriteImg(s.emblem || s.sprite, "px")}</div><div class="pt-name">${esc(s.label)}</div></div>`).join("");
     let info = "";
-    if (sel) {
+    const phone = isPhone();
+    if (sel && !phone) {
       const allocCount = allocatedPerks(sel).length, pts = specPoints(sel);
       const perkList = specPerkListHtml(sel);
       const cos0 = sel.costumes && sel.costumes.length ? sel.costumes[0] : null;
@@ -1482,22 +1483,35 @@
         <button class="ovl-close" data-action="close-ovl">✕</button></div>
       <div class="overlay-body">
         <div class="ovl-center" data-action="lib-deselect"><div class="ovl-center-scroll"><div class="pick-grid spec-grid">${tiles}</div></div></div>
-        <div class="ovl-right spec-right">${info}</div>
+        ${phone ? "" : `<div class="ovl-right spec-right">${info}</div>`}
       </div>
       <div class="overlay-footer"><span class="foot-info"></span>
         <div>
           <button class="btn-ghost" data-action="close-ovl">Cancel</button>
-          <button class="btn-ghost" data-action="customize-perks" ${sel ? "" : "disabled"}>Customize</button>
-          <button class="btn-confirm" data-action="spec-confirm" ${st.sel == null ? "disabled" : ""}>Confirm</button>
+          ${phone ? "" : `<button class="btn-ghost" data-action="customize-perks" ${sel ? "" : "disabled"}>Customize</button>
+          <button class="btn-confirm" data-action="spec-confirm" ${st.sel == null ? "disabled" : ""}>Confirm</button>`}
         </div></div>
     </div></div>`;
   }
 
-  // spec detail (view) — mirrors the selector's info panel; Edit routes back to the picker
+  // spec PAGE (detail layer, over the picker): animated costume + prose + perks; Edit turns the perk cards into rank
+  // steppers in place. Reached by tapping a spec in the phone picker, or the Spec tile (picker opens underneath, so the
+  // back arrow lands on the grid to pick a replacement). Footer: Confirm for a new spec, Done for the active one.
+  const isPhone = () => !!(window.matchMedia && window.matchMedia("(max-width: 600px)").matches);
+  function openSpecPage(specId) {
+    dovState = { kind: "spec-detail", specId, editing: false, render: renderSpecPage };
+    openDetail(dovState.render()); syncSpecAnim();
+  }
+  function applySpec(id) {
+    build.specId = id;
+    // drop any equipped anointments that now belong to the current spec (can't double-dip)
+    build.anoints = build.anoints.filter(x => x.specId !== build.specId);
+    enforceAnointCap();   // new spec may lower the anoint cap (e.g. leaving Royal)
+    persistBuild(); closeOverlay(); render();
+  }
   function openSpecDetail() {
     if (build.specId == null) { openSpecPicker(); return; }
-    dovState = { kind: "spec-detail", specId: build.specId, render: renderSpecDetail };
-    openDetail(dovState.render()); syncSpecAnim();
+    openSpecPicker(); openSpecPage(build.specId);
   }
   // shared perk-list markup used by both the selector info panel and the detail page
   function specPerkListHtml(spec) {
@@ -1513,26 +1527,53 @@
         </div></div>`;
     }).join("");
   }
-  function renderSpecDetail() {
-    const spec = SPEC.get(dovState.specId); if (!spec) return "";
+  function renderSpecPage() {
+    const st = dovState, spec = SPEC.get(st.specId); if (!spec) return "";
     const allocCount = allocatedPerks(spec).length, pts = specPoints(spec);
     const cos0 = spec.costumes && spec.costumes.length ? spec.costumes[0] : null;
     const costumeImg = cos0 ? (cos0.frames && cos0.frames[0]) || cos0.img : spec.sprite;
-    return `<div class="ovl-backdrop" data-action="detail-backdrop"><div class="overlay-panel detail">
-      <div class="overlay-header"><h2>${esc(spec.label)}</h2><button class="ovl-close" data-action="close-detail">✕</button></div>
+    const active = build.specId === spec.id;
+    const perks = st.editing
+      ? `<div class="ovl-filterbar spec-edit-bar"><button class="chip" data-action="perk-all">Max all</button><button class="chip" data-action="perk-none">Clear all</button></div>
+         <div class="perk-picker">${perkEditRowsHtml(spec, spec.perks)}</div>`
+      : `<div class="perk-list">${specPerkListHtml(spec)}</div>`;
+    return `<div class="ovl-backdrop" data-action="detail-backdrop"><div class="overlay-panel detail spec-page">
+      <div class="overlay-header"><button class="btn-ghost spec-back" data-action="specpage-back" title="All specializations">‹</button>
+        <h2 style="flex:1">${esc(spec.label)}</h2><button class="ovl-close" data-action="specpage-close">✕</button></div>
       <div class="overlay-body"><div class="ovl-center"><div class="ovl-center-scroll">
         <div class="spec-info">
           <div class="spec-info-sprite costume" id="specCostume">${spriteImg(costumeImg, "px")}</div>
           <h2 class="spec-info-name">${esc(spec.label)}</h2>
           <div class="trait-desc spec-play">${richText(spec.playstyle || spec.description || "")}</div>
           <div class="section-label" style="margin-top:12px">Perks — ${allocCount}/${spec.perks.length} allocated · ${pts} pts</div>
-          <div class="perk-list">${specPerkListHtml(spec)}</div>
+          ${perks}
         </div>
       </div></div></div>
       <div class="overlay-footer"><span class="foot-info"></span>
-        <div><button class="btn-ghost" data-action="spec-edit">Edit</button>
-        <button class="btn-confirm" data-action="close-detail">Done</button></div></div>
+        <div><button class="btn-ghost ${st.editing ? "on" : ""}" data-action="specpage-edit">Edit</button>
+        <button class="btn-confirm" data-action="${active ? "specpage-close" : "specpage-confirm"}">${active ? "Done" : "Confirm"}</button></div></div>
     </div></div>`;
+  }
+  // editable perk cards (rank stepper) — the spec page's Edit mode and the desktop Customize screen
+  function perkEditRowsHtml(spec, list) {
+    return list.map(p => {
+      const r = perkRank(spec, p), mx = perkMax(p), on = r > 0;
+      const k = esc(p.key);
+      const stepper = `<div class="perk-stepper">
+        <button class="perk-step" data-action="perk-dec" data-k="${k}" ${r <= 0 ? "disabled" : ""}>−</button>
+        <span class="perk-rank-val">${r}<span class="perk-rank-max">/${mx}</span></span>
+        <button class="perk-step" data-action="perk-inc" data-k="${k}" ${r >= mx ? "disabled" : ""}>+</button>
+        ${mx > 1 ? `<button class="perk-step wide" data-action="perk-max" data-k="${k}" ${r >= mx ? "disabled" : ""}>Max</button>` : ""}
+        <button class="perk-step wide" data-action="perk-zero" data-k="${k}" ${r <= 0 ? "disabled" : ""}>0</button></div>`;
+      const costLine = p.cost != null ? `<span class="perk-meta">${p.cost} pt${p.cost === 1 ? "" : "s"}/rank${on ? ` · ${p.cost * r} spent` : ""}</span>` : "";
+      const asc = p.ascension ? `<span class="anoint-badge asc">Ascension</span>` : "";
+      const ico = `<div class="apx-iconcol">${p.icon ? `<div class="apx-crea">${spriteImg(p.icon, "px")}</div>` : ""}</div>`;   // same 48px centered icon as the Glossary
+      return `<div class="perk-row ${on ? "on" : "off"} ${p.ascension ? "asc" : ""}">
+        ${ico}<div class="perk-row-main">
+          <div class="perk-row-head"><b>${esc(p.name)}</b><span class="perk-line-meta">${asc}${costLine}</span></div>
+          ${p.desc ? `<div class="perk-desc">${perkText(p.desc, r)}</div>` : ""}
+          ${stepper}</div></div>`;
+    }).join("");
   }
 
   // ── perk selector (Customize) — per-perk rank stepper (default fully allocated) ─
@@ -1564,24 +1605,7 @@
     else if (st.perkBrowse) browseBody = `<div class="opt-list">${[...valsByCat.keys()].sort().map(c =>
       `<button class="opt-row" data-action="perk-taxo-cat" data-c="${esc(c)}"><span>${esc(c)}</span><span class="opt-chev">›</span></button>`).join("")}</div>`;
     const allocCount = allocatedPerks(spec).length, pts = specPoints(spec);
-    const rows = list.map(p => {
-      const r = perkRank(spec, p), mx = perkMax(p), on = r > 0;
-      const k = esc(p.key);
-      const stepper = `<div class="perk-stepper">
-        <button class="perk-step" data-action="perk-dec" data-k="${k}" ${r <= 0 ? "disabled" : ""}>−</button>
-        <span class="perk-rank-val">${r}<span class="perk-rank-max">/${mx}</span></span>
-        <button class="perk-step" data-action="perk-inc" data-k="${k}" ${r >= mx ? "disabled" : ""}>+</button>
-        ${mx > 1 ? `<button class="perk-step wide" data-action="perk-max" data-k="${k}" ${r >= mx ? "disabled" : ""}>Max</button>` : ""}
-        <button class="perk-step wide" data-action="perk-zero" data-k="${k}" ${r <= 0 ? "disabled" : ""}>0</button></div>`;
-      const costLine = p.cost != null ? `<span class="perk-meta">${p.cost} pt${p.cost === 1 ? "" : "s"}/rank${on ? ` · ${p.cost * r} spent` : ""}</span>` : "";
-      const asc = p.ascension ? `<span class="anoint-badge asc">Ascension</span>` : "";
-      const ico = `<div class="apx-iconcol">${p.icon ? `<div class="apx-crea">${spriteImg(p.icon, "px")}</div>` : ""}</div>`;   // same 48px centered icon as the Glossary
-      return `<div class="perk-row ${on ? "on" : "off"} ${p.ascension ? "asc" : ""}">
-        ${ico}<div class="perk-row-main">
-          <div class="perk-row-head"><b>${esc(p.name)}</b><span class="perk-line-meta">${asc}${costLine}</span></div>
-          ${p.desc ? `<div class="perk-desc">${perkText(p.desc, r)}</div>` : ""}
-          ${stepper}</div></div>`;
-    }).join("");
+    const rows = perkEditRowsHtml(spec, list);
     return `<div class="ovl-backdrop" data-action="facet-backdrop"><div class="overlay-panel detail">
       <div class="overlay-header"><h2>${esc(spec.label)} — Perks</h2>
         <input class="ovl-search" placeholder="Search perks…" value="${esc(st.search)}" data-action="perk-search">
@@ -4814,7 +4838,10 @@
       }
       case "pick-spec": openSpecPicker(); break;
       case "spec-detail": openSpecDetail(); break;
-      case "spec-edit": closeDetail(); openSpecPicker(); break;
+      case "specpage-back": closeDetail(); refreshOverlay(); syncSpecAnim(); break;   // → the selector grid underneath
+      case "specpage-close": closeDetail(); closeOverlay(); render(); break;
+      case "specpage-edit": dovState.editing = !dovState.editing; refreshDetail(); break;
+      case "specpage-confirm": { const id = dovState.specId; closeDetail(); applySpec(id); break; }
       case "remove-creature": armOrDo(t, () => { build.slots[+t.dataset.slot] = emptySlot(); persistBuild(); render(); }); break;
       case "clear-spec": e.stopPropagation(); build.specId = null; persistBuild(); render(); break;
       case "clear-party": armOrDo(t, () => { build = freshBuild(); clearBookmarks(); persistBuild(); render(); }); break;
@@ -5050,13 +5077,9 @@
       }
 
       // spec picker + perks
-      case "spec-pick": ovState.sel = ovState.sel === +t.dataset.id ? null : +t.dataset.id; refreshOverlay(); break;
-      case "spec-confirm":
-        build.specId = ovState.sel;
-        // drop any equipped anointments that now belong to the current spec (can't double-dip)
-        build.anoints = build.anoints.filter(x => x.specId !== build.specId);
-        enforceAnointCap();   // new spec may lower the anoint cap (e.g. leaving Royal)
-        persistBuild(); closeOverlay(); render(); break;
+      case "spec-pick": if (isPhone()) { ovState.sel = +t.dataset.id; openSpecPage(ovState.sel); break; }   // phones: full spec page
+        ovState.sel = ovState.sel === +t.dataset.id ? null : +t.dataset.id; refreshOverlay(); break;
+      case "spec-confirm": applySpec(ovState.sel); break;
       case "customize-perks": if (ovState.sel != null) openPerkPicker(ovState.sel); break;
       case "perk-inc": case "perk-dec": case "perk-max": case "perk-zero": {
         const sp = SPEC.get(dovState.specId), p = sp.perks.find(x => x.key === t.dataset.k); if (!p) break;
