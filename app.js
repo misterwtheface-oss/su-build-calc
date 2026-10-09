@@ -746,7 +746,7 @@
       </div>`;
 
     const body = homeView === "roster"
-      ? `<div class="party-roster">${build.slots.map((s, i) => renderRosterRow(s, i)).join("")}</div>`
+      ? `<div class="party-roster${build.slots.some(s => CREA.get(s.cid)) ? "" : " all-empty"}">${build.slots.map((s, i) => renderRosterRow(s, i)).join("")}</div>`
       : `<div class="party-grid">${build.slots.map((s, i) => renderSlot(s, i)).join("")}</div>`;
     return `
       <div class="home-top">${specTile}${anointTile}</div>

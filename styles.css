@@ -285,6 +285,12 @@ h1, h2, h3 { margin: 0; }
   background: radial-gradient(circle closest-side, rgba(154,123,214,.18), transparent); }
 .roster-sprite.roster-add .slot-empty-icon { font-size: 38px; }
 .roster-sprite.roster-add:hover .slot-empty-icon { opacity: .6; }
+/* fresh party (no creature yet): the roster stretches to fill the screen below the top tiles, rows
+   share the height evenly and the add box scales with its row. Reverts once a creature is picked. */
+.planning-main:has(> .party-roster.all-empty) { display: flex; flex-direction: column; }
+.party-roster.all-empty { flex: 1 0 auto; }
+.party-roster.all-empty .roster-row { flex: 1 1 0; min-height: 72px; grid-template-rows: 1fr; align-items: center; }
+.party-roster.all-empty .roster-sprite.roster-add { height: 100%; max-height: 112px; width: auto; aspect-ratio: 1; }
 .roster-head { display: flex; flex-direction: column; align-items: center; gap: 2px; min-width: 0; max-width: 100%; }
 .roster-name {
   font-size: 13px; font-weight: 600; text-align: center; line-height: 1.15;
@@ -321,6 +327,7 @@ h1, h2, h3 { margin: 0; }
   .roster-row.empty { padding: 8px; }                   /* six empty rows fit a phone screen without scrolling */
   .roster-sprite.roster-add { width: 56px; height: 56px; }
   .roster-sprite.roster-add .slot-empty-icon { font-size: 26px; }
+  .party-roster.all-empty .roster-row { min-height: 60px; }
   .roster-stats { order: 5; }
   .roster-actions { order: 6; }
 }
