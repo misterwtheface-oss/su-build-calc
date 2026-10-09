@@ -1898,7 +1898,7 @@ function realmObjectSprite(realmName, objName, acr) {
 // No parser/derivation — the app slides the favor rank and reads these values directly.
 const FAVOR_DIR = path.join(ROOT, 'data', 'favor');
 function parseFavorCSV(file) {
-  const rows = []; let row = [], cur = '', q = false; const txt = fs.readFileSync(path.join(FAVOR_DIR, file), 'utf8');
+  const rows = []; let row = [], cur = '', q = false; const txt = fs.readFileSync(path.isAbsolute(file) ? file : path.join(FAVOR_DIR, file), 'utf8');
   for (let i = 0; i < txt.length; i++) { const ch = txt[i];
     if (q) { if (ch === '"') { if (txt[i + 1] === '"') { cur += '"'; i++; } else q = false; } else cur += ch; }
     else if (ch === '"') q = true; else if (ch === ',') { row.push(cur); cur = ''; }
@@ -1911,7 +1911,12 @@ const favCell = (v) => { v = (v || '').trim(); if (!v || v === '-') return null;
   const m = v.match(/^(-?\d+(?:\.\d+)?)%?$/); return m ? +m[1] : null; };
 const favUnit = (v) => /%/.test(v || '') ? '%' : (v || '').trim() === 'X' ? 'bool' : '';
 const cleanColLabel = (h) => h.replace(/\s*\(.*$/, '').trim();
-const _mtx = parseFavorCSV('Favor_MTX.csv'); const _mh = _mtx[0].map(h => h.trim());
+// Yield matrix source = CODE (2026-10-09, S27m): _su_extract audit_community_csv/Favor_CODE.csv, built by
+// code/data_dump/s27/realm_yields.py from realm_object_spawns.json (scr_RandomWalkGen counts) x yield_spec.py (every realm
+// object's interaction + battle aftermath, decoded per favor rank). Same columns as the user's Favor_MTX.csv, which stays
+// in data/favor/ as the diff reference. Units: favor points, treasure = inv_Loot bundles, resources = resource grants,
+// chances = expected spawns in %, boosts = expected count (Buff / Debuff capped at 5).
+const _mtx = parseFavorCSV(path.join(SRC, 'audit_community_csv', 'Favor_CODE.csv')); const _mh = _mtx[0].map(h => h.trim());
 // column defs from the MTX header: cols 4..22 = Unique group, 24..39 = Generic group (23 is the group label)
 const favorColDefs = (a, b, group) => { const out = [];
   for (let c = a; c <= b; c++) { const label = cleanColLabel(_mh[c]); if (!label) continue;

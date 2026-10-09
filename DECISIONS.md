@@ -79,3 +79,14 @@ a flat modifier to base: raised **×4/3 (+33%)**, lowered **×2/3 (−33%)**, ot
 - Boss rooms: 2 chests × 6 bundles = `Treasure [12]`; Nether Boss rooms 18. The +5 boss-room blessing is a favor bonus, not
   part of rank 0.
 
+
+## Realm yield source = code (2026-10-09)
+- User (2026-10-09): "replace our data source for the yield calculations with fully code grounded data".
+- The Yield tab reads `_su_extract/audit_community_csv/Favor_CODE.csv` (code). `data/favor/Favor_MTX.csv` (user) stays as
+  the diff reference and is no longer read.
+- Expected value per floor = placed count × per-interaction expectation.
+- Random outcomes are weighted by their code odds.
+- Player-choice objects are averaged evenly: Clock, Star, the vomiting Fruit / Squash / Tarot Cards, and the Music Crystal
+  / Alchemy minigames.
+- Code ≠ Realm_REF text keeps the code value. The list is in `REALM_YIELDS.md`; the Realm_REF strings are not yet patched
+  (pending the user's ruling).

@@ -4,6 +4,16 @@ Every dated change entry, newest first (moved verbatim from Progress.md on 2026-
 to their own section and sorted by their date). Current state and open work: `Progress.md`, `BACKLOG.md`.
 New entries go at the TOP.
 
+## 2026-10-09 — realm Yield tab now code-grounded
+- The Yield tab's realm × favor-rank matrix now comes from the game code instead of the hand-built `data/favor/Favor_MTX.csv`
+  (kept as the diff reference). `build-data.mjs` reads `_su_extract/audit_community_csv/Favor_CODE.csv`, built from:
+  - per-realm object spawn counts decoded from the realm generator;
+  - every realm object's interaction and battle-aftermath payouts, per favor rank.
+- Units: favor points; treasure in loot bundles; resources as grants; Dumpling / Treasure Golem as expected spawns (%);
+  boosts as expected counts (Buff / Debuff capped at 5). The generic columns are unchanged: they match the old matrix
+  exactly. Faster Quest Completion is not modelled yet. Details: `_su_extract/code/REALM_YIELDS.md`,
+  `REALM_SPAWN_COUNTS.md`.
+
 ## 2026-10-09 — realm objects: emblem chances checked against code
 - All 72 "N% Chance" favor rows checked against the code: 68 match; Hunter's Lodge, Inactive Modrons and Horseshoe emblem
   chances are 25% in code (text 35%) and the Monolith's "50% Chance" treasure has no roll. Those rows carry a "(code: …)" note.
