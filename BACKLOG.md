@@ -5,6 +5,29 @@ Progress.md; original text kept, with a status note where later work changed thi
 recorded in `CHANGELOG.md`. Full pre-consolidation text: `archive/Progress_until_2026-10-08.md`.
 Extract-side research questions live in `_su_extract/RESUME.md`.
 
+## ▶ ACTIVE BATCH (2026-10-09) — work one at a time, deploy all together when done
+Commit each item locally; push ONCE when the whole batch is finished. Anything that needs a decompile → don't attempt it,
+write the requirements to `_su_extract/code/HANDOFF_<topic>.md` for the extract session. Tick items here as they land.
+- [ ] 1. **Mobile Artifact wizard** — slots become a single-row header, locked, scrolling horizontally, so the rest of the
+  screen is the selector list.
+- [ ] 2. **Nether stone spell filter** — toggle between the "On X" trigger variants; a stone counts if ANY of its spells
+  meets the condition (stones can hold several spells).
+- [ ] 3. **Artifact library preview → Sockets tab** doesn't show EMPTY sockets (seen on a Helmet with empty spell + nether
+  slots; probably not helmet-specific). The editor is fine.
+- [ ] 4. **Fusion colours need the internet** — offline (airplane mode) every build showed default colours and the 6 fusion
+  colour options were all default. Find why (asset not precached / fetched from GitHub at runtime?) and fix.
+- [ ] 5. **Spell-gem property conflicts** — Jade / Generosity can't be added to spells the user expects. Audit every property's
+  conflict/eligibility mapping; any property allowed on NO spell = a bug.
+- [ ] 6. **Mobile Spec selector redesign** — no info panel: tapping a spec opens a full-page screen (back arrow → selector
+  grid) with the animated spec sprite, description prose and perk containers. One **Edit** button (replaces "Customize")
+  turns the perk containers into their editable form. Tapping the Spec tile when a spec is active opens the SAME page
+  (Edit available; back arrow → grid to pick a replacement). Confirm button becomes **Done** when reached from an active spec.
+- [ ] 7. **Anointment tile** — add the "✕" clear like the other Planner tiles; centre the perk icons horizontally without
+  changing their size or wrapping (exactly 5 per row).
+- [ ] 8. **God Shop** — show Favor Rank requirements.
+- [ ] 9. **Guild Shop** — the list is always 5: lay it out as a row of 3 over a row of 2 (offset, gaps between).
+- [ ] 10. **All God Shop lists** — centre text vertically in each row.
+
 ## Feature ideas (user backlog, not started)
 - [ ] **DPS / effective-stat simulation** from `damageModel` (spell & melee, crit/dodge, defending). Class advantage is now
   code-known (×2 / ×0.5, `_su_extract/code/CLASS_ADVANTAGE.md`); expose it as a toggle. Effect formulas for in-app compute:
