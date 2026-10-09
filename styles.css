@@ -318,7 +318,9 @@ h1, h2, h3 { margin: 0; }
   .roster-identity > .slot-sub { order: 2; }             /* standalone note (e.g. "Ignored (Pariah)") */
   .roster-sprite-row { order: 3; }
   .roster-sprite { width: 72px; height: 72px; }
-  .roster-sprite.roster-add { width: 96px; height: 96px; }
+  .roster-row.empty { padding: 8px; }                   /* six empty rows fit a phone screen without scrolling */
+  .roster-sprite.roster-add { width: 56px; height: 56px; }
+  .roster-sprite.roster-add .slot-empty-icon { font-size: 26px; }
   .roster-stats { order: 5; }
   .roster-actions { order: 6; }
 }
