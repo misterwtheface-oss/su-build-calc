@@ -2501,7 +2501,7 @@
         <div class="pt-sprite">${g.img ? spriteImg(g.img, "px") : `<span class="spec-tile-plus">✦</span>`}</div>
         <div class="pt-name">${esc(g.name)}</div></div>`).join("") || `<div class="slot-sub" style="padding:10px">Nothing matches.</div>`;
       header = `<h2>Shops</h2>`;
-      body = `${shopToggle(shop.key)}<div class="ovl-center-scroll"><div class="pick-grid gs-grid">${tiles}</div></div>`;
+      body = `${shopToggle(shop.key)}<div class="ovl-center-scroll"><div class="pick-grid gs-grid${shop.key === "guild" ? " guild-grid" : ""}">${tiles}</div></div>`;
     } else if (group) {
       header = `<button class="btn-ghost" data-action="shop-back">‹ ${esc(shop.label)}</button><h2 style="flex:1">${esc(group.name)}</h2>`;
       body = `${shopToggle(shop.key)}<div class="gs-detail-head">${group.img ? `<div class="gs-god-sprite">${spriteImg(group.img, "px")}</div>` : ""}<div class="gs-god-name">${esc(group.name)}</div>${group.currency ? `<div class="slot-sub gs-cur-line">${group.currencyIcon ? `<span class="gs-cur-ico">${spriteImg(group.currencyIcon, "px")}</span>` : ""}${esc(group.currency)}</div>` : ""}</div>
