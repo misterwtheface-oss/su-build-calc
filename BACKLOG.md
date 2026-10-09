@@ -16,7 +16,9 @@ write the requirements to `_su_extract/code/HANDOFF_<topic>.md` for the extract 
   slots; probably not helmet-specific). The editor is fine.
 - [x] 4. **Fusion colours need the internet** — offline (airplane mode) every build showed default colours and the 6 fusion
   colour options were all default. Find why (asset not precached / fetched from GitHub at runtime?) and fix.
-- [ ] 5. **Spell-gem property conflicts** — Jade / Generosity can't be added to spells the user expects. Audit every property's
+- [~] 5. **Spell-gem property conflicts** — AUDITED 2026-10-09: Jade (Generosity) is the ONLY property allowed on no spell; the
+  extract's decompile forces its column (c13) to 0 for every spell, so the app is faithful to the code reading. Verification
+  handed off → `_su_extract/code/HANDOFF_jade_generosity.md`; on its verdict rebuild data / add a clarify note. Original ask: — Jade / Generosity can't be added to spells the user expects. Audit every property's
   conflict/eligibility mapping; any property allowed on NO spell = a bug.
 - [ ] 6. **Mobile Spec selector redesign** — no info panel: tapping a spec opens a full-page screen (back arrow → selector
   grid) with the animated spec sprite, description prose and perk containers. One **Edit** button (replaces "Customize")
