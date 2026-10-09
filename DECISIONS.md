@@ -90,3 +90,12 @@ a flat modifier to base: raised **×4/3 (+33%)**, lowered **×2/3 (−33%)**, ot
   / Alchemy minigames.
 - Code ≠ Realm_REF text keeps the code value. The list is in `REALM_YIELDS.md`; the Realm_REF strings are not yet patched
   (pending the user's ruling).
+
+## Realm property rules surfaced (2026-10-09)
+- User (2026-10-09): "we'll also need the realm property conflict rules decoded so we can surface those in the app and
+  calculate the true maximum item bonus".
+- Shipped minimal, pending the user's review of placement:
+  - a glossary "Maximum Realm Bonus" table;
+  - the Nether Stone table capped at that maximum;
+  - a "Visible only" chip in Threats.
+- The 7 ↔ 16 exclusion stays data-only: both are hidden from the Threats advisor as composition flavour.

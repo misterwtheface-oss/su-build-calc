@@ -2430,10 +2430,19 @@ const runes = runesRaw.runes.map(r => ({
   counters: RUNE_COUNTERS[r.key] || [], counterClass: null,
   general: !RUNE_COUNTERS[r.key],
 }));
+// Realm property conflict rules + true maximum realm bonus — CODE (2026-10-09, S27n; _su_extract
+// data/model/realm_property_rules.json from scr_RealmGetProperties): the hidden pool rejects player-penalty ids, ids never
+// repeat across both pools, 7 Same Race <-> 16 Inhabited By are exclusive. visibleOnly = can't be a hidden property.
+const rpRules = readJSON(path.join(MODEL, 'realm_property_rules.json'));
+const rpKeyById = {};
+for (const [id, nm] of Object.entries(readJSON(path.join(SRC, 'code', 'data_dump', 's27', 'realmprop_names.json'))))
+  rpKeyById[id] = String((nm[0] || [])[0] || '').replace(/^L_REALM_/, '');
+const rpHiddenBanned = new Set(rpRules.rules.hidden_banned.map(i => rpKeyById[i]));
+const realmBonusMax = Object.fromEntries(Object.entries(rpRules.max_bonus).map(([ri, m]) => [ri, { deep: m.realm_bonus_deepest, below: m.realm_bonus_below_deepest }]));
 const realmProps = realmPropsRaw.properties
   .filter(p => !REALM_NEUTRAL.has(p.key))
   .map(p => ({
-    key: p.key, name: p.name, effect: p.effect,
+    key: p.key, name: p.name, effect: p.effect, visibleOnly: rpHiddenBanned.has(p.key) || undefined,
     icon: threatIcon((ICONS2.realm_properties_app_join[p.key] || {}).sprite, `realm property ${p.key}`),
     counters: REALM_COUNTERS[p.key] || [], counterClass: REALM_COUNTER_CLASS[p.key] || null,
     general: !(REALM_COUNTERS[p.key] || REALM_COUNTER_CLASS[p.key]),
@@ -3100,6 +3109,7 @@ const SU_DATA = {
   personalities: PERSONALITIES,
   runes,                    // False God difficulty runes (18) + authored theme counters
   realmProps,               // Realm-Instability realm properties (56) + authored theme/class counters
+  realmBonusMax,            // instability -> true max realm bonus % (deepest / below deepest), code S27n
   shops,                    // CODE-GROUNDED shop stock: [God(groups=gods), Guild(groups=guilds), Arena, Tavern] — the Shops overlay
   realms,                   // 30 realms: denizens/resources + Realm Objects (w/ rank-0 base); each carries a
                             //   `favor` matrix { rank(0..100) → [value per favorAllCols] } from Favor_MTX

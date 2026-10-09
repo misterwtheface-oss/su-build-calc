@@ -4,6 +4,14 @@ Every dated change entry, newest first (moved verbatim from Progress.md on 2026-
 to their own section and sorted by their date). Current state and open work: `Progress.md`, `BACKLOG.md`.
 New entries go at the TOP.
 
+## 2026-10-09 — realm property rules + true maximum realm bonus
+- Glossary: new **Maximum Realm Bonus** table, the best reachable realm (item) bonus per instability at your deepest
+  depth and below it: 60 / 139 / 259 / 433 / **672%**. Source: the game's property generator rules and the realm bonus
+  formula.
+- Nether Stone Drops now runs to that true maximum (was a flat 600%), adding the 12-in-5000 Pariah row.
+- Threats: realm properties the game never places as *hidden* properties carry a "Visible only" chip (22 of them).
+- Source: `_su_extract/code/REALM_PROPERTY_RULES.md` (`data/model/realm_property_rules.json`).
+
 ## 2026-10-09 — realm Yield tab now code-grounded
 - The Yield tab's realm × favor-rank matrix now comes from the game code instead of the hand-built `data/favor/Favor_MTX.csv`
   (kept as the diff reference). `build-data.mjs` reads `_su_extract/audit_community_csv/Favor_CODE.csv`, built from:

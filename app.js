@@ -2367,6 +2367,7 @@
     const chips = [
       ...m.hitThemes.map(t => `<span class="thr-chip">${esc(themeLabel(t))}</span>`),
       ...(m.hitClass ? [`<span class="thr-chip cls">${esc(m.hitClass[0].toUpperCase() + m.hitClass.slice(1))}</span>`] : []),
+      ...(m.visibleOnly ? [`<span class="thr-chip">Visible only</span>`] : []),
     ].join("");
     // same row layout as the Glossary: large icon column + name/effect body (perk-line / apx-iconcol)
     return `<div class="perk-line">
@@ -2617,7 +2618,7 @@
         <div class="apx-iconcol">${e.icon ? `<div class="apx-crea"><img src="${esc(e.icon)}" alt=""></div>` : ""}${exclBox(e)}</div>
         <div class="perk-line-body"><div class="perk-line-head"><b>${esc(e.name)}</b></div><div class="perk-desc">${esc(e.desc)}</div></div></div>`).join("")}</div>` : "";
       return `<button class="apx-sec-head apx-cat${open ? "" : " collapsed"}" data-action="gloss-cat-toggle" data-c="${esc(c)}"><span class="apx-sec-caret">${open ? "▾" : "▸"}</span>${esc(c)}s</button>${rows}`;
-    }).join("") + resOrderSection(st, q) + sobSection(st, q) + netherDropSection(st, q) || `<div class="slot-sub" style="padding:10px">No buff, debuff or minion matches “${esc(st.search)}”.</div>`;
+    }).join("") + resOrderSection(st, q) + sobSection(st, q) + netherDropSection(st, q) + realmBonusSection(st, q) || `<div class="slot-sub" style="padding:10px">No buff, debuff or minion matches “${esc(st.search)}”.</div>`;
     return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel">
       <div class="overlay-header"><h2>Glossary</h2>
         <input class="ovl-search" placeholder="Search buffs / debuffs / minions / resurrection…" value="${esc(st.search)}" data-action="gloss-search">
@@ -2694,9 +2695,11 @@
 
   // ── Nether Stone drop breakpoints (code: inv_Loot, _su_extract code/DROP_RATES_FINDINGS.md +
   // HANDOFF_nether_stone_breakpoints.md). Each loot roll succeeds on 1..N ≤ X, X = (1 + realm bonus) × 1.25
-  // (× 1.25 again with Pariah ascended) → k = floor(X) chances in N. Rows = every k reachable by 600% realm bonus,
+  // (× 1.25 again with Pariah ascended) → k = floor(X) chances in N. Rows = every k reachable by the true maximum realm
+  // bonus (D.realmBonusMax, code: scr_RealmGetProperties rules × scr_RealmBonus, instability 5 at deepest depth),
   // found by running the game's own arithmetic over each whole percent.
-  const ND = { n: { normal: 5000, relaxed: 2000, ruthless: 8000 }, maxBonus: 600 };
+  const ND = { n: { normal: 5000, relaxed: 2000, ruthless: 8000 },
+    maxBonus: Math.max(600, ...Object.values(D.realmBonusMax || {}).map(m => m.deep)) };
   let ND_ROWS = null;
   function netherDropRows() {
     if (ND_ROWS) return ND_ROWS;
@@ -2720,6 +2723,17 @@
         </div>
         <div class="slot-sub nd-note">Per loot roll · after The True Enemy · not in the castle</div></div>` : "";
     return `<button class="apx-sec-head apx-cat${open ? "" : " collapsed"}" data-action="gloss-cat-toggle" data-c="${key}"><span class="apx-sec-caret">${open ? "▾" : "▸"}</span>Nether Stone Drops</button>${body}`;
+  }
+  // true maximum realm bonus per instability (code: best legal visible + hidden property sets, scr_RealmBonus)
+  function realmBonusSection(st, q) {
+    const M = D.realmBonusMax || {};
+    if (!Object.keys(M).length || (q && !"realm bonus item bonus instability maximum".includes(q))) return "";
+    const key = "RealmBonusMax", open = q ? true : !st.collapsed.has(key);
+    const body = open ? `<div class="nd-wrap"><div class="nd-table">
+        <div class="nd-row nd-hd"><span>Instability</span><span>Deepest depth</span><span>Below deepest</span></div>
+        ${Object.entries(M).map(([ri, m]) => `<div class="nd-row"><span>${ri}</span><span>${m.deep}%</span><span>${m.below}%</span></div>`).join("")}
+      </div></div>` : "";
+    return `<button class="apx-sec-head apx-cat${open ? "" : " collapsed"}" data-action="gloss-cat-toggle" data-c="${key}"><span class="apx-sec-caret">${open ? "▾" : "▸"}</span>Maximum Realm Bonus</button>${body}`;
   }
   function resOrderSection(st, q) {
     const rows = resOrderRows().filter(r => !q || r.name.toLowerCase().includes(q) || (r.desc || "").toLowerCase().includes(q));
