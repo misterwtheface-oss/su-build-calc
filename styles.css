@@ -1206,6 +1206,11 @@ button.apx-owner:hover .apx-owner-ico { border-color: var(--accent); }
 .gs-item-ico img { width: 100%; height: 100%; object-fit: contain; padding: 3px; }
 .gs-item-ico .crit-face { width: 100%; height: 100%; }
 .gs-item-ico.empty { background: none; border-color: transparent; }
+/* shop rows: name / chips / price centred vertically in the row (not pinned to the top like perk rows) */
+.perk-line.gs-line { align-items: center; }
+.gs-line .perk-line-body { align-self: center; justify-content: center; }
+.gs-line .perk-line-head { align-items: center; }
+.gs-line .perk-line-meta { margin-top: 0; padding-top: 0; }
 .card-effect.off { opacity: .38; }
 .card-effect.off .ce-tier { background: var(--border-dim); }
 .card-level { display: flex; align-items: center; justify-content: center; gap: 12px; margin-top: auto; padding-top: 2px; }

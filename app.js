@@ -2481,7 +2481,7 @@
       const rows = open ? list.map(it => {
         const go = shopItemOpen(it), tr = it.kind === "trait_item" && it.traitId != null && D.traits[it.traitId];
         const nmTitle = it.nameSrc ? ` title="Not statically resolvable in code — name from the God Shop reference"` : "";
-        return `<div class="perk-line${go ? " apx-clickable" : ""}"${go}>${shopItemIcon(it)}
+        return `<div class="perk-line gs-line${go ? " apx-clickable" : ""}"${go}>${shopItemIcon(it)}
           <div class="perk-line-body"><div class="perk-line-head"><b${nmTitle}>${esc(shopItemName(it))}</b>
             <span class="perk-line-meta">${it.rank != null ? `<span class="anoint-spec-tag" title="Guild Reputation rank">Rank ${it.rank}</span>` : ""}${it.favorRank != null ? `<span class="anoint-spec-tag" title="Favor Rank required (community reference)">Rank ${it.favorRank}</span>` : ""}${it.price != null ? `<span class="gs-price"${cur ? ` title="${esc(cur)}"` : ""}>${it.price}${curIco ? `<span class="gs-cur-ico">${spriteImg(curIco, "px")}</span>` : cur ? ` <span class="gs-cur">${esc(cur)}</span>` : ""}</span>` : ""}</span></div>
             ${tr ? `<div class="perk-desc">${esc(tr.name)}</div>` : ""}</div></div>`;

@@ -28,7 +28,7 @@ write the requirements to `_su_extract/code/HANDOFF_<topic>.md` for the extract 
   changing their size or wrapping (exactly 5 per row).
 - [x] 8. **God Shop** — show Favor Rank requirements. Shipped from the community reference (630/630 joined); code gate → `_su_extract/code/HANDOFF_god_shop_favor_rank.md`.
 - [x] 9. **Guild Shop** — the list is always 5: lay it out as a row of 3 over a row of 2 (offset, gaps between).
-- [ ] 10. **All God Shop lists** — centre text vertically in each row.
+- [x] 10. **All God Shop lists** — centre text vertically in each row.
 
 ## Feature ideas (user backlog, not started)
 - [ ] **DPS / effective-stat simulation** from `damageModel` (spell & melee, crit/dodge, defending). Class advantage is now
