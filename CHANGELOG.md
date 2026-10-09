@@ -4,6 +4,10 @@ Every dated change entry, newest first (moved verbatim from Progress.md on 2026-
 to their own section and sorted by their date). Current state and open work: `Progress.md`, `BACKLOG.md`.
 New entries go at the TOP.
 
+## 2026-10-09 — realm objects: emblem chances checked against code
+- All 72 "N% Chance" favor rows checked against the code: 68 match; Hunter's Lodge, Inactive Modrons and Horseshoe emblem
+  chances are 25% in code (text 35%) and the Monolith's "50% Chance" treasure has no roll. Those rows carry a "(code: …)" note.
+
 ## 2026-10-09 — realm objects: code-grounded odds on random interactions
 - Rank-0 strings of random objects now carry the real odds: Oasis 25% each (Mirage / Favor / Treasure [3] / Nix; 33% each
   once Mirages are removed), the favor-or-encounter objects 75% / 25% (Torture Device, Spider Eggs, Corrupted Totem, Totem,
