@@ -8,6 +8,8 @@ New entries go at the TOP.
 - Realms → Yield and Compare now use the new code-built yield model: every realm at every favor rank, with a
   Relaxed / Normal / Ruthless toggle. Values include god-altar donations, Treasure Golem / Dumpling rewards, boss-fight
   resource bonuses, resource costs, and realm-boost caps as true averages.
+- The god-altar donation is always counted (favor +150, resources -1000) with no column of its own; treasure now
+  includes the 5% Mimic chance on every realm chest.
 - Common bonuses now show their real totals (chests, nodes, breakables, spawn and flee chances) per rank.
 
 ## 2026-10-10 — realm favor text tags

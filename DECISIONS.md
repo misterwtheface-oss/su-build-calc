@@ -87,7 +87,8 @@ a flat modifier to base: raised **×4/3 (+33%)**, lowered **×2/3 (−33%)**, ot
   Favor_CODE.csv below.
 - Per realm × difficulty (Relaxed / Normal / Ruthless toggle) × favor rank: favor, treasure bundles, net resources,
   emblems, knowledge, spell recipes, tickets, realm boosts, spawn chances (Golem / Dumpling kept for Prophecy goals),
-  guaranteed nemeses, god-altar donation. Common (all-realm) bonuses are one shared row per rank.
+  guaranteed nemeses. The god-altar donation is always made (in favor and net resources, no column); generic chests are
+  5% Mimics (5 bundles + a fight). Common (all-realm) bonuses are one shared row per rank.
 - Key rules: realm bonus 0; other gods ignored; choice objects at full weight per outcome; chance outcomes weighted, game
   floors kept; boost caps as the true average; costs paid every run; one god-altar donation per realm; Golem / Dumpling
   one-hit KO; roaming battles not counted.
