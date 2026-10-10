@@ -3075,7 +3075,7 @@
     const objects = sel.objects.length ? `<div class="section-label">Objects</div>
       <div class="robj-cards">${sel.objects.map(o => `<div class="robj-card">
         <div class="robj-card-head"><span class="realm-obj-ico">${o.sprite ? spriteImg(o.sprite, "px") : ""}</span>
-          <b>${esc(o.name)}</b>${o.baseCount != null ? `<span class="realm-obj-ct">×${o.baseCount}</span>` : ""}</div>
+          <b>${esc(o.name)}</b>${o.baseCount != null ? `<span class="realm-obj-ct"${o.countNote ? ` title="${esc(o.countNote)}"` : ""}>×${o.baseCount}</span>` : ""}</div>
         <div class="robj-tiers">${o.base ? objRow(0, o.base) : ""}${(o.favor || []).slice().sort((x, y) => x.at - y.at).map(t => objRow(t.at, t.effect)).join("")}</div></div>`).join("")}</div>` : "";
     const interactionsView = `${creatures}${resources}${objects}`;
     const barsView = `${favorSlider(rank)}${rankNote}${commonToggle}

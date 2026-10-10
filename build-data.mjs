@@ -1811,8 +1811,14 @@ function parseRealmOther(other) {
       // "<Name> [baseCount]" begins an object; numeric rows are its milestones — row "0" = base interaction.
       // rows > 0 = the favor ranks that upgrade THIS object (the user's grouping in Realm_REF.csv)
       if (/^\d+$/.test(lbl)) { if (cur && val) { if (lbl === '0') cur.base = val; else cur.favor.push({ at: +lbl, effect: val }); } continue; }
-      const m = lbl.match(/^(.*?)\s*\[(\d+)\]\s*$/); const name = (m ? m[1] : lbl).trim();
-      if (cleanRealmVal(name)) { cur = { name, baseCount: m ? +m[2] : null, base: null, favor: [] }; objects.push(cur); } else cur = null;
+      // an optional "(code: …)" tag after the count = code ≠ reference text; a leading number there is the code's count
+      const m = lbl.match(/^(.*?)\s*\[(\d+)\]\s*(?:\(code:\s*([^)]*)\))?\s*$/); const name = (m ? m[1] : lbl).trim();
+      const codeCt = m && m[3] && /^\d+/.test(m[3]) ? parseInt(m[3], 10) : null;
+      if (cleanRealmVal(name)) {
+        cur = { name, baseCount: m ? (codeCt ?? +m[2]) : null, base: null, favor: [] };
+        if (m && m[3]) cur.countNote = `Reference says ${m[2]}; the game code: ${m[3]}.`;
+        objects.push(cur);
+      } else cur = null;
     } else if (sec === 'traits') {
       // the god's Favor Reward track: unlock threshold → effect (shared thresholds, realm-specific effects)
       if (/^\d+$/.test(lbl) && val) traits.push({ at: +lbl, effect: val });
