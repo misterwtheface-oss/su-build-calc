@@ -1936,33 +1936,26 @@ const favCell = (v) => { v = (v || '').trim(); if (!v || v === '-') return null;
   const m = v.match(/^(-?\d+(?:\.\d+)?)%?$/); return m ? +m[1] : null; };
 const favUnit = (v) => /%/.test(v || '') ? '%' : (v || '').trim() === 'X' ? 'bool' : '';
 const cleanColLabel = (h) => h.replace(/\s*\(.*$/, '').trim();
-// Yield matrix source = CODE (2026-10-09, S27m): _su_extract audit_community_csv/Favor_CODE.csv, built by
-// code/data_dump/s27/realm_yields.py from realm_object_spawns.json (scr_RandomWalkGen counts) x yield_spec.py (every realm
-// object's interaction + battle aftermath, decoded per favor rank). Same columns as the user's Favor_MTX.csv, which stays
-// in data/favor/ as the diff reference. Units: favor points, treasure = inv_Loot bundles, resources = resource grants,
-// chances = expected spawns in %, boosts = expected count (Buff / Debuff capped at 5).
-const _mtx = parseFavorCSV(path.join(SRC, 'audit_community_csv', 'Favor_CODE.csv')); const _mh = _mtx[0].map(h => h.trim());
-// column defs from the MTX header: cols 4..22 = Unique group, 24..39 = Generic group (23 is the group label)
-const favorColDefs = (a, b, group) => { const out = [];
-  for (let c = a; c <= b; c++) { const label = cleanColLabel(_mh[c]); if (!label) continue;
-    let unit = ''; for (let r = 1; r < _mtx.length; r++) { const raw = (_mtx[r][c] || '').trim(); if (raw && raw !== '-') { unit = favUnit(raw); break; } }
-    out.push({ key: 'c' + c, col: c, label, group, unit }); }
-  return out;
-};
-const favorCols = { unique: favorColDefs(4, 22, 'unique'), generic: favorColDefs(24, 39, 'generic') };
-const favorAllCols = [...favorCols.unique, ...favorCols.generic];
-// matrix: realmName → { rank(0..100) → [value per favorAllCols index] }
-const favorMatrix = {};
-for (let r = 1; r < _mtx.length; r++) { const row = _mtx[r]; const realm = (row[1] || '').trim(); const rank = +row[2];
-  if (!realm || Number.isNaN(rank)) continue;
-  (favorMatrix[realm] = favorMatrix[realm] || {})[rank] = favorAllCols.map(d => favCell(row[d.col])); }
-// rank-100 cross-realm max per column (scales the magnitude bars so they grow with rank)
+// Yield model source = CODE (2026-10-10, S27p): _su_extract data/model/realm_yield_model.json, exported by
+// code/data_dump/s27/walk/export_yields.py from the per-realm yield walkthroughs (walk/<realm>.py on the shared model
+// walk/generic.py; the user's yield rules in code/YIELD_GROUNDING_PLAN.md). Per realm × difficulty (relaxed / normal /
+// ruthless) × rank 0..100: one value per "yield" column (favor, treasure bundles, net resources, emblems, boosts, spawn
+// chances ...). The "common" columns (identical in every realm) are one row per rank. Community copy:
+// audit_community_csv/Realm_Yields_CODE.csv. (Favor_CODE.csv / data/favor/Favor_MTX.csv stay as references only.)
+const _ym = readJSON(path.join(MODEL, 'realm_yield_model.json'));
+const favorCols = { unique: _ym.columns.yield.map(c => ({ ...c, group: 'unique' })),
+                    generic: _ym.columns.common.map(c => ({ ...c, group: 'generic' })) };
+const favorDiffs = _ym.difficulties;
+const favorMatrix = _ym.realms;                              // realm → difficulty → rank → [yield values]
+const favorCommonVals = _ym.common;                          // rank → [common values]
+// rank-100 cross-realm max per yield column and difficulty (scales the magnitude bars so they grow with rank)
 const favorColMax = {};
-favorAllCols.forEach((d, i) => { favorColMax[d.key] = Math.max(1, ...Object.values(favorMatrix).map(m => (m[100] && m[100][i]) || 0)); });
+for (const d of favorDiffs) { favorColMax[d] = {};
+  favorCols.unique.forEach((c, i) => { favorColMax[d][c.key] = Math.max(1, ...Object.values(favorMatrix).map(m => (m[d]['100'] || [])[i] || 0)); }); }
 // common favor-rank schedule from Favor_REF: rank → {effect, blessing?} (blessing = a realm-unique tier)
 const _ref = parseFavorCSV('Favor_REF.csv');
 const favorCommon = _ref.slice(1).filter(r => r[0]).map(r => ({ rank: +r[0], effect: (r[1] || '').trim(), blessing: /Realm Blessing/i.test(r[1] || '') }));
-console.log(`  favor track: ${Object.keys(favorMatrix).length} realms × 101 ranks · ${favorCols.unique.length} unique + ${favorCols.generic.length} generic cols · ${favorCommon.filter(c => !c.blessing).length} common tiers`);
+console.log(`  yield model: ${Object.keys(favorMatrix).length} realms × ${favorDiffs.length} difficulties × 101 ranks · ${favorCols.unique.length} yield + ${favorCols.generic.length} common cols · ${favorCommon.filter(c => !c.blessing).length} common tiers`);
 const realms = realmArr.map((r, i) => {
   const godFull = (r.god || '').trim();
   const godName = godFull.split(',')[0].trim();               // short name (matches god-shop `god`)
@@ -2017,7 +2010,7 @@ for (const rm of realms) rm.hasShop = shopGods.has(rm.godName);   // cross-link 
 // join the Favor-track matrix to each realm by name (Favor_MTX realm names == D.realms[].realm)
 let favorJoined = 0;
 for (const rm of realms) { if (favorMatrix[rm.realm]) { rm.favor = favorMatrix[rm.realm]; favorJoined++; }
-  else warn(`realm "${rm.realm}" has no Favor_MTX row`); }
+  else warn(`realm "${rm.realm}" has no yield-model entry`); }
 { console.log(`  realms: ${realms.length} · ${realms.reduce((n, r) => n + r.objects.length, 0)} realm objects · ${realms.filter(r => r.hasShop).length} w/ god shop`);
   console.log(`  favor matrix joined: ${favorJoined}/${realms.length} realms`); }
 console.log(`  realm object sprites: ${realmObjHits} matched · ${realmObjMiss} need a slug/override`);
@@ -3139,7 +3132,9 @@ const SU_DATA = {
   realms,                   // 30 realms: denizens/resources + Realm Objects (w/ rank-0 base); each carries a
                             //   `favor` matrix { rank(0..100) → [value per favorAllCols] } from Favor_MTX
   favorCols,                // { unique:[{key,col,label,unit}], generic:[...] } — the Favor_MTX column groups
-  favorColMax,              // rank-100 cross-realm max per column key — scales the magnitude bars
+  favorColMax,              // difficulty → rank-100 cross-realm max per yield column key — scales the magnitude bars
+  favorDiffs,               // ['relaxed','normal','ruthless'] — realm.favor is keyed by these
+  favorCommonVals,          // rank → [value per common column] (identical in every realm)
   favorCommon,              // Favor_REF: [{rank,effect,blessing}] — the shared favor-rank tier schedule
   buildThemes: BUILD_THEMES,// detectable build intents (Action/Mechanic taxonomy) for the Threats advisor
   skinIdMigration: SKIN_ID_MIGRATION,   // old (shifted) skin id -> code skin id, for saved builds

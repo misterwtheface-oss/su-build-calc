@@ -80,7 +80,19 @@ a flat modifier to base: raised **×4/3 (+33%)**, lowered **×2/3 (−33%)**, ot
   part of rank 0.
 
 
-## Realm yield source = code (2026-10-09)
+## Realm yield model = the user's rules (2026-10-10)
+- The Yield and Compare views read `_su_extract/data/model/realm_yield_model.json` (community copy
+  `audit_community_csv/Realm_Yields_CODE.csv`), built rank by rank with the user from code
+  (`_su_extract/code/data_dump/s27/walk/`, rules in `_su_extract/code/YIELD_GROUNDING_PLAN.md`). It replaces
+  Favor_CODE.csv below.
+- Per realm × difficulty (Relaxed / Normal / Ruthless toggle) × favor rank: favor, treasure bundles, net resources,
+  emblems, knowledge, spell recipes, tickets, realm boosts, spawn chances (Golem / Dumpling kept for Prophecy goals),
+  guaranteed nemeses, god-altar donation. Common (all-realm) bonuses are one shared row per rank.
+- Key rules: realm bonus 0; other gods ignored; choice objects at full weight per outcome; chance outcomes weighted, game
+  floors kept; boost caps as the true average; costs paid every run; one god-altar donation per realm; Golem / Dumpling
+  one-hit KO; roaming battles not counted.
+
+## Realm yield source = code (2026-10-09) — superseded 2026-10-10 by the yield model above
 - User (2026-10-09): "replace our data source for the yield calculations with fully code grounded data".
 - The Yield tab reads `_su_extract/audit_community_csv/Favor_CODE.csv` (code). `data/favor/Favor_MTX.csv` (user) stays as
   the diff reference and is no longer read.

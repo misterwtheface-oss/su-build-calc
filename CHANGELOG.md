@@ -4,6 +4,12 @@ Every dated change entry, newest first (moved verbatim from Progress.md on 2026-
 to their own section and sorted by their date). Current state and open work: `Progress.md`, `BACKLOG.md`.
 New entries go at the TOP.
 
+## 2026-10-10 — realm yield model
+- Realms → Yield and Compare now use the new code-built yield model: every realm at every favor rank, with a
+  Relaxed / Normal / Ruthless toggle. Values include god-altar donations, Treasure Golem / Dumpling rewards, boss-fight
+  resource bonuses, resource costs, and realm-boost caps as true averages.
+- Common bonuses now show their real totals (chests, nodes, breakables, spawn and flee chances) per rank.
+
 ## 2026-10-10 — realm favor text tags
 - Realm favor rows: 33 code-vs-text tags in total. Forgotten Lab's Modron emblem and Schematic refill were tagged first,
   then 31 more from the all-realm yield audit (swapped Damarel bonuses, refills that never roll, encounter favor the
