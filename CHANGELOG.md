@@ -12,6 +12,8 @@ New entries go at the TOP.
   includes the 5% Mimic chance on every realm chest.
 - Realm yields now include the Pandemonium shrine (all 13 outcomes, weighted) and the Backer NPC (4–7 treasure
   bundles on 35% of floors).
+- Buff / Debuff / Minion realm boosts never exceed 5: the Music Crystal / Alchemy extra rolls (stored in the Minion
+  slot) now count as Minion boosts.
 - Treasure Map: 25% per floor (not quest-only); its dig spot's 3 bundles count in treasure.
 - Glossary: new Pandemonium Shrine table (13 outcomes, 1 in 13 each, from the code).
 - Common bonuses now show their real totals (chests, nodes, breakables, spawn and flee chances) per rank.
