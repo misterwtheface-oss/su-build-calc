@@ -5,7 +5,8 @@ Progress.md; original text kept, with a status note where later work changed thi
 recorded in `CHANGELOG.md`. Full pre-consolidation text: `archive/Progress_until_2026-10-08.md`.
 Extract-side research questions live in `_su_extract/RESUME.md`.
 
-## ▶ ACTIVE BATCH (2026-10-09) — work one at a time, deploy all together when done
+## BATCH 2026-10-09 — DONE and deployed together (details in CHANGELOG). Still open: #5 (awaiting the extract verdict) and the
+## God Shop code gate (#8 follow-up). Delete this section once both land.
 Commit each item locally; push ONCE when the whole batch is finished. Anything that needs a decompile → don't attempt it,
 write the requirements to `_su_extract/code/HANDOFF_<topic>.md` for the extract session. Tick items here as they land.
 - [x] 1. **Mobile Artifact wizard** — slots become a single-row header, locked, scrolling horizontally, so the rest of the

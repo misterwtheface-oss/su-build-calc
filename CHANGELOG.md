@@ -44,6 +44,29 @@ New entries go at the TOP.
 - Source: `_su_extract/code/REALM_OBJECT_BUNDLES.md`; the CSVs were patched at the source (`Realm_REF.csv`,
   `Combination_REF.csv`, backups in `_raw_csv/_backup_20261009/`) and re-ingested.
 
+## 2026-10-09 — 10-item batch (deployed together)
+- **Artifact wizard (phones):** the 9 slots sit on one locked row that scrolls sideways; the picker / preview / live bonus
+  fills the rest of the screen. Overlay re-renders now keep horizontal scroll as well as vertical (`resetTop` resets
+  vertical only).
+- **Nether stone Spell filter** (wizard picker + library) cycles off → any spell → On Attack / Defend / Cast / Provoke / Turn; a
+  stone matches if ANY of its spells has that trigger.
+- **Artifact library → Sockets** lists empty sockets (the info panel never asked for them; every artifact type was
+  affected). Empty rows respect rank locks everywhere ("Tier N" for locked ones).
+- **Offline fusion colours:** `fusion.json` was lazy-loaded and only lived in the per-deploy SHELL cache, so it was cached only
+  if a fused creature rendered online since the last deploy. Now in `precache-list.json` and served from the stable ASSETS
+  cache (`build-data.mjs` adds it; `sw.js` routes it).
+- **Spell-gem properties audit:** every property is allowed on 68+ spells except **Jade (Generosity), allowed on none.** The
+  extract's decompile forces its column (c13) to 0 for every spell, so the app matches the code reading. Verification handed
+  off (`_su_extract/code/HANDOFF_jade_generosity.md`); no app change yet.
+- **Spec page:** tapping a spec (phones) or the Spec tile opens one full page: animated costume, prose, perks. **Edit** turns
+  the perk cards into rank steppers in place; ‹ returns to the selector grid; footer **Confirm** (new spec) / **Done** (active
+  spec). Replaces the read-only spec detail page; the desktop picker keeps its info panel + Customize.
+- **Anointments tile:** ✕ clears them (like the Spec tile); icon rows are centred at the same size, 5 per row.
+- **God Shop:** "Rank N" Favor Rank per item from the community reference (`god_shop_ref` tier), joined by god + kind + name
+  (630/630). Cosmetics have no reference rank. Code gate handed off (`_su_extract/code/HANDOFF_god_shop_favor_rank.md`).
+- **Guild Shop:** the 5 guilds as a row of 3 over an offset row of 2.
+- **Shop lists:** item text centred vertically in each row (all shops).
+
 ## 2026-10-09 — import: no duplicate artifacts / nether stones
 - Importing a build (text or share link) reuses an exact duplicate artifact or nether stone already in the library
   instead of adding a copy. Matching is order-insensitive and ignores fields a game export can't carry (stone icon, rarity
