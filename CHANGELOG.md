@@ -10,6 +10,9 @@ New entries go at the TOP.
   resource bonuses, resource costs, and realm-boost caps as true averages.
 - The god-altar donation is always counted (favor +150, resources -1000) with no column of its own; treasure now
   includes the 5% Mimic chance on every realm chest.
+- Realm yields now include the Pandemonium shrine (all 13 outcomes, weighted) and the Backer NPC (4–7 treasure
+  bundles on 35% of floors).
+- Glossary: new Pandemonium Shrine table (13 outcomes, 1 in 13 each, from the code).
 - Common bonuses now show their real totals (chests, nodes, breakables, spawn and flee chances) per rank.
 
 ## 2026-10-10 — realm favor text tags

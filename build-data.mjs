@@ -3135,6 +3135,7 @@ const SU_DATA = {
   favorColMax,              // difficulty → rank-100 cross-realm max per yield column key — scales the magnitude bars
   favorDiffs,               // ['relaxed','normal','ruthless'] — realm.favor is keyed by these
   favorCommonVals,          // rank → [value per common column] (identical in every realm)
+  pandShrine: _ym.pandemonium_shrine,   // Pandemonium shrine outcome table (code: obj_demonstatue, 1/13 each)
   favorCommon,              // Favor_REF: [{rank,effect,blessing}] — the shared favor-rank tier schedule
   buildThemes: BUILD_THEMES,// detectable build intents (Action/Mechanic taxonomy) for the Threats advisor
   skinIdMigration: SKIN_ID_MIGRATION,   // old (shifted) skin id -> code skin id, for saved builds

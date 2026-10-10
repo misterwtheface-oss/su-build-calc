@@ -2566,7 +2566,7 @@
 
   // ── Glossary — Buff / Debuff / Minion reference (name + prose + in-game status glyph from the game). ──
   function openGlossary() {
-    ovState = { kind: "glossary", search: "", collapsed: new Set([...GLOSSARY_CATS, "Resurrection", "NetherDrops", "StartOfBattle"]), ndDiff: "normal", render: renderGlossary };
+    ovState = { kind: "glossary", search: "", collapsed: new Set([...GLOSSARY_CATS, "Resurrection", "NetherDrops", "PandShrine", "StartOfBattle"]), ndDiff: "normal", render: renderGlossary };
     openOverlay(ovState.render()); maybeFocusSearch(OV);
   }
   const GLOSSARY_CATS = ["Buff", "Debuff", "Minion"];
@@ -2650,7 +2650,7 @@
         <div class="apx-iconcol">${e.icon ? `<div class="apx-crea"><img src="${esc(e.icon)}" alt=""></div>` : ""}${exclBox(e)}</div>
         <div class="perk-line-body"><div class="perk-line-head"><b>${esc(e.name)}</b></div><div class="perk-desc">${esc(e.desc)}</div></div></div>`).join("")}</div>` : "";
       return `<button class="apx-sec-head apx-cat${open ? "" : " collapsed"}" data-action="gloss-cat-toggle" data-c="${esc(c)}"><span class="apx-sec-caret">${open ? "▾" : "▸"}</span>${esc(c)}s</button>${rows}`;
-    }).join("") + resOrderSection(st, q) + sobSection(st, q) + netherDropSection(st, q) + realmBonusSection(st, q) || `<div class="slot-sub" style="padding:10px">No buff, debuff or minion matches “${esc(st.search)}”.</div>`;
+    }).join("") + resOrderSection(st, q) + sobSection(st, q) + netherDropSection(st, q) + pandShrineSection(st, q) + realmBonusSection(st, q) || `<div class="slot-sub" style="padding:10px">No buff, debuff or minion matches “${esc(st.search)}”.</div>`;
     return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel">
       <div class="overlay-header"><h2>Glossary</h2>
         <input class="ovl-search" placeholder="Search buffs / debuffs / minions / resurrection…" value="${esc(st.search)}" data-action="gloss-search">
@@ -2755,6 +2755,17 @@
         </div>
         <div class="slot-sub nd-note">Per loot roll · after The True Enemy · not in the castle</div></div>` : "";
     return `<button class="apx-sec-head apx-cat${open ? "" : " collapsed"}" data-action="gloss-cat-toggle" data-c="${key}"><span class="apx-sec-caret">${open ? "▾" : "▸"}</span>Nether Stone Drops</button>${body}`;
+  }
+  // Pandemonium shrine outcomes (code: obj_demonstatue_KeyPress_69 — choice = irandom_range(1, 13), each 1 in 13)
+  function pandShrineSection(st, q) {
+    const ps = D.pandShrine; if (!ps) return "";
+    if (q && !"pandemonium shrine king queen".includes(q) && !ps.outcomes.some(o => (o.label + " " + o.gives).toLowerCase().includes(q))) return "";
+    const key = "PandShrine", open = q ? true : !st.collapsed.has(key), pct = `${+(100 / ps.outcomes.length).toFixed(1)}%`;
+    const body = open ? `<div class="nd-wrap"><div class="nd-table">
+        <div class="nd-row ps-row nd-hd"><span>Outcome</span><span>Chance</span><span>Gives</span></div>
+        ${ps.outcomes.map(o => `<div class="nd-row ps-row"><span class="nd-pct">${esc(o.label)}</span><span>${pct}</span><span>${esc(o.gives)}</span></div>`).join("")}
+      </div><div class="slot-sub nd-note">${esc(ps.note)}</div></div>` : "";
+    return `<button class="apx-sec-head apx-cat${open ? "" : " collapsed"}" data-action="gloss-cat-toggle" data-c="${key}"><span class="apx-sec-caret">${open ? "▾" : "▸"}</span>Pandemonium Shrine</button>${body}`;
   }
   // true maximum realm bonus per instability (code: best legal visible + hidden property sets, scr_RealmBonus)
   function realmBonusSection(st, q) {

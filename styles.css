@@ -1676,6 +1676,9 @@ select.app-select:hover { border-color: var(--accent2); }
 .nd-pct { font-weight: 700; color: var(--accent); display: flex; align-items: baseline; gap: 8px; }
 .nd-pct small { font-weight: 400; font-size: 11px; color: var(--text-mute); }
 .nd-note { margin-top: 6px; }
+.nd-row.ps-row { grid-template-columns: 1fr 52px 1.6fr; }
+.nd-row.ps-row span { text-align: left; }
+.nd-row.ps-row span:nth-child(2) { text-align: right; }
 /* glossary: start-of-battle steps (collapsible groups inside the section) */
 .sob-intro { margin: 8px 0 6px; }
 .sob-step { display: flex; align-items: center; gap: 6px; width: 100%; margin: 6px 0; padding: 7px 10px; text-align: left; cursor: pointer;
