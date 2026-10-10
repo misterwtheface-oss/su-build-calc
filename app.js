@@ -1550,7 +1550,7 @@
           ${perks}
         </div>
       </div></div></div>
-      <div class="overlay-footer"><span class="foot-info"></span>
+      <div class="overlay-footer"><button class="btn-ghost" data-action="specpage-back">‹ Specializations</button>
         <div><button class="btn-ghost ${st.editing ? "on" : ""}" data-action="specpage-edit">Edit</button>
         <button class="btn-confirm" data-action="${active ? "specpage-close" : "specpage-confirm"}">${active ? "Done" : "Confirm"}</button></div></div>
     </div></div>`;

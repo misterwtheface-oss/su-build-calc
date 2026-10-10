@@ -44,6 +44,9 @@ New entries go at the TOP.
 - Source: `_su_extract/code/REALM_OBJECT_BUNDLES.md`; the CSVs were patched at the source (`Realm_REF.csv`,
   `Combination_REF.csv`, backups in `_raw_csv/_backup_20261009/`) and re-ingested.
 
+## 2026-10-10 — Spec page footer
+- Left-aligned "‹ Specializations" button in the spec page footer (same action as the header ‹: back to the selector grid).
+
 ## 2026-10-09 — 10-item batch (deployed together)
 - **Artifact wizard (phones):** the 9 slots sit on one locked row that scrolls sideways; the picker / preview / live bonus
   fills the rest of the screen. Overlay re-renders now keep horizontal scroll as well as vertical (`resetTop` resets
