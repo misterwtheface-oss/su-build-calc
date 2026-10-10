@@ -4,6 +4,13 @@ Every dated change entry, newest first (moved verbatim from Progress.md on 2026-
 to their own section and sorted by their date). Current state and open work: `Progress.md`, `BACKLOG.md`.
 New entries go at the TOP.
 
+## 2026-10-10 — deleted gems / artifacts leave saved builds
+- Deleting a spell gem or artifact now removes it from every saved build, not just the open one. Before, a saved build
+  kept the dead id; ids are reused (max + 1) after a reload, so loading that build could equip an unrelated new gem or
+  artifact, or keep a phantom gem that took up a spell slot.
+- `pruneBuildRefs` runs on delete, on every build load / import (`normalizeBuild`), and once at startup to clean
+  references already left in saved builds.
+
 ## 2026-10-10 — realm yield model
 - Realms → Yield and Compare now use the new code-built yield model: every realm at every favor rank, with a
   Relaxed / Normal / Ruthless toggle. Values include god-altar donations, Treasure Golem / Dumpling rewards, boss-fight

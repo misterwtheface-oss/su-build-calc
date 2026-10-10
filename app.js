@@ -421,6 +421,7 @@
     b.slots = Array.isArray(b.slots) ? b.slots : [];
     while (b.slots.length < 6) b.slots.push(emptySlot());
     b.slots = b.slots.slice(0, 6).map(s => Object.assign(emptySlot(), s));
+    pruneBuildRefs(b);
     return b;
   };
 
@@ -454,6 +455,23 @@
   let nextNetherId = nether.reduce((m, n) => Math.max(m, n.id || 0), 0) + 1;
   let nextArtId = artifacts.reduce((m, a) => Math.max(m, a.id || 0), 0) + 1;
   let nextSpellGemId = spellGems.reduce((m, g) => Math.max(m, g.id || 0), 0) + 1;
+  // drop a build's references to deleted spell gems / artifacts. Ids are reused after a reload (max + 1), so a stale
+  // id left in a saved build would later equip an unrelated new item. Runs on delete, on load, and once at startup.
+  const pruneBuildRefs = (b) => {
+    let changed = false;
+    for (const s of (b && b.slots) || []) {
+      if (!s) continue;
+      const ids = s.spellGemIds || [], kept = ids.filter(id => spellGems.some(g => g.id === id));
+      if (kept.length !== ids.length) { s.spellGemIds = kept; changed = true; }
+      if (s.artifactId != null && !artifacts.some(a => a.id === s.artifactId)) { s.artifactId = null; changed = true; }
+    }
+    return changed;
+  };
+  const pruneAllBuildRefs = () => {
+    if (pruneBuildRefs(build)) persistBuild();
+    if (builds.map(b => pruneBuildRefs(b.build)).some(Boolean)) persistBuilds();
+  };
+  pruneAllBuildRefs();
 
   const cardLevel = (id) => {
     if (cards.applyAll) { const c = CARD.get(id); return c ? c.effects.length : 3; }
@@ -5133,7 +5151,7 @@
         persistBuild(); render(); refreshOverlay(); break; }
       case "art-new": openArtifactBuilder(null, ovState.slotIdx); break;
       case "art-edit": openArtifactBuilder(+t.dataset.id, ovState.slotIdx); break;
-      case "art-del": armOrDo(t, () => { const id = +t.dataset.id; artifacts = artifacts.filter(a => a.id !== id); build.slots.forEach(s => { if (s.artifactId === id) s.artifactId = null; }); if (ovState.sel === id) ovState.sel = null; persistArtifacts(); persistBuild(); refreshOverlay(); }); break;
+      case "art-del": armOrDo(t, () => { const id = +t.dataset.id; artifacts = artifacts.filter(a => a.id !== id); pruneAllBuildRefs(); if (ovState.sel === id) ovState.sel = null; persistArtifacts(); refreshOverlay(); }); break;
       case "artb-next": ovState.step = ovState.step === "type" ? "slots" : "name"; ovState.pickType = null; ovState.preview = null; ovState.search = ""; refreshOverlay(true); break;
       case "artb-back": ovState.step = ovState.step === "name" ? "slots" : "type"; ovState.pickType = null; ovState.preview = null; ovState.search = ""; refreshOverlay(true); break;
       case "artb-closecat": ovState.pickType = null; ovState.preview = null; ovState.search = ""; ovState.bkOnly = false; refreshOverlay(true); break;
@@ -5259,9 +5277,9 @@
       case "sg-edit": openSpellGemBuilder(+t.dataset.id, gemListRetSlot()); break;
       case "sg-del": armOrDo(t, () => { const id = +t.dataset.id; spellGems = spellGems.filter(g => g.id !== id);
         artifacts.forEach(a => a.spells = (a.spells || []).filter(x => x !== id));
-        build.slots.forEach(s => s.spellGemIds = (s.spellGemIds || []).filter(x => x !== id));
+        pruneAllBuildRefs();
         if (ovState.sel === id) ovState.sel = null;
-        persistSpellGems(); persistArtifacts(); persistBuild(); refreshOverlay(); }); break;
+        persistSpellGems(); persistArtifacts(); refreshOverlay(); }); break;
       case "sg-cancel": backToGemList(ovState.retSlot, ovState.editId); break;
       case "sg-spell": { const d = ovState.draft; d.spellId = d.spellId === +t.dataset.id ? null : +t.dataset.id;
         const sp = gemSpell(d); if (sp) d.propIds = d.propIds.filter(pid => { const p = SPELLPROP.get(pid); return p && gemPropOk(sp, p); });   // drop what the new spell can't take
