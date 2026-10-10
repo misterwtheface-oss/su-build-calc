@@ -4,6 +4,13 @@ Every dated change entry, newest first (moved verbatim from Progress.md on 2026-
 to their own section and sorted by their date). Current state and open work: `Progress.md`, `BACKLOG.md`.
 New entries go at the TOP.
 
+## 2026-10-10 — realm favor text tags
+- Realm favor rows: 33 code-vs-text tags in total. Forgotten Lab's Modron emblem and Schematic refill were tagged first,
+  then 31 more from the all-realm yield audit (swapped Damarel bonuses, refills that never roll, encounter favor the
+  text omits, counts).
+- Realm objects: a "(code: N)" tag on an object's count makes the card show the code count; the reference count moves
+  to a tooltip (Abandoned Cave 3, Angel Shrine 1, Giant Gears 3, Apocalypse Nest 5, Living Ember 8).
+
 ## 2026-10-09 — realm property rules + true maximum realm bonus
 - Glossary: new **Maximum Realm Bonus** table, the best reachable realm (item) bonus per instability at your deepest
   depth and below it: 60 / 139 / 259 / 433 / **672%**. Source: the game's property generator rules and the realm bonus
