@@ -44,6 +44,11 @@ New entries go at the TOP.
 - Source: `_su_extract/code/REALM_OBJECT_BUNDLES.md`; the CSVs were patched at the source (`Realm_REF.csv`,
   `Combination_REF.csv`, backups in `_raw_csv/_backup_20261009/`) and re-ingested.
 
+## 2026-10-10 — sort toggles can be removed
+- Every sort button (saved libraries, nether-stone / spell pickers in the artifact wizard, Builds, Realms, creature stat sort)
+  now cycles natural → reversed → **off**. Off = no button lit, list in its default order (creature picker lights "—").
+  `sortPick` in app.js; `sortCur` keeps a never-touched default lit.
+
 ## 2026-10-10 — Spec page footer
 - Left-aligned "‹ Specializations" button in the spec page footer (same action as the header ‹: back to the selector grid).
 

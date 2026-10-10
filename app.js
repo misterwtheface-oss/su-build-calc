@@ -460,15 +460,22 @@
     return cards.levels[id] == null ? 3 : cards.levels[id];
   };
 
-  // ── sort toggles: tapping the ACTIVE sort flips its direction; picking another starts in its natural direction ──
-  // st[key] = active sort value, st[revKey] = true when flipped from natural. `natDesc` = that sort's natural order is
-  // descending (stats, potency, charges, recent, last-edited); name-style sorts are naturally ascending.
-  const sortPick = (st, key, revKey, v) => { if (st[key] === v) st[revKey] = !st[revKey]; else { st[key] = v; st[revKey] = false; } };
+  // ── sort toggles: tap a sort → its natural direction; tap again → reversed; a third tap removes it (list falls back to
+  // its default order, no button lit). Picking another sort starts in its natural direction.
+  // st[key] = active sort value (null = removed; undefined = never touched → the list's default shows as lit),
+  // st[revKey] = true when flipped from natural. `natDesc` = that sort's natural order is descending (stats, potency,
+  // charges, recent, last-edited); name-style sorts are naturally ascending.
+  const sortPick = (st, key, revKey, v) => {
+    if (st[key] !== v) { st[key] = v; st[revKey] = false; }
+    else if (!st[revKey]) st[revKey] = true;
+    else { st[key] = null; st[revKey] = false; }
+  };
+  const sortCur = (v, dflt) => v === undefined ? dflt : v;   // the lit sort button: default until touched, none once removed
   const sortSign = (rev) => (rev ? -1 : 1);
   // button label with the live direction arrow on the active sort (▼ descending, ▲ ascending)
   const sortLbl = (label, active, rev, natDesc) => active ? `${label} <span class="sort-dir">${(natDesc !== !!rev) ? "▼" : "▲"}</span>` : label;
   // saved-library sort control (Artifacts / Nether Stones / Spell Gems): opts = [[value, label, naturallyDescending]]
-  const libSortSeg = (st, opts) => { const cur = st.libSort || opts[0][0];
+  const libSortSeg = (st, opts) => { const cur = sortCur(st.libSort, opts[0][0]);
     return `<div class="seg">${opts.map(([v, l, nd]) => `<button class="seg-btn ${cur === v ? "on" : ""}" data-action="lib-sort" data-v="${v}">${sortLbl(l, cur === v, st.libSortRev, nd)}</button>`).join("")}</div>`; };
 
   // ── util ─────────────────────────────────────────────────────────────────
@@ -3685,7 +3692,7 @@
   const spellKind = (sp) => (sp.taxo || []).includes("Related Spells::Ultimate Spells") ? "ultimate" : sp.source === "Rune Knight" ? "rune" : null;
   // the identical two-row bar: [lead] search · ＋ Filter · ★ Bookmarked  /  Target ▾ · Class ▾ · A–Z | Potency | Charges
   function spellFilterBar(st, searchAction, lead = "") {
-    const sort = st.spellSort || "name";
+    const sort = sortCur(st.spellSort, "name");
     const taxo = st.spellTaxo
       ? `<button class="facet on tag" data-action="sg-taxofilter-clear">${esc(taxoCatName(st.spellTaxo))}: <b>${esc(taxoValName(st.spellTaxo))}</b> <span class="facet-x">✕</span></button>`
       : `<button class="facet add" data-action="sg-taxofilter">＋ Filter</button>`;
@@ -3782,7 +3789,7 @@
           <button class="facet ${st.nsTrait ? "on" : ""}" data-action="artb-nsfilter" data-f="nsTrait">Trait</button>
           ${nsSpellChip(st.nsSpell, "ns-spellcycle")}
           <button class="facet ${st.nsHideUsed ? "on" : ""}" data-action="artb-nsfilter" data-f="nsHideUsed" title="Hide stones already socketed in another equipped artifact">Hide in use</button></div>
-        <div class="art-side-filter">${seg("artb-nssort", st.nsSort || "recent", [["recent", "Recent"], ["name", "A–Z"], ...STAT_KEYS.map(k => [k, STAT_LABEL[k].slice(0, 3)])], st.nsSortRev)}</div>`;
+        <div class="art-side-filter">${seg("artb-nssort", sortCur(st.nsSort, "recent"), [["recent", "Recent"], ["name", "A–Z"], ...STAT_KEYS.map(k => [k, STAT_LABEL[k].slice(0, 3)])], st.nsSortRev)}</div>`;
     } else if (traitFilter || bkFilter) extra = `<div class="art-side-filter">${traitFilter}${bkFilter}</div>`;
     const label = (ART_SLOTS.find(s => s.pick === type) || {}).label || "";
     return `<div class="art-side-head"><b>Add ${esc(label)}</b><button class="chip" data-action="artb-closecat">Done</button></div>
@@ -5114,10 +5121,10 @@
       case "artb-traitfilter-clear": ovState.traitTaxo = null; refreshOverlay(); break;
       case "artb-bkonly": ovState.bkOnly = !ovState.bkOnly; refreshOverlay(); break;
       // shared spell picker bar (Spell Gem / Artifact / Nether Stone wizards)
-      case "spf-sort": if (!ovState.spellSort) ovState.spellSort = "name"; sortPick(ovState, "spellSort", "spellSortRev", t.dataset.v); refreshOverlay(); break;
+      case "spf-sort": if (ovState.spellSort === undefined) ovState.spellSort = "name"; sortPick(ovState, "spellSort", "spellSortRev", t.dataset.v); refreshOverlay(); break;
       case "spf-bk": ovState.bkOnly = !ovState.bkOnly; refreshOverlay(); break;
       case "artb-nsfilter": ovState[t.dataset.f] = !ovState[t.dataset.f]; refreshOverlay(); break;
-      case "artb-nssort": if (!ovState.nsSort) ovState.nsSort = "recent"; sortPick(ovState, "nsSort", "nsSortRev", t.dataset.v); refreshOverlay(); break;
+      case "artb-nssort": if (ovState.nsSort === undefined) ovState.nsSort = "recent"; sortPick(ovState, "nsSort", "nsSortRev", t.dataset.v); refreshOverlay(); break;
       // spell-gem builder spell picker filter (reuses the facet detail picker)
       case "sg-taxofilter": openFacetPicker("taxo-cat", {
         idxFn: () => taxoIndexFor("spell", D.spells, s => s.taxo || []),
