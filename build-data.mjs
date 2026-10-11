@@ -3079,7 +3079,8 @@ console.log(`  start-of-battle order: ${startOfBattle.length} rows from ${sobRaw
 //   battleOnly — never a holdable gem: Ultimates (category ULTIMATE) and the reserved ids 431–441 (Rune / Mega Magic /
 //                Colorwave). Booze 312–326 (Tavern) and Living 328–352 (Arena) are reserved but sold as gems, and the boss spells
 //                493–543 are False God Inscriptions (spell recipes from the anointment pick, spell_owners.json
-//                false_god_inscriptions; Plague / Devastation also spec recipes), so they stay. Hidden from every gem picker.
+//                false_god_inscriptions; the False God is the source, Shadowbringer / Toxicologist starting with Plague / Devastation are
+//                exceptions), so they stay. Hidden from every gem picker.
 //                Sandbox mode is never a signal (user ruling 2026-10-11).
 //   noManual   — a real gem that can't be cast manually (inv_SpellCanBeCastManually: Booze, category BEER, or a static id list),
 //                so the macro builder leaves it out.

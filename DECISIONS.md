@@ -40,7 +40,8 @@ Nature=gem_nature, Chaos=gem_chaos, Sorcery=gem_sorceryB(blue), Death=gem_sorcer
   Errata page, same layout; its menu button sits right below Glossary.
 - **Battle-only spells (2026-10-10; corrected 2026-10-11):** spells that can't be held as a gem (Ultimates, Runes, Mega Magic,
   Colorwave) are hidden from every spell picker. The 51 False God spells (ids 493–543) are NOT battle-only: each False God drops
-  them as Inscriptions (user, confirmed in code), so they are pickable gems. Sandbox mode is never a signal for availability
+  them as Inscriptions (user, confirmed in code), so they are pickable gems. The False God is their source; a specialization
+  that starts with one of the recipes (Shadowbringer → Plague, Toxicologist → Devastation) is an exception, not the source. Sandbox mode is never a signal for availability
   (user ruling 2026-10-11: it does not reflect the core game; an Ultimate being craftable in Sandbox doesn't make it a normal spell). Battle-only spells show up automatically on the
   creatures they belong to, under the owner's condition, without using a spell-gem slot (e.g. Rune of Cor only on Chaos
   creatures and only while the Rune of Cor perk is allocated or anointed).
