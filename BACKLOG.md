@@ -5,8 +5,8 @@ Progress.md; original text kept, with a status note where later work changed thi
 recorded in `CHANGELOG.md`. Full pre-consolidation text: `archive/Progress_until_2026-10-08.md`.
 Extract-side research questions live in `_su_extract/RESUME.md`.
 
-## BATCH 2026-10-09 — DONE and deployed together (details in CHANGELOG). Still open: #5 (awaiting the extract verdict) and the
-## God Shop code gate (#8 follow-up). Delete this section once both land.
+## BATCH 2026-10-09 — DONE and deployed together (details in CHANGELOG). Still open: the God Shop code gate (#8 follow-up).
+## Delete this section once it lands.
 Commit each item locally; push ONCE when the whole batch is finished. Anything that needs a decompile → don't attempt it,
 write the requirements to `_su_extract/code/HANDOFF_<topic>.md` for the extract session. Tick items here as they land.
 - [x] 1. **Mobile Artifact wizard** — slots become a single-row header, locked, scrolling horizontally, so the rest of the
@@ -17,10 +17,9 @@ write the requirements to `_su_extract/code/HANDOFF_<topic>.md` for the extract 
   slots; probably not helmet-specific). The editor is fine.
 - [x] 4. **Fusion colours need the internet** — offline (airplane mode) every build showed default colours and the 6 fusion
   colour options were all default. Find why (asset not precached / fetched from GitHub at runtime?) and fix.
-- [~] 5. **Spell-gem property conflicts** — AUDITED 2026-10-09: Jade (Generosity) is the ONLY property allowed on no spell; the
-  extract's decompile forces its column (c13) to 0 for every spell, so the app is faithful to the code reading. Verification
-  handed off → `_su_extract/code/HANDOFF_jade_generosity.md`; on its verdict rebuild data / add a clarify note. Original ask: — Jade / Generosity can't be added to spells the user expects. Audit every property's
-  conflict/eligibility mapping; any property allowed on NO spell = a bug.
+- [x] 5. **Spell-gem property conflicts** — RESOLVED 2026-10-10 (extract verdict b): two extractor bugs (c13 read from the
+  else-branch only; every record shifted by one spell). Jade is allowed on 685 spells (same set as Citrine); data rebuilt,
+  735 spells' allowed sets changed. No clarify note needed.
 - [x] 6. **Mobile Spec selector redesign** — no info panel: tapping a spec opens a full-page screen (back arrow → selector
   grid) with the animated spec sprite, description prose and perk containers. One **Edit** button (replaces "Customize")
   turns the perk containers into their editable form. Tapping the Spec tile when a spec is active opens the SAME page

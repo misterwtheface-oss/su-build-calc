@@ -632,6 +632,8 @@
     resolveArtifact, perkRank: (spec, p) => perkRank(spec, p),
     anointed: (specId, key) => build.anoints.some(a => a.specId === specId && a.key === key),
     slotTraitIds: (slot) => slotTraitIds(slot), finalStats: (slot) => finalStats(slot),
+    slotClass: (slot) => (baseStats(slot) || {}).cls || null,
+    SPELL, spellGrants: D.spellGrants || [], relicUltimates: D.relicUltimates || {}, ultimateRoutes: D.ultimateRoutes || [],
   });
   // "equipped in the current build" tests, for the saved-list Hide-equipped filter
   const artifactEquippedInBuild = (id) => build.slots.some(s => s.artifactId === id);
@@ -840,7 +842,7 @@
         <div class="roster-actions">
           <button class="slot-mini ${a ? "on" : ""}" data-action="equip-artifact" data-slot="${i}" title="Artifact">Artifact</button>
           <button class="slot-mini ${slot.relic ? "on" : ""}" data-action="build-relic" data-slot="${i}" title="Relic">Relic</button>
-          <button class="slot-mini ${(slot.spellGemIds || []).length ? "on" : ""}" data-action="creature-spells" data-slot="${i}" title="Spell gems">Spells${(slot.spellGemIds || []).length ? ` ${slot.spellGemIds.length}/${creatureSlotMax(slot)}` : ""}</button>
+          ${spellsBtn(slot, i)}
         </div>
       </div>
       <div class="roster-traits">
@@ -877,7 +879,7 @@
       <div class="slot-actions">
         <button class="slot-mini ${a ? "on" : ""}" data-action="equip-artifact" data-slot="${i}" title="Artifact">Artifact</button>
         <button class="slot-mini ${slot.relic ? "on" : ""}" data-action="build-relic" data-slot="${i}" title="Relic">Relic</button>
-        <button class="slot-mini ${(slot.spellGemIds || []).length ? "on" : ""}" data-action="creature-spells" data-slot="${i}" title="Spell gems">Spells${(slot.spellGemIds || []).length ? ` ${slot.spellGemIds.length}/${creatureSlotMax(slot)}` : ""}</button>
+        ${spellsBtn(slot, i)}
       </div></div>`;
   }
 
@@ -1278,6 +1280,7 @@
       return `<div class="primary-traits" style="margin-bottom:8px">
         <div class="fg-part-name"><b>${esc(p.name)}</b>${tr ? "" : `<span class="slot-sub"> · no distinct trait</span>`}</div>
         ${tr ? `${traitBanner(p.traitId)}<div class="trait-desc">${richText(tr.desc || "")}</div>` : ""}
+        ${traitGrantCards(p.traitId, p.runtimeIds || [])}
         ${p.stats ? `<div class="slot-sub">${STAT_KEYS.map(k => `${STAT_LABEL[k].slice(0, 3)} ${p.stats[k]}`).join(" · ")}</div>` : ""}
       </div>`;
     }).join("");
@@ -1540,6 +1543,27 @@
     openSpecPicker(); openSpecPage(build.specId);
   }
   // shared perk-list markup used by both the selector info panel and the detail page
+  // owner → the spells it grants (D.spellGrants), as spell-gem cards on the owner's own display
+  const grantsOf = (kind, test) => (D.spellGrants || []).filter(g => g.owner.kind === kind && test(g.owner));
+  const grantCardTrigger = (g) => g.mode === "boss" ? (g.oneOf && g.spells.length > 1 ? "One at random · its turn" : "On its turn") : grantTrigger(g);
+  const grantCards = (gs) => gs.map(g => g.spells.map(id => SPELL.get(id)).filter(Boolean).map(sp => spellGemCard(sp, grantCardTrigger(g))).join("")).join("");
+  const perkGrantCards = (specId, key) => grantCards(grantsOf("perk", o => o.spec === specId && o.key === key));
+  const traitGrantCards = (traitId, rtIds) => grantCards(grantsOf("trait", o => o.id === traitId
+    || (rtIds && ((TRAIT[o.id] || {}).runtimeIds || []).some(r => rtIds.includes(r)))));
+  // a relic's Ultimate (scr_GetUltimateSpellByRelic) and who hands it out (Idolatry / Weapons of Mass Distortion)
+  function relicUltimateCard(relicId) {
+    const sp = SPELL.get((D.relicUltimates || {})[relicId]); if (!sp) return "";
+    const via = (D.ultimateRoutes || []).map(r => grantOwnerName(r.owner)).filter(Boolean).join(" · ");
+    return `<div class="section-label">Ultimate</div>${spellGemCard(sp, via)}`;
+  }
+  // spell → every owner that grants it (spell entity detail)
+  function spellGrantedByHtml(spellId) {
+    const names = (D.spellGrants || []).filter(g => g.spells.includes(spellId)).map(g => grantOwnerName(g.owner));
+    const rel = Object.entries(D.relicUltimates || {}).filter(([, sid]) => sid === spellId).map(([rid]) => grantOwnerName({ kind: "relic", id: +rid }));
+    if (rel.length) names.push(...(D.ultimateRoutes || []).map(r => `${grantOwnerName(r.owner)} (${rel.join(", ")})`));
+    const uniq = [...new Set(names.filter(Boolean))];
+    return uniq.length ? `<div class="section-label">Granted by</div><div class="perk-desc" style="margin-bottom:12px">${uniq.map(esc).join(" · ")}</div>` : "";
+  }
   function specPerkListHtml(spec) {
     return spec.perks.map(p => {
       const r = perkRank(spec, p), mx = perkMax(p), on = r > 0;
@@ -1550,6 +1574,7 @@
         <div class="perk-line-body">
           <div class="perk-line-head"><b>${esc(p.name)}</b><span class="perk-line-meta">${asc}${badge}</span>${bkBtn("perks", p.key)}</div>
           ${p.desc ? `<div class="perk-desc">${perkText(p.desc, r)}</div>` : ""}
+          ${perkGrantCards(spec.id, p.key)}
         </div></div>`;
     }).join("");
   }
@@ -2290,6 +2315,10 @@
       <div class="overlay-body"><div class="ovl-center"><div class="ovl-center-scroll">
         ${r.descHtml ? `<div class="perk-desc" style="margin-bottom:12px">${r.descHtml}</div>` : ""}
         ${st.ekind === "condition" && e.exclusive && e.exclusive.show ? `<div class="excl-note">${e.exclusive.icon ? spriteImg(e.exclusive.icon, "px") : ""}<span>Exclusive to <b>${esc(e.exclusive.source)}</b></span></div>` : ""}
+        ${st.ekind === "perk" ? perkGrantCards((D.specs.find(x => x.perks.includes(e)) || {}).id, e.key) : ""}
+        ${st.ekind === "trait" ? traitGrantCards(+st.eid) : ""}
+        ${st.ekind === "relic" ? relicUltimateCard(e.id) : ""}
+        ${st.ekind === "spell" ? spellGrantedByHtml(e.id) : ""}
         ${st.ekind === "trait" ? `<div class="section-label">Source</div>${traitDetailSections(e)}` : ""}
         <div class="section-label">Taxonomy — ${n} tag${n === 1 ? "" : "s"}</div>
         ${entityTaxHtml(e)}
@@ -2337,6 +2366,7 @@
       // it carries is the counted effect — the creature's own name never contributes.
       for (const tid of slotTraitIds(slot)) { const tr = TRAIT[tid]; if (tr) addEffect(m, tr.name, tr.taxo, "trait"); }
       for (const gid of slot.spellGemIds || []) { const g = spellGems.find(x => x.id === gid); const sp = g ? gemSpell(g) : null; if (sp) addEffect(m, sp.name, sp.taxo, "spell gem"); }
+      for (const g of grantedSpellList(slot)) addEffect(m, g.sp.name, g.sp.taxo, "granted spell");
       // relic (equipped per creature; Deprived ignores relics) + nether spell props
       const rel = slot.relic && !FX.ignores("relics") ? RELIC.get(slot.relic.id) : null;
       if (rel) addEffect(m, rel.name, rel.taxo, "relic");
@@ -2355,6 +2385,7 @@
       const c = CREA.get(slot.cid); if (!c) continue;
       for (const tid of slotTraitIds(slot)) { const tr = TRAIT[tid]; if (tr) push(tr.name, richText(tr.desc || ""), tr.taxo, c.name, "Trait"); }
       for (const gid of slot.spellGemIds || []) { const g = spellGems.find(x => x.id === gid); const sp = g ? gemSpell(g) : null; if (sp) push(sp.name, richText(sp.desc || ""), sp.taxo, c.name, "Spell"); }
+      for (const g of grantedSpellList(slot)) push(g.sp.name, richText(g.sp.desc || ""), g.sp.taxo, c.name, "Spell");
       const rel = slot.relic && !FX.ignores("relics") ? RELIC.get(slot.relic.id) : null;
       if (rel) push(rel.name, rel.ranks.map(r => r.desc).join(" · "), rel.taxo, c.name, "Relic");
       for (const sp of slotNetherSpells(slot)) push(sp.name, richText(sp.desc || ""), sp.taxo, c.name, "Spell");
@@ -3700,15 +3731,16 @@
     .filter(([v]) => (D.spells || []).some(sp => sp.target === v));
   // ── shared spell picker (Spell Gem, Artifact and Nether Stone wizards) ──
   // state on the wizard's ovState: search, spellTarget, spellCls, spellSort, spellTaxo, bkOnly
+  // Only spells that exist as holdable gems: battle-only spells (Ultimates, Runes, Mega Magic, Colorwave, boss kits) reach a
+  // creature through their owner instead (FX.grantedSpells), and never-created spells don't reach play at all.
   function spellPickList(st, exclude) {
     const q = (st.search || "").trim().toLowerCase(), sort = st.spellSort || "name";
-    return (D.spells || []).filter(sp => !(exclude && exclude.has(sp.id))
+    return (D.spells || []).filter(sp => !sp.battleOnly && !sp.unused && !(exclude && exclude.has(sp.id))
         && (!q || sp.name.toLowerCase().includes(q) || (sp.desc || "").toLowerCase().includes(q) || (sp.taxo || []).some(k => taxoValName(k).toLowerCase().includes(q)))
         && (!st.spellCls || sp.cls === st.spellCls)
         && (st.spellTarget == null || sp.target === st.spellTarget)
         && (!st.spellTaxo || (sp.taxo || []).includes(st.spellTaxo))
-        && (!st.bkOnly || bookmarks.spells.includes(sp.id))
-        && (!st.spellKind || (st.spellKind === "core" ? !spellKind(sp) : spellKind(sp) === st.spellKind)))
+        && (!st.bkOnly || bookmarks.spells.includes(sp.id)))
       .sort((x, y) => {
         const d = sortSign(st.spellSortRev), byName = x.name.localeCompare(y.name);
         if (sort === "potency") { const rx = potencyRank(x), ry = potencyRank(y), none = POTENCY_ORDER.length;
@@ -3728,7 +3760,6 @@
       || `<div class="slot-sub" style="padding:10px">No spells match.</div>`;
   }
   // spell kind: Ultimate (Avatar ultimates, tagged "Related Spells::Ultimate Spells") · Rune (the Rune Knight's 5 runes)
-  const spellKind = (sp) => (sp.taxo || []).includes("Related Spells::Ultimate Spells") ? "ultimate" : sp.source === "Rune Knight" ? "rune" : null;
   // the identical two-row bar: [lead] search · ＋ Filter · ★ Bookmarked  /  Target ▾ · Class ▾ · A–Z | Potency | Charges
   function spellFilterBar(st, searchAction, lead = "") {
     const sort = sortCur(st.spellSort, "name");
@@ -3742,8 +3773,6 @@
           <option value="*" ${st.spellTarget == null ? "selected" : ""}>-</option>${SPELL_TARGETS.map(([v, l]) => `<option value="${esc(v)}" ${st.spellTarget === v ? "selected" : ""}>${esc(l)}</option>`).join("")}</select>
         <select class="app-select${st.spellCls ? " on" : ""}" data-action="spf-cls" title="Filter by class">
           <option value="" ${!st.spellCls ? "selected" : ""}>-</option>${SPELL_CLASSES.map(cl => `<option value="${cl}" ${st.spellCls === cl ? "selected" : ""}>${cl}</option>`).join("")}</select>
-        <select class="app-select${st.spellKind ? " on" : ""}" data-action="spf-kind" title="Filter by spell kind">
-          ${[["", "-"], ["core", "No Ultimate / Rune"], ["ultimate", "Ultimate"], ["rune", "Rune"]].map(([v, l]) => `<option value="${v}" ${(st.spellKind || "") === v ? "selected" : ""}>${l}</option>`).join("")}</select>
         <span class="sg-sort-gap"></span>
         <div class="seg">${[["name", "A–Z"], ["potency", "Potency"], ["charges", "Charges"]].map(([v, l]) =>
           `<button class="seg-btn ${sort === v ? "on" : ""}" data-action="spf-sort" data-v="${v}">${sortLbl(l, sort === v, st.spellSortRev, v !== "name")}</button>`).join("")}</div></div>`;
@@ -4037,7 +4066,7 @@
           <div class="slot-sub">Boosts ${esc(sel.statBonus || "—")}</div></div>
         <div class="ovl-filterbar rank-picker"><span class="slot-sub">Rank</span>
           <input type="range" min="1" max="${maxRank}" step="1" value="${st.rank}" data-action="relic-rank"><span class="rank-badge">${st.rank}</span></div>
-        <div class="ovl-center-scroll">${ranks}</div>
+        <div class="ovl-center-scroll">${ranks}${relicUltimateCard(sel.id)}</div>
       </div></div>
       <div class="overlay-footer"><button class="btn-ghost" data-action="relic-back">‹ Back</button>
         <div>${(build.slots[st.slotIdx].relic || {}).id === sel.id ? `<button class="btn-ghost" data-action="relic-unequip">Unequip</button>` : ""}
@@ -4099,12 +4128,13 @@
   }
   // spells the creature can actually cast in a macro = its equipped spell GEMS only. Spells socketed into an
   // artifact (Spell slot) or a Nether Stone auto-proc and CANNOT be cast manually / by a macro — excluded.
+  // Spells the game marks "cannot be cast manually" (Booze, Saving Grace, …) are left out; gems a perk / trait grants
+  // (Runes, Mega Magic, Colorwave, Idolatry's Ultimate) are castable and count.
   function gatherSlotSpells(slot) {
     const out = [], seen = new Set();
-    for (const gid of slot.spellGemIds || []) {
-      const g = spellGems.find(x => x.id === gid); const sp = g ? gemSpell(g) : null;
-      if (sp && !seen.has(sp.id)) { seen.add(sp.id); out.push(sp); }
-    }
+    const add = (sp) => { if (sp && !sp.noManual && !seen.has(sp.id)) { seen.add(sp.id); out.push(sp); } };
+    for (const gid of slot.spellGemIds || []) { const g = spellGems.find(x => x.id === gid); add(g ? gemSpell(g) : null); }
+    for (const g of grantedSpellList(slot)) if (g.mode === "gem") add(g.sp);
     return out;
   }
   const TAUNT_TAGS = new Set(["Action/Mechanic::Provoke", "Action/Mechanic::Defend"]);
@@ -4787,6 +4817,29 @@
     </div></div>`;
   }
 
+  // spells a slot gets from a perk / trait / relic (FX.grantedSpells): no spell-gem slot used
+  const grantedSpellList = (slot) => FX.grantedSpells(slot).map(g => ({ ...g, sp: SPELL.get(g.spellId) })).filter(g => g.sp);
+  function grantOwnerName(o) {
+    if (o.kind === "perk") { const s = SPEC.get(o.spec), p = s && s.perks.find(x => x.key === o.key); return p ? p.name : ""; }
+    if (o.kind === "trait") return (TRAIT[o.id] || {}).name || "";
+    if (o.kind === "relic") return String((RELIC.get(o.id) || {}).name || "").split(",")[0];
+    return "";
+  }
+  const capFirst = (x) => x ? x[0].toUpperCase() + x.slice(1) : "";
+  const grantTrigger = (g) => g.mode === "replaceArtifactSpell" ? "Replaces artifact spell"
+    : g.mode === "cast" ? `${g.chance}% · ${capFirst(g.when)}` : capFirst(String(g.when || "start of battle").split(",")[0]);
+  const grantedTile = (g) => `<div class="art-spellcard spell-page-tile apx-clickable" data-action="apx-open" data-ek="spell" data-eid="${g.sp.id}" title="View taxonomy">
+    <div class="art-spellcard-head"><span class="prop-ico">${spellIcon(g.sp) ? spriteImg(spellIcon(g.sp), "px") : ""}</span><b>${esc(g.sp.name)}</b>
+      <span class="spt-tags">${g.sp.cls ? `<span class="anoint-spec-tag" style="color:${clsColor(g.sp.cls)}">${esc(g.sp.cls)}</span>` : ""}<span class="art-trigger">${esc(grantTrigger(g))}</span></span></div>
+    <div class="slot-sub" style="text-align:left">from ${esc(grantOwnerName(g.owner))}</div>
+    ${g.sp.desc ? `<div class="trait-desc">${perkText(g.sp.desc)}</div>` : ""}
+    ${spellStatsHtml(g.sp)}</div>`;
+
+  // the tile's Spells button: equipped gems / slots, then +N granted spells (they use no slot)
+  function spellsBtn(slot, i) {
+    const n = (slot.spellGemIds || []).length, gr = grantedSpellList(slot).length;
+    return `<button class="slot-mini ${n || gr ? "on" : ""}" data-action="creature-spells" data-slot="${i}" title="Spell gems">Spells${n ? ` ${n}/${creatureSlotMax(slot)}` : ""}${gr ? ` +${gr}` : ""}</button>`;
+  }
   // creature spell-slot header: one circle per equipped gem in its spell's base class colour, then an outlined
   // "empty" circle per open slot (total = the creature's slot count incl. perk/trait grants). Shared by the Spells
   // page and the equip list opened from a creature's Spells button.
@@ -4810,7 +4863,8 @@
   function renderSpellsPage() {
     const st = dovState, slot = build.slots[st.slotIdx];
     const gems = (slot.spellGemIds || []).map(id => spellGems.find(g => g.id === id)).filter(Boolean);
-    if (!gems.length) { closeDetail(); return ""; }
+    const granted = grantedSpellList(slot);
+    if (!gems.length && !granted.length) { closeDetail(); return ""; }
     const tiles = gems.map((g, gi) => {
       const sp = gemSpell(g), tier = gemTier(g);
       const props = (g.propIds || []).map(pid => { const p = SPELLPROP.get(pid); return p ? `<div class="prop-row static"${p.textNote ? ` title="${esc(p.textNote)}"` : ""}>
@@ -4828,7 +4882,7 @@
     }).join("");
     return `<div class="ovl-backdrop" data-action="detail-backdrop"><div class="overlay-panel detail">
       <div class="overlay-header spells-hdr">${spellsHeaderHtml(st.slotIdx, `<button class="btn-ghost" data-action="spellpage-back">‹ Spell Gems</button>`)}<button class="ovl-close" data-action="close-detail">✕</button></div>
-      <div class="overlay-body"><div class="ovl-center"><div class="ovl-center-scroll"><div class="spell-page-list">${tiles}</div></div></div></div>
+      <div class="overlay-body"><div class="ovl-center"><div class="ovl-center-scroll"><div class="spell-page-list">${tiles}${granted.length ? `<div class="section-label">Granted</div>${granted.map(grantedTile).join("")}` : ""}</div></div></div></div>
       <div class="overlay-footer"><button class="btn-ghost" data-action="spellpage-back">‹ Back</button>
         <button class="btn-confirm" data-action="spellpage-done">Done</button></div>
     </div></div>`;
@@ -5264,7 +5318,7 @@
       // spell gems: library + wizard + equip
       case "open-spellgems": openSpellGems(); break;
       case "creature-spells": { const si = +t.dataset.slot; openCreatureSpells(si);
-        if ((build.slots[si].spellGemIds || []).some(id => spellGems.some(g => g.id === id))) openSpellsPage(si); break; }
+        if ((build.slots[si].spellGemIds || []).some(id => spellGems.some(g => g.id === id)) || grantedSpellList(build.slots[si]).length) openSpellsPage(si); break; }
       case "spellpage-back": closeDetail(); break;
       case "spellpage-done": closeDetail(); closeOverlay(); break;
       case "spellpage-move": { const ids = build.slots[dovState.slotIdx].spellGemIds, i = +t.dataset.i, j = i + +t.dataset.d;
@@ -5493,7 +5547,6 @@
     // shared spell picker dropdowns ("*" / "" = "-" = no filter)
     else if (A === "spf-target") { ovState.spellTarget = t.value === "*" ? null : t.value; refreshOverlay(); }
     else if (A === "spf-cls") { ovState.spellCls = t.value || null; refreshOverlay(); }
-    else if (A === "spf-kind") { ovState.spellKind = t.value || null; refreshOverlay(); }
     else if (A === "lib-type") { ovState.libType = t.value || null; refreshOverlay(); }
     else if (A === "lib-cls") { ovState.libCls = t.value || null; refreshOverlay(); }
     else if (A === "nether-propval" && ovState && ovState.kind === "netherbuild") {   // commit: clamp to the code range, refresh score

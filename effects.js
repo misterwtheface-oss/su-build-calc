@@ -21,6 +21,8 @@
   //   anointed(specId, key),          perk equipped as an anointment
   //   slotTraitIds(slot),             traits the slot carries (innate/fusion/artifact/nether)
   //   finalStats(slot),               the app's stat pipeline (for rules that read another creature's stats)
+  //   slotClass(slot),                the slot's effective class (fusion → the secondary's)
+  //   SPELL, spellGrants, relicUltimates, ultimateRoutes   granted spells (D.*, see grantedSpells)
   // }
   function create(env) {
     const rules = env.rules || [];
@@ -156,8 +158,44 @@
       return out;
     }
 
+    // ── 5. granted spells ───────────────────────────────────────────────────
+    // Spells a slot gets from an owner instead of a held gem (D.spellGrants / relicUltimates / ultimateRoutes, code S28).
+    // None of them use a spell-gem slot. Per entry: {spellId, mode, when, chance, owner}
+    //   gem   — the creature gains the gem in battle (Rune perks, Zantai's traits, Colorwave, Idolatry → relic Ultimate)
+    //   cast  — a chance to cast it (Fable rank 100, Doomsday, Immobility)
+    //   replaceArtifactSpell — Weapons of Mass Distortion: the artifact's Spell-slot gem becomes the relic's Ultimate
+    // False God part kits (mode boss) never reach a party slot. A perk counts while allocated in the current spec or
+    // anointed; classGate = only creatures of the spell's own class (Rune of Cor → Chaos creatures, Colorwave per class).
+    function grantedSpells(slot) {
+      const c = env.CREA.get(slot.cid); if (!c) return [];
+      const cls = env.slotClass ? env.slotClass(slot) : c.cls;   // a fused creature takes the secondary's class
+      const out = [], seen = new Set();
+      const live = (o) => o.kind === "perk" ? perkRuleRank({ spec: o.spec, key: o.key, via: "spec+anoint" }) > 0
+        : o.kind === "trait" ? slotHasTrait(slot, o.id)
+        : o.kind === "relic" ? !!slot.relic && slot.relic.id === o.id && !ignores("relics") : false;
+      const add = (spellId, g) => {
+        const k = spellId + "|" + g.mode; if (seen.has(k)) return; seen.add(k);
+        out.push({ spellId, mode: g.mode, when: g.when || null, chance: g.chance || null, owner: g.owner });
+      };
+      for (const g of env.spellGrants || []) {
+        if (g.mode === "boss" || !live(g.owner)) continue;
+        if (g.minRank != null && (slot.relic.rank || 0) < g.minRank) continue;
+        for (const id of g.spells) {
+          if (g.classGate && (env.SPELL.get(id) || {}).cls !== cls) continue;
+          add(id, g);
+        }
+      }
+      const ult = slot.relic ? (env.relicUltimates || {})[slot.relic.id] : null;
+      if (ult != null) for (const r of env.ultimateRoutes || []) {
+        if (!live(r.owner)) continue;
+        if (r.mode === "replaceArtifactSpell") { const a = env.resolveArtifact(slot); if (!a || !(a.spells || []).length) continue; }
+        add(ult, r);
+      }
+      return out;
+    }
+
     return { STAT_KEYS, artifactContribs, netherContribs, relicContribs, foldCore, foldBonus, slotBonusPct,
-             ignores, cap, gemSlotMax, equipClasses, battleStart };
+             ignores, cap, gemSlotMax, equipClasses, battleStart, grantedSpells };
   }
 
   // Code-tier rules (prov 'code', decoded from the game's gated blocks) + the global combat pipeline ship lazily in

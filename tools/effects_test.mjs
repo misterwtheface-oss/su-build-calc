@@ -33,7 +33,9 @@ function engine(build, { artifacts = [], nether = [] } = {}) {
     build: () => build, nether: () => nether,
     resolveArtifact: (s) => (s.artifactId != null ? artifacts.find(a => a.id === s.artifactId) : null),
     perkRank, anointed: (sid, key) => build.anoints.some(a => a.specId === sid && a.key === key),
-    slotTraitIds: (s) => { const c = CREA.get(s.cid); return c ? [c.traitId] : []; },
+    slotTraitIds: (s) => { const c = CREA.get(s.cid); return c ? [c.traitId, ...(s.extraTraits || [])] : []; },
+    slotClass: (s) => { const c = CREA.get(s.cid), f = s.fusion != null ? CREA.get(s.fusion) : null; return f ? f.cls : c && c.cls; },
+    SPELL: new Map(D.spells.map(x => [x.id, x])), spellGrants: D.spellGrants, relicUltimates: D.relicUltimates, ultimateRoutes: D.ultimateRoutes,
     finalStats: (s) => { const c = CREA.get(s.cid); if (!c) return null; const st = Object.fromEntries(STAT_KEYS.map(k => [k, c[k]])); return { adj: st, final: Object.fromEntries(STAT_KEYS.map(k => [k, c[k] * 2])) }; },   // final ≠ adj on purpose: the share must read the STORED (adj) stat
   });
 }
@@ -118,6 +120,34 @@ console.log('code tier (effects-code.json)');
   eq('Pressure Point: +2 percent per rank on ally dodge', pp && [pp.op, pp.amount.value, pp.amount.unit, pp.amount.per[0], pp.when.event], ['value.mod', 2, 'percent', 'perk_rank', 'dodge']);
   const crit = (C.pipeline.damage.order || []).find(s => s.step === 'crit');
   eq('pipeline: crit multiplier at equal speed (code) = 2.25', crit && crit.multiplier_at_equal_speed_no_modifiers, 2.25);
+}
+
+console.log('granted spells (spell_owners: perk / trait / relic → spell, no gem slot used)');
+{
+  const spec = (label) => D.specs.find(x => x.label === label);
+  const sn = (id) => D.spells[id].name;
+  const got = (b, i = 0, o) => engine(b, o).grantedSpells(b.slots[i]).map(g => `${sn(g.spellId)}:${g.mode}${g.chance ? g.chance : ''}`);
+  const ofCls = (cls, n = 0) => D.creatures.filter(c => c.cls === cls && c.traitId != null)[n].id;
+  const RK = spec('Rune Knight').id;
+  eq('Rune Knight, Chaos creature → Rune of Cor only', got(B(RK, party(slot(ofCls('Chaos'))))), ['Rune of Cor:gem']);
+  eq('Rune Knight, Sorcery creature → Rune of Sah only', got(B(RK, party(slot(ofCls('Sorcery'))))), ['Rune of Sah:gem']);
+  eq('Rune of Cor at rank 0 → nothing for a Chaos creature', got(B(RK, party(slot(ofCls('Chaos'))), { perkAlloc: { [RK]: { COR: 0 } } })), []);
+  eq('another spec → no Runes', got(B(spec('Animator').id, party(slot(ofCls('Chaos'))))), []);
+  eq('fused Chaos + Death → Death class → Rune of Dun', got(B(RK, party(slot(ofCls('Chaos'), { fusion: ofCls('Death') })))), ['Rune of Dun:gem']);
+  const SW = spec('Spellweaver').id;
+  eq('Spellweaver (both Colorwave perks) → one Colorwave of the creature\'s class', got(B(SW, party(slot(ofCls('Life'))))), ['Colorwave (Life):gem']);
+  const zantai = Object.values(D.traits).find(t => /^Zantai's/.test(t.name));
+  eq('Zantai\'s trait on the creature → Mega Magic', got(B(null, party(slot(ofCls('Nature'), { extraTraits: [zantai.id] })))), ['Mega Magic:gem']);
+  const fable = D.relics.find(r => /^Fable/.test(r.name)).id;
+  eq('Fable rank 99 → nothing; rank 100 → 10% Mega Magic', [got(B(null, party(slot(ofCls('Life'), { relic: { id: fable, rank: 99 } })))),
+    got(B(null, party(slot(ofCls('Life'), { relic: { id: fable, rank: 100 } }))))], [[], ['Mega Magic:cast10']]);
+  eq('Doomsday → 15% Ill Fate on every creature', got(B(spec('Shadowbringer').id, party(slot(ofCls('Life')), slot(ofCls('Death')))), 1), ['Ill Fate:cast15']);
+  const ANT = spec('Antiquarian').id, rel = D.relics[0];
+  eq('Idolatry + relic → the relic\'s Ultimate; no relic → nothing', [got(B(ANT, party(slot(ofCls('Life'), { relic: { id: rel.id, rank: 1 } })))), got(B(ANT, party(slot(ofCls('Life')))))],
+    [[`${sn(D.relicUltimates[rel.id])}:gem`], []]);
+  eq('False God part kits never reach a party slot', got(B(null, party(slot(ofCls('Life'), { extraTraits: [D.spellGrants.find(g => g.mode === 'boss').owner.id] })))), []);
+  eq('pickers: 93 battle-only / never-created spells hidden, 15 Booze kept', [D.spells.filter(x => x.battleOnly || x.unused).length,
+    D.spells.filter(x => !x.battleOnly && !x.unused && /alcohol/.test(x.desc || '')).length], [93, 15]);
 }
 
 console.log(`\n${pass} passed, ${fail} failed`);

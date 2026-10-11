@@ -4,6 +4,23 @@ Every dated change entry, newest first (moved verbatim from Progress.md on 2026-
 to their own section and sorted by their date). Current state and open work: `Progress.md`, `BACKLOG.md`.
 New entries go at the TOP.
 
+## 2026-10-10 — granted spells, holdable-only spell pickers, Jade fix
+- **Granted spells** (`_su_extract` spell_owners.json, `HANDOFF_spell_owners.md`): spells a perk, trait or relic gives a creature
+  now show on that creature automatically and use no spell-gem slot. The Spells button reads "+N" and the Spells page lists
+  them under **Granted** with their trigger and owner. Conditions come from the code: Rune Knight Rune perks → creatures of
+  that Rune's class; Spellweaver Colorwave → the variant of the creature's class (a fused creature uses its secondary's
+  class); Zantai's traits → Mega Magic; Fable rank 100 → 10% Mega Magic; Doomsday → 15% Ill Fate; Immobility → 10% Aggravate;
+  Idolatry → the equipped relic's Ultimate; Weapons of Mass Distortion → the relic's Ultimate replaces the artifact spell.
+  A perk counts while allocated in the current spec or anointed. Engine: `FX.grantedSpells` (effects.js), tested.
+- Owner displays: spell cards under the granting perk (Spec page + perk detail), trait detail, False God body parts
+  (their boss AI kits), and the relic's **Ultimate** on the relic detail. A spell's detail lists what grants it.
+- **Spell pickers** (Spell Gem, Artifact and Nether Stone wizards) offer only holdable gems: 52 battle-only and 41
+  never-created spells are hidden. The kind filter (Ultimate / Rune) became empty and was removed.
+- **Macros** leave out spells the game marks "cannot be cast manually" (Booze, Saving Grace, Lucky Gem, …) and include
+  granted gems.
+- **Jade / Generosity** (`HANDOFF_jade_generosity.md` verdict): the compat data had two extractor bugs. Rebuilt: Jade is now
+  allowed on 685 spells; allowed properties changed for 735 spells.
+
 ## 2026-10-10 — deleted gems / artifacts leave saved builds
 - Deleting a spell gem or artifact now removes it from every saved build, not just the open one. Before, a saved build
   kept the dead id; ids are reused (max + 1) after a reload, so loading that build could equip an unrelated new gem or

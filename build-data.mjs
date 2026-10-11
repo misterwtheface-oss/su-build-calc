@@ -3074,6 +3074,103 @@ for (const e of sobRaw) {
 }
 console.log(`  start-of-battle order: ${startOfBattle.length} rows from ${sobRaw.length} entries · text-only ${startOfBattle.filter(r => r.ref.k === 'text').length} · blacklisted ${sobBlacklisted.length} (${[...new Set(sobBlacklisted)].join(', ')}) · skipped (no app join) ${sobSkipped.length}: ${sobSkipped.join(' | ')}${sobNameDiff.length ? ` · ⚠ trait name mismatches ${sobNameDiff.length}: ${sobNameDiff.join(' | ')}` : ''}`);
 
+// ── Spell gem availability + spells granted by an owner — code (_su_extract spell_owners.json + spell_property_compat.json,
+// S28; code/SPELL_GEM_SOURCES_FINDINGS.md, HANDOFF_spell_owners.md). Per spell:
+//   battleOnly — never a holdable gem: Ultimates (category ULTIMATE) and the reserved ids inv_SpellReserved lists that no shop
+//                sells (431–441 Rune / Mega Magic / Colorwave, 493–543 boss kits). Booze 312–326 (Tavern) and Living 328–352 (Arena)
+//                are reserved too but sold as gems, so they stay. The app hides battleOnly spells from every gem picker.
+//   unused     — one of the 41 spells nothing in the game creates or casts (also hidden; never shown as granted).
+//   noManual   — a real gem that can't be cast manually (inv_SpellCanBeCastManually: Booze, category BEER, or a static id list),
+//                so the macro builder leaves it out.
+// spellGrants: owner (perk spec+key / trait app id / relic app id) → spell ids, with mode gem (the creature gains the gem, no
+// slot used) | cast (a chance to cast) | boss (False God part AI; shown on the part only), classGate (only creatures of the
+// spell's class: Rune perks name the class, Colorwave is "of its own class"), minRank (relic rank text that names the spell).
+// relicUltimates: app relic id → its Ultimate (scr_GetUltimateSpellByRelic); ultimateRoutes: who hands it out.
+const { spellGrants, relicUltimates, ultimateRoutes } = (() => {
+  const so = readJSON(path.join(MODEL, 'spell_owners.json'));
+  const cf = readJSON(path.join(MODEL, 'spell_property_compat.json'));
+  const spByKey = new Map(spells.map(x => [x.key, x]));
+  const codeById = new Map(cf.records.map(r => [r.spell_id, r]));
+  // the reserved-id ranges are code ids; check they still land on the spells the findings name
+  for (const [id, key] of [[431, 'RUNEOFCOR'], [441, 'COLORWAVESORCERY'], [493, 'PLAGUE'], [543, null], [312, null], [352, null]]) {
+    const r = codeById.get(id); if (!r) { err(`spell availability: no code spell ${id}`); continue; }
+    if (key && r.key !== key) err(`spell availability: code spell ${id} is ${r.key}, expected ${key}`);
+  }
+  const NO_MANUAL = new Set([249, 263, 282, 371, 612, 644, 649, 671, 732, 742, 747]);
+  const battleIds = (id) => (id >= 431 && id <= 441) || (id >= 493 && id <= 543);
+  const never = new Set(so.never_created.map(r => r.spell_key));
+  let nBattle = 0, nUnused = 0, nNoManual = 0, nBooze = 0;
+  for (const r of cf.records) {
+    const sp = spByKey.get(r.key); if (!sp) continue;
+    const cat = String(r.category || '');
+    if (never.has(r.key)) { sp.unused = true; nUnused++; }
+    else if (/ULTIMATE/.test(cat) || battleIds(r.spell_id)) { sp.battleOnly = true; nBattle++; }
+    if (/BEER/.test(cat)) nBooze++;
+    if (/BEER/.test(cat) || NO_MANUAL.has(r.spell_id)) { sp.noManual = true; nNoManual++; }
+  }
+  if (nUnused !== never.size) err(`spell availability: ${nUnused}/${never.size} never-created spells joined`);
+  if (nBooze !== 15) err(`spell availability: ${nBooze} Booze (BEER) spells, expected 15`);
+
+  const appSpell = (k) => { const x = spByKey.get(k); if (!x) err(`spell owners: spell ${k} not in the app`); return x ? x.id : null; };
+  const traitByRt = new Map(); for (const id in traits) for (const rt of traits[id].runtimeIds || []) traitByRt.set(rt, +id);
+  const specByLabel = new Map(specs.map(x => [x.label, x]));
+  const relicByName = new Map(relics.map(r => [norm(String(r.name).split(',')[0]), r]));
+  const owner = (o) => {
+    if (o.kind === 'perk') {
+      const sp = specByLabel.get(o.spec), pk = sp && sp.perks.find(x => x.key === o.perk_key);
+      if (!pk) { err(`spell owners: perk ${o.spec} / ${o.perk_key} not in the app`); return null; }
+      return { kind: 'perk', spec: sp.id, key: pk.key };
+    }
+    if (o.kind === 'trait') {
+      const id = traitByRt.get(o.trait_runtime_id);
+      if (id == null) { err(`spell owners: trait runtime ${o.trait_runtime_id} (${o.name}) not in the app`); return null; }
+      return { kind: 'trait', id };
+    }
+    if (o.kind === 'relic') {
+      const r = relicByName.get(norm(o.relic_name));
+      if (!r) { err(`spell owners: relic ${o.relic_name} not in the app`); return null; }
+      return { kind: 'relic', id: r.id };
+    }
+    err(`spell owners: unknown owner kind ${o.kind}`); return null;
+  };
+  const grants = [];
+  for (const g of so.grants) {
+    const ow = owner(g.owner); if (!ow) continue;
+    const ids = g.spells.map(x => appSpell(x.spell_key)).filter(x => x != null);
+    const chance = /(\d+)% chance/.exec(g.how || '');
+    const mode = /False God/.test(g.when || '') ? 'boss' : chance ? 'cast' : 'gem';
+    const out = { owner: ow, spells: ids, mode, when: g.when };
+    if (chance) out.chance = +chance[1];
+    if (/one (at random|of)/.test(g.how || '')) out.oneOf = true;
+    // class gate, read from the owner's own text: "your {CLASS_X} creatures gain" (Rune perks) or "of its own class" (Colorwave)
+    if (ow.kind === 'perk') {
+      const pk = specs.find(x => x.id === ow.spec).perks.find(x => x.key === ow.key);
+      const clsOk = ids.every(id => (pk.desc || '').includes(`{CLASS_${spells[id].cls}}`));
+      if (clsOk || /of its own class/.test(g.how || '')) out.classGate = true;
+    }
+    // relic grants only from the rank whose text names the spell
+    if (ow.kind === 'relic') {
+      const r = relics[ow.id], names = ids.map(id => spells[id].name);
+      const rk = r.ranks.find(x => names.some(n => (x.desc || '').includes(n)));
+      if (!rk) err(`spell owners: relic ${r.name} rank text never names ${names.join(', ')}`); else out.minRank = rk.rank;
+    }
+    grants.push(out);
+  }
+  const ult = {};
+  for (const u of so.ultimate_by_relic) {
+    const r = relicByName.get(norm(u.owner.relic_name)), id = appSpell(u.spell_key);
+    if (!r) err(`relic Ultimate: relic ${u.owner.relic_name} not in the app`); else if (id != null) ult[r.id] = id;
+  }
+  const routes = so.ultimate_grant_routes.filter(r => r.owner.kind !== 'creature_group').map(r => {
+    const ow = owner(r.owner); if (!ow) return null;
+    return { owner: ow, mode: /replaced/.test(r.how) ? 'replaceArtifactSpell' : 'gem', when: 'start of battle' };
+  }).filter(Boolean);
+  console.log(`  spell availability (code): ${nBattle} battle-only · ${nUnused} never created · ${nNoManual} not manually castable · ` +
+    `owners: ${grants.length} grants (${grants.filter(g => g.mode === 'gem').length} gem / ${grants.filter(g => g.mode === 'cast').length} cast / ` +
+    `${grants.filter(g => g.mode === 'boss').length} boss) · ${Object.keys(ult).length}/${relics.length} relic Ultimates · ${routes.length} Ultimate routes`);
+  return { spellGrants: grants, relicUltimates: ult, ultimateRoutes: routes };
+})();
+
 const SU_DATA = {
   meta: {
     generated: new Date().toISOString(),
@@ -3122,6 +3219,9 @@ const SU_DATA = {
   wardrobe,
   spells,
   spellGems,
+  spellGrants,              // owner (perk / trait / relic) → spells it grants (code, S28 spell_owners.json)
+  relicUltimates,           // app relic id → its Ultimate spell id (scr_GetUltimateSpellByRelic)
+  ultimateRoutes,           // perk / trait that hands out the equipped relic's Ultimate
   spellGemTiers,            // spell gem levels 1..15: property slots + icon tier per level (code)
   spellProps,
   personalities: PERSONALITIES,
