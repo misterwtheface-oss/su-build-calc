@@ -38,7 +38,7 @@ write the requirements to `_su_extract/code/HANDOFF_<topic>.md` for the extract 
   the boss against the current build (e.g. flag a party with no Defend answer vs The Ancestor's head, no debuff immunity vs
   Loid). The boss/enemy trait taxonomy (`trait_meta.scope=boss_enemy_flavor`) could feed it; verify tags in-game first.
 - [ ] **Godforge helper** — Godforge (spell-gem enchant / artifact forging) planner.
-- [ ] **Luck / Roll Errata section** driven by the `hasRoll` flags (data shipped 2026-10-07, no UI yet).
+- [ ] **Luck / Roll section (Appendix page, formerly Errata)** driven by the `hasRoll` flags (data shipped 2026-10-07, no UI yet).
 - [ ] Rodian Masters reverse lookup (optional, `HANDOFF_rodian_masters.md`): on a "Master of …" trait / Mastery Sigil, list the
   realms whose Master pool has that race (inverse of `D.masterRealms`).
 - [ ] Spell-gem loadouts (potency tiers already in `damageModel`).

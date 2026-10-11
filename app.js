@@ -2406,6 +2406,7 @@
     TRAIT_SOURCES = { creatureByTrait, itemsByTrait };
     return TRAIT_SOURCES;
   }
+  // Taxonomy page (internal ids say "appendix"/"apx", its old name; the page now titled Appendix is openErrata)
   function openAppendix() {
     ovState = { kind: "appendix", search: "", tags: [], browsing: false, bkScope: null,
       collapsed: new Set(), expanded: new Set(), render: renderAppendix };
@@ -2536,7 +2537,7 @@
       body = body_sections || `<div class="slot-sub" style="padding:10px">Nothing matches${q ? ` “${esc(st.search.trim())}”` : " these filters"}.</div>`;
     }
     return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel">
-      <div class="overlay-header"><h2>Appendix</h2>
+      <div class="overlay-header"><h2>Taxonomy</h2>
         <input class="ovl-search" placeholder="${placeholder}" value="${esc(st.search)}" data-action="appendix-search">
         <button class="ovl-close" data-action="close-ovl">✕</button></div>
       <div class="overlay-body"><div class="ovl-center">
@@ -2589,7 +2590,7 @@
     if (!groups.size) return `<div class="slot-sub" style="padding:10px">No taxonomy tags on this entry.</div>`;
     return [...groups].map(([cat, vals]) => `<div class="etax-group">
       <div class="etax-cat">${esc(cat)}</div>
-      <div class="etax-vals">${vals.map(v => `<button class="etax-tag" data-action="etax-filter" data-k="${esc(v.key)}" title="Filter the Appendix to “${esc(v.val)}”">${esc(v.val)}${FEATURES.taxoSource && v.src ? `<span class="apx-src s-${esc(v.src)}">${esc(v.src)}</span>` : ""}</button>`).join("")}</div>
+      <div class="etax-vals">${vals.map(v => `<button class="etax-tag" data-action="etax-filter" data-k="${esc(v.key)}" title="Filter the Taxonomy to “${esc(v.val)}”">${esc(v.val)}${FEATURES.taxoSource && v.src ? `<span class="apx-src s-${esc(v.src)}">${esc(v.src)}</span>` : ""}</button>`).join("")}</div>
     </div>`).join("");
   }
   // trait provenance sections for the detail page: the granting material (or "No Material Exists"),
@@ -2941,12 +2942,12 @@
     </div></div>`;
   }
 
-  // ── Glossary — Buff / Debuff / Minion reference (name + prose + in-game status glyph from the game). ──
+  // ── Status Effects page (internal ids say "glossary", its old name) — Buff / Debuff / Minion reference (name + prose + in-game status glyph from the game). ──
   function openGlossary() {
     ovState = { kind: "glossary", search: "", collapsed: new Set(GLOSSARY_CATS), render: renderGlossary };
     openOverlay(ovState.render()); maybeFocusSearch(OV);
   }
-  // ── Errata — code-grounded mechanics the game doesn't show (same collapsible layout as the Glossary). ──
+  // ── Appendix page (internal ids say "errata", its old name) — code-grounded mechanics the game doesn't show (same collapsible layout as the Glossary). ──
   function openErrata() {
     ovState = { kind: "errata", search: "", collapsed: new Set(["Resurrection", "StartOfBattle", "NetherDrops", "PandShrine", "RealmBonusMax", "Masters"]), ndDiff: "normal", render: renderErrata };
     openOverlay(ovState.render()); maybeFocusSearch(OV);
@@ -2956,7 +2957,7 @@
     const body = resOrderSection(st, q) + sobSection(st, q) + netherDropSection(st, q) + pandShrineSection(st, q) + realmBonusSection(st, q) + mastersSection(st, q)
       || `<div class="slot-sub" style="padding:10px">Nothing matches “${esc(st.search)}”.</div>`;
     return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel">
-      <div class="overlay-header"><h2>Errata</h2>
+      <div class="overlay-header"><h2>Appendix</h2>
         <input class="ovl-search" placeholder="Search resurrection / realms / races…" value="${esc(st.search)}" data-action="errata-search">
         <button class="ovl-close" data-action="close-ovl">✕</button></div>
       <div class="overlay-body"><div class="ovl-center"><div class="ovl-center-scroll">${body}</div></div></div>
@@ -3046,7 +3047,7 @@
       return `<button class="apx-sec-head apx-cat${open ? "" : " collapsed"}" data-action="gloss-cat-toggle" data-c="${esc(c)}"><span class="apx-sec-caret">${open ? "▾" : "▸"}</span>${esc(c)}s</button>${rows}`;
     }).join("") || `<div class="slot-sub" style="padding:10px">No buff, debuff or minion matches “${esc(st.search)}”.</div>`;
     return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel">
-      <div class="overlay-header"><h2>Glossary</h2>
+      <div class="overlay-header"><h2>Status Effects</h2>
         <input class="ovl-search" placeholder="Search buffs / debuffs / minions…" value="${esc(st.search)}" data-action="gloss-search">
         <button class="ovl-close" data-action="close-ovl">✕</button></div>
       <div class="overlay-body"><div class="ovl-center"><div class="ovl-center-scroll">${body}</div></div></div>

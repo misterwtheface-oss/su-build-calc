@@ -103,6 +103,8 @@ source of truth), called by both `build-data.mjs` and the **`.githooks/pre-commi
 - **Bosses** (2026-10-11, Menu → Bosses, `D.bosses` from `_su_extract` bosses.json): portrait grid by boss type → boss page
   (formation, callouts, threat chips, base stats, anointment specs, each part's trait + code turn script + passives, Runes, Lore).
   Step lines are rendered from the code step list (`bossStepHtml`), never from trait text. False Gods only so far.
+- **Page names (renamed 2026-10-11):** Taxonomy (was Appendix; ids `appendix`/`apx`), Status Effects (was Glossary; ids
+  `glossary`), Appendix (was Errata; ids `errata`). Older notes below use the old names.
 - **Glossary / Errata** (2026-10-10): Glossary = Buffs / Debuffs / Minions only. Errata (menu, below Glossary) = the
   code-grounded tables: Resurrection Order, Start of Battle Order, Nether Stone Drops, Pandemonium Shrine, Maximum Realm
   Bonus, Rodian Masters (`D.masterRealms`). Same collapsible layout; section functions are shared (`*Section(st, q)`).
