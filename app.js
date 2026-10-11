@@ -2615,8 +2615,25 @@
 
   // ── Glossary — Buff / Debuff / Minion reference (name + prose + in-game status glyph from the game). ──
   function openGlossary() {
-    ovState = { kind: "glossary", search: "", collapsed: new Set([...GLOSSARY_CATS, "Resurrection", "NetherDrops", "PandShrine", "StartOfBattle"]), ndDiff: "normal", render: renderGlossary };
+    ovState = { kind: "glossary", search: "", collapsed: new Set(GLOSSARY_CATS), render: renderGlossary };
     openOverlay(ovState.render()); maybeFocusSearch(OV);
+  }
+  // ── Errata — code-grounded mechanics the game doesn't show (same collapsible layout as the Glossary). ──
+  function openErrata() {
+    ovState = { kind: "errata", search: "", collapsed: new Set(["Resurrection", "NetherDrops", "PandShrine", "StartOfBattle", "Masters"]), ndDiff: "normal", render: renderErrata };
+    openOverlay(ovState.render()); maybeFocusSearch(OV);
+  }
+  function renderErrata() {
+    const st = ovState, q = st.search.trim().toLowerCase();
+    const body = resOrderSection(st, q) + sobSection(st, q) + netherDropSection(st, q) + pandShrineSection(st, q) + realmBonusSection(st, q) + mastersSection(st, q)
+      || `<div class="slot-sub" style="padding:10px">Nothing matches “${esc(st.search)}”.</div>`;
+    return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel">
+      <div class="overlay-header"><h2>Errata</h2>
+        <input class="ovl-search" placeholder="Search resurrection / realms / races…" value="${esc(st.search)}" data-action="errata-search">
+        <button class="ovl-close" data-action="close-ovl">✕</button></div>
+      <div class="overlay-body"><div class="ovl-center"><div class="ovl-center-scroll">${body}</div></div></div>
+      <div class="overlay-footer"><span class="foot-info"></span><button class="btn-confirm" data-action="close-ovl">Done</button></div>
+    </div></div>`;
   }
   const GLOSSARY_CATS = ["Buff", "Debuff", "Minion"];
   // ── Resurrection order — bc_OnDeath, in execution order (_su_extract code/REVIVE_CHAIN_FINDINGS.md).
@@ -2699,10 +2716,10 @@
         <div class="apx-iconcol">${e.icon ? `<div class="apx-crea"><img src="${esc(e.icon)}" alt=""></div>` : ""}${exclBox(e)}</div>
         <div class="perk-line-body"><div class="perk-line-head"><b>${esc(e.name)}</b></div><div class="perk-desc">${esc(e.desc)}</div></div></div>`).join("")}</div>` : "";
       return `<button class="apx-sec-head apx-cat${open ? "" : " collapsed"}" data-action="gloss-cat-toggle" data-c="${esc(c)}"><span class="apx-sec-caret">${open ? "▾" : "▸"}</span>${esc(c)}s</button>${rows}`;
-    }).join("") + resOrderSection(st, q) + sobSection(st, q) + netherDropSection(st, q) + pandShrineSection(st, q) + realmBonusSection(st, q) || `<div class="slot-sub" style="padding:10px">No buff, debuff or minion matches “${esc(st.search)}”.</div>`;
+    }).join("") || `<div class="slot-sub" style="padding:10px">No buff, debuff or minion matches “${esc(st.search)}”.</div>`;
     return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel">
       <div class="overlay-header"><h2>Glossary</h2>
-        <input class="ovl-search" placeholder="Search buffs / debuffs / minions / resurrection…" value="${esc(st.search)}" data-action="gloss-search">
+        <input class="ovl-search" placeholder="Search buffs / debuffs / minions…" value="${esc(st.search)}" data-action="gloss-search">
         <button class="ovl-close" data-action="close-ovl">✕</button></div>
       <div class="overlay-body"><div class="ovl-center"><div class="ovl-center-scroll">${body}</div></div></div>
       <div class="overlay-footer"><span class="foot-info"></span><button class="btn-confirm" data-action="close-ovl">Done</button></div>
@@ -2826,6 +2843,24 @@
         ${Object.entries(M).map(([ri, m]) => `<div class="nd-row"><span>${ri}</span><span>${m.deep}%</span><span>${m.below}%</span></div>`).join("")}
       </div></div>` : "";
     return `<button class="apx-sec-head apx-cat${open ? "" : " collapsed"}" data-action="gloss-cat-toggle" data-c="${key}"><span class="apx-sec-caret">${open ? "▾" : "▸"}</span>Maximum Realm Bonus</button>${body}`;
+  }
+  // Rodian Creature Masters per realm (code: D.masterRealms from master_realms.json, _su_extract code/MASTER_SPAWN_FINDINGS.md).
+  // Master-only races (scr_GetMasterRaces extras, not realm spawns) get a dashed chip.
+  function mastersSection(st, q) {
+    const M = D.masterRealms || []; if (!M.length) return "";
+    const all = q && "rodian creature masters".includes(q);
+    const list = M.filter(m => !q || all || m.realm.toLowerCase().includes(q) || m.pool.some(r => r.toLowerCase().includes(q)));
+    if (!list.length) return "";
+    const key = "Masters", open = q ? true : !st.collapsed.has(key);
+    const icon = (realm) => { const r = D.realms.find(x => x.realm === realm); return r && r.icon ? spriteImg(r.icon, "px") : ""; };
+    const chip = (m, race) => { const ic = D.raceIcons && D.raceIcons[race], ex = m.extra.includes(race);
+      return `<span class="realm-race${ex ? " mr-extra" : ""}"${ex ? ` title="Master only"` : ""}>${ic ? spriteImg(ic, "px") : ""}<span>${esc(race)}</span></span>`; };
+    const body = open ? `<div class="nd-wrap"><div class="nd-table">
+        <div class="nd-row mr-row nd-hd"><span>Realm</span><span>Masters</span></div>
+        ${list.map(m => `<div class="nd-row mr-row"><span class="mr-realm">${icon(m.realm)}<b>${esc(m.realm)}</b></span>
+          <span class="mr-pool">${m.pool.map(r => chip(m, r)).join("")}</span></div>`).join("")}
+      </div><div class="slot-sub nd-note">Appears only at your deepest Realm Depth, once per depth, as the race in the realm's list you've defeated the fewest Masters of. Any realm: 1% chance of an Alemental or Construct Master, 1% of a Dumpling or Godspawn; first talking to it has a 1% chance to turn it into a Mimic Master. Nether realms: a random race from the list, or 3% chance of a Dumpling, Alemental or Construct.</div></div>` : "";
+    return `<button class="apx-sec-head apx-cat${open ? "" : " collapsed"}" data-action="gloss-cat-toggle" data-c="${key}"><span class="apx-sec-caret">${open ? "▾" : "▸"}</span>Rodian Masters</button>${body}`;
   }
   function resOrderSection(st, q) {
     const rows = resOrderRows().filter(r => !q || r.name.toLowerCase().includes(q) || (r.desc || "").toLowerCase().includes(q));
@@ -5011,6 +5046,8 @@
       case "open-riddle": openRiddle(); break;
       case "riddle-search": break;   // handled in onInput
       case "open-glossary": openGlossary(); break;
+      case "open-errata": openErrata(); break;
+      case "errata-search": break;   // handled in onInput
       case "gloss-search": break;    // handled in onInput
       case "open-projects": if (FEATURES.projects) openProjects(); break;
       case "open-netherhelp": openNetherHelper(); break;
@@ -5461,7 +5498,7 @@
     if (A === "share-name") { ovState.name = v; return; }
     // search fields — live filter without losing caret
     const searchMap = { "crea-search": [OV, ovState], "spec-search": [OV, ovState], "artb-search": [OV, ovState],
-      "relic-search": [OV, ovState], "cards-search": [OV, ovState], "anoint-search": [OV, ovState], "nether-search": [OV, ovState], "sg-search": [OV, ovState], "appendix-search": [OV, ovState], "shop-search": [OV, ovState], "realm-search": [OV, ovState], "riddle-search": [OV, ovState], "gloss-search": [OV, ovState], "proj-search": [OV, ovState], "lib-search": [OV, ovState], "facet-search": [DOV, dovState], "perk-search": [DOV, dovState], "pers-search": [DOV, dovState], "iconpick-search": [DOV, dovState], "skin-search": [DOV, dovState] };
+      "relic-search": [OV, ovState], "cards-search": [OV, ovState], "anoint-search": [OV, ovState], "nether-search": [OV, ovState], "sg-search": [OV, ovState], "appendix-search": [OV, ovState], "shop-search": [OV, ovState], "realm-search": [OV, ovState], "riddle-search": [OV, ovState], "gloss-search": [OV, ovState], "errata-search": [OV, ovState], "proj-search": [OV, ovState], "lib-search": [OV, ovState], "facet-search": [DOV, dovState], "perk-search": [DOV, dovState], "pers-search": [DOV, dovState], "iconpick-search": [DOV, dovState], "skin-search": [DOV, dovState] };
     if (searchMap[A]) {
       const [root, state] = searchMap[A]; state.search = v;
       if (A === "crea-search") resetCreaPage();   // new query → back to page 1

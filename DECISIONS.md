@@ -28,6 +28,9 @@ Nature=gem_nature, Chaos=gem_chaos, Sorcery=gem_sorceryB(blue), Death=gem_sorcer
 - Nether spells carry ONLY a trigger (no visible chance); migration strips the old `chance` (user).
 
 ## Creatures and UI
+- **Glossary vs Errata (2026-10-10):** the Glossary holds only Buffs, Debuffs and Minions. Every other reference table
+  (resurrection / start-of-battle order, drop and shrine odds, realm bonus, Rodian Masters, and new ones) goes on the
+  Errata page, same layout; its menu button sits right below Glossary.
 - **Battle-only spells (2026-10-10):** spells that can't be held as a gem (Ultimates, Runes, Mega Magic, Colorwave, False God
   kits) and the 41 never-created spells are hidden from every spell picker. Battle-only spells show up automatically on the
   creatures they belong to, under the owner's condition, without using a spell-gem slot (e.g. Rune of Cor only on Chaos

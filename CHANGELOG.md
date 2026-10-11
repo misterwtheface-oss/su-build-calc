@@ -4,6 +4,17 @@ Every dated change entry, newest first (moved verbatim from Progress.md on 2026-
 to their own section and sorted by their date). Current state and open work: `Progress.md`, `BACKLOG.md`.
 New entries go at the TOP.
 
+## 2026-10-10 — Errata page + Rodian Masters
+- **Errata** (menu, right below Glossary): new page with the Glossary's layout and search. It takes every Glossary section
+  except Buffs / Debuffs / Minions: Resurrection Order, Start of Battle Order, Nether Stone Drops, Pandemonium Shrine,
+  Maximum Realm Bonus. The Glossary now holds only Buffs, Debuffs and Minions.
+- **Rodian Masters** (new Errata table; `_su_extract` master_realms.json, `HANDOFF_rodian_masters.md`): one row per realm
+  (30) with the races its Creature Master can be, as race-icon chips; Master-only races (not realm spawns) get a dashed
+  chip. Search matches a realm or any race ("Dragon" → Fae Lands, Temple of Lies). Note line: deepest depth only, fewest
+  defeated race, the 1% rare / Mimic rolls and the Nether rule.
+- `build-data.mjs` ships `masterRealms` (joined by realm name, `&` ↔ `and`); the build fails if a pool race has no
+  "Master of …" trait or a realm doesn't join (30 realms · 151 races). No community CSV has a realm ↔ Master column.
+
 ## 2026-10-10 — granted spells, holdable-only spell pickers, Jade fix
 - **Granted spells** (`_su_extract` spell_owners.json, `HANDOFF_spell_owners.md`): spells a perk, trait or relic gives a creature
   now show on that creature automatically and use no spell-gem slot. The Spells button reads "+N" and the Spells page lists

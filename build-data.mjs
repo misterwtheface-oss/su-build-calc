@@ -3171,6 +3171,27 @@ const { spellGrants, relicUltimates, ultimateRoutes } = (() => {
   return { spellGrants: grants, relicUltimates: ult, ultimateRoutes: routes };
 })();
 
+// ── Rodian Creature Masters per realm — code (_su_extract master_realms.json, S28–S28c; code/MASTER_SPAWN_FINDINGS.md,
+// HANDOFF_rodian_masters.md). pool = the realm's spawn races (scr_GetRaceArrayByRealm) + Master-only extras
+// (scr_GetMasterRaces), in code order. Joined to the app realm by name (& ↔ and); every pool race must have its Master trait.
+const masterRealms = (() => {
+  const mr = readJSON(path.join(MODEL, 'master_realms.json'));
+  const amp = (x) => String(x).replace(/\s*&\s*/g, ' and ');
+  const appRealm = new Map(realms.map(r => [amp(r.realm), r.realm]));
+  const masters = new Set(Object.values(traits).filter(t => /^Master of /.test(t.name)).map(t => t.name.slice(10).toLowerCase()));
+  const plurals = (r) => { r = r.toLowerCase(); return [r, r + 's', r + 'es', r.replace(/y$/, 'ies'), r.replace(/f$/, 'ves'), r.replace(/man$/, 'men')]; };
+  const out = [], races = new Set();
+  for (const [name, r] of Object.entries(mr.realms)) {
+    const realm = appRealm.get(amp(name));
+    if (!realm) { err(`master realms: realm ${name} not in the app`); continue; }
+    for (const x of r.pool) { races.add(x); if (!plurals(x).some(p => masters.has(p))) err(`master realms: no Master trait for ${x} (${name})`); }
+    out.push({ realm, pool: r.pool, extra: r.master_extra || [] });
+  }
+  if (out.length !== realms.length) err(`master realms: ${out.length}/${realms.length} realms`);
+  console.log(`  master realms: ${out.length} · races ${races.size}`);
+  return out.sort((a, b) => a.realm.localeCompare(b.realm));
+})();
+
 const SU_DATA = {
   meta: {
     generated: new Date().toISOString(),
@@ -3219,6 +3240,7 @@ const SU_DATA = {
   wardrobe,
   spells,
   spellGems,
+  masterRealms,             // realm → races its Rodian Creature Master can be (code, master_realms.json)
   spellGrants,              // owner (perk / trait / relic) → spells it grants (code, S28 spell_owners.json)
   relicUltimates,           // app relic id → its Ultimate spell id (scr_GetUltimateSpellByRelic)
   ultimateRoutes,           // perk / trait that hands out the equipped relic's Ultimate

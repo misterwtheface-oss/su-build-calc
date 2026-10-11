@@ -39,7 +39,9 @@ write the requirements to `_su_extract/code/HANDOFF_<topic>.md` for the extract 
 - [ ] **Boss guides (per-boss detail pages).** Boss-only traits already render at the bottom of the Appendix grouped by
   `ownerGroup` (app.js `bossTraitRows`); the per-boss detail pages from the original item are not built.
 - [ ] **Godforge helper** — Godforge (spell-gem enchant / artifact forging) planner.
-- [ ] **Luck / Roll glossary section** driven by the `hasRoll` flags (data shipped 2026-10-07, no UI yet).
+- [ ] **Luck / Roll Errata section** driven by the `hasRoll` flags (data shipped 2026-10-07, no UI yet).
+- [ ] Rodian Masters reverse lookup (optional, `HANDOFF_rodian_masters.md`): on a "Master of …" trait / Mastery Sigil, list the
+  realms whose Master pool has that race (inverse of `D.masterRealms`).
 - [ ] Spell-gem loadouts (potency tiers already in `damageModel`).
 - [ ] Entity detail: optional "shared by N party members" on the trait view.
 

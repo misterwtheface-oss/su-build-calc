@@ -100,6 +100,9 @@ source of truth), called by both `build-data.mjs` and the **`.githooks/pre-commi
   Fable / Doomsday / Immobility chance casts, relic Ultimate via Idolatry / Weapons of Mass Distortion) come from
   `FX.grantedSpells(slot)` (EFFECT_ENGINE.md): "Spells +N" button, **Granted** section on the Spells page, no slot used;
   owners show them as cards (perk list, trait / False God part / relic detail; spell detail "Granted by").
+- **Glossary / Errata** (2026-10-10): Glossary = Buffs / Debuffs / Minions only. Errata (menu, below Glossary) = the
+  code-grounded tables: Resurrection Order, Start of Battle Order, Nether Stone Drops, Pandemonium Shrine, Maximum Realm
+  Bonus, Rodian Masters (`D.masterRealms`). Same collapsible layout; section functions are shared (`*Section(st, q)`).
 - **Deleted gems / artifacts** are pruned from the current and every saved build (on delete, load and startup).
 - **Synergy** (Menu → Synergy): one overlay, **Matrix** ⇆ **List** toggle. Matrix = members (Spec /
   collapsed Anointments / creatures — each expandable to its perks/anoints/traits) × tags; cell = that
@@ -124,6 +127,7 @@ source of truth), called by both `build-data.mjs` and the **`.githooks/pre-commi
   `SPEC_PLAN.md`, pipeline in `WIKI_CONTEXT.md`.
 
 ### Shipped since 2026-09-24 (headings from CHANGELOG.md; details there)
+- 2026-10-10 — Errata page + Rodian Masters
 - 2026-10-10 — granted spells, holdable-only spell pickers, Jade fix
 - 2026-10-10 — deleted gems / artifacts leave saved builds
 - 2026-10-10 — realm yield model · realm favor text tags · sort toggles can be removed · Spec page footer
