@@ -11,6 +11,7 @@ New entries go at the TOP.
   93 → 42 (Ultimates, Runes, Mega Magic, Colorwaves). Test updated.
 
 ## 2026-10-11 — Bosses page: rune advice (Recommended / Avoid)
+- Section order (user): Threats, Base stats, Body parts, **Runes**, Rewards, Lore.
 - **Runes** is back on False God pages, after Threats, as two lists: **Recommended** and **Avoid**. Runes sharing a reason sit
   in one container under that reason. The calls come from the boss's code kit (`bossRuneAdvice`): can it be killed (Jotun:
   every defensive rune is a free reward bonus), which stats its kit uses (More Attack is safe vs Impington and Saint Althea),
