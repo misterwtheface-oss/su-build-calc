@@ -10,6 +10,11 @@ New entries go at the TOP.
   `obj_anointpicker`, extract `spell_owners.json` `false_god_inscriptions`). They now show in every gem picker. Hidden list:
   93 → 42 (Ultimates, Runes, Mega Magic, Colorwaves). Test updated.
 
+## 2026-10-11 — Bosses page: part order follows the formation
+- Body-part cards (and the steps inside each Threat) now run head, body, arms, shoulders: formation grid 2, 5, 4, 6, 1, 3.
+  Bosses with other parts use whatever sits there (Hydranox: head, body, then the other heads; Caliban: head, heart, hands,
+  orbs; Mindwurm: head, body, saddle, tail, orbs).
+
 ## 2026-10-11 — Bosses page: Threats and Rewards sections
 - **Threats** replaces the threat chips and the timer callout: one container per major threat, headed by its name, holding
   the steps that cause it (part name → its card) and a plain-language "why it matters". Found from the code's step kinds only:

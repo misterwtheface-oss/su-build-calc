@@ -1303,6 +1303,10 @@
   const BOSSES = (D.bosses && D.bosses.encounters) || [];
   const BOSS_BY_KEY = new Map(BOSSES.map(e => [e.key, e]));
   const COND_BY_KEY = new Map((D.conditions || []).filter(c => c.cat !== "Minion").map(c => [c.key, c]));
+  // card order follows the formation: head (grid 2), body (5), arms (4, 6), shoulders (1, 3); bosses with other parts
+  // (Hydranox's heads, Caliban's orbs) use whatever sits in those grid positions
+  const BOSS_GRID_ORDER = [2, 5, 4, 6, 1, 3];
+  const bossUnitsOrdered = (e) => [...e.units].sort((a, b) => BOSS_GRID_ORDER.indexOf(a.grid) - BOSS_GRID_ORDER.indexOf(b.grid));
   const bossImg = (e) => { const g = FG_BY_KEY.get(e.key); return g ? g.img : null; };
   // the six parts drawn edge to edge in battle order (grid 1–3 top row, 4–6 bottom) so they form the whole creature; each
   // trimmed frame sits at its code offset inside its cell. jump → each part links to its card below.
@@ -1405,7 +1409,7 @@
   function bossThreats(e, part) {
     const map = new Map(), order = [];
     const add = (k, u, s, when) => { if (!map.has(k)) { map.set(k, []); order.push(k); } map.get(k).push({ u, s, when }); };
-    for (const u of e.units) for (const [when, arr] of [["turn", bossMerge(u.turn || [])], ["always", bossMerge(u.passives)]]) for (const s of arr) {
+    for (const u of bossUnitsOrdered(e)) for (const [when, arr] of [["turn", bossMerge(u.turn || [])], ["always", bossMerge(u.passives)]]) for (const s of arr) {
       const f = String(s.formula || "");
       if (s.kind === "ohko") add(s.target === "each_player_not_defending" ? "ohko_def" : "ohko", u, s, when);
       else if (s.cond && ["keep_condition", "intensify_condition", "damage_bonus_vs_condition"].includes(s.kind)) add(`cond:${s.cond}`, u, s, when);
@@ -1500,7 +1504,7 @@
     const sameStats = e.units.every(u => STAT_KEYS.every(k => u.stats[k] === e.units[0].stats[k]));
     const statLine = (s) => `<div class="boss-stats">${STAT_KEYS.map(k => `<span><b>${s[k]}</b> ${STAT_LABEL[k]}</span>`).join("")}</div>`;
     const lines = (arr) => `<ul class="boss-steps">${bossMerge(arr).map(s => s.kind === "note" ? `<li class="fx-clarify">${esc(s.text)}</li>` : `<li>${bossStepHtml(s, part)}</li>`).join("")}</ul>`;
-    const units = e.units.map(u => {
+    const units = bossUnitsOrdered(e).map(u => {
       const tr = u.traitId != null ? TRAIT[u.traitId] : null;
       return `<div class="boss-unit" id="boss-unit-${u.slot}">
         <div class="boss-unit-head"><span class="boss-unit-spr">${u.img ? spriteImg(u.img, "px") : ""}</span>
