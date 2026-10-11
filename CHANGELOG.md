@@ -4,6 +4,12 @@ Every dated change entry, newest first (moved verbatim from Progress.md on 2026-
 to their own section and sorted by their date). Current state and open work: `Progress.md`, `BACKLOG.md`.
 New entries go at the TOP.
 
+## 2026-10-11 — False God spells are pickable gems again
+- The 51 False God spells (Plague, Laser Beam, Mementos, Caliban's Orbs, …) were hidden from the gem pickers as "battle-only /
+  never created". Wrong: each False God drops its list as Inscriptions (one random unknown spell per anointment pick; code
+  `obj_anointpicker`, extract `spell_owners.json` `false_god_inscriptions`). They now show in every gem picker. Hidden list:
+  93 → 42 (Ultimates, Runes, Mega Magic, Colorwaves). Test updated.
+
 ## 2026-10-11 — Bosses page: whole-creature formation, spell containers, no Runes
 - Formation: the six battle frames are drawn edge to edge (no cell containers, no gaps) so they form the whole False God;
   each part still links to its card. The exported PNGs are trimmed, so each frame is placed at its code offset inside its

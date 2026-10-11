@@ -3076,10 +3076,11 @@ console.log(`  start-of-battle order: ${startOfBattle.length} rows from ${sobRaw
 
 // ── Spell gem availability + spells granted by an owner — code (_su_extract spell_owners.json + spell_property_compat.json,
 // S28; code/SPELL_GEM_SOURCES_FINDINGS.md, HANDOFF_spell_owners.md). Per spell:
-//   battleOnly — never a holdable gem: Ultimates (category ULTIMATE) and the reserved ids inv_SpellReserved lists that no shop
-//                sells (431–441 Rune / Mega Magic / Colorwave, 493–543 boss kits). Booze 312–326 (Tavern) and Living 328–352 (Arena)
-//                are reserved too but sold as gems, so they stay. The app hides battleOnly spells from every gem picker.
-//   unused     — one of the 41 spells nothing in the game creates or casts (also hidden; never shown as granted).
+//   battleOnly — never a holdable gem: Ultimates (category ULTIMATE) and the reserved ids 431–441 (Rune / Mega Magic /
+//                Colorwave). Booze 312–326 (Tavern) and Living 328–352 (Arena) are reserved but sold as gems, and the boss spells
+//                493–543 are False God Inscriptions (spell recipes from the anointment pick, spell_owners.json
+//                false_god_inscriptions; Plague / Devastation also spec recipes), so they stay. Hidden from every gem picker.
+//                Sandbox mode is never a signal (user ruling 2026-10-11).
 //   noManual   — a real gem that can't be cast manually (inv_SpellCanBeCastManually: Booze, category BEER, or a static id list),
 //                so the macro builder leaves it out.
 // spellGrants: owner (perk spec+key / trait app id / relic app id) → spell ids, with mode gem (the creature gains the gem, no
@@ -3097,18 +3098,19 @@ const { spellGrants, relicUltimates, ultimateRoutes } = (() => {
     if (key && r.key !== key) err(`spell availability: code spell ${id} is ${r.key}, expected ${key}`);
   }
   const NO_MANUAL = new Set([249, 263, 282, 371, 612, 644, 649, 671, 732, 742, 747]);
-  const battleIds = (id) => (id >= 431 && id <= 441) || (id >= 493 && id <= 543);
-  const never = new Set(so.never_created.map(r => r.spell_key));
-  let nBattle = 0, nUnused = 0, nNoManual = 0, nBooze = 0;
+  const battleIds = (id) => id >= 431 && id <= 441;
+  const insc = new Set(so.false_god_inscriptions.by_god.flatMap(g => g.spells.map(x => x.spell_key)));
+  if (insc.size !== 51) err(`spell availability: ${insc.size} False God Inscription spells, expected 51`);
+  let nBattle = 0, nNoManual = 0, nBooze = 0, nInsc = 0;
   for (const r of cf.records) {
     const sp = spByKey.get(r.key); if (!sp) continue;
     const cat = String(r.category || '');
-    if (never.has(r.key)) { sp.unused = true; nUnused++; }
-    else if (/ULTIMATE/.test(cat) || battleIds(r.spell_id)) { sp.battleOnly = true; nBattle++; }
+    if (insc.has(r.key)) nInsc++;
+    if (/ULTIMATE/.test(cat) || battleIds(r.spell_id)) { sp.battleOnly = true; nBattle++; }
     if (/BEER/.test(cat)) nBooze++;
     if (/BEER/.test(cat) || NO_MANUAL.has(r.spell_id)) { sp.noManual = true; nNoManual++; }
   }
-  if (nUnused !== never.size) err(`spell availability: ${nUnused}/${never.size} never-created spells joined`);
+  if (nInsc !== insc.size) err(`spell availability: ${nInsc}/${insc.size} False God Inscription spells joined`);
   if (nBooze !== 15) err(`spell availability: ${nBooze} Booze (BEER) spells, expected 15`);
 
   const appSpell = (k) => { const x = spByKey.get(k); if (!x) err(`spell owners: spell ${k} not in the app`); return x ? x.id : null; };
@@ -3165,7 +3167,7 @@ const { spellGrants, relicUltimates, ultimateRoutes } = (() => {
     const ow = owner(r.owner); if (!ow) return null;
     return { owner: ow, mode: /replaced/.test(r.how) ? 'replaceArtifactSpell' : 'gem', when: 'start of battle' };
   }).filter(Boolean);
-  console.log(`  spell availability (code): ${nBattle} battle-only · ${nUnused} never created · ${nNoManual} not manually castable · ` +
+  console.log(`  spell availability (code): ${nBattle} battle-only · ${nInsc} False God Inscription spells · ${nNoManual} not manually castable · ` +
     `owners: ${grants.length} grants (${grants.filter(g => g.mode === 'gem').length} gem / ${grants.filter(g => g.mode === 'cast').length} cast / ` +
     `${grants.filter(g => g.mode === 'boss').length} boss) · ${Object.keys(ult).length}/${relics.length} relic Ultimates · ${routes.length} Ultimate routes`);
   return { spellGrants: grants, relicUltimates: ult, ultimateRoutes: routes };

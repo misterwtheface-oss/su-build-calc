@@ -146,8 +146,9 @@ console.log('granted spells (spell_owners: perk / trait / relic → spell, no ge
   eq('Idolatry + relic → the relic\'s Ultimate; no relic → nothing', [got(B(ANT, party(slot(ofCls('Life'), { relic: { id: rel.id, rank: 1 } })))), got(B(ANT, party(slot(ofCls('Life')))))],
     [[`${sn(D.relicUltimates[rel.id])}:gem`], []]);
   eq('False God part kits never reach a party slot', got(B(null, party(slot(ofCls('Life'), { extraTraits: [D.spellGrants.find(g => g.mode === 'boss').owner.id] })))), []);
-  eq('pickers: 93 battle-only / never-created spells hidden, 15 Booze kept', [D.spells.filter(x => x.battleOnly || x.unused).length,
-    D.spells.filter(x => !x.battleOnly && !x.unused && /alcohol/.test(x.desc || '')).length], [93, 15]);
+  eq('pickers: 42 battle-only spells hidden, 15 Booze kept, 51 False God Inscription spells pickable', [D.spells.filter(x => x.battleOnly || x.unused).length,
+    D.spells.filter(x => !x.battleOnly && !x.unused && /alcohol/.test(x.desc || '')).length,
+    D.spells.filter(x => !x.battleOnly && !x.unused && /False Gods \(/.test(x.source || '')).length], [42, 15, 51]);
 }
 
 console.log(`\n${pass} passed, ${fail} failed`);

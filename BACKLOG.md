@@ -121,6 +121,9 @@ Known limits + planned work, roughly in priority order (all now cheap to impleme
 - [ ] **Boss feature — Nether Bosses + Gate of the Gods** (False Gods shipped 2026-10-11): when the extract adds `nether_boss` /
   `gate_god` encounters to bosses.json, rebuild. New step kinds need a line in `bossStepHtml` (app.js); new notes need a plain
   rewrite in `NOTE_PLAIN` (build-data fails on code-like notes); non-False-God portraits need a source (`bossImg`).
+- [ ] **Bosses page: Inscriptions** — bosses.json now has `encounters[].inscriptions` (the god's 5–6 Inscription spells, one
+  random unknown per anointment pick; `other_routes` / `only_from_this_boss` per spell) and per cast-spell `player_access` /
+  `boss_exclusive`. Show the list on each boss page as spell-gem containers. (Data only so far, 2026-10-11.)
 - [ ] In-game checks the Bosses page shows as unverified: Jotun's 24-turn count, Mindwurm saddle "nothing" pick, Nebodar
   "Burned can't be avoided".
 - [ ] **Misery → Perdition** (2026-10-11): owner set provisionally (`user-pending`, hidden). When the user confirms in-game, drop
