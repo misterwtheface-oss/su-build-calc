@@ -7,7 +7,7 @@ New entries go at the TOP.
 ## 2026-10-10 — Errata page + Rodian Masters
 - **Errata** (menu, right below Glossary): new page with the Glossary's layout and search. It takes every Glossary section
   except Buffs / Debuffs / Minions: Resurrection Order, Start of Battle Order, Nether Stone Drops, Pandemonium Shrine,
-  Maximum Realm Bonus. The Glossary now holds only Buffs, Debuffs and Minions.
+  Maximum Realm Bonus. The Glossary now holds only Buffs, Debuffs and Minions. Every Errata section starts collapsed.
 - **Rodian Masters** (new Errata table; `_su_extract` master_realms.json, `HANDOFF_rodian_masters.md`): one row per realm
   (30) with the races its Creature Master can be, as race-icon chips; Master-only races (not realm spawns) get a dashed
   chip. Search matches a realm or any race ("Dragon" → Fae Lands, Temple of Lies). Note line: deepest depth only, fewest

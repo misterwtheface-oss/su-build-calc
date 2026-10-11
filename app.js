@@ -2620,7 +2620,7 @@
   }
   // ── Errata — code-grounded mechanics the game doesn't show (same collapsible layout as the Glossary). ──
   function openErrata() {
-    ovState = { kind: "errata", search: "", collapsed: new Set(["Resurrection", "NetherDrops", "PandShrine", "StartOfBattle", "Masters"]), ndDiff: "normal", render: renderErrata };
+    ovState = { kind: "errata", search: "", collapsed: new Set(["Resurrection", "StartOfBattle", "NetherDrops", "PandShrine", "RealmBonusMax", "Masters"]), ndDiff: "normal", render: renderErrata };
     openOverlay(ovState.render()); maybeFocusSearch(OV);
   }
   function renderErrata() {
