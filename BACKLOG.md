@@ -34,10 +34,9 @@ write the requirements to `_su_extract/code/HANDOFF_<topic>.md` for the extract 
 - [ ] **DPS / effective-stat simulation** from `damageModel` (spell & melee, crit/dodge, defending). Class advantage is now
   code-known (×2 / ×0.5, `_su_extract/code/CLASS_ADVANTAGE.md`); expose it as a toggle. Effect formulas for in-app compute:
   `_su_extract/code/EFFECT_FORMULAS.md` (code tier already in EFFECT_ENGINE.md).
-- [ ] **Boss-prep planner** — surface the boss/enemy trait taxo (`trait_meta.scope=boss_enemy_flavor`, already in
-  `data.js`) as a "prepare for this fight / what to expect" view. Verify tags in-game first.
-- [ ] **Boss guides (per-boss detail pages).** Boss-only traits already render at the bottom of the Appendix grouped by
-  `ownerGroup` (app.js `bossTraitRows`); the per-boss detail pages from the original item are not built.
+- [ ] **Boss-prep planner, part 2** — the Bosses page (2026-10-11) covers "what to expect" from code steps. Still open: compare
+  the boss against the current build (e.g. flag a party with no Defend answer vs The Ancestor's head, no debuff immunity vs
+  Loid). The boss/enemy trait taxonomy (`trait_meta.scope=boss_enemy_flavor`) could feed it; verify tags in-game first.
 - [ ] **Godforge helper** — Godforge (spell-gem enchant / artifact forging) planner.
 - [ ] **Luck / Roll Errata section** driven by the `hasRoll` flags (data shipped 2026-10-07, no UI yet).
 - [ ] Rodian Masters reverse lookup (optional, `HANDOFF_rodian_masters.md`): on a "Master of …" trait / Mastery Sigil, list the
@@ -119,8 +118,11 @@ Known limits + planned work, roughly in priority order (all now cheap to impleme
   disagree otherwise, the CSV value is kept until the user decides. List the disagreements and ask.
 
 ## Pending extract hand-offs (from `_su_extract/RESUME.md`, waiting on the user)
-- [ ] **Boss feature** (user plan, 2026-10-11): one page shape for False Gods, Nether Bosses and Gate of the Gods, fed by
-  `_su_extract/data/model/bosses.json` (`_su_extract/code/HANDOFF_boss_encounters.md`). False God data is ready; the other two types follow.
+- [ ] **Boss feature — Nether Bosses + Gate of the Gods** (False Gods shipped 2026-10-11): when the extract adds `nether_boss` /
+  `gate_god` encounters to bosses.json, rebuild. New step kinds need a line in `bossStepHtml` (app.js); new notes need a plain
+  rewrite in `NOTE_PLAIN` (build-data fails on code-like notes); non-False-God portraits need a source (`bossImg`).
+- [ ] In-game checks the Bosses page shows as unverified: Jotun's 24-turn count, Mindwurm saddle "nothing" pick, Nebodar
+  "Burned can't be avoided".
 - [ ] **Misery → Perdition** (2026-10-11): owner set provisionally (`user-pending`, hidden). When the user confirms in-game, drop
   `nyi` from traits 568–570 (or move them back if the test says otherwise).
 - [ ] Relic `hasRoll` flags: the extract read relic gate ids in the wrong order; after the extract fix, refresh the app's relic

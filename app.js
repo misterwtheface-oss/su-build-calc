@@ -1263,6 +1263,7 @@
   // False God detail — a boss is a set of body-part creatures that share one stat spread. One page:
   // portrait + the shared base-stat table + each part's trait. Opened from the Appendix boss-trait row.
   function openFalseGodDetail(key) {
+    if (BOSS_BY_KEY.has(key)) return openBossDetail(key);   // the full boss page (bosses.json); the old page stays for NYI gods
     const g = FG_BY_KEY.get(key); if (!g) return;
     dovState = { kind: "fgod-detail", fg: key, render: () => renderFalseGodDetail(key) };
     openDetail(dovState.render());
@@ -1293,6 +1294,169 @@
         ${statTable(s)}` : ""}
         <div class="section-label"${g.stats ? ` style="margin-top:14px"` : ""}>Body parts — ${(g.parts || []).length}</div>
         ${parts || `<div class="slot-sub">No body parts.</div>`}
+      </div></div></div>
+      <div class="overlay-footer"><span class="foot-info"></span><button class="btn-confirm" data-action="close-detail">Done</button></div>
+    </div></div>`;
+  }
+  // ── Bosses (Menu → Bosses) — one page shape for every boss type (D.bosses from _su_extract bosses.json). A unit's
+  // "On its turn" / "Always" lines are rendered from the code's step list (kind + target + fields), never from trait text.
+  const BOSSES = (D.bosses && D.bosses.encounters) || [];
+  const BOSS_BY_KEY = new Map(BOSSES.map(e => [e.key, e]));
+  const COND_BY_KEY = new Map((D.conditions || []).filter(c => c.cat !== "Minion").map(c => [c.key, c]));
+  const bossImg = (e) => { const g = FG_BY_KEY.get(e.key); return g ? g.img : null; };
+  function openBosses() {
+    ovState = { kind: "bosses", search: "", render: renderBosses };
+    openOverlay(ovState.render()); maybeFocusSearch(OV);
+  }
+  function renderBosses() {
+    const st = ovState, q = st.search.trim().toLowerCase();
+    const hit = (e) => !q || e.name.toLowerCase().includes(q) || e.units.some(u => u.name.toLowerCase().includes(q));
+    const body = ((D.bosses && D.bosses.types) || []).map(t => {
+      const list = BOSSES.filter(e => e.type === t.type && hit(e));
+      if (!list.length) return "";
+      return `<div class="section-label">${esc(t.label)}</div><div class="pick-grid boss-grid">${list.map(e => `<div class="pick-tile" data-action="boss-open" data-k="${esc(e.key)}">
+        <div class="pt-sprite">${bossImg(e) ? spriteImg(bossImg(e), "px") : ""}</div><div class="pt-name">${esc(e.name)}</div></div>`).join("")}</div>`;
+    }).join("") || `<div class="slot-sub" style="padding:10px">Nothing matches “${esc(st.search)}”.</div>`;
+    return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel">
+      <div class="overlay-header"><h2>Bosses</h2>
+        <input class="ovl-search" placeholder="Search…" value="${esc(st.search)}" data-action="bosses-search">
+        <button class="ovl-close" data-action="close-ovl">✕</button></div>
+      <div class="overlay-body"><div class="ovl-center"><div class="ovl-center-scroll">${body}</div></div></div>
+      <div class="overlay-footer"><span class="foot-info"></span><button class="btn-confirm" data-action="close-ovl">Done</button></div>
+    </div></div>`;
+  }
+  function openBossDetail(key) {
+    if (!BOSS_BY_KEY.has(key)) return;
+    dovState = { kind: "boss-detail", key, open: new Set(), render: renderBossDetail };
+    openDetail(dovState.render());
+  }
+  // step → one plain-language line. part = what the boss's own units are called ("part" for False Gods).
+  function bossStepHtml(s, part) {
+    let T = {
+      self: "itself", each_ally: `every other ${part}`, each_ally_and_self: `every ${part}`,
+      each_ally_incl_dead: `every other ${part}, dead or alive`,
+      ally_creature: [...new Set(s.units || [])].map(n => `${(s.units || []).filter(x => x === n).length > 1 ? "each " : ""}${esc(n)}`).join(" and "),
+      each_player: "each of your creatures", random_player: "a random creature of yours", first_player: "your first creature",
+      last_player: "your last creature", top_player_on_timeline: "your creature highest on the timeline",
+      each_player_not_defending: "each of your creatures that isn't Defending", all_players: "your whole party",
+    }[s.target] || "";
+    // "every other part, dead or alive … if it is dead" reads as "every other dead part"
+    let cond = s.when;
+    if (s.target === "each_ally_incl_dead" && /\b(dead|alive)\b/.test(s.when || "")) { T = `every other ${/dead/.test(s.when) ? "dead" : "living"} ${part}`; cond = null; }
+    const sp = (id) => { const x = D.spells[id]; return x ? `<button class="boss-chip" data-action="apx-open" data-ek="spell" data-eid="${id}">${spellIcon(x) ? `<span class="prop-ico sm">${spriteImg(spellIcon(x), "px")}</span>` : ""}${esc(x.name)}</button>` : ""; };
+    const cd = (k) => { const c = k && COND_BY_KEY.get(k); return c ? `<button class="boss-chip" data-action="apx-open" data-ek="condition" data-eid="${esc(`${c.cat}:${c.key}`)}">${c.icon ? `<span class="prop-ico sm"><img src="${esc(c.icon)}" alt=""></span>` : ""}${esc(c.name)}</button>` : `<span class="boss-chip dim">nothing</span>`; };
+    const chips = (ids) => `<div class="boss-chips">${ids.join("")}</div>`;
+    const plain = (t) => esc(String(t || "").replace(/this unit's/g, "its").replace(/boss units?/g, (m) => m.endsWith("s") ? `${part}s` : part));
+    const dtype = s.damage_type ? ` (${esc(String(s.damage_type).replace(/\s*\(.*\)$/, ""))})` : "";
+    const when = cond ? ` — if ${plain(cond.replace(/^unit /, "it "))}` : "";
+    const statList = (st) => st.map(x => STAT_LABEL[{ attack: "atk", intelligence: "int", defense: "def", speed: "spd", health: "hp" }[x]] || x);
+    const andJoin = (a) => a.length < 2 ? a.join("") : `${a.slice(0, -1).join(", ")} and ${a[a.length - 1]}`;
+    switch (s.kind) {
+      case "attack": return `Attacks ${T}${s.power_pct !== 100 ? ` for <b>${s.power_pct}%</b> damage` : ""}`;
+      case "cast": {
+        const n = s.repeat || 1, ids = (s.spells || []).map(sp);
+        const at = s.target === "all_players" ? ` at ${T}` : s.target === "ally_creature" ? ` on ${T}` : "";
+        if (s.oneOf) return `${n > 1 ? `Casts <b>${n}</b> times, a random spell each time, from:` : "Casts a random spell from:"}${chips(ids)}`;
+        return `Casts ${ids.join("")}${n > 1 ? ` <b>${n}</b> times` : ""}${at}`;
+      }
+      case "buff":
+        if (s.conds) return `Grants ${T} one of:${chips(s.conds.map(cd))}`;
+        return s.cond ? `Grants ${cd(s.cond)} to ${T}` : `Grants a random buff to ${T}`;
+      case "debuff": return `Afflicts ${T} with a random debuff`;
+      case "cleanse": return `Removes a random debuff from ${T}`;
+      case "heal_direct": return `Restores <b>${s.pct}%</b> of max Health to ${T}${when}`;
+      case "resurrect": return `Resurrects ${T} at full Health${when}`;
+      case "stat_gain": {
+        const ex = /^units without the (.+?) trait/.exec(s.filter || "");   // "every other part except the Body of Hydranox"
+        const tgt = ex ? `${T} except the ${esc(ex[1])}` : T;
+        return `Raises ${andJoin(statList(s.stat))} of ${tgt} by <b>${s.pct}%</b> of current${s.filter && !ex ? ` (${esc(s.filter)})` : ""}`;
+      }
+      case "damage": return `Deals damage to ${T}${dtype}: ${plain(s.formula)}`;
+      case "ohko": return `<b>Instantly</b> kills ${T}`;
+      case "defend": return "Defends";
+      case "provoke": return "Provokes";
+      case "timeline_to_bottom": return `Sends ${T} to the bottom of the timeline`;
+      case "minion": return `Gives ${T} a random minion`;
+      case "intensify_condition": return `Multiplies the potency of ${cd(s.cond)} on ${T} by <b>${s.multiplier}</b>`;
+      case "immune_damage": return `Immune to damage${s.when ? ` while ${plain(s.when)}` : ""}`;
+      case "damage_bonus_vs_condition": return `Extra damage against ${cd(s.cond)}: ${plain(s.formula)}`;
+      case "reflect_on_damaged": return `After taking damage, deals ${plain(s.formula)} to ${plain(s.target)}${dtype}`;
+      case "keep_condition": return `${s.target === "each_player" ? "Your creatures" : T} always have ${cd(s.cond)}`;
+      case "revive": return `Revives <b>${s.count}</b> times, at ${andJoin((s.stages || []).map(x => `${x.hp_pct}%`))} Health; each time every other ${part} returns to full Health`;
+      default: return esc(s.text || s.kind);
+    }
+  }
+  // threat summary for the top of the page: one chip per dangerous mechanic, from step kinds only; tap → that unit
+  function bossThreats(e) {
+    const out = [], seen = new Set();
+    const add = (k, label, slot) => { if (seen.has(k)) return; seen.add(k); out.push({ label, slot }); };
+    for (const u of e.units) for (const s of [...(u.turn || []), ...u.passives]) {
+      const c = s.cond && COND_BY_KEY.get(s.cond);
+      if (s.kind === "ohko") add("ohko", s.target === "each_player_not_defending" ? "Kills anyone not Defending" : "Instant kill", u.slot);
+      else if (s.kind === "keep_condition" && c) add(`keep:${s.cond}`, `Permanent ${c.name}`, u.slot);
+      else if (s.kind === "immune_damage") add(`imm:${s.when || ""}`, s.when ? `${u.name} shielded` : "Immune to damage", u.slot);
+      else if (s.kind === "resurrect" || s.kind === "revive") add("rez", s.kind === "revive" ? `${u.name} revives` : "Resurrects parts", u.slot);
+      else if (s.kind === "reflect_on_damaged") add("reflect", "Damages attackers", u.slot);
+      else if (s.kind === "timeline_to_bottom") add("timeline", "Timeline push", u.slot);
+      else if (s.kind === "intensify_condition" && c) add(`int:${s.cond}`, `${c.name} intensifies`, u.slot);
+    }
+    return out;
+  }
+  function renderBossDetail() {
+    const st = dovState, e = BOSS_BY_KEY.get(st.key); if (!e) return "";
+    const part = e.type === "false_god" ? "part" : "boss creature";
+    const typeLabel = (((D.bosses && D.bosses.types) || []).find(t => t.type === e.type) || {}).label || "";
+    const sec = (k, title, html) => `<button class="apx-sec-head apx-cat${st.open.has(k) ? "" : " collapsed"}" data-action="boss-sec" data-k="${k}"><span class="apx-sec-caret">${st.open.has(k) ? "▾" : "▸"}</span>${title}</button>${st.open.has(k) ? html : ""}`;
+    const short = (n) => n.split(" of ")[0];
+    // battle formation: grid positions 1–3 = top row, 4–6 = bottom row (the portrait layout)
+    const byGrid = new Map(e.units.map(u => [u.grid, u]));
+    const formation = `<div class="boss-formation">${[1, 2, 3, 4, 5, 6].map(g => { const u = byGrid.get(g);
+      return u ? `<button class="boss-cell" data-action="boss-jump" data-slot="${u.slot}" title="${esc(u.name)}"><span class="boss-cell-spr">${u.img ? spriteImg(u.img, "px") : ""}</span><span class="boss-cell-n">${esc(short(u.name))}</span></button>` : `<span></span>`; }).join("")}</div>`;
+    const threats = bossThreats(e);
+    const sameStats = e.units.every(u => STAT_KEYS.every(k => u.stats[k] === e.units[0].stats[k]));
+    const statLine = (s) => `<div class="boss-stats">${STAT_KEYS.map(k => `<span><b>${s[k]}</b> ${STAT_LABEL[k]}</span>`).join("")}</div>`;
+    // consecutive stat gains with the same target + amount read as one line ("Attack and Intelligence")
+    const merge = (arr) => arr.reduce((out, s) => {
+      const p = out[out.length - 1];
+      if (s.kind === "stat_gain" && p && p.kind === "stat_gain" && p.target === s.target && p.pct === s.pct && p.filter === s.filter && String(p.units) === String(s.units)) p.stat.push(s.stat);
+      else out.push(s.kind === "stat_gain" ? { ...s, stat: [s.stat] } : s);
+      return out;
+    }, []);
+    const lines = (arr) => `<ul class="boss-steps">${merge(arr).map(s => s.kind === "note" ? `<li class="fx-clarify">${esc(s.text)}</li>` : `<li>${bossStepHtml(s, part)}</li>`).join("")}</ul>`;
+    const units = e.units.map(u => {
+      const tr = u.traitId != null ? TRAIT[u.traitId] : null;
+      return `<div class="boss-unit" id="boss-unit-${u.slot}">
+        <div class="boss-unit-head"><span class="boss-unit-spr">${u.img ? spriteImg(u.img, "px") : ""}</span>
+          <div class="boss-unit-name"><b>${esc(u.name)}</b></div></div>
+        ${tr ? `<div class="primary-traits">${traitBanner(u.traitId)}<div class="trait-desc">${richText(tr.desc || "")}</div></div>` : ""}
+        ${sameStats ? "" : statLine(u.stats)}
+        <div class="boss-sub">On its turn</div>
+        ${u.turn ? lines(u.turn) : `<div class="slot-sub">Normal enemy AI: attacks or casts a spell</div>`}
+        ${u.turnNote ? `<div class="fx-clarify">${esc(u.turnNote)}</div>` : ""}
+        ${u.passives.length ? `<div class="boss-sub">Always</div>${lines(u.passives)}` : ""}
+      </div>`;
+    }).join("");
+    const specs = e.specIds.map(id => D.specs.find(s => s.id === id)).filter(Boolean);
+    const runes = e.runes ? (D.runes || []).map(r => `<div class="boss-rune">${r.icon ? `<span class="prop-ico">${spriteImg(r.icon, "px")}</span>` : ""}
+      <div><b>${esc(r.name)}</b>${r.rewardPct != null ? ` <span class="anoint-spec-tag">+${r.rewardPct}% Rewards</span>` : ""}
+        <div class="trait-desc">${richText(r.effect)}</div>
+        ${r.code && (r.code.clarify || r.code.verdict !== "matches") ? `<div class="fx-clarify">${esc(r.code.detail)}</div>` : ""}</div></div>`).join("") : "";
+    return `<div class="ovl-backdrop" data-action="detail-backdrop"><div class="overlay-panel detail">
+      <div class="overlay-header">${bossImg(e) ? `<span class="hdr-ico">${spriteImg(bossImg(e))}</span>` : ""}
+        <h2>${esc(e.name)}</h2>${typeLabel ? `<span class="anoint-spec-tag apx-boss-cat">${esc(typeLabel.replace(/s$/, ""))}</span>` : ""}
+        <button class="ovl-close" data-action="close-detail">✕</button></div>
+      <div class="overlay-body"><div class="ovl-center"><div class="ovl-center-scroll boss-page">
+        ${formation}
+        ${e.mechanics.map(m => `<div class="excl-note boss-mech"><span>${m.kind === "timer_exit"
+          ? `${esc(e.name)} leaves after <b>${m.turns}</b> turns (every creature's turn counts) and all its ${part}s die.${e.units.every(u => u.passives.some(x => x.kind === "immune_damage" && !x.when)) ? ` Every ${part} is immune to damage, so outlasting it is the only way to win.` : ""}`
+          : esc(m.text)}</span></div>`).join("")}
+        ${threats.length ? `<div class="boss-chips boss-threats">${threats.map(t => `<button class="boss-chip warn" data-action="boss-jump" data-slot="${t.slot}">${esc(t.label)}</button>`).join("")}</div>` : ""}
+        ${sameStats && e.units.length ? `<div class="section-label">Base stats</div>${statLine(e.units[0].stats)}` : ""}
+        ${specs.length ? `<div class="section-label">Anointments</div><div class="boss-chips">${specs.map(s => `<span class="boss-chip">${SPEC_EMBLEM.get(s.label) ? `<span class="prop-ico sm">${spriteImg(SPEC_EMBLEM.get(s.label), "px")}</span>` : ""}${esc(s.label)}</span>`).join("")}</div>` : ""}
+        <div class="section-label">${e.type === "false_god" ? "Body parts" : "Creatures"}</div>
+        ${units}
+        ${runes ? sec("runes", "Runes", `<div class="boss-runes">${runes}</div>`) : ""}
+        ${e.lore || e.dialog ? sec("lore", "Lore", `${e.lore ? `<div class="trait-desc boss-lore">${richText(e.lore)}</div>` : ""}${e.dialog ? `<div class="trait-desc boss-lore boss-dialog">${richText(e.dialog)}</div>` : ""}`) : ""}
       </div></div></div>
       <div class="overlay-footer"><span class="foot-info"></span><button class="btn-confirm" data-action="close-detail">Done</button></div>
     </div></div>`;
@@ -2294,12 +2458,14 @@
   }
   function openEntityDetail(kind, id) {
     const ret = dovState;   // if we're already in a detail (e.g. creature detail), return to it on close
+    if (ret) { const sc = DOV.querySelector(".ovl-center-scroll"); ret.scrollTop = sc ? sc.scrollTop : 0; }
     dovState = { kind: "entity-detail", ekind: kind, eid: id, ret, render: renderEntityDetail };
     openDetail(dovState.render());
   }
   function closeEntityDetail() {
     const ret = dovState && dovState.ret;
-    if (ret) { dovState = ret; openDetail(dovState.render()); } else closeDetail();
+    if (ret) { dovState = ret; openDetail(dovState.render());
+      const sc = DOV.querySelector(".ovl-center-scroll"); if (sc && ret.scrollTop) sc.scrollTop = ret.scrollTop; } else closeDetail();
   }
   function renderEntityDetail() {
     const st = dovState, r = resolveEntity(st.ekind, st.eid), e = r.e;
@@ -5048,6 +5214,11 @@
       case "open-glossary": openGlossary(); break;
       case "open-errata": openErrata(); break;
       case "errata-search": break;   // handled in onInput
+      case "open-bosses": openBosses(); break;
+      case "bosses-search": break;   // handled in onInput
+      case "boss-open": openBossDetail(t.dataset.k); break;
+      case "boss-sec": { const k = t.dataset.k; dovState.open.has(k) ? dovState.open.delete(k) : dovState.open.add(k); refreshDetail(); break; }
+      case "boss-jump": { const el = DOV.querySelector(`#boss-unit-${t.dataset.slot}`); if (el) el.scrollIntoView({ behavior: "smooth", block: "start" }); break; }
       case "gloss-search": break;    // handled in onInput
       case "open-projects": if (FEATURES.projects) openProjects(); break;
       case "open-netherhelp": openNetherHelper(); break;
@@ -5498,7 +5669,7 @@
     if (A === "share-name") { ovState.name = v; return; }
     // search fields — live filter without losing caret
     const searchMap = { "crea-search": [OV, ovState], "spec-search": [OV, ovState], "artb-search": [OV, ovState],
-      "relic-search": [OV, ovState], "cards-search": [OV, ovState], "anoint-search": [OV, ovState], "nether-search": [OV, ovState], "sg-search": [OV, ovState], "appendix-search": [OV, ovState], "shop-search": [OV, ovState], "realm-search": [OV, ovState], "riddle-search": [OV, ovState], "gloss-search": [OV, ovState], "errata-search": [OV, ovState], "proj-search": [OV, ovState], "lib-search": [OV, ovState], "facet-search": [DOV, dovState], "perk-search": [DOV, dovState], "pers-search": [DOV, dovState], "iconpick-search": [DOV, dovState], "skin-search": [DOV, dovState] };
+      "relic-search": [OV, ovState], "cards-search": [OV, ovState], "anoint-search": [OV, ovState], "nether-search": [OV, ovState], "sg-search": [OV, ovState], "appendix-search": [OV, ovState], "shop-search": [OV, ovState], "realm-search": [OV, ovState], "riddle-search": [OV, ovState], "gloss-search": [OV, ovState], "errata-search": [OV, ovState], "bosses-search": [OV, ovState], "proj-search": [OV, ovState], "lib-search": [OV, ovState], "facet-search": [DOV, dovState], "perk-search": [DOV, dovState], "pers-search": [DOV, dovState], "iconpick-search": [DOV, dovState], "skin-search": [DOV, dovState] };
     if (searchMap[A]) {
       const [root, state] = searchMap[A]; state.search = v;
       if (A === "crea-search") resetCreaPage();   // new query → back to page 1

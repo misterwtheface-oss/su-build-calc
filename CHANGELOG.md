@@ -4,6 +4,24 @@ Every dated change entry, newest first (moved verbatim from Progress.md on 2026-
 to their own section and sorted by their date). Current state and open work: `Progress.md`, `BACKLOG.md`.
 New entries go at the TOP.
 
+## 2026-10-11 — Bosses page (False Gods)
+- **Bosses** (Menu, below Nether Realm): portrait grid grouped by boss type (False Gods now; Nether Bosses and Gate of the Gods
+  join the same page when the extract ships them). A boss page shows the battle formation (tap a part to jump to it), encounter
+  callouts (Jotun leaves after 24 turns), threat chips (instant kills, permanent debuffs, immunity, resurrection, damage
+  reflection, timeline push; tap → the part), shared base stats, anointment specs, then every body part in party order:
+  trait, **On its turn** and **Always**, rendered from the code's step list (`_su_extract` bosses.json, S29), never from trait
+  text. Spells and buffs/debuffs are chips that open their detail. Runes (with the code check where it differs or adds, e.g.
+  Damage Cap) and Lore are collapsed sections. The Appendix False God link opens the same page.
+- Code facts now visible: Saint Althea's second Hand casts the Shoulder's healing spells (its own Devour / Soul Harvest /
+  Terror / Intimidate list is never used); one Althea Shoulder has no script; Mindwurm's saddle pool has a non-buff entry.
+- `build-data.mjs` ships `bosses` with every id translated at build time: spells by code id → key, conditions by code id →
+  registry key, traits by **runtime id** (legacy ids cross-checked; the extract left them empty for 9 same-name parts), specs by
+  runtime id (asserted by name), part sprites by battle frame (`assets/bossparts/`). Extract notes are rewritten in plain
+  language; a note that still reads like code fails the build. Runes get a `code` check.
+- **Build fix:** errors recorded after the main report (spell owners, Rodian Masters, bosses) were silently ignored; a second
+  gate now fails the build before `data.js` is written. No hidden errors surfaced in the older blocks.
+- Returning from a spell/trait link to the page it was opened from keeps that page's scroll position.
+
 ## 2026-10-11 — False God names from the game; Misery is not a False God (data only)
 - False God names now match the game text (`L_WBOSS_*`): **Imp Impington Reborn**, **Caliban the Unredeemed**, **Jotun**,
   **Lost Construct** (were Imp Impington / Caliban / Jotunir / The Lost Construct). Keys and portrait files are unchanged;

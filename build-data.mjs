@@ -3192,6 +3192,128 @@ const masterRealms = (() => {
   return out.sort((a, b) => a.realm.localeCompare(b.realm));
 })();
 
+// ── Boss encounters — code (_su_extract bosses.json, S29; code/FALSE_GOD_BEHAVIOR_FINDINGS.md, HANDOFF_boss_encounters.md).
+// One shape for every boss type (False Gods now; Nether Bosses / Gate of the Gods later). Each unit's turn script + passives
+// are the code's step list; ids are translated here so the app never sees a code id: spells by code id → key → app spell,
+// conditions by code id → registry key → app condition, traits by legacy id, specs by runtime id (asserted by name), part
+// sprites by battle frame. Every miss is a build error. Stats stay level-1 base (DECISIONS.md). Runes get their code check.
+const bosses = (() => {
+  const bj = readJSON(path.join(MODEL, 'bosses.json'));
+  const cf = readJSON(path.join(MODEL, 'spell_property_compat.json'));
+  const codeSpellKey = new Map(cf.records.map(r => [r.spell_id, r.key]));
+  const spByKey = new Map(spells.map(x => [x.key, x]));
+  const spell = (s, where) => {
+    const x = spByKey.get(codeSpellKey.get(s.id));
+    if (!x) { err(`bosses: ${where} spell ${s.id} (${s.name}) not in the app`); return null; }
+    if (norm(x.name) !== norm(s.name)) warn(`bosses: ${where} spell ${s.id} is "${x.name}" in the app, "${s.name}" in bosses.json`);
+    return x.id;
+  };
+  const condKey = new Map(readJSON(path.join(MODEL, 'condition_registry.json')).conditions.filter(c => c.key).map(c => [c.id, c.key]));
+  const appCond = new Map(conditions.filter(c => c.cat !== 'Minion').map(c => [c.key, c.key]));
+  const cond = (c, where) => {
+    if (!c || c.id === 0) return null;                       // Mindwurm's saddle pool: the zero constant is not a buff (noted in data)
+    const k = condKey.get(c.id), key = k && appCond.get(norm(k));
+    if (!key) err(`bosses: ${where} condition ${c.id} (${c.name}) not in the app`);
+    return key || null;
+  };
+  const traitByRt = new Map(); for (const id in traits) for (const rt of traits[id].runtimeIds || []) traitByRt.set(rt, +id);
+  const OUT_BOSSPARTS = path.join(OUT_ASSETS, 'bossparts');
+  fs.rmSync(OUT_BOSSPARTS, { recursive: true, force: true });
+  fs.mkdirSync(OUT_BOSSPARTS, { recursive: true });
+  const TYPE_LABEL = { false_god: 'False Gods', nether_boss: 'Nether Bosses', gate_god: 'Gate of the Gods' };
+  const unesc = (t) => String(t || '').replace(/\\n/g, '\n');
+  // extract notes are written for the decode; the app shows them in plain language. Code refs in parentheses are dropped,
+  // the rest is rewritten here (meaning kept), and any note that still reads like code fails the build.
+  const NOTE_PLAIN = [
+    [/^The OR check is has\(\d+\) \|\| has\(\d+\)/, null],                // replaced by the generated quirk line on the unit it affects
+    [/^No scripted branch for this trait/, null],                                // the app's own "normal enemy AI" line says it
+    [/^Sixth pool entry is the zero constant/, 'The sixth entry in this list is not a buff, so about 1 in 6 picks likely gives nothing (not yet checked in-game).'],
+    [/^Trait text also says Burned damage cannot be circumvented/, "The trait text also says Burned damage can't be avoided; no code for that was found (unverified)."],
+  ];
+  const plainNote = (n, w) => {
+    if (!n) return null;
+    for (const [re, to] of NOTE_PLAIN) if (re.test(n)) return to;
+    const t = String(n).replace(/\s*\([^()]*(?:\b0x[0-9a-f]+|\bscr_\w+)[^()]*\)/g, '');
+    if (/0x[0-9a-f]|has\(|\bscr_|\bbc_|\bL_[A-Z_]{3,}|\bcondition \d/.test(t)) err(`bosses: ${w} note still reads like code: ${t}`);
+    return t;
+  };
+  const SKIP = new Set(['code', 'code_arg', 'gate', 'via_or_check', 'spell', 'pool', 'condition', 'creature_ids']);
+  const out = [];
+  let nUnits = 0, nSteps = 0;
+  for (const e of bj.encounters) {
+    const where = e.name;
+    const unitName = new Map(e.units.map(u => [u.creature_id, u.name]));
+    const step = (s, w) => {
+      const o = {};
+      for (const [k, v] of Object.entries(s)) if (!SKIP.has(k)) o[k] = v;
+      if (s.spell) o.spells = [spell(s.spell, w)].filter(x => x != null);
+      if (s.pool && s.kind === 'cast') { o.spells = s.pool.map(p => spell(p, w)).filter(x => x != null); o.oneOf = s.pool.length > 1; }
+      if (s.pool && s.kind === 'buff') { o.conds = s.pool.map(p => cond(p, w)); o.oneOf = true; }
+      if (s.condition) o.cond = cond(s.condition, w);
+      if (s.kind === 'note') { o.text = plainNote(s.text, w); if (!o.text) return null; }
+      if (s.creature_ids) o.units = s.creature_ids.map(id => unitName.get(id) || (err(`bosses: ${w} targets unknown unit ${id}`), String(id)));
+      nSteps++;
+      return o;
+    };
+    const units = e.units.map(u => {
+      const w = `${where} / ${u.name}`;
+      // runtime id is the join; legacy_ids (empty for some same-name parts) must agree when present
+      const traitId = traitByRt.get(u.trait.runtime_id);
+      if (traitId == null) err(`bosses: ${w} trait ${u.trait.name} (runtime ${u.trait.runtime_id}) not in the app`);
+      else if ((u.trait.legacy_ids || []).length && !u.trait.legacy_ids.includes(traitId)) err(`bosses: ${w} runtime ${u.trait.runtime_id} → app trait ${traitId}, legacy_ids say ${u.trait.legacy_ids}`);
+      else if (norm(traits[traitId].name) !== norm(u.trait.name)) err(`bosses: ${w} trait ${traitId} is "${traits[traitId].name}", expected "${u.trait.name}"`);
+      const src = path.join(SRC_BATTLE, `spr_crits_battle_${u.battle_frame}.png`);
+      let img = null;
+      if (fs.existsSync(src)) { fs.copyFileSync(src, path.join(OUT_BOSSPARTS, `${u.battle_frame}.png`)); img = `assets/bossparts/${u.battle_frame}.png`; }
+      else err(`bosses: ${w} battle frame ${u.battle_frame} missing (404-source)`);
+      // a unit caught by another trait's OR check runs that kit; its own branch is never reached (Saint Althea's second Hand)
+      let turnNote = plainNote(u.turn_action ? u.turn_action.note : u.turn_action_note, w);
+      // only a quirk when the shared branch belongs to a differently named part (two copies of one part sharing a branch is normal)
+      const kit = u.turn_action && u.turn_action.via_or_check ? e.units.find(x => x.trait.runtime_id === u.turn_action.gate) : null;
+      if (u.turn_action && u.turn_action.via_or_check && !kit) err(`bosses: ${w} OR-check gate ${u.turn_action.gate} matches no unit`);
+      if (kit && norm(kit.trait.name) !== norm(u.trait.name)) {
+        const own = ((u.unreachable_branch || {}).steps || []).flatMap(x => (x.pool || []).map(p => spells[spell(p, w)]).filter(Boolean)).map(x => x.name);
+        turnNote = `Code quirk: casts the ${kit.trait.name} spells.${own.length ? ` Its own list (${own.join(', ')}) is never used.` : ''}`;
+      }
+      nUnits++;
+      return {
+        slot: u.slot, grid: u.grid_position, name: u.name, stats: u.base_stats, img, traitId: traitId ?? null,
+        turn: u.turn_action ? u.turn_action.steps.map(s => step(s, w)) : null,
+        ...(turnNote ? { turnNote } : {}),
+        passives: (u.passives || []).map(s => step(s, w)).filter(Boolean),
+      };
+    });
+    const specIds = (e.anointment_specs || []).map(s => {
+      const sp = specs.find(x => x.id === s.spec_id);
+      if (!sp || norm(sp.label) !== norm(s.name)) err(`bosses: ${where} anointment spec ${s.spec_id} (${s.name}) does not match the app`);
+      return sp ? sp.id : null;
+    }).filter(x => x != null);
+    if (e.type === 'false_god') {
+      const fg = falseGods.find(g => g.key === e.app_key);
+      if (!fg) err(`bosses: ${where} has no app False God ${e.app_key}`);
+      else if (fg.name !== e.name) err(`bosses: ${where} is "${fg.name}" in the app`);
+    }
+    out.push({
+      id: e.id, type: e.type, key: e.app_key || e.key, name: e.name,
+      lore: unesc(e.lore && e.lore.text), dialog: unesc(e.dialog && e.dialog.text),
+      orb: (e.nether_orb && e.nether_orb.class) || null, specIds,
+      mechanics: (e.mechanics || []).map(m => ({ kind: m.kind, ...(m.turns ? { turns: m.turns } : {}), text: m.text, ...(m.check ? { check: m.check } : {}) })),
+      units: units.sort((a, b) => a.slot - b.slot),
+      runes: (e.modifiers || []).includes('false_god_runes'),
+    });
+  }
+  // the code check per rune (only shown where it adds to / differs from the text)
+  const rc = new Map(((bj.modifiers.false_god_runes || {}).runes || []).map(r => [r.key, r.code_check]));
+  for (const r of runes) {
+    const c = rc.get(r.key);
+    if (!c) { err(`bosses: rune ${r.key} has no code check`); continue; }
+    r.code = { verdict: c.verdict, detail: c.detail, ...(c.clarify ? { clarify: c.clarify } : {}) };
+  }
+  const types = [...new Set(out.map(e => e.type))].map(t => ({ type: t, label: TYPE_LABEL[t] || t }));
+  console.log(`  bosses: ${out.length} encounters (${types.map(t => `${out.filter(e => e.type === t.type).length} ${t.type}`).join(' / ')}) · ${nUnits} units · ${nSteps} steps · rune checks ${rc.size}`);
+  return { types, encounters: out };
+})();
+
 const SU_DATA = {
   meta: {
     generated: new Date().toISOString(),
@@ -3241,6 +3363,7 @@ const SU_DATA = {
   spells,
   spellGems,
   masterRealms,             // realm → races its Rodian Creature Master can be (code, master_realms.json)
+  bosses,                   // boss encounters: units in party order with code turn scripts + passives (bosses.json, S29)
   spellGrants,              // owner (perk / trait / relic) → spells it grants (code, S28 spell_owners.json)
   relicUltimates,           // app relic id → its Ultimate spell id (scr_GetUltimateSpellByRelic)
   ultimateRoutes,           // perk / trait that hands out the equipped relic's Ultimate
@@ -3434,6 +3557,13 @@ console.log(`  asset cache-bust: ${assetUrlsVersioned} image URLs versioned by c
   for (const [k, v] of Object.entries(SU_DATA)) if (k !== 'traits') walk(v, k);
   if (bad.length) throw new Error(`BLACKLIST GUARD: ${bad.length} reference(s) to blacklisted / non-shipped traits: ${bad.slice(0, 10).join(' | ')}`);
   console.log('  blacklist guard: no references to blacklisted traits ✓');
+}
+// second gate: the blocks after the report above (spell owners, Rodian Masters, bosses …) record errors too
+if (errors.length) {
+  console.log(`✗ ${errors.length} errors:`);
+  for (const e of errors.slice(0, 40)) console.log('    ' + e);
+  console.error(`BUILD FAILED: ${errors.length} errors after the main report — data.js left untouched`);
+  process.exit(1);
 }
 fs.writeFileSync(path.join(ROOT, 'data.js'), `// GENERATED by build-data.mjs — do not edit by hand.\nwindow.SU_DATA = ${JSON.stringify(SU_DATA)};\n`);
 console.log(`✓ wrote data.js (${(fs.statSync(path.join(ROOT, 'data.js')).size / 1e6).toFixed(2)} MB)`);
