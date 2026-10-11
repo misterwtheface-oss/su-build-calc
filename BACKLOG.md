@@ -119,6 +119,10 @@ Known limits + planned work, roughly in priority order (all now cheap to impleme
   disagree otherwise, the CSV value is kept until the user decides. List the disagreements and ask.
 
 ## Pending extract hand-offs (from `_su_extract/RESUME.md`, waiting on the user)
+- [ ] **Boss feature** (user plan, 2026-10-11): one page shape for False Gods, Nether Bosses and Gate of the Gods, fed by
+  `_su_extract/data/model/bosses.json` (`_su_extract/code/HANDOFF_boss_encounters.md`). False God data is ready; the other two types follow.
+- [ ] **Misery → Perdition** (2026-10-11): owner set provisionally (`user-pending`, hidden). When the user confirms in-game, drop
+  `nyi` from traits 568–570 (or move them back if the test says otherwise).
 - [ ] Relic `hasRoll` flags: the extract read relic gate ids in the wrong order; after the extract fix, refresh the app's relic
   `hasRoll` flags.
 - [ ] Booze spells / Top Shelf / Happy Hour `hasRoll` (if the roll attribution is approved).

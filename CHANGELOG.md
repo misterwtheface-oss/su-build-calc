@@ -4,6 +4,17 @@ Every dated change entry, newest first (moved verbatim from Progress.md on 2026-
 to their own section and sorted by their date). Current state and open work: `Progress.md`, `BACKLOG.md`.
 New entries go at the TOP.
 
+## 2026-10-11 — False God names from the game; Misery is not a False God (data only)
+- False God names now match the game text (`L_WBOSS_*`): **Imp Impington Reborn**, **Caliban the Unredeemed**, **Jotun**,
+  **Lost Construct** (were Imp Impington / Caliban / Jotunir / The Lost Construct). Keys and portrait files are unchanged;
+  `build-data.mjs` finds each god's part list through a new `partsKey`.
+- **Misery** is gone from the False God list: the code has no Misery False God. Hand / Heart / Brain of Misery are now
+  provisionally owned by **Perdition** (Gate of the Gods, `ownerProvenance: user-pending`) and stay hidden behind
+  `FEATURES.nyi` until the user's in-game test.
+- Rebuilt `data.js`: only `falseGods` names, the three Misery traits' owner fields and meta changed.
+- Extract side (not shipped yet): `_su_extract/data/model/bosses.json`, every False God part's behaviour, for the planned
+  boss feature (`_su_extract/code/HANDOFF_boss_encounters.md`).
+
 ## 2026-10-10 — Errata page + Rodian Masters
 - **Errata** (menu, right below Glossary): new page with the Glossary's layout and search. It takes every Glossary section
   except Buffs / Debuffs / Minions: Resurrection Order, Start of Battle Order, Nether Stone Drops, Pandemonium Shrine,

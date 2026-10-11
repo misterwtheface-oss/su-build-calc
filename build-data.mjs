@@ -205,11 +205,12 @@ for (const id of NYI_SANDBOX_TRAIT_IDS) excludedTraitIds.add(id);
 // (siralimultimate.wiki.gg/wiki/Lord_Zantai) only MAPS the encounter trait to it. So #1538 is owned by
 // Zantai, ownerForm=encounter. His Jewel of Zantai drops stay item-only (via itemSource).
 const MANUAL_TRAIT_OWNERS = new Map([
-  // MISERY — NYI False God (sandbox-staged, user-confirmed not live): its 3 body-part traits ship in the data flagged
-  // `nyi:true` and are HIDDEN in the app unless FEATURES.nyi. One trait per part, owner = the part (like every False God).
-  [568, { owner: 'Hand of Misery',  ownerType: 'boss', ownerForm: 'encounter', ownerCategory: 'False God', ownerGroup: 'Misery', ownerProvenance: 'user', nyi: true }],
-  [569, { owner: 'Heart of Misery', ownerType: 'boss', ownerForm: 'encounter', ownerCategory: 'False God', ownerGroup: 'Misery', ownerProvenance: 'user', nyi: true }],
-  [570, { owner: 'Brain of Misery', ownerType: 'boss', ownerForm: 'encounter', ownerCategory: 'False God', ownerGroup: 'Misery', ownerProvenance: 'user', nyi: true }],
+  // Hand / Heart / Brain of Misery — NOT a False God (2026-10-11): the code has no Misery False God (no L_WBOSS_MISERY, no
+  // worldboss_ icon, no case in scr_FalseGodName 0-9). PROVISIONAL owner = Perdition's Gate of the Gods (Deity) fight, pending
+  // the user's in-game test (challenge Perdition). Stays nyi:true (hidden unless FEATURES.nyi) until the test confirms it.
+  [568, { owner: 'Perdition', ownerType: 'boss', ownerForm: 'encounter', ownerCategory: 'Deity', ownerGroup: 'Perdition', ownerProvenance: 'user-pending', nyi: true }],
+  [569, { owner: 'Perdition', ownerType: 'boss', ownerForm: 'encounter', ownerCategory: 'Deity', ownerGroup: 'Perdition', ownerProvenance: 'user-pending', nyi: true }],
+  [570, { owner: 'Perdition', ownerType: 'boss', ownerForm: 'encounter', ownerCategory: 'Deity', ownerGroup: 'Perdition', ownerProvenance: 'user-pending', nyi: true }],
   [1538,{ owner: 'Zantai', ownerType: 'boss', ownerForm: 'encounter', ownerCategory: 'Special Boss', ownerGroup: 'Lord Zantai', ownerProvenance: 'wiki' }],
   // Guided by Darkness = Erebyss's CURRENT Deity (encounter) trait — patch 2.0.17 (2025-05-24) changed it
   // FROM "Absence of Light" (which is now just Fog Spirit's creature trait #797). This fills Erebyss's
@@ -752,19 +753,18 @@ for (const k in perkTaxo) { const pk = k.slice(k.indexOf(':') + 1); if (!(pk in 
 // "creatures" whose battle sprites tile into one massive creature; the composite
 // portraits are pre-built by tools/build_falsegods.py into assets/falsegods/<key>.png.
 const OUT_FGOD = path.join(OUT_ASSETS, 'falsegods');
+// names = the game's own text (L_WBOSS_*, scr_FalseGodName ids 0-9); partsKey = the extract's key in false_god_parts_true.json
 const FALSE_GODS = [
   { key: 'THEANCESTOR',   name: 'The Ancestor',      specs: ['Bloodmage', 'Inquisitor', 'Purgatorian'] },
   { key: 'SAINTALTHEA',   name: 'Saint Althea',      specs: ['Cleric', 'Fanatic', 'Paladin', 'Shadowbringer', 'Mermaid'] },
-  { key: 'CALIBAN',       name: 'Caliban',           specs: ['Evoker', 'Trickster', 'Demonologist', 'Pariah'] },
+  { key: 'CALIBAN',       name: 'Caliban the Unredeemed', partsKey: 'Caliban', specs: ['Evoker', 'Trickster', 'Demonologist', 'Pariah'] },
   { key: 'NEBODAR',       name: 'Nebodar',           specs: ['Hell Knight', 'Pyromancer', 'Gladiator'] },
   { key: 'LOIDPRIME',     name: 'Loid Prime',        specs: ['Defiler', 'Necromancer', 'Reaver', 'Mime'] },
   { key: 'MINDWURM',      name: 'Mindwurm',          specs: ['Cabalist', 'Dreamshade', 'Sorcerer', 'Graveborn', 'Mesmerist'] },
   { key: 'HYDRANOX',      name: 'Hydranox',          specs: ['Astrologer', 'Animator', 'Doombringer', 'Spellweaver', 'Toxicologist'] },
-  { key: 'IMPIMPINGTON',  name: 'Imp Impington',     specs: ['Druid', 'Tribalist', 'Windrunner', 'Deprived', 'Grovetender'] },
-  { key: 'JOTUNIR',       name: 'Jotunir',           specs: ['Monk', 'Warden', 'Witch Doctor', 'Brewmaster'] },
-  { key: 'LOSTCONSTRUCT', name: 'The Lost Construct', specs: ['Rune Knight', 'Siegemaster', 'Engineer', 'Antiquarian'] },
-  // NYI (sandbox-staged, not live): no specs, no creature rows/sprites in the extract — only its 3 part traits. Hidden unless FEATURES.nyi.
-  { key: 'MISERY',        name: 'Misery',            specs: [], nyi: true, partTraitIds: [568, 569, 570] },
+  { key: 'IMPIMPINGTON',  name: 'Imp Impington Reborn', partsKey: 'Imp Impington', specs: ['Druid', 'Tribalist', 'Windrunner', 'Deprived', 'Grovetender'] },
+  { key: 'JOTUNIR',       name: 'Jotun',             partsKey: 'Jotunir', specs: ['Monk', 'Warden', 'Witch Doctor', 'Brewmaster'] },
+  { key: 'LOSTCONSTRUCT', name: 'Lost Construct',    partsKey: 'The Lost Construct', specs: ['Rune Knight', 'Siegemaster', 'Engineer', 'Antiquarian'] },
 ];
 const godBySpec = new Map();       // norm(spec label) -> god key
 for (const g of FALSE_GODS) for (const sp of g.specs) godBySpec.set(norm(sp), g.key);
@@ -1356,7 +1356,7 @@ for (const m of matRecs) {
     // TRUE-ID MAPPING: a part is looked up by its creature-table instances (each row = one body part with its OWN runtime
     // trait id), NOT by display name — same-named parts (5x Head of Hydranox, 2x Hand of Loid …) are distinct instances of
     // one shipped trait. Caliban's table also holds the story-boss block (excluded here via owner_type).
-    const inst = (FG_TRUE[g.name] || []).filter(i => i.block !== 'story_boss');
+    const inst = (FG_TRUE[(FALSE_GODS.find(x => x.key === g.key) || {}).partsKey || g.name] || []).filter(i => i.block !== 'story_boss');
     // creature name != trait name for exactly one part (The Ancestor: creature "Arm of The Ancestor" carries the trait "Hand of
     // The Ancestor" x2) — pair the single unmatched part with the single leftover trait group (asserted), never by guess.
     const matchedNames = new Set(parts.map(p => norm(p.name)));

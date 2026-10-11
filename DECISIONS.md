@@ -4,6 +4,13 @@ Standing decisions the user made about how the app models the game. Don't "fix" 
 the assistant's working notes on 2026-10-08 (they existed nowhere in the repo). Add new rulings here when they're made.
 Taxonomy category definitions themselves live in `TAXONOMY.md`.
 
+## Bosses (2026-10-11)
+- **False God names = the game's own text** (`L_WBOSS_*`): Imp Impington Reborn, Caliban the Unredeemed, Jotun, Lost Construct.
+- **Misery is not a False God.** Its three traits are provisionally Perdition's (Gate of the Gods); the user will confirm in-game.
+- **One boss feature for all three boss types** (False Gods, Nether Bosses, Gate of the Gods) on one data source
+  (`_su_extract/data/model/bosses.json`). Boss stats stay at level-1 base; the app does not scale stats above level 1.
+- Upcoming 3.0 content (the "False Godspawn" creatures) stays behind the NYI feature flag.
+
 ## Data joins
 - **Lesson (user-flagged twice): when a name-join undercounts,
 the spine/join source is wrong, not the data — the sprites/classes DO exist under a better key.**
