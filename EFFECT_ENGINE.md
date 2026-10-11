@@ -76,6 +76,22 @@ live on a party slot that carries the trait (innate / fusion / artifact / nether
 | `equip.addClass` | `cls` | `FX.equipClasses` |
 | `stat.share` | `target`, `from`, `stats`, `pctPerRank`, `phase` | `FX.battleStart()` → per slot `{gain, ledger}` |
 
+## Granted spells
+
+`FX.grantedSpells(slot)` → `[{spellId, mode, when, chance, owner}]`: spells an owner hands a creature without using a
+gem slot. Data (all from `_su_extract/data/model/spell_owners.json`, built by `build-data.mjs`):
+`D.spellGrants` (`{owner, spells, mode: gem|cast|boss, when, chance?, oneOf?, classGate?, minRank?}`),
+`D.relicUltimates` (app relic id → Ultimate spell id) and `D.ultimateRoutes` (perk / trait that hands out the relic's
+Ultimate; mode `gem` or `replaceArtifactSpell`).
+
+- Owner liveness: perk via `perkRuleRank` (`spec+anoint`), trait via `slotTraitIds`, relic via `slot.relic` (rank ≥
+  `minRank`, not under `ignores("relics")`).
+- `classGate`: only the spell of the creature's class (`env.slotClass`; a fused creature = its secondary's class).
+- `mode: boss` (False God part kits) never reaches a party slot; shown on the part only.
+- `replaceArtifactSpell` needs an equipped artifact with a spell. Results are deduped by `spellId|mode`.
+
+Env it reads: `slotClass(slot)`, `SPELL` (id → spell), `spellGrants`, `relicUltimates`, `ultimateRoutes`.
+
 `build-data` fails the build on an unknown op, an unknown source kind / `via`, a duplicate id, or a rule
 naming a perk/trait that doesn't exist (a typo can never silently do nothing).
 
@@ -89,7 +105,7 @@ naming a perk/trait that doesn't exist (a typo can never silently do nothing).
 ## Testing
 
 - `node tools/effects_test.mjs` — engine unit tests against the shipped `data.js` (Molecular Betrayal, caps,
-  gem slots / class permissions, stat contributions).
+  gem slots / class permissions, stat contributions, granted spells).
 - Behaviour preservation of the refactor was proven by snapshotting 195 UI surfaces (home both layouts, every
   creature detail + spell-gem picker, creature picker, anointments, synergy, threats, artifact/nether libraries
   and builders) across 14 fixture builds before and after: 0 diffs; a mutated engine produced 55 diffs.

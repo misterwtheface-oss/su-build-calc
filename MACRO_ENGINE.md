@@ -9,8 +9,10 @@ vocabulary ships as `D.macroVocab` (from `_su_extract/data/model/macro_vocab.jso
 ## Pipeline (each stage is a separate function you can change in isolation)
 
 1. **`gatherSlotSpells(slot)`** → the spells the creature can actually cast in a macro = its equipped
-   spell **gems only**. Artifact Spell-slot and Nether-Stone spells auto-proc and can't be cast manually,
-   so they're excluded here.
+   spell **gems** plus spells it is **granted as a gem** (`FX.grantedSpells`, mode `gem`: Runes, Colorwave,
+   Mega Magic, a relic Ultimate). Artifact Spell-slot and Nether-Stone spells auto-proc and can't be cast
+   manually, so they're excluded here; so are spells flagged `noManual` (code `inv_SpellCanBeCastManually`:
+   Booze and a static list such as Saving Grace / Lucky Gem) and chance-cast grants.
 2. **`classifySpell(sp)`** → `{ sp, name, purpose, side, multi }`. `purpose` ∈ `rez · heal · damage ·
    debuff · buff · provoke · defend · summon · other`, derived from the spell's taxonomy, then overridden by
    `SPELL_OVERRIDES`.

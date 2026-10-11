@@ -95,6 +95,12 @@ source of truth), called by both `build-data.mjs` and the **`.githooks/pre-commi
   objects) with a cross-link to the 22 per-god favor shops (items · type · favor price · desc).
 - **Spells** carry code-certain `charges` + community `potency`/`target`/`source`; shown in spell-gem info
   panels (library + builder step-1) and Appendix spell rows (class gem icon + charges·potency).
+- **Holdable spells only / granted spells** (2026-10-10, code `spell_owners.json`): spell pickers (gem / artifact / nether)
+  hide `battleOnly` + `unused` spells (DECISIONS.md). Spells an owner grants (Rune perks, Colorwave, Zantai's traits,
+  Fable / Doomsday / Immobility chance casts, relic Ultimate via Idolatry / Weapons of Mass Distortion) come from
+  `FX.grantedSpells(slot)` (EFFECT_ENGINE.md): "Spells +N" button, **Granted** section on the Spells page, no slot used;
+  owners show them as cards (perk list, trait / False God part / relic detail; spell detail "Granted by").
+- **Deleted gems / artifacts** are pruned from the current and every saved build (on delete, load and startup).
 - **Synergy** (Menu → Synergy): one overlay, **Matrix** ⇆ **List** toggle. Matrix = members (Spec /
   collapsed Anointments / creatures — each expandable to its perks/anoints/traits) × tags; cell = that
   member's contribution count (sub-rows use dots); columns/cells **coloured by share status** (green = shared
@@ -118,6 +124,11 @@ source of truth), called by both `build-data.mjs` and the **`.githooks/pre-commi
   `SPEC_PLAN.md`, pipeline in `WIKI_CONTEXT.md`.
 
 ### Shipped since 2026-09-24 (headings from CHANGELOG.md; details there)
+- 2026-10-10 — granted spells, holdable-only spell pickers, Jade fix
+- 2026-10-10 — deleted gems / artifacts leave saved builds
+- 2026-10-10 — realm yield model · realm favor text tags · sort toggles can be removed · Spec page footer
+- 2026-10-09 — realm property rules + true maximum realm bonus · realm Yield tab / object odds / treasure counts code-grounded
+- 2026-10-09 — 10-item batch · import: no duplicate artifacts / nether stones
 - 2026-10-08 — data notes (bullets)
 - 2026-10-07 — `hasRoll` flags (data only)
 - 2026-10-06 — UI batch (libraries, selection, icons, Realms Objects)
