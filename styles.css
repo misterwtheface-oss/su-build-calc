@@ -1714,6 +1714,16 @@ button.boss-cell { cursor: pointer; }
 .boss-cell img { position: absolute; image-rendering: pixelated; }
 button.boss-cell:hover img, button.boss-cell:focus-visible img { filter: brightness(1.25) drop-shadow(0 0 2px var(--accent2)); }
 .boss-mech { margin: 0 0 10px; }
+.boss-threat { margin-bottom: 8px; border: 1px solid var(--bad); border-radius: var(--radius); background: var(--surface); overflow: hidden; }
+.boss-threat-head { padding: 6px 10px; background: rgba(224,107,107,.16); font-weight: 700; font-size: 14px; }
+.boss-threat-body { padding: 8px 10px; font-size: 13px; line-height: 1.5; }
+.boss-threat-body .boss-steps { padding-left: 16px; }
+.boss-threat-fx, .boss-why { margin: 0; }
+.boss-threat-cond { margin: 6px 0 0; }
+.boss-why { margin-top: 6px; color: var(--text-dim); }
+.boss-who { padding: 0; border: 0; background: none; font: inherit; font-weight: 700; color: var(--accent); cursor: pointer; }
+.boss-who:hover { text-decoration: underline; }
+.boss-when { color: var(--text-mute); }
 .boss-chips { display: flex; flex-wrap: wrap; gap: 4px; margin: 4px 0; }
 .boss-threats { margin-bottom: 12px; }
 .boss-chip { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border: 1px solid var(--border-dim);

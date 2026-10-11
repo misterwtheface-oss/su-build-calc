@@ -3297,6 +3297,13 @@ const bosses = (() => {
       if (!sp || norm(sp.label) !== norm(s.name)) err(`bosses: ${where} anointment spec ${s.spec_id} (${s.name}) does not match the app`);
       return sp ? sp.id : null;
     }).filter(x => x != null);
+    // Inscriptions: picking an Anointment also teaches one unknown spell recipe from this list (this boss is its source);
+    // a spec that starts with one of the recipes is an exception, never the source
+    const inscriptions = ((e.inscriptions || {}).spells || []).map(x => {
+      const id = spell(x, `${where} inscription`);
+      return id == null ? null : { spell: id, ...((x.exceptions || []).length ? { exceptions: x.exceptions.map(c => c.detail) } : {}) };
+    }).filter(Boolean);
+    if (e.type === 'false_god' && !inscriptions.length) err(`bosses: ${where} has no Inscriptions`);
     if (e.type === 'false_god') {
       const fg = falseGods.find(g => g.key === e.app_key);
       if (!fg) err(`bosses: ${where} has no app False God ${e.app_key}`);
@@ -3305,7 +3312,7 @@ const bosses = (() => {
     out.push({
       id: e.id, type: e.type, key: e.app_key || e.key, name: e.name,
       lore: unesc(e.lore && e.lore.text), dialog: unesc(e.dialog && e.dialog.text),
-      orb: (e.nether_orb && e.nether_orb.class) || null, specIds,
+      orb: (e.nether_orb && e.nether_orb.class) || null, specIds, inscriptions,
       mechanics: (e.mechanics || []).map(m => ({ kind: m.kind, ...(m.turns ? { turns: m.turns } : {}), text: m.text, ...(m.check ? { check: m.check } : {}) })),
       units: units.sort((a, b) => a.slot - b.slot),
     });

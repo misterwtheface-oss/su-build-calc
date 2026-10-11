@@ -10,6 +10,10 @@ Taxonomy category definitions themselves live in `TAXONOMY.md`.
 - **One boss feature for all three boss types** (False Gods, Nether Bosses, Gate of the Gods) on one data source
   (`_su_extract/data/model/bosses.json`). Boss stats stay at level-1 base; the app does not scale stats above level 1.
 - Upcoming 3.0 content (the "False Godspawn" creatures) stays behind the NYI feature flag.
+- **Boss page layout (user, 2026-10-11):** whole-creature formation (parts edge to edge, still links), a **Threats** section
+  (one container per major threat: title, the causing steps, a plain "why it matters"), spells as full spell containers,
+  **Rewards** at the bottom (Anointment = a perk from one of the listed specs; Inscription = one unknown spell from the
+  boss's list). No Runes section on boss pages (same for every False God). Boss grid: 2 tiles per row, whole-creature art.
 
 ## Data joins
 - **Lesson (user-flagged twice): when a name-join undercounts,

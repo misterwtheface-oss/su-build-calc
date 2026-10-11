@@ -10,6 +10,16 @@ New entries go at the TOP.
   `obj_anointpicker`, extract `spell_owners.json` `false_god_inscriptions`). They now show in every gem picker. Hidden list:
   93 → 42 (Ultimates, Runes, Mega Magic, Colorwaves). Test updated.
 
+## 2026-10-11 — Bosses page: Threats and Rewards sections
+- **Threats** replaces the threat chips and the timer callout: one container per major threat, headed by its name, holding
+  the steps that cause it (part name → its card) and a plain-language "why it matters". Found from the code's step kinds only:
+  timed exit, instant kills (incl. "not Defending"), shielded/reviving parts, resurrection, permanent/growing conditions
+  (with the condition's description), heavy attacks (≥300%), "×3 unless Provoking", debuff-scaled damage, compounding stat
+  gains, damage reflection, timeline push. Sorted deadliest first; advice adapts to unkillable bosses (Jotun).
+- **Rewards** (bottom of the page, replaces the Anointments line): Anointment = a perk from one of the listed specs;
+  Inscription = one spell you don't know yet from the False God's own list (bosses.json `inscriptions`, S29), shown as full
+  spell containers, with spec exceptions (Shadowbringer starts with Plague) as clarify notes.
+
 ## 2026-10-11 — Bosses page: whole-creature formation, spell containers, no Runes
 - Formation: the six battle frames are drawn edge to edge (no cell containers, no gaps) so they form the whole False God;
   each part still links to its card. The exported PNGs are trimmed, so each frame is placed at its code offset inside its

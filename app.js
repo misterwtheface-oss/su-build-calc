@@ -1393,21 +1393,102 @@
       default: return esc(s.text || s.kind);
     }
   }
-  // threat summary for the top of the page: one chip per dangerous mechanic, from step kinds only; tap → that unit
-  function bossThreats(e) {
-    const out = [], seen = new Set();
-    const add = (k, label, slot) => { if (seen.has(k)) return; seen.add(k); out.push({ label, slot }); };
-    for (const u of e.units) for (const s of [...(u.turn || []), ...u.passives]) {
-      const c = s.cond && COND_BY_KEY.get(s.cond);
-      if (s.kind === "ohko") add("ohko", s.target === "each_player_not_defending" ? "Kills anyone not Defending" : "Instant kill", u.slot);
-      else if (s.kind === "keep_condition" && c) add(`keep:${s.cond}`, `Permanent ${c.name}`, u.slot);
-      else if (s.kind === "immune_damage") add(`imm:${s.when || ""}`, s.when ? `${u.name} shielded` : "Immune to damage", u.slot);
-      else if (s.kind === "resurrect" || s.kind === "revive") add("rez", s.kind === "revive" ? `${u.name} revives` : "Resurrects parts", u.slot);
-      else if (s.kind === "reflect_on_damaged") add("reflect", "Damages attackers", u.slot);
-      else if (s.kind === "timeline_to_bottom") add("timeline", "Timeline push", u.slot);
-      else if (s.kind === "intensify_condition" && c) add(`int:${s.cond}`, `${c.name} intensifies`, u.slot);
-    }
+  // consecutive stat gains with the same target + amount read as one line ("Attack and Intelligence")
+  const bossMerge = (arr) => arr.reduce((out, s) => {
+    const p = out[out.length - 1];
+    if (s.kind === "stat_gain" && p && p.kind === "stat_gain" && p.target === s.target && p.pct === s.pct && p.filter === s.filter && String(p.units) === String(s.units)) p.stat.push(s.stat);
+    else out.push(s.kind === "stat_gain" ? { ...s, stat: [s.stat] } : s);
     return out;
+  }, []);
+  // Threats: one container per dangerous mechanic, found from the code's step kinds only. Each holds the steps that cause it
+  // (part name → its card) and a plain-language "why it matters" built from the same steps.
+  function bossThreats(e, part) {
+    const map = new Map(), order = [];
+    const add = (k, u, s, when) => { if (!map.has(k)) { map.set(k, []); order.push(k); } map.get(k).push({ u, s, when }); };
+    for (const u of e.units) for (const [when, arr] of [["turn", bossMerge(u.turn || [])], ["always", bossMerge(u.passives)]]) for (const s of arr) {
+      const f = String(s.formula || "");
+      if (s.kind === "ohko") add(s.target === "each_player_not_defending" ? "ohko_def" : "ohko", u, s, when);
+      else if (s.cond && ["keep_condition", "intensify_condition", "damage_bonus_vs_condition"].includes(s.kind)) add(`cond:${s.cond}`, u, s, when);
+      else if (s.kind === "immune_damage") add(s.when ? `shield:${u.slot}` : "immune", u, s, when);
+      else if (s.kind === "revive") add(`shield:${u.slot}`, u, s, when);
+      else if (s.kind === "resurrect") add("rez", u, s, when);
+      else if (s.kind === "reflect_on_damaged") add("reflect", u, s, when);
+      else if (s.kind === "timeline_to_bottom") add("timeline", u, s, when);
+      else if (s.kind === "damage" && /debuffs on the target/.test(f)) add("debuffs", u, s, when);
+      else if (s.kind === "damage" && /not Provoking/.test(f)) add("provoke", u, s, when);
+      else if ((s.kind === "stat_gain" && when === "turn") || (s.kind === "damage" && /stat gains/.test(f))) add("grow", u, s, when);
+      else if (s.kind === "attack" && s.power_pct >= 300) add("heavy", u, s, when);
+    }
+    const uniq = (its) => [...new Set(its.map(i => i.u.name))];
+    // "the Body of Loid and each Arm of Loid" — a part with two copies reads "each …"; plural() picks the verb form
+    const names = (its) => { const n = uniq(its).map(x => new Set(its.filter(i => i.u.name === x).map(i => i.u.slot)).size > 1 ? `each ${x}` : `the ${x}`);
+      return n.length < 2 ? n.join("") : `${n.slice(0, -1).join(", ")} and ${n[n.length - 1]}`; };
+    const plural = (its) => uniq(its).length > 1;
+    const cap = (t) => t.replace(/^./, x => x.toUpperCase());
+    const timer = e.mechanics.find(m => m.kind === "timer_exit");
+    const allImmune = e.units.every(u => u.passives.some(x => x.kind === "immune_damage" && !x.when));   // can't be killed (Jotun)
+    const out = [];
+    if (timer) out.push({ title: `Survive ${timer.turns} turns`, extra: "",
+      effect: `<p class="boss-threat-fx">${esc(e.name)} leaves after <b>${timer.turns}</b> turns (every creature's turn counts) and all its ${part}s die.${allImmune ? ` Every ${part} is immune to damage.` : ""}</p>`,
+      why: allImmune ? "You can't win by attacking: damage does nothing here. You win by staying alive until it leaves, so healing, Defense and protection matter more than damage."
+        : `The fight ends on its own after ${timer.turns} turns.` });
+    for (const k of order) {
+      const its = map.get(k), u0 = its[0].u, s0 = its[0].s;
+      const c = s0.cond ? COND_BY_KEY.get(s0.cond) : null;
+      let title = "", why = "", extra = "";
+      if (k === "ohko_def") { title = "Kills anyone not Defending";
+        why = `Health and Defense don't help: any creature of yours that isn't Defending when the ${u0.name} acts dies outright. Watch the timeline and have your creatures Defending before it acts, or kill the ${u0.name} first.`; }
+      else if (k === "ohko") { title = "Instant kill";
+        why = `Every turn the ${u0.name} takes, one of your creatures dies outright, whatever its Health or Defense. Over a long fight that adds up: kill the ${u0.name} early, and bring resurrection.`; }
+      else if (k.startsWith("cond:") && c) {
+        const keep = its.find(i => i.s.kind === "keep_condition"), grow = its.find(i => i.s.kind === "intensify_condition"), bonus = its.filter(i => i.s.kind === "damage_bonus_vs_condition");
+        title = `${keep ? "Permanent " : ""}${grow ? (keep ? "growing " : "Growing ") : ""}${c.name}`;
+        extra = c.desc ? `<div class="trait-desc boss-threat-cond">${richText(c.desc)}</div>` : "";
+        why = [keep && (s0.cond === "blight"
+            ? "Your whole party can't be healed for the entire fight, and healing effects damage them instead. A team that relies on healing turns against itself here: lean on damage prevention and killing fast."
+            : `Your creatures have ${c.name} for the whole fight, so removing it doesn't stick.`),
+          grow && `Every turn the ${grow.u.name} takes, the potency of ${c.name} on your creatures is multiplied by ${grow.s.multiplier}, so it keeps climbing until the ${grow.u.name} dies.`,
+          bonus.length && `${cap(names(bonus))} also deal${plural(bonus) ? "" : "s"} extra damage the stronger ${c.name} is on the target.`,
+          grow && `Kill the ${grow.u.name} early.`].filter(Boolean).join(" ");
+      }
+      else if (k === "immune") { if (timer && allImmune) continue; title = "Immune to damage";
+        why = `${cap(names(its))} can't be damaged at all.`; }
+      else if (k.startsWith("shield:")) {
+        const imm = its.find(i => i.s.kind === "immune_damage"), rev = its.find(i => i.s.kind === "revive");
+        title = `${u0.name}: ${[imm && "shielded", rev && `revives ${rev.s.count}×`].filter(Boolean).join(", ")}`;
+        why = [imm && `You can't damage the ${u0.name} until every other ${part} is dead.`,
+          rev && `It comes back ${rev.s.count} times (at ${rev.s.stages.map(x => `${x.hp_pct}%`).join(" and ")} Health), and each time every other ${part} returns to full Health, so the fight nearly starts over.`,
+          "Expect a long fight: bring sustain, not just burst damage."].filter(Boolean).join(" "); }
+      else if (k === "rez") { title = "Resurrects parts";
+        const heals = (u0.turn || []).some(x => x.kind === "heal_direct");
+        why = `Every turn the ${u0.name} takes, it brings every dead ${part} back at full Health${heals ? " and heals the living ones" : ""}. Kill the ${u0.name} first, or damage on the other ${part}s is wasted.`; }
+      else if (k === "reflect") { title = "Damages attackers";
+        why = `Every time you damage ${names(its)}, the attacker takes damage back (${s0.formula.replace(/this unit's/g, "that part's")}). Attacks and spells that hit several times, or hit several ${part}s, trigger it once per hit.`; }
+      else if (k === "timeline") { title = "Timeline push";
+        why = `Every turn the ${u0.name} takes, your creature next in line to act is sent to the bottom of the timeline, so it acts after everyone else instead of next. Your fastest creatures get delayed the most.`; }
+      else if (k === "debuffs") { title = "Debuffs multiply its damage";
+        const deb = e.units.filter(u => (u.turn || []).some(x => x.kind === "debuff")).map(u => ({ u }));
+        why = `The ${u0.name}'s damage is multiplied by one plus the number of debuffs on each target.${deb.length ? ` ${cap(names(deb))} add${plural(deb) ? "" : "s"} a random debuff to your creatures every turn, so it climbs fast.` : ""} Removing debuffs keeps it down.`; }
+      else if (k === "provoke") { title = "Triple damage unless Provoking";
+        why = `${cap(names(its))} hit${plural(its) ? "" : "s"} every creature of yours, three times as hard on any that isn't Provoking.`; }
+      else if (k === "grow") { title = "Grows stronger every turn";
+        const gains = its.filter(i => i.s.kind === "stat_gain"), dmg = its.find(i => i.s.kind === "damage");
+        const st = new Set(gains.flatMap(i => i.s.stat));
+        const fx = [(st.has("attack") || st.has("intelligence") || dmg) && "the harder it hits", st.has("defense") && "the tougher it gets", st.has("speed") && "the more often it acts"].filter(Boolean);
+        why = `The gains are a share of current stats, so they compound: the longer the fight, ${fx.length > 1 ? `${fx.slice(0, -1).join(", ")} and ${fx[fx.length - 1]}` : fx[0]}.${dmg ? ` The ${dmg.u.name}'s damage is based on these gains, so it climbs with them.` : ""} ${allImmune ? "You can't kill it to stop this, so the last turns before it leaves hurt the most." : uniq(gains).length > 2 ? "End the fight fast." : `Kill ${names(gains)} early, or end the fight fast.`}`; }
+      else if (k === "heavy") { const pct = Math.max(...its.map(i => i.s.power_pct)); title = `${pct}% attacks`;
+        const all = its.some(i => i.s.target === "each_player");
+        why = all ? `Every turn ${names(its)} takes, it attacks every creature of yours at ${pct / 100}× normal damage. Fragile creatures can drop in one turn: ${allImmune ? "build Defense to outlast it." : `build Defense or kill ${names(its)} first.`}`
+          : `Hits ${its.map(i => ({ first_player: "your first creature", last_player: "your last creature", random_player: "a random creature" }[i.s.target] || "one creature")).join(" and ")} at ${pct / 100}× normal damage. Put creatures that can take the hit in those spots.`; }
+      if (!title) continue;
+      const rank = ["ohko_def", "ohko", "shield", "rez", "cond", "heavy", "provoke", "debuffs", "grow", "reflect", "timeline", "immune"].indexOf(k.split(":")[0]);
+      // the same line on two copies of a part reads once, "Arm of Loid ×2"
+      const rows = new Map();
+      for (const i of its) { const h = bossStepHtml(i.s, part), rk = i.u.name + "|" + i.when + "|" + h;
+        if (rows.has(rk)) rows.get(rk).n++; else rows.set(rk, { ...i, h, n: 1 }); }
+      out.push({ rank, title, why, extra, effect: `<ul class="boss-steps">${[...rows.values()].map(r => `<li><button class="boss-who" data-action="boss-jump" data-slot="${r.u.slot}">${esc(r.u.name)}${r.n > 1 ? ` ×${r.n}` : ""}</button> <span class="boss-when">${r.when === "turn" ? "on its turn" : "always"}</span>: ${r.h}</li>`).join("")}</ul>` });
+    }
+    return out.sort((a, b) => (a.rank ?? -1) - (b.rank ?? -1));   // the timer (no rank) leads, then deadliest first
   }
   function renderBossDetail() {
     const st = dovState, e = BOSS_BY_KEY.get(st.key); if (!e) return "";
@@ -1415,17 +1496,10 @@
     const typeLabel = (((D.bosses && D.bosses.types) || []).find(t => t.type === e.type) || {}).label || "";
     const sec = (k, title, html) => `<button class="apx-sec-head apx-cat${st.open.has(k) ? "" : " collapsed"}" data-action="boss-sec" data-k="${k}"><span class="apx-sec-caret">${st.open.has(k) ? "▾" : "▸"}</span>${title}</button>${st.open.has(k) ? html : ""}`;
     const formation = bossFormation(e, true);
-    const threats = bossThreats(e);
+    const threats = bossThreats(e, part);
     const sameStats = e.units.every(u => STAT_KEYS.every(k => u.stats[k] === e.units[0].stats[k]));
     const statLine = (s) => `<div class="boss-stats">${STAT_KEYS.map(k => `<span><b>${s[k]}</b> ${STAT_LABEL[k]}</span>`).join("")}</div>`;
-    // consecutive stat gains with the same target + amount read as one line ("Attack and Intelligence")
-    const merge = (arr) => arr.reduce((out, s) => {
-      const p = out[out.length - 1];
-      if (s.kind === "stat_gain" && p && p.kind === "stat_gain" && p.target === s.target && p.pct === s.pct && p.filter === s.filter && String(p.units) === String(s.units)) p.stat.push(s.stat);
-      else out.push(s.kind === "stat_gain" ? { ...s, stat: [s.stat] } : s);
-      return out;
-    }, []);
-    const lines = (arr) => `<ul class="boss-steps">${merge(arr).map(s => s.kind === "note" ? `<li class="fx-clarify">${esc(s.text)}</li>` : `<li>${bossStepHtml(s, part)}</li>`).join("")}</ul>`;
+    const lines = (arr) => `<ul class="boss-steps">${bossMerge(arr).map(s => s.kind === "note" ? `<li class="fx-clarify">${esc(s.text)}</li>` : `<li>${bossStepHtml(s, part)}</li>`).join("")}</ul>`;
     const units = e.units.map(u => {
       const tr = u.traitId != null ? TRAIT[u.traitId] : null;
       return `<div class="boss-unit" id="boss-unit-${u.slot}">
@@ -1440,20 +1514,23 @@
       </div>`;
     }).join("");
     const specs = e.specIds.map(id => D.specs.find(s => s.id === id)).filter(Boolean);
+    const insc = (e.inscriptions || []).filter(x => D.spells[x.spell]);
+    const rewards = specs.length || insc.length ? `<div class="section-label">Rewards</div>
+      ${specs.length ? `<div class="boss-sub">Anointment: a perk from one of</div><div class="boss-chips">${specs.map(s => `<span class="boss-chip">${SPEC_EMBLEM.get(s.label) ? `<span class="prop-ico sm">${spriteImg(SPEC_EMBLEM.get(s.label), "px")}</span>` : ""}${esc(s.label)}</span>`).join("")}</div>` : ""}
+      ${insc.length ? `<div class="boss-sub">Inscription: a spell you don't know yet from</div><div class="art-spellcards boss-spells">${insc.map(x => spellGemCard(D.spells[x.spell]) + (x.exceptions || []).map(t => `<div class="fx-clarify">${esc(t)}</div>`).join("")).join("")}</div>` : ""}` : "";
     return `<div class="ovl-backdrop" data-action="detail-backdrop"><div class="overlay-panel detail">
       <div class="overlay-header">${bossImg(e) ? `<span class="hdr-ico">${spriteImg(bossImg(e))}</span>` : ""}
         <h2>${esc(e.name)}</h2>${typeLabel ? `<span class="anoint-spec-tag apx-boss-cat">${esc(typeLabel.replace(/s$/, ""))}</span>` : ""}
         <button class="ovl-close" data-action="close-detail">✕</button></div>
       <div class="overlay-body"><div class="ovl-center"><div class="ovl-center-scroll boss-page">
         ${formation}
-        ${e.mechanics.map(m => `<div class="excl-note boss-mech"><span>${m.kind === "timer_exit"
-          ? `${esc(e.name)} leaves after <b>${m.turns}</b> turns (every creature's turn counts) and all its ${part}s die.${e.units.every(u => u.passives.some(x => x.kind === "immune_damage" && !x.when)) ? ` Every ${part} is immune to damage, so outlasting it is the only way to win.` : ""}`
-          : esc(m.text)}</span></div>`).join("")}
-        ${threats.length ? `<div class="boss-chips boss-threats">${threats.map(t => `<button class="boss-chip warn" data-action="boss-jump" data-slot="${t.slot}">${esc(t.label)}</button>`).join("")}</div>` : ""}
+        ${e.mechanics.filter(m => m.kind !== "timer_exit").map(m => `<div class="excl-note boss-mech"><span>${esc(m.text)}</span></div>`).join("")}
+        ${threats.length ? `<div class="section-label">Threats</div>${threats.map(t => `<div class="boss-threat"><div class="boss-threat-head">${esc(t.title)}</div>
+          <div class="boss-threat-body">${t.effect}${t.extra}<p class="boss-why">${esc(t.why)}</p></div></div>`).join("")}` : ""}
         ${sameStats && e.units.length ? `<div class="section-label">Base stats</div>${statLine(e.units[0].stats)}` : ""}
-        ${specs.length ? `<div class="section-label">Anointments</div><div class="boss-chips">${specs.map(s => `<span class="boss-chip">${SPEC_EMBLEM.get(s.label) ? `<span class="prop-ico sm">${spriteImg(SPEC_EMBLEM.get(s.label), "px")}</span>` : ""}${esc(s.label)}</span>`).join("")}</div>` : ""}
         <div class="section-label">${e.type === "false_god" ? "Body parts" : "Creatures"}</div>
         ${units}
+        ${rewards}
         ${e.lore || e.dialog ? sec("lore", "Lore", `${e.lore ? `<div class="trait-desc boss-lore">${richText(e.lore)}</div>` : ""}${e.dialog ? `<div class="trait-desc boss-lore boss-dialog">${richText(e.dialog)}</div>` : ""}`) : ""}
       </div></div></div>
       <div class="overlay-footer"><span class="foot-info"></span><button class="btn-confirm" data-action="close-detail">Done</button></div>
