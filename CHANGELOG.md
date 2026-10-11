@@ -4,6 +4,16 @@ Every dated change entry, newest first (moved verbatim from Progress.md on 2026-
 to their own section and sorted by their date). Current state and open work: `Progress.md`, `BACKLOG.md`.
 New entries go at the TOP.
 
+## 2026-10-11 — Bosses page: whole-creature formation, spell containers, no Runes
+- Formation: the six battle frames are drawn edge to edge (no cell containers, no gaps) so they form the whole False God;
+  each part still links to its card. The exported PNGs are trimmed, so each frame is placed at its code offset inside its
+  64x64 cell (new `_su_extract/assets/battle_frame_offsets.json`, dumped by `tools/scripts/dump_battle_frame_offsets.csx`;
+  build fails on a missing offset).
+- Boss selection grid: the same whole-creature formation as the tile art, 2 tiles per row (5 rows for the 10 False Gods).
+- Cast steps show each spell as the full spell-gem container (icon + name + description) used on the relic page, not a chip.
+- Runes section removed from boss pages (it was the same list on every False God); the per-rune code check is no longer
+  shipped in data.js.
+
 ## 2026-10-11 — Bosses page (False Gods)
 - **Bosses** (Menu, below Nether Realm): portrait grid grouped by boss type (False Gods now; Nether Bosses and Gate of the Gods
   join the same page when the extract ships them). A boss page shows the battle formation (tap a part to jump to it), encounter

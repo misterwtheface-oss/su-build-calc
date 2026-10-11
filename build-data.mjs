@@ -3220,6 +3220,9 @@ const bosses = (() => {
   const OUT_BOSSPARTS = path.join(OUT_ASSETS, 'bossparts');
   fs.rmSync(OUT_BOSSPARTS, { recursive: true, force: true });
   fs.mkdirSync(OUT_BOSSPARTS, { recursive: true });
+  // spr_crits_battle PNGs are exported trimmed; the frame's place in its 64x64 cell (dump_battle_frame_offsets.csx) lets the
+  // page reassemble a multi-part boss pixel-exact
+  const FRAME_OFF = JSON.parse(fs.readFileSync(path.join(SRC, 'assets', 'battle_frame_offsets.json'), 'utf8'));
   const TYPE_LABEL = { false_god: 'False Gods', nether_boss: 'Nether Bosses', gate_god: 'Gate of the Gods' };
   const unesc = (t) => String(t || '').replace(/\\n/g, '\n');
   // extract notes are written for the decode; the app shows them in plain language. Code refs in parentheses are dropped,
@@ -3266,6 +3269,9 @@ const bosses = (() => {
       let img = null;
       if (fs.existsSync(src)) { fs.copyFileSync(src, path.join(OUT_BOSSPARTS, `${u.battle_frame}.png`)); img = `assets/bossparts/${u.battle_frame}.png`; }
       else err(`bosses: ${w} battle frame ${u.battle_frame} missing (404-source)`);
+      const fo = FRAME_OFF.frames[u.battle_frame];
+      if (!fo) err(`bosses: ${w} battle frame ${u.battle_frame} has no offset`);
+      const off = fo ? fo.map((v, i) => +(v / (i % 2 ? FRAME_OFF.h : FRAME_OFF.w) * 100).toFixed(4)) : null;   // % of the cell
       // a unit caught by another trait's OR check runs that kit; its own branch is never reached (Saint Althea's second Hand)
       let turnNote = plainNote(u.turn_action ? u.turn_action.note : u.turn_action_note, w);
       // only a quirk when the shared branch belongs to a differently named part (two copies of one part sharing a branch is normal)
@@ -3277,7 +3283,7 @@ const bosses = (() => {
       }
       nUnits++;
       return {
-        slot: u.slot, grid: u.grid_position, name: u.name, stats: u.base_stats, img, traitId: traitId ?? null,
+        slot: u.slot, grid: u.grid_position, name: u.name, stats: u.base_stats, img, off, traitId: traitId ?? null,
         turn: u.turn_action ? u.turn_action.steps.map(s => step(s, w)) : null,
         ...(turnNote ? { turnNote } : {}),
         passives: (u.passives || []).map(s => step(s, w)).filter(Boolean),
@@ -3299,18 +3305,10 @@ const bosses = (() => {
       orb: (e.nether_orb && e.nether_orb.class) || null, specIds,
       mechanics: (e.mechanics || []).map(m => ({ kind: m.kind, ...(m.turns ? { turns: m.turns } : {}), text: m.text, ...(m.check ? { check: m.check } : {}) })),
       units: units.sort((a, b) => a.slot - b.slot),
-      runes: (e.modifiers || []).includes('false_god_runes'),
     });
   }
-  // the code check per rune (only shown where it adds to / differs from the text)
-  const rc = new Map(((bj.modifiers.false_god_runes || {}).runes || []).map(r => [r.key, r.code_check]));
-  for (const r of runes) {
-    const c = rc.get(r.key);
-    if (!c) { err(`bosses: rune ${r.key} has no code check`); continue; }
-    r.code = { verdict: c.verdict, detail: c.detail, ...(c.clarify ? { clarify: c.clarify } : {}) };
-  }
   const types = [...new Set(out.map(e => e.type))].map(t => ({ type: t, label: TYPE_LABEL[t] || t }));
-  console.log(`  bosses: ${out.length} encounters (${types.map(t => `${out.filter(e => e.type === t.type).length} ${t.type}`).join(' / ')}) · ${nUnits} units · ${nSteps} steps · rune checks ${rc.size}`);
+  console.log(`  bosses: ${out.length} encounters (${types.map(t => `${out.filter(e => e.type === t.type).length} ${t.type}`).join(' / ')}) · ${nUnits} units · ${nSteps} steps`);
   return { types, encounters: out };
 })();
 

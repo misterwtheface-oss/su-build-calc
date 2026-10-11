@@ -1304,6 +1304,12 @@
   const BOSS_BY_KEY = new Map(BOSSES.map(e => [e.key, e]));
   const COND_BY_KEY = new Map((D.conditions || []).filter(c => c.cat !== "Minion").map(c => [c.key, c]));
   const bossImg = (e) => { const g = FG_BY_KEY.get(e.key); return g ? g.img : null; };
+  // the six parts drawn edge to edge in battle order (grid 1–3 top row, 4–6 bottom) so they form the whole creature; each
+  // trimmed frame sits at its code offset inside its cell. jump → each part links to its card below.
+  const bossFormation = (e, jump) => { const byGrid = new Map(e.units.map(u => [u.grid, u]));
+    return `<div class="boss-formation">${[1, 2, 3, 4, 5, 6].map(g => { const u = byGrid.get(g), o = u && u.off;
+      const img = u && u.img && o ? `<img src="${esc(u.img)}" alt="" style="left:${o[0]}%;top:${o[1]}%;width:${o[2]}%;height:${o[3]}%" onerror="this.classList.add('sprite-missing');console.error('MISSING SPRITE:', this.getAttribute('src'))">` : "";
+      return jump && u ? `<button class="boss-cell" data-action="boss-jump" data-slot="${u.slot}" title="${esc(u.name)}">${img}</button>` : `<span class="boss-cell">${img}</span>`; }).join("")}</div>`; };
   function openBosses() {
     ovState = { kind: "bosses", search: "", render: renderBosses };
     openOverlay(ovState.render()); maybeFocusSearch(OV);
@@ -1314,8 +1320,8 @@
     const body = ((D.bosses && D.bosses.types) || []).map(t => {
       const list = BOSSES.filter(e => e.type === t.type && hit(e));
       if (!list.length) return "";
-      return `<div class="section-label">${esc(t.label)}</div><div class="pick-grid boss-grid">${list.map(e => `<div class="pick-tile" data-action="boss-open" data-k="${esc(e.key)}">
-        <div class="pt-sprite">${bossImg(e) ? spriteImg(bossImg(e), "px") : ""}</div><div class="pt-name">${esc(e.name)}</div></div>`).join("")}</div>`;
+      return `<div class="section-label">${esc(t.label)}</div><div class="boss-grid">${list.map(e => `<div class="boss-tile" data-action="boss-open" data-k="${esc(e.key)}">
+        ${bossFormation(e, false)}<div class="pt-name">${esc(e.name)}</div></div>`).join("")}</div>`;
     }).join("") || `<div class="slot-sub" style="padding:10px">Nothing matches “${esc(st.search)}”.</div>`;
     return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel">
       <div class="overlay-header"><h2>Bosses</h2>
@@ -1343,7 +1349,8 @@
     // "every other part, dead or alive … if it is dead" reads as "every other dead part"
     let cond = s.when;
     if (s.target === "each_ally_incl_dead" && /\b(dead|alive)\b/.test(s.when || "")) { T = `every other ${/dead/.test(s.when) ? "dead" : "living"} ${part}`; cond = null; }
-    const sp = (id) => { const x = D.spells[id]; return x ? `<button class="boss-chip" data-action="apx-open" data-ek="spell" data-eid="${id}">${spellIcon(x) ? `<span class="prop-ico sm">${spriteImg(spellIcon(x), "px")}</span>` : ""}${esc(x.name)}</button>` : ""; };
+    const sp = (id) => D.spells[id] ? spellGemCard(D.spells[id]) : "";
+    const cards = (ids) => `<div class="art-spellcards boss-spells">${ids.join("")}</div>`;
     const cd = (k) => { const c = k && COND_BY_KEY.get(k); return c ? `<button class="boss-chip" data-action="apx-open" data-ek="condition" data-eid="${esc(`${c.cat}:${c.key}`)}">${c.icon ? `<span class="prop-ico sm"><img src="${esc(c.icon)}" alt=""></span>` : ""}${esc(c.name)}</button>` : `<span class="boss-chip dim">nothing</span>`; };
     const chips = (ids) => `<div class="boss-chips">${ids.join("")}</div>`;
     const plain = (t) => esc(String(t || "").replace(/this unit's/g, "its").replace(/boss units?/g, (m) => m.endsWith("s") ? `${part}s` : part));
@@ -1356,8 +1363,8 @@
       case "cast": {
         const n = s.repeat || 1, ids = (s.spells || []).map(sp);
         const at = s.target === "all_players" ? ` at ${T}` : s.target === "ally_creature" ? ` on ${T}` : "";
-        if (s.oneOf) return `${n > 1 ? `Casts <b>${n}</b> times, a random spell each time, from:` : "Casts a random spell from:"}${chips(ids)}`;
-        return `Casts ${ids.join("")}${n > 1 ? ` <b>${n}</b> times` : ""}${at}`;
+        if (s.oneOf) return `${n > 1 ? `Casts <b>${n}</b> times, a random spell each time, from:` : "Casts a random spell from:"}${cards(ids)}`;
+        return `Casts${n > 1 ? ` <b>${n}</b> times` : ""}${at}:${cards(ids)}`;
       }
       case "buff":
         if (s.conds) return `Grants ${T} one of:${chips(s.conds.map(cd))}`;
@@ -1407,11 +1414,7 @@
     const part = e.type === "false_god" ? "part" : "boss creature";
     const typeLabel = (((D.bosses && D.bosses.types) || []).find(t => t.type === e.type) || {}).label || "";
     const sec = (k, title, html) => `<button class="apx-sec-head apx-cat${st.open.has(k) ? "" : " collapsed"}" data-action="boss-sec" data-k="${k}"><span class="apx-sec-caret">${st.open.has(k) ? "▾" : "▸"}</span>${title}</button>${st.open.has(k) ? html : ""}`;
-    const short = (n) => n.split(" of ")[0];
-    // battle formation: grid positions 1–3 = top row, 4–6 = bottom row (the portrait layout)
-    const byGrid = new Map(e.units.map(u => [u.grid, u]));
-    const formation = `<div class="boss-formation">${[1, 2, 3, 4, 5, 6].map(g => { const u = byGrid.get(g);
-      return u ? `<button class="boss-cell" data-action="boss-jump" data-slot="${u.slot}" title="${esc(u.name)}"><span class="boss-cell-spr">${u.img ? spriteImg(u.img, "px") : ""}</span><span class="boss-cell-n">${esc(short(u.name))}</span></button>` : `<span></span>`; }).join("")}</div>`;
+    const formation = bossFormation(e, true);
     const threats = bossThreats(e);
     const sameStats = e.units.every(u => STAT_KEYS.every(k => u.stats[k] === e.units[0].stats[k]));
     const statLine = (s) => `<div class="boss-stats">${STAT_KEYS.map(k => `<span><b>${s[k]}</b> ${STAT_LABEL[k]}</span>`).join("")}</div>`;
@@ -1437,10 +1440,6 @@
       </div>`;
     }).join("");
     const specs = e.specIds.map(id => D.specs.find(s => s.id === id)).filter(Boolean);
-    const runes = e.runes ? (D.runes || []).map(r => `<div class="boss-rune">${r.icon ? `<span class="prop-ico">${spriteImg(r.icon, "px")}</span>` : ""}
-      <div><b>${esc(r.name)}</b>${r.rewardPct != null ? ` <span class="anoint-spec-tag">+${r.rewardPct}% Rewards</span>` : ""}
-        <div class="trait-desc">${richText(r.effect)}</div>
-        ${r.code && (r.code.clarify || r.code.verdict !== "matches") ? `<div class="fx-clarify">${esc(r.code.detail)}</div>` : ""}</div></div>`).join("") : "";
     return `<div class="ovl-backdrop" data-action="detail-backdrop"><div class="overlay-panel detail">
       <div class="overlay-header">${bossImg(e) ? `<span class="hdr-ico">${spriteImg(bossImg(e))}</span>` : ""}
         <h2>${esc(e.name)}</h2>${typeLabel ? `<span class="anoint-spec-tag apx-boss-cat">${esc(typeLabel.replace(/s$/, ""))}</span>` : ""}
@@ -1455,7 +1454,6 @@
         ${specs.length ? `<div class="section-label">Anointments</div><div class="boss-chips">${specs.map(s => `<span class="boss-chip">${SPEC_EMBLEM.get(s.label) ? `<span class="prop-ico sm">${spriteImg(SPEC_EMBLEM.get(s.label), "px")}</span>` : ""}${esc(s.label)}</span>`).join("")}</div>` : ""}
         <div class="section-label">${e.type === "false_god" ? "Body parts" : "Creatures"}</div>
         ${units}
-        ${runes ? sec("runes", "Runes", `<div class="boss-runes">${runes}</div>`) : ""}
         ${e.lore || e.dialog ? sec("lore", "Lore", `${e.lore ? `<div class="trait-desc boss-lore">${richText(e.lore)}</div>` : ""}${e.dialog ? `<div class="trait-desc boss-lore boss-dialog">${richText(e.dialog)}</div>` : ""}`) : ""}
       </div></div></div>
       <div class="overlay-footer"><span class="foot-info"></span><button class="btn-confirm" data-action="close-detail">Done</button></div>

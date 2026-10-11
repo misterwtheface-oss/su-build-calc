@@ -1701,14 +1701,18 @@ select.app-select:hover { border-color: var(--accent2); }
 .sob-marker .res-n { font-size: 16px; }
 
 /* ── Bosses (Menu → Bosses + boss detail page) — mobile first ── */
-.boss-grid { margin-bottom: 14px; }
-.boss-formation { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; max-width: 300px; margin: 0 auto 12px; }
-.boss-cell { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 4px 2px; background: var(--surface);
-  border: 1px solid var(--border-dim); border-radius: var(--radius); color: var(--text); cursor: pointer; font: inherit; }
-.boss-cell:hover { border-color: var(--accent2); }
-.boss-cell-spr { width: 100%; aspect-ratio: 1; display: flex; align-items: center; justify-content: center; }
-.boss-cell-spr img { max-width: 90%; max-height: 90%; object-fit: contain; }
-.boss-cell-n { font-size: 11px; color: var(--text-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.boss-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-bottom: 14px; }
+.boss-tile { display: flex; flex-direction: column; align-items: stretch; gap: 4px; padding: 8px; background: var(--surface);
+  border: 1px solid var(--border-dim); border-radius: 9px; cursor: pointer; transition: border-color .1s; }
+.boss-tile:hover { border-color: var(--accent2); }
+.boss-tile .boss-formation { width: 100%; margin: 0; }
+.boss-tile .pt-name { text-align: center; font-size: 13px; }
+/* six trimmed battle frames tiled edge to edge into the whole creature (offsets are % of each 64x64 cell) */
+.boss-formation { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0; width: min(100%, 288px); margin: 0 auto 12px; }
+.boss-cell { position: relative; display: block; aspect-ratio: 1; padding: 0; margin: 0; border: 0; background: none; }
+button.boss-cell { cursor: pointer; }
+.boss-cell img { position: absolute; image-rendering: pixelated; }
+button.boss-cell:hover img, button.boss-cell:focus-visible img { filter: brightness(1.25) drop-shadow(0 0 2px var(--accent2)); }
 .boss-mech { margin: 0 0 10px; }
 .boss-chips { display: flex; flex-wrap: wrap; gap: 4px; margin: 4px 0; }
 .boss-threats { margin-bottom: 12px; }
@@ -1730,12 +1734,11 @@ button.boss-chip:hover { border-color: var(--accent2); }
 .boss-sub { margin: 8px 0 2px; font-size: 11px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--accent); }
 .boss-steps { margin: 0; padding-left: 18px; font-size: 13px; line-height: 1.5; }
 .boss-steps li { margin: 2px 0; }
+.boss-spells { margin: 4px 0 8px; }
 .boss-steps li.fx-clarify { list-style: none; margin-left: -18px; }
-.boss-rune { display: flex; gap: 8px; align-items: flex-start; padding: 6px 0; border-bottom: 1px solid var(--border-dim); }
-.boss-rune:last-child { border-bottom: 0; }
-.boss-runes, .boss-lore { margin: 4px 0 12px; }
+.boss-lore { margin: 4px 0 12px; }
 .boss-dialog { font-style: italic; color: var(--text-dim); }
 @media (min-width: 720px) {
-  .boss-formation { max-width: 420px; }
+  .boss-formation { width: min(100%, 384px); }
   .boss-steps { font-size: 13.5px; }
 }
