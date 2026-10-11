@@ -10,6 +10,15 @@ New entries go at the TOP.
   `obj_anointpicker`, extract `spell_owners.json` `false_god_inscriptions`). They now show in every gem picker. Hidden list:
   93 → 42 (Ultimates, Runes, Mega Magic, Colorwaves). Test updated.
 
+## 2026-10-11 — Bosses page: rune advice (Recommended / Avoid)
+- **Runes** is back on False God pages, after Threats, as two lists: **Recommended** and **Avoid**. Runes sharing a reason sit
+  in one container under that reason. The calls come from the boss's code kit (`bossRuneAdvice`): can it be killed (Jotun:
+  every defensive rune is a free reward bonus), which stats its kit uses (More Attack is safe vs Impington and Saint Althea),
+  whether a longer fight helps it (revives, resurrection, growing Burned, instant kills, compounding gains → defensive runes
+  are Avoid), highest-stat formulas (Loid: any More-stat rune), debuff-scaled damage (Loid: Mass Debuffs), Blight (Damage
+  Over Time) and "not Defending" kills (Top of Timeline / More Speed). Runes with no clear call are left out.
+- The Damage Cap code clarify (caps only hits above 10%, down to 5%) ships again, as `runes[].clarify`.
+
 ## 2026-10-11 — Bosses page: part order follows the formation
 - Body-part cards (and the steps inside each Threat) now run head, body, arms, shoulders: formation grid 2, 5, 4, 6, 1, 3.
   Bosses with other parts use whatever sits there (Hydranox: head, body, then the other heads; Caliban: head, heart, hands,

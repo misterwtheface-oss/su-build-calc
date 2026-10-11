@@ -13,7 +13,9 @@ Taxonomy category definitions themselves live in `TAXONOMY.md`.
 - **Boss page layout (user, 2026-10-11):** whole-creature formation (parts edge to edge, still links), a **Threats** section
   (one container per major threat: title, the causing steps, a plain "why it matters"), spells as full spell containers,
   **Rewards** at the bottom (Anointment = a perk from one of the listed specs; Inscription = one unknown spell from the
-  boss's list). No Runes section on boss pages (same for every False God). Boss grid: 2 tiles per row, whole-creature art.
+  boss's list). Boss grid: 2 tiles per row, whole-creature art. Part cards: head, body, arms, shoulders (grid 2,5,4,6,1,3).
+- **Runes on a boss page = per-boss advice only** (user): Recommended / Avoid with a reason drawn from that boss's kit; the
+  plain rune list (identical for every False God) is not shown there.
 
 ## Data joins
 - **Lesson (user-flagged twice): when a name-join undercounts,

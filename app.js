@@ -1494,6 +1494,78 @@
     }
     return out.sort((a, b) => (a.rank ?? -1) - (b.rank ?? -1));   // the timer (no rank) leads, then deadliest first
   }
+  // Rune advice: which False God runes are low risk / dangerous for THIS boss, from what its code kit actually uses (stats it
+  // scales from, whether it can be killed, whether a longer fight helps it). Runes with no clear call either way are left out.
+  function bossRuneAdvice(e) {
+    const steps = e.units.flatMap(u => [...(u.turn || []), ...u.passives]);
+    const has = (k) => steps.some(s => s.kind === k);
+    const f = steps.map(s => String(s.formula || "")).join(" ");
+    const gains = new Set(steps.filter(s => s.kind === "stat_gain").map(s => s.stat));
+    const unscripted = e.units.filter(u => !u.turn);
+    const p = {
+      unkillable: e.units.every(u => u.passives.some(x => x.kind === "immune_damage" && !x.when)),
+      timer: e.mechanics.find(m => m.kind === "timer_exit"),
+      highest: /highest stat/.test(f),                       // Loid: damage + reflection use its highest stat
+      gainDmg: /stat gains/.test(f),                         // Lost Construct: damage from stat gains
+      attack: has("attack") || /Attack/.test(f) || gains.has("attack"),
+      int: has("cast") || /Intelligence/.test(f) || gains.has("intelligence") || steps.some(s => s.cond === "burned"),
+      heavy: steps.some(s => s.kind === "attack" && s.power_pct >= 300),
+      ohkoDef: steps.some(s => s.kind === "ohko" && s.target === "each_player_not_defending"),
+      ohko: steps.some(s => s.kind === "ohko" && s.target !== "each_player_not_defending"),
+      timeline: has("timeline_to_bottom"), grow: gains.size > 0, growCond: has("intensify_condition"),
+      rez: has("resurrect"), revive: has("revive"), blight: steps.some(s => s.kind === "keep_condition" && s.cond === "blight"),
+      debuffMult: /debuffs on the target/.test(f), reflect: has("reflect_on_damaged"),
+    };
+    const unitOf = (pred) => (e.units.find(u => [...(u.turn || []), ...u.passives].some(pred)) || {}).name;
+    // why a longer fight helps this boss (null = it doesn't, much)
+    const longBad = p.revive ? `the ${unitOf(s => s.kind === "revive")} has to go down ${steps.find(s => s.kind === "revive").count + 1} times, so anything that slows your damage stretches an already long fight`
+      : p.rez ? `every turn the ${unitOf(s => s.kind === "resurrect")} stays alive it brings dead parts back, so slower kills give it more turns`
+      : p.growCond ? `${COND_BY_KEY.get(steps.find(s => s.kind === "intensify_condition").cond).name} keeps growing every turn, so a longer fight hurts more`
+      : p.ohko ? `every turn it gets is another instant kill, so a longer fight costs you more creatures`
+      : p.grow ? `its stat gains compound every turn, so a longer fight makes it much stronger`
+      : null;
+    const out = { good: [], bad: [] };
+    const say = (key, v, why) => { const r = (D.runes || []).find(x => x.key === key); if (r && why) out[v].push({ r, why }); };
+    const survive = p.unkillable ? `${e.name} can't be damaged anyway, so this changes nothing: a free reward bonus.` : null;
+    // runes that only make it harder to damage
+    for (const k of ["AVOIDDAMAGE", "DAMAGECAP", "TAKELESSDAMAGE", "MOREHEALTH", "IMMUNEATTACKS", "IMMUNESPELLS", "IMMUNEINDIRECT"]) {
+      if (survive) say(k, "good", survive);
+      else if (longBad && ["DAMAGECAP", "TAKELESSDAMAGE", "MOREHEALTH", "AVOIDDAMAGE"].includes(k)) say(k, "bad", `Makes it slower to kill, and ${longBad}.`);
+    }
+    if (p.highest) for (const k of ["MOREDEFENSE", "MOREATTACK", "MOREINTELLIGENCE", "MORESPEED"])
+      say(k, "bad", `Its damage${p.reflect ? " and its damage reflection" : ""} use${p.reflect ? "" : "s"} its highest stat, so tripling any stat can raise it.`);
+    else {
+      if (survive) say("MOREDEFENSE", "good", survive);
+      else if (longBad) say("MOREDEFENSE", "bad", `Makes it slower to kill, and ${longBad}.`);
+      const stat = (key, name, used, how) => {
+        if (p.gainDmg) return say(key, "bad", `The ${unitOf(s => /stat gains/.test(String(s.formula || "")))} deals damage from its stat gains; tripling its stats likely means bigger gains every turn (not yet checked in-game).`);
+        if (used) return say(key, "bad", how);
+        say(key, "good", `Its kit never uses ${name}${unscripted.length ? `, though the ${[...new Set(unscripted.map(u => u.name))].join(" and ")} has no script and may attack or cast normally` : ""}, so this is close to a free reward bonus.`);
+      };
+      stat("MOREATTACK", "Attack", p.attack, `${p.heavy ? `Its ${Math.max(...steps.filter(s => s.kind === "attack").map(s => s.power_pct))}% attacks` : has("attack") ? "Its attacks" : "Its damage"}${gains.has("attack") ? ", and the Attack it gains every turn," : ""} scale with Attack, so tripling it ${p.unkillable ? "makes every survival turn harder" : "means much bigger hits"}.`);
+      const intSrc = [has("cast") && "its spells", steps.some(s => s.cond === "burned") && "Burned", gains.has("intelligence") && "the Intelligence it gains every turn"].filter(Boolean);
+      stat("MOREINTELLIGENCE", "Intelligence", p.int, `${(intSrc.length > 1 ? `${intSrc.slice(0, -1).join(", ")} and ${intSrc[intSrc.length - 1]}` : intSrc[0] || "its damage").replace(/^./, x => x.toUpperCase())} scale${intSrc.length > 1 || has("cast") ? "" : "s"} with Intelligence, so tripling it ${p.unkillable ? "makes every survival turn harder" : "hits much harder"}.`);
+    }
+    // more damage from every hit
+    const dmgWhy = p.unkillable ? `Its damage is the only way you can lose this fight; this makes every turn of the ${p.timer ? p.timer.turns + "-turn " : ""}wait more dangerous.`
+      : p.heavy ? `Its ${Math.max(...steps.filter(s => s.kind === "attack").map(s => s.power_pct))}% attacks can already take out a creature in one turn; this makes that far more likely.`
+      : p.debuffMult ? "Its damage already multiplies with your debuffs; this stacks on top." : null;
+    say("ALWAYSCRIT", "bad", dmgWhy); say("DOMOREDAMAGE", "bad", dmgWhy);
+    // more boss turns
+    const turnsWhy = p.ohkoDef ? `The ${unitOf(s => s.kind === "ohko")} kills anyone not Defending; going first means it can act before your creatures get to Defend.`
+      : p.ohko ? `More turns for the ${unitOf(s => s.kind === "ohko")} means more instant kills.`
+      : p.timeline ? `More turns for the ${unitOf(s => s.kind === "timeline_to_bottom")} means your creatures get pushed back more often.`
+      : p.unkillable ? `More of the ${p.timer ? p.timer.turns + " " : ""}turns go to its attacks instead of your creatures.`
+      : p.rez ? `More turns for the ${unitOf(s => s.kind === "resurrect")} means more resurrections.`
+      : p.grow || p.growCond ? "More turns means faster growth." : null;
+    say("TOPOFTIMELINE", "bad", turnsWhy);
+    if (!p.highest) say("MORESPEED", "bad", p.ohkoDef ? `The ${unitOf(s => s.kind === "ohko")} acts sooner and more often, so your creatures get fewer chances to Defend before it does.` : turnsWhy);
+    // your side
+    if (p.debuffMult) say("DEBUFFS", "bad", `The ${unitOf(s => /debuffs on the target/.test(String(s.formula || "")))}'s damage is multiplied by one plus the debuffs on each target; starting with 7 debuffs means ×8 damage from its first turn.`);
+    if (p.blight) say("DAMAGEOVERTIME", "bad", "Your creatures have Blight for the whole fight, so they can't heal this damage back; healing even hurts them.");
+    else if (p.unkillable) say("DAMAGEOVERTIME", "bad", `Your creatures lose 75% of their max Health at the start of each of their turns, for a fight you can only win by surviving.`);
+    return out;
+  }
   function renderBossDetail() {
     const st = dovState, e = BOSS_BY_KEY.get(st.key); if (!e) return "";
     const part = e.type === "false_god" ? "part" : "boss creature";
@@ -1518,6 +1590,16 @@
       </div>`;
     }).join("");
     const specs = e.specIds.map(id => D.specs.find(s => s.id === id)).filter(Boolean);
+    const ra = e.type === "false_god" ? bossRuneAdvice(e) : { good: [], bad: [] };
+    const runeRow = (r) => `<div class="boss-rune">${r.icon ? `<span class="prop-ico">${spriteImg(r.icon, "px")}</span>` : ""}
+      <div><b>${esc(r.name)}</b>${r.rewardPct != null ? ` <span class="anoint-spec-tag">+${r.rewardPct}% Rewards</span>` : ""}
+        <div class="trait-desc">${richText(r.effect)}</div>${r.clarify ? `<div class="fx-clarify">${esc(r.clarify)}</div>` : ""}</div></div>`;
+    // runes that share a reason sit in one container under that reason
+    const runeGroups = (list, cls) => { const g = new Map(); for (const x of list) { if (!g.has(x.why)) g.set(x.why, []); g.get(x.why).push(x.r); }
+      return [...g].map(([why, rs]) => `<div class="boss-rune-group ${cls}">${rs.map(runeRow).join("")}<p class="boss-why">${esc(why)}</p></div>`).join(""); };
+    const runes = ra.good.length || ra.bad.length ? `<div class="section-label">Runes</div>
+      ${ra.good.length ? `<div class="boss-sub boss-sub-good">Recommended</div>${runeGroups(ra.good, "good")}` : ""}
+      ${ra.bad.length ? `<div class="boss-sub boss-sub-bad">Avoid</div>${runeGroups(ra.bad, "bad")}` : ""}` : "";
     const insc = (e.inscriptions || []).filter(x => D.spells[x.spell]);
     const rewards = specs.length || insc.length ? `<div class="section-label">Rewards</div>
       ${specs.length ? `<div class="boss-sub">Anointment: a perk from one of</div><div class="boss-chips">${specs.map(s => `<span class="boss-chip">${SPEC_EMBLEM.get(s.label) ? `<span class="prop-ico sm">${spriteImg(SPEC_EMBLEM.get(s.label), "px")}</span>` : ""}${esc(s.label)}</span>`).join("")}</div>` : ""}
@@ -1531,6 +1613,7 @@
         ${e.mechanics.filter(m => m.kind !== "timer_exit").map(m => `<div class="excl-note boss-mech"><span>${esc(m.text)}</span></div>`).join("")}
         ${threats.length ? `<div class="section-label">Threats</div>${threats.map(t => `<div class="boss-threat"><div class="boss-threat-head">${esc(t.title)}</div>
           <div class="boss-threat-body">${t.effect}${t.extra}<p class="boss-why">${esc(t.why)}</p></div></div>`).join("")}` : ""}
+        ${runes}
         ${sameStats && e.units.length ? `<div class="section-label">Base stats</div>${statLine(e.units[0].stats)}` : ""}
         <div class="section-label">${e.type === "false_god" ? "Body parts" : "Creatures"}</div>
         ${units}

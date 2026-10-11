@@ -1746,6 +1746,13 @@ button.boss-chip:hover { border-color: var(--accent2); }
 .boss-steps li { margin: 2px 0; }
 .boss-spells { margin: 4px 0 8px; }
 .boss-steps li.fx-clarify { list-style: none; margin-left: -18px; }
+.boss-rune-group { margin-bottom: 8px; padding: 4px 10px 8px; border: 1px solid var(--border-dim); border-left: 3px solid var(--good);
+  border-radius: var(--radius); background: var(--surface); }
+.boss-rune-group.bad { border-left-color: var(--bad); }
+.boss-rune { display: flex; gap: 8px; align-items: flex-start; padding: 6px 0; border-bottom: 1px solid var(--border-dim); font-size: 13px; }
+.boss-rune-group .boss-why { font-size: 13px; line-height: 1.5; }
+.boss-sub-bad { color: var(--bad); }
+.boss-sub-good { color: var(--good); }
 .boss-lore { margin: 4px 0 12px; }
 .boss-dialog { font-style: italic; color: var(--text-dim); }
 @media (min-width: 720px) {

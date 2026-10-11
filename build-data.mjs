@@ -3317,6 +3317,13 @@ const bosses = (() => {
       units: units.sort((a, b) => a.slot - b.slot),
     });
   }
+  // rune code checks: only the clarify (code ≠ text, e.g. Damage Cap) ships, shown on the boss page's rune advice
+  const rc = new Map(((bj.modifiers.false_god_runes || {}).runes || []).map(r => [r.key, r.code_check]));
+  for (const r of runes) {
+    const c = rc.get(r.key);
+    if (!c) { err(`bosses: rune ${r.key} has no code check`); continue; }
+    if (c.clarify) r.clarify = c.clarify;
+  }
   const types = [...new Set(out.map(e => e.type))].map(t => ({ type: t, label: TYPE_LABEL[t] || t }));
   console.log(`  bosses: ${out.length} encounters (${types.map(t => `${out.filter(e => e.type === t.type).length} ${t.type}`).join(' / ')}) · ${nUnits} units · ${nSteps} steps`);
   return { types, encounters: out };
