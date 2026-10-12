@@ -99,7 +99,7 @@
     return s && s.img ? spriteImg(s.img) : critFace(c);
   };
 
-  // ── Fusion colour (CODE-EXACT; _su_extract code/fusion_palette.py + FUSION_MODEL.md, scr_GetFusionSurface) ──
+  // ── Fusion colour (CODE-EXACT; _su_extract code/fusion_palette.py + SKINS_AND_FUSION.md, scr_GetFusionSurface) ──
   // Each battle frame's distinct non-outline colours, sorted 4 ways (0 pixel count / 1 hue / 2 value / 3 saturation).
   // Modes 0–3: the primary's top ceil(0.5·n) colours become the secondary's colours at the same rank (shader match
   // within one 8-bit step, first row wins). Mode 4: every primary colour → nearest (squared RGB) colour of the
@@ -3155,7 +3155,7 @@
   // "free": checked before the chain, outside the one-per-death rule (neither checks nor blocks it).
   // "stop": checked before the chain; if it fires, the chain is skipped. "chain": one per death — the first that fires
   // resurrects, the rest are skipped. Only actual resurrection sources are listed (Breath of Death excluded: its gate
-  // is unresolved and its text resurrects nothing — _su_extract code/HANDOFF_resurrection_open_questions.md). Refs: perk = name, trait = code runtime id, relic = name fragment + app rank (10–100 = extract perk 1–10),
+  // is unresolved and its text resurrects nothing — _su_extract archive/handoffs/HANDOFF_resurrection_open_questions.md). Refs: perk = name, trait = code runtime id, relic = name fragment + app rank (10–100 = extract perk 1–10),
   // cond = glossary key, realm = realm-property key (matched by text: the only realm property that resurrects).
   const RES_ORDER = [
     ["rule", "perk", "Somnus"],
@@ -3300,8 +3300,8 @@
     return `<button class="apx-sec-head apx-cat${open ? "" : " collapsed"}" data-action="gloss-cat-toggle" data-c="${key}"><span class="apx-sec-caret">${open ? "▾" : "▸"}</span>Start of Battle Order</button>${body}`;
   }
 
-  // ── Nether Stone drop breakpoints (code: inv_Loot, _su_extract code/DROP_RATES_FINDINGS.md +
-  // HANDOFF_nether_stone_breakpoints.md). Each loot roll succeeds on 1..N ≤ X, X = (1 + realm bonus) × 1.25
+  // ── Nether Stone drop breakpoints (code: inv_Loot, _su_extract code/LOOT.md +
+  // archive/handoffs/HANDOFF_nether_stone_breakpoints.md). Each loot roll succeeds on 1..N ≤ X, X = (1 + realm bonus) × 1.25
   // (× 1.25 again with Pariah ascended) → k = floor(X) chances in N. Rows = every k reachable by the true maximum realm
   // bonus (D.realmBonusMax, code: scr_RealmGetProperties rules × scr_RealmBonus, instability 5 at deepest depth),
   // found by running the game's own arithmetic over each whole percent.
@@ -3390,7 +3390,7 @@
   // L_IN_WEATHER's name is the runtime "{1}" (the weather is picked when you buy it) — show it as "Weather"
   const shopItemName = (it) => /^\{\d\}$/.test(it.name || "") ? (it.key === "L_IN_WEATHER" ? "Weather" : "?") : (it.name || "?");
 
-  // ── Nether Realm helpers (code-grounded: _su_extract code/NETHER_HELPERS_FINDINGS.md) ──
+  // ── Nether Realm helpers (code-grounded: _su_extract code/NETHER.md) ──
   // Faucet = room_nether_valves: 4 on/off valves form a code (left→right) that picks the single chest's contents;
   // the closed chest's sprite already previews the result. Mimic Mike = room_nether_treasurehuge: 35 chests whose
   // contents are rolled at room creation and shown by their sprite; 7 opens, each parchment adds 2–4 more.
@@ -4002,7 +4002,7 @@
   // artifact TYPE (its primary property) → the trigger its native spell-gem slot fires on.
   // Nether-stone spells socketed into the artifact carry their own stored trigger instead.
   const ART_TYPE_TRIGGER = { Helmet: "On Provoke", Sword: "On Attack", Staff: "On Cast", Shield: "On Defend", Boots: "On Turn" };
-  // ── Spell Gem Slot activation chance (code-grounded model D.slotChance; _su_extract SPELL_GEM_SLOT_CHANCE_FINDINGS.md).
+  // ── Spell Gem Slot activation chance (code-grounded model D.slotChance; _su_extract ARTIFACTS.md).
   // Artifact slot: base[type] → Smith p3 ×1.1 → (stone carries ANY spell ⇒ reset to base, or 100 with The Truth) →
   // + Hidden Hand 2/rank → + Battle Born 10; Ferro (rank ≥ 80) = second roll; Celebrate Decline = casts twice.
   // Nether spell: base[trigger], or 100 with The Truth. Luck re-rolls (Sleight of Hand / realm Luck) intentionally

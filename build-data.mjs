@@ -828,7 +828,7 @@ for (const s of specRecs) {
 }
 
 // ── Nether Realm helpers (Faucet valve lock + Mimic Mike's treasury) — code-grounded tables from
-// _su_extract code/NETHER_HELPERS_FINDINGS.md (decomp/nether_helpers/nether_helpers.json). Chest sprites → assets/nether/.
+// _su_extract code/NETHER.md (decomp/nether_helpers/nether_helpers.json). Chest sprites → assets/nether/.
 const netherHelpers = (() => {
   const f = path.join(SRC, 'code', 'decomp', 'nether_helpers', 'nether_helpers.json');
   if (!fs.existsSync(f)) { warn(`nether helper table missing (${f})`); return null; }
@@ -864,7 +864,7 @@ for (const g of FALSE_GODS) {
   if (!fs.existsSync(path.join(OUT_FGOD, `${g.key}.png`))) {
     fgodImgMisses++; warn(`False God "${g.name}" composite missing (${rel}) — run tools/build_falsegods.py`);
   }
-  // the god's small ICON (code-grounded per _su_extract code/FALSE_GOD_ICONS.md) — used where a False God is listed
+  // the god's small ICON (code-grounded per _su_extract code/FALSE_GOD_BEHAVIOR_FINDINGS.md) — used where a False God is listed
   const iconRel = `assets/falsegods/icons/${g.key}.png`;
   const hasIcon = fs.existsSync(path.join(ROOT, iconRel));
   if (!hasIcon) { fgodIconMisses++; warn(`False God "${g.name}" icon missing (${iconRel})`); }
@@ -1619,7 +1619,7 @@ for (const cl of CLASSES) {
   if (copyNamedSprite(`card_bg_${norm(cl.key)}`, OUT_CARDBG, dest)) classBg[cl.key] = `assets/cardbg/${dest}`;
 }
 // card BORDER frame_<class> — drawn untinted OVER bg + creature in obj_cardalbum_Draw_64 (80×120, transparent centre;
-// _su_extract code/CARD_BORDER_FINDINGS.md). Same class→sprite switch as the bg.
+// _su_extract code/CARDS.md). Same class→sprite switch as the bg.
 const classFrame = {};
 for (const cl of CLASSES) {
   const dest = `frame_${norm(cl.key)}.png`;
@@ -1938,7 +1938,7 @@ const favUnit = (v) => /%/.test(v || '') ? '%' : (v || '').trim() === 'X' ? 'boo
 const cleanColLabel = (h) => h.replace(/\s*\(.*$/, '').trim();
 // Yield model source = CODE (2026-10-10, S27p): _su_extract data/model/realm_yield_model.json, exported by
 // code/data_dump/s27/walk/export_yields.py from the per-realm yield walkthroughs (walk/<realm>.py on the shared model
-// walk/generic.py; the user's yield rules in code/YIELD_GROUNDING_PLAN.md). Per realm × difficulty (relaxed / normal /
+// walk/generic.py; the user's yield rules in code/REALM_YIELDS.md). Per realm × difficulty (relaxed / normal /
 // ruthless) × rank 0..100: one value per "yield" column (favor, treasure bundles, net resources, emblems, boosts, spawn
 // chances ...). The "common" columns (identical in every realm) are one row per rank. Community copy:
 // audit_community_csv/Realm_Yields_CODE.csv. (Favor_CODE.csv / data/favor/Favor_MTX.csv stay as references only.)
@@ -2042,7 +2042,7 @@ const raceTotal = Object.values(raceClassIcons.races).length;
 if (raceUnresolved.length) warn(`404 race icons — no code race sprite, NO fallback substituted (${raceUnresolved.length}): ${raceUnresolved.join(', ')}`);
 console.log(`  tile icons: ${Object.keys(classIcons).length}/5 class · ${Object.keys(raceIcons).length}/${raceTotal} race · ${raceUnresolved.length} unresolved (404, no fallback)`);
 
-// Nether-stone icons — CODE-EXACT (_su_extract code/NETHER_COLOR_MODEL.md): inv_NetherStoneCreate rolls
+// Nether-stone icons — CODE-EXACT (_su_extract code/NETHER.md): inv_NetherStoneCreate rolls
 // icon = irandom_range(2085, 2100), a frame of the `icons` sheet, PRE-COLOURED (incl. two-tone / gradient borders);
 // a stone stores no colour data and no shader tints it. Frames 2085–2094 = cornether_7..16, 2095–2100 = cornether_1..6
 // (the uncoloured source art). Keys stay `nether_<cornether n>` so saved stones keep their shape. Picker = game order.
@@ -2336,7 +2336,7 @@ const PERSONALITIES = [
 const OUT_SKIN = path.join(OUT_ASSETS, 'skins');
 fs.rmSync(OUT_SKIN, { recursive: true, force: true });
 fs.mkdirSync(OUT_SKIN, { recursive: true });
-// CODE-GROUNDED owners (_su_extract code/extract_skin_owners.py / SKIN_OWNER_MODEL.md, 2026-10-01): scr_DatabaseSkins
+// CODE-GROUNDED owners (_su_extract code/extract_skin_owners.py / SKINS_AND_FUSION.md, 2026-10-01): scr_DatabaseSkins
 // skin[i][1] = a race-name string (skin fits any creature of that race) or a creature id (fits that creature only);
 // enforced by the skin-apply handler. Replaces the sprite-name heuristic (skins.json) and its boss "exclusions" — the
 // 37 boss-named skins are real race-restricted skin records in code. Same order + frames as skins.json, whose
@@ -2781,7 +2781,7 @@ const TRAIT_REJECT = fs.existsSync(APPROVED_PATH) ? (readJSON(APPROVED_PATH).tra
 
 // ── code-grounded effect clarifications (mechanics the game's own text omits) ─────────────────────────
 // Shipped as `clarify: string[]` sentences on traits / spec perks / relic ranks (shown on the taxonomy detail page;
-// never edited into the game prose). Sources (_su_extract code/DR_CAPS_AND_RUNES_FINDINGS.md):
+// never edited into the game prose). Sources (_su_extract code/COMBAT_RULES.md):
 //   dr_caps.json            — every per-effect damage-reduction clamp in bc_EventDamage (global.dr_cap = 0.8)
 //   rune_knight_perks.json  — Undermine / Inspirit per-rune condition + Ruse's rune-gem properties
 {
@@ -2925,7 +2925,7 @@ const effects = (() => {
 })();
 
 // ── Spell Gem Slot activation chance (artifact spell slot + nether-stone spells) ───────────────────
-// _su_extract data/model/spell_gem_slot_chance.json (code/SPELL_GEM_SLOT_CHANCE_FINDINGS.md). Shipped as a compact
+// _su_extract data/model/spell_gem_slot_chance.json (code/ARTIFACTS.md). Shipped as a compact
 // model; the app computes the live chance from the build (perk ranks, party traits, relic rank, card levels, stones).
 // Re-roll luck effects (Sleight of Hand / Bad/Good Luck / Spin the Wheel) are deliberately NOT applied (user 2026-10-04).
 let slotChance = null;
@@ -3008,7 +3008,7 @@ const projects = (() => {
 const sobRaw = readJSON(path.join(MODEL, 'start_of_battle_order.json')).entries.slice().sort((a, b) => a.global_order - b.global_order);
 const relicCodeToApp = new Map(readJSON(path.join(MODEL, 'relic_signatures.json')).records.map(r => [r.relic_code_id, r.app_relic_id]));
 // scr_RealmPropertyName case → app realm-property key. 13 COPYTRAITS is never rolled (scr_RealmGetProperties redraws it;
-// _su_extract code/REALM_PROPERTY_POOL_FINDINGS.md) → dropped via never_rolled above.
+// _su_extract code/REALM_PROPERTIES.md) → dropped via never_rolled above.
 const SOB_REALM_PROP = { 25: 'DEBUFF', 12: 'EXTRATRAITS', 67: 'SPELLSLOTS', 11: 'COPYGEMS' };
 const SOB_REALM_TEXT = {};
 // always-on member names that are blacklisted traits (and not also a shipped trait's name) never show
@@ -3075,7 +3075,7 @@ for (const e of sobRaw) {
 console.log(`  start-of-battle order: ${startOfBattle.length} rows from ${sobRaw.length} entries · text-only ${startOfBattle.filter(r => r.ref.k === 'text').length} · blacklisted ${sobBlacklisted.length} (${[...new Set(sobBlacklisted)].join(', ')}) · skipped (no app join) ${sobSkipped.length}: ${sobSkipped.join(' | ')}${sobNameDiff.length ? ` · ⚠ trait name mismatches ${sobNameDiff.length}: ${sobNameDiff.join(' | ')}` : ''}`);
 
 // ── Spell gem availability + spells granted by an owner — code (_su_extract spell_owners.json + spell_property_compat.json,
-// S28; code/SPELL_GEM_SOURCES_FINDINGS.md, HANDOFF_spell_owners.md). Per spell:
+// S28; code/SPELL_GEMS.md, HANDOFF_spell_owners.md). Per spell:
 //   battleOnly — never a holdable gem: Ultimates (category ULTIMATE) and the reserved ids 431–441 (Rune / Mega Magic /
 //                Colorwave). Booze 312–326 (Tavern) and Living 328–352 (Arena) are reserved but sold as gems, and the boss spells
 //                493–543 are False God Inscriptions (spell recipes from the anointment pick, spell_owners.json
@@ -3175,7 +3175,7 @@ const { spellGrants, relicUltimates, ultimateRoutes } = (() => {
 })();
 
 // ── Rodian Creature Masters per realm — code (_su_extract master_realms.json, S28–S28c; code/MASTER_SPAWN_FINDINGS.md,
-// HANDOFF_rodian_masters.md). pool = the realm's spawn races (scr_GetRaceArrayByRealm) + Master-only extras
+// archive/handoffs/HANDOFF_rodian_masters.md). pool = the realm's spawn races (scr_GetRaceArrayByRealm) + Master-only extras
 // (scr_GetMasterRaces), in code order. Joined to the app realm by name (& ↔ and); every pool race must have its Master trait.
 const masterRealms = (() => {
   const mr = readJSON(path.join(MODEL, 'master_realms.json'));
@@ -3515,7 +3515,7 @@ const SU_DATA = {
   scrollMax: 15,            // creatures consume up to 15 stat scrolls total, each +1 base stat (L_ID_SCROLL_*)
 };
 
-// ── fusion colour palettes (CODE-EXACT, _su_extract code/fusion_palette.py / FUSION_MODEL.md 2026-10-01) ──
+// ── fusion colour palettes (CODE-EXACT, _su_extract code/fusion_palette.py / SKINS_AND_FUSION.md 2026-10-01) ──
 // scr_GetFusionSurface: per battle frame, the distinct non-outline colours (R,G,B all ≤15 skipped) sorted 4 ways
 // (0 pixel count / 1 hue / 2 value / 3 saturation, MSVC-qsort tie order) + the mode-4 extract_palette set.
 // Compact per frame: [U, o0, o1, o2, o3, P]

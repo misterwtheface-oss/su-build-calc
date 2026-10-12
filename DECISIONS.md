@@ -131,7 +131,7 @@ a flat modifier to base: raised **×4/3 (+33%)**, lowered **×2/3 (−33%)**, ot
 ## Realm yield model = the user's rules (2026-10-10)
 - The Yield and Compare views read `_su_extract/data/model/realm_yield_model.json` (community copy
   `audit_community_csv/Realm_Yields_CODE.csv`), built rank by rank with the user from code
-  (`_su_extract/code/data_dump/s27/walk/`, rules in `_su_extract/code/YIELD_GROUNDING_PLAN.md`). It replaces
+  (`_su_extract/code/data_dump/s27/walk/`, rules in `_su_extract/code/REALM_YIELDS.md`). It replaces
   Favor_CODE.csv below.
 - Per realm × difficulty (Relaxed / Normal / Ruthless toggle) × favor rank: favor, treasure bundles, net resources,
   emblems, knowledge, spell recipes, tickets, realm boosts, spawn chances (Golem / Dumpling kept for Prophecy goals),

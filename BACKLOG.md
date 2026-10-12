@@ -32,7 +32,7 @@ write the requirements to `_su_extract/code/HANDOFF_<topic>.md` for the extract 
 
 ## Feature ideas (user backlog, not started)
 - [ ] **DPS / effective-stat simulation** from `damageModel` (spell & melee, crit/dodge, defending). Class advantage is now
-  code-known (×2 / ×0.5, `_su_extract/code/CLASS_ADVANTAGE.md`); expose it as a toggle. Spells match on the gem's class
+  code-known (×2 / ×0.5, `_su_extract/code/COMBAT_RULES.md`); expose it as a toggle. Spells match on the gem's class
   (Class Swap first), not the caster's. Effect formulas for in-app compute:
   `_su_extract/code/EFFECT_FORMULAS.md` (code tier already in EFFECT_ENGINE.md).
 - [ ] **Boss-prep planner, part 2** — the Bosses page (2026-10-11) covers "what to expect" from code steps. Still open: compare
@@ -40,7 +40,7 @@ write the requirements to `_su_extract/code/HANDOFF_<topic>.md` for the extract 
   Loid). The boss/enemy trait taxonomy (`trait_meta.scope=boss_enemy_flavor`) could feed it; verify tags in-game first.
 - [ ] **Godforge helper** — Godforge (spell-gem enchant / artifact forging) planner.
 - [ ] **Luck / Roll section (Appendix page, formerly Errata)** driven by the `hasRoll` flags (data shipped 2026-10-07, no UI yet).
-- [ ] Rodian Masters reverse lookup (optional, `HANDOFF_rodian_masters.md`): on a "Master of …" trait / Mastery Sigil, list the
+- [ ] Rodian Masters reverse lookup (optional, `archive/handoffs/HANDOFF_rodian_masters.md`): on a "Master of …" trait / Mastery Sigil, list the
   realms whose Master pool has that race (inverse of `D.masterRealms`).
 - [ ] Spell-gem loadouts (potency tiers already in `damageModel`).
 - [ ] Entity detail: optional "shared by N party members" on the trait view.
@@ -178,7 +178,7 @@ full builder stays the high-fidelity path.
   - **Nether trait limit = 3, CODE-CERTAIN.** In `inv_NetherStoneCreate` the trait loop runs i=1..3 and stops at the first
     failed roll. A trait is only accepted if an artifact trait-item material exists for it, so the quick-nether picker uses
     the **same trait-material pool** as the Artifact Trait step (minus duplicates on the stone).
-    Source: _su_extract `code/NETHER_GENERATION.md` / `data/model/nether_generation.json`.
+    Source: _su_extract `code/NETHER.md` / `data/model/nether_generation.json`.
 - Still open:
   - Library treatment for quick Artifacts.
   - Promoting a quick Artifact to a proper one when it is opened in the builder.

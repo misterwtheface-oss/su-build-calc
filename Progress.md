@@ -219,4 +219,4 @@ source of truth), called by both `build-data.mjs` and the **`.githooks/pre-commi
 - Relic contributions are qualitative (no numeric stat) → shown as effect text, deliberately not a stat column.
 - Class-advantage multiplier + Nether Stone numerics are runtime/in-game-only (see WIKI_CONTEXT) → modelled around.
   **Update 2026-10-01:** Nether Stone numerics are code-grounded (`inv_NetherStoneCreate`). **Update 2026-10-08:** class
-  advantage is code-known too (×2 / ×0.5, `_su_extract/code/CLASS_ADVANTAGE.md`); only the in-game confirmation is open (BACKLOG).
+  advantage is code-known too (×2 / ×0.5, `_su_extract/code/COMBAT_RULES.md`); only the in-game confirmation is open (BACKLOG).

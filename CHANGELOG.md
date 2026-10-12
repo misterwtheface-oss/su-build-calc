@@ -4,6 +4,12 @@ Every dated change entry, newest first (moved verbatim from Progress.md on 2026-
 to their own section and sorted by their date). Current state and open work: `Progress.md`, `BACKLOG.md`.
 New entries go at the TOP.
 
+## 2026-10-12 — Extract doc references updated (no app change)
+- The extract's research docs were consolidated into topic docs (e.g. `code/NETHER.md`, `code/COMBAT_RULES.md`,
+  `code/LOOT.md`); finished handoffs moved to `_su_extract/archive/handoffs/`. Source comments in `app.js` /
+  `build-data.mjs` and the paths in BACKLOG / DECISIONS / Progress / WIKI_CONTEXT now point at the new names. Old name →
+  new doc: the extract's CONTEXT_MAP, "Merged and archived docs". No behaviour or data change.
+
 ## 2026-10-12 — Status Effects folded into the Appendix; perk spell cards lose casting chips
 - The Status Effects page is gone from the menu: it is now the first section of the Appendix, with Buffs, Debuffs and
   Minions as collapsible sub-sections (search opens everything that matches).

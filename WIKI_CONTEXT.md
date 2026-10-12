@@ -20,7 +20,7 @@ artifacts, relics, spell gems, realm cards, Nether Stones, anointments.
 - **Traits** — each creature has one innate trait; a creature can gain **one more** via its artifact's
   trait slot. Traits are the association layer (synergy). Effects live in prose + code edge tags
   (produces/consumes). A trait's colour = its source creature's class.
-- **Artifacts are containers, not stat records** (`_su_extract/code/ARTIFACT_MODEL.md`). Each has 1
+- **Artifacts are containers, not stat records** (`_su_extract/code/ARTIFACTS.md`). Each has 1
   **primary** stat slot (`rank+9`%: 10%@rank1 … 59%@rank50), plus **properties** and **trait slots**
   populated by slotted objects. We model: primary (5) + properties (25 stat + 47 trick) + trait-item
   slots (1830 items → grant a trait) + Nether sockets. Only Health/Attack/Defense/Intelligence/Speed
@@ -32,7 +32,7 @@ artifacts, relics, spell gems, realm cards, Nether Stones, anointments.
   statically extractable). Per the datamine, a stone draws from the artifact property pool, unrestricted.
   → the calculator has the user **enter their own stones** (name, rarity, property lines) and stores them.
 - **Realm Cards** — 141 families, 3 unlock tiers each. Global build modifiers; user toggles owned/on.
-- **Class advantage** (code-certain, `_su_extract/code/CLASS_ADVANTAGE.md`): strong ×2, weak ×0.5. Attacks use the
+- **Class advantage** (code-certain, `_su_extract/code/COMBAT_RULES.md`): strong ×2, weak ×0.5. Attacks use the
   attacker's class; **spells use the spell gem's class** (a Class Swap property overrides it; Convoke the Spirits counts
   as the class the target is weak against), never the caster's. Defender = the target's class.
 
