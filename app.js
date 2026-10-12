@@ -1590,6 +1590,7 @@
     }
     // your side
     if (p.debuffMult) say("DEBUFFS", "bad", `The ${unitOf(s => /debuffs on the target/.test(String(s.formula || "")))}'s damage is multiplied by one plus the debuffs on each target; starting with 7 debuffs means ×8 damage from its first turn.`);
+    else if (p.blight) say("DEBUFFS", "bad", "Seven random debuffs can be crippling on their own, and with Blight on your whole party all fight, any damage they deal can't be healed back.");   // user: never recommended anywhere
     if (p.blight) say("DAMAGEOVERTIME", "bad", "Your creatures have Blight for the whole fight, so they can't heal this damage back; healing even hurts them.");
     else if (p.unkillable) say("DAMAGEOVERTIME", "bad", `Your creatures lose 75% of their max Health at the start of each of their turns, for a fight you can only win by surviving.`);
     return out;

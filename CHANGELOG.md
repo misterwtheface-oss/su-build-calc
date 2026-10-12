@@ -4,6 +4,12 @@ Every dated change entry, newest first (moved verbatim from Progress.md on 2026-
 to their own section and sorted by their date). Current state and open work: `Progress.md`, `BACKLOG.md`.
 New entries go at the TOP.
 
+## 2026-10-11 — Rune advice review: Damage Cap, Damage Over Time (research), Mass Debuffs
+- Damage Cap and Damage Over Time: advice unchanged until the rune research handoff answers questions 3–7 (what counts
+  as one capped hit, damage types, Caliban/Loid interaction; whether the 75% can be reduced and when it lands vs Burned).
+- Mass Debuffs (user): never recommended. Avoid vs Loid (debuffs multiply its damage) and now Saint Althea (Blight: damage
+  from the debuffs can't be healed back).
+
 ## 2026-10-11 — Rune advice review: Avoids Damage
 - (user) One of the hardest runes on any boss you can kill, worst in a sprint kill. Sprint = scaling on 3+ parts, no single
   part to stop it (Lost Construct). Otherwise the reason names the part to focus-kill first (Loid's Head, Nebodar's Head,
