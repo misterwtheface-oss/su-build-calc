@@ -1317,7 +1317,6 @@
   const bossStatTable = (st) => `<div class="stat-grid single mag boss-stat-grid">${STAT_KEYS.map(k => { const v = st[k], pc = Math.max(0, Math.min(100, (v || 0) / (STAT_MAX[k] || 1) * 100));
     return `<div class="stat-row"><span class="stat-name">${STAT_LABEL[k]}</span><span class="stat-mag" title="${Math.round(pc)}% of the highest base ${STAT_LABEL[k]} of any creature"><i style="width:${pc}%"></i></span><span class="stat-val total">${v}</span></div>`; }).join("")}</div>`;
   // boss battle rule (bosses.json rules.boss_instant_kill): Nether Boss and False God fights turn instant kills into damage
-  const BOSS_OHKO_NOTE = "Instant kills don't kill anything on the boss's side: they deal 20% of the target's missing Health instead (nothing at full Health). Loif En't Fair, Boils Popped, Death By Boredom and Incandescence still kill.";
   // the six parts drawn edge to edge in battle order (grid 1–3 top row, 4–6 bottom) so they form the whole creature; each
   // trimmed frame sits at its code offset inside its cell. jump → each part links to its card below.
   const bossFormation = (e, jump) => { const byGrid = new Map(e.units.map(u => [u.grid, u]));
@@ -1702,7 +1701,6 @@
       <div class="overlay-body"><div class="ovl-center"><div class="ovl-center-scroll boss-page">
         ${formation}
         ${e.mechanics.filter(m => m.kind !== "timer_exit").map(m => `<div class="excl-note boss-mech"><span>${esc(m.text)}</span></div>`).join("")}
-        ${e.units.every(u => u.passives.some(x => x.kind === "immune_damage" && !x.when)) ? "" : `<div class="excl-note boss-mech"><span>${esc(BOSS_OHKO_NOTE)}</span></div>`}
         ${threats.length ? `<div class="section-label">Threats</div>${threats.map(t => `<div class="boss-threat"><div class="boss-threat-head">${esc(t.title)}</div>
           <div class="boss-threat-body">${t.effect}${t.extra}<p class="boss-why">${esc(t.why)}</p></div></div>`).join("")}` : ""}
         ${sameStats && e.units.length ? `<div class="section-label">Base stats</div>${statLine(e.units[0].stats)}` : ""}
@@ -1727,9 +1725,7 @@
     const sameStats = units.every(u => STAT_KEYS.every(k => u.stats[k] === units[0].stats[k]));
     // identical creatures read once, "Sadomasochist ×6"
     const groups = []; for (const u of units) { const g = groups.find(x => x.u.creature === u.creature && x.u.name === u.name && JSON.stringify(x.u.stats) === JSON.stringify(u.stats)); g ? g.n++ : groups.push({ u, n: 1 }); }
-    const party = [six ? `Six ${(CREA.get(lead.creature) || {}).name || lead.name}s fight: ${e.party3.join(", ")}.` : null,
-      e.fill ? `${e.fill} random realm creature${e.fill > 1 ? "s" : ""} fill${e.fill > 1 ? "" : "s"} the other slot${e.fill > 1 ? "s" : ""}.` : null,
-      "Spell gems and artifacts are random, like any enemy's, and every creature uses normal enemy AI."].filter(Boolean);
+    const party = six ? [`Six ${(CREA.get(lead.creature) || {}).name || lead.name}s fight: ${e.party3.join(", ")}.`] : [];
     const threats = adv.threats[tier - 1] || [];
     const cards = groups.map(({ u, n }) => {
       const c = CREA.get(u.creature), bt = u.tiers ? u.tiers[tier - 1] : null;
@@ -1756,9 +1752,9 @@
         <h2>${esc(e.name)}</h2><span class="anoint-spec-tag apx-boss-cat">Nether Boss</span>
         <button class="ovl-close" data-action="close-detail">✕</button></div>
       <div class="overlay-body"><div class="ovl-center"><div class="ovl-center-scroll boss-page">
+        ${bossImg(e) ? `<div class="gg-portrait">${spriteImg(bossImg(e), "px")}</div>` : ""}
         ${tierToggle}
         ${party.map(t => `<div class="excl-note boss-mech"><span>${esc(t)}</span></div>`).join("")}
-        <div class="excl-note boss-mech"><span>${esc(BOSS_OHKO_NOTE)}</span></div>
         ${threats.length ? `<div class="section-label">Threats</div>${threats.map(t => `<div class="boss-threat"><div class="boss-threat-head">${esc(t.title)}</div>
           <div class="boss-threat-body"><div class="trait-desc">${esc(t.what)}</div><p class="boss-why">${esc(t.why)}</p></div></div>`).join("")}` : ""}
         ${sameStats ? `<div class="section-label">Base stats</div>${bossStatTable(units[0].stats)}` : ""}
@@ -1776,11 +1772,8 @@
   function renderGateDetail(e) {
     const st = dovState, u = e.units[0], c = CREA.get(u.creature), adv = e.advice || { threats: [], notes: [] };
     const sec = (k, title, html) => `<button class="apx-sec-head apx-cat${st.open.has(k) ? "" : " collapsed"}" data-action="boss-sec" data-k="${k}"><span class="apx-sec-caret">${st.open.has(k) ? "▾" : "▸"}</span>${title}</button>${st.open.has(k) ? html : ""}`;
-    const immune = e.key === "GG_LISTER";   // Loif En't Fair: nothing on its side takes damage, so the instant-kill rule is moot
     const notes = [e.unlock && e.unlock !== "always" ? `Unlocked ${e.unlock.replace(/^after its unlock project$/, "by its project")}.` : null,
-      `${e.fill} random creatures of ${e.name}'s realm fill the other slots. Every enemy has 5 random spells of its class and a random artifact; the Avatar doesn't get its Ultimate.`,
-      "Your creatures count as level 100 for every stat. Enemy level = your creatures' average level (at least 10) × the difficulty multiplier.",
-      immune ? null : BOSS_OHKO_NOTE].filter(Boolean);
+      "Your creatures count as level 100 for every stat. Enemy level = your creatures' average level (at least 10) × the difficulty multiplier."].filter(Boolean);
     const gt = TRAIT[u.godTraitId], ot = TRAIT[u.ownTraitId];
     const card = `<div class="boss-unit" id="boss-unit-1">
         <div class="boss-unit-head"><span class="boss-unit-spr">${c && c.sprite ? spriteImg(c.sprite, "px") : ""}</span>

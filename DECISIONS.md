@@ -25,6 +25,8 @@ Taxonomy category definitions themselves live in `TAXONOMY.md`.
   trait): fight notes (random realm fill + loadout, your creatures at level 100, enemy level formula, instant-kill rule),
   Threats, base stats (bars), the Avatar card (god trait + its replaced own trait), a Difficulty table (level multiplier,
   Emblems, Avatar Mana, costume chance), Rewards (+ the god's costume; skins not listed until the code names them), Lore.
+- **Boss pages: no generic how-boss-fights-work chips** (user, 2026-10-12): no random-party / random-spells / instant-kill
+  notes; only boss-specific notes. Nether pages lead with the boss sprite, like Gate pages.
 - **Boss threat text must come from the extracted game context** (user, 2026-10-11): "Any recommendations and threat analysis
   need to be analyzed against actual extracted game context not made up". Nether threats are authored in
   `data/reference/nether_boss_advice.json` from the code behaviour (bosses.json `boss_traits[].behaviour` / `code_vs_text`,
