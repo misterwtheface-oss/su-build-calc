@@ -1544,10 +1544,13 @@
         : "One of the hardest runes: 35% of your hits do nothing, so every part takes longer to kill.")
         + (p.reflect ? " One upside: a Prevented hit isn't reflected back at you." : ""));
     }
-    // runes that only make it harder to damage
+    // runes that only make it harder to damage. Takes Less Damage / More Health / More Defense (user): build-relative, Avoid
+    // only for a sprint kill (scaling on 3+ parts, nothing to focus-kill)
+    const sprint = e.units.filter(u => (u.turn || []).some(s => s.kind === "stat_gain" || s.kind === "intensify_condition")).length >= 3;
+    const sprintWhy = `Nearly every part of ${e.name} gets stronger every turn and nothing stops it but killing them, so this fight is a race, and this slows every kill.`;
     for (const k of ["AVOIDDAMAGE", "DAMAGECAP", "TAKELESSDAMAGE", "MOREHEALTH", "IMMUNEATTACKS", "IMMUNESPELLS", "IMMUNEINDIRECT"]) {
       if (survive) say(k, "good", survive);
-      else if (longBad && ["TAKELESSDAMAGE", "MOREHEALTH"].includes(k)) say(k, "bad", `Makes it slower to kill, and ${longBad}.`);
+      else if (sprint && ["TAKELESSDAMAGE", "MOREHEALTH"].includes(k)) say(k, "bad", sprintWhy);
     }
     // Damage Cap (rune research Q3-5): the last step of every hit, any damage type: over 10% of max Health becomes 5%. That's
     // about hit size (build-relative), so it's only called out where parts must die more than once (Caliban, Loid).
@@ -1559,10 +1562,9 @@
     if (p.highest) for (const k of ["MOREDEFENSE", "MOREATTACK", "MOREINTELLIGENCE", "MORESPEED"])
       say(k, "bad", `Its damage${p.reflect ? " and its damage reflection" : ""} use${p.reflect ? "" : "s"} its highest stat, so tripling any stat can raise it.`);
     else {
-      // More Defense (user): build-relative, except a sprint kill (scaling on most parts) or damage that scales with Defense
-      const sprint = e.units.filter(u => (u.turn || []).some(s => s.kind === "stat_gain" || s.kind === "intensify_condition")).length >= 3;
+      // More Defense (user): build-relative, except a sprint kill or damage that scales with Defense
       if (survive) say("MOREDEFENSE", "good", survive);
-      else if (sprint || p.gainDmg) say("MOREDEFENSE", "bad", [sprint && `Nearly every part of ${e.name} gets stronger every turn and nothing stops it but killing them, so this fight is a race; tripled Defense slows every kill.`,
+      else if (sprint || p.gainDmg) say("MOREDEFENSE", "bad", [sprint && sprintWhy,
         p.gainDmg && `The ${unitOf(s => /stat gains/.test(String(s.formula || "")))}'s damage counts its Defense gains too, and those are a share of current Defense.`].filter(Boolean).join(" "));
       const stat = (key, name, used, how) => {
         if (p.gainDmg) return say(key, "bad", `The ${unitOf(s => /stat gains/.test(String(s.formula || "")))} deals damage from its stat gains; tripling its stats likely means bigger gains every turn (not yet checked in-game).`);

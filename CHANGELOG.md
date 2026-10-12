@@ -4,6 +4,10 @@ Every dated change entry, newest first (moved verbatim from Progress.md on 2026-
 to their own section and sorted by their date). Current state and open work: `Progress.md`, `BACKLOG.md`.
 New entries go at the TOP.
 
+## 2026-10-11 — Rune advice review: Takes Less Damage, More Health
+- Takes Less Damage / More Health (user): build-relative like More Defense; Avoid only for a sprint kill (scaling on 3+
+  parts: Lost Construct). Dropped the generic "slower to kill" Avoid elsewhere; still Recommended vs Jotun.
+
 ## 2026-10-11 — Rune advice from the rune research (extract HANDOFF_false_god_rune_research, 9 answers)
 - Damage Cap: per hit, the last step, every damage type, nothing bypasses it; it's about hit size (build-relative), so it's
   now Avoid only where parts die more than once (Caliban's Heart refills every part; Loid's Head resurrects at full Health),
