@@ -4,6 +4,11 @@ Every dated change entry, newest first (moved verbatim from Progress.md on 2026-
 to their own section and sorted by their date). Current state and open work: `Progress.md`, `BACKLOG.md`.
 New entries go at the TOP.
 
+## 2026-10-12 — Effect data from a full formula rebuild
+- The extract's full formula rebuild was re-run (first remote run via Task Scheduler). Spell stats unchanged; the damage
+  pipeline's spell-class step now carries its code source (cast sets the class from the gem; Convoke the Spirits picks the
+  class strong against the target).
+
 ## 2026-10-12 — Nether pages: boss names, not base creatures
 - The boss creature's card shows the boss name (Kiichi, not Eft Howler; Phobos ×6, not Sadomasochist ×6; Vitja; Kraynaks),
   as the game names it. Duos, the Aspects, the Shadows, the Gemlings and the six-copy 3rd fights keep their own names.
