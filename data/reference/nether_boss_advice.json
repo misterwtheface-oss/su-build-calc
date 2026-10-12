@@ -146,13 +146,16 @@
     },
     "FLUBRIS": {
       "threats": [
-        { "title": { "1": "Immune to attacks, spells or both", "2": "Immune to attacks, spells or both, and indirect damage", "3": "Six shape-shifting slimes" },
+        { "title": "Six Flubris instead of a random party", "tiers": [3],
+          "what": "No random realm creatures: all six slots are slimes (Glubris, Shubris, Pubris, Jubris, Cubris and Flubris), each with Unjustified Expectations and its own form. The trait is the same as in the 2nd fight; the six copies are the change.",
+          "why": "Six times the trait: every enemy changes form on its own turn and ignores indirect damage, so there is no easy target. Each hit has to match the form of the slime it lands on." },
+        { "title": { "1": "Immune to attacks, spells or both", "2": "Immune to attacks, spells or both, and indirect damage", "3": "Immune to attacks, spells or both, and indirect damage" },
           "what": { "1": "Each turn the slime changes to one of its other two forms: one is immune to attacks, one to spells, one to both.",
                     "2": "Each turn the slime changes form (immune to attacks, spells or both), and it is always immune to indirect damage.",
-                    "3": "Six slimes (Glubris, Shubris, Pubris, Jubris, Cubris and Flubris), each changing form every turn, each always immune to indirect damage." },
+                    "3": "Each slime changes form at the start of its turn (immune to attacks, spells or both), and is always immune to indirect damage." },
           "why": { "1": "Bring both attackers and casters and hit with whatever the current form lets through; skip it on the form that blocks both. Indirect damage (Poison, Burned and Bleeding ticks) works on every form.",
                    "2": "Indirect damage no longer works, so you need both attackers and casters, and some turns the slime can't be hurt at all.",
-                   "3": "Six slimes, each changing form on its own turn: you need attackers and casters, and a way to check each slime's form before you commit." } }
+                   "3": "Indirect damage works on none of them, so you need both attackers and casters, and on some turns a slime can't be hurt at all." } }
       ],
       "notes": { "all": ["The art for two forms is swapped in code: the form whose sprite is named \"all immune\" only blocks attacks, and the one named \"physical immune\" blocks both attacks and spells."] }
     },
@@ -410,13 +413,16 @@
     },
     "KRAYNAKS": {
       "threats": [
-        { "title": { "1": "Comes back as your creatures", "2": "Comes back as your creatures, with an extra trait", "3": "Six Mimics that come back as your creatures" },
+        { "title": "Six Kraynaks instead of a random party", "tiers": [3],
+          "what": "No random realm creatures: all six slots are Mimics (Kraynaks, Ranksya, Narkyaks, Snakyark, Yankarks and Arkansky), each with Who Am I? None Of Your Business and its own list of your creatures to copy. The trait works as in the 2nd fight; the six copies are the change.",
+          "why": "Six times the trait: against a full party each Mimic has seven lives, up to 42 deaths in all, and every life brings back one of your traits plus a random one. A long fight: bring sustain." },
+        { "title": { "1": "Comes back as your creatures", "2": "Comes back as your creatures, with an extra trait", "3": "Comes back as your creatures, with an extra trait" },
           "what": { "1": "When Kraynaks dies, it comes back at full Health as the first creature of yours (in party order) it hasn't copied yet, with that creature's trait. Once it has copied all of them, its next death is final.",
                     "2": "As tier 1, and each time it also gains a random trait from a creature of the copied creature's race.",
-                    "3": "Six Mimics (Kraynaks, Ranksya, Narkyaks, Snakyark, Yankarks, Arkansky), each with the tier 2 trait and its own copy list." },
+                    "3": "When a Mimic dies, it comes back at full Health as the first creature of yours (in party order) it hasn't copied yet, with that creature's trait and a random trait from its race. Once it has copied all of them, its next death is final." },
           "why": { "1": "With a full party Kraynaks has seven lives, and every life fights with one of your traits. Your party order is its order: put the creatures whose traits you least want to face last.",
                    "2": "Seven lives, each with your creature's trait plus a random one from its race. Party order sets the order it copies in.",
-                   "3": "Each Mimic has seven lives with a full party, up to 42 deaths in total, and each life brings your traits. A long fight: bring sustain." } }
+                   "3": "Party order sets the order they copy in: put the creatures whose traits you least want to face last." } }
       ],
       "notes": { "all": ["Not in the text: it also comes back at full Health and copies the creature's trait, and never copies the same creature twice."] }
     },

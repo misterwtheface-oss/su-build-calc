@@ -4,6 +4,11 @@ Every dated change entry, newest first (moved verbatim from Progress.md on 2026-
 to their own section and sorted by their date). Current state and open work: `Progress.md`, `BACKLOG.md`.
 New entries go at the TOP.
 
+## 2026-10-12 — Flubris and Kraynaks: six-copy threat
+- 3rd fight: a new first threat, "Six Flubris / Six Kraynaks instead of a random party" (six copies, each with the boss
+  trait; the tier 3 trait code is the same as tier 2's, per NETHER_BOSS_BEHAVIOR_FINDINGS). The trait threat below it now
+  describes the per-creature behaviour only.
+
 ## 2026-10-12 — Boss pages: no chips before Threats
 - Removed the remaining notes above the Threats section: False God mechanics, the six-copy 3rd-fight line on Nether pages,
   and the Gate unlock and level lines. Pages go sprite → (tier toggle) → Threats.
