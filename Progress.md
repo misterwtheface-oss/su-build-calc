@@ -100,9 +100,13 @@ source of truth), called by both `build-data.mjs` and the **`.githooks/pre-commi
   Fable / Doomsday / Immobility chance casts, relic Ultimate via Idolatry / Weapons of Mass Distortion) come from
   `FX.grantedSpells(slot)` (EFFECT_ENGINE.md): "Spells +N" button, **Granted** section on the Spells page, no slot used;
   owners show them as cards (perk list, trait / False God part / relic detail; spell detail "Granted by").
-- **Bosses** (2026-10-11, Menu → Bosses, `D.bosses` from `_su_extract` bosses.json): portrait grid by boss type → boss page
-  (formation, callouts, threat chips, base stats, anointment specs, each part's trait + code turn script + passives, Runes, Lore).
-  Step lines are rendered from the code step list (`bossStepHtml`), never from trait text. False Gods only so far.
+- **Bosses** (2026-10-11/12, Menu → Bosses, `D.bosses` from `_su_extract` bosses.json): toggle Nether Bosses | False Gods |
+  Gate of the Gods → sprite grid (duo bosses show both sprites) → boss page. Every page: sprite first, **no chips before
+  Threats**, base-stat magnitude bars, Lore. False Gods: formation, threats from the code step list (`bossStepHtml`, never trait
+  text), anointment specs, each part's trait + turn script, Runes. Nether: 1st/2nd/3rd+ tier toggle, threats + notes from
+  `data/reference/nether_boss_advice.json`, creature cards (boss trait only; boss name, never the base creature), the 3 trait
+  materials + their traits, every-win rewards. Gate: threats from `data/reference/gate_god_advice.json`, Avatar card (god trait
+  only), difficulty table, rewards + costume. Threat text must be grounded in the extract's code behaviour (DECISIONS).
 - **Page names (renamed 2026-10-11):** Taxonomy (was Appendix; ids `appendix`/`apx`), Status Effects (was Glossary; ids
   `glossary`), Appendix (was Errata; ids `errata`). Older notes below use the old names.
 - **Glossary / Errata** (2026-10-10): Glossary = Buffs / Debuffs / Minions only. Errata (menu, below Glossary) = the
@@ -132,6 +136,8 @@ source of truth), called by both `build-data.mjs` and the **`.githooks/pre-commi
   `SPEC_PLAN.md`, pipeline in `WIKI_CONTEXT.md`.
 
 ### Shipped since 2026-09-24 (headings from CHANGELOG.md; details there)
+- 2026-10-12 — Boss pages trimmed: sprite first, no chips before Threats, no own traits / base creatures, duo sprites, six-copy threats
+- 2026-10-11 — Nether Boss + Gate of the Gods pages, boss-type toggle, stat bars
 - 2026-10-11 — Bosses page (False Gods)
 - 2026-10-10 — Errata page + Rodian Masters
 - 2026-10-10 — granted spells, holdable-only spell pickers, Jade fix
