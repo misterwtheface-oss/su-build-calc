@@ -62,6 +62,10 @@ Nature=gem_nature, Chaos=gem_chaos, Sorcery=gem_sorceryB(blue), Death=gem_sorcer
 ## Creatures and UI
 - **Page names (user, 2026-10-11):** Appendix → **Taxonomy**, Glossary → **Status Effects**, Errata → **Appendix**. Internal
   ids keep the old names; notes dated before this use the old names.
+- **Status Effects live in the Appendix (user, 2026-10-12):** one "Status Effects" section of the Appendix, with Buffs,
+  Debuffs and Minions as collapsible sub-sections; no separate Status Effects page. Supersedes the Glossary/Errata split below.
+- **No casting chips on perk spell cards (user, 2026-10-12):** spell containers under a specialization perk show no
+  trigger/chance chip; the perk text already states when it casts.
 - **Glossary vs Errata (2026-10-10):** the Glossary holds only Buffs, Debuffs and Minions. Every other reference table
   (resurrection / start-of-battle order, drop and shrine odds, realm bonus, Rodian Masters, and new ones) goes on the
   Errata page, same layout; its menu button sits right below Glossary.

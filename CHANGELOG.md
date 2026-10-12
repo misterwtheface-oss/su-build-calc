@@ -4,6 +4,12 @@ Every dated change entry, newest first (moved verbatim from Progress.md on 2026-
 to their own section and sorted by their date). Current state and open work: `Progress.md`, `BACKLOG.md`.
 New entries go at the TOP.
 
+## 2026-10-12 — Status Effects folded into the Appendix; perk spell cards lose casting chips
+- The Status Effects page is gone from the menu: it is now the first section of the Appendix, with Buffs, Debuffs and
+  Minions as collapsible sub-sections (search opens everything that matches).
+- Spell containers under specialization perks (spec pages and a perk's Taxonomy view) no longer show the casting chip
+  (e.g. "35% · When …"); the perk text already says it. Trait / boss spell cards keep theirs.
+
 ## 2026-10-12 — Effect data from a full formula rebuild
 - The extract's full formula rebuild was re-run (first remote run via Task Scheduler). Spell stats unchanged; the damage
   pipeline's spell-class step now carries its code source (cast sets the class from the gem; Convoke the Spirits picks the

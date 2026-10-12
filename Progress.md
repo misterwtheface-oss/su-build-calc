@@ -109,6 +109,8 @@ source of truth), called by both `build-data.mjs` and the **`.githooks/pre-commi
   only), difficulty table, rewards + costume. Threat text must be grounded in the extract's code behaviour (DECISIONS).
 - **Page names (renamed 2026-10-11):** Taxonomy (was Appendix; ids `appendix`/`apx`), Status Effects (was Glossary; ids
   `glossary`), Appendix (was Errata; ids `errata`). Older notes below use the old names.
+- **Status Effects merged into the Appendix (2026-10-12):** no own page/menu item any more; it is the Appendix's first
+  section (`statusSection`), with Buffs / Debuffs / Minions as nested collapsible groups (`sob-step` style, keys `Status:<cat>`).
 - **Glossary / Errata** (2026-10-10): Glossary = Buffs / Debuffs / Minions only. Errata (menu, below Glossary) = the
   code-grounded tables: Resurrection Order, Start of Battle Order, Nether Stone Drops, Pandemonium Shrine, Maximum Realm
   Bonus, Rodian Masters (`D.masterRealms`). Same collapsible layout; section functions are shared (`*Section(st, q)`).

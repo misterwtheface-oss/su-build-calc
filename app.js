@@ -2061,8 +2061,9 @@
   // owner → the spells it grants (D.spellGrants), as spell-gem cards on the owner's own display
   const grantsOf = (kind, test) => (D.spellGrants || []).filter(g => g.owner.kind === kind && test(g.owner));
   const grantCardTrigger = (g) => g.mode === "boss" ? (g.oneOf && g.spells.length > 1 ? "One at random · its turn" : "On its turn") : grantTrigger(g);
-  const grantCards = (gs) => gs.map(g => g.spells.map(id => SPELL.get(id)).filter(Boolean).map(sp => spellGemCard(sp, grantCardTrigger(g))).join("")).join("");
-  const perkGrantCards = (specId, key) => grantCards(grantsOf("perk", o => o.spec === specId && o.key === key));
+  const grantCards = (gs, noTrigger) => gs.map(g => g.spells.map(id => SPELL.get(id)).filter(Boolean).map(sp => spellGemCard(sp, noTrigger ? "" : grantCardTrigger(g))).join("")).join("");
+  // perk spell cards carry no casting chip: the perk text right above already states when / how often it casts
+  const perkGrantCards = (specId, key) => grantCards(grantsOf("perk", o => o.spec === specId && o.key === key), true);
   const traitGrantCards = (traitId, rtIds) => grantCards(grantsOf("trait", o => o.id === traitId
     || (rtIds && ((TRAIT[o.id] || {}).runtimeIds || []).some(r => rtIds.includes(r)))));
   // a relic's Ultimate (scr_GetUltimateSpellByRelic) and who hands it out (Idolatry / Weapons of Mass Distortion)
@@ -3131,23 +3132,18 @@
     </div></div>`;
   }
 
-  // ── Status Effects page (internal ids say "glossary", its old name) — Buff / Debuff / Minion reference (name + prose + in-game status glyph from the game). ──
-  function openGlossary() {
-    ovState = { kind: "glossary", search: "", collapsed: new Set(GLOSSARY_CATS), render: renderGlossary };
-    openOverlay(ovState.render()); maybeFocusSearch(OV);
-  }
-  // ── Appendix page (internal ids say "errata", its old name) — code-grounded mechanics the game doesn't show (same collapsible layout as the Glossary). ──
+  // ── Appendix page (internal ids say "errata", its old name) — code-grounded mechanics the game doesn't show, plus the Status Effects reference. ──
   function openErrata() {
-    ovState = { kind: "errata", search: "", collapsed: new Set(["Resurrection", "StartOfBattle", "NetherDrops", "PandShrine", "RealmBonusMax", "Masters"]), ndDiff: "normal", render: renderErrata };
+    ovState = { kind: "errata", search: "", collapsed: new Set(["StatusEffects", "Resurrection", "StartOfBattle", "NetherDrops", "PandShrine", "RealmBonusMax", "Masters"]), ndDiff: "normal", render: renderErrata };
     openOverlay(ovState.render()); maybeFocusSearch(OV);
   }
   function renderErrata() {
     const st = ovState, q = st.search.trim().toLowerCase();
-    const body = resOrderSection(st, q) + sobSection(st, q) + netherDropSection(st, q) + pandShrineSection(st, q) + realmBonusSection(st, q) + mastersSection(st, q)
+    const body = statusSection(st, q) + resOrderSection(st, q) + sobSection(st, q) + netherDropSection(st, q) + pandShrineSection(st, q) + realmBonusSection(st, q) + mastersSection(st, q)
       || `<div class="slot-sub" style="padding:10px">Nothing matches “${esc(st.search)}”.</div>`;
     return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel">
       <div class="overlay-header"><h2>Appendix</h2>
-        <input class="ovl-search" placeholder="Search resurrection / realms / races…" value="${esc(st.search)}" data-action="errata-search">
+        <input class="ovl-search" placeholder="Search status effects / resurrection / realms…" value="${esc(st.search)}" data-action="errata-search">
         <button class="ovl-close" data-action="close-ovl">✕</button></div>
       <div class="overlay-body"><div class="ovl-center"><div class="ovl-center-scroll">${body}</div></div></div>
       <div class="overlay-footer"><span class="foot-info"></span><button class="btn-confirm" data-action="close-ovl">Done</button></div>
@@ -3215,33 +3211,28 @@
     let n = 0; for (const r of RES_ROWS) if (r.group !== "rule") r.n = ++n;   // execution order, Somnus unnumbered
     return RES_ROWS;
   }
-  function renderGlossary() {
-    const st = ovState, q = st.search.trim().toLowerCase(), all = D.conditions || [];
-    const match = (e) => !q || e.name.toLowerCase().includes(q) || e.desc.toLowerCase().includes(q);
-    const list = all.filter(match);
+  // ── Status Effects (Appendix section; internal ids say "gloss", its old page name) — Buff / Debuff / Minion reference
+  // (name + prose + in-game status glyph), one collapsible sub-group per type (closed by default, all open while searching).
+  function statusSection(st, q) {
+    const list = (D.conditions || []).filter(e => !q || e.name.toLowerCase().includes(q) || e.desc.toLowerCase().includes(q));
+    if (!list.length) return "";
+    const key = "StatusEffects", open = q ? true : !st.collapsed.has(key);
     // exclusivity glyph stacked below the status icon: minions summoned by only one spec/spell/creature
     // carry that source's emblem (spec emblem, creature sprite, or class gem). `show:false` keeps the
     // record but withholds the badge (Guardian of Surathli — no emblem art yet).
     const exclBox = (e) => (e.exclusive && e.exclusive.show && e.exclusive.icon)
       ? `<div class="apx-crea apx-excl" title="Exclusive to ${esc(e.exclusive.source)}">${spriteImg(e.exclusive.icon, "px")}</div>`
       : "";
-    // collapsible category headers (same style as the Appendix) + large icon on the left of each row
-    const body = GLOSSARY_CATS.map(c => {
+    const body = open ? GLOSSARY_CATS.map(c => {
       const items = list.filter(e => e.cat === c);
       if (!items.length) return "";
-      const open = q ? true : !st.collapsed.has(c);
-      const rows = open ? `<div class="perk-list">${items.map(e => `<div class="perk-line apx-clickable" data-action="apx-open" data-ek="condition" data-eid="${esc(e.cat + ':' + e.key)}" title="View taxonomy">
+      const sk = "Status:" + c, sopen = q ? true : st.sobOpen && st.sobOpen.has(sk);
+      const rows = sopen ? `<div class="perk-list">${items.map(e => `<div class="perk-line apx-clickable" data-action="apx-open" data-ek="condition" data-eid="${esc(e.cat + ':' + e.key)}" title="View taxonomy">
         <div class="apx-iconcol">${e.icon ? `<div class="apx-crea"><img src="${esc(e.icon)}" alt=""></div>` : ""}${exclBox(e)}</div>
         <div class="perk-line-body"><div class="perk-line-head"><b>${esc(e.name)}</b></div><div class="perk-desc">${esc(e.desc)}</div></div></div>`).join("")}</div>` : "";
-      return `<button class="apx-sec-head apx-cat${open ? "" : " collapsed"}" data-action="gloss-cat-toggle" data-c="${esc(c)}"><span class="apx-sec-caret">${open ? "▾" : "▸"}</span>${esc(c)}s</button>${rows}`;
-    }).join("") || `<div class="slot-sub" style="padding:10px">No buff, debuff or minion matches “${esc(st.search)}”.</div>`;
-    return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel">
-      <div class="overlay-header"><h2>Status Effects</h2>
-        <input class="ovl-search" placeholder="Search buffs / debuffs / minions…" value="${esc(st.search)}" data-action="gloss-search">
-        <button class="ovl-close" data-action="close-ovl">✕</button></div>
-      <div class="overlay-body"><div class="ovl-center"><div class="ovl-center-scroll">${body}</div></div></div>
-      <div class="overlay-footer"><span class="foot-info"></span><button class="btn-confirm" data-action="close-ovl">Done</button></div>
-    </div></div>`;
+      return `<button class="sob-step${sopen ? " open" : ""}" data-action="sob-step" data-k="${sk}"><span class="apx-sec-caret">${sopen ? "▾" : "▸"}</span>${esc(c)}s</button>${rows}`;
+    }).join("") : "";
+    return `<button class="apx-sec-head apx-cat${open ? "" : " collapsed"}" data-action="gloss-cat-toggle" data-c="${key}"><span class="apx-sec-caret">${open ? "▾" : "▸"}</span>Status Effects</button>${body}`;
   }
 
   // ── Start-of-battle order (D.startOfBattle, built from _su_extract START_OF_BATTLE_FINDINGS.md). One collapsible group per
@@ -5563,7 +5554,6 @@
       case "open-realms": openRealms(); break;
       case "open-riddle": openRiddle(); break;
       case "riddle-search": break;   // handled in onInput
-      case "open-glossary": openGlossary(); break;
       case "open-errata": openErrata(); break;
       case "errata-search": break;   // handled in onInput
       case "open-bosses": openBosses(); break;
@@ -5573,7 +5563,6 @@
       case "nb-tier": dovState.tier = +t.dataset.v; refreshDetail(); break;
       case "boss-sec": { const k = t.dataset.k; dovState.open.has(k) ? dovState.open.delete(k) : dovState.open.add(k); refreshDetail(); break; }
       case "boss-jump": { const el = DOV.querySelector(`#boss-unit-${t.dataset.slot}`); if (el) el.scrollIntoView({ behavior: "smooth", block: "start" }); break; }
-      case "gloss-search": break;    // handled in onInput
       case "open-projects": if (FEATURES.projects) openProjects(); break;
       case "open-netherhelp": openNetherHelper(); break;
       case "nh-tab": ovState.tab = t.dataset.v; refreshOverlay(true); break;
@@ -6023,7 +6012,7 @@
     if (A === "share-name") { ovState.name = v; return; }
     // search fields — live filter without losing caret
     const searchMap = { "crea-search": [OV, ovState], "spec-search": [OV, ovState], "artb-search": [OV, ovState],
-      "relic-search": [OV, ovState], "cards-search": [OV, ovState], "anoint-search": [OV, ovState], "nether-search": [OV, ovState], "sg-search": [OV, ovState], "appendix-search": [OV, ovState], "shop-search": [OV, ovState], "realm-search": [OV, ovState], "riddle-search": [OV, ovState], "gloss-search": [OV, ovState], "errata-search": [OV, ovState], "bosses-search": [OV, ovState], "proj-search": [OV, ovState], "lib-search": [OV, ovState], "facet-search": [DOV, dovState], "perk-search": [DOV, dovState], "pers-search": [DOV, dovState], "iconpick-search": [DOV, dovState], "skin-search": [DOV, dovState] };
+      "relic-search": [OV, ovState], "cards-search": [OV, ovState], "anoint-search": [OV, ovState], "nether-search": [OV, ovState], "sg-search": [OV, ovState], "appendix-search": [OV, ovState], "shop-search": [OV, ovState], "realm-search": [OV, ovState], "riddle-search": [OV, ovState], "errata-search": [OV, ovState], "bosses-search": [OV, ovState], "proj-search": [OV, ovState], "lib-search": [OV, ovState], "facet-search": [DOV, dovState], "perk-search": [DOV, dovState], "pers-search": [DOV, dovState], "iconpick-search": [DOV, dovState], "skin-search": [DOV, dovState] };
     if (searchMap[A]) {
       const [root, state] = searchMap[A]; state.search = v;
       if (A === "crea-search") resetCreaPage();   // new query → back to page 1
