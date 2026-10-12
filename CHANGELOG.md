@@ -4,6 +4,19 @@ Every dated change entry, newest first (moved verbatim from Progress.md on 2026-
 to their own section and sorted by their date). Current state and open work: `Progress.md`, `BACKLOG.md`.
 New entries go at the TOP.
 
+## 2026-10-11 — Gate of the Gods pages
+- The extract's Gate of the Gods data landed (31 gods); the Bosses toggle's third tab is live, with god portraits as tiles.
+- God page: fight notes (5 random realm creatures, 5 random spells + artifact each, no Avatar Ultimate; your creatures count
+  as level 100; enemy level = your average level × the difficulty multiplier; unlock condition; the instant-kill rule except
+  vs Lister), Threats, base-stat bars, the Avatar (god trait with plain code-vs-text notes, the own trait it replaces), a
+  Difficulty table (level ×, Emblems, Avatar Mana, costume %), Rewards (Emblem, Avatar Mana, costume chance past 10, skins,
+  decoration, Ascension; the god's costume shown), Lore.
+- Threats authored per god in `data/reference/gate_god_advice.json` from the code behaviour (e.g. Vulcanar halves your stats
+  at battle start; Meraxis reflects onto your whole party; Erebyss wipes you on its 2nd turn and Vertraag on its 3rd; Torun's
+  500% per turn start; Shallan counts its side's own actions). build-data validates coverage and rejects code-like text.
+- build-data: gate builder (Avatar by name, asserted by its replaced trait's runtime id; god trait by runtime id; costume from
+  the wardrobe's god entries); dialog without the speaker tag, `{PLAYERNAME}` → "[your name]", repeated lines dropped.
+
 ## 2026-10-11 — Nether Boss pages; boss-type toggle; stat bars on boss pages
 - Bosses list: Nether Bosses | False Gods | Gate of the Gods toggle (the Realms page's style); Gate of the Gods disabled until
   its data lands. Nether Bosses list as creature tiles (boss-skin battle sprite).

@@ -1,0 +1,239 @@
+{
+  "_note": "App-authored Gate of the Gods threat analysis, keyed by the Avatar's key (bosses.json type gate_god, units[0].key). Every claim is taken from the god trait's code behaviour (bosses.json units[].god_trait.behaviour / code_vs_text; code/GATE_OF_THE_GODS_FINDINGS.md) plus game rules already in the extract (timeline, crit, Defending, Barrier cap, Shelled vs indirect, sourceless damage ticks, the boss instant-kill rule). One god trait per god, no tiers. notes = code-vs-text clarify notes shown under the god trait. build-data validates every key.",
+  "gods": {
+    "SURATHLI": {
+      "threats": [
+        { "title": "Every buff, all the time",
+          "what": "At the start of battle every creature on Surathli's side gains Barrier, Shelled, Rebirth and Invisible, and always has every other buff (any that are removed come back).",
+          "why": "Only Barrier, Shelled and Invisible are left out of the permanent buffs, so breaking or removing those three sticks; everything else (Mending, Leeching, Repelling and the rest) comes straight back. Plan around Rebirth too: every enemy starts with it." }
+      ]
+    },
+    "EREBYSS": {
+      "threats": [
+        { "title": "Kills your whole party every other turn",
+          "what": "At the start of Erebyss's 2nd, 4th, 6th … turn, every creature of yours is killed instantly.",
+          "why": "These are real kills on your side, so resurrection works, but the clock is Erebyss's own turns: kill it before its second turn, or push it down the timeline to delay that turn. The effect stops when Erebyss dies." }
+      ]
+    },
+    "VULCANAR": {
+      "threats": [
+        { "title": "Your stats start halved",
+          "what": "At the start of battle each of your creatures has its Attack, Intelligence, Defense and Speed halved.",
+          "why": "Not in the text. Every damage, Defense and Speed check starts from half, so plan as if your team were half as strong." },
+        { "title": "Revives 5 times, stronger each time",
+          "what": "When Vulcanar dies it comes back at full Health, up to 5 times. Each revive adds 25% to its damage and 10% to its damage reduction.",
+          "why": "Six lives, the last one dealing +125% damage and taking 50% less. Pace your resources for six kills, and keep your burst for the late lives." }
+      ],
+      "notes": ["Not in the text: at the start of battle every creature of yours has its Attack, Intelligence, Defense and Speed halved."]
+    },
+    "ZONTE": {
+      "threats": [
+        { "title": "Your creatures cast harmful spells on your own party",
+          "what": "At the start of each of your creatures' turns, it casts 3 random enemy-wide harmful spells at its own party, itself included.",
+          "why": "Each of your turns opens with three party-wide hits from your own creature's stats, so high-Intelligence creatures hurt your party the most. Six creatures means 18 such spells a round." },
+        { "title": "Its side buffs itself every turn",
+          "what": "At the start of each turn of a creature on Zonte's side, it casts 3 random whole-side beneficial spells.",
+          "why": "Heals, shields and buffs on the whole enemy side every enemy turn. Cleansing buffs and big single hits beat chip damage here." }
+      ],
+      "notes": ["The text says the harmful spells are cast on themselves; the code aims each one at the creature's whole party."]
+    },
+    "MERAXIS": {
+      "threats": [
+        { "title": "Every hit is reflected onto your whole party",
+          "what": "Every creature on Meraxis's side always Defends. After one of them takes damage, each of your creatures takes the same amount.",
+          "why": "They never attack, but every point of damage you deal comes back on all six of your creatures. A big hit can wipe your own party. They Defend (35% less damage taken), so the reflected amount is what got through. Your party needs to out-heal or out-last the damage you deal, so bring heavy Defense and healing." }
+      ],
+      "notes": ["The text says damage is reflected back to the enemy; the code deals the full amount to every one of your creatures, not only the attacker."]
+    },
+    "AZURAL": {
+      "threats": [
+        { "title": "Your damage needs buffs",
+          "what": "Your creatures deal only 1% of normal damage for each buff they have, never more than normal.",
+          "why": "With no buffs your creatures deal nothing. Stack as many buffs as you can on your damage dealers: 10 buffs is still only 10% damage, and full damage needs 100 buffs. Damage from creatures without buffs is wasted." }
+      ],
+      "notes": ["The text implies every buff keeps adding damage; the code caps it at normal damage (reached at 100 buffs)."]
+    },
+    "AEOLIAN": {
+      "threats": [
+        { "title": "Only one class can hurt its side; no indirect damage",
+          "what": "A random class is chosen at the start of battle and at each of Aeolian's turns (always a different one). Only an attack or spell from a creature of that class lands on its side; indirect damage and damage with no source are blocked.",
+          "why": "Bring creatures of several classes so someone can always hit. Poison, Burned and Bleeding ticks don't work here." }
+      ]
+    },
+    "TARTARITH": {
+      "threats": [
+        { "title": "You can't Attack or Cast",
+          "what": "Your creatures can't use the Attack or Cast commands, and macros skip them too.",
+          "why": "All your damage has to come from things that happen on their own: traits, relics, artifacts, automatic casts, minions and damage over time. Build a team that wins without pressing Attack or Cast." }
+      ]
+    },
+    "GONFURIAN": {
+      "threats": [
+        { "title": "No spells; its side only takes damage with 5+ debuffs",
+          "what": "Your creatures can't cast spells. A creature on Gonfurian's side takes no damage unless it has at least 5 debuffs.",
+          "why": "Debuff each enemy five times before damaging it, using traits, artifacts and attacks that apply debuffs (no spells). Damage before the fifth debuff is wasted." }
+      ]
+    },
+    "YSEROS": {
+      "threats": [
+        { "title": "Every attack and spell is answered by its whole side",
+          "what": "After one of your creatures attacks, every creature on Yseros's side attacks a random creature of yours. After one of yours casts a spell, every one of them casts that same spell.",
+          "why": "Each of your actions brings six back. Damage spells come back at your party and buff spells buff their side too, so every spell you cast is cast six more times for them. Make every attack count." }
+      ]
+    },
+    "TORUN": {
+      "threats": [
+        { "title": "500% of max Health at every turn start",
+          "what": "At the start of every creature's turn, on either side, each of your creatures takes damage equal to 500% of its max Health. Torun's side takes 65% less damage.",
+          "why": "This wipes your party at the first turn start unless the hit is prevented, absorbed or survived. Damage reduction is capped at 80% (still a full 100% of max Health), so you need ways to block the hit, absorb it (Barrier) or come back from death, and they have to hold at every single turn start." }
+      ],
+      "notes": ["The text is a joke line; the code deals 500% of max Health to each of your creatures at every turn start, and Torun's side takes 65% less damage."]
+    },
+    "REGALIS": {
+      "threats": [
+        { "title": "Two random debuffs every turn, no resistance",
+          "what": "At the start and end of each of your creatures' turns, it gets a random debuff. Your creatures can never be resistant to debuffs.",
+          "why": "Twelve random debuffs a round across your party, including control and damage-over-time ones. Bring cleansing and debuff immunity; resistance doesn't work." }
+      ]
+    },
+    "VERTRAAG": {
+      "threats": [
+        { "title": "Your whole party dies on its 3rd turn",
+          "what": "Vertraag shows a warning on its 1st and 2nd turns. At the start of its 3rd turn, every creature of yours is killed instantly.",
+          "why": "You have until Vertraag's third turn. Kill it before then, or delay its turns by pushing it down the timeline. These are real kills, so resurrection can still save the fight afterward." }
+      ],
+      "notes": ["The text says your creatures die eventually; the code kills them all at the start of Vertraag's 3rd turn."]
+    },
+    "FRIDEN": {
+      "threats": [
+        { "title": "Only Blight damage hurts its side",
+          "what": "Every creature on Friden's side always has Blighted, and takes no damage unless it comes from Blighted.",
+          "why": "Your attacks, spells and other damage do nothing. Blight hurts a creature when it's healed, so heal the enemy side: healing spells and effects aimed at them are your damage." }
+      ]
+    },
+    "LISTER": {
+      "threats": [
+        { "title": "Survive 24 turns",
+          "what": "Lister's side takes no damage. After 24 creature turns (every creature's turn on both sides counts), every creature on its side dies.",
+          "why": "You can't win by attacking. You win by staying alive until the 24th turn, so healing, Defense and protection matter more than damage. It's the same counter Jotun uses." }
+      ]
+    },
+    "MORTEM": {
+      "threats": [
+        { "title": "Every hit capped at 1% of max Health",
+          "what": "A hit on a creature on Mortem's side can deal at most 1% of its max Health.",
+          "why": "Each enemy needs at least 100 hits. Count hits, not damage: multi-hit attacks, area spells hitting all six, damage-over-time ticks and anything that repeats." }
+      ]
+    },
+    "VENEDON": {
+      "threats": [
+        { "title": "Every attack and cast six times",
+          "what": "Every creature on Venedon's side attacks or casts 6 times each time it acts, overriding any effect that changes the count.",
+          "why": "Six enemies, six hits each per action. Effects that cut their attack or cast count do nothing. Defense, damage reduction and killing them fast are what work." }
+      ]
+    },
+    "TENEBRIS": {
+      "threats": [
+        { "title": "Invisible means immune",
+          "what": "Every creature on Tenebris's side gains Invisible at the start of battle and at the start of each Tenebris turn. While Invisible, it takes no damage.",
+          "why": "Invisible goes away when a creature acts, so a creature on its side can be hurt only after its own turn and before Tenebris's next turn. Damage in that window; area damage helps reach whoever just acted." }
+      ]
+    },
+    "APOCRANOX": {
+      "threats": [
+        { "title": "Arrows before and after every turn",
+          "what": "At the start and end of every creature's turn, on both sides, Apocranox casts a random Arrow spell (Fragmenting, Disintegrating, Splitting, Poison, Homing, Frost, Fire, Entangling or Explosive Arrow).",
+          "why": "With twelve creatures that's up to 24 free Arrow casts a round. Kill Apocranox to stop them." }
+      ]
+    },
+    "AURUM": {
+      "threats": [
+        { "title": "300% of your lowest stat after every turn",
+          "what": "At the end of each of your creatures' turns, it takes damage equal to 300% of its lowest stat.",
+          "why": "Creatures with one very low stat take the least, so lopsided stat spreads are safer here than balanced ones; raising a creature's lowest stat makes the hit bigger." }
+      ]
+    },
+    "PERDITION": {
+      "threats": [
+        { "title": "Triple attacks that hit your whole party",
+          "what": "Every creature on Perdition's side attacks 2 extra times, and each attack also hits every other creature of yours for 100% of its damage.",
+          "why": "Every attack is three attacks on your whole party. Defense and damage reduction on every creature, and killing the hardest hitters first." }
+      ]
+    },
+    "CALIBAN": {
+      "threats": [
+        { "title": "Triple attacks that hit your whole party",
+          "what": "In code Caliban gets Perdition's Modern Misery: every creature on its side attacks 2 extra times, and each attack also hits every other creature of yours for 100% of its damage.",
+          "why": "Every attack is three attacks on your whole party. Defense and damage reduction on every creature, and killing the hardest hitters first." }
+      ],
+      "notes": ["Caliban shares Perdition's room, so in code it gets Modern Misery; its own Total Nightmare is never used here (not yet checked in-game).", "Caliban unlocks after 5 Zantai kills and isn't part of Ascension."]
+    },
+    "ALEXANDRIA": {
+      "threats": [
+        { "title": "Grows from your best stats every turn",
+          "what": "At the start of each turn of a creature on Alexandria's side, it gains max Health, Attack, Intelligence, Defense and Speed, each equal to 30% of your creatures' highest stats added together.",
+          "why": "A full party of stat-stackers feeds every enemy a huge bonus every turn, and it keeps adding up. End the fight fast; lower stats on your side shrink what they gain." }
+      ]
+    },
+    "ANNELTHA": {
+      "threats": [
+        { "title": "Kills your left-most creature every turn; no resurrection",
+          "what": "At the start of Anneltha's turn, your left-most living creature is killed. Your creatures can't be resurrected.",
+          "why": "One creature lost every Anneltha turn, for good. Put the creatures you can spare in your left-most slots, and kill Anneltha quickly." }
+      ]
+    },
+    "ARIAMAKI": {
+      "threats": [
+        { "title": "Shelled and Invisible after every hit",
+          "what": "Every creature on Ariamaki's side gains Invisible and Shelled at the start of battle and after it takes damage.",
+          "why": "Shelled negates the next attack or spell, so every other hit is wasted. Indirect damage gets past Shelled; a cheap hit first pops it." },
+        { "title": "One cast empties a gem",
+          "what": "After one of your creatures casts a spell, that spell gem's charges are set to 0.",
+          "why": "Each gem casts once a battle. Spread your casts over many gems, or lean on attacks and passive damage." }
+      ]
+    },
+    "GENAROS": {
+      "threats": [
+        { "title": "Four attacks per action, and it grows",
+          "what": "Every creature on Genaros's side attacks 3 extra times, gains 20% of its max Health (current and max) after it attacks and after it is attacked, and is immune to Scorned.",
+          "why": "Four attacks per enemy action, and every attack, theirs or yours, makes it bigger. Spells and indirect damage don't feed its growth; attacking it does. Scorned can't stop the attacks." }
+      ]
+    },
+    "MUSE": {
+      "threats": [
+        { "title": "Every minion at max stacks, and Crucifixion every turn",
+          "what": "Every creature on Muse's side always has every minion at maximum stacks. At the start of each of their turns, Crucifixion is cast on each of your creatures.",
+          "why": "Every enemy carries every minion (extra hits, extra casts, extra turns, damage back), and each enemy turn brings Crucifixion on your whole party. End it fast." }
+      ]
+    },
+    "RECLUSA": {
+      "threats": [
+        { "title": "A coin flip to die after every turn",
+          "what": "At the end of each of your creatures' turns, it has a 50% chance to die. At the end of each turn of a creature on Reclusa's side, a random dead ally of theirs comes back at full Health.",
+          "why": "Every turn you take is a 50% chance to lose that creature, and every enemy turn undoes one of your kills. Resurrection on your side matters, and so does ending the fight in as few turns as possible." }
+      ]
+    },
+    "4080": {
+      "threats": [
+        { "title": "Half your actions turn back on you",
+          "what": "When one of your creatures attacks, casts on, debuffs or lowers the stats of a creature on 4080's side, there's a 50% chance it happens to your creature instead.",
+          "why": "Your biggest hits and your strongest debuffs are the most dangerous to your own creatures. Sturdy creatures with moderate hits, and damage that isn't an attack or spell, are safer." }
+      ]
+    },
+    "SHALLAN": {
+      "threats": [
+        { "title": "No damage for their first 20 actions",
+          "what": "Each creature on Shallan's side takes 120% less damage minus 1% for every attack and cast it has made this battle. Above 100% it takes no damage (it isn't healed), and the reduction isn't held to the usual 80% cap.",
+          "why": "Each enemy is untouchable until it has acted 20 times, and only takes full damage after 120 actions. A long fight: survive while they act, and save your damage for when their count is high." }
+      ],
+      "notes": ["The text's 120% less would read as healing; the code takes no damage instead, and the reduction isn't capped at 80% like most."]
+    },
+    "T'MEREM'RGO": {
+      "threats": [
+        { "title": "Every spell and attack is copied by its whole side",
+          "what": "After one of your creatures manually casts a spell, every creature on T'mere M'rgo's side casts it too. After one of yours attacks, each of them attacks a random creature of yours.",
+          "why": "Each action you take brings six back. Damage spells come back at your party; automatic casts (relics, traits) aren't copied, only manual ones." }
+      ]
+    }
+  }
+}

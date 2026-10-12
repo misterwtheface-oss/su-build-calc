@@ -1310,7 +1310,9 @@
   // a Nether Boss creature wears its boss skin (battle sprite); a skinless one (Giran, the Gemlings) shows its own sprite
   const nbUnitImg = (u) => { const sk = (u.skins || []).length ? SKIN_BY_ID.get(u.skins[0]) : null; return (sk && sk.img) || (CREA.get(u.creature) || {}).sprite || null; };
   const nbLead = (e) => e.units.find(u => u.tiers) || e.units[0];
-  const bossImg = (e) => e.type === "nether_boss" ? nbUnitImg(nbLead(e)) : (FG_BY_KEY.get(e.key) || {}).img || null;
+  // a god: its battle portrait (bossSprites by name), else its Avatar's creature sprite
+  const ggImg = (e) => (D.bossSprites || {})[e.name.toLowerCase().replace(/[^a-z0-9]/g, "")] || (CREA.get(e.units[0].creature) || {}).sprite || null;
+  const bossImg = (e) => e.type === "nether_boss" ? nbUnitImg(nbLead(e)) : e.type === "gate_god" ? ggImg(e) : (FG_BY_KEY.get(e.key) || {}).img || null;
   // base stats as magnitude bars (value / the playable roster's max for that stat), same bar as the creature wizard
   const bossStatTable = (st) => `<div class="stat-grid single mag boss-stat-grid">${STAT_KEYS.map(k => { const v = st[k], pc = Math.max(0, Math.min(100, (v || 0) / (STAT_MAX[k] || 1) * 100));
     return `<div class="stat-row"><span class="stat-name">${STAT_LABEL[k]}</span><span class="stat-mag" title="${Math.round(pc)}% of the highest base ${STAT_LABEL[k]} of any creature"><i style="width:${pc}%"></i></span><span class="stat-val total">${v}</span></div>`; }).join("")}</div>`;
@@ -1656,6 +1658,7 @@
   function renderBossDetail() {
     const st = dovState, e = BOSS_BY_KEY.get(st.key); if (!e) return "";
     if (e.type === "nether_boss") return renderNetherDetail(e);
+    if (e.type === "gate_god") return renderGateDetail(e);
     const part = e.type === "false_god" ? "part" : "boss creature";
     const typeLabel = (((D.bosses && D.bosses.types) || []).find(t => t.type === e.type) || {}).label || "";
     const sec = (k, title, html) => `<button class="apx-sec-head apx-cat${st.open.has(k) ? "" : " collapsed"}" data-action="boss-sec" data-k="${k}"><span class="apx-sec-caret">${st.open.has(k) ? "▾" : "▸"}</span>${title}</button>${st.open.has(k) ? html : ""}`;
@@ -1761,6 +1764,55 @@
         ${sameStats ? `<div class="section-label">Base stats</div>${bossStatTable(units[0].stats)}` : ""}
         <div class="section-label">Creatures</div>
         ${cards}
+        ${rewards}
+        ${e.dialog ? sec("lore", "Lore", `<div class="trait-desc boss-lore boss-dialog">${richText(e.dialog)}</div>`) : ""}
+      </div></div></div>
+      <div class="overlay-footer"><span class="foot-info"></span><button class="btn-confirm" data-action="close-detail">Done</button></div>
+    </div></div>`;
+  }
+  // Gate of the Gods page (bosses.json gate_god + gate_rules): the god's Avatar with the god trait in place of its own, 5 random
+  // realm creatures, difficulty-scaled levels. Threats app-authored from the code behaviour (data/reference/gate_god_advice.json).
+  const GG_MULT = [1, 1.5, 2, 2.5, 3, 4, 5, 7, 10, 15];   // scr_GodBattleLevel; 10+ = 15 + 5 per level above 10
+  function renderGateDetail(e) {
+    const st = dovState, u = e.units[0], c = CREA.get(u.creature), adv = e.advice || { threats: [], notes: [] };
+    const sec = (k, title, html) => `<button class="apx-sec-head apx-cat${st.open.has(k) ? "" : " collapsed"}" data-action="boss-sec" data-k="${k}"><span class="apx-sec-caret">${st.open.has(k) ? "▾" : "▸"}</span>${title}</button>${st.open.has(k) ? html : ""}`;
+    const immune = e.key === "GG_LISTER";   // Loif En't Fair: nothing on its side takes damage, so the instant-kill rule is moot
+    const notes = [e.unlock && e.unlock !== "always" ? `Unlocked ${e.unlock.replace(/^after its unlock project$/, "by its project")}.` : null,
+      `${e.fill} random creatures of ${e.name}'s realm fill the other slots. Every enemy has 5 random spells of its class and a random artifact; the Avatar doesn't get its Ultimate.`,
+      "Your creatures count as level 100 for every stat. Enemy level = your creatures' average level (at least 10) × the difficulty multiplier.",
+      immune ? null : BOSS_OHKO_NOTE].filter(Boolean);
+    const gt = TRAIT[u.godTraitId], ot = TRAIT[u.ownTraitId];
+    const card = `<div class="boss-unit" id="boss-unit-1">
+        <div class="boss-unit-head"><span class="boss-unit-spr">${c && c.sprite ? spriteImg(c.sprite, "px") : ""}</span>
+          <div class="boss-unit-name"><b>${esc(u.name)}</b> <span class="anoint-spec-tag">Avatar</span></div></div>
+        ${gt ? `<div class="boss-sub">God trait</div><div class="primary-traits">${traitBanner(u.godTraitId)}<div class="trait-desc">${richText(gt.desc || "")}</div></div>${(adv.notes || []).map(t => `<div class="fx-clarify">${esc(t)}</div>`).join("")}` : ""}
+        ${ot ? `<div class="boss-sub">Own trait (replaced in this fight)</div><div class="primary-traits">${traitBanner(u.ownTraitId)}<div class="trait-desc">${richText(ot.desc || "")}</div></div>` : ""}
+      </div>`;
+    const diffRows = GG_MULT.map((m, i) => { const d = i + 1; return `<tr><td>${d}</td><td>${m}</td><td>${d}</td><td>${d * 10}</td><td>${3 * d}%</td></tr>`; }).join("")
+      + `<tr class="boss-diff-more"><td>11+</td><td>+×5 each</td><td>10</td><td>100</td><td>+3% each</td></tr>`;
+    const diff = `<div class="section-label">Difficulty</div>
+      <div class="boss-diff-wrap"><table class="boss-diff"><thead><tr><th>Difficulty</th><th>Level ×</th><th>Emblems</th><th>Mana</th><th>Costume</th></tr></thead><tbody>${diffRows}</tbody></table></div>
+      <div class="slot-sub boss-diff-note">You can pick up to difficulty 10, or one above your best win against ${esc(e.name)}.</div>`;
+    const costume = e.costume ? (D.wardrobe || []).find(w => w.key === e.costume) : null;
+    const rewards = `<div class="section-label">Rewards</div>
+      <ul class="boss-steps"><li>${esc(e.name)}'s Emblem × the difficulty (up to 10) and its Avatar Mana × 10 × the difficulty (up to 100). No resources.</li>
+        <li>Its costume, if you don't have it: 3% × the difficulty (keeps rising past 10).</li>
+        <li>Each of its three skins, if you don't have it: 5%. Its decoration, if not unlocked: 10%.</li>
+        <li>${e.ascension ? `Ascension: beat all 30 gods except Caliban at difficulty 10 or higher with the same specialization for a perk point and that specialization's decoration.` : "Not part of Ascension."}</li></ul>
+      ${costume ? `<div class="boss-chips boss-rewards-art"><span class="boss-chip">${costume.img ? `<span class="prop-ico sm">${spriteImg(costume.img, "px")}</span>` : ""}${esc(costume.name)} costume</span></div>` : ""}`;
+    return `<div class="ovl-backdrop" data-action="detail-backdrop"><div class="overlay-panel detail">
+      <div class="overlay-header">${bossImg(e) ? `<span class="hdr-ico">${spriteImg(bossImg(e), "px")}</span>` : ""}
+        <h2>${esc(e.name)}</h2><span class="anoint-spec-tag apx-boss-cat">God</span>
+        <button class="ovl-close" data-action="close-detail">✕</button></div>
+      <div class="overlay-body"><div class="ovl-center"><div class="ovl-center-scroll boss-page">
+        ${bossImg(e) ? `<div class="gg-portrait">${spriteImg(bossImg(e), "px")}</div>` : ""}
+        ${notes.map(t => `<div class="excl-note boss-mech"><span>${esc(t)}</span></div>`).join("")}
+        ${adv.threats.length ? `<div class="section-label">Threats</div>${adv.threats.map(t => `<div class="boss-threat"><div class="boss-threat-head">${esc(t.title)}</div>
+          <div class="boss-threat-body"><div class="trait-desc">${esc(t.what)}</div><p class="boss-why">${esc(t.why)}</p></div></div>`).join("")}` : ""}
+        <div class="section-label">Base stats</div>${bossStatTable(u.stats)}
+        <div class="section-label">Creatures</div>
+        ${card}
+        ${diff}
         ${rewards}
         ${e.dialog ? sec("lore", "Lore", `<div class="trait-desc boss-lore boss-dialog">${richText(e.dialog)}</div>`) : ""}
       </div></div></div>

@@ -21,6 +21,10 @@ Taxonomy category definitions themselves live in `TAXONOMY.md`.
 - **Nether Boss page** (user, 2026-10-11): simpler than a False God page, same shape: a 1st fight | 2nd fight | 3rd+ toggle
   (the boss trait tier = times beaten), Threats, a base-stat table with magnitude bars, Creatures, Rewards (the boss's 3 trait
   materials with their traits, plus the every-win rewards). False God base stats use the same magnitude-bar table.
+- **Gate of the Gods page** (user, 2026-10-11, "implement their pages as well"): Nether-Boss shape without tiers (one god
+  trait): fight notes (random realm fill + loadout, your creatures at level 100, enemy level formula, instant-kill rule),
+  Threats, base stats (bars), the Avatar card (god trait + its replaced own trait), a Difficulty table (level multiplier,
+  Emblems, Avatar Mana, costume chance), Rewards (+ the god's costume; skins not listed until the code names them), Lore.
 - **Boss threat text must come from the extracted game context** (user, 2026-10-11): "Any recommendations and threat analysis
   need to be analyzed against actual extracted game context not made up". Nether threats are authored in
   `data/reference/nether_boss_advice.json` from the code behaviour (bosses.json `boss_traits[].behaviour` / `code_vs_text`,

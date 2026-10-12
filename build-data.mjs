@@ -3247,7 +3247,7 @@ const bosses = (() => {
   const out = [];
   let nUnits = 0, nSteps = 0;
   // types the app doesn't build yet (Gate of the Gods until its schema lands) are counted, never silently dropped
-  const BUILT = new Set(['false_god', 'nether_boss']);
+  const BUILT = new Set(['false_god', 'nether_boss', 'gate_god']);
   const skipped = bj.encounters.filter(e => !BUILT.has(e.type));
   if (skipped.length) warn(`bosses: ${skipped.length} encounters of an unbuilt type skipped (${[...new Set(skipped.map(e => e.type))].join(', ')})`);
   for (const e of bj.encounters.filter(e => e.type === 'false_god')) {
@@ -3389,6 +3389,42 @@ const bosses = (() => {
       fill, units, materials, advice: advice(e.key, where),
       // tier 3 party change (Flubris / Kraynaks: six copies, named); Inner Darkness's "all six carry the trait" is in its advice
       ...(/^six /i.test(e.tier3_party || '') && /\(([^)]+)\)/.test(e.tier3_party) ? { party3: /\(([^)]+)\)/.exec(e.tier3_party)[1].split(/,\s*/) } : {}),
+    });
+  }
+  // Gate of the Gods (bosses.json gate_god; code/GATE_OF_THE_GODS_FINDINGS.md): the god's Avatar with its own trait replaced by
+  // the god trait (one per god, no tiers) + 5 random realm creatures; generic AI. Avatar joined by name, asserted by the
+  // replaced trait's runtime id; god trait by runtime id. Rewards: the god's costume (wardrobe category god, code-named
+  // L_WD_<GOD>, joined by name). Threats: data/reference/gate_god_advice.json, same checks as the Nether Bosses.
+  const GG_ADV = readJSON(path.join(ROOT, 'data', 'reference', 'gate_god_advice.json')).gods;
+  const ggKeys = new Set(bj.encounters.filter(e => e.type === 'gate_god').map(e => e.units[0].key));
+  for (const k in GG_ADV) if (!ggKeys.has(k)) err(`gate advice: ${k} is not a god Avatar key`);
+  for (const e of bj.encounters.filter(e => e.type === 'gate_god')) {
+    const where = e.name, u0 = e.units[0], a = GG_ADV[u0.key];
+    if (!a) err(`gate advice: ${where} has no entry`);
+    const threats = ((a || {}).threats || []).map((x, i) => { for (const f of ['title', 'what', 'why']) { if (!x[f]) err(`gate advice: ${where} threat ${i + 1} has no ${f}`); else if (CODEY.test(x[f])) err(`gate advice: ${where} threat ${i + 1} reads like code: ${x[f]}`); }
+      return { title: x.title, what: x.what, why: x.why }; });
+    const notes = ((a || {}).notes || []); for (const n of notes) if (CODEY.test(n)) err(`gate advice: ${where} note reads like code: ${n}`);
+    const units = e.units.map(u => {
+      const w = `${where} / ${u.creature}`, c = crByName.get(norm(u.creature));
+      if (!c) err(`bosses: ${w} Avatar not in the app roster`);
+      const own = u.own_trait_replaced ? rtTrait(u.own_trait_replaced, `${w} own`) : null;
+      if (c && own != null && c.traitId !== own) err(`bosses: ${w} replaced trait ${own} ≠ the app creature's trait ${c.traitId}`);
+      const god = rtTrait(u.god_trait, `${w} god trait`);
+      nUnits++;
+      return { slot: u.slot, name: u.creature, creature: c ? c.id : null, stats: u.base_stats, ownTraitId: own, godTraitId: god };
+    });
+    // (its "three skins" aren't named in the reward code, and the Avatar's creature-locked skins include seasonal ones: not listed)
+    const costume = wardrobe.find(x => x.category === 'god' && norm(x.name) === norm(e.name));
+    if (!costume) warn(`bosses: ${where} has no god costume in the wardrobe`);
+    out.push({
+      id: e.id, type: e.type, key: `GG_${u0.key.replace(/[^A-Z0-9]/g, '')}`, name: e.name, ggId: e.type_id,
+      // the god's lines (speaker tag dropped, the player's name as "[your name]"); a line repeated inside another is kept once
+      dialog: (() => { const ds = (e.dialog || []).map(d => unesc(d.text).replace(/^\{GODT_[A-Z]+\}:\s*/, '').replace(/\{PLAYERNAME\}/g, '[your name]').trim());
+        return ds.filter((d, i) => !ds.some((o, j) => j !== i && o.includes(d) && (o.length > d.length || j < i))).join('\n\n') || null; })(),
+      fill: +((/^(\d+) random/.exec(e.battle.random_fill) || [])[1] || 0), units,
+      unlock: e.unlock, ascension: !!e.counts_for_ascension,
+      costume: costume ? costume.key : null,
+      advice: { threats, notes },
     });
   }
   // rune code checks: only the clarify (code ≠ text, e.g. Damage Cap) ships, shown on the boss page's rune advice

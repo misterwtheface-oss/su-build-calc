@@ -1779,3 +1779,13 @@ button.boss-chip:hover { border-color: var(--accent2); }
 .boss-unit .boss-stat-grid { margin-top: 8px; }
 .boss-mat { padding: 8px 0; border-bottom: 1px solid var(--border-dim); }
 .boss-mat-head { display: flex; align-items: center; gap: 8px; font-size: 13px; margin-bottom: 6px; }
+/* Gate of the Gods page: god portrait + difficulty table (scrolls sideways inside its box on a narrow phone, never the page) */
+.gg-portrait { display: flex; justify-content: center; margin: 0 0 12px; }
+.gg-portrait img { width: min(50%, 160px); height: auto; image-rendering: pixelated; }
+.boss-diff-wrap { overflow-x: auto; margin-bottom: 6px; }
+.boss-diff { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.boss-diff th, .boss-diff td { padding: 5px 6px; text-align: right; border-bottom: 1px solid var(--border-dim); white-space: nowrap; }
+.boss-diff th:first-child, .boss-diff td:first-child { text-align: left; }
+.boss-diff th { color: var(--text-mute); font-weight: 700; font-size: 11px; text-transform: uppercase; letter-spacing: .3px; }
+.boss-diff-note { margin-bottom: 12px; }
+.boss-rewards-art { margin-top: 6px; }
