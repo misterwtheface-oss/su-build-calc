@@ -1516,6 +1516,8 @@
       rez: has("resurrect"), revive: has("revive"), blight: steps.some(s => s.kind === "keep_condition" && s.cond === "blight"),
       debuffMult: /debuffs on the target/.test(f), reflect: has("reflect_on_damaged"),
     };
+    // a spell that deals damage (its tags or text), vs heals / buffs / control
+    const dmgSpell = (id) => { const x = D.spells[id]; return x && ((x.taxo || []).some(t => /Creature is Damaged|Direct Damage|Indirect Damage/.test(t)) || /damage/i.test(x.desc || "")); };
     const unitOf = (pred) => (e.units.find(u => [...(u.turn || []), ...u.passives].some(pred)) || {}).name;
     // why a longer fight helps this boss (null = it doesn't, much)
     const longBad = p.revive ? `the ${unitOf(s => s.kind === "revive")} has to go down ${steps.find(s => s.kind === "revive").count + 1} times, so anything that slows your damage stretches an already long fight`
@@ -1549,16 +1551,29 @@
     if (p.highest) for (const k of ["MOREDEFENSE", "MOREATTACK", "MOREINTELLIGENCE", "MORESPEED"])
       say(k, "bad", `Its damage${p.reflect ? " and its damage reflection" : ""} use${p.reflect ? "" : "s"} its highest stat, so tripling any stat can raise it.`);
     else {
+      // More Defense (user): build-relative, except a sprint kill (scaling on most parts) or damage that scales with Defense
+      const sprint = e.units.filter(u => (u.turn || []).some(s => s.kind === "stat_gain" || s.kind === "intensify_condition")).length >= 3;
       if (survive) say("MOREDEFENSE", "good", survive);
-      else if (longBad) say("MOREDEFENSE", "bad", `Makes it slower to kill, and ${longBad}.`);
+      else if (sprint || p.gainDmg) say("MOREDEFENSE", "bad", [sprint && `Nearly every part of ${e.name} gets stronger every turn and nothing stops it but killing them, so this fight is a race; tripled Defense slows every kill.`,
+        p.gainDmg && `The ${unitOf(s => /stat gains/.test(String(s.formula || "")))}'s damage counts its Defense gains too, and those are a share of current Defense.`].filter(Boolean).join(" "));
       const stat = (key, name, used, how) => {
         if (p.gainDmg) return say(key, "bad", `The ${unitOf(s => /stat gains/.test(String(s.formula || "")))} deals damage from its stat gains; tripling its stats likely means bigger gains every turn (not yet checked in-game).`);
         if (used) return say(key, "bad", how);
         say(key, "good", `Its kit never uses ${name}${unscripted.length ? `, though the ${[...new Set(unscripted.map(u => u.name))].join(" and ")} has no script and may attack or cast normally` : ""}, so this is close to a free reward bonus.`);
       };
       stat("MOREATTACK", "Attack", p.attack, `${p.heavy ? `Its ${Math.max(...steps.filter(s => s.kind === "attack").map(s => s.power_pct))}% attacks` : has("attack") ? "Its attacks" : "Its damage"}${gains.has("attack") ? ", and the Attack it gains every turn," : ""} scale with Attack, so tripling it ${p.unkillable ? "makes every survival turn harder" : "means much bigger hits"}.`);
-      const intSrc = [has("cast") && "its spells", steps.some(s => s.cond === "burned") && "Burned", gains.has("intelligence") && "the Intelligence it gains every turn"].filter(Boolean);
-      stat("MOREINTELLIGENCE", "Intelligence", p.int, `${(intSrc.length > 1 ? `${intSrc.slice(0, -1).join(", ")} and ${intSrc[intSrc.length - 1]}` : intSrc[0] || "its damage").replace(/^./, x => x.toUpperCase())} scale${intSrc.length > 1 || has("cast") ? "" : "s"} with Intelligence, so tripling it ${p.unkillable ? "makes every survival turn harder" : "hits much harder"}.`);
+      // Intelligence matters only through what actually deals damage (user): damage spells, Burned, Int-based formula damage,
+      // and heals cast on your Blighted creatures (they hurt). A boss whose spells only control or buff (Mindwurm) doesn't use it.
+      const casts = steps.filter(s => s.kind === "cast"), dmgCast = casts.some(s => (s.spells || []).some(dmgSpell));
+      const intFormula = unitOf(s => s.kind === "damage" && /Intelligence/.test(String(s.formula || "")));
+      const intSrc = [dmgCast && "its damage spells", steps.some(s => s.cond === "burned") && "Burned", intFormula && `the ${intFormula}'s damage`,
+        p.blight && casts.some(s => (s.spells || []).some(id => !dmgSpell(id))) && "its healing spells (they hurt your Blighted creatures)",
+        (dmgCast || intFormula) && gains.has("intelligence") && "the Intelligence it gains every turn"].filter(Boolean);
+      const unscriptedNote = unscripted.length ? `, though the ${[...new Set(unscripted.map(u => u.name))].join(" and ")} has no script and may attack or cast normally` : "";
+      if (p.gainDmg) stat("MOREINTELLIGENCE", "Intelligence", true, "");
+      else if (intSrc.length) say("MOREINTELLIGENCE", "bad", `${(intSrc.length > 1 ? `${intSrc.slice(0, -1).join(", ")} and ${intSrc[intSrc.length - 1]}` : intSrc[0]).replace(/^./, x => x.toUpperCase())} scale${intSrc.length > 1 || dmgCast ? "" : "s"} with Intelligence, so tripling it ${p.unkillable ? "makes every survival turn harder" : "hits much harder"}.`);
+      else say("MOREINTELLIGENCE", "good", casts.length ? `None of its spells deal damage${/Orbs/.test(unitOf(s => s.kind === "cast") || "") ? ` (the ${unitOf(s => s.kind === "cast")} turn your own creatures' attacks and spells against you)` : ""}, so its Intelligence does nothing${unscriptedNote}: close to a free reward bonus.`
+        : `Its kit never uses Intelligence${unscriptedNote}, so this is close to a free reward bonus.`);
     }
     // more damage from every hit
     const dmgWhy = p.unkillable ? `Its damage is the only way you can lose this fight; this makes every turn of the ${p.timer ? p.timer.turns + "-turn " : ""}wait more dangerous.`
@@ -1566,7 +1581,6 @@
       : p.debuffMult ? "Its damage already multiplies with your debuffs; this stacks on top." : null;
     // Deals More Damage (user): low risk where only a couple of parts deal damage at all, all of it from spells (Impington);
     // which damage the +150% actually boosts is open (rune research handoff Q8), so the Avoid reasons stay general for now
-    const dmgSpell = (id) => { const x = D.spells[id]; return x && ((x.taxo || []).some(t => /Creature is Damaged|Direct Damage|Indirect Damage/.test(t)) || /damage/i.test(x.desc || "")); };
     const dealers = e.units.filter(u => [...(u.turn || []), ...u.passives].some(s => ["attack", "damage", "reflect_on_damaged"].includes(s.kind)
       || (s.kind === "cast" && (s.spells || []).some(dmgSpell)) || (s.kind === "keep_condition" && s.cond === "burned")));
     const spellOnly = dealers.every(u => [...(u.turn || []), ...u.passives].every(s => !["attack", "damage", "reflect_on_damaged", "keep_condition"].includes(s.kind)));
@@ -1594,7 +1608,7 @@
     if (!p.highest) {
       const why = [atk.length && "Its attacks crit more often and harder: crit chance and crit damage both grow with its Speed over the target's.",
         p.ohkoDef && `${atk.length ? "It also likely moves" : "Tripled Speed likely moves"} the ${ohkoUnit} ahead of your creatures in the turn order, so it can act before they Defend.`,
-        !p.unkillable && longBad && `A faster creature also dodges more of your attacks, which slows your kill, and ${longBad}.`].filter(Boolean);
+        !p.unkillable && longBad && `A faster creature ${atk.length || p.ohkoDef ? "also " : ""}dodges more of your attacks, which slows your kill, and ${longBad}.`].filter(Boolean);
       if (why.length) say("MORESPEED", "bad", why.join(" "));
     }
     // your side

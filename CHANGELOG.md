@@ -4,6 +4,14 @@ Every dated change entry, newest first (moved verbatim from Progress.md on 2026-
 to their own section and sorted by their date). Current state and open work: `Progress.md`, `BACKLOG.md`.
 New entries go at the TOP.
 
+## 2026-10-11 — Rune advice review: More Intelligence, More Defense, Immune runes
+- More Intelligence (user): judged by what actually deals damage (the damage-source mapping): damage spells, Burned,
+  Int-based formula damage, and heals cast on Blighted creatures (Saint Althea). Mindwurm's Orbs only turn your own
+  creatures against you, so More Intelligence is now Recommended there.
+- More Defense (user): build-relative; Avoid only for a sprint kill (scaling on 3+ parts) or damage that scales with Defense
+  (Loid's highest stat, Lost Construct's stat-gain damage). Recommended vs Jotun as before.
+- Immune to Attacks / Spells / Indirect: build-relative, unchanged (Recommended vs Jotun only).
+
 ## 2026-10-11 — Rune advice review: Deals More Damage
 - (user) Recommended vs Imp Impington Reborn: only 3 of its 6 parts deal damage (the Cannon and both Shoulders), all from
   spells; its real threats (instant kill, timeline push) don't scale with it. Rule: ≤2 damage-dealing part types, spell
