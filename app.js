@@ -1478,7 +1478,7 @@
       else if (k === "grow") { title = "Grows stronger every turn";
         const gains = its.filter(i => i.s.kind === "stat_gain"), dmg = its.find(i => i.s.kind === "damage");
         const st = new Set(gains.flatMap(i => i.s.stat));
-        const fx = [(st.has("attack") || st.has("intelligence") || dmg) && "the harder it hits", st.has("defense") && "the tougher it gets", st.has("speed") && "the more often it acts"].filter(Boolean);
+        const fx = [(st.has("attack") || st.has("intelligence") || dmg) && "the harder it hits", st.has("defense") && "the tougher it gets", st.has("speed") && "the harder its attacks crit and the more it dodges"].filter(Boolean);
         why = `The gains are a share of current stats, so they compound: the longer the fight, ${fx.length > 1 ? `${fx.slice(0, -1).join(", ")} and ${fx[fx.length - 1]}` : fx[0]}.${dmg ? ` The ${dmg.u.name}'s damage is based on these gains, so it climbs with them.` : ""} ${allImmune ? "You can't kill it to stop this, so the last turns before it leaves hurt the most." : uniq(gains).length > 2 ? "End the fight fast." : `Kill ${names(gains)} early, or end the fight fast.`}`; }
       else if (k === "heavy") { const pct = Math.max(...its.map(i => i.s.power_pct)); title = `${pct}% attacks`;
         const all = its.some(i => i.s.target === "each_player");
@@ -1550,16 +1550,30 @@
     const dmgWhy = p.unkillable ? `Its damage is the only way you can lose this fight; this makes every turn of the ${p.timer ? p.timer.turns + "-turn " : ""}wait more dangerous.`
       : p.heavy ? `Its ${Math.max(...steps.filter(s => s.kind === "attack").map(s => s.power_pct))}% attacks can already take out a creature in one turn; this makes that far more likely.`
       : p.debuffMult ? "Its damage already multiplies with your debuffs; this stacks on top." : null;
-    say("ALWAYSCRIT", "bad", dmgWhy); say("DOMOREDAMAGE", "bad", dmgWhy);
-    // more boss turns
-    const turnsWhy = p.ohkoDef ? `The ${unitOf(s => s.kind === "ohko")} kills anyone not Defending; going first means it can act before your creatures get to Defend.`
-      : p.ohko ? `More turns for the ${unitOf(s => s.kind === "ohko")} means more instant kills.`
-      : p.timeline ? `More turns for the ${unitOf(s => s.kind === "timeline_to_bottom")} means your creatures get pushed back more often.`
-      : p.unkillable ? `More of the ${p.timer ? p.timer.turns + " " : ""}turns go to its attacks instead of your creatures.`
-      : p.rez ? `More turns for the ${unitOf(s => s.kind === "resurrect")} means more resurrections.`
-      : p.grow || p.growCond ? "More turns means faster growth." : null;
-    say("TOPOFTIMELINE", "bad", turnsWhy);
-    if (!p.highest) say("MORESPEED", "bad", p.ohkoDef ? `The ${unitOf(s => s.kind === "ohko")} acts sooner and more often, so your creatures get fewer chances to Defend before it does.` : turnsWhy);
+    say("DOMOREDAMAGE", "bad", dmgWhy);
+    // Always Crit (user + code): only attacks crit (spells / indirect only via a trait). Crit damage adds
+    // 0.25 + max(0, 1 + ln(attacker Speed / target Speed)) (EFFECT_FORMULAS S12), so it bites hardest on big attacks
+    // and on a boss whose Speed climbs during the fight.
+    const atk = steps.filter(s => s.kind === "attack"), topAtk = atk.length ? Math.max(...atk.map(s => s.power_pct)) : 0;
+    const atkGrows = atk.length && gains.has("attack");
+    const spdUnit = unitOf(s => s.kind === "stat_gain" && s.stat === "speed");
+    if (topAtk >= 200 || atkGrows || (atk.length && spdUnit)) say("ALWAYSCRIT", "bad", [
+      topAtk >= 200 ? `Its ${topAtk}% attacks are its biggest hits, and every one becomes a crit.` : atkGrows ? "Its attacks get stronger every turn as it gains Attack, and every one becomes a crit." : "Every one of its attacks becomes a crit.",
+      spdUnit ? `The ${spdUnit} raises its Speed every turn, and crit damage grows with the attacker's Speed over the target's, so its crits keep getting stronger.`
+        : "A crit adds more damage the faster the attacker is than the target (about +125% at equal Speed)."].join(" "));
+    // Speed / Top of Timeline (TIMELINE_FINDINGS): every creature gets one turn per round; Speed only sets the starting
+    // order (Speed changes mid-battle don't reorder it). Speed also raises crit chance + crit damage on attacks and dodge
+    // chance when faster than the other side (EFFECT_FORMULAS S12).
+    const ohkoUnit = unitOf(s => s.kind === "ohko");
+    if (p.ohkoDef) say("TOPOFTIMELINE", "bad", `Its parts start at the top of the timeline, so the ${ohkoUnit} acts before any of your creatures has had a turn to Defend: on the first round it kills your whole party unless something else protects them.`);
+    else if (p.ohko) say("TOPOFTIMELINE", "bad", `Its parts start at the top of the timeline and keep that place, so the ${ohkoUnit}'s instant kill lands before your creatures act.`);
+    else if (topAtk >= 300) say("TOPOFTIMELINE", "bad", `Its ${topAtk}% attacks land before any of your creatures has acted, so you can't Defend, heal or buff first.`);
+    if (!p.highest) {
+      const why = [atk.length && "Its attacks crit more often and harder: crit chance and crit damage both grow with its Speed over the target's.",
+        p.ohkoDef && `${atk.length ? "It also likely moves" : "Tripled Speed likely moves"} the ${ohkoUnit} ahead of your creatures in the turn order, so it can act before they Defend.`,
+        !p.unkillable && longBad && `A faster creature also dodges more of your attacks, which slows your kill, and ${longBad}.`].filter(Boolean);
+      if (why.length) say("MORESPEED", "bad", why.join(" "));
+    }
     // your side
     if (p.debuffMult) say("DEBUFFS", "bad", `The ${unitOf(s => /debuffs on the target/.test(String(s.formula || "")))}'s damage is multiplied by one plus the debuffs on each target; starting with 7 debuffs means ×8 damage from its first turn.`);
     if (p.blight) say("DAMAGEOVERTIME", "bad", "Your creatures have Blight for the whole fight, so they can't heal this damage back; healing even hurts them.");

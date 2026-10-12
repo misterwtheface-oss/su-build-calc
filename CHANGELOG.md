@@ -4,6 +4,16 @@ Every dated change entry, newest first (moved verbatim from Progress.md on 2026-
 to their own section and sorted by their date). Current state and open work: `Progress.md`, `BACKLOG.md`.
 New entries go at the TOP.
 
+## 2026-10-11 — Rune advice review (user, rune by rune): Always Crit, Speed, Top of Timeline
+- **Always Crit** (user rule): only attacks crit (spells / indirect only through a trait), and crits hit harder the faster
+  the attacker is than the target (code: bonus 0.25 + max(0, 1 + ln(Spd att / Spd tgt)), EFFECT_FORMULAS S12). Avoid only
+  vs attacks of 200%+, attacks that grow with Attack gains, or attackers that gain Speed. Dropped vs bosses without attacks.
+- **Speed model fixed** (TIMELINE_FINDINGS): every creature gets one turn per round; Speed only sets the starting order and
+  mid-battle Speed changes don't reorder it. Removed every "more turns" reason (More Speed, Top of Timeline, the "Grows
+  stronger" threat). More Speed is now Avoid for crit chance + crit damage on attacks, dodge (slower kill when a long fight
+  helps the boss) and The Ancestor's "not Defending" kill; Top of Timeline only vs first-round threats (The Ancestor,
+  Impington's instant kill, 300%+ attacks).
+
 ## 2026-10-11 — Page renames
 - (user) **Appendix → Taxonomy** (top-bar button + page title), **Glossary → Status Effects**, **Errata → Appendix**.
   Internal ids keep the old names: `open-appendix`/`apx-*` = Taxonomy, `open-glossary` = Status Effects,
