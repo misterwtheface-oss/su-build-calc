@@ -1564,7 +1564,16 @@
     const dmgWhy = p.unkillable ? `Its damage is the only way you can lose this fight; this makes every turn of the ${p.timer ? p.timer.turns + "-turn " : ""}wait more dangerous.`
       : p.heavy ? `Its ${Math.max(...steps.filter(s => s.kind === "attack").map(s => s.power_pct))}% attacks can already take out a creature in one turn; this makes that far more likely.`
       : p.debuffMult ? "Its damage already multiplies with your debuffs; this stacks on top." : null;
-    say("DOMOREDAMAGE", "bad", dmgWhy);
+    // Deals More Damage (user): low risk where only a couple of parts deal damage at all, all of it from spells (Impington);
+    // which damage the +150% actually boosts is open (rune research handoff Q8), so the Avoid reasons stay general for now
+    const dmgSpell = (id) => { const x = D.spells[id]; return x && ((x.taxo || []).some(t => /Creature is Damaged|Direct Damage|Indirect Damage/.test(t)) || /damage/i.test(x.desc || "")); };
+    const dealers = e.units.filter(u => [...(u.turn || []), ...u.passives].some(s => ["attack", "damage", "reflect_on_damaged"].includes(s.kind)
+      || (s.kind === "cast" && (s.spells || []).some(dmgSpell)) || (s.kind === "keep_condition" && s.cond === "burned")));
+    const spellOnly = dealers.every(u => [...(u.turn || []), ...u.passives].every(s => !["attack", "damage", "reflect_on_damaged", "keep_condition"].includes(s.kind)));
+    const dealerNames = [...new Set(dealers.map(u => u.name))];
+    if (!dmgWhy && dealerNames.length && dealerNames.length <= 2 && spellOnly && (p.ohko || p.timeline))
+      say("DOMOREDAMAGE", "good", `Only ${dealers.length} of its ${e.units.length} parts deal damage (${dealerNames.map(n => { const c = dealers.filter(u => u.name === n).length, sh = n.split(" of ")[0]; return c > 1 ? `${c === 2 ? "both" : "all " + c} ${sh}s` : `the ${sh}`; }).join(" and ")}), all of it from spells. Its real threats are ${[p.ohko && `the ${unitOf(s => s.kind === "ohko")}'s instant kill`, p.timeline && "the timeline push"].filter(Boolean).join(" and ")}, which this doesn't change.`);
+    else say("DOMOREDAMAGE", "bad", dmgWhy);
     // Always Crit (user + code): only attacks crit (spells / indirect only via a trait). Crit damage adds
     // 0.25 + max(0, 1 + ln(attacker Speed / target Speed)) (EFFECT_FORMULAS S12), so it bites hardest on big attacks
     // and on a boss whose Speed climbs during the fight.

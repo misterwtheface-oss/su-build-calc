@@ -4,6 +4,12 @@ Every dated change entry, newest first (moved verbatim from Progress.md on 2026-
 to their own section and sorted by their date). Current state and open work: `Progress.md`, `BACKLOG.md`.
 New entries go at the TOP.
 
+## 2026-10-11 — Rune advice review: Deals More Damage
+- (user) Recommended vs Imp Impington Reborn: only 3 of its 6 parts deal damage (the Cannon and both Shoulders), all from
+  spells; its real threats (instant kill, timeline push) don't scale with it. Rule: ≤2 damage-dealing part types, spell
+  damage only, and an instant-kill or timeline threat. Elsewhere the Avoid reasons stay as they were until the rune research
+  handoff answers which damage the +150% boosts (Q8) and the damage type of the Ancestor / Lost Construct formula steps (Q9).
+
 ## 2026-10-11 — Rune advice review: Damage Cap, Damage Over Time (research), Mass Debuffs
 - Damage Cap and Damage Over Time: advice unchanged until the rune research handoff answers questions 3–7 (what counts
   as one capped hit, damage types, Caliban/Loid interaction; whether the 75% can be reduced and when it lands vs Burned).
