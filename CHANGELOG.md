@@ -4,6 +4,12 @@ Every dated change entry, newest first (moved verbatim from Progress.md on 2026-
 to their own section and sorted by their date). Current state and open work: `Progress.md`, `BACKLOG.md`.
 New entries go at the TOP.
 
+## 2026-10-11 — Rune advice review: Keeps Its Stats, Mass Buffs
+- Keeps Its Stats (user): Avoid where the boss stacks stats that feed its damage (Lost Construct's stat-gain damage; Attack /
+  Intelligence gains that its attacks, damage spells or formula damage use: Jotun, Hydranox, The Ancestor, Mindwurm);
+  lowering its stats is the counter, and the rune cuts every stat loss by 80%.
+- Mass Buffs (user): no False God interacts with buffs, so it stays unlisted.
+
 ## 2026-10-11 — Rune advice review: More Intelligence, More Defense, Immune runes
 - More Intelligence (user): judged by what actually deals damage (the damage-source mapping): damage spells, Burned,
   Int-based formula damage, and heals cast on Blighted creatures (Saint Althea). Mindwurm's Orbs only turn your own

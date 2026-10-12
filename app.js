@@ -1611,6 +1611,11 @@
         !p.unkillable && longBad && `A faster creature ${atk.length || p.ohkoDef ? "also " : ""}dodges more of your attacks, which slows your kill, and ${longBad}.`].filter(Boolean);
       if (why.length) say("MORESPEED", "bad", why.join(" "));
     }
+    // Keeps Its Stats (user): Avoid where the boss stacks stats that feed its damage; lowering those stats is how you fight
+    // the stacking, and this rune cuts every stat loss by 80% (code: stat loss x0.2). Mass Buffs: no False God interaction.
+    const fedGains = [gains.has("attack") && (atk.length || /Attack/.test(f)) && "Attack", gains.has("intelligence") && (steps.some(s => s.kind === "cast" && (s.spells || []).some(dmgSpell)) || /Intelligence/.test(f)) && "Intelligence"].filter(Boolean);
+    if (p.gainDmg) say("LOSELESSSTATS", "bad", `The ${unitOf(s => /stat gains/.test(String(s.formula || "")))}'s damage comes from how far its stats have grown. Lowering its stats is how you shrink that, and this rune cuts every stat loss you cause by 80%.`);
+    else if (fedGains.length) say("LOSELESSSTATS", "bad", `It stacks ${fedGains.join(" and ")} every turn and its damage scales with ${fedGains.length > 1 ? "them" : "it"}. Lowering its stats is how you keep that in check, and this rune cuts every stat loss you cause by 80%.`);
     // your side
     if (p.debuffMult) say("DEBUFFS", "bad", `The ${unitOf(s => /debuffs on the target/.test(String(s.formula || "")))}'s damage is multiplied by one plus the debuffs on each target; starting with 7 debuffs means ×8 damage from its first turn.`);
     else if (p.blight) say("DEBUFFS", "bad", "Seven random debuffs can be crippling on their own, and with Blight on your whole party all fight, any damage they deal can't be healed back.");   // user: never recommended anywhere
