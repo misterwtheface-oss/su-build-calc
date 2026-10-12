@@ -77,6 +77,10 @@ Known limits + planned work, roughly in priority order (all now cheap to impleme
   the current spec (`via:"spec"`), never as anointments.
 - [ ] Introversion + Total Deprivation require rank > 0, though their text says "always active while your
   specialization is …, even if you haven't allocated any Perk Points".
+- [ ] Spell damage stat: when an evaluator claims `dmg.deal` / `heal.deal` / `stat.add`, use `amount.stat` (it is no
+  longer always Intelligence). Unverified code reading: Int-only stat swaps (Confusion and Empathy, Anomaly, Voodoo,
+  Bloodthirst, Mortem R8) don't affect spells that read Speed / Attack / Defense directly
+  (`_su_extract/code/SPELL_POTENCY_STAT_FINDINGS.md`).
 - [ ] Highborn always +5 (assumes every other spec ascended; text says 3 otherwise).
 - [ ] Master of Gemlings ("If all … are Gemlings") grants no any-class permission (old text pattern misses it).
 - [ ] Spectrometry ("Your Spelljuggler creatures …") grants no any-class permission (same cause).

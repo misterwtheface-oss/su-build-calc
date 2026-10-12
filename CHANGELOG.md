@@ -4,6 +4,14 @@ Every dated change entry, newest first (moved verbatim from Progress.md on 2026-
 to their own section and sorted by their date). Current state and open work: `Progress.md`, `BACKLOG.md`.
 New entries go at the TOP.
 
+## 2026-10-12 — Spells: the real stat each spell scales with
+- 13 spells scale off a stat their text doesn't mention. Each now has a code note under its game text: Pumpkin King's
+  Wrath, Harbinger's Curse, Direct Orders, Blood Spray, Conductive Chains, Infinite Blades and Blindside (Speed); Haunt,
+  Judgment Blade, Star Blast and Pustule (Defense); Phoenix Burst (Attack); Devastating Throw (Attack and Speed).
+- Code effect data (`effects-code.json`) no longer marks every spell as Intelligence-based. 59 spell amounts now carry
+  the code stat (Speed, Attack, Defense, highest / lowest stat, Max Health, or a split). Source:
+  `_su_extract/code/SPELL_POTENCY_STAT_FINDINGS.md`.
+
 ## 2026-10-12 — Flubris and Kraynaks: six-copy threat
 - 3rd fight: a new first threat, "Six Flubris / Six Kraynaks instead of a random party" (six copies, each with the boss
   trait; the tier 3 trait code is the same as tier 2's, per NETHER_BOSS_BEHAVIOR_FINDINGS). The trait threat below it now
