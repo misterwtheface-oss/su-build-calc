@@ -1313,6 +1313,11 @@
   // a god: its battle portrait (bossSprites by name), else its Avatar's creature sprite
   const ggImg = (e) => (D.bossSprites || {})[e.name.toLowerCase().replace(/[^a-z0-9]/g, "")] || (CREA.get(e.units[0].creature) || {}).sprite || null;
   const bossImg = (e) => e.type === "nether_boss" ? nbUnitImg(nbLead(e)) : e.type === "gate_god" ? ggImg(e) : (FG_BY_KEY.get(e.key) || {}).img || null;
+  // every sprite the boss leads with: both halves of a duo (two different boss-trait creatures, e.g. Judgment and Mercy)
+  const bossImgs = (e) => { if (e.type === "nether_boss") { const duo = e.units.filter(u => u.tiers).filter((u, i, a) => a.findIndex(x => x.name === u.name) === i);
+      if (duo.length === 2) return duo.map(nbUnitImg).filter(Boolean); }
+    return bossImg(e) ? [bossImg(e)] : []; };
+  const bossSprs = (e, alt) => bossImgs(e).map(i => spriteImg(i, alt)).join("");
   // base stats as magnitude bars (value / the playable roster's max for that stat), same bar as the creature wizard
   const bossStatTable = (st) => `<div class="stat-grid single mag boss-stat-grid">${STAT_KEYS.map(k => { const v = st[k], pc = Math.max(0, Math.min(100, (v || 0) / (STAT_MAX[k] || 1) * 100));
     return `<div class="stat-row"><span class="stat-name">${STAT_LABEL[k]}</span><span class="stat-mag" title="${Math.round(pc)}% of the highest base ${STAT_LABEL[k]} of any creature"><i style="width:${pc}%"></i></span><span class="stat-val total">${v}</span></div>`; }).join("")}</div>`;
@@ -1340,7 +1345,7 @@
       : tab === "false_god" ? `<div class="boss-grid">${list.map(e => `<div class="boss-tile" data-action="boss-open" data-k="${esc(e.key)}">
         ${bossFormation(e, false)}<div class="pt-name">${esc(e.name)}</div></div>`).join("")}</div>`
       : `<div class="nb-grid">${list.map(e => `<button class="nb-tile" data-action="boss-open" data-k="${esc(e.key)}">
-        <span class="nb-tile-spr">${bossImg(e) ? spriteImg(bossImg(e), "px") : ""}</span><span class="pt-name">${esc(e.name)}</span></button>`).join("")}</div>`;
+        <span class="nb-tile-spr${bossImgs(e).length > 1 ? " duo" : ""}">${bossSprs(e, "px")}</span><span class="pt-name">${esc(e.name)}</span></button>`).join("")}</div>`;
     return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel">
       <div class="overlay-header"><h2>Bosses</h2>
         <input class="ovl-search" placeholder="Search…" value="${esc(st.search)}" data-action="bosses-search">
@@ -1728,12 +1733,11 @@
     const party = six ? [`Six ${(CREA.get(lead.creature) || {}).name || lead.name}s fight: ${e.party3.join(", ")}.`] : [];
     const threats = adv.threats[tier - 1] || [];
     const cards = groups.map(({ u, n }) => {
-      const c = CREA.get(u.creature), bt = u.tiers ? u.tiers[tier - 1] : null;
+      const bt = u.tiers ? u.tiers[tier - 1] : null;
       return `<div class="boss-unit" id="boss-unit-${u.slot}">
         <div class="boss-unit-head"><span class="boss-unit-spr">${nbUnitImg(u) ? spriteImg(nbUnitImg(u), "px") : ""}</span>
-          <div class="boss-unit-name"><b>${esc(u.name)}${n > 1 ? ` ×${n}` : ""}</b>${c && c.name !== u.name ? ` <span class="anoint-spec-tag">${esc(c.name)}</span>` : ""}</div></div>
+          <div class="boss-unit-name"><b>${esc(u.name)}${n > 1 ? ` ×${n}` : ""}</b></div></div>
         ${bt != null && TRAIT[bt] ? `<div class="boss-sub">Boss trait</div><div class="primary-traits">${traitBanner(bt)}<div class="trait-desc">${richText(TRAIT[bt].desc || "")}</div></div>${(adv.noteUnit ? u.name === adv.noteUnit : u.tiers === lead.tiers && u.slot === groups[0].u.slot) ? (adv.notes[tier - 1] || []).map(t => `<div class="fx-clarify">${esc(t)}</div>`).join("") : ""}` : ""}
-        ${u.ownTraitId != null && TRAIT[u.ownTraitId] ? `<div class="boss-sub">Own trait</div><div class="primary-traits">${traitBanner(u.ownTraitId)}<div class="trait-desc">${richText(TRAIT[u.ownTraitId].desc || "")}</div></div>` : ""}
         ${sameStats ? "" : bossStatTable(u.stats)}
       </div>`;
     }).join("");
@@ -1741,18 +1745,18 @@
       return ti ? `<div class="boss-mat"><div class="boss-mat-head">${ti.icon ? `<span class="prop-ico">${spriteImg(ti.icon, "px")}</span>` : ""}<b>${esc(ti.name)}</b></div>${tr ? `<div class="primary-traits">${traitBanner(m.traitId)}<div class="trait-desc">${richText(tr.desc || "")}</div></div>` : ""}</div>` : ""; }).join("");
     const isID = e.key === "NB_SHADOWS";
     const rewards = `<div class="section-label">Rewards</div>
-      ${mats ? `<div class="boss-sub">Trait materials</div>${mats}<div class="fx-clarify">Which boss a material belongs to, and the depth it unlocks at, come from the wiki's Nether Boss table.</div>` : ""}
+      ${mats ? `<div class="boss-sub">Trait materials</div>${mats}` : ""}
       <div class="boss-sub">Every win</div>
       <ul class="boss-steps"><li>A loot roll and Gate of the Gods Key Fragments: 4–7, plus (1 + realm Instability) × (1 + Inner Darkness clears, up to 3).</li>
         <li>Your first Nether Boss win ever gives the Nether Shop decoration instead.</li>
         <li>Royal Mode: a False Nether Orb of a random False God (an Anointment and an Inscription, as after a False God fight).</li>
         ${isID ? "<li>Your 1st, 2nd and 3rd Inner Darkness wins unlock the Gate of the Gods project, the Guild projects and the mysterious realm portals.</li>" : ""}</ul>`;
     return `<div class="ovl-backdrop" data-action="detail-backdrop"><div class="overlay-panel detail">
-      <div class="overlay-header">${bossImg(e) ? `<span class="hdr-ico">${spriteImg(bossImg(e), "px")}</span>` : ""}
+      <div class="overlay-header">${bossImgs(e).length ? `<span class="hdr-ico${bossImgs(e).length > 1 ? " duo" : ""}">${bossSprs(e, "px")}</span>` : ""}
         <h2>${esc(e.name)}</h2><span class="anoint-spec-tag apx-boss-cat">Nether Boss</span>
         <button class="ovl-close" data-action="close-detail">✕</button></div>
       <div class="overlay-body"><div class="ovl-center"><div class="ovl-center-scroll boss-page">
-        ${bossImg(e) ? `<div class="gg-portrait">${spriteImg(bossImg(e), "px")}</div>` : ""}
+        ${bossImgs(e).length ? `<div class="gg-portrait${bossImgs(e).length > 1 ? " duo" : ""}">${bossSprs(e, "px")}</div>` : ""}
         ${tierToggle}
         ${party.map(t => `<div class="excl-note boss-mech"><span>${esc(t)}</span></div>`).join("")}
         ${threats.length ? `<div class="section-label">Threats</div>${threats.map(t => `<div class="boss-threat"><div class="boss-threat-head">${esc(t.title)}</div>
@@ -1774,12 +1778,11 @@
     const sec = (k, title, html) => `<button class="apx-sec-head apx-cat${st.open.has(k) ? "" : " collapsed"}" data-action="boss-sec" data-k="${k}"><span class="apx-sec-caret">${st.open.has(k) ? "▾" : "▸"}</span>${title}</button>${st.open.has(k) ? html : ""}`;
     const notes = [e.unlock && e.unlock !== "always" ? `Unlocked ${e.unlock.replace(/^after its unlock project$/, "by its project")}.` : null,
       "Your creatures count as level 100 for every stat. Enemy level = your creatures' average level (at least 10) × the difficulty multiplier."].filter(Boolean);
-    const gt = TRAIT[u.godTraitId], ot = TRAIT[u.ownTraitId];
+    const gt = TRAIT[u.godTraitId];
     const card = `<div class="boss-unit" id="boss-unit-1">
         <div class="boss-unit-head"><span class="boss-unit-spr">${c && c.sprite ? spriteImg(c.sprite, "px") : ""}</span>
           <div class="boss-unit-name"><b>${esc(u.name)}</b> <span class="anoint-spec-tag">Avatar</span></div></div>
         ${gt ? `<div class="boss-sub">God trait</div><div class="primary-traits">${traitBanner(u.godTraitId)}<div class="trait-desc">${richText(gt.desc || "")}</div></div>${(adv.notes || []).map(t => `<div class="fx-clarify">${esc(t)}</div>`).join("")}` : ""}
-        ${ot ? `<div class="boss-sub">Own trait (replaced in this fight)</div><div class="primary-traits">${traitBanner(u.ownTraitId)}<div class="trait-desc">${richText(ot.desc || "")}</div></div>` : ""}
       </div>`;
     const diffRows = GG_MULT.map((m, i) => { const d = i + 1; return `<tr><td>${d}</td><td>${m}</td><td>${d}</td><td>${d * 10}</td><td>${3 * d}%</td></tr>`; }).join("")
       + `<tr class="boss-diff-more"><td>11+</td><td>+×5 each</td><td>10</td><td>100</td><td>+3% each</td></tr>`;

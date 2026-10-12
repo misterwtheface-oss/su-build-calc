@@ -4,6 +4,12 @@ Every dated change entry, newest first (moved verbatim from Progress.md on 2026-
 to their own section and sorted by their date). Current state and open work: `Progress.md`, `BACKLOG.md`.
 New entries go at the TOP.
 
+## 2026-10-12 — Boss pages: duo sprites, trimmed creature cards
+- Duo Nether Bosses (Judgment and Mercy, Scylla and Charybdis) show both sprites side by side on the grid tile, in the page
+  header and in the lead portrait.
+- Creature cards drop the own-trait blocks (Nether and Gate) and the base-creature chip; the trait materials drop the
+  wiki-source note.
+
 ## 2026-10-12 — Boss pages: sprite first, no generic chips
 - Nether Boss pages open with the boss sprite above the tier toggle, like the Gate of the Gods pages.
 - Removed the chips that explain boss fights in general (random fill creatures, random spells/artifacts and enemy AI, the

@@ -1773,6 +1773,10 @@ button.boss-chip:hover { border-color: var(--accent2); }
 .nb-tile:hover { border-color: var(--accent2); }
 .nb-tile-spr { width: 64px; height: 64px; display: flex; align-items: center; justify-content: center; }
 .nb-tile-spr img { max-width: 100%; max-height: 100%; object-fit: contain; image-rendering: pixelated; }
+.nb-tile-spr.duo { width: 100%; max-width: 128px; gap: 2px; }
+.nb-tile-spr.duo img { max-width: 50%; }
+.hdr-ico.duo { width: 62px; gap: 2px; }
+.hdr-ico.duo img { width: 30px; }
 .nb-tile .pt-name { text-align: center; font-size: 12px; line-height: 1.25; }
 .nb-tiers { margin-top: 0; }
 .boss-stat-grid { margin-bottom: 12px; }
@@ -1782,6 +1786,8 @@ button.boss-chip:hover { border-color: var(--accent2); }
 /* Gate of the Gods page: god portrait + difficulty table (scrolls sideways inside its box on a narrow phone, never the page) */
 .gg-portrait { display: flex; justify-content: center; margin: 0 0 12px; }
 .gg-portrait img { width: min(50%, 160px); height: auto; image-rendering: pixelated; }
+.gg-portrait.duo { gap: 8px; }
+.gg-portrait.duo img { width: min(42%, 150px); }
 .boss-diff-wrap { overflow-x: auto; margin-bottom: 6px; }
 .boss-diff { width: 100%; border-collapse: collapse; font-size: 12.5px; }
 .boss-diff th, .boss-diff td { padding: 5px 6px; text-align: right; border-bottom: 1px solid var(--border-dim); white-space: nowrap; }
