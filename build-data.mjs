@@ -3246,7 +3246,10 @@ const bosses = (() => {
   const SKIP = new Set(['code', 'code_arg', 'gate', 'via_or_check', 'spell', 'pool', 'condition', 'creature_ids']);
   const out = [];
   let nUnits = 0, nSteps = 0;
-  for (const e of bj.encounters) {
+  // Nether Boss encounters (party + tier schema) are in the extract since S29 but not built yet (BACKLOG: Nether Bosses)
+  const skipped = bj.encounters.filter(e => e.type !== 'false_god');
+  if (skipped.length) console.log(`  bosses: ${skipped.length} non-False-God encounters skipped (${[...new Set(skipped.map(e => e.type))].join(', ')}: not built yet)`);
+  for (const e of bj.encounters.filter(e => e.type === 'false_god')) {
     const where = e.name;
     const unitName = new Map(e.units.map(u => [u.creature_id, u.name]));
     const step = (s, w) => {

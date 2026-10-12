@@ -121,6 +121,8 @@ Known limits + planned work, roughly in priority order (all now cheap to impleme
 - [ ] **Boss feature — Nether Bosses + Gate of the Gods** (False Gods shipped 2026-10-11): when the extract adds `nether_boss` /
   `gate_god` encounters to bosses.json, rebuild. New step kinds need a line in `bossStepHtml` (app.js); new notes need a plain
   rewrite in `NOTE_PLAIN` (build-data fails on code-like notes); non-False-God portraits need a source (`bossImg`).
+  **2026-10-11: the extract now has 35 `nether_boss` encounters** (party schema: `creature`, `own_trait`, `boss_traits`,
+  tiers); build-data skips non-False-God encounters until this is built.
 - [ ] **Bosses page: Inscriptions** — bosses.json now has `encounters[].inscriptions` (the god's 5–6 Inscription spells, one
   random unknown per anointment pick; `exceptions` (e.g. Shadowbringer starts with Plague) / `also_cast_by` per spell) and per
   cast-spell `source` / `exceptions` / `boss_exclusive`. The False God is the source; show spec starts as exceptions. Show the list on each boss page as spell-gem containers. (Data only so far, 2026-10-11.)

@@ -1537,17 +1537,25 @@
         ["intensify_condition", `it makes ${(COND_BY_KEY.get((steps.find(s => s.kind === "intensify_condition") || {}).cond) || { name: "a debuff" }).name} stronger every turn`], ["stat_gain", "it raises the other parts' stats every turn"]]
         .map(([k, what]) => { const u = e.units.find(x => (x.turn || []).some(s => s.kind === k)); return u && { u, what: k === "ohko" && p.ohkoDef ? "it kills anyone not Defending" : what }; }).find(Boolean);
       const dup = focus && e.units.filter(u => u.name === focus.u.name).length > 1;
-      say("AVOIDDAMAGE", "bad", scalers.length >= 3
+      say("AVOIDDAMAGE", "bad", (scalers.length >= 3
         ? `Nearly every part of ${e.name} gets stronger every turn and there's no single part to kill to stop it, so this fight is a race. Losing 35% of your hits is one of the worst runes for a sprint kill.`
         : p.revive ? `One of the hardest runes even in a long fight: 35% of your hits do nothing, and the ${unitOf(s => s.kind === "revive")} has to go down ${steps.find(s => s.kind === "revive").count + 1} times.`
         : focus ? `The ${focus.u.name}${dup ? ` that ${focus.what.replace(/^it /, "")}` : ""} is the part to kill first${dup ? "" : ` (${focus.what})`}. With 35% of your hits prevented, it gets more turns before it goes down.`
-        : "One of the hardest runes: 35% of your hits do nothing, so every part takes longer to kill.");
+        : "One of the hardest runes: 35% of your hits do nothing, so every part takes longer to kill.")
+        + (p.reflect ? " One upside: a Prevented hit isn't reflected back at you." : ""));
     }
     // runes that only make it harder to damage
     for (const k of ["AVOIDDAMAGE", "DAMAGECAP", "TAKELESSDAMAGE", "MOREHEALTH", "IMMUNEATTACKS", "IMMUNESPELLS", "IMMUNEINDIRECT"]) {
       if (survive) say(k, "good", survive);
-      else if (longBad && ["DAMAGECAP", "TAKELESSDAMAGE", "MOREHEALTH"].includes(k)) say(k, "bad", `Makes it slower to kill, and ${longBad}.`);
+      else if (longBad && ["TAKELESSDAMAGE", "MOREHEALTH"].includes(k)) say(k, "bad", `Makes it slower to kill, and ${longBad}.`);
     }
+    // Damage Cap (rune research Q3-5): the last step of every hit, any damage type: over 10% of max Health becomes 5%. That's
+    // about hit size (build-relative), so it's only called out where parts must die more than once (Caliban, Loid).
+    const capBase = "Any hit over 10% of a part's max Health is cut to 5%, whatever the damage type, so each part needs at least 10 hits to kill";
+    const capTail = "Crits and damage boosts count before the cap, so they can push a hit past 10% and shrink it: hits just under 10% do the most.";
+    if (!survive && p.revive) { const rv = steps.find(s => s.kind === "revive");
+      say("DAMAGECAP", "bad", `${capBase}. The ${unitOf(s => s.kind === "revive")} comes back ${rv.count} times and refills every other part to full Health each time, so you pay that again for every life. ${capTail}`); }
+    else if (!survive && p.rez) say("DAMAGECAP", "bad", `${capBase}, and the ${unitOf(s => s.kind === "resurrect")} brings dead parts back at full Health, so you can pay that more than once. ${capTail}`);
     if (p.highest) for (const k of ["MOREDEFENSE", "MOREATTACK", "MOREINTELLIGENCE", "MORESPEED"])
       say(k, "bad", `Its damage${p.reflect ? " and its damage reflection" : ""} use${p.reflect ? "" : "s"} its highest stat, so tripling any stat can raise it.`);
     else {
@@ -1576,13 +1584,17 @@
         : `Its kit never uses Intelligence${unscriptedNote}, so this is close to a free reward bonus.`);
     }
     // more damage from every hit
+    const atk = steps.filter(s => s.kind === "attack"), topAtk = atk.length ? Math.max(...atk.map(s => s.power_pct)) : 0;
+    const fedGains = [gains.has("attack") && (atk.length || /Attack/.test(f)) && "Attack", gains.has("intelligence") && (steps.some(s => s.kind === "cast" && (s.spells || []).some(dmgSpell)) || /Intelligence/.test(f)) && "Intelligence"].filter(Boolean);
     const dmgWhy = p.unkillable ? `Its damage is the only way you can lose this fight; this makes every turn of the ${p.timer ? p.timer.turns + "-turn " : ""}wait more dangerous.`
       : p.heavy ? `Its ${Math.max(...steps.filter(s => s.kind === "attack").map(s => s.power_pct))}% attacks can already take out a creature in one turn; this makes that far more likely.`
-      : p.debuffMult ? "Its damage already multiplies with your debuffs; this stacks on top." : null;
-    // Deals More Damage (user): low risk where only a couple of parts deal damage at all, all of it from spells (Impington);
-    // which damage the +150% actually boosts is open (rune research handoff Q8), so the Avoid reasons stay general for now
+      : p.debuffMult ? `Its damage already multiplies with your debuffs; this stacks on top.${p.reflect ? " The damage Boils reflects back at you gets the +150% too." : ""}`
+      : p.gainDmg ? `The ${unitOf(s => /stat gains/.test(String(s.formula || "")))}'s damage grows with its stat gains every turn, and this adds +150% on top of it.`
+      : fedGains.length ? `Its damage grows every turn as it stacks ${fedGains.join(" and ")}, and this adds +150% on top of all of it.` : null;
+    // Deals More Damage (user): low risk where only a couple of parts deal damage at all, all of it from spells (Impington).
+    // Only damage a part is the source of counts (research Q8): Burned / Poison / Bleed ticks and Blight damage don't.
     const dealers = e.units.filter(u => [...(u.turn || []), ...u.passives].some(s => ["attack", "damage", "reflect_on_damaged"].includes(s.kind)
-      || (s.kind === "cast" && (s.spells || []).some(dmgSpell)) || (s.kind === "keep_condition" && s.cond === "burned")));
+      || (s.kind === "cast" && (s.spells || []).some(dmgSpell))));
     const spellOnly = dealers.every(u => [...(u.turn || []), ...u.passives].every(s => !["attack", "damage", "reflect_on_damaged", "keep_condition"].includes(s.kind)));
     const dealerNames = [...new Set(dealers.map(u => u.name))];
     if (!dmgWhy && dealerNames.length && dealerNames.length <= 2 && spellOnly && (p.ohko || p.timeline))
@@ -1591,7 +1603,6 @@
     // Always Crit (user + code): only attacks crit (spells / indirect only via a trait). Crit damage adds
     // 0.25 + max(0, 1 + ln(attacker Speed / target Speed)) (EFFECT_FORMULAS S12), so it bites hardest on big attacks
     // and on a boss whose Speed climbs during the fight.
-    const atk = steps.filter(s => s.kind === "attack"), topAtk = atk.length ? Math.max(...atk.map(s => s.power_pct)) : 0;
     const atkGrows = atk.length && gains.has("attack");
     const spdUnit = unitOf(s => s.kind === "stat_gain" && s.stat === "speed");
     if (topAtk >= 200 || atkGrows || (atk.length && spdUnit)) say("ALWAYSCRIT", "bad", [
@@ -1613,14 +1624,18 @@
     }
     // Keeps Its Stats (user): Avoid where the boss stacks stats that feed its damage; lowering those stats is how you fight
     // the stacking, and this rune cuts every stat loss by 80% (code: stat loss x0.2). Mass Buffs: no False God interaction.
-    const fedGains = [gains.has("attack") && (atk.length || /Attack/.test(f)) && "Attack", gains.has("intelligence") && (steps.some(s => s.kind === "cast" && (s.spells || []).some(dmgSpell)) || /Intelligence/.test(f)) && "Intelligence"].filter(Boolean);
     if (p.gainDmg) say("LOSELESSSTATS", "bad", `The ${unitOf(s => /stat gains/.test(String(s.formula || "")))}'s damage comes from how far its stats have grown. Lowering its stats is how you shrink that, and this rune cuts every stat loss you cause by 80%.`);
     else if (fedGains.length) say("LOSELESSSTATS", "bad", `It stacks ${fedGains.join(" and ")} every turn and its damage scales with ${fedGains.length > 1 ? "them" : "it"}. Lowering its stats is how you keep that in check, and this rune cuts every stat loss you cause by 80%.`);
     // your side
     if (p.debuffMult) say("DEBUFFS", "bad", `The ${unitOf(s => /debuffs on the target/.test(String(s.formula || "")))}'s damage is multiplied by one plus the debuffs on each target; starting with 7 debuffs means ×8 damage from its first turn.`);
     else if (p.blight) say("DEBUFFS", "bad", "Seven random debuffs can be crippling on their own, and with Blight on your whole party all fight, any damage they deal can't be healed back.");   // user: never recommended anywhere
-    if (p.blight) say("DAMAGEOVERTIME", "bad", "Your creatures have Blight for the whole fight, so they can't heal this damage back; healing even hurts them.");
-    else if (p.unkillable) say("DAMAGEOVERTIME", "bad", `Your creatures lose 75% of their max Health at the start of each of their turns, for a fight you can only win by surviving.`);
+    const castOf = (re) => { for (const u of e.units) for (const s of u.turn || []) for (const id of (s.kind === "cast" && s.spells) || []) if (re.test((D.spells[id] || {}).desc || "")) return { u: u.name, sp: D.spells[id].name }; return null; };
+    const vul = castOf(/DEBUFF_VUL/), burnKeep = steps.find(s => s.kind === "keep_condition" && s.cond === "burned");
+    const dotWhy = [p.blight && "Your creatures have Blight for the whole fight, so they can't heal this damage back; healing even hurts them.",
+      burnKeep && `It hits at the start of each of your creatures' turns, right before their Burned tick, and the ${unitOf(s => s === burnKeep)} keeps Burned on your creatures and makes it stronger every turn. A creature needs more than 75% of its max Health plus one Burned tick to live through the start of its turn.`,
+      !burnKeep && p.unkillable && "Your creatures lose 75% of their max Health at the start of each of their turns, for a fight you can only win by surviving.",
+      vul && `The ${vul.u} can cast ${vul.sp}, which makes your creatures Vulnerable: a Vulnerable creature takes 112.5% of its max Health from this, so it dies at the start of its turn even from full Health.`].filter(Boolean);
+    if (dotWhy.length) say("DAMAGEOVERTIME", "bad", dotWhy.join(" ") + " Defending cuts it to about 49%; Defense doesn't reduce it.");
     return out;
   }
   function renderBossDetail() {

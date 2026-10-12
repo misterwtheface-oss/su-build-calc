@@ -4,6 +4,22 @@ Every dated change entry, newest first (moved verbatim from Progress.md on 2026-
 to their own section and sorted by their date). Current state and open work: `Progress.md`, `BACKLOG.md`.
 New entries go at the TOP.
 
+## 2026-10-11 — Rune advice from the rune research (extract HANDOFF_false_god_rune_research, 9 answers)
+- Damage Cap: per hit, the last step, every damage type, nothing bypasses it; it's about hit size (build-relative), so it's
+  now Avoid only where parts die more than once (Caliban's Heart refills every part; Loid's Head resurrects at full Health),
+  with the "just under 10%" hit-size note. Dropped from the generic "slower to kill" group elsewhere.
+- Damage Over Time: reducible (Defending ×0.65, Barrier, class advantage), not by Defense; lands before Bleed / Poison /
+  Burned ticks; Vulnerable makes it 112.5%. New Avoid on Nebodar (kept + growing Burned right after the hit) and on bosses
+  that can cast Rapture (Vulnerable: Hydranox, Caliban; added to Saint Althea's Blight line). Each line ends with the
+  Defending / Defense note.
+- Deals More Damage: only damage a part is the source of counts (attacks, spells, formula steps, Loid's Boils; not
+  Burned / Poison / Bleed ticks or Blight). New Avoid where that damage grows with stacked stats (Hydranox, The Ancestor,
+  Lost Construct); Loid's line adds the Boils reflect.
+- Avoids Damage on Loid: notes the one upside (a Prevented hit isn't reflected).
+- Speed raises dodge (research Q2): the More Speed dodge line stands.
+- build-data: the extract now also holds 35 Nether Boss encounters (different schema); they're skipped until that page
+  is built (BACKLOG).
+
 ## 2026-10-11 — Rune advice review: Keeps Its Stats, Mass Buffs
 - Keeps Its Stats (user): Avoid where the boss stacks stats that feed its damage (Lost Construct's stat-gain damage; Attack /
   Intelligence gains that its attacks, damage spells or formula damage use: Jotun, Hydranox, The Ancestor, Mindwurm);
