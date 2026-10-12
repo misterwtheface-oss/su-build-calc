@@ -1,0 +1,452 @@
+{
+  "_note": "App-authored Nether Boss threat analysis, keyed by the extract's boss key (bosses.json type nether_boss). Every claim is taken from the code behaviour in _su_extract data/model/bosses.json (boss_traits[].behaviour / code_vs_text) and code/NETHER_BOSS_BEHAVIOR_FINDINGS.md, plus game rules from TIMELINE_FINDINGS (timeline moves), EFFECT_FORMULAS (crit, Defending) and the rune research (sourceless damage ticks, Shelled vs indirect). A value may be a string or {\"1\":..,\"2\":..,\"3\":..} per tier; \"tiers\" limits a threat to those tiers. notes = code-vs-text clarify notes per tier (\"all\" = every tier), shown under the boss trait of the lead creature, or of the creature named in \"_unit\". build-data validates every key against bosses.json.",
+  "bosses": {
+    "KIICHI": {
+      "threats": [
+        { "title": { "1": "Permanent Bleeding that spreads", "2": "Bleeding from the highest stat, spread to everyone", "3": "Double Bleeding from the highest stat, spread to everyone" },
+          "what": { "1": "Your creatures always have Bleeding: any creature without it gets it back. When one takes its Bleeding damage at the start of its turn, each of its living allies takes the same amount.",
+                    "2": "Your creatures always have Bleeding, and its damage is based on the bleeding creature's highest stat instead of its Health. Every tick is copied to each of its living allies.",
+                    "3": "Your creatures always have Bleeding based on their highest stat, it ticks twice at the start of each turn, and every tick is copied to each of their living allies." },
+          "why": { "1": "A creature's own tick is 30% of its current Health, but the copies are flat amounts from its allies' ticks, so every creature takes up to five extra hits a round and a low-Health one can die to its teammates' Bleeding. Removing Bleeding only lasts until the trait gives it back. Heal the whole party every round or kill Kiichi fast.",
+                   "2": "Based on the highest stat, Bleeding no longer shrinks as Health drops, and the creature with the biggest stat bleeds hardest and copies that to the whole party. Fewer creatures means fewer copies: each tick is spread to every living ally.",
+                   "3": "Two ticks per turn means two rounds of copies: each creature's turn start hits the whole party twice for a share of its highest stat. This is a race; kill Kiichi before the copies stack up." } }
+      ]
+    },
+    "IANNE": {
+      "threats": [
+        { "title": { "1": "Damage reduction that grows with every hit", "2": "Every enemy's damage reduction grows with hits", "3": "Every enemy's damage reduction grows with hits" },
+          "what": { "1": "Ianne takes 5% less damage for each time it has been damaged this battle, up to 80% less (after 16 hits).",
+                    "2": "Every creature on Ianne's side takes 5% less damage for each time it has been damaged this battle, up to 80% less.",
+                    "3": "Every creature on Ianne's side takes 5% less damage for each time it has been damaged this battle, up to 80% less." },
+          "why": { "1": "Every hit counts toward the 80%, however small, so multi-hit attacks and chip damage on Ianne waste its early, full-damage hits. Open on Ianne with your biggest single hits.",
+                   "2": "Area spells and splash damage raise every enemy's count at once. Focus one creature at a time with big single hits so each one dies before its reduction climbs.",
+                   "3": "Area spells and splash damage raise every enemy's count at once. Focus one creature at a time with big single hits so each one dies before its reduction climbs." } },
+        { "title": "Shelled after every hit", "tiers": [3],
+          "what": "After Ianne takes damage from an attack or spell, it gains Shelled.",
+          "why": "Shelled negates the next attack or spell, so every hit on Ianne is followed by a wasted one. Pop it with a cheap hit first, or use indirect damage: Shelled doesn't stop it." }
+      ],
+      "notes": { "1": ["The text says up to 95% less damage; the code caps it at the game's shared 80% damage-reduction cap."],
+                 "2": ["The text says 10% less per hit and up to 95%; the code uses 5% per hit and the shared 80% cap."],
+                 "3": ["The text says 10% less per hit and up to 95%; the code uses 5% per hit and the shared 80% cap."] }
+    },
+    "CEASELESSGLADIATOR": {
+      "threats": [
+        { "title": "Takes every hit for its allies",
+          "what": "Any damage to another creature on its side is taken by the Ceaseless Gladiator instead.",
+          "why": "You can't kill the other five while it lives: everything you aim at them lands on it. Kill the Gladiator first." },
+        { "title": { "1": "Shelled after every hit", "2": "Its whole side gets Shelled", "3": "Its whole side gets Shelled" },
+          "what": { "1": "After the Gladiator takes damage, it gains Shelled.", "2": "After any creature on its side takes damage, every creature on its side gains Shelled.", "3": "After any creature on its side takes damage, every creature on its side gains Shelled." },
+          "why": "Shelled negates the next attack or spell, so every other hit is wasted, and redirected hits count too. Indirect damage gets past Shelled: Poison, Burned and Bleeding ticks and other indirect damage keep the pressure on." },
+        { "title": { "2": "Comes back once", "3": "Its whole side comes back once" }, "tiers": [2, 3],
+          "what": { "2": "The Gladiator starts the battle with Rebirth.", "3": "Every creature on its side starts the battle with Rebirth." },
+          "why": { "2": "Rebirth brings it back at 50% Health the first time it dies, so you have to take it down twice.", "3": "Rebirth brings each of them back at 50% Health the first time it dies: every enemy has to die twice, and the Gladiator still soaks the hits for the rest." } }
+      ]
+    },
+    "MYRTLE": {
+      "threats": [
+        { "title": "Feeds on every death",
+          "what": { "1": "After any creature dies, on either side, Myrtle gains 50% of its max Health, Attack, Intelligence, Defense and Speed.", "2": "After any creature dies, on either side, Myrtle gains 50% of its max Health, Attack, Intelligence, Defense and Speed.", "3": "After any creature dies, on either side, Myrtle gains 100% of its max Health, Attack, Intelligence, Defense and Speed." },
+          "why": { "1": "Your deaths feed it too. Kill Myrtle first, before its allies die and make it bigger.",
+                   "2": "It can't be damaged until its allies are dead, so it eats all five of them before you can touch it. Avoid losing creatures, and save your burst for the moment the last ally falls.",
+                   "3": "Each death adds a whole creature's stats. It eats all five allies before you can hit it, plus any of yours that fall. Avoid losing creatures, and burst it the moment the last ally dies." } },
+        { "title": "Immune while its allies live", "tiers": [2, 3],
+          "what": "Myrtle takes no damage (shown as Prevented) while it has a living ally.",
+          "why": "Damage aimed at Myrtle is wasted until the other five are dead. Clear them first, then switch everything to Myrtle." }
+      ]
+    },
+    "NERLYX": {
+      "threats": [
+        { "title": { "1": "Locks on and one-shots", "2": "Locks on to two and one-shots", "3": "Locks on to two; Defending no longer helps" },
+          "what": { "1": "At the end of its turn Nerlyx locks on to a random creature of yours. At the start of its next turn it hits that creature for 1000× its Attack, or 3× if it is Defending.",
+                    "2": "At the end of its turn Nerlyx locks on to two random creatures of yours. At the start of its next turn it hits each for 1000× its Attack, or 3× if it is Defending.",
+                    "3": "At the end of its turn Nerlyx locks on to two random creatures of yours. At the start of its next turn it hits each for 1000× its Attack. Defending doesn't reduce it." },
+          "why": { "1": "1000× Attack kills anything, so the locked creature has to be Defending when Nerlyx's next turn starts. Kill Nerlyx before its second turn, or keep creatures Defending.",
+                   "2": "Two creatures a turn are at risk. Kill Nerlyx before its second turn, or keep creatures Defending until it's down.",
+                   "3": "Nothing short of killing it stops this: every Nerlyx turn after the first can kill two of your creatures. Kill it in the first round, or bring resurrection." } }
+      ],
+      "notes": { "all": ["The text says 10,000% of Attack; the code multiplies Attack by 1000 (100,000%)."] }
+    },
+    "KINGANDRICK": {
+      "threats": [
+        { "title": "Rapture every turn",
+          "what": "At the start of each of its turns, King Andrick casts Rapture, then takes its normal turn.",
+          "why": "Rapture hits your whole party for a massive amount and leaves them Weak (50% less damage dealt) and Vulnerable (50% more damage taken), every one of its turns. Cleanse often or kill it fast." },
+        { "title": { "1": "Starts with the four Horsemen", "2": "Starts with an army of minions", "3": "An army of minions that never leaves" },
+          "what": { "1": "At the start of battle, every creature on its side gains the minions Conquest, Death, Famine and War.",
+                    "2": "At the start of battle, every creature on its side gains 12 minions at 10 stacks each: Conquest, Death, Famine, War, Animated Gem, Animated Weapon, Unstable Horror, Spiderling, Writheling, Zombie, Direwolf and Doppelganger.",
+                    "3": "Every living creature on its side always has the same 12 minions at 10 stacks each, and while it is on the field minions never leave, for any creature in the battle." },
+          "why": { "1": "Every enemy gets War (hits back for 50% of the damage it takes), Death (can kill your lowest-Health creature at its turn start), Famine (its attacks cut your max Health) and Conquest (its spells buff its side).",
+                   "2": "Six enemies with twelve minions each: extra hits, extra casts, extra turns (Doppelganger) and the Horsemen's damage-back and kill chance. Kill the minion owners quickly, starting with the ones that act soonest.",
+                   "3": "Getting rid of minions doesn't work: they are given back and their leave chance is set to 0 for every creature, yours included. Treat every enemy as permanently empowered and end the fight fast." } }
+      ]
+    },
+    "LOID": {
+      "threats": [
+        { "title": { "1": "Attacking Scorns you, casting Silences you", "2": "Each action locks it out and drains the stat", "3": "Each action locks it out, and the locks stack" },
+          "what": { "1": "After one of your creatures attacks, it is Scorned for 2 turns (can't attack). After it casts a spell, it gets Silence for 2 turns (can't cast).",
+                    "2": "After one of your creatures attacks, it is Scorned for 2 turns and loses 35% of its current Attack. After it casts, it gets Silence for 2 turns and loses 35% of its current Intelligence.",
+                    "3": "As tier 2, and Scorned and Silence no longer replace each other, so a creature can have both." },
+          "why": { "1": "Scorned and Silence normally overwrite each other, so alternate: attack, then cast while Scorned (the new Silence replaces the Scorn), then attack again. Creatures that can only do one thing sit out while locked.",
+                   "2": "Alternating still works (the new debuff replaces the old one), but every action costs 35% of the stat it used and it compounds: four attacks leave about 18% of your Attack. Hit hardest on the first actions.",
+                   "3": "A creature that attacks and then casts ends up unable to do either. Plan each creature's actions so it never needs both, and front-load damage: every action drains 35% of the stat it used." } }
+      ]
+    },
+    "ZENPANG": {
+      "threats": [
+        { "title": { "1": "Attacks before and after every one of your turns", "2": "Attacks twice before and after every one of your turns", "3": "Attacks three times before and after every one of your turns" },
+          "what": { "1": "At the start and end of each of your creatures' turns, Zenpang attacks that creature. Each attack deals 25% more for every attack it has already made this battle.",
+                    "2": "At the start and end of each of your creatures' turns, Zenpang attacks that creature 2 times. Each attack deals 25% more for every attack it has already made this battle.",
+                    "3": "At the start and end of each of your creatures' turns, Zenpang attacks that creature 3 times. Each attack deals 25% more for every attack it has already made this battle." },
+          "why": { "1": "With six creatures that is 12 attacks a round, so by the end of the first round its attacks deal +300%, and it keeps climbing. Kill Zenpang in the first round.",
+                   "2": "24 attacks a round: +600% by the end of the first round. Kill Zenpang before most of your creatures have had a turn.",
+                   "3": "36 attacks a round: +900% by the end of the first round. Every creature's turn feeds it six attacks, so kill it with your first actions." } }
+      ]
+    },
+    "PHOBOS": {
+      "threats": [
+        { "title": { "1": "Hit one, the other five hit back", "2": "Hit one, the other five hit back", "3": "Hit one, the other five hit back three times" },
+          "what": { "1": "When a Sadomasochist takes damage from one of your creatures, every other living Sadomasochist attacks that creature once.",
+                    "2": "When a Sadomasochist takes damage from one of your creatures, every other living Sadomasochist attacks that creature once.",
+                    "3": "When a Sadomasochist takes damage from one of your creatures, every other living Sadomasochist attacks that creature 3 times." },
+          "why": { "1": "Each hit draws up to five counterattacks on the creature that dealt it, and an area spell hits all six, so one spell can draw 30 attacks on your caster. Hit one at a time with sturdy creatures. Poison, Burned and Bleeding ticks have no source creature, so they don't trigger counters.",
+                   "2": "Each hit draws up to five counterattacks on the creature that dealt it, and an area spell can draw 30. Hit one at a time with sturdy creatures; Poison, Burned and Bleeding ticks have no source creature, so they don't trigger counters.",
+                   "3": "Up to 15 counterattacks per hit, 90 from one area spell. Single-target hits only, and damage over time (Poison, Burned, Bleeding ticks) draws no counters at all." } },
+        { "title": "Every hit crits and can't be dodged", "tiers": [2, 3],
+          "what": "While the Sadomasochists are on the field, every attack on your creatures can't be dodged and every hit from their side is critical.",
+          "why": "This covers all their damage, not just the counters. A crit adds about 125% more damage at equal Speed and more the faster they are. Dodge doesn't help; out-speeding them shrinks the crit bonus (down to +25% at about 2.7× their Speed), and Defense and damage reduction help." }
+      ],
+      "notes": { "2": ["The text limits the crit and can't-be-dodged effect to the counterattacks; in code it applies to every attack and hit from their side."],
+                 "3": ["The text limits the crit and can't-be-dodged effect to the counterattacks; in code it applies to every attack and hit from their side."] }
+    },
+    "GIRAN": {
+      "threats": [
+        { "title": { "1": "Borrows its allies' Attack", "2": "Borrows everyone's Attack, yours included", "3": "Borrows all of everyone's Attack" },
+          "what": { "1": "Giran adds 50% of each other living ally's current Attack to its own Attack, Defense, Intelligence and Speed.",
+                    "2": "Giran adds 50% of the current Attack of every other creature in the battle, on both sides and dead ones included, to its Attack, Defense, Intelligence and Speed.",
+                    "3": "Giran adds 100% of the current Attack of every other creature in the battle, on both sides and dead ones included, to its Attack, Defense, Intelligence and Speed." },
+          "why": { "1": "Only Attack counts (a code bug: all four stats read the others' Attack). Kill its allies first or lower their Attack and Giran shrinks with them.",
+                   "2": "Your own Attack feeds it, and killing creatures doesn't help because the dead still count. Lowering Attack on either side does. Teams that deal damage with spells or indirect damage on low Attack starve it.",
+                   "3": "It gets the full Attack of all eleven others on every stat. Low-Attack teams (spells, indirect damage) and Attack loss on its allies are the way through; high-Attack teams make it huge." } }
+      ],
+      "notes": { "1": ["The text says 50% of the other creatures' stats; the code adds 50% of their Attack to every stat (Defense, Intelligence and Speed never count)."],
+                 "2": ["The text says 50% of all other creatures' stats; the code adds 50% of their Attack to every stat, and counts dead creatures."],
+                 "3": ["The text says 100% of all other creatures' stats; the code adds 100% of their Attack to every stat, and counts dead creatures."] }
+    },
+    "CHROMA": {
+      "threats": [
+        { "title": "Only one class can hurt its side",
+          "what": "Damage to any creature on Chroma's side is Prevented unless the attacker or caster is of the current shield class. The class changes at the start of each Chroma turn, and its look changes to match.",
+          "why": { "1": "Bring creatures of several classes so someone can always hit. Damage with no source creature skips the shield: Poison, Burned and Bleeding ticks always get through.",
+                   "2": "Bring creatures of several classes so someone can always hit. Its side is immune to debuffs now, so damage over time can't be applied.",
+                   "3": "Only attacks and spells from the matching class work: debuffs and indirect damage are both blocked. Bring all five classes, or creatures that can change class." } },
+        { "title": { "2": "Immune to debuffs", "3": "Immune to debuffs and indirect damage" }, "tiers": [2, 3],
+          "what": { "2": "Every creature on Chroma's side is immune to debuffs (buffs still land).", "3": "Every creature on Chroma's side is immune to debuffs and takes no indirect damage." },
+          "why": { "2": "No Poison, Burned or Bleeding, and no control debuffs: plan on direct damage from the matching class.", "3": "No way around the shield: debuffs and indirect damage do nothing, so every point of damage has to come from a creature of the current class." } }
+      ]
+    },
+    "FLUBRIS": {
+      "threats": [
+        { "title": { "1": "Immune to attacks, spells or both", "2": "Immune to attacks, spells or both, and indirect damage", "3": "Six shape-shifting slimes" },
+          "what": { "1": "Each turn the slime changes to one of its other two forms: one is immune to attacks, one to spells, one to both.",
+                    "2": "Each turn the slime changes form (immune to attacks, spells or both), and it is always immune to indirect damage.",
+                    "3": "Six slimes (Glubris, Shubris, Pubris, Jubris, Cubris and Flubris), each changing form every turn, each always immune to indirect damage." },
+          "why": { "1": "Bring both attackers and casters and hit with whatever the current form lets through; skip it on the form that blocks both. Indirect damage (Poison, Burned and Bleeding ticks) works on every form.",
+                   "2": "Indirect damage no longer works, so you need both attackers and casters, and some turns the slime can't be hurt at all.",
+                   "3": "Six slimes, each changing form on its own turn: you need attackers and casters, and a way to check each slime's form before you commit." } }
+      ],
+      "notes": { "all": ["The art for two forms is swapped in code: the form whose sprite is named \"all immune\" only blocks attacks, and the one named \"physical immune\" blocks both attacks and spells."] }
+    },
+    "VLORA": {
+      "threats": [
+        { "title": { "1": "Acts after every one of your turns", "2": "Acts after every one of your turns and hits your party", "3": "Acts after every one of your turns, hits your party, pulls an ally up" },
+          "what": { "1": "At the end of each of your creatures' turns, Vlora moves to the top of the timeline.",
+                    "2": "At the end of each of your creatures' turns, Vlora moves to the top of the timeline. Each time she moves there, each of your creatures takes 15% of her highest stat.",
+                    "3": "At the end of each of your creatures' turns, Vlora moves to the top of the timeline. Each time, each of your creatures takes 25% of her highest stat and a random ally of hers also moves to the top." },
+          "why": { "1": "The top of the timeline means acting next, so Vlora takes a turn after every one of yours: up to six turns a round. Speed doesn't help. Kill her first.",
+                   "2": "Up to six turns a round, plus six hits on your whole party. Kill her first; every turn she lives costs the party a lot.",
+                   "3": "Her party hits are bigger and each move also brings another enemy forward, so her side gets extra turns too. Kill Vlora first." } }
+      ]
+    },
+    "SAREA": {
+      "threats": [
+        { "title": { "1": "Turns your creatures on each other", "2": "Turns your creatures on each other twice", "3": "Turns your creatures on each other three times" },
+          "what": { "1": "At the start of its turn, Sarea picks two random creatures of yours (it can pick the same one twice) and the first attacks the second.",
+                    "2": "At the start of its turn, Sarea picks two random creatures of yours (possibly the same one) and the first attacks the second 2 times.",
+                    "3": "At the start of its turn, Sarea picks two random creatures of yours (possibly the same one) and the first attacks the second 3 times." },
+          "why": "Your strongest attackers are the most dangerous to your own party, and a creature can be made to hit itself. High-Attack, low-Defense teams suffer most. Kill Sarea early." },
+        { "title": "Makes an ally cast for free",
+          "what": { "1": "At the end of its turn, a random ally of Sarea casts one of its own spell gems.", "2": "At the end of its turn, a random ally of Sarea casts a random one of its own spell gems 2 times.", "3": "At the end of its turn, a random ally of Sarea casts a random one of its own spell gems 3 times." },
+          "why": "Extra free casts from the random realm creatures beside it, on top of their own turns." }
+      ],
+      "notes": { "all": ["The text says it forces an enemy to attack one of its allies; the code picks both at random from the same list, so a creature can attack itself."] }
+    },
+    "SHACKLER": {
+      "threats": [
+        { "title": { "1": "Only indirect damage hurts it", "2": "Only indirect damage hurts its side", "3": "Only indirect damage hurts its side, and it cleanses" },
+          "what": { "1": "Shackler takes no damage from attacks or spells and is resistant to debuffs. Indirect damage gets through.",
+                    "2": "Every creature on Shackler's side takes no damage from attacks or spells and is resistant to debuffs. Indirect damage gets through.",
+                    "3": "Every creature on its side takes no damage from attacks or spells and is resistant to debuffs, and at the start of Shackler's turn each of them, Shackler included, loses a random debuff." },
+          "why": { "1": "Kill its allies normally, then finish Shackler with indirect damage: Poison, Burned and Bleeding ticks and other indirect damage.",
+                   "2": "The whole fight is indirect damage. Bring a team built on damage over time and other indirect damage; direct attackers and nukers do nothing.",
+                   "3": "An all-indirect fight where its side sheds a debuff every Shackler turn, so keep reapplying your damage-over-time debuffs." } }
+      ],
+      "notes": { "3": ["The text says it removes a random debuff from its allies; the code removes one from every creature on its side, Shackler included."] }
+    },
+    "FURNESS": {
+      "threats": [
+        { "title": { "1": "Every Booze spell as extra gems", "2": "Its whole side gets every Booze spell", "3": "Its whole side gets Booze, cast twice as often" },
+          "what": { "1": "At the start of battle Furness gains all 15 Booze spells as extra spell gems.",
+                    "2": "At the start of battle every creature on its side gains all 15 Booze spells as extra spell gems.",
+                    "3": "Every creature on its side gains all 15 Booze spells, and each Booze gem has a 30% chance to cast itself at the end of that creature's turn (normally 15%)." },
+          "why": { "1": "Booze spells heal, buff (including Immunity from Godly Gin) and make allies attack (Amber Ale: 300% damage). Furness gets 15 extra options; kill it first.",
+                   "2": "Six enemies with fifteen extra spells each: healing, Immunity and forced attacks across their whole side. End the fight fast.",
+                   "3": "With 15 gems at 30% each, every enemy fires about four or five free Booze casts at the end of each of its turns, on top of its action. Kill them quickly, starting with the next to act." } }
+      ]
+    },
+    "ASPECTS": {
+      "threats": [
+        { "title": { "1": "Always Defending, immune to indirect damage", "2": "Every hit is critical", "3": "Every hit is critical" },
+          "what": { "1": "Every creature on the Aspects' side always Defends and takes no damage that doesn't come from an attack or spell. This lasts even after the Aspect of Change dies.",
+                    "2": "Every creature on the Aspects' side takes no indirect damage and all of their damage is critical. This lasts the whole battle.",
+                    "3": "Every creature on the Aspects' side takes no indirect damage and all of their damage is critical. This lasts the whole battle." },
+          "why": { "1": "They never attack or cast, only Defend (35% less damage taken, more Defense), so this is a damage check with no pressure. Only attacks and spells hurt them; damage over time does nothing.",
+                   "2": "They fight normally now and every hit crits: about 125% more damage at equal Speed, more if they're faster. Bring Defense and attack or spell damage; indirect damage does nothing.",
+                   "3": "They fight normally and every hit crits: about 125% more damage at equal Speed, more if they're faster. Bring Defense and attack or spell damage; indirect damage does nothing." } }
+      ],
+      "notes": { "all": ["No 30% damage reflection exists in the code, despite the text.", "The effect is set once at the start of battle, so killing the Aspect of Change doesn't end it."],
+                 "2": ["Tier 2 also makes their side always deal critical damage, which its text doesn't say."] }
+    },
+    "VEXT": {
+      "threats": [
+        { "title": { "1": "Steals your stats every turn", "2": "Steals your stats and shares them with its side", "3": "Steals 20% of your stats every turn" },
+          "what": { "1": "At the start of its turn, each of your creatures loses 5% of its current Attack, Intelligence, Defense and Speed, and Vext gains the totals.",
+                    "2": "At the start of its turn, each of your creatures loses 10% of its current Attack, Intelligence, Defense and Speed; every creature on Vext's side, Vext included, gains 50% of the totals.",
+                    "3": "At the start of its turn, each of your creatures loses 20% of its current Attack, Intelligence, Defense and Speed; every creature on Vext's side, Vext included, gains 50% of the totals." },
+          "why": { "1": "It compounds: after 10 Vext turns your stats are at 60% while Vext has taken all of it. Stat-loss protection works against it.",
+                   "2": "After 7 Vext turns your stats are under half, and all six enemies share in it: their side gains three times what you lose. Kill Vext early; stat-loss protection works against it.",
+                   "3": "Three Vext turns take about half your stats, and its whole side grows with them. Kill Vext in the first round or two, or bring stat-loss protection." } }
+      ],
+      "notes": { "2": ["The text reads as Vext keeping all of it and sharing 50%; in code Vext gets 50% like each of its allies."],
+                 "3": ["The text reads as Vext keeping all of it and sharing 50%; in code Vext gets 50% like each of its allies."] }
+    },
+    "XYRXZYS": {
+      "threats": [
+        { "title": { "1": "Your first action is your only action", "2": "Your first action is your only action; one attack per turn", "3": "Your first action is your only action; one attack and one cast per turn" },
+          "what": { "1": "Once one of your creatures has acted, every later turn it repeats that kind of action automatically: attack a random enemy, cast a random one of its own spell gems, Defend, or Provoke.",
+                    "2": "Once one of your creatures has acted, every later turn it repeats that kind of action automatically, and your creatures can attack only once per turn.",
+                    "3": "Once one of your creatures has acted, every later turn it repeats that kind of action automatically, and your creatures can attack and cast only once per turn." },
+          "why": { "1": "Choose each creature's first action carefully: it's locked in for the battle, with random targets and spells. Casters should cast, attackers attack. Defending or Provoking on turn one means doing it forever.",
+                   "2": "Each creature's first action is locked in, and multi-attack effects stop at one attack per turn. Spell builds keep their extra casts at this tier.",
+                   "3": "Each creature's first action is locked in, and extra attacks and extra casts are both cut to one per turn. Lean on passive damage that doesn't need actions." } }
+      ],
+      "notes": { "all": ["The text says the same action; the code repeats the kind of action with a random target or a random spell gem."] }
+    },
+    "KATARINA": {
+      "threats": [
+        { "title": { "1": "Shelled and Invisible after every hit", "2": "Shelled, Invisible, Mending and Repelling after every hit", "3": "Shelled, Invisible, Mending, Repelling and a Barrier after every hit" },
+          "what": { "1": "After a creature on Katarina's side takes damage, it gains Invisible and Shelled for 1 turn.",
+                    "2": "After a creature on Katarina's side takes damage, it gains Invisible, Shelled, Mending and Repelling for 1 turn.",
+                    "3": "After a creature on Katarina's side takes damage, it gains Invisible, Shelled, Mending, Repelling and a Barrier worth 30% of its Defense for 1 turn." },
+          "why": { "1": "Shelled negates the next attack or spell and Invisible stops it from being manually targeted, so follow-up hits on the same creature are wasted. Spread first hits, and use indirect damage, which Shelled doesn't stop.",
+                   "2": "Mending heals it 30% at its next turn and Repelling makes spells miss half the time. Indirect damage and area hits that land before its turn are the way through.",
+                   "3": "On top of tier 2, each hit gives a Barrier. Indirect damage and area hits that land before its turn are the way through." } }
+      ]
+    },
+    "MEDIERRA": {
+      "threats": [
+        { "title": { "1": "Joins every enemy attack and repeats every spell", "2": "Joins every enemy attack twice and repeats every spell twice", "3": "Joins every enemy attack three times and repeats every spell three times" },
+          "what": { "1": "After another creature on Medierra's side attacks one of yours, Medierra attacks the same creature. After one of them casts a spell, Medierra casts it too.",
+                    "2": "After another creature on its side attacks one of yours, Medierra attacks the same creature 2 times. After one of them casts a spell, Medierra casts it 2 times.",
+                    "3": "After another creature on its side attacks one of yours, Medierra attacks the same creature 3 times. After one of them casts a spell, Medierra casts it 3 times." },
+          "why": "Every enemy action comes with extra copies, so the random creatures beside it hit far harder than usual. Kill Medierra first. The spell copies may continue after it dies: the code has no alive check on that path (not yet checked in-game)." }
+      ],
+      "notes": { "all": ["Only spells cast on a creature's own turn are copied; automatic casts aren't.", "In code a dead Medierra still copies spells (no alive check); not yet checked in-game."] }
+    },
+    "SPOONOR": {
+      "threats": [
+        { "title": { "1": "Permanent Poison that grows", "2": "Permanent Poison and Burned that grow", "3": "Permanent Poison, Burned and Bleeding" },
+          "what": { "1": "Your creatures always have Poisoned, starting at 30% of the highest Attack on Spoonor's side. At the start of Spoonor's turn its strength rises by 50%.",
+                    "2": "Your creatures always have Poisoned and Burned (30% of the highest Attack / Intelligence on Spoonor's side), and both rise by 50% at the start of Spoonor's turn.",
+                    "3": "Your creatures always have Poisoned, Burned and Bleeding. Poisoned and Burned rise by 50% at the start of Spoonor's turn; Bleeding is 30% of current Health per tick." },
+          "why": { "1": "×1.5 every Spoonor turn: about 7.6× after 5 of its turns. Removing Poison only lasts until it comes back. Kill Spoonor to stop the growth.",
+                   "2": "Two growing ticks at the start of every one of your creatures' turns; about 7.6× stronger after 5 Spoonor turns. Kill Spoonor fast.",
+                   "3": "Three ticks every turn start (Bleeding, then Poisoned, then Burned), two of them growing ×1.5 per Spoonor turn. Kill Spoonor in the first round or two." } }
+      ]
+    },
+    "DEATHWALKER": {
+      "threats": [
+        { "title": { "1": "Everyone is Scorned or Silenced", "2": "Your creatures are Scorned or Silenced", "3": "Scorned or Silenced, one attack and one cast per turn" },
+          "what": { "1": "Every creature in the battle, on both sides, always has either Scorned (can't attack) or Silence (can't cast). It switches at the start of Deathwalker's turn; which one comes first is random.",
+                    "2": "Your creatures always have either Scorned or Silence, switching at the start of Deathwalker's turn; which one comes first is random.",
+                    "3": "Your creatures always have either Scorned or Silence, switching at the start of Deathwalker's turn, and can attack and cast only once per turn." },
+          "why": { "1": "Between switches no one can attack, or no one can cast. Give every creature both an attack and spells so it can act either way. Its side is locked the same way.",
+                   "2": "Only your side is locked now. Each creature needs both attacks and spells, or damage that doesn't need actions.",
+                   "3": "Only your side is locked, and extra attacks and casts are cut to one. Lean on passive and indirect damage." } }
+      ],
+      "notes": { "all": ["The text says it starts as Scorned; the code picks the starting debuff at random."] }
+    },
+    "QILA": {
+      "threats": [
+        { "title": { "1": "A full-Health Barrier every turn", "2": "Barriers every turn, Shelled when they break", "3": "Barriers, Shelled, Mending and Leeching" },
+          "what": { "1": "At the start of battle and at the start of each of their turns, creatures on Qila's side gain a Barrier that absorbs 100% of their max Health.",
+                    "2": "As tier 1, and when a Barrier breaks that creature gains Shelled.",
+                    "3": "As tier 2, and every creature on Qila's side always has Mending and Leeching." },
+          "why": { "1": "Each enemy has about double its Health, and the Barrier comes back every turn. Focus one enemy and break through before its next turn, or the Barrier resets.",
+                   "2": "Breaking a Barrier gives Shelled, which negates the next attack or spell. Follow up with indirect damage (Shelled doesn't stop it), or a cheap hit to pop it first.",
+                   "3": "Mending heals 30% at each turn start and Leeching heals 25% of the damage they deal, on top of the Barriers. Focus fire hard; spread damage achieves nothing." } }
+      ]
+    },
+    "SCYLLAANDCHARYBDIS": {
+      "threats": [
+        { "title": { "1": "The survivor takes the dead one's stats", "2": "The survivor grows and hits three times harder", "3": "The survivor grows, hits three times harder and takes 80% less" },
+          "what": { "1": "When Scylla or Charybdis dies, the other gains 200% of its max Health, Attack, Intelligence, Defense and Speed.",
+                    "2": "When one dies, the other gains 300% of its stats and deals 200% more damage while its partner is dead.",
+                    "3": "When one dies, the other gains 500% of its stats, deals 200% more damage and takes 80% less while its partner is dead." },
+          "why": { "1": "Kill them together: bring both low, then finish both in the same round (area damage helps).",
+                   "2": "A lone survivor triples its damage on top of the stat gain. Bring both low, then finish them in the same round.",
+                   "3": "A lone survivor gains five times its partner's stats on top of its own, with triple damage and 80% damage reduction. Finishing both together is close to essential." } }
+      ]
+    },
+    "VITJA": {
+      "threats": [
+        { "title": "Immune until the Gemlings fall",
+          "what": "Vitja (the Onyx Carbuncle) takes no damage while any Gemling lives.",
+          "why": "You have to kill all five Gemlings first, and each death sets off Vitja's spells." },
+        { "title": { "1": "5 random spells every death", "2": "5 big spells every death", "3": "10 big spells every death" },
+          "what": { "1": "When any creature on Vitja's side dies, Vitja's own death included, Vitja casts 5 random spells of random classes.",
+                    "2": "When any creature on its side dies, Vitja's own death included, Vitja casts 5 spells, each one of Star Pact, Rapture, Steel Storm or Lightning Storm.",
+                    "3": "When any creature on its side dies, Vitja's own death included, Vitja casts 10 spells, each one of Star Pact, Rapture, Steel Storm or Lightning Storm." },
+          "why": { "1": "Six deaths, six volleys. Space the kills out so you can heal between volleys.",
+                   "2": "Each volley is five party-wide nukes, and Rapture adds Weak and Vulnerable. Space the kills out and heal between them; never kill two in one turn.",
+                   "3": "Each death fires ten party-wide nukes. Kill one creature at a time, heal and cleanse Vulnerable in between, and expect a final volley when Vitja dies." } }
+      ],
+      "notes": { "all": ["The text says the dead creature casts; the code has Vitja cast, and its own death also sets it off (not yet checked in-game)."],
+                 "2": ["\"Powerful spells\" are Star Pact, Rapture, Steel Storm and Lightning Storm."],
+                 "3": ["\"Powerful spells\" are Star Pact, Rapture, Steel Storm and Lightning Storm."] }
+    },
+    "IMPIMPINGTON": {
+      "threats": [
+        { "title": { "1": "Every enemy takes two turns", "2": "Two turns, and every attack or spell six times", "3": "Two turns, six of everything, and minions" },
+          "what": { "1": "After a creature on Imp Impington's side finishes a turn, it takes one more.",
+                    "2": "After a creature on its side finishes a turn it takes one more, and every attack or spell they make happens 5 extra times.",
+                    "3": "As tier 2, and each of them gains a random minion at the start of each of its turns." },
+          "why": { "1": "The whole enemy side acts twice as often as yours. Kill fast and keep Defense up.",
+                   "2": "Two turns of six attacks or casts each: twelve hits per enemy per round. Kill whatever acts next first, and bring heavy Defense.",
+                   "3": "Twelve hits per enemy per round, and a new minion every turn. End it fast, starting with whoever acts next." } },
+        { "title": "Comes back once with doubled stats",
+          "what": "The first time Imp Impington dies, it comes back at full Health, then gains +100% max Health, Attack, Intelligence, Defense and Speed.",
+          "why": "Its second life has double the stats. Save your burst for after it returns." }
+      ],
+      "notes": { "all": ["Not in the text: Angry Army also revives Imp Impington once at full Health with doubled stats."] }
+    },
+    "JUDGMENTANDMERCY": {
+      "threats": [
+        { "title": { "1": "Mercy sets your Health to 20%", "2": "Mercy sets your Health to 10%", "3": "Mercy sets your Health to 5%" },
+          "what": { "1": "Mercy starts at the top of the timeline. At the start of each of its turns, every creature of yours has its Health set to exactly 20% of its max Health.",
+                    "2": "Mercy starts at the top of the timeline. At the start of each of its turns, every creature of yours has its Health set to exactly 10%.",
+                    "3": "Mercy starts at the top of the timeline. At the start of each of its turns, every creature of yours has its Health set to exactly 5%." },
+          "why": { "1": "It's a set, not damage, so Defense and reductions don't matter, and a creature below 20% is raised to 20%.",
+                   "2": "It's a set, not damage: nothing reduces it. It leaves every creature under Judgment's 20% line.",
+                   "3": "It's a set, not damage: nothing reduces it. It leaves every creature far under Judgment's 35% line." } },
+        { "title": { "1": "Judgment kills below 5%", "2": "Judgment kills below 20%", "3": "Judgment kills below 35%" },
+          "what": { "1": "Judgment starts at the bottom of the timeline. At the start of each of its turns, every creature of yours below 5% Health dies.",
+                    "2": "Judgment starts at the bottom of the timeline. At the start of each of its turns, every creature of yours below 20% Health dies.",
+                    "3": "Judgment starts at the bottom of the timeline. At the start of each of its turns, every creature of yours below 35% Health dies." },
+          "why": { "1": "Mercy's 20% sits above the line, so the pair is survivable as long as other damage doesn't push you under 5%.",
+                   "2": "After Mercy, everyone is at 10%, under the line: heal above 20% between Mercy's turn and Judgment's, or lose the party. It's a real death (resurrection works); only the Robodomi card powers can save a creature (10% each).",
+                   "3": "After Mercy, everyone is at 5%. Heal everyone above 35% before Judgment acts, or kill Judgment first. It's a real death; only the Robodomi card powers can save a creature (10% each)." } }
+      ],
+      "notes": { "_unit": "Mercy", "all": ["Its Health set has no \"only if lower\" check, so it raises a creature that is below the value."] }
+    },
+    "ETTA": {
+      "threats": [
+        { "title": { "1": "Your creatures attack a teammate every turn", "2": "Your creatures hit a teammate every turn", "3": "Your creatures hit a teammate hard every turn" },
+          "what": { "1": "At the start of each of your creatures' turns, it attacks a random living ally of its own.",
+                    "2": "At the start of each of your creatures' turns, it deals damage to a random living ally of its own equal to 50% of its own highest stat.",
+                    "3": "At the start of each of your creatures' turns, it deals damage to a random living ally of its own equal to 100% of its own highest stat." },
+          "why": { "1": "Six friendly attacks a round; high-Attack creatures hurt your own party most. Kill Etta early.",
+                   "2": "Six friendly hits a round, each from the attacker's highest stat, so your best stat-stacker hurts the party most. Kill Etta early.",
+                   "3": "Each creature's turn costs a teammate its whole highest stat in damage. Kill Etta first." } }
+      ]
+    },
+    "TELLUR": {
+      "threats": [
+        { "title": { "1": "Every hit capped at 15% (Tellur 5%)", "2": "Every hit capped at 10% (Tellur 5%)", "3": "Every hit capped at 5%" },
+          "what": { "1": "A single hit can deal at most 15% of a creature's max Health on Tellur's side, and at most 5% to Tellur itself.",
+                    "2": "A single hit can deal at most 10% of a creature's max Health on Tellur's side, and at most 5% to Tellur. Your creatures deal 10% more damage for each time they have been damaged this battle.",
+                    "3": "A single hit can deal at most 5% of a creature's max Health on Tellur's side. Your creatures deal 20% more damage for each time they have been damaged this battle." },
+          "why": { "1": "Each enemy needs at least 7 hits and Tellur 20. Many hits beat big ones: multi-hit attacks, area spells and damage-over-time ticks.",
+                   "2": "At least 10 hits per enemy and 20 for Tellur, so go for many hits. Your creatures grow stronger as they get hit, which helps tanky ones that keep their hit count rising.",
+                   "3": "At least 20 hits per enemy. Many hits beat big ones, and your creatures gain 20% damage every time they're hit." } }
+      ],
+      "notes": { "2": ["The text reads as a bonus for Tellur's side; in code the damage bonus goes to your creatures."],
+                 "3": ["The text reads as a bonus for Tellur's side; in code the damage bonus goes to your creatures."] }
+    },
+    "NOETHERIAN": {
+      "threats": [
+        { "title": { "1": "Barriers that explode on your party", "2": "Barriers on everyone; theirs explode", "3": "Barriers and Shelled that explode on your party" },
+          "what": { "1": "At the end of its turn, up to 3 random creatures on Noetherian's side gain a Barrier equal to their max Health. At the start of its next turn, each Barrier on its side breaks and deals 300% of its absorption to each of your creatures.",
+                    "2": "At the end of its turn, every creature on both sides gains a Barrier equal to its max Health. At the start of its next turn, each Barrier on its side breaks and deals 300% of its absorption to each of your creatures.",
+                    "3": "At the end of its turn, every creature on its side gains a Barrier equal to its max Health and Shelled. At the start of its next turn, each Barrier on its side breaks and deals 300% of its absorption to each of your creatures." },
+          "why": { "1": "Each Barrier still up at Noetherian's next turn hits your whole party for three times its strength, once per Barrier. Break them before then; a broken Barrier can't explode.",
+                   "2": "All six enemies get a Barrier, so up to six party-wide hits per Noetherian turn. Your creatures get a Barrier too (a code quirk), which soaks some of it. Break theirs fast.",
+                   "3": "Six Barriers, and Shelled stops the first attack or spell on each. Use indirect damage or cheap hits to pop Shelled, then break the Barriers before its next turn." } }
+      ],
+      "notes": { "2": ["Tier 2 also gives your creatures a Barrier equal to their max Health (a code quirk the text doesn't mention); only its own side's Barriers explode."] }
+    },
+    "RAMSES": {
+      "threats": [
+        { "title": "Permanent Cursed",
+          "what": "Your creatures always have Cursed.",
+          "why": "Every attack or spell that deals damage costs your creature damage equal to its target's Attack. Indirect damage doesn't trigger it." },
+        { "title": { "1": "Forced attacks on Ramses, who heals", "2": "Your creatures attack each other", "3": "Your creatures attack each other three times" },
+          "what": { "1": "At the start of each of your creatures' turns, it attacks Ramses. After Ramses takes damage, it recovers 15% of its max Health.",
+                    "2": "At the start of each of your creatures' turns, it attacks a random ally of its own. After Ramses takes damage, it recovers 15% of its max Health.",
+                    "3": "At the start of each of your creatures' turns, it attacks random allies of its own 3 times. After Ramses takes damage, it recovers 15% of its max Health." },
+          "why": { "1": "Each forced attack costs your creature Ramses's Attack (Cursed), and Ramses heals 15% after every hit. Burst it with a few big hits or indirect damage.",
+                   "2": "Friendly attacks are Cursed too, so each one hurts the attacker by its teammate's Attack. High-Attack teams wreck themselves. Kill Ramses with big hits; it heals 15% per hit.",
+                   "3": "Three friendly attacks per turn, each also hurting the attacker through Cursed. Kill Ramses as fast as possible; it heals 15% after every hit." } }
+      ]
+    },
+    "KRAYNAKS": {
+      "threats": [
+        { "title": { "1": "Comes back as your creatures", "2": "Comes back as your creatures, with an extra trait", "3": "Six Mimics that come back as your creatures" },
+          "what": { "1": "When Kraynaks dies, it comes back at full Health as the first creature of yours (in party order) it hasn't copied yet, with that creature's trait. Once it has copied all of them, its next death is final.",
+                    "2": "As tier 1, and each time it also gains a random trait from a creature of the copied creature's race.",
+                    "3": "Six Mimics (Kraynaks, Ranksya, Narkyaks, Snakyark, Yankarks, Arkansky), each with the tier 2 trait and its own copy list." },
+          "why": { "1": "With a full party Kraynaks has seven lives, and every life fights with one of your traits. Your party order is its order: put the creatures whose traits you least want to face last.",
+                   "2": "Seven lives, each with your creature's trait plus a random one from its race. Party order sets the order it copies in.",
+                   "3": "Each Mimic has seven lives with a full party, up to 42 deaths in total, and each life brings your traits. A long fight: bring sustain." } }
+      ],
+      "notes": { "all": ["Not in the text: it also comes back at full Health and copies the creature's trait, and never copies the same creature twice."] }
+    },
+    "CYHRA": {
+      "threats": [
+        { "title": "Untouchable while any ally lives",
+          "what": "While any ally of Cyhra is alive, Cyhra takes no damage, loses no stats and can't be debuffed.",
+          "why": { "1": "Kill the other five first, then Cyhra. Debuffs and stat drops on Cyhra are wasted until then.",
+                   "2": "Kill the other five first; it brings three back each turn, so do it within one of Cyhra's turns.",
+                   "3": "Kill the other five and then Cyhra before its next turn: it brings every dead ally back each turn." } },
+        { "title": { "2": "Resurrects 3 allies each turn; its side takes half damage", "3": "Resurrects every ally each turn" }, "tiers": [2, 3],
+          "what": { "2": "At the end of its turn, Cyhra resurrects up to 3 dead allies at full Health. Every creature on its side takes 50% less damage.",
+                    "3": "At the end of its turn, Cyhra resurrects all dead allies at full Health." },
+          "why": { "2": "Half damage taken and three resurrections a turn make a slow kill hopeless. Burst its allies down in one round, then hit Cyhra before its next turn.",
+                   "3": "Every Cyhra turn undoes all your kills. Kill all five allies and Cyhra between two of its turns; pushing it down the timeline buys time." } }
+      ],
+      "notes": { "2": ["Tier 2 also halves all damage taken by Cyhra's side, which its text doesn't mention."],
+                 "all": ["Its immunity stops debuffs only; buffs still land."] }
+    },
+    "SHADOWS": {
+      "threats": [
+        { "title": { "1": "The Shadow Cobra echoes every hit", "2": "Echoes, and every attack splashes", "3": "All six Shadows echo, and every attack splashes" },
+          "what": { "1": "When another Shadow deals damage on its own turn, the Shadow Cobra deals the same amount to a random creature of yours, even while dead.",
+                    "2": "When another Shadow deals damage on its own turn, the Shadow Cobra deals the same amount to a random creature of yours, even while dead. After any Shadow attacks, each of your other creatures takes the same damage.",
+                    "3": "All six Shadows have the trait: each damage a Shadow deals on its own turn is echoed by every other Shadow, dead ones too, onto random creatures of yours. Every Shadow attack also hits all your other creatures for the same damage." },
+          "why": { "1": "Killing the Cobra doesn't stop the echo. Every hit the other five deal on their turns lands twice; bring Defense and damage reduction.",
+                   "2": "Every Shadow attack hits your whole party, and the Cobra echoes it once more. Damage reduction on every creature matters more than anything.",
+                   "3": "Every Shadow hit is repeated up to five times, and attacks splash to the whole party. Killing Shadows doesn't stop their echoes. Kill fast and stack damage reduction." } }
+      ],
+      "notes": { "all": ["The text says it triggers when your creatures take damage; in code it triggers on damage a Shadow deals during its own turn, and dead Shadows still echo."] }
+    }
+  }
+}

@@ -118,11 +118,14 @@ Known limits + planned work, roughly in priority order (all now cheap to impleme
   disagree otherwise, the CSV value is kept until the user decides. List the disagreements and ask.
 
 ## Pending extract hand-offs (from `_su_extract/RESUME.md`, waiting on the user)
-- [ ] **Boss feature — Nether Bosses + Gate of the Gods** (False Gods shipped 2026-10-11): when the extract adds `nether_boss` /
-  `gate_god` encounters to bosses.json, rebuild. New step kinds need a line in `bossStepHtml` (app.js); new notes need a plain
-  rewrite in `NOTE_PLAIN` (build-data fails on code-like notes); non-False-God portraits need a source (`bossImg`).
-  **2026-10-11: the extract now has 35 `nether_boss` encounters** (party schema: `creature`, `own_trait`, `boss_traits`,
-  tiers); build-data skips non-False-God encounters until this is built.
+- [x] **Nether Bosses** shipped 2026-10-11 (35 pages, tier toggle, threats, stat bars, trait materials).
+- [ ] **Gate of the Gods** (user: "keep an eye out for the Gate of the Gods data to drop and implement their pages as well"):
+  the toggle tab is in place, disabled until bosses.json has `gate_god` encounters (extract RESUME: next after Nether Bosses).
+  When it lands: add `gate_god` to build-data's `BUILT` set and a builder for its schema, a page renderer, and threat text
+  grounded in its code behaviour (same rule as the Nether Bosses). build-data warns while that type is skipped.
+- [ ] **Nether Boss trait materials: code source** — the boss ↔ material link and unlock depth come from the wiki table
+  (`nether_boss_trait_depths.json`, asserted against the item reconciliation's boss source); the drop isn't in the loot
+  code docs (the treasure-only pool doesn't hold them). Asked in `_su_extract/code/HANDOFF_nether_material_source.md`.
 - [ ] **Bosses page: Inscriptions** — bosses.json now has `encounters[].inscriptions` (the god's 5–6 Inscription spells, one
   random unknown per anointment pick; `exceptions` (e.g. Shadowbringer starts with Plague) / `also_cast_by` per spell) and per
   cast-spell `source` / `exceptions` / `boss_exclusive`. The False God is the source; show spec starts as exceptions. Show the list on each boss page as spell-gem containers. (Data only so far, 2026-10-11.)

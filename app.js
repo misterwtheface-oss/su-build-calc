@@ -1307,7 +1307,15 @@
   // (Hydranox's heads, Caliban's orbs) use whatever sits in those grid positions
   const BOSS_GRID_ORDER = [2, 5, 4, 6, 1, 3];
   const bossUnitsOrdered = (e) => [...e.units].sort((a, b) => BOSS_GRID_ORDER.indexOf(a.grid) - BOSS_GRID_ORDER.indexOf(b.grid));
-  const bossImg = (e) => { const g = FG_BY_KEY.get(e.key); return g ? g.img : null; };
+  // a Nether Boss creature wears its boss skin (battle sprite); a skinless one (Giran, the Gemlings) shows its own sprite
+  const nbUnitImg = (u) => { const sk = (u.skins || []).length ? SKIN_BY_ID.get(u.skins[0]) : null; return (sk && sk.img) || (CREA.get(u.creature) || {}).sprite || null; };
+  const nbLead = (e) => e.units.find(u => u.tiers) || e.units[0];
+  const bossImg = (e) => e.type === "nether_boss" ? nbUnitImg(nbLead(e)) : (FG_BY_KEY.get(e.key) || {}).img || null;
+  // base stats as magnitude bars (value / the playable roster's max for that stat), same bar as the creature wizard
+  const bossStatTable = (st) => `<div class="stat-grid single mag boss-stat-grid">${STAT_KEYS.map(k => { const v = st[k], pc = Math.max(0, Math.min(100, (v || 0) / (STAT_MAX[k] || 1) * 100));
+    return `<div class="stat-row"><span class="stat-name">${STAT_LABEL[k]}</span><span class="stat-mag" title="${Math.round(pc)}% of the highest base ${STAT_LABEL[k]} of any creature"><i style="width:${pc}%"></i></span><span class="stat-val total">${v}</span></div>`; }).join("")}</div>`;
+  // boss battle rule (bosses.json rules.boss_instant_kill): Nether Boss and False God fights turn instant kills into damage
+  const BOSS_OHKO_NOTE = "Instant kills don't kill anything on the boss's side: they deal 20% of the target's missing Health instead (nothing at full Health). Loif En't Fair, Boils Popped, Death By Boredom and Incandescence still kill.";
   // the six parts drawn edge to edge in battle order (grid 1–3 top row, 4–6 bottom) so they form the whole creature; each
   // trimmed frame sits at its code offset inside its cell. jump → each part links to its card below.
   const bossFormation = (e, jump) => { const byGrid = new Map(e.units.map(u => [u.grid, u]));
@@ -1315,29 +1323,34 @@
       const img = u && u.img && o ? `<img src="${esc(u.img)}" alt="" style="left:${o[0]}%;top:${o[1]}%;width:${o[2]}%;height:${o[3]}%" onerror="this.classList.add('sprite-missing');console.error('MISSING SPRITE:', this.getAttribute('src'))">` : "";
       return jump && u ? `<button class="boss-cell" data-action="boss-jump" data-slot="${u.slot}" title="${esc(u.name)}">${img}</button>` : `<span class="boss-cell">${img}</span>`; }).join("")}</div>`; };
   function openBosses() {
-    ovState = { kind: "bosses", search: "", render: renderBosses };
+    ovState = { kind: "bosses", search: "", tab: (ovState && ovState.kind === "bosses" && ovState.tab) || "nether_boss", render: renderBosses };
     openOverlay(ovState.render()); maybeFocusSearch(OV);
   }
   function renderBosses() {
     const st = ovState, q = st.search.trim().toLowerCase();
-    const hit = (e) => !q || e.name.toLowerCase().includes(q) || e.units.some(u => u.name.toLowerCase().includes(q));
-    const body = ((D.bosses && D.bosses.types) || []).map(t => {
-      const list = BOSSES.filter(e => e.type === t.type && hit(e));
-      if (!list.length) return "";
-      return `<div class="section-label">${esc(t.label)}</div><div class="boss-grid">${list.map(e => `<div class="boss-tile" data-action="boss-open" data-k="${esc(e.key)}">
-        ${bossFormation(e, false)}<div class="pt-name">${esc(e.name)}</div></div>`).join("")}</div>`;
-    }).join("") || `<div class="slot-sub" style="padding:10px">Nothing matches “${esc(st.search)}”.</div>`;
+    const hit = (e) => !q || e.name.toLowerCase().includes(q) || e.units.some(u => u.name.toLowerCase().includes(q) || ((CREA.get(u.creature) || {}).name || "").toLowerCase().includes(q));
+    // Nether Bosses | False Gods | Gate of the Gods, the Realms page's toggle; a type with no data yet can't be picked
+    const types = (D.bosses && D.bosses.types) || [];
+    const has = (t) => BOSSES.some(e => e.type === t);
+    const tab = has(st.tab) ? st.tab : (types.find(t => has(t.type)) || {}).type;
+    const toggle = `<div class="art-view-toggle boss-types">${types.map((t, i) => `${i ? `<span class="av-pipe">|</span>` : ""}<button class="av-tab ${t.type === tab ? "on" : ""}"${has(t.type) ? "" : " disabled"} data-action="boss-tab" data-v="${t.type}">${esc(t.label)}</button>`).join("")}</div>`;
+    const list = BOSSES.filter(e => e.type === tab && hit(e));
+    const body = !list.length ? `<div class="slot-sub" style="padding:10px">Nothing matches “${esc(st.search)}”.</div>`
+      : tab === "false_god" ? `<div class="boss-grid">${list.map(e => `<div class="boss-tile" data-action="boss-open" data-k="${esc(e.key)}">
+        ${bossFormation(e, false)}<div class="pt-name">${esc(e.name)}</div></div>`).join("")}</div>`
+      : `<div class="nb-grid">${list.map(e => `<button class="nb-tile" data-action="boss-open" data-k="${esc(e.key)}">
+        <span class="nb-tile-spr">${bossImg(e) ? spriteImg(bossImg(e), "px") : ""}</span><span class="pt-name">${esc(e.name)}</span></button>`).join("")}</div>`;
     return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel">
       <div class="overlay-header"><h2>Bosses</h2>
         <input class="ovl-search" placeholder="Search…" value="${esc(st.search)}" data-action="bosses-search">
         <button class="ovl-close" data-action="close-ovl">✕</button></div>
-      <div class="overlay-body"><div class="ovl-center"><div class="ovl-center-scroll">${body}</div></div></div>
+      <div class="overlay-body"><div class="ovl-center">${toggle}<div class="ovl-center-scroll">${body}</div></div></div>
       <div class="overlay-footer"><span class="foot-info"></span><button class="btn-confirm" data-action="close-ovl">Done</button></div>
     </div></div>`;
   }
   function openBossDetail(key) {
     if (!BOSS_BY_KEY.has(key)) return;
-    dovState = { kind: "boss-detail", key, open: new Set(), render: renderBossDetail };
+    dovState = { kind: "boss-detail", key, open: new Set(), tier: 1, render: renderBossDetail };
     openDetail(dovState.render());
   }
   // step → one plain-language line. part = what the boss's own units are called ("part" for False Gods).
@@ -1642,13 +1655,14 @@
   }
   function renderBossDetail() {
     const st = dovState, e = BOSS_BY_KEY.get(st.key); if (!e) return "";
+    if (e.type === "nether_boss") return renderNetherDetail(e);
     const part = e.type === "false_god" ? "part" : "boss creature";
     const typeLabel = (((D.bosses && D.bosses.types) || []).find(t => t.type === e.type) || {}).label || "";
     const sec = (k, title, html) => `<button class="apx-sec-head apx-cat${st.open.has(k) ? "" : " collapsed"}" data-action="boss-sec" data-k="${k}"><span class="apx-sec-caret">${st.open.has(k) ? "▾" : "▸"}</span>${title}</button>${st.open.has(k) ? html : ""}`;
     const formation = bossFormation(e, true);
     const threats = bossThreats(e, part);
     const sameStats = e.units.every(u => STAT_KEYS.every(k => u.stats[k] === e.units[0].stats[k]));
-    const statLine = (s) => `<div class="boss-stats">${STAT_KEYS.map(k => `<span><b>${s[k]}</b> ${STAT_LABEL[k]}</span>`).join("")}</div>`;
+    const statLine = bossStatTable;
     const lines = (arr) => `<ul class="boss-steps">${bossMerge(arr).map(s => s.kind === "note" ? `<li class="fx-clarify">${esc(s.text)}</li>` : `<li>${bossStepHtml(s, part)}</li>`).join("")}</ul>`;
     const units = bossUnitsOrdered(e).map(u => {
       const tr = u.traitId != null ? TRAIT[u.traitId] : null;
@@ -1685,6 +1699,7 @@
       <div class="overlay-body"><div class="ovl-center"><div class="ovl-center-scroll boss-page">
         ${formation}
         ${e.mechanics.filter(m => m.kind !== "timer_exit").map(m => `<div class="excl-note boss-mech"><span>${esc(m.text)}</span></div>`).join("")}
+        ${e.units.every(u => u.passives.some(x => x.kind === "immune_damage" && !x.when)) ? "" : `<div class="excl-note boss-mech"><span>${esc(BOSS_OHKO_NOTE)}</span></div>`}
         ${threats.length ? `<div class="section-label">Threats</div>${threats.map(t => `<div class="boss-threat"><div class="boss-threat-head">${esc(t.title)}</div>
           <div class="boss-threat-body">${t.effect}${t.extra}<p class="boss-why">${esc(t.why)}</p></div></div>`).join("")}` : ""}
         ${sameStats && e.units.length ? `<div class="section-label">Base stats</div>${statLine(e.units[0].stats)}` : ""}
@@ -1693,6 +1708,61 @@
         ${runes}
         ${rewards}
         ${e.lore || e.dialog ? sec("lore", "Lore", `${e.lore ? `<div class="trait-desc boss-lore">${richText(e.lore)}</div>` : ""}${e.dialog ? `<div class="trait-desc boss-lore boss-dialog">${richText(e.dialog)}</div>` : ""}`) : ""}
+      </div></div></div>
+      <div class="overlay-footer"><span class="foot-info"></span><button class="btn-confirm" data-action="close-detail">Done</button></div>
+    </div></div>`;
+  }
+  // Nether Boss page (bosses.json nether_boss): an ordinary creature in a boss skin; its boss trait has 3 tiers by times beaten
+  // (1st fight / 2nd / 3rd+). Threats are app-authored from the code behaviour (data/reference/nether_boss_advice.json).
+  function renderNetherDetail(e) {
+    const st = dovState, tier = st.tier || 1, adv = e.advice || { threats: [[], [], []], notes: [[], [], []] };
+    const sec = (k, title, html) => `<button class="apx-sec-head apx-cat${st.open.has(k) ? "" : " collapsed"}" data-action="boss-sec" data-k="${k}"><span class="apx-sec-caret">${st.open.has(k) ? "▾" : "▸"}</span>${title}</button>${st.open.has(k) ? html : ""}`;
+    const tierToggle = `<div class="art-view-toggle nb-tiers">${["1st fight", "2nd fight", "3rd+"].map((l, i) => `${i ? `<span class="av-pipe">|</span>` : ""}<button class="av-tab ${tier === i + 1 ? "on" : ""}" data-action="nb-tier" data-v="${i + 1}">${l}</button>`).join("")}</div>`;
+    // tier 3 Flubris / Kraynaks: six copies of the boss creature
+    const lead = nbLead(e), six = tier === 3 && e.party3;
+    const units = six ? e.party3.map((n, i) => ({ ...lead, slot: i + 1, name: n })) : e.units;
+    const sameStats = units.every(u => STAT_KEYS.every(k => u.stats[k] === units[0].stats[k]));
+    // identical creatures read once, "Sadomasochist ×6"
+    const groups = []; for (const u of units) { const g = groups.find(x => x.u.creature === u.creature && x.u.name === u.name && JSON.stringify(x.u.stats) === JSON.stringify(u.stats)); g ? g.n++ : groups.push({ u, n: 1 }); }
+    const party = [six ? `Six ${(CREA.get(lead.creature) || {}).name || lead.name}s fight: ${e.party3.join(", ")}.` : null,
+      e.fill ? `${e.fill} random realm creature${e.fill > 1 ? "s" : ""} fill${e.fill > 1 ? "" : "s"} the other slot${e.fill > 1 ? "s" : ""}.` : null,
+      "Spell gems and artifacts are random, like any enemy's, and every creature uses normal enemy AI."].filter(Boolean);
+    const threats = adv.threats[tier - 1] || [];
+    const cards = groups.map(({ u, n }) => {
+      const c = CREA.get(u.creature), bt = u.tiers ? u.tiers[tier - 1] : null;
+      return `<div class="boss-unit" id="boss-unit-${u.slot}">
+        <div class="boss-unit-head"><span class="boss-unit-spr">${nbUnitImg(u) ? spriteImg(nbUnitImg(u), "px") : ""}</span>
+          <div class="boss-unit-name"><b>${esc(u.name)}${n > 1 ? ` ×${n}` : ""}</b>${c && c.name !== u.name ? ` <span class="anoint-spec-tag">${esc(c.name)}</span>` : ""}</div></div>
+        ${bt != null && TRAIT[bt] ? `<div class="boss-sub">Boss trait</div><div class="primary-traits">${traitBanner(bt)}<div class="trait-desc">${richText(TRAIT[bt].desc || "")}</div></div>${(adv.noteUnit ? u.name === adv.noteUnit : u.tiers === lead.tiers && u.slot === groups[0].u.slot) ? (adv.notes[tier - 1] || []).map(t => `<div class="fx-clarify">${esc(t)}</div>`).join("") : ""}` : ""}
+        ${u.ownTraitId != null && TRAIT[u.ownTraitId] ? `<div class="boss-sub">Own trait</div><div class="primary-traits">${traitBanner(u.ownTraitId)}<div class="trait-desc">${richText(TRAIT[u.ownTraitId].desc || "")}</div></div>` : ""}
+        ${sameStats ? "" : bossStatTable(u.stats)}
+      </div>`;
+    }).join("");
+    const mats = (e.materials || []).map(m => { const ti = TRAITITEM.get(m.item), tr = TRAIT[m.traitId];
+      return ti ? `<div class="boss-mat"><div class="boss-mat-head">${ti.icon ? `<span class="prop-ico">${spriteImg(ti.icon, "px")}</span>` : ""}<b>${esc(ti.name)}</b></div>${tr ? `<div class="primary-traits">${traitBanner(m.traitId)}<div class="trait-desc">${richText(tr.desc || "")}</div></div>` : ""}</div>` : ""; }).join("");
+    const isID = e.key === "NB_SHADOWS";
+    const rewards = `<div class="section-label">Rewards</div>
+      ${mats ? `<div class="boss-sub">Trait materials</div>${mats}<div class="fx-clarify">Which boss a material belongs to, and the depth it unlocks at, come from the wiki's Nether Boss table.</div>` : ""}
+      <div class="boss-sub">Every win</div>
+      <ul class="boss-steps"><li>A loot roll and Gate of the Gods Key Fragments: 4–7, plus (1 + realm Instability) × (1 + Inner Darkness clears, up to 3).</li>
+        <li>Your first Nether Boss win ever gives the Nether Shop decoration instead.</li>
+        <li>Royal Mode: a False Nether Orb of a random False God (an Anointment and an Inscription, as after a False God fight).</li>
+        ${isID ? "<li>Your 1st, 2nd and 3rd Inner Darkness wins unlock the Gate of the Gods project, the Guild projects and the mysterious realm portals.</li>" : ""}</ul>`;
+    return `<div class="ovl-backdrop" data-action="detail-backdrop"><div class="overlay-panel detail">
+      <div class="overlay-header">${bossImg(e) ? `<span class="hdr-ico">${spriteImg(bossImg(e), "px")}</span>` : ""}
+        <h2>${esc(e.name)}</h2><span class="anoint-spec-tag apx-boss-cat">Nether Boss</span>
+        <button class="ovl-close" data-action="close-detail">✕</button></div>
+      <div class="overlay-body"><div class="ovl-center"><div class="ovl-center-scroll boss-page">
+        ${tierToggle}
+        ${party.map(t => `<div class="excl-note boss-mech"><span>${esc(t)}</span></div>`).join("")}
+        <div class="excl-note boss-mech"><span>${esc(BOSS_OHKO_NOTE)}</span></div>
+        ${threats.length ? `<div class="section-label">Threats</div>${threats.map(t => `<div class="boss-threat"><div class="boss-threat-head">${esc(t.title)}</div>
+          <div class="boss-threat-body"><div class="trait-desc">${esc(t.what)}</div><p class="boss-why">${esc(t.why)}</p></div></div>`).join("")}` : ""}
+        ${sameStats ? `<div class="section-label">Base stats</div>${bossStatTable(units[0].stats)}` : ""}
+        <div class="section-label">Creatures</div>
+        ${cards}
+        ${rewards}
+        ${e.dialog ? sec("lore", "Lore", `<div class="trait-desc boss-lore boss-dialog">${richText(e.dialog)}</div>`) : ""}
       </div></div></div>
       <div class="overlay-footer"><span class="foot-info"></span><button class="btn-confirm" data-action="close-detail">Done</button></div>
     </div></div>`;
@@ -5454,6 +5524,8 @@
       case "open-bosses": openBosses(); break;
       case "bosses-search": break;   // handled in onInput
       case "boss-open": openBossDetail(t.dataset.k); break;
+      case "boss-tab": if (!t.disabled) { ovState.tab = t.dataset.v; refreshOverlay(); } break;
+      case "nb-tier": dovState.tier = +t.dataset.v; refreshDetail(); break;
       case "boss-sec": { const k = t.dataset.k; dovState.open.has(k) ? dovState.open.delete(k) : dovState.open.add(k); refreshDetail(); break; }
       case "boss-jump": { const el = DOV.querySelector(`#boss-unit-${t.dataset.slot}`); if (el) el.scrollIntoView({ behavior: "smooth", block: "start" }); break; }
       case "gloss-search": break;    // handled in onInput

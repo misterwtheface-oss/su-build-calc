@@ -4,6 +4,21 @@ Every dated change entry, newest first (moved verbatim from Progress.md on 2026-
 to their own section and sorted by their date). Current state and open work: `Progress.md`, `BACKLOG.md`.
 New entries go at the TOP.
 
+## 2026-10-11 — Nether Boss pages; boss-type toggle; stat bars on boss pages
+- Bosses list: Nether Bosses | False Gods | Gate of the Gods toggle (the Realms page's style); Gate of the Gods disabled until
+  its data lands. Nether Bosses list as creature tiles (boss-skin battle sprite).
+- Nether Boss page (35): 1st fight | 2nd fight | 3rd+ toggle (trait tier = times beaten); party lines (random fill, random
+  loadout, normal AI; six copies for Flubris / Kraynaks at tier 3); the boss instant-kill rule; Threats per tier; base-stat
+  table with magnitude bars; Creatures (boss trait for the tier with plain code-vs-text notes, own trait); Rewards (the 3 trait
+  materials and their traits, Key Fragments, first-win decoration, Royal Mode orb, Inner Darkness unlocks); Lore (dialog).
+- Threats: authored per boss and tier in `data/reference/nether_boss_advice.json` from the extract's code behaviour and game
+  rules; build-data validates coverage and rejects code-like text.
+- build-data: Nether Boss builder (creature joined by name and asserted by its own trait's runtime id; tier traits by runtime
+  id, Flubris tier 2 shows its blacklisted duplicate's shipped twin; skins by code skin id; materials from the wiki table,
+  asserted against the item reconciliation source). Encounter keys `NB_<key>` (Loid / Imp Impington share names with False
+  Gods). Unbuilt boss types warn instead of being skipped silently.
+- False God pages: base stats as the magnitude-bar table; the instant-kill rule shown (not on Jotun, which can't be damaged).
+
 ## 2026-10-11 — Rune advice review: Takes Less Damage, More Health
 - Takes Less Damage / More Health (user): build-relative like More Defense; Avoid only for a sprint kill (scaling on 3+
   parts: Lost Construct). Dropped the generic "slower to kill" Avoid elsewhere; still Recommended vs Jotun.

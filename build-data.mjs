@@ -3246,9 +3246,10 @@ const bosses = (() => {
   const SKIP = new Set(['code', 'code_arg', 'gate', 'via_or_check', 'spell', 'pool', 'condition', 'creature_ids']);
   const out = [];
   let nUnits = 0, nSteps = 0;
-  // Nether Boss encounters (party + tier schema) are in the extract since S29 but not built yet (BACKLOG: Nether Bosses)
-  const skipped = bj.encounters.filter(e => e.type !== 'false_god');
-  if (skipped.length) console.log(`  bosses: ${skipped.length} non-False-God encounters skipped (${[...new Set(skipped.map(e => e.type))].join(', ')}: not built yet)`);
+  // types the app doesn't build yet (Gate of the Gods until its schema lands) are counted, never silently dropped
+  const BUILT = new Set(['false_god', 'nether_boss']);
+  const skipped = bj.encounters.filter(e => !BUILT.has(e.type));
+  if (skipped.length) warn(`bosses: ${skipped.length} encounters of an unbuilt type skipped (${[...new Set(skipped.map(e => e.type))].join(', ')})`);
   for (const e of bj.encounters.filter(e => e.type === 'false_god')) {
     const where = e.name;
     const unitName = new Map(e.units.map(u => [u.creature_id, u.name]));
@@ -3320,6 +3321,76 @@ const bosses = (() => {
       units: units.sort((a, b) => a.slot - b.slot),
     });
   }
+  // Nether Bosses (bosses.json type nether_boss; code/NETHER_BOSS_BEHAVIOR_FINDINGS.md): an ordinary creature record in a
+  // boss skin, its boss trait in 3 tiers (times beaten), generic enemy AI. Creature joined by name and asserted by its own
+  // trait's runtime id; tier traits by runtime id; skins by code skin id. Trait materials: tier + depth from the wiki
+  // Trait Materials table (nether_boss_trait_depths.json), asserted against the item reconciliation's boss source.
+  const crByName = new Map(creatures.map(c => [norm(c.name), c]));
+  const skinIds = new Set(skins.map(x => x.id));
+  const nbDepths = readJSON(path.join(REF, 'nether_boss_trait_depths.json')).traits;
+  const recon = readJSON(path.join(MODEL, 'item_reconciliation.json'));
+  const reconSrc = new Map((Array.isArray(recon) ? recon : recon.records || recon.items || []).map(r => [r.index, r.source || '']));
+  const normTN = (x) => String(x || '').toLowerCase().replace(/[’']/g, '').replace(/[^a-z0-9]+/g, '');
+  const tiByTrait = new Map(traitItems.map(t => [normTN(t.traitName), t]));
+  const rtTrait = (t, w) => { const id = traitByRt.get(t.runtime_id);
+    if (id == null) err(`bosses: ${w} trait ${t.name} (runtime ${t.runtime_id}) not in the app`);
+    else if (norm(traits[id].name) !== norm(t.name)) err(`bosses: ${w} trait ${id} is "${traits[id].name}", expected "${t.name}"`);
+    return id ?? null; };
+  // threat analysis + plain code-vs-text notes: app-authored from the extract's behaviour (data/reference/nether_boss_advice.json);
+  // each threat resolves to per-tier {title, what, why}, every tier it covers must have all three, and no line may read like code
+  const NB_ADV = readJSON(path.join(ROOT, 'data', 'reference', 'nether_boss_advice.json')).bosses;
+  const nbKeys = new Set(bj.encounters.filter(e => e.type === 'nether_boss').map(e => e.key));
+  for (const k in NB_ADV) if (!nbKeys.has(k)) err(`nether advice: ${k} is not a Nether Boss key`);
+  const CODEY = new RegExp(String.raw`0x[0-9a-f]|\bscr_|\bbc_|\bslot \d|dtype|runtime|\bL_[A-Z_]{3,}`);
+  const perTier = (v, t) => v == null ? null : typeof v === 'string' ? v : v[t] ?? null;
+  const advice = (key, where) => {
+    const a = NB_ADV[key]; if (!a) { err(`nether advice: ${where} has no entry`); return null; }
+    const threats = (a.threats || []).map((x, i) => [1, 2, 3].map(t => {
+      if (x.tiers && !x.tiers.includes(t)) return null;
+      const r = { title: perTier(x.title, t), what: perTier(x.what, t), why: perTier(x.why, t) };
+      for (const f in r) { if (!r[f]) err(`nether advice: ${where} threat ${i + 1} tier ${t} has no ${f}`); else if (CODEY.test(r[f])) err(`nether advice: ${where} threat ${i + 1} reads like code: ${r[f]}`); }
+      return r;
+    }));
+    const notes = [1, 2, 3].map(t => [...((a.notes || {}).all || []), ...((a.notes || {})[t] || [])]);
+    const noteUnit = (a.notes || {})._unit || null;   // which creature's boss trait the notes clarify (default: the lead)
+    for (const n of notes.flat()) if (CODEY.test(n)) err(`nether advice: ${where} note reads like code: ${n}`);
+    // per tier: the threats that apply, in authored order
+    return { threats: [0, 1, 2].map(t => threats.map(x => x[t]).filter(Boolean)), notes, ...(noteUnit ? { noteUnit } : {}) };
+  };
+  for (const e of bj.encounters.filter(e => e.type === 'nether_boss')) {
+    const where = e.name;
+    const units = e.units.map(u => {
+      const w = `${where} / ${u.creature}`, c = crByName.get(norm(u.creature));
+      if (!c) err(`bosses: ${w} creature not in the app roster`);
+      const own = u.own_trait ? rtTrait(u.own_trait, `${w} own`) : null;
+      if (c && own != null && c.traitId !== own) err(`bosses: ${w} own trait ${own} ≠ the app creature's trait ${c.traitId}`);
+      const skin = typeof u.skin === 'number' ? [u.skin] : /^choose\(/.test(String(u.skin || '')) ? String(u.skin).match(/\d+/g).map(Number) : [];
+      for (const k of skin) if (!skinIds.has(k)) err(`bosses: ${w} skin ${k} not in the app`);
+      // a tier whose record is a blacklisted same-text duplicate (Flubris tier 2 = tier 3's text) shows its shipped twin
+      const bt = (u.boss_traits || []).sort((a, b) => a.tier - b.tier);
+      const tiers = bt.map(t => { const twin = !traitByRt.has(t.runtime_id) && bt.find(x => x !== t && x.desc === t.desc && traitByRt.has(x.runtime_id));
+        return twin ? traitByRt.get(twin.runtime_id) : rtTrait(t, `${w} tier ${t.tier}`); });
+      if (tiers.length && tiers.length !== 3) err(`bosses: ${w} has ${tiers.length} boss-trait tiers`);
+      nUnits++;
+      return { slot: u.slot, name: u.nickname || u.creature, creature: c ? c.id : null, skins: skin,
+        stats: u.base_stats, ownTraitId: own, ...(tiers.length ? { tiers } : {}) };
+    });
+    const materials = nbDepths.filter(r => norm(r.boss.replace(/&/g, 'and')) === norm(e.name)).sort((a, b) => a.tier - b.tier).map(r => {
+      const ti = tiByTrait.get(normTN(r.trait));
+      if (!ti) { err(`bosses: ${where} trait material for "${r.trait}" not in the app`); return null; }
+      if (!new RegExp(`Nether Boss \(${e.name.replace(/[()]/g, '.')}\)`).test(reconSrc.get(ti.id) || '')) warn(`bosses: ${where} material ${ti.name}: item source is "${reconSrc.get(ti.id) || 'none'}"`);
+      return { tier: r.tier, item: ti.id, traitId: ti.traitId, depth: r.depth };
+    }).filter(Boolean);
+    if (materials.length !== 3) err(`bosses: ${where} has ${materials.length} trait materials`);
+    const fill = +((/^(\d+) other slot/.exec(e.battle.random_fill) || [])[1] || 0);
+    out.push({
+      id: e.id, type: e.type, key: `NB_${e.key}`, name: e.name, nbId: e.type_id,
+      dialog: (e.dialog || []).map(d => unesc(d.text)).join('\n\n') || null,
+      fill, units, materials, advice: advice(e.key, where),
+      // tier 3 party change (Flubris / Kraynaks: six copies, named); Inner Darkness's "all six carry the trait" is in its advice
+      ...(/^six /i.test(e.tier3_party || '') && /\(([^)]+)\)/.test(e.tier3_party) ? { party3: /\(([^)]+)\)/.exec(e.tier3_party)[1].split(/,\s*/) } : {}),
+    });
+  }
   // rune code checks: only the clarify (code ≠ text, e.g. Damage Cap) ships, shown on the boss page's rune advice
   const rc = new Map(((bj.modifiers.false_god_runes || {}).runes || []).map(r => [r.key, r.code_check]));
   for (const r of runes) {
@@ -3327,7 +3398,9 @@ const bosses = (() => {
     if (!c) { err(`bosses: rune ${r.key} has no code check`); continue; }
     if (c.clarify) r.clarify = c.clarify;
   }
-  const types = [...new Set(out.map(e => e.type))].map(t => ({ type: t, label: TYPE_LABEL[t] || t }));
+  // list-page toggle order (user): Nether Bosses | False Gods | Gate of the Gods; a type with no encounters yet still gets its tab
+  const types = ['nether_boss', 'false_god', 'gate_god'].map(t => ({ type: t, label: TYPE_LABEL[t] }));
+  for (const t of new Set(out.map(e => e.type))) if (!TYPE_LABEL[t]) err(`bosses: encounter type ${t} has no label`);
   console.log(`  bosses: ${out.length} encounters (${types.map(t => `${out.filter(e => e.type === t.type).length} ${t.type}`).join(' / ')}) · ${nUnits} units · ${nSteps} steps`);
   return { types, encounters: out };
 })();

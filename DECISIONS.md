@@ -16,6 +16,16 @@ Taxonomy category definitions themselves live in `TAXONOMY.md`.
   boss's list). Boss grid: 2 tiles per row, whole-creature art. Part cards: head, body, arms, shoulders (grid 2,5,4,6,1,3).
 - **Runes on a boss page = per-boss advice only** (user): Recommended / Avoid with a reason drawn from that boss's kit; the
   plain rune list (identical for every False God) is not shown there.
+- **Bosses list = the Realms page's toggle** (user, 2026-10-11): Nether Bosses | False Gods | Gate of the Gods, in that order;
+  a type with no data yet shows a disabled tab.
+- **Nether Boss page** (user, 2026-10-11): simpler than a False God page, same shape: a 1st fight | 2nd fight | 3rd+ toggle
+  (the boss trait tier = times beaten), Threats, a base-stat table with magnitude bars, Creatures, Rewards (the boss's 3 trait
+  materials with their traits, plus the every-win rewards). False God base stats use the same magnitude-bar table.
+- **Boss threat text must come from the extracted game context** (user, 2026-10-11): "Any recommendations and threat analysis
+  need to be analyzed against actual extracted game context not made up". Nether threats are authored in
+  `data/reference/nether_boss_advice.json` from the code behaviour (bosses.json `boss_traits[].behaviour` / `code_vs_text`,
+  NETHER_BOSS_BEHAVIOR_FINDINGS) plus the extract's game rules (timeline, crit, Defending, sourceless damage ticks, Shelled vs
+  indirect). build-data rejects a missing tier or code-like text.
 
 ## Data joins
 - **Lesson (user-flagged twice): when a name-join undercounts,
