@@ -4,6 +4,11 @@ Every dated change entry, newest first (moved verbatim from Progress.md on 2026-
 to their own section and sorted by their date). Current state and open work: `Progress.md`, `BACKLOG.md`.
 New entries go at the TOP.
 
+## 2026-10-12 — Nether pages: boss names, not base creatures
+- The boss creature's card shows the boss name (Kiichi, not Eft Howler; Phobos ×6, not Sadomasochist ×6; Vitja; Kraynaks),
+  as the game names it. Duos, the Aspects, the Shadows, the Gemlings and the six-copy 3rd fights keep their own names.
+- Threat text no longer names base creatures (Sadomasochist → Phobos, Onyx Carbuncle dropped, Mimic → Kraynaks/copy).
+
 ## 2026-10-12 — Spells: the real stat each spell scales with
 - 13 spells scale off a stat their text doesn't mention. Each now has a code note under its game text: Pumpkin King's
   Wrath, Harbinger's Curse, Direct Orders, Blood Spray, Conductive Chains, Infinite Blades and Blindside (Speed); Haunt,

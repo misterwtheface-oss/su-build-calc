@@ -27,7 +27,8 @@ Taxonomy category definitions themselves live in `TAXONOMY.md`.
   Emblems, Avatar Mana, costume chance), Rewards (+ the god's costume; skins not listed until the code names them), Lore.
 - **Boss pages: no chips before Threats** (user, 2026-10-12): no note chips at all above the Threats section (generic or
   boss-specific). Nether pages lead with the boss sprite, like Gate pages.
-- **Boss creature cards** (user, 2026-10-12): show the boss/god trait only, no own trait, no base-creature chip; no
+- **Boss creature cards** (user, 2026-10-12): never reference the base creature (card name = boss name, none in threat text);
+  show the boss/god trait only, no own trait, no base-creature chip; no
   data-source callouts. Duo bosses (two different boss-trait creatures) show both sprites everywhere the boss sprite shows.
 - **Boss threat text must come from the extracted game context** (user, 2026-10-11): "Any recommendations and threat analysis
   need to be analyzed against actual extracted game context not made up". Nether threats are authored in

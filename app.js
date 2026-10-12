@@ -1730,11 +1730,14 @@
     // identical creatures read once, "Sadomasochist ×6"
     const groups = []; for (const u of units) { const g = groups.find(x => x.u.creature === u.creature && x.u.name === u.name && JSON.stringify(x.u.stats) === JSON.stringify(u.stats)); g ? g.n++ : groups.push({ u, n: 1 }); }
     const threats = adv.threats[tier - 1] || [];
+    // the game names an un-nicknamed boss creature after the boss (Eft Howler → Kiichi, six Sadomasochists → Phobos ×6); duos,
+    // the Aspects, the Shadows and the six-copy 3rd fights already carry their own names
+    const soloBoss = !six && new Set(e.units.filter(x => x.tiers).map(x => x.name)).size === 1;
     const cards = groups.map(({ u, n }) => {
       const bt = u.tiers ? u.tiers[tier - 1] : null;
       return `<div class="boss-unit" id="boss-unit-${u.slot}">
         <div class="boss-unit-head"><span class="boss-unit-spr">${nbUnitImg(u) ? spriteImg(nbUnitImg(u), "px") : ""}</span>
-          <div class="boss-unit-name"><b>${esc(u.name)}${n > 1 ? ` ×${n}` : ""}</b></div></div>
+          <div class="boss-unit-name"><b>${esc(soloBoss && u.tiers ? e.name : u.name)}${n > 1 ? ` ×${n}` : ""}</b></div></div>
         ${bt != null && TRAIT[bt] ? `<div class="boss-sub">Boss trait</div><div class="primary-traits">${traitBanner(bt)}<div class="trait-desc">${richText(TRAIT[bt].desc || "")}</div></div>${(adv.noteUnit ? u.name === adv.noteUnit : u.tiers === lead.tiers && u.slot === groups[0].u.slot) ? (adv.notes[tier - 1] || []).map(t => `<div class="fx-clarify">${esc(t)}</div>`).join("") : ""}` : ""}
         ${sameStats ? "" : bossStatTable(u.stats)}
       </div>`;

@@ -105,14 +105,14 @@
     "PHOBOS": {
       "threats": [
         { "title": { "1": "Hit one, the other five hit back", "2": "Hit one, the other five hit back", "3": "Hit one, the other five hit back three times" },
-          "what": { "1": "When a Sadomasochist takes damage from one of your creatures, every other living Sadomasochist attacks that creature once.",
-                    "2": "When a Sadomasochist takes damage from one of your creatures, every other living Sadomasochist attacks that creature once.",
-                    "3": "When a Sadomasochist takes damage from one of your creatures, every other living Sadomasochist attacks that creature 3 times." },
+          "what": { "1": "When one Phobos takes damage from one of your creatures, every other living Phobos attacks that creature once.",
+                    "2": "When one Phobos takes damage from one of your creatures, every other living Phobos attacks that creature once.",
+                    "3": "When one Phobos takes damage from one of your creatures, every other living Phobos attacks that creature 3 times." },
           "why": { "1": "Each hit draws up to five counterattacks on the creature that dealt it, and an area spell hits all six, so one spell can draw 30 attacks on your caster. Hit one at a time with sturdy creatures. Poison, Burned and Bleeding ticks have no source creature, so they don't trigger counters.",
                    "2": "Each hit draws up to five counterattacks on the creature that dealt it, and an area spell can draw 30. Hit one at a time with sturdy creatures; Poison, Burned and Bleeding ticks have no source creature, so they don't trigger counters.",
                    "3": "Up to 15 counterattacks per hit, 90 from one area spell. Single-target hits only, and damage over time (Poison, Burned, Bleeding ticks) draws no counters at all." } },
         { "title": "Every hit crits and can't be dodged", "tiers": [2, 3],
-          "what": "While the Sadomasochists are on the field, every attack on your creatures can't be dodged and every hit from their side is critical.",
+          "what": "While any Phobos is on the field, every attack on your creatures can't be dodged and every hit from their side is critical.",
           "why": "This covers all their damage, not just the counters. A crit adds about 125% more damage at equal Speed and more the faster they are. Dodge doesn't help; out-speeding them shrinks the crit bonus (down to +25% at about 2.7× their Speed), and Defense and damage reduction help." }
       ],
       "notes": { "2": ["The text limits the crit and can't-be-dodged effect to the counterattacks; in code it applies to every attack and hit from their side."],
@@ -313,7 +313,7 @@
     "VITJA": {
       "threats": [
         { "title": "Immune until the Gemlings fall",
-          "what": "Vitja (the Onyx Carbuncle) takes no damage while any Gemling lives.",
+          "what": "Vitja takes no damage while any Gemling lives.",
           "why": "You have to kill all five Gemlings first, and each death sets off Vitja's spells." },
         { "title": { "1": "5 random spells every death", "2": "5 big spells every death", "3": "10 big spells every death" },
           "what": { "1": "When any creature on Vitja's side dies, Vitja's own death included, Vitja casts 5 random spells of random classes.",
@@ -414,12 +414,12 @@
     "KRAYNAKS": {
       "threats": [
         { "title": "Six Kraynaks instead of a random party", "tiers": [3],
-          "what": "No random realm creatures: all six slots are Mimics (Kraynaks, Ranksya, Narkyaks, Snakyark, Yankarks and Arkansky), each with Who Am I? None Of Your Business and its own list of your creatures to copy. The trait works as in the 2nd fight; the six copies are the change.",
-          "why": "Six times the trait: against a full party each Mimic has seven lives, up to 42 deaths in all, and every life brings back one of your traits plus a random one. A long fight: bring sustain." },
+          "what": "No random realm creatures: all six slots are copies of Kraynaks (Kraynaks, Ranksya, Narkyaks, Snakyark, Yankarks and Arkansky), each with Who Am I? None Of Your Business and its own list of your creatures to copy. The trait works as in the 2nd fight; the six copies are the change.",
+          "why": "Six times the trait: against a full party each copy has seven lives, up to 42 deaths in all, and every life brings back one of your traits plus a random one. A long fight: bring sustain." },
         { "title": { "1": "Comes back as your creatures", "2": "Comes back as your creatures, with an extra trait", "3": "Comes back as your creatures, with an extra trait" },
           "what": { "1": "When Kraynaks dies, it comes back at full Health as the first creature of yours (in party order) it hasn't copied yet, with that creature's trait. Once it has copied all of them, its next death is final.",
                     "2": "As tier 1, and each time it also gains a random trait from a creature of the copied creature's race.",
-                    "3": "When a Mimic dies, it comes back at full Health as the first creature of yours (in party order) it hasn't copied yet, with that creature's trait and a random trait from its race. Once it has copied all of them, its next death is final." },
+                    "3": "When one dies, it comes back at full Health as the first creature of yours (in party order) it hasn't copied yet, with that creature's trait and a random trait from its race. Once it has copied all of them, its next death is final." },
           "why": { "1": "With a full party Kraynaks has seven lives, and every life fights with one of your traits. Your party order is its order: put the creatures whose traits you least want to face last.",
                    "2": "Seven lives, each with your creature's trait plus a random one from its race. Party order sets the order it copies in.",
                    "3": "Party order sets the order they copy in: put the creatures whose traits you least want to face last." } }
