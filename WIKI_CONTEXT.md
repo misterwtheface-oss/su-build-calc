@@ -32,8 +32,9 @@ artifacts, relics, spell gems, realm cards, Nether Stones, anointments.
   statically extractable). Per the datamine, a stone draws from the artifact property pool, unrestricted.
   → the calculator has the user **enter their own stones** (name, rarity, property lines) and stores them.
 - **Realm Cards** — 141 families, 3 unlock tiers each. Global build modifiers; user toggles owned/on.
-- **Class advantage** damage multiplier is **unconfirmed** in the extract (`[1.25 or 1.5]`) — treat as an
-  exposed assumption in any DPS work, never hardcode.
+- **Class advantage** (code-certain, `_su_extract/code/CLASS_ADVANTAGE.md`): strong ×2, weak ×0.5. Attacks use the
+  attacker's class; **spells use the spell gem's class** (a Class Swap property overrides it; Convoke the Spirits counts
+  as the class the target is weak against), never the caster's. Defender = the target's class.
 
 ## Data sources & datamine access
 - Datamine workspace: `../_su_extract/` (**NOT shipped** — gitignored). Read its `RESUME.md` first.

@@ -32,7 +32,8 @@ write the requirements to `_su_extract/code/HANDOFF_<topic>.md` for the extract 
 
 ## Feature ideas (user backlog, not started)
 - [ ] **DPS / effective-stat simulation** from `damageModel` (spell & melee, crit/dodge, defending). Class advantage is now
-  code-known (×2 / ×0.5, `_su_extract/code/CLASS_ADVANTAGE.md`); expose it as a toggle. Effect formulas for in-app compute:
+  code-known (×2 / ×0.5, `_su_extract/code/CLASS_ADVANTAGE.md`); expose it as a toggle. Spells match on the gem's class
+  (Class Swap first), not the caster's. Effect formulas for in-app compute:
   `_su_extract/code/EFFECT_FORMULAS.md` (code tier already in EFFECT_ENGINE.md).
 - [ ] **Boss-prep planner, part 2** — the Bosses page (2026-10-11) covers "what to expect" from code steps. Still open: compare
   the boss against the current build (e.g. flag a party with no Defend answer vs The Ancestor's head, no debuff immunity vs
