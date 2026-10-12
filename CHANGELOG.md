@@ -4,6 +4,12 @@ Every dated change entry, newest first (moved verbatim from Progress.md on 2026-
 to their own section and sorted by their date). Current state and open work: `Progress.md`, `BACKLOG.md`.
 New entries go at the TOP.
 
+## 2026-10-11 — Rune advice review: Avoids Damage
+- (user) One of the hardest runes on any boss you can kill, worst in a sprint kill. Sprint = scaling on 3+ parts, no single
+  part to stop it (Lost Construct). Otherwise the reason names the part to focus-kill first (Loid's Head, Nebodar's Head,
+  Mindwurm's Body, …); Caliban: hard even in its long fight. Still Recommended vs Jotun (can't be damaged).
+- Research question (does a Prevented hit still trigger Loid's Boils?) → `_su_extract/code/HANDOFF_false_god_rune_research.md`.
+
 ## 2026-10-11 — Rune advice review (user, rune by rune): Always Crit, Speed, Top of Timeline
 - **Always Crit** (user rule): only attacks crit (spells / indirect only through a trait), and crits hit harder the faster
   the attacker is than the target (code: bonus 0.25 + max(0, 1 + ln(Spd att / Spd tgt)), EFFECT_FORMULAS S12). Avoid only

@@ -1527,10 +1527,24 @@
     const out = { good: [], bad: [] };
     const say = (key, v, why) => { const r = (D.runes || []).find(x => x.key === key); if (r && why) out[v].push({ r, why }); };
     const survive = p.unkillable ? `${e.name} can't be damaged anyway, so this changes nothing: a free reward bonus.` : null;
+    // Avoids Damage (user): one of the hardest runes on any boss you can kill, worst in a sprint kill. Sprint = scaling
+    // spread over most parts (no single part to focus); otherwise name the part to focus-kill first.
+    if (!survive) {
+      const scalers = e.units.filter(u => (u.turn || []).some(s => s.kind === "stat_gain" || s.kind === "intensify_condition"));
+      const focus = [["ohko", "it kills one of your creatures every turn"], ["resurrect", "it brings the others back"],
+        ["intensify_condition", `it makes ${(COND_BY_KEY.get((steps.find(s => s.kind === "intensify_condition") || {}).cond) || { name: "a debuff" }).name} stronger every turn`], ["stat_gain", "it raises the other parts' stats every turn"]]
+        .map(([k, what]) => { const u = e.units.find(x => (x.turn || []).some(s => s.kind === k)); return u && { u, what: k === "ohko" && p.ohkoDef ? "it kills anyone not Defending" : what }; }).find(Boolean);
+      const dup = focus && e.units.filter(u => u.name === focus.u.name).length > 1;
+      say("AVOIDDAMAGE", "bad", scalers.length >= 3
+        ? `Nearly every part of ${e.name} gets stronger every turn and there's no single part to kill to stop it, so this fight is a race. Losing 35% of your hits is one of the worst runes for a sprint kill.`
+        : p.revive ? `One of the hardest runes even in a long fight: 35% of your hits do nothing, and the ${unitOf(s => s.kind === "revive")} has to go down ${steps.find(s => s.kind === "revive").count + 1} times.`
+        : focus ? `The ${focus.u.name}${dup ? ` that ${focus.what.replace(/^it /, "")}` : ""} is the part to kill first${dup ? "" : ` (${focus.what})`}. With 35% of your hits prevented, it gets more turns before it goes down.`
+        : "One of the hardest runes: 35% of your hits do nothing, so every part takes longer to kill.");
+    }
     // runes that only make it harder to damage
     for (const k of ["AVOIDDAMAGE", "DAMAGECAP", "TAKELESSDAMAGE", "MOREHEALTH", "IMMUNEATTACKS", "IMMUNESPELLS", "IMMUNEINDIRECT"]) {
       if (survive) say(k, "good", survive);
-      else if (longBad && ["DAMAGECAP", "TAKELESSDAMAGE", "MOREHEALTH", "AVOIDDAMAGE"].includes(k)) say(k, "bad", `Makes it slower to kill, and ${longBad}.`);
+      else if (longBad && ["DAMAGECAP", "TAKELESSDAMAGE", "MOREHEALTH"].includes(k)) say(k, "bad", `Makes it slower to kill, and ${longBad}.`);
     }
     if (p.highest) for (const k of ["MOREDEFENSE", "MOREATTACK", "MOREINTELLIGENCE", "MORESPEED"])
       say(k, "bad", `Its damage${p.reflect ? " and its damage reflection" : ""} use${p.reflect ? "" : "s"} its highest stat, so tripling any stat can raise it.`);
