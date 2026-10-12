@@ -4,6 +4,10 @@ Every dated change entry, newest first (moved verbatim from Progress.md on 2026-
 to their own section and sorted by their date). Current state and open work: `Progress.md`, `BACKLOG.md`.
 New entries go at the TOP.
 
+## 2026-10-12 — Boss pages: no chips before Threats
+- Removed the remaining notes above the Threats section: False God mechanics, the six-copy 3rd-fight line on Nether pages,
+  and the Gate unlock and level lines. Pages go sprite → (tier toggle) → Threats.
+
 ## 2026-10-12 — Boss pages: duo sprites, trimmed creature cards
 - Duo Nether Bosses (Judgment and Mercy, Scylla and Charybdis) show both sprites side by side on the grid tile, in the page
   header and in the lead portrait.

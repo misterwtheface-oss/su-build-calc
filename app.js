@@ -1705,7 +1705,6 @@
         <button class="ovl-close" data-action="close-detail">✕</button></div>
       <div class="overlay-body"><div class="ovl-center"><div class="ovl-center-scroll boss-page">
         ${formation}
-        ${e.mechanics.filter(m => m.kind !== "timer_exit").map(m => `<div class="excl-note boss-mech"><span>${esc(m.text)}</span></div>`).join("")}
         ${threats.length ? `<div class="section-label">Threats</div>${threats.map(t => `<div class="boss-threat"><div class="boss-threat-head">${esc(t.title)}</div>
           <div class="boss-threat-body">${t.effect}${t.extra}<p class="boss-why">${esc(t.why)}</p></div></div>`).join("")}` : ""}
         ${sameStats && e.units.length ? `<div class="section-label">Base stats</div>${statLine(e.units[0].stats)}` : ""}
@@ -1730,7 +1729,6 @@
     const sameStats = units.every(u => STAT_KEYS.every(k => u.stats[k] === units[0].stats[k]));
     // identical creatures read once, "Sadomasochist ×6"
     const groups = []; for (const u of units) { const g = groups.find(x => x.u.creature === u.creature && x.u.name === u.name && JSON.stringify(x.u.stats) === JSON.stringify(u.stats)); g ? g.n++ : groups.push({ u, n: 1 }); }
-    const party = six ? [`Six ${(CREA.get(lead.creature) || {}).name || lead.name}s fight: ${e.party3.join(", ")}.`] : [];
     const threats = adv.threats[tier - 1] || [];
     const cards = groups.map(({ u, n }) => {
       const bt = u.tiers ? u.tiers[tier - 1] : null;
@@ -1758,7 +1756,6 @@
       <div class="overlay-body"><div class="ovl-center"><div class="ovl-center-scroll boss-page">
         ${bossImgs(e).length ? `<div class="gg-portrait${bossImgs(e).length > 1 ? " duo" : ""}">${bossSprs(e, "px")}</div>` : ""}
         ${tierToggle}
-        ${party.map(t => `<div class="excl-note boss-mech"><span>${esc(t)}</span></div>`).join("")}
         ${threats.length ? `<div class="section-label">Threats</div>${threats.map(t => `<div class="boss-threat"><div class="boss-threat-head">${esc(t.title)}</div>
           <div class="boss-threat-body"><div class="trait-desc">${esc(t.what)}</div><p class="boss-why">${esc(t.why)}</p></div></div>`).join("")}` : ""}
         ${sameStats ? `<div class="section-label">Base stats</div>${bossStatTable(units[0].stats)}` : ""}
@@ -1776,8 +1773,6 @@
   function renderGateDetail(e) {
     const st = dovState, u = e.units[0], c = CREA.get(u.creature), adv = e.advice || { threats: [], notes: [] };
     const sec = (k, title, html) => `<button class="apx-sec-head apx-cat${st.open.has(k) ? "" : " collapsed"}" data-action="boss-sec" data-k="${k}"><span class="apx-sec-caret">${st.open.has(k) ? "▾" : "▸"}</span>${title}</button>${st.open.has(k) ? html : ""}`;
-    const notes = [e.unlock && e.unlock !== "always" ? `Unlocked ${e.unlock.replace(/^after its unlock project$/, "by its project")}.` : null,
-      "Your creatures count as level 100 for every stat. Enemy level = your creatures' average level (at least 10) × the difficulty multiplier."].filter(Boolean);
     const gt = TRAIT[u.godTraitId];
     const card = `<div class="boss-unit" id="boss-unit-1">
         <div class="boss-unit-head"><span class="boss-unit-spr">${c && c.sprite ? spriteImg(c.sprite, "px") : ""}</span>
@@ -1802,7 +1797,6 @@
         <button class="ovl-close" data-action="close-detail">✕</button></div>
       <div class="overlay-body"><div class="ovl-center"><div class="ovl-center-scroll boss-page">
         ${bossImg(e) ? `<div class="gg-portrait">${spriteImg(bossImg(e), "px")}</div>` : ""}
-        ${notes.map(t => `<div class="excl-note boss-mech"><span>${esc(t)}</span></div>`).join("")}
         ${adv.threats.length ? `<div class="section-label">Threats</div>${adv.threats.map(t => `<div class="boss-threat"><div class="boss-threat-head">${esc(t.title)}</div>
           <div class="boss-threat-body"><div class="trait-desc">${esc(t.what)}</div><p class="boss-why">${esc(t.why)}</p></div></div>`).join("")}` : ""}
         <div class="section-label">Base stats</div>${bossStatTable(u.stats)}

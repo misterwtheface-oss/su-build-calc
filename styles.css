@@ -1713,7 +1713,6 @@ select.app-select:hover { border-color: var(--accent2); }
 button.boss-cell { cursor: pointer; }
 .boss-cell img { position: absolute; image-rendering: pixelated; }
 button.boss-cell:hover img, button.boss-cell:focus-visible img { filter: brightness(1.25) drop-shadow(0 0 2px var(--accent2)); }
-.boss-mech { margin: 0 0 10px; }
 .boss-threat { margin-bottom: 8px; border: 1px solid var(--bad); border-radius: var(--radius); background: var(--surface); overflow: hidden; }
 .boss-threat-head { padding: 6px 10px; background: rgba(224,107,107,.16); font-weight: 700; font-size: 14px; }
 .boss-threat-body { padding: 8px 10px; font-size: 13px; line-height: 1.5; }
