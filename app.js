@@ -1687,8 +1687,8 @@
     const specs = e.specIds.map(id => D.specs.find(s => s.id === id)).filter(Boolean);
     const ra = e.type === "false_god" ? bossRuneAdvice(e) : { good: [], bad: [] };
     const runeRow = (r) => `<div class="boss-rune">${r.icon ? `<span class="prop-ico">${spriteImg(r.icon, "px")}</span>` : ""}
-      <div><b>${esc(r.name)}</b>${r.rewardPct != null ? ` <span class="anoint-spec-tag">+${r.rewardPct}% Rewards</span>` : ""}
-        <div class="trait-desc">${richText(r.effect)}</div>${r.clarify ? `<div class="fx-clarify">${esc(r.clarify)}</div>` : ""}</div></div>`;
+      <div><b>${richText(r.name)}</b>${r.rewardPct != null ? ` <span class="anoint-spec-tag">+${r.rewardPct}% Rewards</span>` : ""}
+        ${r.effect && r.effect !== r.name ? `<div class="trait-desc">${richText(r.effect)}</div>` : ""}${r.clarify ? `<div class="fx-clarify">${esc(r.clarify)}</div>` : ""}</div></div>`;
     // runes that share a reason sit in one container under that reason
     const runeGroups = (list, cls) => { const g = new Map(); for (const x of list) { if (!g.has(x.why)) g.set(x.why, []); g.get(x.why).push(x.r); }
       return [...g].map(([why, rs]) => `<div class="boss-rune-group ${cls}">${rs.map(runeRow).join("")}<p class="boss-why">${esc(why)}</p></div>`).join(""); };
@@ -2972,8 +2972,8 @@
     // same row layout as the Glossary: large icon column + name/effect body (perk-line / apx-iconcol)
     return `<div class="perk-line">
       <div class="apx-iconcol">${m.icon ? `<div class="apx-crea">${spriteImg(m.icon, "px")}</div>` : ""}</div>
-      <div class="perk-line-body"><div class="perk-line-head"><b>${esc(m.name)}</b>${m.rewardPct != null ? `<span class="thr-reward">+${m.rewardPct}% Rewards</span>` : ""}</div>
-        <div class="perk-desc">${esc(m.effect)}</div>
+      <div class="perk-line-body"><div class="perk-line-head"><b>${richText(m.name)}</b>${m.rewardPct != null ? `<span class="thr-reward">+${m.rewardPct}% Rewards</span>` : ""}</div>
+        ${m.effect && m.effect !== m.name ? `<div class="perk-desc">${richText(m.effect)}</div>` : ""}
         ${chips ? `<div class="perk-line-meta">${chips}</div>` : ""}</div></div>`;
   }
   function renderThreats() {

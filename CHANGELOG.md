@@ -4,6 +4,19 @@ Every dated change entry, newest first (moved verbatim from Progress.md on 2026-
 to their own section and sorted by their date). Current state and open work: `Progress.md`, `BACKLOG.md`.
 New entries go at the TOP.
 
+## 2026-10-13 — Real game names for every tokenized word, realm property and rune
+- **Tokens:** every `{TOKEN}` in trait / spell / perk / start-of-battle text now shows the game's own word, read from the
+  extract's new `token_names.json` (the game's text renderer and its `scr_Lang*` resolvers). Before, missing tokens were
+  guessed from their key and a few had hand-written names. Visible changes: condition names follow the game (Burning,
+  Silenced, Dire Wolves, Shelled, Warded, Protected, Immune, Torun Junior …; the old names came from the code's internal
+  suffixes), and action / stat words keep the game's capitals ("After this creature Attacks", "Charges"). Trait texts are
+  rendered from the game's tokenized text (802 changed, nearly all capitalisation). The same names are used in tag labels,
+  taxonomy filters, the condition glossary, start-of-battle rows, the Ruse rune clarify line and the boss advice prose.
+- **Build guard:** the build fails if any shipped text has a `{TOKEN}` without a code-grounded word.
+- **Realm properties** show the game's name (`L_REALM_*`) with the rolled value as X, e.g. "Extra Attack: X%", "Buff: X",
+  replacing the hand-written names. **Runes** show the game's rune line (e.g. "False God has 200% more Attack"); the effect
+  line is no longer repeated under it, and its `{TIMELINE}` token renders.
+
 ## 2026-10-13 — Arena vendor skins: names were one record off
 - The Arena vendor's five skins showed as Pyre, Chaos Axe, Death Mace, Life Sword and Nature Bow. The shop sells Chaos Axe,
   Death Mace, Life Sword, Nature Bow and Sorcery Staff: the extract's shop builder looked the code skin id up in the shifted

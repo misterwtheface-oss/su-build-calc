@@ -57,7 +57,7 @@
       "threats": [
         { "title": "Only one class can hurt its side; no indirect damage",
           "what": "A random class is chosen at the start of battle and at each of Aeolian's turns (always a different one). Only an attack or spell from a creature of that class lands on its side; indirect damage and damage with no source are blocked.",
-          "why": "Bring creatures of several classes so someone can always hit. Poison, Burned and Bleeding ticks don't work here." }
+          "why": "Bring creatures of several classes so someone can always hit. Poisoned, Burning and Bleeding ticks don't work here." }
       ]
     },
     "TARTARITH": {

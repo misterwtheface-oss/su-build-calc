@@ -457,13 +457,30 @@ for (const t of consolidated) {
   const si = t.source_item && t.source_item.name;
   if (si && si !== 'N/A' && !traitIdByItemName.has(si)) traitIdByItemName.set(si, t.id);
 }
+// Trait text: rendered here from the game's tokenized text with the code token table (token_names.json), so every
+// {CONDNAME_* / ACTION_* / STAT_* / RACE_* …} reads exactly as the game prints it (user, 2026-10-13). The extract's
+// pre-rendered `desc` used suffix-derived condition names ("Burned", "Direwolf"); it is only the fallback.
+const TOKEN_TEXT = readJSON(path.join(MODEL, 'token_names.json')).tokens;
+// condition registry name (suffix-derived) -> the game's display name (scr_LangCondition)
+const COND_GAME = (() => { const tn = readJSON(path.join(MODEL, 'token_names.json')).conditions, m = new Map();
+  for (const c of readJSON(path.join(MODEL, 'condition_registry.json')).conditions) if (c.name && tn[c.id]) m.set(c.name, tn[c.id].text);
+  return m; })();
+const tokenMiss = new Map();
+const renderTokens = (tok, fallback) => {
+  if (!tok) return fallback || '';
+  let ok = true;
+  const out = tok.replace(/\{([A-Za-z][A-Za-z0-9_ ]*)\}/g, (m, k) => {
+    const t = TOKEN_TEXT[k]; if (t) return t.text;
+    ok = false; tokenMiss.set(k, (tokenMiss.get(k) || 0) + 1); return m; });
+  return ok ? out : (fallback || out);
+};
 const traits = {};
 let traitsExcluded = 0;
 for (const t of consolidated) {
   if (excludedTraitIds.has(t.id)) { traitsExcluded++; continue; }   // blacklisted -> never ships
   const tag = tagByTraitId.get(t.id) || {};
   const cls = (t.source_creature && CLASS_SET.has(t.source_creature.class)) ? t.source_creature.class : null;
-  const desc = t.desc || t.effect_prose || '';
+  const desc = renderTokens(t.desc_tokenized, t.desc || t.effect_prose || '');
   const srcArr = taxoTags[String(t.id)] || [];
   const taxo = correctTaxo(srcArr.map(a => a.cat + '::' + a.val), desc, 'trait');
   const rec = reconById.get(t.id) || {};
@@ -2106,7 +2123,13 @@ const CONDNAME_OVERRIDE = {
 };
 const terms = {};
 for (const [k, v] of Object.entries(labelsMap)) terms[k] = (v && v.name) || k;
-Object.assign(terms, CONDNAME_OVERRIDE);   // runtime {CONDNAME_*} tokens in trait/spell/perk text
+// CODE-GROUNDED token words (user, 2026-10-13: real display names, never inferred): _su_extract token_names.json =
+// exactly what the game's text renderer (process_complex_macros -> scr_LangStat / scr_LangAction / scr_LangCondition /
+// scr_LangRace / scr_LangClass / scr_LangSpellType / scr_LangSpec / scr_LangTimeline) prints for each {TOKEN}.
+const TOKEN_NAMES = readJSON(path.join(MODEL, 'token_names.json')).tokens;
+for (const [k, v] of Object.entries(TOKEN_NAMES)) terms[k] = v.text;
+for (const [k, v] of Object.entries(CONDNAME_OVERRIDE))      // the old hand list must agree with the code (it did, minus Direwolf)
+  if (TOKEN_NAMES[k] && TOKEN_NAMES[k].text !== v) warn(`token ${k}: hand name "${v}" replaced by the game's "${TOKEN_NAMES[k].text}"`);
 // {SPELL_*} spell-type tokens → the game's glossary words. scr_LangSpellType maps the token list
 // [equipment, alcohol, jewel, ultimate] to L_ARSENALSPELL / L_BOOZESPELL / L_PRISMSPELL / L_ULTIMATESPELL (same switch as
 // its [spell_artifact]/[spell_booze]/[spell_jewel]/[spell_ultimate] icon tags). Without this the humanizer fell back
@@ -2130,13 +2153,16 @@ const macroVocab = readJSON(path.join(MODEL, 'macro_vocab.json'));
 // ── Buff / Debuff / Minion glossary — L_CDESC_* prose from vocabulary.csv + CONDNAME_* names (labels.json),
 // with runtime tokens ({CONDNAME_*}/{STAT_*}/{ACTION_*}) expanded to plain text. 65 conditions. ──
 const STAT_TOK = { health: 'Health', attack: 'Attack', intelligence: 'Intelligence', defense: 'Defense', speed: 'Speed', mana: 'Mana' };
-const condName = (cat, suf) => CONDNAME_OVERRIDE[`CONDNAME_${cat}_${suf}`] || (labelsMap[`CONDNAME_${cat}_${suf}`] || {}).name || (suf[0] + suf.slice(1).toLowerCase());
+const condName = (cat, suf) => {
+  const t = TOKEN_NAMES[`CONDNAME_${cat}_${suf}`];
+  if (!t) err(`condition token CONDNAME_${cat}_${suf}: not in token_names.json`);
+  return t ? t.text : suf;
+};
 const expandCond = (t) => {
   if (!t) return '';
   return t
     .replace(/\{CONDNAME_(BUFF|DEBUFF|MINION)_([A-Z0-9]+)\}/g, (_, c, s) => condName(c, s))
-    .replace(/\{STAT_([a-z]+)\}/g, (_, s) => STAT_TOK[s] || (s[0].toUpperCase() + s.slice(1)))
-    .replace(/\{ACTION_([a-z]+)\}/g, (_, s) => s)
+    .replace(/\{(STAT|ACTION)_([a-z]+)\}/g, (m, f, w) => (TOKEN_NAMES[`${f}_${w}`] || {}).text || (err(`token ${m}: not in token_names.json`), w))
     .replace(/\{[^}]+\}/g, (m) => { const p = m.slice(1, -1).split('_').pop(); return p[0] + p.slice(1).toLowerCase(); })
     .replace(/\s+/g, ' ').trim();
 };
@@ -2423,8 +2449,8 @@ const REALM_COUNTER_CLASS = {
 };
 // pure enemy-composition flavour — not a difficulty spike for/against any build; hidden from the advisor.
 const REALM_NEUTRAL = new Set(['FAMILIES', 'RACE']);
-// runes.json carries no display name; humanize each key.
-const RUNE_NAME = {
+// (retired 2026-10-13: runes show their game label L_RUNE_NAME_<KEY>; this hand list is kept only as a record)
+const RUNE_NAME_RETIRED = {
   ALWAYSCRIT: 'Always Crit', AVOIDDAMAGE: 'Avoids Damage', DAMAGECAP: 'Damage Cap',
   DAMAGEOVERTIME: 'Damage Over Time', DEBUFFS: 'Mass Debuffs', DOMOREDAMAGE: 'Deals More Damage',
   IMMUNEATTACKS: 'Immune to Attacks', IMMUNEINDIRECT: 'Immune to Indirect', IMMUNESPELLS: 'Immune to Spells',
@@ -2442,7 +2468,7 @@ const threatIcon = (sprite, what) => {
   return `assets/threats/${sprite}.png`;
 };
 const runes = runesRaw.runes.map(r => ({
-  key: r.key, name: RUNE_NAME[r.key] || r.key, effect: r.effect,
+  key: r.key, name: r.effect || (err(`rune ${r.key}: no L_RUNE_NAME text`), r.key), effect: r.effect,   // game label = L_RUNE_NAME_<KEY>
   rewardPct: r.reward_bonus_pct ?? null,     // scr_RuneBonusRep (code, S15) — shown as the game's "+{1}% Rewards"
   icon: threatIcon((ICONS2.runes_app_join[r.key] || {}).sprite, `rune ${r.key}`),
   counters: RUNE_COUNTERS[r.key] || [], counterClass: null,
@@ -2457,10 +2483,18 @@ for (const [id, nm] of Object.entries(readJSON(path.join(SRC, 'code', 'data_dump
   rpKeyById[id] = String((nm[0] || [])[0] || '').replace(/^L_REALM_/, '');
 const rpHiddenBanned = new Set(rpRules.rules.hidden_banned.map(i => rpKeyById[i]));
 const realmBonusMax = Object.fromEntries(Object.entries(rpRules.max_bonus).map(([ri, m]) => [ri, { deep: m.realm_bonus_deepest, below: m.realm_bonus_below_deepest }]));
+// Display name = the game's L_REALM_<KEY> text (scr_RealmPropertyName; user 2026-10-13: real names, not curated). The game
+// prints the rolled value in it ("Extra Attack: 25%"); the planner has no rolled value, so it shows X in its place.
+const rpName = (p) => {
+  if (!p.code_name) { err(`realm property ${p.key}: no code_name (L_REALM_${p.key})`); return p.name; }
+  const n = p.code_name.replace(/\{1\}/g, 'X').trim();     // the rolled value shown as X ("Extra Attack: X%", "Buff: X")
+  if (/[{}]/.test(n)) err(`realm property ${p.key}: name still has a token: ${n}`);
+  return n;
+};
 const realmProps = realmPropsRaw.properties
   .filter(p => !REALM_NEUTRAL.has(p.key))
   .map(p => ({
-    key: p.key, name: p.name, effect: p.effect, visibleOnly: rpHiddenBanned.has(p.key) || undefined,
+    key: p.key, name: rpName(p), effect: p.effect, visibleOnly: rpHiddenBanned.has(p.key) || undefined,
     icon: threatIcon((ICONS2.realm_properties_app_join[p.key] || {}).sprite, `realm property ${p.key}`),
     counters: REALM_COUNTERS[p.key] || [], counterClass: REALM_COUNTER_CLASS[p.key] || null,
     general: !(REALM_COUNTERS[p.key] || REALM_COUNTER_CLASS[p.key]),
@@ -2863,7 +2897,7 @@ const TRAIT_REJECT = fs.existsSync(APPROVED_PATH) ? (readJSON(APPROVED_PATH).tra
       const tgt = perkByKey.get(pk.perk_key); if (!tgt) { warn(`rune notes: perk ${pk.perk_key} not in app data`); continue; }
       const list = (xs) => xs.length > 1 ? `${xs.slice(0, -1).join(', ')} and ${xs[xs.length - 1]}` : xs.join('');
       if (pk.per_rune && pk.per_rune[0] && pk.per_rune[0].condition)            // Undermine / Inspirit: per-rune condition
-        addNote(tgt, `By Rune: ${pk.per_rune.map(r => `${short(r.rune)} → ${r.condition}`).join(', ')}.`);
+        addNote(tgt, `By Rune: ${pk.per_rune.map(r => `${short(r.rune)} → ${COND_GAME.get(r.condition) || r.condition}`).join(', ')}.`);
       else if (pk.per_rune) {                                                    // Ruse: shared props + per-rune variant
         const all = pk.per_rune.map(r => r.properties);
         const common = all[0].filter(x => all.every(l => l.includes(x)));
@@ -3005,6 +3039,13 @@ const projects = (() => {
 // the "timeline rebuilt" step (it's the phase itself), relic gates with no app rank. Ids → app refs:
 //   passive/trait = trait runtime id · perk = name (app perk names are unique) · relic = [perk_index, relic_code_id] →
 //   relic_signatures app id, rank = index×10 · card = set family + power · condition / realm property / realm boost = code id.
+// condition registry names (suffix-derived, e.g. "Burned", "Silence") -> the game's display names (token_names.json conditions)
+const COND_DISPLAY = (() => {
+  const tn = readJSON(path.join(MODEL, 'token_names.json')).conditions, m = new Map();
+  for (const c of readJSON(path.join(MODEL, 'condition_registry.json')).conditions) if (c.name && tn[c.id]) m.set(c.name, tn[c.id].text);
+  return m;
+})();
+const condDisplay = (n) => COND_DISPLAY.get(n) || n;
 const sobRaw = readJSON(path.join(MODEL, 'start_of_battle_order.json')).entries.slice().sort((a, b) => a.global_order - b.global_order);
 const relicCodeToApp = new Map(readJSON(path.join(MODEL, 'relic_signatures.json')).records.map(r => [r.relic_code_id, r.app_relic_id]));
 // scr_RealmPropertyName case → app realm-property key. 13 COPYTRAITS is never rolled (scr_RealmGetProperties redraws it;
@@ -3036,7 +3077,7 @@ for (const e of sobRaw) {
       m = n.match(/^relic \[(\d+),\s*(\d+)\]$/);
       if (m) { const rel = relics.find(r => r.id === relicCodeToApp.get(+m[2])), rk = +m[1] * 10;
         return rel && rel.ranks.some(x => x.rank === rk) ? `${rel.name.split(',')[0]} (rank ${rk})` : null; }
-      return sobBlackNames.has(n) ? null : n;
+      return sobBlackNames.has(n) ? null : condDisplay(n);
     };
     const add = (e.members || []).filter(Boolean).map(memberName).filter(Boolean);
     if (sobAlways) { for (const n of add) if (!sobAlways.ref.members.includes(n)) sobAlways.ref.members.push(n); continue; }
@@ -3060,7 +3101,7 @@ for (const e of sobRaw) {
     if (rel && rel.ranks.some(x => x.rank === idx * 10)) ref = { k: 'relic', id: app, rank: idx * 10 };
   }
   else if (e.family === 'card') { const fam = e.name.replace(/ set power \d+$/, ''); ref = cards.some(c => c.family === fam) ? { k: 'card', family: fam, power: e.ids[0] } : null; }
-  else if (e.family === 'condition') ref = { k: 'cond', name: e.name.replace(/\s*\(\d+\)$/, '') };
+  else if (e.family === 'condition') ref = { k: 'cond', name: condDisplay(e.name.replace(/\s*\(\d+\)$/, '')) };
   else if (e.family === 'realm') { const id = e.ids[0], tx = SOB_REALM_TEXT[id];
     ref = SOB_REALM_PROP[id] ? { k: 'realm', key: SOB_REALM_PROP[id] }
       : tx ? { k: 'text', name: tx.name, desc: e.effect || '', icon: threatIcon(tx.sprite, `start-of-battle realm property ${id}`), chip: 'Realm Property' } : null; }
@@ -3684,6 +3725,44 @@ console.log(`  asset cache-bust: ${assetUrlsVersioned} image URLs versioned by c
   for (const [k, v] of Object.entries(SU_DATA)) if (k !== 'traits') walk(v, k);
   if (bad.length) throw new Error(`BLACKLIST GUARD: ${bad.length} reference(s) to blacklisted / non-shipped traits: ${bad.slice(0, 10).join(' | ')}`);
   console.log('  blacklist guard: no references to blacklisted traits ✓');
+}
+// GAME CONDITION NAMES in display strings (2026-10-13): labels / taxonomy values / start-of-battle text were built from the
+// condition registry's suffix-derived names ("Inflicts Burned", "Summons Direwolf", "Related Minion::Littletorun"). Show the
+// game's names (scr_LangCondition, token_names.json). Identifier strings ("debuff:Burned", tag keys) are left alone.
+{
+  const tn = readJSON(path.join(MODEL, 'token_names.json')).conditions;
+  const pairs = readJSON(path.join(MODEL, 'condition_registry.json')).conditions
+    .filter(c => c.name && tn[c.id] && tn[c.id].text !== c.name).map(c => [c.name, tn[c.id].text]);
+  const re = new RegExp('\\b(' + pairs.map(p => p[0]).join('|') + ')\\b', 'g'), to = Object.fromEntries(pairs);
+  const fix = (x) => typeof x === 'string' ? x.replace(re, (m) => to[m]) : x;
+  const fixTaxo = (x) => typeof x === 'string' && /^(Related (?:Buff|Debuff|Minion)|Buff|Debuff|Minion)::/.test(x) ? fix(x) : x;
+  let n = 0; const cnt = (a, b) => { if (a !== b) n++; return b; };
+  for (const t of Object.values(SU_DATA.traits)) {
+    if (t.labels) t.labels = t.labels.map(x => cnt(x, fix(x)));
+    if (t.taxo) t.taxo = t.taxo.map(x => cnt(x, fixTaxo(x)));
+  }
+  for (const k of ['spells', 'conditions', 'cards', 'relics']) for (const o of [].concat(SU_DATA[k] || [])) if (o && o.taxo) o.taxo = o.taxo.map(x => cnt(x, fixTaxo(x)));
+  for (const sp of SU_DATA.specs || []) for (const p of sp.perks || []) if (p.taxo) p.taxo = p.taxo.map(x => cnt(x, fixTaxo(x)));
+  for (const v of Object.values(SU_DATA.tagLabels || {})) for (const f of ['produces', 'consumes']) if (v[f]) v[f] = cnt(v[f], fix(v[f]));
+  const cats = (SU_DATA.taxonomy || {}).categories;
+  for (const c of Object.values(cats || {})) if (c && Array.isArray(c.values) && /^(Related (?:Buff|Debuff|Minion))/.test(c.category || c.name || c.key || ''))
+    c.values = c.values.map(x => cnt(x, typeof x === 'string' ? fix(x) : x));
+  // start-of-battle rows for a trait show that trait's (token-rendered) text
+  for (const r of SU_DATA.startOfBattle || []) if (r.ref && r.ref.k === 'trait' && SU_DATA.traits[r.ref.id] && r.effect) {
+    const d = SU_DATA.traits[r.ref.id].desc; if (d && d !== r.effect) { r.effect = d; n++; } }
+  console.log(`  game condition names: ${n} display strings updated`);
+}
+// TOKEN GUARD (2026-10-13): every {TOKEN} in shipped text must have a code-grounded word (terms ⊇ token_names.json), so the
+// app never invents a display name from the token's key. Runtime values the game fills in itself are allowed.
+{
+  const RUNTIME = /^(PLAYERNAME|CASTLENAME|CURRENTSPEC|\d+|C(?:OND)?DESC_[A-Za-z0-9_]+)$/;
+  const miss = new Map();
+  const walk = (o) => { if (Array.isArray(o)) o.forEach(walk); else if (o && typeof o === 'object') Object.values(o).forEach(walk);
+    else if (typeof o === 'string') for (const m of o.matchAll(/\{([A-Za-z][A-Za-z0-9_]*)\}/g)) if (!terms[m[1]] && !RUNTIME.test(m[1])) miss.set(m[1], (miss.get(m[1]) || 0) + 1); };
+  for (const [k, v] of Object.entries(SU_DATA)) if (k !== 'terms') walk(v);
+  if (tokenMiss.size) err(`trait text: ${tokenMiss.size} token(s) not in token_names.json: ${[...tokenMiss.keys()].join(', ')}`);
+  if (miss.size) err(`token guard: ${miss.size} token(s) with no code-grounded word: ${[...miss.keys()].slice(0, 12).join(', ')}`);
+  else console.log(`  token guard: every {TOKEN} has its game word (${Object.keys(TOKEN_NAMES).length} code tokens) ✓`);
 }
 // second gate: the blocks after the report above (spell owners, Rodian Masters, bosses …) record errors too
 if (errors.length) {

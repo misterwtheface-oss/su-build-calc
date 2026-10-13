@@ -4,6 +4,15 @@ Standing decisions the user made about how the app models the game. Don't "fix" 
 the assistant's working notes on 2026-10-08 (they existed nowhere in the repo). Add new rulings here when they're made.
 Taxonomy category definitions themselves live in `TAXONOMY.md`.
 
+## Display names (2026-10-13)
+- **Real display names only (user):** every name the app shows for a tokenized attribute or an inferred label is the game's
+  own localized text. `{TOKEN}` words come from `_su_extract/data/model/token_names.json` (the game's text renderer,
+  `process_complex_macros` → `scr_Lang*`), never from a key humanizer or a hand list; the build fails on a token it
+  can't name. Condition names follow `scr_LangCondition` (Burning, Silenced, Dire Wolves, Torun Junior …); action/stat
+  words keep the game's capitals (Attacks, Charges). Realm properties use their `L_REALM_*` name with the rolled value as X
+  ("Extra Attack: X%"); runes use their `L_RUNE_NAME_*` line (the game has no shorter name).
+- **Skins carry their localized `L_SKIN_*` names** everywhere, including the frame index.
+
 ## Bosses (2026-10-11)
 - **False God names = the game's own text** (`L_WBOSS_*`): Imp Impington Reborn, Caliban the Unredeemed, Jotun, Lost Construct.
 - **Misery is not a False God.** Its three traits are provisionally Perdition's (Gate of the Gods); the user will confirm in-game.

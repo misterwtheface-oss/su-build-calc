@@ -36,7 +36,7 @@
           "why": "You can't kill the other five while it lives: everything you aim at them lands on it. Kill the Gladiator first." },
         { "title": { "1": "Shelled after every hit", "2": "Its whole side gets Shelled", "3": "Its whole side gets Shelled" },
           "what": { "1": "After the Gladiator takes damage, it gains Shelled.", "2": "After any creature on its side takes damage, every creature on its side gains Shelled.", "3": "After any creature on its side takes damage, every creature on its side gains Shelled." },
-          "why": "Shelled negates the next attack or spell, so every other hit is wasted, and redirected hits count too. Indirect damage gets past Shelled: Poison, Burned and Bleeding ticks and other indirect damage keep the pressure on." },
+          "why": "Shelled negates the next attack or spell, so every other hit is wasted, and redirected hits count too. Indirect damage gets past Shelled: Poisoned, Burning and Bleeding ticks and other indirect damage keep the pressure on." },
         { "title": { "2": "Comes back once", "3": "Its whole side comes back once" }, "tiers": [2, 3],
           "what": { "2": "The Gladiator starts the battle with Rebirth.", "3": "Every creature on its side starts the battle with Rebirth." },
           "why": { "2": "Rebirth brings it back at 50% Health the first time it dies, so you have to take it down twice.", "3": "Rebirth brings each of them back at 50% Health the first time it dies: every enemy has to die twice, and the Gladiator still soaks the hits for the rest." } }
@@ -73,7 +73,7 @@
           "why": "Rapture hits your whole party for a massive amount and leaves them Weak (50% less damage dealt) and Vulnerable (50% more damage taken), every one of its turns. Cleanse often or kill it fast." },
         { "title": { "1": "Starts with the four Horsemen", "2": "Starts with an army of minions", "3": "An army of minions that never leaves" },
           "what": { "1": "At the start of battle, every creature on its side gains the minions Conquest, Death, Famine and War.",
-                    "2": "At the start of battle, every creature on its side gains 12 minions at 10 stacks each: Conquest, Death, Famine, War, Animated Gem, Animated Weapon, Unstable Horror, Spiderling, Writheling, Zombie, Direwolf and Doppelganger.",
+                    "2": "At the start of battle, every creature on its side gains 12 minions at 10 stacks each: Conquest, Death, Famine, War, Animated Gem, Animated Weapon, Unstable Horror, Spiderlings, Writhelings, Zombies, Dire Wolves and Doppelganger.",
                     "3": "Every living creature on its side always has the same 12 minions at 10 stacks each, and while it is on the field minions never leave, for any creature in the battle." },
           "why": { "1": "Every enemy gets War (hits back for 50% of the damage it takes), Death (can kill your lowest-Health creature at its turn start), Famine (its attacks cut your max Health) and Conquest (its spells buff its side).",
                    "2": "Six enemies with twelve minions each: extra hits, extra casts, extra turns (Doppelganger) and the Horsemen's damage-back and kill chance. Kill the minion owners quickly, starting with the ones that act soonest.",
@@ -83,10 +83,10 @@
     "LOID": {
       "threats": [
         { "title": { "1": "Attacking Scorns you, casting Silences you", "2": "Each action locks it out and drains the stat", "3": "Each action locks it out, and the locks stack" },
-          "what": { "1": "After one of your creatures attacks, it is Scorned for 2 turns (can't attack). After it casts a spell, it gets Silence for 2 turns (can't cast).",
-                    "2": "After one of your creatures attacks, it is Scorned for 2 turns and loses 35% of its current Attack. After it casts, it gets Silence for 2 turns and loses 35% of its current Intelligence.",
-                    "3": "As tier 2, and Scorned and Silence no longer replace each other, so a creature can have both." },
-          "why": { "1": "Scorned and Silence normally overwrite each other, so alternate: attack, then cast while Scorned (the new Silence replaces the Scorn), then attack again. Creatures that can only do one thing sit out while locked.",
+          "what": { "1": "After one of your creatures attacks, it is Scorned for 2 turns (can't attack). After it casts a spell, it gets Silenced for 2 turns (can't cast).",
+                    "2": "After one of your creatures attacks, it is Scorned for 2 turns and loses 35% of its current Attack. After it casts, it gets Silenced for 2 turns and loses 35% of its current Intelligence.",
+                    "3": "As tier 2, and Scorned and Silenced no longer replace each other, so a creature can have both." },
+          "why": { "1": "Scorned and Silenced normally overwrite each other, so alternate: attack, then cast while Scorned (the new Silenced replaces the Scorned), then attack again. Creatures that can only do one thing sit out while locked.",
                    "2": "Alternating still works (the new debuff replaces the old one), but every action costs 35% of the stat it used and it compounds: four attacks leave about 18% of your Attack. Hit hardest on the first actions.",
                    "3": "A creature that attacks and then casts ends up unable to do either. Plan each creature's actions so it never needs both, and front-load damage: every action drains 35% of the stat it used." } }
       ]
@@ -108,9 +108,9 @@
           "what": { "1": "When one Phobos takes damage from one of your creatures, every other living Phobos attacks that creature once.",
                     "2": "When one Phobos takes damage from one of your creatures, every other living Phobos attacks that creature once.",
                     "3": "When one Phobos takes damage from one of your creatures, every other living Phobos attacks that creature 3 times." },
-          "why": { "1": "Each hit draws up to five counterattacks on the creature that dealt it, and an area spell hits all six, so one spell can draw 30 attacks on your caster. Hit one at a time with sturdy creatures. Poison, Burned and Bleeding ticks have no source creature, so they don't trigger counters.",
-                   "2": "Each hit draws up to five counterattacks on the creature that dealt it, and an area spell can draw 30. Hit one at a time with sturdy creatures; Poison, Burned and Bleeding ticks have no source creature, so they don't trigger counters.",
-                   "3": "Up to 15 counterattacks per hit, 90 from one area spell. Single-target hits only, and damage over time (Poison, Burned, Bleeding ticks) draws no counters at all." } },
+          "why": { "1": "Each hit draws up to five counterattacks on the creature that dealt it, and an area spell hits all six, so one spell can draw 30 attacks on your caster. Hit one at a time with sturdy creatures. Poisoned, Burning and Bleeding ticks have no source creature, so they don't trigger counters.",
+                   "2": "Each hit draws up to five counterattacks on the creature that dealt it, and an area spell can draw 30. Hit one at a time with sturdy creatures; Poisoned, Burning and Bleeding ticks have no source creature, so they don't trigger counters.",
+                   "3": "Up to 15 counterattacks per hit, 90 from one area spell. Single-target hits only, and damage over time (Poisoned, Burning, Bleeding ticks) draws no counters at all." } },
         { "title": "Every hit crits and can't be dodged", "tiers": [2, 3],
           "what": "While any Phobos is on the field, every attack on your creatures can't be dodged and every hit from their side is critical.",
           "why": "This covers all their damage, not just the counters. A crit adds about 125% more damage at equal Speed and more the faster they are. Dodge doesn't help; out-speeding them shrinks the crit bonus (down to +25% at about 2.7× their Speed), and Defense and damage reduction help." }
@@ -136,12 +136,12 @@
       "threats": [
         { "title": "Only one class can hurt its side",
           "what": "Damage to any creature on Chroma's side is Prevented unless the attacker or caster is of the current shield class. The class changes at the start of each Chroma turn, and its look changes to match.",
-          "why": { "1": "Bring creatures of several classes so someone can always hit. Damage with no source creature skips the shield: Poison, Burned and Bleeding ticks always get through.",
+          "why": { "1": "Bring creatures of several classes so someone can always hit. Damage with no source creature skips the shield: Poisoned, Burning and Bleeding ticks always get through.",
                    "2": "Bring creatures of several classes so someone can always hit. Its side is immune to debuffs now, so damage over time can't be applied.",
                    "3": "Only attacks and spells from the matching class work: debuffs and indirect damage are both blocked. Bring all five classes, or creatures that can change class." } },
         { "title": { "2": "Immune to debuffs", "3": "Immune to debuffs and indirect damage" }, "tiers": [2, 3],
           "what": { "2": "Every creature on Chroma's side is immune to debuffs (buffs still land).", "3": "Every creature on Chroma's side is immune to debuffs and takes no indirect damage." },
-          "why": { "2": "No Poison, Burned or Bleeding, and no control debuffs: plan on direct damage from the matching class.", "3": "No way around the shield: debuffs and indirect damage do nothing, so every point of damage has to come from a creature of the current class." } }
+          "why": { "2": "No Poisoned, Burning or Bleeding, and no control debuffs: plan on direct damage from the matching class.", "3": "No way around the shield: debuffs and indirect damage do nothing, so every point of damage has to come from a creature of the current class." } }
       ]
     },
     "FLUBRIS": {
@@ -153,7 +153,7 @@
           "what": { "1": "Each turn the slime changes to one of its other two forms: one is immune to attacks, one to spells, one to both.",
                     "2": "Each turn the slime changes form (immune to attacks, spells or both), and it is always immune to indirect damage.",
                     "3": "Each slime changes form at the start of its turn (immune to attacks, spells or both), and is always immune to indirect damage." },
-          "why": { "1": "Bring both attackers and casters and hit with whatever the current form lets through; skip it on the form that blocks both. Indirect damage (Poison, Burned and Bleeding ticks) works on every form.",
+          "why": { "1": "Bring both attackers and casters and hit with whatever the current form lets through; skip it on the form that blocks both. Indirect damage (Poisoned, Burning and Bleeding ticks) works on every form.",
                    "2": "Indirect damage no longer works, so you need both attackers and casters, and some turns the slime can't be hurt at all.",
                    "3": "Indirect damage works on none of them, so you need both attackers and casters, and on some turns a slime can't be hurt at all." } }
       ],
@@ -189,7 +189,7 @@
           "what": { "1": "Shackler takes no damage from attacks or spells and is resistant to debuffs. Indirect damage gets through.",
                     "2": "Every creature on Shackler's side takes no damage from attacks or spells and is resistant to debuffs. Indirect damage gets through.",
                     "3": "Every creature on its side takes no damage from attacks or spells and is resistant to debuffs, and at the start of Shackler's turn each of them, Shackler included, loses a random debuff." },
-          "why": { "1": "Kill its allies normally, then finish Shackler with indirect damage: Poison, Burned and Bleeding ticks and other indirect damage.",
+          "why": { "1": "Kill its allies normally, then finish Shackler with indirect damage: Poisoned, Burning and Bleeding ticks and other indirect damage.",
                    "2": "The whole fight is indirect damage. Bring a team built on damage over time and other indirect damage; direct attackers and nukers do nothing.",
                    "3": "An all-indirect fight where its side sheds a debuff every Shackler turn, so keep reapplying your damage-over-time debuffs." } }
       ],
@@ -201,8 +201,8 @@
           "what": { "1": "At the start of battle Furness gains all 15 Booze spells as extra spell gems.",
                     "2": "At the start of battle every creature on its side gains all 15 Booze spells as extra spell gems.",
                     "3": "Every creature on its side gains all 15 Booze spells, and each Booze gem has a 30% chance to cast itself at the end of that creature's turn (normally 15%)." },
-          "why": { "1": "Booze spells heal, buff (including Immunity from Godly Gin) and make allies attack (Amber Ale: 300% damage). Furness gets 15 extra options; kill it first.",
-                   "2": "Six enemies with fifteen extra spells each: healing, Immunity and forced attacks across their whole side. End the fight fast.",
+          "why": { "1": "Booze spells heal, buff (including Immune from Godly Gin) and make allies attack (Amber Ale: 300% damage). Furness gets 15 extra options; kill it first.",
+                   "2": "Six enemies with fifteen extra spells each: healing, Immune and forced attacks across their whole side. End the fight fast.",
                    "3": "With 15 gems at 30% each, every enemy fires about four or five free Booze casts at the end of each of its turns, on top of its action. Kill them quickly, starting with the next to act." } }
       ]
     },
@@ -267,21 +267,21 @@
     },
     "SPOONOR": {
       "threats": [
-        { "title": { "1": "Permanent Poison that grows", "2": "Permanent Poison and Burned that grow", "3": "Permanent Poison, Burned and Bleeding" },
+        { "title": { "1": "Permanent Poison that grows", "2": "Permanent Poisoned and Burning that grow", "3": "Permanent Poisoned, Burning and Bleeding" },
           "what": { "1": "Your creatures always have Poisoned, starting at 30% of the highest Attack on Spoonor's side. At the start of Spoonor's turn its strength rises by 50%.",
-                    "2": "Your creatures always have Poisoned and Burned (30% of the highest Attack / Intelligence on Spoonor's side), and both rise by 50% at the start of Spoonor's turn.",
-                    "3": "Your creatures always have Poisoned, Burned and Bleeding. Poisoned and Burned rise by 50% at the start of Spoonor's turn; Bleeding is 30% of current Health per tick." },
+                    "2": "Your creatures always have Poisoned and Burning (30% of the highest Attack / Intelligence on Spoonor's side), and both rise by 50% at the start of Spoonor's turn.",
+                    "3": "Your creatures always have Poisoned, Burning and Bleeding. Poisoned and Burning rise by 50% at the start of Spoonor's turn; Bleeding is 30% of current Health per tick." },
           "why": { "1": "×1.5 every Spoonor turn: about 7.6× after 5 of its turns. Removing Poison only lasts until it comes back. Kill Spoonor to stop the growth.",
                    "2": "Two growing ticks at the start of every one of your creatures' turns; about 7.6× stronger after 5 Spoonor turns. Kill Spoonor fast.",
-                   "3": "Three ticks every turn start (Bleeding, then Poisoned, then Burned), two of them growing ×1.5 per Spoonor turn. Kill Spoonor in the first round or two." } }
+                   "3": "Three ticks every turn start (Bleeding, then Poisoned, then Burning), two of them growing ×1.5 per Spoonor turn. Kill Spoonor in the first round or two." } }
       ]
     },
     "DEATHWALKER": {
       "threats": [
         { "title": { "1": "Everyone is Scorned or Silenced", "2": "Your creatures are Scorned or Silenced", "3": "Scorned or Silenced, one attack and one cast per turn" },
-          "what": { "1": "Every creature in the battle, on both sides, always has either Scorned (can't attack) or Silence (can't cast). It switches at the start of Deathwalker's turn; which one comes first is random.",
-                    "2": "Your creatures always have either Scorned or Silence, switching at the start of Deathwalker's turn; which one comes first is random.",
-                    "3": "Your creatures always have either Scorned or Silence, switching at the start of Deathwalker's turn, and can attack and cast only once per turn." },
+          "what": { "1": "Every creature in the battle, on both sides, always has either Scorned (can't attack) or Silenced (can't cast). It switches at the start of Deathwalker's turn; which one comes first is random.",
+                    "2": "Your creatures always have either Scorned or Silenced, switching at the start of Deathwalker's turn; which one comes first is random.",
+                    "3": "Your creatures always have either Scorned or Silenced, switching at the start of Deathwalker's turn, and can attack and cast only once per turn." },
           "why": { "1": "Between switches no one can attack, or no one can cast. Give every creature both an attack and spells so it can act either way. Its side is locked the same way.",
                    "2": "Only your side is locked now. Each creature needs both attacks and spells, or damage that doesn't need actions.",
                    "3": "Only your side is locked, and extra attacks and casts are cut to one. Lean on passive and indirect damage." } }
