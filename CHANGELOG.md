@@ -4,6 +4,14 @@ Every dated change entry, newest first (moved verbatim from Progress.md on 2026-
 to their own section and sorted by their date). Current state and open work: `Progress.md`, `BACKLOG.md`.
 New entries go at the TOP.
 
+## 2026-10-13 — Ten more code ≠ text clarify notes (user-approved)
+- High confidence: **Mass Resurrection** (no 30% roll; all others come back at 50% Health), **Not Quite A Dud** (no 50%
+  roll; the Bomb is always kept), **Of One Mind** (extra attack = full normal damage, not 10%), **Gravewalker** perk
+  (resurrects with full Health, not 50%).
+- Medium-high / medium: **Going Mad** (100% of lowest stat, Health counted), **Power In Balance** (flat +10% once),
+  **Synthesis** (full highest stat), **Harbinger's Sign** (always casts), **Ferocity** (Savage only, no +25%),
+  **Psychic Suicide** perk (no potency bonus). Same `clarify` field as before; the game text stays verbatim.
+
 ## 2026-10-13 — Cold Blood and Furor clarify notes
 - **Cold Blood:** the code adds a random 75–200% on top, so hits deal 175–300% of normal damage (text: 50–250%).
 - **Furor:** each extra attack deals 300% (text: 200%). Both from the extract's hand traces of the effect-formula residual.
