@@ -4,6 +4,11 @@ Every dated change entry, newest first (moved verbatim from Progress.md on 2026-
 to their own section and sorted by their date). Current state and open work: `Progress.md`, `BACKLOG.md`.
 New entries go at the TOP.
 
+## 2026-10-12 — Devastating Throw: wrong clarify note removed
+- The spell carried a clarify note saying its text implies Intelligence. The game text actually says 50% Attack and 50%
+  Speed, which is exactly what the code does (extract re-check, bc_SpellDamage case 0x1415d8468). Note removed; only this
+  spell changed in `data.js`.
+
 ## 2026-10-12 — Morph spells get their spell-gem property list
 - The 5 Morph spells (Morph: Chaos / Death / Life / Nature / Sorcery) had no code compat record, so the app left them
   unrestricted. Cause (extract): their text keys contain a colon (`L_SN_MORPH:CHAOS`) and the extractor's key pattern
