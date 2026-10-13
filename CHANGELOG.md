@@ -4,6 +4,12 @@ Every dated change entry, newest first (moved verbatim from Progress.md on 2026-
 to their own section and sorted by their date). Current state and open work: `Progress.md`, `BACKLOG.md`.
 New entries go at the TOP.
 
+## 2026-10-13 — Cold Blood and Furor clarify notes
+- **Cold Blood:** the code adds a random 75–200% on top, so hits deal 175–300% of normal damage (text: 50–250%).
+- **Furor:** each extra attack deals 300% (text: 200%). Both from the extract's hand traces of the effect-formula residual.
+- Token guard now ignores machine `code` templates (the macro vocabulary's `"1,{n}"`); the rebuilt data also carries the
+  extract's additive macro-vocabulary fields (codes, behaviour) from its S34 work.
+
 ## 2026-10-13 — Real game names for every tokenized word, realm property and rune
 - **Tokens:** every `{TOKEN}` in trait / spell / perk / start-of-battle text now shows the game's own word, read from the
   extract's new `token_names.json` (the game's text renderer and its `scr_Lang*` resolvers). Before, missing tokens were

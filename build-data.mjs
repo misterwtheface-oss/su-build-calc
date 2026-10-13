@@ -3757,7 +3757,7 @@ console.log(`  asset cache-bust: ${assetUrlsVersioned} image URLs versioned by c
 {
   const RUNTIME = /^(PLAYERNAME|CASTLENAME|CURRENTSPEC|\d+|C(?:OND)?DESC_[A-Za-z0-9_]+)$/;
   const miss = new Map();
-  const walk = (o) => { if (Array.isArray(o)) o.forEach(walk); else if (o && typeof o === 'object') Object.values(o).forEach(walk);
+  const walk = (o) => { if (Array.isArray(o)) o.forEach(walk); else if (o && typeof o === 'object') { for (const [k, v] of Object.entries(o)) if (k !== 'code') walk(v); }   // `code` = machine templates (macro "1,{n}"), not display text
     else if (typeof o === 'string') for (const m of o.matchAll(/\{([A-Za-z][A-Za-z0-9_]*)\}/g)) if (!terms[m[1]] && !RUNTIME.test(m[1])) miss.set(m[1], (miss.get(m[1]) || 0) + 1); };
   for (const [k, v] of Object.entries(SU_DATA)) if (k !== 'terms') walk(v);
   if (tokenMiss.size) err(`trait text: ${tokenMiss.size} token(s) not in token_names.json: ${[...tokenMiss.keys()].join(', ')}`);
