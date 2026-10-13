@@ -3328,7 +3328,7 @@
           ${netherDropRows().map(r => `<div class="nd-row"><span class="nd-pct">${pct(r.k)}<small>1 in ${Math.round(N / r.k).toLocaleString()}</small></span>
             <span>${r.plain != null ? `${r.plain}%` : "—"}</span><span>${r.pariah}%</span></div>`).join("")}
         </div>
-        <div class="slot-sub nd-note">Per loot roll · after The True Enemy · not in the castle</div></div>` : "";
+        <div class="slot-sub nd-note">Per loot bundle · after The True Enemy · not in the castle</div></div>` : "";
     return `<button class="apx-sec-head apx-cat${open ? "" : " collapsed"}" data-action="gloss-cat-toggle" data-c="${key}"><span class="apx-sec-caret">${open ? "▾" : "▸"}</span>Nether Stone Drops</button>${body}`;
   }
   // Pandemonium shrine outcomes (code: obj_demonstatue_KeyPress_69 — choice = irandom_range(1, 13), each 1 in 13)

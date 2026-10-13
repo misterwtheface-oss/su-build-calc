@@ -4,6 +4,10 @@ Every dated change entry, newest first (moved verbatim from Progress.md on 2026-
 to their own section and sorted by their date). Current state and open work: `Progress.md`, `BACKLOG.md`.
 New entries go at the TOP.
 
+## 2026-10-12 — Nether Stone Drops note: "Per loot bundle"
+- The note under the Nether Stone Drops table said "Per loot roll". In the extract, "loot roll" means the ~20 item rolls inside a
+  bundle; the Nether Stone gets one roll per bundle (`inv_Loot` bundle loop, re-checked in code). Numbers unchanged.
+
 ## 2026-10-12 — Extract doc references updated (no app change)
 - The extract's research docs were consolidated into topic docs (e.g. `code/NETHER.md`, `code/COMBAT_RULES.md`,
   `code/LOOT.md`); finished handoffs moved to `_su_extract/archive/handoffs/`. Source comments in `app.js` /
