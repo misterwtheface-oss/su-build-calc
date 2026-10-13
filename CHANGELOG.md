@@ -7,8 +7,8 @@ New entries go at the TOP.
 ## 2026-10-12 — Morph spells get their spell-gem property list
 - The 5 Morph spells (Morph: Chaos / Death / Life / Nature / Sorcery) had no code compat record, so the app left them
   unrestricted. Cause (extract): their text keys contain a colon (`L_SN_MORPH:CHAOS`) and the extractor's key pattern
-  rejected it. Fixed there; they now take the same `scr_FixSpellGemProps` rules as every spell (24 allowed properties each:
-  no Damage, no Healing, no Generous-exclusive extras beyond the rule). Only these 5 spells changed in `data.js`.
+  rejected it. Fixed there; they now take the same `scr_FixSpellGemProps` rules as every spell (24 allowed properties each;
+  not Moonstone, Obsidian, Diamond or Jasper). Only these 5 spells changed in `data.js`.
 
 ## 2026-10-12 — Nether Stone Drops note: "Per loot bundle"
 - The note under the Nether Stone Drops table said "Per loot roll". In the extract, "loot roll" means the ~20 item rolls inside a
