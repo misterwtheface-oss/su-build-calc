@@ -4,6 +4,12 @@ Every dated change entry, newest first (moved verbatim from Progress.md on 2026-
 to their own section and sorted by their date). Current state and open work: `Progress.md`, `BACKLOG.md`.
 New entries go at the TOP.
 
+## 2026-10-13 — Arena vendor skins: names were one record off
+- The Arena vendor's five skins showed as Pyre, Chaos Axe, Death Mace, Life Sword and Nature Bow. The shop sells Chaos Axe,
+  Death Mace, Life Sword, Nature Bow and Sorcery Staff: the extract's shop builder looked the code skin id up in the shifted
+  `skins.json` (code id + 1). Fixed at the source (`build_shops_true.py` now joins `skin_owners.json`); only these five shop
+  rows changed. Audit of every other skin join (Nether Boss parties, Gate rewards, Nether shop): no other offset errors.
+
 ## 2026-10-12 — Devastating Throw: wrong clarify note removed
 - The spell carried a clarify note saying its text implies Intelligence. The game text actually says 50% Attack and 50%
   Speed, which is exactly what the code does (extract re-check, bc_SpellDamage case 0x1415d8468). Note removed; only this
