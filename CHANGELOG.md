@@ -4,6 +4,12 @@ Every dated change entry, newest first (moved verbatim from Progress.md on 2026-
 to their own section and sorted by their date). Current state and open work: `Progress.md`, `BACKLOG.md`.
 New entries go at the TOP.
 
+## 2026-10-13 — Weaponized Spirit: roll credit and clarify note (user-approved)
+- `hasRoll` (data only): Weaponized Spirit added to the Booze end-of-turn auto-cast roll (while it's in play, Arsenal
+  gems roll it too).
+- Clarify note: it applies to every rule on both sides; Arsenal spells can't be cast manually (unless Sobered Up /
+  Brewmaster's Handshake) and get the Booze auto-cast chance; Booze spells get Arsenal effects (e.g. Killing Machine).
+
 ## 2026-10-13 — Booze roll credited; Frozen clarify note (user-approved)
 - `hasRoll` (data only): the Booze end-of-turn auto-cast roll (15%, 30% with Top Shelf / Happy Hour) is now credited
   to the 15 Booze spells, the Top Shelf perk and Happy Hour (HAPPYHOUR3). Before this it was a system roll with no owner.
