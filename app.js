@@ -2768,7 +2768,7 @@
     if (kind === "relic") { const e = RELIC.get(+id); return { e, icon: e && e.icon, name: e && e.name, descHtml: e && relicRanksHtml(e.ranks, true), kindLabel: "Relic" }; }
     if (kind === "card") { const e = CARD.get(+id); return { e, icon: e && e.sprite, name: e && e.family, descHtml: e && cardTiersHtml(e.effects, e.tiers), kindLabel: "Realm Card" }; }
     if (kind === "perk") { const e = perkByKey(id); return { e, icon: e && e.icon, name: e && e.name, descHtml: e && perkText(e.desc, e.ranks) + fxClarify(e), kindLabel: "Perk" }; }
-    if (kind === "condition") { const e = CONDITION.get(id); return { e, icon: e && e.icon, name: e && e.name, descHtml: e && richText(e.desc || ""), kindLabel: e && e.cat }; }
+    if (kind === "condition") { const e = CONDITION.get(id); return { e, icon: e && e.icon, name: e && e.name, descHtml: e && richText(e.desc || "") + fxClarify(e), kindLabel: e && e.cat }; }
     return { e: null };
   }
   // grouped taxonomy: Category → its values, each a chip that (a) shows the provenance source and

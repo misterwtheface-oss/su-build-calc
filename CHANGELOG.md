@@ -4,6 +4,12 @@ Every dated change entry, newest first (moved verbatim from Progress.md on 2026-
 to their own section and sorted by their date). Current state and open work: `Progress.md`, `BACKLOG.md`.
 New entries go at the TOP.
 
+## 2026-10-13 — Booze roll credited; Frozen clarify note (user-approved)
+- `hasRoll` (data only): the Booze end-of-turn auto-cast roll (15%, 30% with Top Shelf / Happy Hour) is now credited
+  to the 15 Booze spells, the Top Shelf perk and Happy Hour (HAPPYHOUR3). Before this it was a system roll with no owner.
+- **Frozen** clarify note: by the code the first thaw roll is 50% (100% if resistant), then 100%; the text says 25%,
+  doubling each turn. The condition detail page now shows clarify notes; the build joins `kind: "condition"` entries.
+
 ## 2026-10-13 — Relic roll flags re-attributed; code-read trigger labels (user-approved)
 - Relic `hasRoll` flags (data only, no UI): the extract had read relic gate ids in the wrong order. Now 20 relics /
   36 ranks have a chance roll (was 8 / 16, 8 of them wrong). New: Arbiter, Holy Shield of Surathli rank 50 (10% to prevent
