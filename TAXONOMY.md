@@ -147,7 +147,7 @@ Actor-split: **Ally** = bearer's side, **Enemy** = opposing side. The event set 
 | Automatically Defend ⚠ | Auto-performs the Defend action. |
 | Automatically Provoke ⚠ | Auto-performs the Provoke action. |
 | Can't Manually Defend / Provoke | The creature cannot be ordered to defend / provoke. |
-| Defense Calculation | Changes how Defense/mitigation is computed. |
+| Defense Calculation ⚠ | Changes how Defense/mitigation is computed. Audit: sweep + inbound damage tag (BACKLOG G7). |
 | Survive with X Health | Cheats death / survives at a Health floor. |
 
 ## Affect on Life
