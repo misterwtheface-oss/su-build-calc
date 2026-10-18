@@ -152,7 +152,7 @@ a decompile → write `_su_extract/code/HANDOFF_<topic>.md` and don't guess (bat
   has a different one.) Handoff, then show the result on the trait. **2026-10-17:** it's the Demonologist perk FINALSUMMONING; asked in the same handoff §3.
 
 ### G9. Nether Realm helpers + Nether Bosses
-- [ ] **(#11) Faucet valve order is mirrored.** **User:** read the code right→left. The app currently assumes left→right
+- [x] **(#11) Faucet valve order is mirrored.** DONE 2026-10-17 (screen valve i = code digit 3−i; NETHER.md updated). The 40% fade item is still only offered. **User:** read the code right→left. The app currently assumes left→right
   (`app.js` FAUCET section, ~line 3394). The CHANGELOG 2026-10 check was "only the LEFT valve on → gem chest". Mirror the
   digit order and update that note. Can go out with the open "Faucet valve sprites: remove the 40% fade" item.
 - [ ] **(#7) Verify Nether Boss rewards.** Check that the reward given right after a Nether Boss fight is the quest

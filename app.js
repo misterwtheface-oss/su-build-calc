@@ -3487,6 +3487,10 @@
     ovState = { kind: "netherhelp", tab: "faucet", valves: [0, 0, 0, 0], render: renderNetherHelper };
     openOverlay(ovState.render());
   }
+  // the code's 4-bit valve string reads RIGHT→LEFT across the on-screen valves (user, in-game, 2026-10-17): screen valve i
+  // = code digit 3−i. st.valves stays in screen order; codes convert at the edges.
+  const valveCode = (screen) => screen.slice().reverse().join("");
+  const codeValves = (code) => [...code].reverse().map(Number);
   const valveImg = (on) => spriteImg(on ? NH.faucet.valveOn : NH.faucet.valveOff, on ? "px" : "px nh-off");
   function renderNetherHelper() {
     const st = ovState, faucet = st.tab === "faucet";
@@ -3497,14 +3501,14 @@
     let head = "", body;
     if (faucet) {
       // locked header: the 4 interactable valves + the chest they produce (defaults: all off → empty chest)
-      const code = st.valves.join(""), cur = NH.faucet.table.find(r => r.code === code);
+      const code = valveCode(st.valves), cur = NH.faucet.table.find(r => r.code === code);
       const valves = st.valves.map((v, i) => `<button class="nh-valve${v ? " on" : ""}" data-action="nh-valve" data-i="${i}" title="Faucet ${i + 1}">${valveImg(v)}</button>`).join("");
       head = `<div class="nh-head"><div class="nh-valves">${valves}</div><span class="nh-arrow">→</span>
         <div class="nh-result${cur && cur.kind === "mimic" ? " mimic" : ""}"><span class="nh-chest lg">${cur ? spriteImg(cur.img, "px") : ""}</span>
           <b>${cur ? esc(cur.reward) : ""}</b></div></div>`;
       const rows = NH.faucet.table.slice().sort((a, b) => (FAUCET_ORDER[a.kind] ?? 0) - (FAUCET_ORDER[b.kind] ?? 0) || a.code.localeCompare(b.code))
         .map(r => `<button class="nh-row${r.code === code ? " on" : ""}${r.kind === "mimic" ? " mimic" : r.kind === "empty" ? " empty" : ""}" data-action="nh-code" data-c="${r.code}">
-          <span class="nh-row-valves">${[...r.code].map(d => valveImg(d === "1")).join("")}</span>
+          <span class="nh-row-valves">${codeValves(r.code).map(v => valveImg(v === 1)).join("")}</span>
           <span class="nh-chest">${spriteImg(r.img, "px")}</span><span class="nh-reward">${esc(r.reward)}</span></button>`).join("");
       body = `<div class="nh-list">${rows}</div>`;
     } else {
@@ -5658,7 +5662,7 @@
       case "open-netherhelp": openNetherHelper(); break;
       case "nh-tab": ovState.tab = t.dataset.v; refreshOverlay(true); break;
       case "nh-valve": { const i = +t.dataset.i; ovState.valves[i] ^= 1; refreshOverlay(); break; }
-      case "nh-code": ovState.valves = [...t.dataset.c].map(Number); refreshOverlay(); break;
+      case "nh-code": ovState.valves = codeValves(t.dataset.c); refreshOverlay(); break;
       case "proj-search": break;     // handled in onInput
       case "proj-diff": ovState.ruthless = t.dataset.v === "ruthless"; refreshOverlay(true); break;
       case "realm-diff": ovState.yieldDiff = t.dataset.v; refreshOverlay(); break;
