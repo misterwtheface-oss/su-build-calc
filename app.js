@@ -1789,6 +1789,7 @@
       <div class="boss-sub">Every win</div>
       <ul class="boss-steps"><li>A loot roll and Gate of the Gods Key Fragments: 4–7, plus (1 + realm Instability) × (1 + Inner Darkness clears, up to 3).</li>
         <li>Your first Nether Boss win ever gives the Nether Shop decoration instead.</li>
+        <li>The boss room's 2 chests hold 9 treasure bundles each: 3, +3 for a boss room, +3 Nether bonus (+5 more each in some realms at a Favor rank).</li>
         <li>Royal Mode: a False Nether Orb of a random False God (an Anointment and an Inscription, as after a False God fight).</li>
         ${isID ? "<li>Your 1st, 2nd and 3rd Inner Darkness wins unlock the Gate of the Gods project, the Guild projects and the mysterious realm portals.</li>" : ""}</ul>`;
     return `<div class="ovl-backdrop" data-action="detail-backdrop"><div class="overlay-panel detail">
@@ -3478,7 +3479,7 @@
   const shopItemName = (it) => /^\{\d\}$/.test(it.name || "") ? (it.key === "L_IN_WEATHER" ? "Weather" : "?") : (it.name || "?");
 
   // ── Nether Realm helpers (code-grounded: _su_extract code/NETHER.md) ──
-  // Faucet = room_nether_valves: 4 on/off valves form a code (left→right) that picks the single chest's contents;
+  // Faucet = room_nether_valves: 4 on/off valves form a code (read right→left, user ruling) that picks the single chest's contents;
   // the closed chest's sprite already previews the result. Mimic Mike = room_nether_treasurehuge: 35 chests whose
   // contents are rolled at room creation and shown by their sprite; 7 opens, each parchment adds 2–4 more.
   const NH = D.netherHelpers || { faucet: { table: [] }, treasury: { table: [] } };

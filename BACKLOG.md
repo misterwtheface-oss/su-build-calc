@@ -158,6 +158,8 @@ a decompile → write `_su_extract/code/HANDOFF_<topic>.md` and don't guess (bat
 - [ ] **(#7) Verify Nether Boss rewards.** Check that the reward given right after a Nether Boss fight is the quest
   completion reward, and that the two chests ALSO hold +3 bundles on top of it. Check against code, then fix the Bosses
   page reward text if needed.
+  **2026-10-17:** chests CONFIRMED in code (2 × 9 bundles: 3 + 3 boss room + 3 Nether bonus; +5 at 10 favor-rank realms) and now
+  on the Bosses page. Whether the post-fight loot roll IS the quest-450 payout is asked in `_su_extract/code/HANDOFF_nether_boss_reward.md`.
 
 ### G10. Macro
 - [ ] **(#12) Order of duplicate-name traits in the macro selector.** E.g. Head of Hydranox appears 5 times, each owned by a
