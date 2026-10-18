@@ -245,6 +245,10 @@ const PREAPPROVED_TAGS = new Set(['Multiplied by::Critical Count', 'Multiplied b
 // Action/Mechanic::Damage (user ruling 2026-10-04): damage where the code does NOT make Attack or Spell/Cast explicit
 // (generic damage handler gates, DoT, damage effects). Replaces the old Attack+Cast pair used to mean "any damage".
 { const am = taxonomy.categories.find(c => c.category === 'Action/Mechanic'); if (am && !am.values.includes('Damage')) am.values.push('Damage'); }
+// Affect on Spells::Count as Manual (user 2026-10-18): an automatic cast counts as manually cast for "manually cast"
+// effects (code: the traits/perk that clear bc_CreatureCast arg3 — _su_extract code/ARTIFACTS.md §3). Members are user-approved
+// in data/reference/code_taxo_approved.json (Superfluidity, The Great Beyond, Embrace the Arcane; Pandemonium Wrath pending code).
+{ const as = taxonomy.categories.find(c => c.category === 'Affect on Spells'); if (as && !as.values.includes('Count as Manual')) as.values.push('Count as Manual'); }
 // Activates When::Ally/Enemy Loses Buff/Debuff (user 2026-10-06): triggered when a creature on that side LOSES a buff or
 // debuff (destroyed, removed, expires, wears off) — distinct from "is Buffed"/"is Debuffed" (gaining one).
 { const aw = taxonomy.categories.find(c => c.category === 'Activates When');
@@ -2732,7 +2736,7 @@ const TRAIT_REJECT = fs.existsSync(APPROVED_PATH) ? (readJSON(APPROVED_PATH).tra
   const ev = (verb) => [`Activates When::Ally ${verb}`, `Activates When::Enemy ${verb}`];
   const RULES = {   // Action/Mechanic value -> exact tags (or "prefix*") that imply it
     Attack: [...ev('Attacks'), 'Affect on Attacks::*', 'Multiplied by::Attack Count'],
-    Cast: [...ev('Casts'), 'Affect on Spells::Automatic/Extra Cast', "Affect on Spells::Can't Manually Cast", 'Multiplied by::Cast Count'],
+    Cast: [...ev('Casts'), 'Affect on Spells::Automatic/Extra Cast', "Affect on Spells::Can't Manually Cast", 'Affect on Spells::Count as Manual', 'Multiplied by::Cast Count'],
     Defend: [...ev('Defends'), 'Affect on Mitigation::Automatically Defend', "Affect on Mitigation::Can't Manually Defend", 'Multiplied by::Defend Count', 'Active If::Defending'],
     Provoke: [...ev('Provokes'), 'Affect on Mitigation::Automatically Provoke', "Affect on Mitigation::Can't Manually Provoke", 'Multiplied by::Provoke Count', 'Active If::Provoking'],
     Dodge: [...ev('Dodges'), "Affect on Mitigation::Can't Dodge Attacks", 'Affect on Mitigation::More Dodge Chance', 'Multiplied by::Dodge Count'],

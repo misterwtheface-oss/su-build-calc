@@ -4,6 +4,13 @@ Every dated change entry, newest first (moved verbatim from Progress.md on 2026-
 to their own section and sorted by their date). Current state and open work: `Progress.md`, `BACKLOG.md`.
 New entries go at the TOP.
 
+## 2026-10-18 — Count as Manual tag; nether "total 6" closed; relic threshold preview
+- New taxonomy value **Affect on Spells::Count as Manual** (user-approved): Superfluidity, The Great Beyond, Embrace the Arcane
+  (code: they clear `bc_CreatureCast` arg3) and Pandemonium Wrath (text; code validation asked). Implies Action/Mechanic::Cast.
+- #24 closed: the nether stone generator has no combined cap (decompile: 6 props / 3 traits / 3 spells, separate loops).
+- #17: 2-vs-3 rank threshold preview from code signatures (37 at 3+, 34 more at exactly 2) recorded; final pick waits on the
+  per-rank tags.
+
 ## 2026-10-17 — Batch of 30 (user list): 20 shipped, rest waiting on the extract or a user call
 - **Spell gems (G1):** one shared spell row for the Spell Wizard, Artifact Wizard spell socket, Nether Stone spell picker and
   library preview (`spellRow`); the Spells-page granted tile now renders through `spellGemCard` (the nether "from X" line was

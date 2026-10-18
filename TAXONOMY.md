@@ -181,6 +181,7 @@ Actor-split: **Ally** = bearer's side, **Enemy** = opposing side. The event set 
 |---|---|
 | Automatic/Extra Cast | Extra or automatic casts. |
 | Can't Manually Cast | The creature cannot be ordered to cast. |
+| Count as Manual | Automatic casts that count as manually cast for "manually cast" effects (Superfluidity, The Great Beyond, Embrace the Arcane; Pandemonium Wrath pending a code check). |
 | Modify Charges/Behavior | Changes gem charges or a spell's behavior. |
 | Chance to Fail (Spell) | Spells may fizzle. |
 | Equip from Other Classes | Allows equipping off-class spell gems. |

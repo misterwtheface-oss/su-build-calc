@@ -262,8 +262,10 @@
    "name": "Superfluidity",
    "replace": [],
    "add": [
-    "Activates When::Ally Casts"
-   ]
+    "Activates When::Ally Casts",
+    "Affect on Spells::Count as Manual"
+   ],
+   "approved": "2026-10-18"
   },
   "1759": {
    "name": "Ninetails's Revenge",
@@ -1710,6 +1712,23 @@
     "Multiplied by::Critical Count"
    ],
    "approved": "2026-10-06"
+  },
+  "1997": {
+   "name": "The Great Beyond",
+   "replace": [],
+   "add": [
+    "Affect on Spells::Count as Manual"
+   ],
+   "approved": "2026-10-18"
+  },
+  "772": {
+   "name": "Pandemonium Wrath",
+   "replace": [],
+   "add": [
+    "Affect on Spells::Count as Manual"
+   ],
+   "approved": "2026-10-18",
+   "note": "Count as Manual from the text only (\"additional spells are considered to be manually cast\"); validate in code — _su_extract/code/HANDOFF_count_as_manual.md"
   }
  },
  "rejected": {
@@ -2463,6 +2482,14 @@
     "Multiplied by::Dodge Count"
    ],
    "approved": "2026-10-06"
+  },
+  "3:EMBRACETHEARCANE": {
+   "name": "Embrace the Arcane",
+   "replace": [],
+   "add": [
+    "Affect on Spells::Count as Manual"
+   ],
+   "approved": "2026-10-18"
   }
  },
  "policy": {

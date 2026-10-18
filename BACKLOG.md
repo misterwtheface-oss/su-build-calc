@@ -66,11 +66,12 @@ a decompile → write `_su_extract/code/HANDOFF_<topic>.md` and don't guess (bat
   (`_su_extract`) and enforce it in the picker, e.g. hide or disable items already used.
   **2026-10-17:** not in any decompile on disk → asked in `_su_extract/code/HANDOFF_artifact_slot_uniqueness.md` §1
   (key = material, property or stat group? trick only, or stat slots too?).
-- [ ] **(#24) Nether Stone wizard: cap total effects at 6**, on top of the existing per-effect caps. Confirm in the code
+- [x] **(#24) Nether Stone wizard: cap total effects at 6** CLOSED 2026-10-18 — no such cap in code (re-checked in the on-disk decompile: separate loops 6 / 3 / 3, no shared counter; NETHER.md). App unchanged., on top of the existing per-effect caps. Confirm in the code
   where the 6 comes from (`inv_NetherStoneCreate` / NETHER.md).
   **2026-10-17: code disagrees — waiting on the user.** NETHER.md (CODE-CERTAIN): the 6 is the *property* cap; traits (3) and
   spells (3) are separate roll chains, so the generator allows up to 12 total. The app already enforces 6/3/3. Asked the
   extract for any other total limit (HANDOFF_artifact_slot_uniqueness.md §2); ask the user if they have in-game evidence.
+  **2026-10-18 (user: "check it against the code"):** decompile read — three loops, own counters reset to 1, bounds 5 extra / 3 / 3.
 
 ### G4. Planner, Spec overlay, creature detail
 - [x] **(#22) Reorder creatures from the Planner screen** DONE 2026-10-17 (▲▼ roster rows, ‹ › tiles; swaps the whole slot). with arrows that swap a creature with its neighbour. **User:**
@@ -111,20 +112,25 @@ a decompile → write `_su_extract/code/HANDOFF_<topic>.md` and don't guess (bat
   ranks) is still to decide**, so ask before shipping.
   **2026-10-17:** relic tags exist only per relic (31), not per rank (310 rank perks; 295 have code signatures) → asked the
   extract for per-rank tags + scope in `_su_extract/code/HANDOFF_relic_rank_taxonomy.md`. Threshold asked of the user.
+  **2026-10-18 (user: "see what surfaces at 2 and is dropped with 3"):** preview from the per-rank CODE signatures (Action/Mechanic
+  level only, Relic mechanic excluded, 30 of 31 relics — Arbiter has no signatures): **37 features at 3+ ranks, 34 more surface at
+  exactly 2**. Re-run the same comparison on the real per-rank tags when they land, then the user picks.
 
 ### G7. Taxonomy + search
 - [x] **(#13) Search inside the taxonomy view should match subcategories** DONE 2026-10-17 (a "Tags" section heads the name results), e.g. searching "Persist" returns every
   Persist-related subcategory, not only the top level.
-- [ ] **(#28) New subcategory under "Affect on Spells": "Count as Manual".** It covers effects that make auto-cast spells
+- [x] **(#28) New subcategory under "Affect on Spells": "Count as Manual".** (Pandemonium Wrath code check open) It covers effects that make auto-cast spells
   count as manually cast for effect interactions (e.g. The Great Beyond). Find the members from the code flag where
   possible. Approval goes through the usual taxonomy review queue.
-  **2026-10-17 proposal (awaiting user approval; nothing shipped):** value `Affect on Spells::Count as Manual`. Code-grounded
+  **SHIPPED 2026-10-18 (user approved all 4):** value `Affect on Spells::Count as Manual`, members in code_taxo_approved.json;
+  Pandemonium Wrath carries a note → validate in code (`_su_extract/code/HANDOFF_count_as_manual.md`). Original proposal: Code-grounded
   members (traits/perks that clear `bc_CreatureCast` arg3, ARTIFACTS.md §3): **Superfluidity** (5%), **The Great Beyond**
   (40%), **Embrace the Arcane** perk (10%). Text-only candidate: **Pandemonium Wrath** ("additional spells are considered to
   be manually cast"; its call path isn't traced). On approval: add to TAXONOMY.md + `correctTaxo` + code_taxo_approved.
 - [ ] **(#19) What counts as "interacts with minions" for Dark Summoning membership?** Define the rule the same way as
   the Multi-Target rule (CHANGELOG 2026-10-06): what qualifies, what doesn't, edge cases. Get the user's approval, then
   re-audit the members.
+  **User 2026-10-18: membership must be validated in code — no text rule.** Waiting on the handoff.
   **2026-10-17:** code predicate asked in `_su_extract/code/HANDOFF_dark_summoning_pool.md` (record is `inferred`; if the code
   has a list/flag, that is the rule). Draft text rule for the user: *qualifies* = the spell creates a minion, or acts on
   minions directly (buff/heal/remove/sacrifice/consume them); *borderline* = scales with minion count (Crucifixion, Direct
