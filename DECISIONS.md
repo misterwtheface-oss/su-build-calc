@@ -62,7 +62,8 @@ the spine/join source is wrong, not the data — the sprites/classes DO exist un
 
 ## Endowment (user in-game, 2026-10-18)
 - Animator's **Endowment** fuses the Animatus with a copy of party creature #2 at battle start. Only base stats change: each
-  = floor((Animatus base + creature #2's FUSED base) / 2), the normal fusion average. The Animatus gains creature #2's
+  = floor((Animatus base + creature #2's PRIMARY creature's plain base) / 2), the normal fusion average (code; see below).
+  The Animatus gains creature #2's
   primary (innate) trait, not its fused trait. Race becomes creature #2's race; class stays the Animatus's.
 - **Shown in the planner (user):** the Animatus's base stats, traits and race everywhere in the app are the endowed values,
   not a separate battle view. The detail header reads "Animatus ⚭ <creature #2>", traits "(innate + Endowment)".
@@ -72,9 +73,9 @@ the spine/join source is wrong, not the data — the sprites/classes DO exist un
   only (fuse fields restored at cleanup).
 - **Deprived keeps the Endowment trait** (code): Total Deprivation clears `passive2` earlier in the same Create event, then
   Endowment sets it again. The app now keeps it.
-- **Open, user ruling needed:** the code stores only creature #2's own creature id as `fuse2`, so the stat average uses
-  creature #2's PRIMARY creature's plain table base, not its fused base. That differs from the user's observation; the
-  app keeps the user's fused-base model until the user rules (a clean test: creature #2 fused from two very different parents).
+- **Stat partner = plain base (user ruling 2026-10-18: "go with what the code says"):** the code stores only creature #2's
+  own creature id as `fuse2`, so the average uses creature #2's PRIMARY creature's plain table base, not its fused base.
+  This replaces the earlier fused-base reading from the in-game test.
 
 ## Artifacts, nether stones, spell-gem dusts (user ground truth)
 **ARTIFACT SLOT TEMPLATE (user ground truth, 2026-09-17 — datamine couldn't extract, was runtime/level-scaled):**

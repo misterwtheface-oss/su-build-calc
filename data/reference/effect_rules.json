@@ -22,6 +22,6 @@
       "_why": "bc_StartupStatGain @0x14171b74d..0x14171cb67 (perk id 22): when party creature #3 exists, the Animatus does hp/hpmax/attack/intelligence/defense/realspeed += a share of that creature's stats. <1>% per rank (max 50)." },
     { "id": "animator-endowment", "src": { "kind": "perk", "spec": 1, "key": "ENDOWMENT", "via": "spec+anoint" },
       "op": "fuse.copy", "phase": "battleStart", "target": { "race": "Animatus" }, "from": { "slot": 1 },
-      "_why": "User in-game 2026-10-18: at battle start the Animatus fuses with a copy of party creature #2. Only base stats change: each = floor((Animatus base + creature #2's fused base) / 2), the normal fusion average. It gains creature #2's primary (innate) trait, not its fused trait. Race becomes creature #2's race (perk text); class stays. Code confirmation asked in _su_extract/code/HANDOFF_endowment.md." }
+      "_why": "User in-game 2026-10-18: at battle start the Animatus fuses with a copy of party creature #2. Only base stats change. Code (extract S36, HANDOFF_endowment.md): fuse2 = creature #2's own creature id, so each base = floor((Animatus base + creature #2's PRIMARY creature's plain base) / 2); user 2026-10-18: go with the code over the in-game fused-total reading. It gains creature #2's primary (innate) trait (passive2), not its fused trait. Race becomes creature #2's race; class stays. Deprived keeps the trait." }
   ]
 }

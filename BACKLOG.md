@@ -279,9 +279,8 @@ Known limits + planned work, roughly in priority order (all now cheap to impleme
   disagree otherwise, the CSV value is kept until the user decides. List the disagreements and ask.
 
 ## Pending extract hand-offs (from `_su_extract/RESUME.md`, waiting on the user)
-- [ ] **Endowment: fused vs plain base (user ruling).** Extract answered 2026-10-18 (`_su_extract/code/HANDOFF_endowment.md`):
-  everything matches the app except the stat partner. Code averages with creature #2's PRIMARY creature's plain table base;
-  the user saw the fused totals. App keeps the user's model until ruled. Deprived now keeps the trait (code).
+- [x] **Endowment: code check** DONE 2026-10-18 (`_su_extract/code/HANDOFF_endowment.md`). User ruled for the code: the stat
+  average uses creature #2's primary creature's plain base. Deprived keeps the trait.
 - [x] **Nether Bosses** shipped 2026-10-11 (35 pages, tier toggle, threats, stat bars, trait materials).
 - [x] **Gate of the Gods** shipped 2026-10-11 (31 god pages: threats, stat bars, difficulty table, rewards).
 - [ ] **Gate god reward skins** — the reward code gives "each of its three skins" without naming them, and each Avatar has 2–5

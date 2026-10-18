@@ -4,6 +4,10 @@ Every dated change entry, newest first (moved verbatim from Progress.md on 2026-
 to their own section and sorted by their date). Current state and open work: `Progress.md`, `BACKLOG.md`.
 New entries go at the TOP.
 
+## 2026-10-18 — Endowment: plain base of creature #2 (code)
+- User ruling: go with the code. The Animatus's base stats now average with creature #2's PRIMARY creature's plain base
+  (code stores only its creature id as `fuse2`), not creature #2's fused base. Trait, race, class unchanged.
+
 ## 2026-10-18 — Endowment: code answer applied
 - Extract confirmed the model (primary trait, class kept, race, slot position 2, no creature #2 scrolls, battle only).
 - Deprived now keeps the Endowment trait: in code, Total Deprivation clears the fused-trait field before Endowment sets it.

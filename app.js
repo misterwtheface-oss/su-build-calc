@@ -672,19 +672,14 @@
   const artifactEquippedInBuild = (id) => build.slots.some(s => s.artifactId === id);
   const netherEquippedInBuild = (id) => build.slots.some(s => { const a = resolveArtifact(s); return a && (a.netherIds || []).includes(id); });
   const spellGemEquippedInBuild = (id) => build.slots.some(s => (s.spellGemIds || []).includes(id));   // gems only slot into creatures now
-  // a slot's creature (+ fusion) base before scrolls: floor((A+B)/2) per stat when fused (scr_UpdateCreature)
-  function fusedBase(slot) {
-    const c = CREA.get(slot.cid); if (!c) return null;
-    const f = slot.fusion != null ? CREA.get(slot.fusion) : null;
-    return Object.fromEntries(STAT_KEYS.map(k => [k, f ? Math.floor((c[k] + f[k]) / 2) : c[k]]));
-  }
   function baseStats(slot) {
     const c = CREA.get(slot.cid); if (!c) return null;
-    // Endowment (FX.fuseCopy, user in-game 2026-10-18): the Animatus fuses with a copy of creature #2 at battle start —
-    // base stats = the fusion average with creature #2's FUSED base, + creature #2's primary trait and race; class stays
+    // Endowment (FX.fuseCopy): the Animatus fuses with a copy of creature #2 at battle start. Code: fuse2 = creature #2's
+    // own creature id, so the average uses its PRIMARY creature's plain base (its fusion partner is never read), + that
+    // creature's innate trait and creature #2's race; class stays (HANDOFF_endowment.md, user 2026-10-18: go with code)
     const fc = FX.fuseCopy(slot), ec = fc ? CREA.get(fc.from.cid) : null;
     const f = !ec && slot.fusion != null ? CREA.get(slot.fusion) : null;
-    const partner = ec ? fusedBase(fc.from) : f;
+    const partner = ec || f;
     const avg = (a, b) => partner ? Math.floor((a + b) / 2) : a;   // game: fused base = floor((A+B)/2) (scr_UpdateCreature)
     const out = { fused: !!partner };
     const sc = slot.scrolls || {};
