@@ -137,6 +137,11 @@ a decompile → write `_su_extract/code/HANDOFF_<topic>.md` and don't guess (bat
   Orders, Dogpile, Dark Transformation) and removes minions (Banish, Earthquake, Chaos Orb, Contagion, Big Bang) — 10 spells
   mention minions but aren't tagged today; *doesn't* = generic creature effects that may happen to hit a minion. 26 members now.
 
+- [ ] **Taxonomy review: traits with no tags (user 2026-10-18: "an error, should have code tied to it").** 7 traits ship with
+  zero tags: Nature of the Beast, Blood Thirst, Hound Legion (Dire Wolves), Conspiracy Theory, Boon of the Hee Hoo Hay Ho,
+  Nether Orbs, Anatidaephobia. Nature of the Beast's pending `Related Minion::Dire Wolves` proposal has no code src. Asked the
+  extract for code-grounded tags + why they fell through (`_su_extract/code/HANDOFF_untagged_traits.md`); approve in review.
+
 ### G8. Appendix sections + combat research (research first → handoffs → Appendix pages)
 - [x] **(#6) Appendix: Class Advantage.** DONE 2026-10-17 (wheel table + attacks/spells/Opal/Convoke note, COMBAT_RULES.md). Show the class wheel order, and explain how it applies to attacks vs spells
   (spells use the gem's class, Class Swap first) and to class changes (e.g. Opal). Source: `_su_extract/code/COMBAT_RULES.md`.

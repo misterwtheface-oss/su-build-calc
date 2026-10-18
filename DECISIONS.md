@@ -182,3 +182,5 @@ a flat modifier to base: raised **×4/3 (+33%)**, lowered **×2/3 (−33%)**, ot
 - **2026-10-18 — Resurrection Order follows the code order** (not a note): resurrection rows in bc_OnDeath call order, blocker
   rows where the code checks them, then the queue-time checks numbered in their check order.
 - **2026-10-18 — Artifact trick slots: one copy per trick property** (the blacksmith's rule). Stat slots allow repeats.
+- **2026-10-18 — Per-rank relic tags join the relic only when code-backed.** The 21 per-rank tags missing from the whole-relic
+  list are all `llm`, so none were added. Untagged traits are an error to fix with code-grounded tags (taxonomy review).
