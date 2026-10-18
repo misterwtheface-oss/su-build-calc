@@ -118,9 +118,18 @@ a decompile → write `_su_extract/code/HANDOFF_<topic>.md` and don't guess (bat
 - [ ] **(#28) New subcategory under "Affect on Spells": "Count as Manual".** It covers effects that make auto-cast spells
   count as manually cast for effect interactions (e.g. The Great Beyond). Find the members from the code flag where
   possible. Approval goes through the usual taxonomy review queue.
+  **2026-10-17 proposal (awaiting user approval; nothing shipped):** value `Affect on Spells::Count as Manual`. Code-grounded
+  members (traits/perks that clear `bc_CreatureCast` arg3, ARTIFACTS.md §3): **Superfluidity** (5%), **The Great Beyond**
+  (40%), **Embrace the Arcane** perk (10%). Text-only candidate: **Pandemonium Wrath** ("additional spells are considered to
+  be manually cast"; its call path isn't traced). On approval: add to TAXONOMY.md + `correctTaxo` + code_taxo_approved.
 - [ ] **(#19) What counts as "interacts with minions" for Dark Summoning membership?** Define the rule the same way as
   the Multi-Target rule (CHANGELOG 2026-10-06): what qualifies, what doesn't, edge cases. Get the user's approval, then
   re-audit the members.
+  **2026-10-17:** code predicate asked in `_su_extract/code/HANDOFF_dark_summoning_pool.md` (record is `inferred`; if the code
+  has a list/flag, that is the rule). Draft text rule for the user: *qualifies* = the spell creates a minion, or acts on
+  minions directly (buff/heal/remove/sacrifice/consume them); *borderline* = scales with minion count (Crucifixion, Direct
+  Orders, Dogpile, Dark Transformation) and removes minions (Banish, Earthquake, Chaos Orb, Contagion, Big Bang) — 10 spells
+  mention minions but aren't tagged today; *doesn't* = generic creature effects that may happen to hit a minion. 26 members now.
 
 ### G8. Appendix sections + combat research (research first → handoffs → Appendix pages)
 - [ ] **(#6) Appendix: Class Advantage.** Show the class wheel order, and explain how it applies to attacks vs spells
