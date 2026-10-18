@@ -967,6 +967,16 @@ const spellSigByKey = new Map();
   if (fs.existsSync(f)) { let d = readJSON(f); d = Array.isArray(d) ? d : (d.records || Object.values(d)); for (const r of d) if (r && r.key) spellSigByKey.set(r.key, r); }
   else warn('spell_signatures.json missing — spell targets fall back to Spell_REF only'); }
 let spellTargetFromCode = 0, spellTargetSelfFix = 0;
+// spell.aim — who an AUTOMATIC cast of this spell picks (bc_CreatureCastSpellGem: record field 5 scope + field 18 side,
+// _su_extract code/ARTIFACTS.md "Target selection"): enemy1 / ally1 = one random living creature of that side (ally side
+// includes the caster; BUFF / DEBUFF / HEAL / RESURRECT tag overrides refine the pick), enemies / allies / all = every living
+// creature of that side, self = the caster. Data for the Appendix "Random targets" section; the CSV `target` is untouched.
+const spellAim = (sig) => {
+  if (!sig) return null;
+  const sc = sig.target_scope, sd = sig.target_side;
+  if (sc === 'single target') return sd === 'enemy' ? 'enemy1' : sd === 'ally' ? 'ally1' : null;
+  return { 'all enemies': 'enemies', 'all your creatures': 'allies', 'all creatures': 'all', 'none/special': 'self' }[sc] || null;
+};
 // name -> class + compendium details (potency/target/source) from the user ref
 const spellClassByName = new Map();
 const spellRefByName = new Map();
@@ -1077,6 +1087,7 @@ const spells = spellArr.map((s, i) => {
   if (selfFix) spellTargetSelfFix++;
   return { id: i, key: s.key, name: s.name, desc: s.desc || '', cls,
     charges, chargesSrc, potency: ref.potency || null, target, targetSrc, source: ref.source || null,
+    aim: spellAim(spellSigByKey.get(s.key)),
     depth: sDepth, ...(sGate ? { gate: sGate } : {}),
     taxo: sTaxo, taxoSrc: srcArr };
 }).filter(s => s.name);

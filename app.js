@@ -3180,16 +3180,16 @@
 
   // ── Appendix page (internal ids say "errata", its old name) — code-grounded mechanics the game doesn't show, plus the Status Effects reference. ──
   function openErrata() {
-    ovState = { kind: "errata", search: "", collapsed: new Set(["StatusEffects", "Resurrection", "StartOfBattle", "NetherDrops", "PandShrine", "RealmBonusMax", "Masters"]), ndDiff: "normal", render: renderErrata };
+    ovState = { kind: "errata", search: "", collapsed: new Set(["StatusEffects", "Resurrection", "StartOfBattle", "ClassAdv", "RandomTargets", "NetherDrops", "PandShrine", "RealmBonusMax", "Masters"]), ndDiff: "normal", render: renderErrata };
     openOverlay(ovState.render()); maybeFocusSearch(OV);
   }
   function renderErrata() {
     const st = ovState, q = st.search.trim().toLowerCase();
-    const body = statusSection(st, q) + resOrderSection(st, q) + sobSection(st, q) + netherDropSection(st, q) + pandShrineSection(st, q) + realmBonusSection(st, q) + mastersSection(st, q)
+    const body = statusSection(st, q) + resOrderSection(st, q) + sobSection(st, q) + classAdvSection(st, q) + randomTargetSection(st, q) + netherDropSection(st, q) + pandShrineSection(st, q) + realmBonusSection(st, q) + mastersSection(st, q)
       || `<div class="slot-sub" style="padding:10px">Nothing matches “${esc(st.search)}”.</div>`;
     return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel">
       <div class="overlay-header"><h2>Appendix</h2>
-        <input class="ovl-search" placeholder="Search status effects / resurrection / realms…" value="${esc(st.search)}" data-action="errata-search">
+        <input class="ovl-search" placeholder="Search status effects / resurrection / spells / realms…" value="${esc(st.search)}" data-action="errata-search">
         <button class="ovl-close" data-action="close-ovl">✕</button></div>
       <div class="overlay-body"><div class="ovl-center"><div class="ovl-center-scroll">${body}</div></div></div>
       <div class="overlay-footer"><span class="foot-info"></span><button class="btn-confirm" data-action="close-ovl">Done</button></div>
@@ -3389,6 +3389,47 @@
     return `<button class="apx-sec-head apx-cat${open ? "" : " collapsed"}" data-action="gloss-cat-toggle" data-c="${key}"><span class="apx-sec-caret">${open ? "▾" : "▸"}</span>Pandemonium Shrine</button>${body}`;
   }
   // true maximum realm bonus per instability (code: best legal visible + hidden property sets, scr_RealmBonus)
+  // Class advantage (_su_extract code/COMBAT_RULES.md § Class advantage, code-certain: bc_EventDamage class block).
+  const CLASS_WHEEL = ["Life", "Death", "Chaos", "Sorcery", "Nature"];   // each is strong against the next (Nature → Life)
+  function classAdvSection(st, q) {
+    if (q && !"class advantage strong weak wheel opal class swap".includes(q)) return "";
+    const key = "ClassAdv", open = q ? true : !st.collapsed.has(key), n = CLASS_WHEEL.length;
+    const cl = (c) => `<span class="ca-cls">${D.classIcons && D.classIcons[c] ? spriteImg(D.classIcons[c], "px") : ""}<b style="color:${clsColor(c)}">${esc(c)}</b></span>`;
+    const body = open ? `<div class="nd-wrap"><div class="nd-table">
+        <div class="nd-row nd-hd"><span>Class</span><span>Strong vs (×2)</span><span>Weak vs (×0.5)</span></div>
+        ${CLASS_WHEEL.map((c, i) => `<div class="nd-row"><span>${cl(c)}</span><span>${cl(CLASS_WHEEL[(i + 1) % n])}</span><span>${cl(CLASS_WHEEL[(i + n - 1) % n])}</span></div>`).join("")}
+      </div><div class="slot-sub nd-note">Attacks use the attacker's class. Spells use the Spell Gem's class, not the caster's: a Class Swap (Opal) property changes it, and Convoke the Spirits always counts as the class the target is weak against. The defender's current class is used. Widdershins reverses the wheel; True Strike, Bloodline and the Aurum relic always hit as strong.</div></div>` : "";
+    return `<button class="apx-sec-head apx-cat${open ? "" : " collapsed"}" data-action="gloss-cat-toggle" data-c="${key}"><span class="apx-sec-caret">${open ? "▾" : "▸"}</span>Class Advantage</button>${body}`;
+  }
+  // Random targets of automatic casts (bc_CreatureCastSpellGem — _su_extract code/ARTIFACTS.md "Target selection"): per
+  // spell.aim (record fields 5 + 18). A spell-name search lists the matching spells with their target rule (#9).
+  const AIM_RULES = [
+    ["enemy1", "One enemy", "A random living enemy."],
+    ["ally1", "One ally", "A random living ally (the caster included). Buff spells prefer an ally without that buff, Heal spells the ally with the lowest Health, resurrection spells a random dead ally."],
+    ["enemies", "All enemies", "Every living enemy."],
+    ["allies", "All your creatures", "Every living ally, the caster included."],
+    ["all", "All creatures", "Every living creature on both sides."],
+    ["self", "Caster", "The caster only."],
+  ];
+  function randomTargetSection(st, q) {
+    const spells = (D.spells || []).filter(sp => sp.aim && !sp.unused);
+    const all = q && "random target targets automatic cast artifact nether booze".includes(q);
+    const hits = q && !all ? spells.filter(sp => sp.name.toLowerCase().includes(q)).slice(0, 40) : [];
+    if (q && !all && !hits.length) return "";
+    const key = "RandomTargets", open = q ? true : !st.collapsed.has(key);
+    const cnt = (k) => spells.filter(sp => sp.aim === k).length;
+    const rule = new Map(AIM_RULES.map(([k, l]) => [k, l]));
+    const body = !open ? "" : hits.length
+      ? `<div class="nd-wrap"><div class="nd-table">
+          <div class="nd-row rt-row nd-hd"><span>Spell</span><span>Automatic cast targets</span></div>
+          ${hits.map(sp => `<div class="nd-row rt-row"><span class="mr-realm">${spellIco(sp)}<b>${esc(sp.name)}</b></span><span>${esc(rule.get(sp.aim))}</span></div>`).join("")}
+        </div></div>`
+      : `<div class="nd-wrap"><div class="slot-sub nd-note" style="margin:0 0 6px">Automatic casts (Artifact spell slot, Nether Stone spells, Booze and Arsenal auto-casts, scripted boss casts) pick their own targets from the spell's target rule:</div><div class="nd-table">
+          <div class="nd-row rt-row3 nd-hd"><span>Spell targets</span><span>Who gets picked</span><span>Spells</span></div>
+          ${AIM_RULES.map(([k, l, d]) => `<div class="nd-row rt-row3"><span><b>${esc(l)}</b></span><span>${esc(d)}</span><span>${cnt(k)}</span></div>`).join("")}
+        </div><div class="slot-sub nd-note">No valid target: the cast fizzles (no fallback). A Confused caster can still send a harmful single-target spell to another random creature. Search a spell name to see its rule.</div></div>`;
+    return `<button class="apx-sec-head apx-cat${open ? "" : " collapsed"}" data-action="gloss-cat-toggle" data-c="${key}"><span class="apx-sec-caret">${open ? "▾" : "▸"}</span>Random Targets</button>${body}`;
+  }
   function realmBonusSection(st, q) {
     const M = D.realmBonusMax || {};
     if (!Object.keys(M).length || (q && !"realm bonus item bonus instability maximum".includes(q))) return "";
