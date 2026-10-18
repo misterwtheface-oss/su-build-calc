@@ -4992,6 +4992,97 @@
     dovState = { kind: "creature-detail", slotIdx, render: () => renderCreatureDetail(dovState.slotIdx) };
     openDetail(dovState.render());
   }
+  // ── Creature detail "Triggers" (BACKLOG #5): every triggered effect the build attaches to this creature, grouped by
+  // the event it fires on. Traits + relic ranks join by their Activates at / Activates When tags (relic ranks: per-rank
+  // tags, relics[].ranks[].trig); spells by their slot trigger (artifact type / nether stone); spell-gem properties by
+  // code (Citrine bc_OnAttack/Defend/Provoke/Heal, Bloodstone/Carnelian/Emerald/Garnet after a cast, Jade at battle
+  // start); artifact "X On Damage" properties roll in bc_EventDamage on the attacker's artifact (roll_sites) → Deals Damage.
+  // Tag matching is case-insensitive (the taxonomy carries both "Enemy Is Healed" and "Enemy is Healed").
+  const TRIG_GROUPS = [
+    { key: "battle", label: "Start of Battle", tags: ["Activates at::Start of Battle"] },
+    { key: "turn", label: "On Turn", tags: ["Start of Ally Turn", "Start of Enemy Turn", "End of Ally Turn", "End of Enemy Turn"].map(v => "Activates at::" + v), slot: "On Turn" },
+    { key: "attack", label: "Attack", ev: ["Attacks"], slot: "On Attack" },
+    { key: "cast", label: "Cast", ev: ["Casts"], slot: "On Cast" },
+    { key: "defend", label: "Defend", ev: ["Defends"], slot: "On Defend" },
+    { key: "provoke", label: "Provoke", ev: ["Provokes"], slot: "On Provoke" },
+    { key: "damage", label: "Damage", ev: ["Deals Damage", "Takes Damage", "Indirectly Damaged"] },
+    { key: "crit", label: "Critical Hits", ev: ["Critically Hits"] },
+    { key: "dodge", label: "Dodge", ev: ["Dodges"] },
+    { key: "heal", label: "Healing", ev: ["is Healed"] },
+    { key: "status", label: "Buffs & Debuffs", ev: ["is Buffed", "is Debuffed", "Loses Buff/Debuff"] },
+    { key: "stats", label: "Stats", ev: ["Gains Stats", "Loses Stats"] },
+    { key: "death", label: "Death & Resurrection", ev: ["Dies", "Resurrects"] },
+    { key: "timeline", label: "Timeline", ev: ["Moves on Timeline"] },
+    { key: "minion", label: "Minions", ev: ["Minion Gain/Action"] },
+    { key: "trait", label: "Trait Activates", ev: ["Trait Activates"] },
+  ];
+  for (const g of TRIG_GROUPS) if (g.ev) g.tags = g.ev.flatMap(e => ["Ally", "Enemy"].map(a => `Activates When::${a} ${e}`));
+  const TRIG_TAG_GROUP = new Map(TRIG_GROUPS.flatMap(g => g.tags.map(t => [t.toLowerCase(), g.key])));
+  const TRIG_GEM_PROP = { CITRINE_ATTACK: "attack", CITRINE_DEFEND: "defend", CITRINE_PROVOKE: "provoke", CITRINE_HEAL: "heal",
+    BLOODSTONE: "cast", CARNELIAN: "cast", EMERALD: "cast", GARNET: "cast", JADE: "battle" };
+  function slotTriggers(slot) {
+    const by = new Map(TRIG_GROUPS.map(g => [g.key, []]));
+    // tag list → Map(group key → the matched event names, for the chip)
+    const byTags = (tags) => { const m = new Map();
+      for (const t of tags || []) { const k = TRIG_TAG_GROUP.get(t.toLowerCase()); if (!k) continue; if (!m.has(k)) m.set(k, []); m.get(k).push(t.split("::")[1]); }
+      return m; };
+    const art = resolveArtifact(slot);
+    // traits (innate / fusion / artifact material / nether stone); non-innate ones say where they come from
+    const traitSrc = new Map(), noteSrc = (tid, name) => { if (tid != null && !traitSrc.has(tid)) traitSrc.set(tid, name); };
+    if (art) {
+      for (const id of art.traits || []) { const ti = TRAITITEM.get(id); if (ti) noteSrc(ti.traitId, art.name); }
+      for (const nid of art.netherIds || []) { const n = nether.find(x => x.id === nid); if (!n) continue;
+        for (const p of n.props || []) if (p.cat === "trait") { const ti = TRAITITEM.get(p.key); if (ti) noteSrc(ti.traitId, n.name); } }
+    }
+    const c = CREA.get(slot.cid), f = slot.fusion != null ? CREA.get(slot.fusion) : null;
+    const innate = new Set([c && c.traitId, f && f.traitId].filter(x => x != null));
+    for (const tid of slotTraitIds(slot)) {
+      const t = TRAIT[tid]; if (!t) continue;
+      const src = innate.has(tid) ? null : traitSrc.get(tid) || null;
+      for (const [k, evs] of byTags(t.taxo)) by.get(k).push({ kind: "trait", tid, evs, src });
+    }
+    // relic ranks up to the equipped rank (Deprived ignores relics)
+    const relic = slot.relic && !FX.ignores("relics") ? RELIC.get(slot.relic.id) : null;
+    if (relic) for (const r of relic.ranks) if (r.rank <= slot.relic.rank)
+      for (const [k, evs] of byTags(r.trig)) by.get(k).push({ kind: "relic", relic, r, evs });
+    if (art) {
+      // spells socketed in the artifact: the native slot fires on the type trigger, nether stone spells on their own
+      const slotGroup = (trig) => (TRIG_GROUPS.find(g => g.slot === trig) || {}).key;
+      const typeTrig = ART_TYPE_TRIGGER[art.primary], ach = artSlotChance(art, slot);
+      for (const id of art.spells || []) { const sp = SPELL.get(id), k = slotGroup(typeTrig); if (sp && k) by.get(k).push({ kind: "spell", sp, trig: typeTrig, src: art.name, ch: ach }); }
+      for (const nid of art.netherIds || []) { const n = nether.find(x => x.id === nid); if (!n) continue;
+        for (const pr of n.props || []) if (pr.cat === "spell") { const sp = SPELL.get(pr.key), trig = pr.trigger || "On Attack", k = slotGroup(trig);
+          if (sp && k) by.get(k).push({ kind: "spell", sp, trig, src: n.name, ch: netherSpellChance(trig) }); } }
+      for (const [prop, { value, unit }] of artifactBonusRows(art).extra) if (/ On Damage$/i.test(prop))
+        by.get("damage").push({ kind: "artprop", prop, value, unit, art });
+    }
+    // equipped spell gems' trigger properties
+    for (const gid of slot.spellGemIds || []) { const g = spellGems.find(x => x.id === gid), sp = gemSpell(g); if (!sp) continue;
+      for (const pid of g.propIds || []) { const p = SPELLPROP.get(pid), k = p && TRIG_GEM_PROP[p.key]; if (k) by.get(k).push({ kind: "gemprop", g, sp, p }); } }
+    return TRIG_GROUPS.map(g => ({ ...g, items: by.get(g.key) })).filter(g => g.items.length);
+  }
+  const trigChip = (txt) => `<span class="art-trigger">${esc(txt)}</span>`;
+  function trigItemHtml(it) {
+    if (it.kind === "spell") return spellGemCard(it.sp, it.trig, it.src, it.ch);
+    if (it.kind === "gemprop") return spellGemCard(it.sp, `${it.p.name} · ${propShort(it.p, gemTier(it.g))}`, gemName(it.g) !== it.sp.name ? gemName(it.g) : null, null);
+    if (it.kind === "trait") return `<div class="art-spellcard trig-card"><div class="art-spellcard-head">${traitBanner(it.tid)}${trigChip(it.evs.join(" · "))}</div>
+        ${it.src ? `<div class="slot-sub" style="text-align:left">from ${esc(it.src)}</div>` : ""}
+        <div class="trait-desc">${richText((TRAIT[it.tid] || {}).desc || "")}</div></div>`;
+    if (it.kind === "relic") { const ra = relicArt(it.relic);
+      return `<div class="art-spellcard apx-clickable" data-action="apx-open" data-ek="relic" data-eid="${it.relic.id}" title="View taxonomy">
+        <div class="art-spellcard-head">${ra ? `<span class="prop-ico sm">${spriteImg(ra, "px")}</span>` : ""}<b>${esc(relicShortName(it.relic))} · R${it.r.rank}</b>${trigChip(it.evs.join(" · "))}</div>
+        <div class="trait-desc">${richText(it.r.desc || "")}</div></div>`; }
+    if (it.kind === "artprop") { const ic = artIcon(it.art);
+      return `<div class="art-spellcard"><div class="art-spellcard-head">${ic ? `<span class="prop-ico sm">${spriteImg(ic, "px")}</span>` : ""}<b>${esc(it.prop)}</b>${trigChip(`Deals Damage · ${it.value}${it.unit === "%" ? "%" : ""}`)}</div>
+        <div class="slot-sub" style="text-align:left">from ${esc(it.art.name)}</div></div>`; }
+    return "";
+  }
+  function triggersSectionHtml(slot) {
+    const groups = slotTriggers(slot); if (!groups.length) return "";
+    return `<div class="section-label" style="margin-top:14px">Triggers</div>
+      ${groups.map(g => `<div class="trig-group"><div class="etax-cat">${esc(g.label)}</div>
+        <div class="art-spellcards">${g.items.map(trigItemHtml).join("")}</div></div>`).join("")}`;
+  }
   function renderCreatureDetail(slotIdx) {
     const slot = build.slots[slotIdx], c = CREA.get(slot.cid); if (!c) return "";
     const fs = finalStats(slot), b = fs.base;
@@ -5063,6 +5154,7 @@
                 <span class="prop-name" style="flex:0 0 40px;color:var(--accent)">R${r.rank}</span>
                 <span class="prop-stat" style="flex:1;text-align:left">${richText(r.desc)}</span></div>`).join("")}
             </div>` : ""}
+          ${triggersSectionHtml(slot)}
         </div></div>
       </div>
       <div class="overlay-footer"><span class="foot-info"></span>

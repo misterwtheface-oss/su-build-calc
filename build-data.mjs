@@ -765,6 +765,10 @@ const cardTaxo = loadTaxoBy('card_taxonomy_tags.json');     // keyed by card id 
 const relicTaxo = loadTaxoBy('relic_taxonomy_tags.json');   // keyed by relic id (LLM-classified)
 // per-rank relic tags (extract S35): how many of a relic's ranks carry each tag → the "×N" on its chip (N ≥ 2, user ruling 2026-10-18)
 const relicRankCounts = (() => { const p = path.join(MODEL, 'relic_rank_taxonomy_tags.json'); return fs.existsSync(p) ? (readJSON(p).relic_tag_counts || {}) : {}; })();
+// per-rank trigger tags (same file, by_key '<relic id>:<rank>'): only the Activates at / Activates When tags ship, for the
+// creature detail's Triggers section (BACKLOG #5)
+const relicRankTrig = (() => { const p = path.join(MODEL, 'relic_rank_taxonomy_tags.json'); return fs.existsSync(p) ? (readJSON(p).by_key || {}) : {}; })();
+const TRIG_CATS = new Set(['Activates at', 'Activates When']);
 const taxoStrs = (arr) => (arr || []).map(a => a.cat + '::' + a.val);
 // perk taxo is keyed "spec_id:perk_key" but a perk's tags are intrinsic to the perk — re-key by perk_key
 // so membership reassignment (CSV-driven) still finds each perk's tags regardless of which spec now owns it.
@@ -1614,7 +1618,10 @@ const relics = relicRef.map((r, i) => {
     name: r.relic,
     icon, iconBig,
     statBonus: r.stat_bonus || null,
-    ranks: (r.ranks || []).map(x => ({ rank: pct(x.rank), desc: x.description || '' })),
+    ranks: (r.ranks || []).map(x => {
+      const trig = [...new Set((relicRankTrig[`${i}:${pct(x.rank)}`] || []).filter(t => TRIG_CATS.has(t.cat)).map(t => t.cat + '::' + t.val))];
+      return { rank: pct(x.rank), desc: x.description || '', ...(trig.length ? { trig } : {}) };
+    }),
     taxo: rTaxo,
     taxoSrc: taxoSrcArr(relicTaxo[String(i)], rTaxo),
     tagRanks: Object.fromEntries(Object.entries(relicRankCounts[String(i)] || {}).filter(([, v]) => v.n >= 2).map(([k, v]) => [k, v.n])),

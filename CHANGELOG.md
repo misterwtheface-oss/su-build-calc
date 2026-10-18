@@ -4,6 +4,23 @@ Every dated change entry, newest first (moved verbatim from Progress.md on 2026-
 to their own section and sorted by their date). Current state and open work: `Progress.md`, `BACKLOG.md`.
 New entries go at the TOP.
 
+## 2026-10-18 — Creature detail: Triggers section (#5)
+- **Triggers** (creature detail, after the relic): every triggered effect the build attaches to that creature, grouped by
+  event. Empty groups are hidden. Groups, in order: Start of Battle, On Turn, Attack, Cast, Defend, Provoke, Damage,
+  Critical Hits, Dodge, Healing, Buffs & Debuffs, Stats, Death & Resurrection, Timeline, Minions, Trait Activates. The
+  user's list was Attack / Cast / Defend / Provoke / Damage / On Turn; the other groups come from the remaining Activates
+  at / Activates When values.
+- Sources: traits (innate, fusion, artifact material, nether stone; non-innate ones say "from <artifact / stone>") and
+  relic ranks up to the equipped rank (skipped under Deprived), both joined by their Activates tags; the chip names the
+  matched event ("Enemy Attacks", "End of Ally Turn"). The artifact's own spell fires on the type trigger, nether stone
+  spells on their stored trigger, both with the slot chance. Spell-gem properties use the code hosts: Citrine
+  Attack / Defend / Provoke / Heal, Bloodstone / Carnelian / Emerald / Garnet → Cast, Jade → Start of Battle. Artifact
+  and nether "X On Damage" properties go under Damage as "Deals Damage": `roll_sites` shows all 36 of them rolled in
+  `bc_EventDamage` on the attacker's artifact. Some localized names say "when receiving damage"; the code says dealing.
+- Data: `relics[].ranks[].trig` = that rank's Activates at / Activates When tags from `relic_rank_taxonomy_tags.json`
+  `by_key` (218 of 310 ranks). Spec perks and anointments are not listed (they belong to the party, not the creature).
+- All spell rows use the shared `spellGemCard`. Code: `TRIG_GROUPS` / `slotTriggers` / `triggersSectionHtml` in app.js.
+
 ## 2026-10-18 — Extract answers applied: trick uniqueness, Minion Spells, relic ×N, resurrection order, Final Summoning
 - **Artifact wizard (#23):** a trick material whose property is already in the other trick slot is greyed out and can't be
   added (code: the blacksmith refuses it); saved artifacts with a repeated trick drop the copy on load. Stat slots unchanged.

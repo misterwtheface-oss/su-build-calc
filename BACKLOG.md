@@ -84,7 +84,7 @@ a decompile → write `_su_extract/code/HANDOFF_<topic>.md` and don't guess (bat
 - [x] **(#21) Something from Nothing trait chip gets no class colour.** DONE 2026-10-17: build-data fills trait.cls from the owning creature (id join) — 5 traits (also Robotic Armor, Numerical Nightmare, Eery Veil, Ignorance Is Bliss); CSVs already right. Likely because the source creature's name is
   numeric, so the name→class lookup misses. Fix the lookup to use the id, then check other traits whose source has a
   numeric or odd name.
-- [ ] **(#5) Creature detail: "Triggers" section.** Subsections: **Attack, Cast, Defend, Provoke** (the 4 actions), a
+- [x] **(#5) Creature detail: "Triggers" section.** DONE 2026-10-18 (16 event groups incl. the extra Activates events; perks/anointments left out as party-wide, CHANGELOG). Subsections: **Attack, Cast, Defend, Provoke** (the 4 actions), a
   general **Damage** subsection, and **On Turn**. Each lists every triggered effect the build attaches to that event:
   - "On X" spells from Artifacts, socketed materials and Nether Stones;
   - spell-gem properties that add an "On Cast: X" effect (Citrine, Azurite, Bloodstone, …);

@@ -1874,3 +1874,7 @@ span.boss-chip { cursor: default; }
 .ds-spell { display: inline-flex; align-items: center; gap: 4px; }
 .ds-spell img { width: 16px; height: 16px; }
 .ds-spells .slot-sub { flex-basis: 100%; }
+/* creature detail Triggers (BACKLOG #5): one block per event, the shared spell-gem containers inside */
+.trig-group { margin-bottom: 10px; }
+.trig-group .art-spellcard-head { flex-wrap: wrap; }
+.trig-card .trait-banner { flex: 1; min-width: 0; }
