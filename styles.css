@@ -144,10 +144,10 @@ h1, h2, h3 { margin: 0; }
 .facet .facet-n { font-weight: 800; opacity: .8; }
 .party-grid {
   display: grid; gap: var(--gap);
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
-@media (min-width: 620px) { .party-grid { grid-template-columns: repeat(3, 1fr); } }
-@media (min-width: 980px) { .party-grid { grid-template-columns: repeat(6, 1fr); } }
+@media (min-width: 620px) { .party-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (min-width: 980px) { .party-grid { grid-template-columns: repeat(6, minmax(0, 1fr)); } }
 
 .player-row { margin-bottom: 16px; }
 
@@ -431,7 +431,7 @@ h1, h2, h3 { margin: 0; }
 /* selection grid of sprite tiles */
 .pick-grid { display: grid; gap: 8px; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); }
 .pick-tile {
-  position: relative;
+  position: relative; min-width: 0;   /* fixed icon size: a long name wraps/clamps instead of widening its grid column */
   background: var(--surface); border: 1px solid var(--border-dim); border-radius: 9px;
   padding: 6px; display: flex; flex-direction: column; gap: 4px; align-items: center;
   cursor: pointer; transition: border-color .1s;
@@ -443,7 +443,7 @@ h1, h2, h3 { margin: 0; }
 /* fixed 2-line name box so every tile is the same height regardless of name length */
 .pick-tile .pt-name {
   font-size: 11px; text-align: center; line-height: 1.1; height: 2.2em; width: 100%; overflow: hidden;
-  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow-wrap: anywhere;
 }
 .pick-tile .pt-total { font-size: 10px; color: var(--text-dim); }
 .crea-sortbar { margin-top: -4px; align-items: center; }   /* keep left-aligned, vertically centre the label + segments */
@@ -738,9 +738,9 @@ h1, h2, h3 { margin: 0; }
   .ovl-center-scroll { -webkit-overflow-scrolling: touch; }
   .cd-info-btn { display: flex; }   /* full-screen detail shortcut — the side panel is a cramped strip here */
   .cd-bk-btn { right: 44px; }       /* sit beside the "i" once it appears on phones */
-  .crea-grid { grid-template-columns: repeat(4, 1fr); gap: 6px; }   /* 4 creatures per row on phones */
+  .crea-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }   /* 4 creatures per row on phones */
   /* saved lists (artifacts / spell gems / nether stones) — at least 4 per row on phones */
-  .pick-grid { grid-template-columns: repeat(4, 1fr); gap: 6px; }
+  .pick-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
   /* tighter overlay chrome so the grid isn't squeezed */
   .overlay-header { padding: 8px 12px; }
   /* extend the footer's background through the nav-bar inset so it sits flush with
@@ -758,9 +758,9 @@ h1, h2, h3 { margin: 0; }
 
 /* home spec tile — small */
 /* home-top mirrors the party grid so spec/anoint tiles match creature-card width */
-.home-top { margin-bottom: 14px; display: grid; gap: var(--gap); grid-template-columns: repeat(2, 1fr); }
-@media (min-width: 620px) { .home-top { grid-template-columns: repeat(3, 1fr); } }
-@media (min-width: 980px) { .home-top { grid-template-columns: repeat(6, 1fr); } }
+.home-top { margin-bottom: 14px; display: grid; gap: var(--gap); grid-template-columns: repeat(2, minmax(0, 1fr)); }
+@media (min-width: 620px) { .home-top { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (min-width: 980px) { .home-top { grid-template-columns: repeat(6, minmax(0, 1fr)); } }
 .anoint-grp { margin-top: 12px; display: flex; gap: 8px; align-items: baseline; }
 .anoint-grp:first-child { margin-top: 0; }
 .anoint-badge { flex: 0 0 auto; align-self: center; font-size: 9px; font-weight: 800; text-transform: uppercase;
@@ -804,7 +804,7 @@ h1, h2, h3 { margin: 0; }
 .spec-play { text-align: left; }
 .spec-grid { grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); }
 /* Relic picker: fixed 3-wide grid per stat section (3×2 for a full 6-relic stat) */
-.relic-grid { grid-template-columns: repeat(3, 1fr); margin-bottom: 14px; }
+.relic-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); margin-bottom: 14px; }
 .relic-grid + .section-label { margin-top: 4px; }
 /* False God grouping — each group headed by the combined 6-part battle portrait */
 .fgod-group { margin-bottom: 8px; }
@@ -1320,7 +1320,7 @@ select.app-select:hover { border-color: var(--accent2); }
 .bi-anoint { width: 26px; height: 26px; display: flex; align-items: center; justify-content: center;
   background: var(--surface2); border: 1px solid var(--border-dim); border-radius: 5px; overflow: hidden; }
 .bi-anoint img { width: 100%; height: 100%; object-fit: contain; }
-.bi-crits { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.bi-crits { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
 .bi-crit { aspect-ratio: 1; display: flex; align-items: center; justify-content: center;
   background: var(--surface); border: 1px solid var(--border-dim); border-radius: 8px; overflow: hidden; }
 .bi-crit.empty { opacity: .35; }
@@ -1473,13 +1473,13 @@ select.app-select:hover { border-color: var(--accent2); }
   .cd-chev.flank { display: block; }   /* flank the sprite on mobile */
   .cd-nav-below { display: none; }      /* … and drop the below-sprite nav */
   .lib-info { flex: 0 0 45vh; height: 45vh; max-height: 45vh; }   /* roomier bottom info panel */
-  .spec-grid { grid-template-columns: repeat(5, 1fr); gap: 6px; }        /* ≥5 per row */
+  .spec-grid { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }        /* ≥5 per row */
   .spec-pick .pt-name { font-size: 9px; line-height: 1.05; }
   .spec-right, .nether-form { width: auto; }
   .card-grid { grid-template-columns: 1fr; }
-  .lib-grid { grid-template-columns: repeat(4, 1fr); }   /* saved builds: 4 per row on phones */
+  .lib-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }   /* saved builds: 4 per row on phones */
   /* equipment overlays (artifacts / spell gems / nether): 6 per row on phones */
-  .equip-grid { grid-template-columns: repeat(6, 1fr); gap: 5px; }
+  .equip-grid { grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 5px; }
   .equip-grid .pick-tile .pt-name { font-size: 9px; }
   /* shorter artifact/slot tiles on mobile so the wizard fits without scrolling */
   .art-slot { min-height: 58px; padding: 6px 4px; }
@@ -1798,3 +1798,4 @@ button.boss-chip:hover { border-color: var(--accent2); }
 /* property that's legal on the spell but does nothing (Agate rounding to +0, Azurite on a no-damage/no-stat spell) */
 .prop-metatag.nofx { color: var(--bad); border: 1px solid var(--bad); border-radius: 4px; padding: 0 4px; }
 .art-slot .prop-metatag.nofx { margin: 2px 0 0; display: inline-block; }
+.taxo-bar .facet { flex: 0 1 auto; min-width: 0; }   /* stacked taxonomy filter chips wrap onto new rows */

@@ -4304,16 +4304,22 @@
   const SPELL_TARGETS = [["Target", "Single target"], ["Enemies", "Enemies"], ["Your Creatures", "Your creatures"], ["All Creatures", "All creatures"], ["Self", "Self"]]
     .filter(([v]) => (D.spells || []).some(sp => sp.target === v));
   // ── shared spell picker (Spell Gem, Artifact and Nether Stone wizards) ──
-  // state on the wizard's ovState: search, spellTarget, spellCls, spellSort, spellTaxo, bkOnly
+  // state on the wizard's ovState: search, spellTarget, spellCls, spellSort, spellTaxos (tags, AND), bkOnly
   // Only spells that exist as holdable gems: battle-only spells (Ultimates, Runes, Mega Magic, Colorwave, boss kits) reach a
   // creature through their owner instead (FX.grantedSpells), and never-created spells don't reach play at all.
+  // stacked taxonomy filters (spell pickers + Spell Gem library): every chosen tag must match (AND). One chip per tag
+  // (✕ drops that tag) and ＋ Filter adds another.
+  const taxosMatch = (st, sp) => !(st.spellTaxos || []).length || (!!sp && st.spellTaxos.every(k => (sp.taxo || []).includes(k)));
+  const taxoChips = (st) => (st.spellTaxos || []).map(k =>
+      `<button class="facet on tag" data-action="sg-taxofilter-clear" data-v="${esc(k)}">${esc(taxoCatName(k))}: <b>${esc(taxoValName(k))}</b> <span class="facet-x">✕</span></button>`).join("")
+    + `<button class="facet add" data-action="sg-taxofilter">＋ Filter</button>`;
   function spellPickList(st, exclude) {
     const q = (st.search || "").trim().toLowerCase(), sort = st.spellSort || "name";
     return (D.spells || []).filter(sp => !sp.battleOnly && !sp.unused && !(exclude && exclude.has(sp.id))
         && (!q || sp.name.toLowerCase().includes(q) || (sp.desc || "").toLowerCase().includes(q) || (sp.taxo || []).some(k => taxoValName(k).toLowerCase().includes(q)))
         && (!st.spellCls || sp.cls === st.spellCls)
         && (st.spellTarget == null || sp.target === st.spellTarget)
-        && (!st.spellTaxo || (sp.taxo || []).includes(st.spellTaxo))
+        && taxosMatch(st, sp)
         && (!st.bkOnly || bookmarks.spells.includes(sp.id)))
       .sort((x, y) => {
         const d = sortSign(st.spellSortRev), byName = x.name.localeCompare(y.name);
@@ -4337,9 +4343,7 @@
   // the identical two-row bar: [lead] search · ＋ Filter · ★ Bookmarked  /  Target ▾ · Class ▾ · A–Z | Potency | Charges
   function spellFilterBar(st, searchAction, lead = "") {
     const sort = sortCur(st.spellSort, "name");
-    const taxo = st.spellTaxo
-      ? `<button class="facet on tag" data-action="sg-taxofilter-clear">${esc(taxoCatName(st.spellTaxo))}: <b>${esc(taxoValName(st.spellTaxo))}</b> <span class="facet-x">✕</span></button>`
-      : `<button class="facet add" data-action="sg-taxofilter">＋ Filter</button>`;
+    const taxo = taxoChips(st);
     const bk = bookmarks.spells.length ? `<button class="facet ${st.bkOnly ? "on" : ""}" data-action="spf-bk" title="Show only bookmarked spells">★ Bookmarked</button>` : "";
     return `<div class="ovl-filterbar spf-row">${lead}<input class="ovl-search" placeholder="Search spells…" value="${esc(st.search || "")}" data-action="${searchAction}">${taxo}${bk}</div>
       <div class="ovl-filterbar sg-dropbar">
@@ -5218,11 +5222,13 @@
     const q = (st.search || "").trim().toLowerCase(), sortK = st.libSort || "recent", d = sortSign(st.libSortRev);
     const gemText = (g) => { const sp = gemSpell(g); return [gemName(g), sp ? sp.name : "", sp ? sp.desc || "" : "",
       ...(g.propIds || []).map(pid => (SPELLPROP.get(pid) || {}).name || "")].join(" ").toLowerCase(); };
-    let list = spellGems.filter(g => (!st.libCls || gemClass(g) === st.libCls) && (!q || gemText(g).includes(q)));
+    let list = spellGems.filter(g => (!st.libCls || gemClass(g) === st.libCls) && (!q || gemText(g).includes(q)) && taxosMatch(st, gemSpell(g)));
     if (st.hideEquipped) list = list.filter(g => !spellGemEquippedInBuild(g.id) || (equipped && equipped.has(g.id)));
     const potOf = (g) => { const sp = gemSpell(g); return sp ? potencyRank(sp) : POTENCY_ORDER.length; };
+    const clsRank = (g) => { const i = SPELL_CLASSES.indexOf(gemClass(g)); return i < 0 ? SPELL_CLASSES.length : i; };   // game class order (Opal swap counts)
     list = list.slice().sort(sortK === "name" ? (x, y) => d * gemName(x).localeCompare(gemName(y))
       : sortK === "level" ? (x, y) => d * (gemTier(y) - gemTier(x)) || gemName(x).localeCompare(gemName(y))
+      : sortK === "cls" ? (x, y) => d * (clsRank(x) - clsRank(y)) || gemName(x).localeCompare(gemName(y))
       : sortK === "potency" ? (x, y) => { const rx = potOf(x), ry = potOf(y), none = POTENCY_ORDER.length;
           if ((rx === none) !== (ry === none)) return rx === none ? 1 : -1;   // no potency stays last either way
           return d * (rx - ry) || gemName(x).localeCompare(gemName(y)); }
@@ -5231,7 +5237,8 @@
         <select class="app-select${st.libCls ? " on" : ""}" data-action="lib-cls" title="Filter by class">
           <option value="" ${!st.libCls ? "selected" : ""}>Class</option>${SPELL_CLASSES.map(cl => `<option value="${cl}" ${st.libCls === cl ? "selected" : ""}>${cl}</option>`).join("")}</select>
         <span class="sg-sort-gap"></span>
-        ${libSortSeg(st, [["recent", "Recent", true], ["name", "A–Z", false], ["level", "Level", true], ["potency", "Potency", true]])}</div>`;
+        ${libSortSeg(st, [["recent", "Recent", true], ["name", "A–Z", false], ["cls", "Class", false], ["level", "Level", true], ["potency", "Potency", true]])}</div>
+      <div class="ovl-filterbar taxo-bar">${taxoChips(st)}</div>`;
     const sel = st.sel != null ? spellGems.find(g => g.id === st.sel) : null;
     // when equipping onto a creature, gems of a class the creature can't use are blocked (unless a
     // trait/perk permits cross-class or an Opal has re-classed the gem) — matches the in-game rule.
@@ -5794,8 +5801,8 @@
       // spell-gem builder spell picker filter (reuses the facet detail picker)
       case "sg-taxofilter": openFacetPicker("taxo-cat", {
         idxFn: () => taxoIndexFor("spell", D.spells, s => s.taxo || []),
-        onPick: (v) => { ovState.spellTaxo = v; } }); break;
-      case "sg-taxofilter-clear": ovState.spellTaxo = null; refreshOverlay(); break;
+        onPick: (v) => { const a = ovState.spellTaxos || (ovState.spellTaxos = []); if (!a.includes(v)) a.push(v); } }); break;
+      case "sg-taxofilter-clear": ovState.spellTaxos = (ovState.spellTaxos || []).filter(k => k !== t.dataset.v); refreshOverlay(); break;
       // perk picker inline taxonomy filter
       case "perk-taxo-open": dovState.perkBrowse = true; refreshDetail(); break;
       case "perk-taxo-cat": dovState.perkCat = t.dataset.c; refreshDetail(); break;

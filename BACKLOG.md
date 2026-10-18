@@ -52,13 +52,13 @@ a decompile → write `_su_extract/code/HANDOFF_<topic>.md` and don't guess (bat
   warning minimal (a small chip, no prose).
 
 ### G2. Spell library (grid / filters / sort)
-- [ ] **(#18) Grid icon size drifts with long names.** In the Spell library, a long name (e.g. Summon Doppelganger) makes
+- [x] **(#18) Grid icon size drifts with long names.** DONE 2026-10-17: every fixed-count `repeat(N, 1fr)` grid → `minmax(0, 1fr)` (9 grids), names wrap. In the Spell library, a long name (e.g. Summon Doppelganger) makes
   every icon in its column bigger than the other columns. The cause is likely that the column width follows the name
   length and the icon scales with the column. Fix by giving icons a fixed size and letting names wrap or ellipsize. Then
   audit every grid layout that uses the same pattern.
-- [ ] **(#16) Multiple filters at once in Spell Gem search**, so the user can narrow down to specific spells (filters
+- [x] **(#16) Multiple filters at once in Spell Gem search** DONE 2026-10-17: stacked taxonomy tags (AND) in the shared spell picker + the Spell Gem library, so the user can narrow down to specific spells (filters
   combine with AND).
-- [ ] **(#20) Class sort in the Spell library.**
+- [x] **(#20) Class sort in the Spell library.** DONE 2026-10-17 (class-wheel order, Opal swap counts).
 
 ### G3. Artifact + Nether Stone wizard limits
 - [ ] **(#23) Artifact wizard: one copy per trick-slot item.** The wizard currently lets the same trick-slot item go in
