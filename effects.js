@@ -158,6 +158,19 @@
       return out;
     }
 
+    // ── 4b. battle-start fusion copy (op fuse.copy, Animator's Endowment) ────────────────────
+    // The live rule whose target is this slot → { rule, from } (from = the party slot it copies). The source position must
+    // be filled and not the slot itself. Applied by the app's baseStats (stats, primary trait, race; class unchanged).
+    function fuseCopy(slot) {
+      const slots = env.build().slots;
+      for (const { rule } of perkRules("fuse.copy")) {
+        if (!targets(rule.target, slot)) continue;
+        const from = slots[rule.from.slot];
+        if (from && from !== slot && env.CREA.get(from.cid)) return { rule, from };
+      }
+      return null;
+    }
+
     // ── 5. granted spells ───────────────────────────────────────────────────
     // Spells a slot gets from an owner instead of a held gem (D.spellGrants / relicUltimates / ultimateRoutes, code S28).
     // None of them use a spell-gem slot. Per entry: {spellId, mode, when, chance, owner}
@@ -195,7 +208,7 @@
     }
 
     return { STAT_KEYS, artifactContribs, netherContribs, relicContribs, foldCore, foldBonus, slotBonusPct,
-             ignores, cap, gemSlotMax, equipClasses, battleStart, grantedSpells };
+             ignores, cap, gemSlotMax, equipClasses, battleStart, fuseCopy, grantedSpells };
   }
 
   // Code-tier rules (prov 'code', decoded from the game's gated blocks) + the global combat pipeline ship lazily in

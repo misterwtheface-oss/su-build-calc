@@ -60,6 +60,15 @@ Taxonomy category definitions themselves live in `TAXONOMY.md`.
 - **Lesson (user-flagged twice): when a name-join undercounts,
 the spine/join source is wrong, not the data — the sprites/classes DO exist under a better key.**
 
+## Endowment (user in-game, 2026-10-18)
+- Animator's **Endowment** fuses the Animatus with a copy of party creature #2 at battle start. Only base stats change: each
+  = floor((Animatus base + creature #2's FUSED base) / 2), the normal fusion average. The Animatus gains creature #2's
+  primary (innate) trait, not its fused trait. Race becomes creature #2's race; class stays the Animatus's.
+- **Shown in the planner (user):** the Animatus's base stats, traits and race everywhere in the app are the endowed values,
+  not a separate battle view. The detail header reads "Animatus ⚭ <creature #2>", traits "(innate + Endowment)".
+- Not yet confirmed in code: creature #2's scrolls (left out), Deprived dropping the trait (treated as a fused trait).
+  Asked in `_su_extract/code/HANDOFF_endowment.md`.
+
 ## Artifacts, nether stones, spell-gem dusts (user ground truth)
 **ARTIFACT SLOT TEMPLATE (user ground truth, 2026-09-17 — datamine couldn't extract, was runtime/level-scaled):**
 every artifact at max level = 1 Primary (the stat tied to the type) + **3 Stat + 2 Trick + 1 Trait + 1 Spell +

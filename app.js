@@ -672,17 +672,29 @@
   const artifactEquippedInBuild = (id) => build.slots.some(s => s.artifactId === id);
   const netherEquippedInBuild = (id) => build.slots.some(s => { const a = resolveArtifact(s); return a && (a.netherIds || []).includes(id); });
   const spellGemEquippedInBuild = (id) => build.slots.some(s => (s.spellGemIds || []).includes(id));   // gems only slot into creatures now
-  function baseStats(slot) {
+  // a slot's creature (+ fusion) base before scrolls: floor((A+B)/2) per stat when fused (scr_UpdateCreature)
+  function fusedBase(slot) {
     const c = CREA.get(slot.cid); if (!c) return null;
     const f = slot.fusion != null ? CREA.get(slot.fusion) : null;
-    const avg = (a, b) => f ? Math.floor((a + b) / 2) : a;   // game: fused base = floor((A+B)/2) (scr_UpdateCreature)
-    const out = { fused: !!f };
+    return Object.fromEntries(STAT_KEYS.map(k => [k, f ? Math.floor((c[k] + f[k]) / 2) : c[k]]));
+  }
+  function baseStats(slot) {
+    const c = CREA.get(slot.cid); if (!c) return null;
+    // Endowment (FX.fuseCopy, user in-game 2026-10-18): the Animatus fuses with a copy of creature #2 at battle start —
+    // base stats = the fusion average with creature #2's FUSED base, + creature #2's primary trait and race; class stays
+    const fc = FX.fuseCopy(slot), ec = fc ? CREA.get(fc.from.cid) : null;
+    const f = !ec && slot.fusion != null ? CREA.get(slot.fusion) : null;
+    const partner = ec ? fusedBase(fc.from) : f;
+    const avg = (a, b) => partner ? Math.floor((a + b) / 2) : a;   // game: fused base = floor((A+B)/2) (scr_UpdateCreature)
+    const out = { fused: !!partner };
     const sc = slot.scrolls || {};
     // BASE stats are level-1 and personality-independent (round). Scrolls (+1 base each) are part of BaseStat.
     // Personality is NOT applied here — it changes the per-LEVEL growth rate, applied in leveledStats().
-    for (const k of STAT_KEYS) out[k] = avg(c[k], f ? f[k] : 0) + (sc[k] || 0);
-    out.cls = f ? (f.cls || c.cls) : c.cls;                 // secondary's class on fusion
-    out.traitIds = [c.traitId, f ? f.traitId : null].filter(x => x != null);
+    for (const k of STAT_KEYS) out[k] = avg(c[k], partner ? partner[k] : 0) + (sc[k] || 0);
+    out.cls = f ? (f.cls || c.cls) : c.cls;                 // secondary's class on fusion (Endowment keeps the Animatus's)
+    out.traitIds = [c.traitId, f ? f.traitId : ec ? ec.traitId : null].filter(x => x != null);
+    out.race = ec ? ec.race : c.race;
+    if (ec) out.endowed = ec;
     out.total = STAT_KEYS.reduce((s, k) => s + out[k], 0);
     return out;
   }
@@ -855,8 +867,9 @@
     const cls = b.cls;
     const clsIco = cls && D.classIcons && D.classIcons[cls]
       ? `<span class="tile-badge" title="${esc(cls)}">${spriteImg(D.classIcons[cls], "px")}</span>` : "";
-    const raceIco = c.race && D.raceIcons && D.raceIcons[c.race]
-      ? `<span class="tile-badge" title="${esc(c.race)}">${spriteImg(D.raceIcons[c.race], "px")}</span>` : "";
+    const race = b.race;
+    const raceIco = race && D.raceIcons && D.raceIcons[race]
+      ? `<span class="tile-badge" title="${esc(race)}">${spriteImg(D.raceIcons[race], "px")}</span>` : "";
     const traitIds = slotTraitIds(slot);
     const traitHtml = traitIds.length
       ? traitIds.map(tid => `<div class="primary-traits">${traitBanner(tid)}<div class="trait-desc">${richText((TRAIT[tid] || {}).desc || "")}</div></div>`).join("")
@@ -874,7 +887,7 @@
         </div>
         <div class="roster-head">
           <div class="roster-name">${esc(c.name)}${f ? ` <span style="color:var(--accent2)">⚭</span>` : ""}</div>
-          <div class="slot-sub roster-clsrace"><span style="color:${clsColor(cls)};font-weight:700">${esc(cls || "—")}</span>${c.race ? " · " + esc(c.race) : ""}</div>
+          <div class="slot-sub roster-clsrace"><span style="color:${clsColor(cls)};font-weight:700">${esc(cls || "—")}</span>${race ? " · " + esc(race) : ""}</div>
         </div>
         ${locked ? `<div class="slot-sub" style="color:var(--bad);font-weight:700">Ignored (Pariah)</div>` : ""}
         <div class="roster-stats">${statLine}</div>
@@ -906,8 +919,9 @@
     const a = resolveArtifact(slot);
     const clsIco = cls && D.classIcons && D.classIcons[cls]
       ? `<span class="tile-badge" title="${esc(cls)}">${spriteImg(D.classIcons[cls], "px")}</span>` : "";
-    const raceIco = c.race && D.raceIcons && D.raceIcons[c.race]
-      ? `<span class="tile-badge" title="${esc(c.race)}">${spriteImg(D.raceIcons[c.race], "px")}</span>` : "";
+    const race = b.race;
+    const raceIco = race && D.raceIcons && D.raceIcons[race]
+      ? `<span class="tile-badge" title="${esc(race)}">${spriteImg(D.raceIcons[race], "px")}</span>` : "";
     return `<div class="slot filled ${locked ? "locked" : ""}" data-slot="${i}" title="Right-click to change creature / fusion">
       ${locked ? `<div class="slot-ignored" title="Pariah allows only 3 creatures — this slot is ignored">Ignored</div>` : ""}
       <div class="tile-badges">${clsIco}${raceIco}</div>
@@ -5034,8 +5048,9 @@
       for (const nid of art.netherIds || []) { const n = nether.find(x => x.id === nid); if (!n) continue;
         for (const p of n.props || []) if (p.cat === "trait") { const ti = TRAITITEM.get(p.key); if (ti) noteSrc(ti.traitId, n.name); } }
     }
-    const c = CREA.get(slot.cid), f = slot.fusion != null ? CREA.get(slot.fusion) : null;
+    const c = CREA.get(slot.cid), f = slot.fusion != null ? CREA.get(slot.fusion) : null, en = (baseStats(slot) || {}).endowed;
     const innate = new Set([c && c.traitId, f && f.traitId].filter(x => x != null));
+    if (en) noteSrc(en.traitId, "Endowment");
     for (const tid of slotTraitIds(slot)) {
       const t = TRAIT[tid]; if (!t) continue;
       const src = innate.has(tid) ? null : traitSrc.get(tid) || null;
@@ -5084,7 +5099,7 @@
     return [...(sc.t || []), ...(sc.a || [])].some(v => {
       const [kind, x, y] = v.split(":");
       if (kind === "party") return true;
-      if (kind === "race") return !!c && c.race === x;
+      if (kind === "race") return !!c && (c.race === x || (b && b.race === x));   // Endowment changes the race; "your Animatus" still means it
       if (kind === "class") return !!b && b.cls === x;
       if (kind === "first") return filled.indexOf(slot) > -1 && filled.indexOf(slot) < n(x);
       if (kind === "top") { const mine = finalStats(slot).final[x]; return filled.filter(s => finalStats(s).final[x] > mine).length < n(y); }
@@ -5136,7 +5151,8 @@
     const rawBaseTot = b.total - scrollTot;
     const persTot = STAT_KEYS.reduce((s, k) => s + (fs.adj[k] - b[k]), 0);
     const traitIds = slotTraitIds(slot);
-    const innateN = new Set([c.traitId, f ? f.traitId : null].filter(x => x != null)).size;
+    const en = b.endowed || null;   // Endowment: the Animatus's battle-start fusion with creature #2
+    const innateN = new Set([c.traitId, f ? f.traitId : null, en ? en.traitId : null].filter(x => x != null)).size;
     const hasArtifactTrait = traitIds.length > innateN;
     const traitHtml = traitIds.map(tid => `<div class="primary-traits" style="margin-bottom:6px">${traitBanner(tid)}
       <div class="trait-desc">${richText((TRAIT[tid] || {}).desc || "")}</div></div>`).join("");
@@ -5159,12 +5175,12 @@
     const pos = filled.indexOf(slotIdx), total = filled.length, hasNav = total > 1;
     const chev = (dir, cls) => `<button class="cd-chev ${cls}" data-action="crea-nav" data-dir="${dir}" title="${dir < 0 ? "Previous" : "Next"} creature">${dir < 0 ? "‹" : "›"}</button>`;
     return `<div class="ovl-backdrop" data-action="detail-backdrop"><div class="overlay-panel detail">
-      <div class="overlay-header"><h2>${esc(c.name)}${f ? " ⚭ " + esc(f.name) : ""}</h2><button class="ovl-close" data-action="close-detail">✕</button></div>
+      <div class="overlay-header"><h2>${esc(c.name)}${f ? " ⚭ " + esc(f.name) : en ? ` ⚭ <span title="Endowment">${esc(en.name)}</span>` : ""}</h2><button class="ovl-close" data-action="close-detail">✕</button></div>
       <div class="overlay-body">
         <div class="ovl-left cd-left">
           <div class="cd-sprite-row">${hasNav ? chev(-1, "flank prev") : ""}
             <div class="cd-sprite">${slotFace(slot, c)}</div>${hasNav ? chev(1, "flank next") : ""}</div>
-          <div class="slot-sub"><span style="color:${clsColor(b.cls)};font-weight:700">${esc(b.cls || "—")}</span>${c.race ? " · " + esc(c.race) : ""}</div>
+          <div class="slot-sub"><span style="color:${clsColor(b.cls)};font-weight:700">${esc(b.cls || "—")}</span>${b.race ? " · " + esc(b.race) : ""}</div>
           ${hasNav ? `<div class="cd-nav-below">${chev(-1, "prev")}<span class="cd-nav-pos">${pos + 1} / ${total}</span>${chev(1, "next")}</div>` : ""}</div>
         <div class="ovl-center"><div class="ovl-center-scroll">
           <div class="stat-grid detailed"><div class="stat-header"><span>Stat</span>
@@ -5176,7 +5192,7 @@
               <span class="stat-val ${persTot > 0 ? "pos" : persTot < 0 ? "neg" : "muted"}">${persTot ? (persTot > 0 ? "+" : "") + persTot : "—"}</span>
               <span class="stat-val scroll">${scrollTot ? "+" + scrollTot : "—"}</span>
               <span class="stat-val art"></span><span class="stat-val total">${fs.total}</span></div></div>
-          <div class="section-label" style="margin-top:14px">Traits (innate${f ? " + fusion" : ""}${hasArtifactTrait ? " + artifact" : ""})</div>
+          <div class="section-label" style="margin-top:14px">Traits (innate${f ? " + fusion" : ""}${en ? " + Endowment" : ""}${hasArtifactTrait ? " + artifact" : ""})</div>
           ${traitHtml || `<div class="slot-sub">No traits.</div>`}
           ${artHtml}
           ${relic ? `<div class="section-label" style="margin-top:14px">Relic — Rank ${slot.relic.rank}${FX.ignores("relics") ? ` <span style="color:var(--bad);font-weight:700">· ignored (Deprived)</span>` : ""}</div>

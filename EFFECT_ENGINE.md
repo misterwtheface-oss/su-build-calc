@@ -75,6 +75,7 @@ live on a party slot that carries the trait (innate / fusion / artifact / nether
 | `equip.anyClass` | `scope` self\|party | `FX.equipClasses(slot, ownClass)` → null = any |
 | `equip.addClass` | `cls` | `FX.equipClasses` |
 | `stat.share` | `target`, `from`, `stats`, `pctPerRank`, `phase` | `FX.battleStart()` → per slot `{gain, ledger}` |
+| `fuse.copy` | `target`, `from`, `phase` | `FX.fuseCopy(slot)` → `{rule, from}`; the app's `baseStats` applies it (Endowment: fusion average with `from`'s fused base, `from`'s primary trait and race, class kept) |
 
 ## Granted spells
 

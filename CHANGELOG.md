@@ -4,6 +4,18 @@ Every dated change entry, newest first (moved verbatim from Progress.md on 2026-
 to their own section and sorted by their date). Current state and open work: `Progress.md`, `BACKLOG.md`.
 New entries go at the TOP.
 
+## 2026-10-18 — Endowment wired in (Animator)
+- New engine op `fuse.copy` (rule `animator-endowment`, spec+anoint): while Endowment is allocated or anointed, the
+  Animatus's base stats become the fusion average with creature #2's fused base (creature #2's scrolls left out; the
+  Animatus's own scrolls and personality apply as usual). The Animatus gains creature #2's primary trait and race; class
+  stays. User in-game model, DECISIONS 2026-10-18.
+- Applied everywhere through `baseStats` (stats, totals, traits, Triggers, synergy, highest-stat perk scopes). Detail
+  header "Animatus ⚭ <creature #2>", traits "(innate + Endowment)". Effective race now shows on the roster row, tile and
+  detail. A race scope matches the original or the changed race.
+- Checked in a browser (Animatus + fused Mutated Crypt Bat): 37 / 22 / 22 / 19 / 21 = the hand-computed averages, trait
+  Cloud of Bats (not the fused Congregation), Death · Bat. 6 engine tests added (48 pass).
+- Code confirmation asked: `_su_extract/code/HANDOFF_endowment.md` (fuse fields, scrolls, class, slot rule, Deprived).
+
 ## 2026-10-18 — Triggers: spec perks, anointments and party members' traits
 - The creature detail Triggers section now also lists **spec perks** (at their allocated rank) and **anointments** (full
   rank), each "from <spec>". It also lists **party members' traits** this creature can set off or carry out ("from <owner>",

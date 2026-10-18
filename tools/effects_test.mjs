@@ -71,6 +71,17 @@ eq('other spec, not anointed → no gain', engine(B(12, party(slot(ANIMATUS), sl
 eq('other spec + anointed → full rank (50%)', near(engine(B(12, party(slot(ANIMATUS), slot(OTHER), slot(THIRD)), { anoints: [{ specId: 1, key: 'MOLECULARBETRAYAL' }] })).battleStart()[0].gain), share(50));
 eq('no Animatus in the party → nobody gains', engine(B(1, party(slot(OTHER), slot(AVATAR), slot(THIRD)))).battleStart().map(r => r.gain), Array(6).fill(ZERO));
 
+console.log('Endowment (Animator perk: the Animatus fuses with a copy of party creature #2 at battle start; user in-game 2026-10-18)');
+{
+  const fc = (b, i = 0) => { const r = engine(b).fuseCopy(b.slots[i]); return r ? [r.rule.id, b.slots.indexOf(r.from)] : null; };
+  eq('allocated → Animatus copies slot #2', fc(B(1, party(slot(ANIMATUS), slot(OTHER), slot(THIRD)))), ['animator-endowment', 1]);
+  eq('non-Animatus slot → nothing', fc(B(1, party(slot(ANIMATUS), slot(OTHER), slot(THIRD))), 1), null);
+  eq('slot #2 empty → nothing', fc(B(1, party(slot(ANIMATUS), slot(null), slot(THIRD)))), null);
+  eq('perk deallocated (rank 0) → nothing', fc(B(1, party(slot(ANIMATUS), slot(OTHER)), { perkAlloc: { 1: { ENDOWMENT: 0 } } })), null);
+  eq('other spec + anointed → copies slot #2', fc(B(12, party(slot(ANIMATUS), slot(OTHER)), { anoints: [{ specId: 1, key: 'ENDOWMENT' }] })), ['animator-endowment', 1]);
+  eq('Animatus in slot #2 never copies itself', fc(B(1, party(slot(OTHER), slot(ANIMATUS))), 1), null);
+}
+
 console.log('caps (pre-engine hard-coded values, now rules)');
 eq('no spec → anoints 5 / creatures 6 / avatars 1', ['anoints', 'creatures', 'avatars'].map(c => engine(B(null, party())).cap(c)), [5, 6, 1]);
 eq('Royal → 20 anointments', engine(B(27, party())).cap('anoints'), 20);

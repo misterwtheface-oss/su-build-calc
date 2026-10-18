@@ -272,6 +272,8 @@ Known limits + planned work, roughly in priority order (all now cheap to impleme
   disagree otherwise, the CSV value is kept until the user decides. List the disagreements and ask.
 
 ## Pending extract hand-offs (from `_su_extract/RESUME.md`, waiting on the user)
+- [ ] **Endowment: code check** (`_su_extract/code/HANDOFF_endowment.md`): fused vs plain base of creature #2, its scrolls,
+  class, position-2 rule, Deprived. App ships the user's in-game model (DECISIONS 2026-10-18).
 - [x] **Nether Bosses** shipped 2026-10-11 (35 pages, tier toggle, threats, stat bars, trait materials).
 - [x] **Gate of the Gods** shipped 2026-10-11 (31 god pages: threats, stat bars, difficulty table, rewards).
 - [ ] **Gate god reward skins** — the reward code gives "each of its three skins" without naming them, and each Avatar has 2–5
