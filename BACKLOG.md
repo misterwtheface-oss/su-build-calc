@@ -76,7 +76,7 @@ a decompile → write `_su_extract/code/HANDOFF_<topic>.md` and don't guess (bat
 - [x] **(#22) Reorder creatures from the Planner screen** DONE 2026-10-17 (▲▼ roster rows, ‹ › tiles; swaps the whole slot). with arrows that swap a creature with its neighbour. **User:**
   swap-with-neighbour (not pick-a-slot). Respect the Animatus slot-1 rule if it gets enforced (see "Rules the app doesn't
   enforce").
-- [ ] **(#25) Perk header collision.** The perk title, the spec chip and the "current build" chip share one row and
+- [x] **(#25) Perk header collision.** DONE 2026-10-17 (`.perk-line-head` wraps; 0 overlaps over 605 headers at 390px). The perk title, the spec chip and the "current build" chip share one row and
   overlap when the chips are too long. Let the chips wrap onto their own row under the title. Mobile first.
 - [ ] **(#29) Spec overlay: mark perks that can't be anointed** with a small visual marker (anointment flag is in
   `anointments.json`). Minimal chrome.
