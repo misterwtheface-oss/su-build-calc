@@ -263,11 +263,31 @@
     return (s ? s.name : "—") + (np ? ` · ${np} propert${np === 1 ? "y" : "ies"}` : ""); };
   // compact stat readout for a spell — whatever we have (charges = code-certain; potency/target/source
   // = community compendium). Returns "" if nothing to show.
-  function spellStatsHtml(sp) {
+  // Agate (More Charges), code-grounded (_su_extract code/SPELL_GEMS.md S33, inv_SpellGemsUpdate): extra = floor(base × v / 100),
+  // gem charges = max(base + extra, 1). Gem alone — other % charge bonuses (card set powers, Endlessly) pool before the floor.
+  const AGATE = (D.spellProps || []).find(p => p.key === "AGATE"), AZURITE = (D.spellProps || []).find(p => p.key === "AZURITE");
+  const agateAdd = (base, tier) => Math.floor(base * AGATE.byTier[tier - 1] / 100);
+  const gemCharges = (sp, g) => {
+    if (!sp || sp.charges == null) return null;
+    const on = g && AGATE && (g.propIds || []).includes(AGATE.id) && gemSlots(g) > (g.propIds || []).indexOf(AGATE.id);
+    return { base: sp.charges, total: on ? Math.max(sp.charges + agateAdd(sp.charges, gemTier(g)), 1) : sp.charges, v: on ? AGATE.byTier[gemTier(g) - 1] : 0 };
+  };
+  // why a property that's legal on this spell still does nothing ("" = it works). Rules from data, never a hand list:
+  // Agate rounds down to +0 below a charge threshold; Azurite is only read when the spell deals damage or changes a stat.
+  const propNoEffect = (sp, p, tier) => {
+    if (!sp || !p) return "";
+    if (AGATE && p.id === AGATE.id && sp.charges != null && agateAdd(sp.charges, tier) === 0)
+      return `Adds no charges: ${sp.charges} × ${AGATE.byTier[tier - 1]}% rounds down to 0`;
+    if (AZURITE && p.id === AZURITE.id && sp.noDmgStat) return "This spell deals no damage and changes no stat";
+    return "";
+  };
+  const noFxChip = (why) => why ? `<span class="prop-metatag nofx" title="${esc(why)}">no effect</span>` : "";
+  function spellStatsHtml(sp, g) {
     if (!sp) return "";
-    const rows = [];
+    const rows = [], ch = gemCharges(sp, g);
     if (sp.cls) rows.push(["Class", `<span style="color:${clsColor(sp.cls)};font-weight:700">${esc(sp.cls)}</span>`]);
-    if (sp.charges != null) rows.push(["Charges", sp.charges]);
+    if (ch) rows.push(["Charges", ch.total !== ch.base
+      ? `<span title="Agate +${ch.v}%: ${ch.base} + floor(${ch.base} × ${ch.v}%)">${ch.base} → <b>${ch.total}</b></span>` : ch.base]);
     if (sp.potency) rows.push(["Potency", esc(sp.potency)]);
     if (sp.target) rows.push(["Target", esc(sp.target)]);
     if (sp.source) rows.push(["Source", esc(sp.source)]);
@@ -3975,7 +3995,7 @@
     ovState = { kind: "artlib", slotIdx, hideEquipped: false, sel: null, search: "", libType: null, libSort: "type", render: renderArtifactLibrary };
     openOverlay(ovState.render());
   }
-  const libRow = (ico, name, sub) => `<div class="prop-row static"><span class="prop-ico">${ico ? spriteImg(ico, "px") : ""}</span><span class="prop-name">${esc(name)}</span>${sub ? `<span class="prop-stat">${esc(sub)}</span>` : ""}</div>`;
+  const libRow = (ico, name, sub, tail = "") => `<div class="prop-row static"><span class="prop-ico">${ico ? spriteImg(ico, "px") : ""}</span><span class="prop-name">${esc(name)}${tail}</span>${sub ? `<span class="prop-stat">${esc(sub)}</span>` : ""}</div>`;
   // a row that also shows the granted trait's tooltip (for trait-item entries in info panels)
   const libTraitRow = (ico, name, traitId) => {
     const tr = traitId != null ? TRAIT[traitId] : null;
@@ -5241,11 +5261,11 @@
     if (sel) {
       const sp = gemSpell(sel);
       const propRows = (sel.propIds || []).map(pid => { const p = SPELLPROP.get(pid);
-        return libRow(p && p.icon, p ? p.name : pid, p ? propShort(p, gemTier(sel)) : ""); }).join("");
+        return libRow(p && p.icon, p ? p.name : pid, p ? propShort(p, gemTier(sel)) : "", noFxChip(propNoEffect(sp, p, gemTier(sel)))); }).join("");
       const spellBlock = sp
         ? `<div class="section-label" style="margin-top:6px">Spell</div>
            ${spellRow(sp, { clamp: false, meta: false })}
-           ${spellStatsHtml(sp)}`
+           ${spellStatsHtml(sp, sel)}`
         : `<div class="slot-sub" style="padding:6px">No spell chosen.</div>`;
       const gcls = gemClass(sel);
       const clsNote = creatureSlot && !equipped.has(sel.id) && !gemAllowed(sel)
@@ -5324,7 +5344,7 @@
         if (pid !== undefined) { const p = SPELLPROP.get(pid);
           boxes.push(`<div class="art-slot${over ? " over" : ""}"${p && p.textNote ? ` title="${esc(p.textNote)}"` : ""}><button class="as-rm" data-action="sg-prop-rm" data-i="${i}">✕</button>
             <div class="as-ico">${p && p.icon ? spriteImg(p.icon, "px") : "◆"}</div><div class="as-lab">${esc(p ? p.name : pid)}</div>
-            <div class="as-sub">${esc(propShort(p, tier))}</div></div>`); }
+            <div class="as-sub">${esc(propShort(p, tier))}</div>${noFxChip(propNoEffect(gemSpell(g), p, tier))}</div>`); }
         else if (over) boxes.push(`<div class="art-slot locked"><div class="as-ico glyph">🔒</div><div class="as-lab">Level ${slotUnlockLevel(i)}</div></div>`);
         else boxes.push(`<div class="art-slot add ${st.picking ? "picking" : ""}" data-action="sg-addprop"><div class="as-ico glyph">＋</div><div class="as-lab">Property</div></div>`);
       }
@@ -5338,14 +5358,15 @@
           return !q || p.name.toLowerCase().includes(q) || propText(p, tier).toLowerCase().includes(q);
         }).map(p =>
           `<div class="prop-row ${g.propIds.includes(p.id) ? "chosen" : ""}" data-action="sg-pickprop" data-id="${p.id}"${p.textNote ? ` title="${esc(p.textNote)}"` : ""}>
-            <span class="prop-ico">${p.icon ? spriteImg(p.icon, "px") : ""}</span><span class="prop-name">${esc(p.name)}</span><span class="prop-stat">${esc(propText(p, tier))}</span></div>`).join("");
+            <span class="prop-ico">${p.icon ? spriteImg(p.icon, "px") : ""}</span><span class="prop-name">${esc(p.name)}${noFxChip(propNoEffect(gsp, p, tier))}</span><span class="prop-stat">${esc(propText(p, tier))}</span></div>`).join("");
         picker = `<div class="sgb-picker" data-action="noop">
           <div class="ovl-filterbar"><button class="chip" data-action="sg-closepick">‹ Done</button>
             <input class="ovl-search" placeholder="Search gemstone enchantments…" value="${esc(st.search)}" data-action="sg-search"></div>
           <div class="sgb-pick-scroll">${pr}</div></div>`;
       }
       body = `<div class="ovl-center" data-action="lib-deselect">
-        <div class="sgb-top">
+        <div class="sgb-top${st.picking ? " picking" : ""}">
+          ${gemSpell(g) ? `<div class="build-section sgb-spell"><h3>Spell</h3>${spellRow(gemSpell(g), { clamp: false, meta: false })}${spellStatsHtml(gemSpell(g), g)}</div>` : ""}
           <div class="build-section"><h3>Name</h3>
             <input class="ovl-search name-field" placeholder="${esc(gemSpell(g) ? gemSpell(g).name : "Spell gem name")}" value="${esc(g.name)}" data-action="sg-name" style="max-width:320px"></div>
           <div class="build-section"><h3>Level</h3>
@@ -5412,7 +5433,7 @@
     const tiles = gems.map((g, gi) => {
       const sp = gemSpell(g), tier = gemTier(g);
       const props = (g.propIds || []).map(pid => { const p = SPELLPROP.get(pid); return p ? `<div class="prop-row static"${p.textNote ? ` title="${esc(p.textNote)}"` : ""}>
-        <span class="prop-ico">${p.icon ? spriteImg(p.icon, "px") : ""}</span><span class="prop-name">${esc(p.name)}</span><span class="prop-stat">${esc(propShort(p, tier))}</span></div>` : ""; }).join("");
+        <span class="prop-ico">${p.icon ? spriteImg(p.icon, "px") : ""}</span><span class="prop-name">${esc(p.name)}${noFxChip(propNoEffect(sp, p, tier))}</span><span class="prop-stat">${esc(propShort(p, tier))}</span></div>` : ""; }).join("");
       const swapped = gemSwapClass(g);
       // ‹ › reorder the equipped gems (the header's class-colour dots follow the same order)
       const mv = gems.length > 1 ? `<span class="spt-move"><button class="spt-mv" data-action="spellpage-move" data-i="${gi}" data-d="-1" ${gi ? "" : "disabled"} title="Move earlier">‹</button><button class="spt-mv" data-action="spellpage-move" data-i="${gi}" data-d="1" ${gi < gems.length - 1 ? "" : "disabled"} title="Move later">›</button></span>` : "";
@@ -5421,7 +5442,7 @@
           <b>${esc(gemName(g))}</b>${sp && gemName(g) !== sp.name ? `<span class="slot-sub">${esc(sp.name)}</span>` : ""}
           <span class="spt-tags">${sp ? clsTag(sp.cls, swapped ? ` → ${esc(swapped)}` : "") : ""}<span class="rank-badge">Lv ${tier}</span></span></div>
         ${sp && sp.desc ? `<div class="trait-desc">${perkText(sp.desc)}</div>` : ""}
-        ${sp ? spellStatsHtml(sp) : ""}
+        ${sp ? spellStatsHtml(sp, g) : ""}
         ${props ? `<div class="prop-list spt-props">${props}</div>` : ""}</div>`;
     }).join("");
     return `<div class="ovl-backdrop" data-action="detail-backdrop"><div class="overlay-panel detail">

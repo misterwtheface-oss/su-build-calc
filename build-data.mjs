@@ -3680,6 +3680,22 @@ const SU_DATA = {
   const srcKey = (s) => s.kind === 'perk' ? `perk:${s.spec}:${s.key}` : `${s.kind}:${s.id}`;
   const codeSrc = new Set(rules.map(r => srcKey(r.src)));
   const uncovered = effects.rules.filter(r => !codeSrc.has(srcKey(r.src))).map(r => r.id);
+  // spell.noDmgStat — the spell neither deals damage nor changes a stat, so Azurite (Defense Penetration, read only in
+  // bc_SpellDamage / bc_SpellStat — _su_extract code/SPELL_GEMS.md S33) does nothing on it. Conservative: set only when the
+  // spell HAS code rules, none is dmg.deal / stat.*, and no damage/stat taxonomy tag says otherwise (code coverage of
+  // indirect damage is incomplete, e.g. Aftermath). The app shows a "no effect" chip from it.
+  {
+    const DS_OPS = new Set(['dmg.deal', 'stat.add', 'stat.set', 'stat.mult']);
+    const DS_TAXO = /^(Action\/Mechanic::(Damage|Indirect Damage|Stats)|Affect on Life::Creature is Damaged|Related Spells::Damaging Spells|Affect on Stats::)/;
+    const opsBySpell = new Map();
+    for (const r of rules) if (r.src.kind === 'spell') { if (!opsBySpell.has(r.src.id)) opsBySpell.set(r.src.id, new Set()); opsBySpell.get(r.src.id).add(r.op); }
+    let n = 0;
+    for (const sp of spells) {
+      const ops = opsBySpell.get(sp.id);
+      if (ops && ![...ops].some(o => DS_OPS.has(o)) && !(sp.taxo || []).some(t => DS_TAXO.test(t))) { sp.noDmgStat = true; n++; }
+    }
+    console.log(`  spells with no damage / stat change (Azurite no-op): ${n}`);
+  }
   const body = JSON.stringify({ schema: 1, ops: CODE_OPS, pipeline: F.pipeline, rules });
   fs.writeFileSync(path.join(ROOT, 'effects-code.json'), body);
   effects.codeFile = `effects-code.json?v=${crypto.createHash('md5').update(body).digest('hex').slice(0, 8)}`;

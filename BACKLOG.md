@@ -40,13 +40,13 @@ a decompile → write `_su_extract/code/HANDOFF_<topic>.md` and don't guess (bat
   containers as the Spell Wizard. Copy the Spell Wizard version over, then make both screens render from ONE shared
   render function or partial, so changing one changes both. While doing it, list any other duplicated container markup
   that has drifted and fold it into shared helpers too.
-- [ ] **(#4) Spell Wizard property step: show the spell's description and stats.** While picking a property, show the
+- [x] **(#4) Spell Wizard property step: show the spell's description and stats.** While picking a property, show the
   chosen spell's description and its stats (charges, potency, target, class). **User:** this is the Spell Wizard's
   property step, not a property detail page.
-- [ ] **(#2) Agate charge calculation.** Show how Agate changes the spell's charges (base → result) in the Spell Wizard
+- [x] **(#2) Agate charge calculation.** DONE 2026-10-17 (floor + min 1 code-grounded, SPELL_GEMS.md S33; gem alone). Show how Agate changes the spell's charges (base → result) in the Spell Wizard
   property step, and on library entries for gems that have an Agate socketed. Use the code formula. Check that Agate's
   rounding and minimum are code-grounded before showing a number.
-- [ ] **(#3) Warn about properties that do nothing.** A property can be valid on a spell and still have no effect, e.g.
+- [x] **(#3) Warn about properties that do nothing.** DONE 2026-10-17: Agate +0 (rounding) and Azurite on `spell.noDmgStat` (266 spells, conservative: code rules + taxonomy). A property can be valid on a spell and still have no effect, e.g.
   Defense Penetration on a spell that deals no damage, or Agate on a spell with fewer than 5 base charges. Flag these in
   the wizard and the library. Rules come from the data (damage flag, base charges), not from a hand-written list. Keep the
   warning minimal (a small chip, no prose).
