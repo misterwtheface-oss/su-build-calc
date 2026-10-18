@@ -93,7 +93,7 @@ a decompile → write `_su_extract/code/HANDOFF_<topic>.md` and don't guess (bat
   relic data).
 
 ### G5. Mobile / touch layout
-- [ ] **(#27) Grey row while scrolling on touch.** **User (found the cause):** it's the "selected"/hover style showing
+- [x] **(#27) Grey row while scrolling on touch.** DONE 2026-10-17: all 51 `:hover` rules wrapped in place in `@media (hover: hover)` (cascade order kept); selection was already click-only. **User (found the cause):** it's the "selected"/hover style showing
   during a scroll gesture that isn't a full tap. On mobile it looks like a desktop mouse hover. Fix by putting hover styles
   under `@media (hover: hover)` and/or only applying the selected state on a completed tap (not on touchstart).
 - [ ] **(#1) Intentional landscape phone layout.** Right now a phone in landscape (e.g. clipped into a controller) just gets

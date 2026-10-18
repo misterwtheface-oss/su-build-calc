@@ -85,7 +85,7 @@ h1, h2, h3 { margin: 0; }
   background: var(--surface2); color: var(--text); border: 1px solid var(--border-dim);
   border-radius: 8px; padding: 5px 10px; font-size: 13px;
 }
-.tb-btn:hover { border-color: var(--border); background: var(--surface3); }
+@media (hover: hover) { .tb-btn:hover { border-color: var(--border); background: var(--surface3); } }
 .tb-danger { border-color: #6b2f2f; }
 .tb-danger.armed { background: var(--bad); color: #1a1230; border-color: var(--bad); }
 /* header Menu dropdown */
@@ -105,7 +105,7 @@ h1, h2, h3 { margin: 0; }
   text-align: left; padding: 8px 10px; border-radius: 6px; font-size: 13px;
   background: transparent; border: 0; color: var(--text);
 }
-.menu-item:hover { background: var(--surface3); }
+@media (hover: hover) { .menu-item:hover { background: var(--surface3); } }
 .menu-item.danger { color: var(--bad); }
 .menu-item.armed { background: var(--bad); color: #1a1230; }
 .menu-sep { height: 1px; background: var(--border-dim); margin: 4px 6px; }
@@ -124,13 +124,13 @@ h1, h2, h3 { margin: 0; }
   background: none; border: 0; border-bottom: 1px solid var(--border-dim);
   font-family: inherit; text-align: left; cursor: pointer;
 }
-.apx-sec-head:hover { color: var(--text); }
+@media (hover: hover) { .apx-sec-head:hover { color: var(--text); } }
 /* Appendix browse: expandable CATEGORY rows styled as bars that pop (accent rail + chevron), not the
    flat uppercase section-label look — matches the old opt-row bars the user preferred */
 .apx-sec-head.apx-cat { font-size: 13.5px; letter-spacing: 0; text-transform: none; color: var(--text);
   background: var(--surface); border: 1px solid var(--border-dim); border-left: 3px solid var(--accent2);
   border-radius: 7px; padding: 9px 12px; margin: 0 0 6px; }
-.apx-sec-head.apx-cat:hover { border-color: var(--accent2); background: var(--surface2); }
+@media (hover: hover) { .apx-sec-head.apx-cat:hover { border-color: var(--accent2); background: var(--surface2); } }
 .apx-sec-head.apx-cat .apx-sec-caret { color: var(--accent2); opacity: 1; }
 .apx-sec-head .apx-sec-caret { flex: 0 0 auto; font-size: 11px; opacity: .6; }
 .apx-sec-head .apx-sec-n { margin-left: auto; font-weight: 800; color: var(--cap); }
@@ -180,7 +180,7 @@ h1, h2, h3 { margin: 0; }
 .tile-badge img { width: 100%; height: 100%; object-fit: contain; }
 /* artifact + relic badges: clickable (open the equip flow); grid tiles stack them under the ✕ */
 .tile-badge.gear { pointer-events: auto; cursor: pointer; border-radius: 4px; }
-.tile-badge.gear:hover { background: rgba(154,123,214,.22); }
+@media (hover: hover) { .tile-badge.gear:hover { background: rgba(154,123,214,.22); } }
 .tile-badge.gear img { image-rendering: pixelated; }
 /* grid tiles: class over race stacked top-left, artifact over relic stacked top-right under the ✕ */
 /* both stacks start at the same height (below the ✕ row) so the two sides mirror each other */
@@ -222,7 +222,7 @@ h1, h2, h3 { margin: 0; }
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .slot-mini.on { color: var(--text); border-color: var(--border); }
-.slot-mini:hover { border-color: var(--border); color: var(--text); }
+@media (hover: hover) { .slot-mini:hover { border-color: var(--border); color: var(--text); } }
 .slot-mini.armed { border-color: var(--cap); color: var(--cap); box-shadow: inset 0 0 0 1px var(--cap); }        /* tap again to confirm */
 .slot-mini.danger.armed { background: var(--bad); color: #1a1230; border-color: var(--bad); box-shadow: none; }
 .slot-remove {
@@ -233,7 +233,7 @@ h1, h2, h3 { margin: 0; }
   opacity: .4; transition: opacity .12s, color .12s;
 }
 .slot.filled .slot-remove { display: flex; }         /* visible on touch, not hover-only */
-.slot-remove:hover { opacity: 1; color: var(--bad); }
+@media (hover: hover) { .slot-remove:hover { opacity: 1; color: var(--bad); } }
 .slot-remove.armed { opacity: 1; background: var(--bad); color: #1a1230; }
 
 /* mini stat readout under the party */
@@ -260,7 +260,7 @@ h1, h2, h3 { margin: 0; }
   padding: 12px; position: relative;
 }
 .roster-row + .roster-row { border-top: 1px solid var(--border-dim); }
-.roster-row.filled:hover { background: rgba(154,123,214,.05); }
+@media (hover: hover) { .roster-row.filled:hover { background: rgba(154,123,214,.05); } }
 .roster-row.locked { opacity: .55; }
 
 .roster-identity {
@@ -284,7 +284,7 @@ h1, h2, h3 { margin: 0; }
 .roster-sprite.roster-add { width: 112px; height: 112px;
   background: radial-gradient(circle closest-side, rgba(154,123,214,.18), transparent); }
 .roster-sprite.roster-add .slot-empty-icon { font-size: 38px; }
-.roster-sprite.roster-add:hover .slot-empty-icon { opacity: .6; }
+@media (hover: hover) { .roster-sprite.roster-add:hover .slot-empty-icon { opacity: .6; } }
 /* fresh party (no creature yet): the roster stretches to fill the screen below the top tiles, rows
    share the height evenly and the add box scales with its row. Reverts once a creature is picked. */
 .planning-main:has(> .party-roster.all-empty) { display: flex; flex-direction: column; }
@@ -363,7 +363,7 @@ h1, h2, h3 { margin: 0; }
   border-radius: 8px; width: 30px; height: 30px; font-size: 16px; flex: 0 0 auto; cursor: pointer;
   display: flex; align-items: center; justify-content: center; padding: 0; line-height: 1;
 }
-.overlay-header .ovl-close:hover, .riddle-pop-head .ovl-close:hover { border-color: var(--accent2); color: var(--text); }
+@media (hover: hover) { .overlay-header .ovl-close:hover, .riddle-pop-head .ovl-close:hover { border-color: var(--accent2); color: var(--text); } }
 .ovl-search {
   flex: 1; min-width: 120px; max-width: 340px;
   background: var(--bg); border: 1px solid var(--border-dim); color: var(--text);
@@ -418,16 +418,17 @@ h1, h2, h3 { margin: 0; }
   align-items: center; justify-content: center; font-family: Georgia, "Times New Roman", serif;
   font-style: italic; font-weight: 700; font-size: 16px; line-height: 1; cursor: pointer;
   background: var(--surface2); color: var(--accent2); border: 1px solid var(--border-dim); }
-.cd-info-btn:hover { background: var(--surface3); border-color: var(--accent2); }
+@media (hover: hover) { .cd-info-btn:hover { background: var(--surface3); border-color: var(--accent2); } }
 /* remove-bookmark star on a creature info panel — only rendered for bookmarked creatures, so always shown */
 .cd-bk-btn { position: absolute; top: 8px; right: 8px; z-index: 2; width: 30px; height: 30px; border-radius: 50%;
   display: flex; align-items: center; justify-content: center; font-size: 16px; line-height: 1; cursor: pointer;
   background: var(--surface2); color: var(--accent); border: 1px solid var(--border-dim); }
-.cd-bk-btn:hover { background: var(--surface3); border-color: var(--accent); }
+@media (hover: hover) { .cd-bk-btn:hover { background: var(--surface3); border-color: var(--accent); } }
 .ovl-center { flex: 1; display: flex; flex-direction: column; min-width: 0; min-height: 0; }
 .ovl-filterbar { flex-shrink: 0; padding: 6px 10px; border-bottom: 1px solid var(--border-dim); display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 .ovl-center-scroll { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 12px; }
 
+/* hover styles sit in @media (hover: hover) — on touch a scroll gesture must not paint rows grey (#27) */
 /* selection grid of sprite tiles */
 .pick-grid { display: grid; gap: 8px; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); }
 .pick-tile {
@@ -436,7 +437,7 @@ h1, h2, h3 { margin: 0; }
   padding: 6px; display: flex; flex-direction: column; gap: 4px; align-items: center;
   cursor: pointer; transition: border-color .1s;
 }
-.pick-tile:hover { border-color: var(--border); }
+@media (hover: hover) { .pick-tile:hover { border-color: var(--border); } }
 .pick-tile .pt-sprite { position: relative; width: 100%; aspect-ratio: 1; display: flex; align-items: center; justify-content: center; }
 /* absolute + object-fit so a portrait sprite (e.g. Torun 40×60) can never stretch the grid row */
 .pick-tile .pt-sprite img { position: absolute; inset: 0; width: 100%; height: 100%; padding: 10%; object-fit: contain; }
@@ -459,10 +460,10 @@ h1, h2, h3 { margin: 0; }
 .prop-row.art-empty-slot { border-style: dashed; background: transparent; color: var(--accent2); cursor: pointer; }
 .prop-row.art-empty-slot .prop-ico { justify-content: center; font-size: 16px; }
 .prop-row.art-empty-slot .prop-name { color: var(--accent2); font-weight: 500; }
-.prop-row.art-empty-slot:hover { border-color: var(--accent2); background: rgba(154,123,214,.10); }
+@media (hover: hover) { .prop-row.art-empty-slot:hover { border-color: var(--accent2); background: rgba(154,123,214,.10); } }
 .prop-row.art-empty-slot.locked { opacity: .45; cursor: default; color: var(--text-mute); }
 .prop-row.art-empty-slot.locked .prop-name { color: var(--text-mute); }
-.prop-row.art-empty-slot.locked:hover { border-color: var(--border-dim); background: transparent; }
+@media (hover: hover) { .prop-row.art-empty-slot.locked:hover { border-color: var(--border-dim); background: transparent; } }
 .pick-tile.selected { border-color: var(--accent2); box-shadow: inset 0 0 0 2px var(--accent2); }
 .pick-tile.selected .pt-sprite { background: rgba(154,123,214,.2); border-radius: 8px; filter: brightness(1.12); }
 /* Equipment library grids (artifacts / spell gems / nether stones): equip-state fill (purple = this
@@ -545,7 +546,7 @@ h1, h2, h3 { margin: 0; }
 .pick-card { border: 1px solid var(--border-dim); border-radius: 9px; padding: 8px; margin-bottom: 8px;
   background: var(--surface); cursor: pointer; transition: border-color .1s;
   display: flex; flex-direction: column; gap: 6px; }
-.pick-card:hover { border-color: var(--accent2); }
+@media (hover: hover) { .pick-card:hover { border-color: var(--accent2); } }
 .pick-card.chosen { border-color: var(--accent2); box-shadow: inset 0 0 0 1px var(--accent2); background: rgba(154,123,214,.08); }
 .pick-card .primary-traits { margin: 0; border: 0; background: none; padding: 0; }
 .pick-card .art-spellcard-head { display: flex; align-items: center; gap: 8px; }
@@ -553,7 +554,7 @@ h1, h2, h3 { margin: 0; }
 /* link out to the trait's material / taxonomy (its own action so it beats the card's add-on-click) */
 .pick-card-src { align-self: flex-start; display: inline-flex; align-items: center; gap: 5px;
   background: none; border: 0; padding: 0; color: var(--text-mute); font: inherit; font-size: 12px; cursor: pointer; }
-.pick-card-src:hover { color: var(--text); }
+@media (hover: hover) { .pick-card-src:hover { color: var(--text); } }
 .pick-card-src.plain { flex: 0 0 auto; color: var(--accent2); font-size: 11px; }
 .pick-card-src .prop-ico.sm { width: 18px; height: 18px; }
 .trait-desc { font-size: 12px; color: var(--text-dim); line-height: 1.4; }
@@ -684,7 +685,7 @@ h1, h2, h3 { margin: 0; }
 .xref-rowhead .xr-dot.k-anoint { background: var(--accent2); }
 .xref-rowhead .xr-dot.k-crea { background: #9fd0ff; }
 .xref-rowhead .xr-exp { display: inline-block; width: 12px; margin-right: 2px; color: var(--text-mute); cursor: pointer; user-select: none; }
-.xref-rowhead .xr-exp:hover { color: var(--text); }
+@media (hover: hover) { .xref-rowhead .xr-exp:hover { color: var(--text); } }
 .xref-rowhead .xr-exp-sp { display: inline-block; width: 12px; margin-right: 2px; }
 .xref-subrow .xref-subhead { font-weight: 400; color: var(--text-dim); font-size: 10px; padding-right: 14px; }
 .xref-subrow td { background: rgba(255,255,255,.02); color: var(--text-mute); }
@@ -815,7 +816,7 @@ h1, h2, h3 { margin: 0; }
   border: 1px solid var(--border-dim); border-left: 3px solid var(--accent2);
   color: inherit; font-family: inherit; text-align: left; cursor: pointer;
 }
-.fgod-head:hover { border-color: var(--border); background: linear-gradient(90deg, rgba(154,123,214,.26), transparent); }
+@media (hover: hover) { .fgod-head:hover { border-color: var(--border); background: linear-gradient(90deg, rgba(154,123,214,.26), transparent); } }
 .fgod-caret { flex: 0 0 auto; font-size: 12px; color: var(--accent2); width: 12px; }
 .fgod-count { flex: 0 0 auto; margin-left: auto; font-size: 11px; font-weight: 800; color: var(--cap);
   background: rgba(255,255,255,.06); border: 1px solid var(--border-dim); border-radius: 10px; padding: 1px 8px; }
@@ -834,7 +835,7 @@ h1, h2, h3 { margin: 0; }
 .apx-crea img { width: 100%; height: 100%; object-fit: contain; padding: 4px; }
 .apx-crea .crit-face { width: 100%; height: 100%; }
 .apx-crea.apx-clickable { cursor: pointer; }
-.apx-crea.apx-clickable:hover { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; }
+@media (hover: hover) { .apx-crea.apx-clickable:hover { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; } }
 .apx-crea.apx-boss { border-color: var(--accent2); }
 /* boss owner with no extracted sprite (Nether/Special) → a name chip in the sprite slot */
 .apx-boss-name { flex: 0 0 auto; align-self: center; max-width: 90px; padding: 4px 7px; border-radius: 8px;
@@ -870,7 +871,7 @@ h1, h2, h3 { margin: 0; }
   background: var(--surface); border: 1px solid var(--border-dim); border-radius: 6px; overflow: hidden; }
 .apx-owner-ico img, .apx-owner-ico .crit-face { width: 100%; height: 100%; object-fit: contain; }
 button.apx-owner { background: none; border: 0; cursor: pointer; font: inherit; color: var(--text); }
-button.apx-owner:hover .apx-owner-ico { border-color: var(--accent); }
+@media (hover: hover) { button.apx-owner:hover .apx-owner-ico { border-color: var(--accent); } }
 /* source-spec tag on each anointment row (rows are grouped by False God, not spec) */
 .anoint-spec-tag {
   font-size: 10px; color: var(--text-dim); background: var(--surface2);
@@ -889,7 +890,7 @@ button.apx-owner:hover .apx-owner-ico { border-color: var(--accent); }
 .perk-line-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; margin-top: auto; padding-top: 4px; }
 /* Appendix bookmark star — toggles a trait/spell into the selector filter set. Hollow=off, gold=on. */
 .apx-bk { flex: 0 0 auto; align-self: center; background: none; border: none; cursor: pointer; padding: 0 2px; line-height: 1; font-size: 15px; color: var(--text-mute); }
-.apx-bk:hover { color: var(--accent); }
+@media (hover: hover) { .apx-bk:hover { color: var(--accent); } }
 .apx-bk.on { color: var(--accent); }
 
 /* Macro Proposal — predicted battle-AI brain shown on the creature detail page */
@@ -923,8 +924,8 @@ button.apx-owner:hover .apx-owner-ico { border-color: var(--accent); }
 
 /* Any trait/spell/etc. display can open its taxonomy detail; hint clickability */
 .apx-clickable { cursor: pointer; }
-.perk-line.apx-clickable:hover, .prop-row.apx-clickable:hover { background: rgba(154,123,214,.08); border-radius: 7px; }
-.art-slot.apx-clickable:hover, .art-pv-top.apx-clickable:hover { outline: 1px solid var(--accent2); outline-offset: -1px; border-radius: 7px; }
+@media (hover: hover) { .perk-line.apx-clickable:hover, .prop-row.apx-clickable:hover { background: rgba(154,123,214,.08); border-radius: 7px; } }
+@media (hover: hover) { .art-slot.apx-clickable:hover, .art-pv-top.apx-clickable:hover { outline: 1px solid var(--accent2); outline-offset: -1px; border-radius: 7px; } }
 .etax-hint { font-size: 10px; font-weight: 700; color: var(--accent2); opacity: .8; white-space: nowrap; }
 
 /* Artifact info panel: Bonuses | Sockets view toggle + spell-gem containers */
@@ -933,7 +934,7 @@ button.apx-owner:hover .apx-owner-ico { border-color: var(--accent); }
 .av-tab { background: none; border: none; padding: 0; cursor: pointer; font-size: 13px; font-weight: 700;
   letter-spacing: .4px; text-transform: uppercase; color: var(--text-mute); }
 .av-tab.on { color: var(--accent); }
-.av-tab:hover { color: var(--text); }
+@media (hover: hover) { .av-tab:hover { color: var(--text); } }
 .av-pipe { color: var(--border-dim); }
 .art-spellcards { display: flex; flex-direction: column; gap: 8px; }
 /* spell-gem container(s) shown beneath a relic rank row that casts a named spell */
@@ -950,7 +951,7 @@ button.apx-owner:hover .apx-owner-ico { border-color: var(--accent); }
 .etax-vals { display: flex; flex-wrap: wrap; gap: 6px; }
 .etax-tag { display: inline-flex; align-items: center; gap: 5px; font-size: 13px; color: var(--text);
   background: rgba(0,0,0,.22); border: 1px solid var(--border-dim); border-radius: 999px; padding: 3px 10px; cursor: pointer; }
-.etax-tag:hover { border-color: var(--accent2); background: rgba(154,123,214,.14); }
+@media (hover: hover) { .etax-tag:hover { border-color: var(--accent2); background: rgba(154,123,214,.14); } }
 .etax-tag .apx-src { font-size: 9px; }
 .etax-legend { color: var(--text-mute); font-size: 11px; margin-top: 12px; line-height: 1.5; }
 .etax-legend b { color: var(--text-dim); }
@@ -992,7 +993,7 @@ button.apx-owner:hover .apx-owner-ico { border-color: var(--accent); }
 .perk-stepper { display: flex; align-items: center; gap: 5px; margin-top: 7px; }
 .perk-step { min-width: 26px; height: 26px; padding: 0 7px; border-radius: 6px; border: 1px solid var(--border-dim); background: var(--panel); color: var(--text); font-weight: 800; cursor: pointer; line-height: 1; }
 .perk-step.wide { font-size: 11px; font-weight: 700; }
-.perk-step:hover:not(:disabled) { border-color: var(--accent2); color: var(--accent2); }
+@media (hover: hover) { .perk-step:hover:not(:disabled) { border-color: var(--accent2); color: var(--accent2); } }
 .perk-step:disabled { opacity: .32; cursor: default; }
 .perk-rank-val { min-width: 46px; text-align: center; font-weight: 800; color: var(--accent2); font-variant-numeric: tabular-nums; }
 .perk-rank-max { color: var(--text-mute); font-weight: 600; }
@@ -1003,11 +1004,11 @@ button.apx-owner:hover .apx-owner-ico { border-color: var(--accent); }
 .facet.add { border-style: dashed; color: var(--accent2); }
 .facet.tag { background: rgba(154,123,214,.14); color: var(--text); }
 .facet-x { opacity: .7; font-size: 11px; padding: 0 2px; }
-.facet-x:hover { color: var(--bad); }
+@media (hover: hover) { .facet-x:hover { color: var(--bad); } }
 .facet-panel { max-width: 640px; }
 .opt-list { display: flex; flex-direction: column; gap: 3px; }
 .opt-row { text-align: left; width: 100%; padding: 9px 12px; background: var(--surface); border: 1px solid var(--border-dim); border-radius: 7px; color: var(--text); font-size: 14px; display: flex; align-items: center; gap: 9px; }
-.opt-row:hover { border-color: var(--border); }
+@media (hover: hover) { .opt-row:hover { border-color: var(--border); } }
 .opt-dot { width: 11px; height: 11px; border-radius: 50%; flex: 0 0 auto; }
 .opt-ico { width: 22px; height: 22px; flex: 0 0 auto; display: flex; align-items: center; justify-content: center; }
 .opt-ico img { width: 100%; height: 100%; object-fit: contain; }
@@ -1039,7 +1040,7 @@ button.apx-owner:hover .apx-owner-ico { border-color: var(--accent); }
 .realm-row { text-align: left; width: 100%; padding: 6px 12px 6px 6px; background: var(--surface);
   border: 1px solid var(--border-dim); border-radius: 8px; color: var(--text); font-size: 14px;
   display: flex; align-items: center; gap: 9px; cursor: pointer; }
-.realm-row:hover { border-color: var(--accent2); }
+@media (hover: hover) { .realm-row:hover { border-color: var(--accent2); } }
 .realm-icon { flex: 0 0 auto; width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; }
 .realm-icon img { width: 32px; height: 32px; object-fit: contain; image-rendering: pixelated; }
 .realm-row-name { font-weight: 600; }
@@ -1050,7 +1051,7 @@ button.apx-owner:hover .apx-owner-ico { border-color: var(--accent); }
   background: rgba(0,0,0,.2); border: 1px solid var(--border-dim); border-radius: 10px; }
 .realm-icon-lg img { width: 64px; height: 64px; object-fit: contain; image-rendering: pixelated; }
 .realm-icon-lg.swap { cursor: pointer; transition: border-color .1s, background .1s; }
-.realm-icon-lg.swap:hover { border-color: var(--accent2); background: rgba(154,123,214,.12); }
+@media (hover: hover) { .realm-icon-lg.swap:hover { border-color: var(--accent2); background: rgba(154,123,214,.12); } }
 /* Riddle Dwarf — fast trivia lookup */
 .riddle-list { display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px; }
 .riddle-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 7px 12px;
@@ -1146,7 +1147,7 @@ button.apx-owner:hover .apx-owner-ico { border-color: var(--accent); }
 .rcmp-row { display: grid; grid-template-columns: minmax(120px, 1.1fr) 96px auto; gap: 10px; align-items: center;
   width: 100%; background: transparent; border: 0; color: var(--text); text-align: left; cursor: pointer; font: inherit;
   padding: 3px 4px; border-radius: 5px; }
-.rcmp-row:hover { background: var(--surface2); }
+@media (hover: hover) { .rcmp-row:hover { background: var(--surface2); } }
 .rcmp-realm { font-size: 12.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 @media (max-width: 600px) {
   .rcat-row { grid-template-columns: 1fr 64px 42px; gap: 8px; }
@@ -1265,7 +1266,7 @@ button.apx-owner:hover .apx-owner-ico { border-color: var(--accent); }
 .syn-list { display: flex; flex-direction: column; gap: 10px; }
 .syn-group { border: 1px solid var(--border-dim); border-radius: 8px; overflow: hidden; scroll-margin-top: 6px; }
 .syn-tag { display: flex; align-items: baseline; gap: 8px; width: 100%; padding: 7px 10px; background: var(--surface2); border-bottom: 1px solid var(--border-dim); border-radius: 0; border-left: 0; border-right: 0; border-top: 0; color: inherit; font: inherit; text-align: left; cursor: pointer; }
-.syn-tag:hover { background: var(--surface3); }
+@media (hover: hover) { .syn-tag:hover { background: var(--surface3); } }
 .syn-group.collapsed .syn-tag { border-bottom: 0; }
 .syn-tag b { font-size: 14px; }
 .syn-tag .syn-count { flex: 0 0 auto; font-weight: 800; color: var(--cap); }
@@ -1276,11 +1277,11 @@ button.apx-owner:hover .apx-owner-ico { border-color: var(--accent); }
 .syn-navbar { flex: 0 0 auto; display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-bottom: 1px solid var(--border-dim); }
 .syn-nav { flex: 1; min-width: 0; background: var(--surface); border: 1px solid var(--border-dim); color: var(--text);
   border-radius: 8px; padding: 6px 10px; font-size: 13px; cursor: pointer; font-family: inherit; }
-.syn-nav:hover { border-color: var(--accent2); }
+@media (hover: hover) { .syn-nav:hover { border-color: var(--accent2); } }
 /* shared select styling for native quick-nav dropdowns (synergy + threats) */
 select.app-select { background: var(--surface); border: 1px solid var(--border-dim); color: var(--text);
   border-radius: 8px; padding: 6px 10px; font-size: 13px; cursor: pointer; font-family: inherit; }
-select.app-select:hover { border-color: var(--accent2); }
+@media (hover: hover) { select.app-select:hover { border-color: var(--accent2); } }
 .syn-effs { display: flex; flex-direction: column; }
 .syn-eff { padding: 7px 10px; border-top: 1px solid var(--border-dim); text-align: left; }
 .syn-eff:first-child { border-top: 0; }
@@ -1298,7 +1299,7 @@ select.app-select:hover { border-color: var(--accent2); }
 .cd-sprite-row { display: flex; align-items: center; justify-content: center; gap: 4px; }
 .cd-chev { background: none; border: none; color: var(--text-mute); cursor: pointer; font-size: 24px; line-height: 1;
   padding: 6px 10px; border-radius: 8px; transition: color .1s, background .1s; }
-.cd-chev:hover { color: var(--text); background: rgba(255,255,255,.07); }
+@media (hover: hover) { .cd-chev:hover { color: var(--text); background: rgba(255,255,255,.07); } }
 .cd-chev.flank { display: none; }               /* mobile-only; hidden on web */
 .cd-nav-below { display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 2px; }
 .cd-nav-pos { font-size: 12px; color: var(--text-mute); font-variant-numeric: tabular-nums; min-width: 34px; }
@@ -1340,14 +1341,14 @@ select.app-select:hover { border-color: var(--accent2); }
   background: var(--surface2); border: 1px solid var(--border-dim); border-radius: 10px;
   color: var(--text); cursor: pointer;
 }
-.build-icon-pick:hover { border-color: var(--accent2); }
+@media (hover: hover) { .build-icon-pick:hover { border-color: var(--accent2); } }
 .build-icon-pick > img, .build-icon-pick > .slot-empty-icon { width: 48px; height: 48px; object-fit: contain; }
 .build-icon-pick .slot-empty-icon { font-size: 26px; }
 /* build creation (save form): a big centred sprite box + name, with a large animated preview panel */
 .build-create { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px; padding: 32px 16px; min-height: 100%; }
 .build-sprite-box { width: 168px; height: 168px; flex: 0 0 auto; display: flex; align-items: center; justify-content: center;
   background: var(--surface); border: 2px dashed var(--border); border-radius: 18px; cursor: pointer; transition: border-color .12s; }
-.build-sprite-box:hover { border-color: var(--accent2); background: var(--surface2); }
+@media (hover: hover) { .build-sprite-box:hover { border-color: var(--accent2); background: var(--surface2); } }
 .build-sprite-box > img { width: 128px; height: 128px; object-fit: contain; image-rendering: pixelated; }
 .build-sprite-box .slot-empty-icon { font-size: 60px; color: var(--accent2); }
 .build-name { flex: 0 0 auto; max-width: 340px; width: 100%; text-align: center; font-weight: 700; font-size: 15px; }
@@ -1361,7 +1362,7 @@ select.app-select:hover { border-color: var(--accent2); }
 .art-type-grid { display: flex; flex-direction: column; gap: 12px; }
 .art-type-tile { display: flex; flex-direction: row; align-items: center; gap: 16px; padding: 16px 18px;
   background: var(--surface); border: 1px solid var(--border-dim); border-radius: 12px; cursor: pointer; text-align: left; }
-.art-type-tile:hover { border-color: var(--border); }
+@media (hover: hover) { .art-type-tile:hover { border-color: var(--border); } }
 .art-type-tile.chosen { border-color: var(--accent2); box-shadow: inset 0 0 0 2px var(--accent2); background: rgba(154,123,214,.12); }
 .att-ico { width: 52px; height: 52px; flex: 0 0 auto; display: flex; align-items: center; justify-content: center; }
 .att-ico img { width: 100%; height: 100%; object-fit: contain; }
@@ -1381,7 +1382,7 @@ select.app-select:hover { border-color: var(--accent2); }
   background: var(--surface); border: 1px solid var(--border-dim); border-radius: 9px; text-align: center; min-height: 78px; justify-content: center; }
 .art-slot.primary { border-color: var(--accent2); }
 .art-slot.add { cursor: pointer; border-style: dashed; color: var(--accent2); }
-.art-slot.add:hover { border-color: var(--accent2); }
+@media (hover: hover) { .art-slot.add:hover { border-color: var(--accent2); } }
 .art-slot.locked { opacity: .4; border-style: dashed; filter: grayscale(1); cursor: default; }
 .as-ico { width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; }
 .as-ico img { width: 100%; height: 100%; object-fit: contain; }
@@ -1517,7 +1518,7 @@ select.app-select:hover { border-color: var(--accent2); }
 .fuse-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 160px)); gap: 12px; justify-content: center; padding: 12px 0; }
 .fuse-cell { aspect-ratio: 1; display: flex; align-items: center; justify-content: center; padding: 10px; cursor: pointer;
   background: var(--surface); border: 1px solid var(--border-dim); border-radius: 9px; transition: border-color .1s; }
-.fuse-cell:hover { border-color: var(--accent2); }
+@media (hover: hover) { .fuse-cell:hover { border-color: var(--accent2); } }
 .fuse-cell.on { border-color: var(--accent2); box-shadow: inset 0 0 0 2px var(--accent2); background: rgba(154,123,214,.2); }
 .fuse-cell img { width: 100%; height: 100%; object-fit: contain; image-rendering: pixelated; }
 
@@ -1590,7 +1591,7 @@ select.app-select:hover { border-color: var(--accent2); }
 .nh-valves { display: flex; gap: 6px; }
 .nh-valve { width: 52px; height: 52px; padding: 4px; display: flex; align-items: center; justify-content: center;
   background: var(--surface2); border: 1px solid var(--border-dim); border-radius: 8px; cursor: pointer; }
-.nh-valve:hover { border-color: var(--border); }
+@media (hover: hover) { .nh-valve:hover { border-color: var(--border); } }
 .nh-valve.on { border-color: var(--border); background: rgba(201,162,75,.14); }
 .nh-valve img, .nh-chest img, .nh-row-valves img { width: 100%; height: 100%; object-fit: contain; image-rendering: pixelated; }
 .nh-arrow { color: var(--text-mute); font-size: 18px; }
@@ -1606,7 +1607,7 @@ select.app-select:hover { border-color: var(--accent2); }
   background: transparent; border: 0; color: var(--text); font: inherit; text-align: left; }
 .nh-row + .nh-row, .nh-mm-row + .nh-mm-row { border-top: 1px solid var(--border-dim); }
 .nh-row { cursor: pointer; }
-.nh-row:hover { background: rgba(154,123,214,.08); }
+@media (hover: hover) { .nh-row:hover { background: rgba(154,123,214,.08); } }
 .nh-row.on { background: rgba(201,162,75,.14); box-shadow: inset 3px 0 0 var(--border); }
 .nh-row.empty { color: var(--text-mute); }
 .nh-row.mimic .nh-reward { color: var(--bad); }
@@ -1634,7 +1635,7 @@ select.app-select:hover { border-color: var(--accent2); }
 .spt-move { display: inline-flex; gap: 2px; margin-right: 2px; }
 .spt-mv { width: 24px; height: 24px; padding: 0; border-radius: 6px; border: 1px solid var(--border-dim); background: var(--surface2);
   color: var(--text); font: inherit; font-size: 15px; line-height: 1; cursor: pointer; }
-.spt-mv:hover:not(:disabled) { border-color: var(--border); }
+@media (hover: hover) { .spt-mv:hover:not(:disabled) { border-color: var(--border); } }
 .spt-mv:disabled { opacity: .3; cursor: default; }
 /* glossary: resurrection order */
 .res-line .res-n { align-self: center; }
@@ -1693,7 +1694,7 @@ select.app-select:hover { border-color: var(--accent2); }
 .sob-step { display: flex; align-items: center; gap: 6px; width: 100%; margin: 6px 0; padding: 7px 10px; text-align: left; cursor: pointer;
   font: inherit; font-size: 13px; font-weight: 600; color: var(--text); background: var(--surface3);
   border: 1px solid rgba(154,123,214,.45); border-radius: 8px; }
-.sob-step:hover { border-color: var(--accent2); }
+@media (hover: hover) { .sob-step:hover { border-color: var(--accent2); } }
 .sob-step + .perk-list { margin-bottom: 8px; }
 .sob-mem-toggle { align-self: flex-start; margin-top: 4px; font-size: 11px; padding: 2px 8px; }
 .sob-members { margin-top: 4px; padding-top: 0; }
@@ -1705,7 +1706,7 @@ select.app-select:hover { border-color: var(--accent2); }
 .boss-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-bottom: 14px; }
 .boss-tile { display: flex; flex-direction: column; align-items: stretch; gap: 4px; padding: 8px; background: var(--surface);
   border: 1px solid var(--border-dim); border-radius: 9px; cursor: pointer; transition: border-color .1s; }
-.boss-tile:hover { border-color: var(--accent2); }
+@media (hover: hover) { .boss-tile:hover { border-color: var(--accent2); } }
 .boss-tile .boss-formation { width: 100%; margin: 0; }
 .boss-tile .pt-name { text-align: center; font-size: 13px; }
 /* six trimmed battle frames tiled edge to edge into the whole creature (offsets are % of each 64x64 cell) */
@@ -1713,7 +1714,8 @@ select.app-select:hover { border-color: var(--accent2); }
 .boss-cell { position: relative; display: block; aspect-ratio: 1; padding: 0; margin: 0; border: 0; background: none; }
 button.boss-cell { cursor: pointer; }
 .boss-cell img { position: absolute; image-rendering: pixelated; }
-button.boss-cell:hover img, button.boss-cell:focus-visible img { filter: brightness(1.25) drop-shadow(0 0 2px var(--accent2)); }
+button.boss-cell:focus-visible img { filter: brightness(1.25) drop-shadow(0 0 2px var(--accent2)); }
+@media (hover: hover) { button.boss-cell:hover img { filter: brightness(1.25) drop-shadow(0 0 2px var(--accent2)); } }
 .boss-threat { margin-bottom: 8px; border: 1px solid var(--bad); border-radius: var(--radius); background: var(--surface); overflow: hidden; }
 .boss-threat-head { padding: 6px 10px; background: rgba(224,107,107,.16); font-weight: 700; font-size: 14px; }
 .boss-threat-body { padding: 8px 10px; font-size: 13px; line-height: 1.5; }
@@ -1722,7 +1724,7 @@ button.boss-cell:hover img, button.boss-cell:focus-visible img { filter: brightn
 .boss-threat-cond { margin: 6px 0 0; }
 .boss-why { margin-top: 6px; color: var(--text-dim); }
 .boss-who { padding: 0; border: 0; background: none; font: inherit; font-weight: 700; color: var(--accent); cursor: pointer; }
-.boss-who:hover { text-decoration: underline; }
+@media (hover: hover) { .boss-who:hover { text-decoration: underline; } }
 .boss-when { color: var(--text-mute); }
 .boss-chips { display: flex; flex-wrap: wrap; gap: 4px; margin: 4px 0; }
 .boss-threats { margin-bottom: 12px; }
@@ -1730,7 +1732,7 @@ button.boss-cell:hover img, button.boss-cell:focus-visible img { filter: brightn
   border-radius: 999px; background: var(--surface2); color: var(--text); font: inherit; font-size: 12px; line-height: 1.4;
   vertical-align: middle; cursor: pointer; }
 span.boss-chip { cursor: default; }
-button.boss-chip:hover { border-color: var(--accent2); }
+@media (hover: hover) { button.boss-chip:hover { border-color: var(--accent2); } }
 .boss-chip.warn { border-color: var(--bad); color: var(--text); background: rgba(224,107,107,.12); }
 .boss-chip.dim { color: var(--text-mute); border-style: dashed; }
 .boss-stats { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 13px; color: var(--text-dim); margin-bottom: 10px; }
@@ -1764,13 +1766,13 @@ button.boss-chip:hover { border-color: var(--accent2); }
 .art-view-toggle.boss-types { gap: 10px; flex-wrap: wrap; }
 .art-view-toggle.boss-types .av-tab { font-size: 11.5px; letter-spacing: .2px; }
 .av-tab:disabled { opacity: .4; cursor: default; }
-.av-tab:disabled:hover { color: var(--text-mute); }
+@media (hover: hover) { .av-tab:disabled:hover { color: var(--text-mute); } }
 /* Nether Boss tiles: one creature each, so a denser grid than the False Gods' formations */
 .nb-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-bottom: 14px; }
 @media (min-width: 720px) { .nb-grid { grid-template-columns: repeat(5, minmax(0, 1fr)); } }
 .nb-tile { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px 4px; background: var(--surface);
   border: 1px solid var(--border-dim); border-radius: 9px; cursor: pointer; color: var(--text); font: inherit; transition: border-color .1s; }
-.nb-tile:hover { border-color: var(--accent2); }
+@media (hover: hover) { .nb-tile:hover { border-color: var(--accent2); } }
 .nb-tile-spr { width: 64px; height: 64px; display: flex; align-items: center; justify-content: center; }
 .nb-tile-spr img { max-width: 100%; max-height: 100%; object-fit: contain; image-rendering: pixelated; }
 .nb-tile-spr.duo { width: 100%; max-width: 128px; gap: 2px; }
