@@ -36,7 +36,7 @@ Grouped by the app area each item touches, in suggested build order. Within a gr
 a decompile → write `_su_extract/code/HANDOFF_<topic>.md` and don't guess (batch rule above).
 
 ### G1. Spell-gem containers, Spell Wizard, Artifact Wizard spell socket (do #26 first; the others build on it)
-- [ ] **(#26) One shared spell-gem container component.** The Artifact Wizard's spell-socket step should show the same
+- [x] **(#26) One shared spell-gem container component.** DONE 2026-10-17: `spellRow` (pickers + library preview), `spellGemCard` (now also the Spells-page granted tile), `spellIco`, `clsTag`. The Artifact Wizard's spell-socket step should show the same
   containers as the Spell Wizard. Copy the Spell Wizard version over, then make both screens render from ONE shared
   render function or partial, so changing one changes both. While doing it, list any other duplicated container markup
   that has drifted and fold it into shared helpers too.

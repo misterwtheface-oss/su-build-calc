@@ -277,6 +277,15 @@
   // brief inline meta (charges · potency) for spell picker rows
   const spellMeta = (sp) => sp ? [sp.charges != null ? `${sp.charges} charge${sp.charges === 1 ? "" : "s"}` : null,
     sp.potency ? sp.potency : null].filter(Boolean).join(" · ") : "";
+  // the spell's icon box (every spell row / card / container uses this one)
+  const spellIco = (sp, cls = "prop-ico") => `<span class="${cls}">${spellIcon(sp) ? spriteImg(spellIcon(sp), "px") : ""}</span>`;
+  // THE spell-gem container row — Spell Wizard, Artifact Wizard spell socket, Nether Stone spell picker and the
+  // spell-gem library preview all render from this, so changing it changes every screen.
+  // opts: chosen · attrs (the owning screen's data-action + data-*) · clamp (2-line description, default on) · meta
+  const spellRow = (sp, { chosen = false, attrs = "", clamp = true, meta = true } = {}) =>
+    `<div class="prop-row rich${chosen ? " chosen" : ""}"${attrs ? " " + attrs : ""}>${spellIco(sp)}
+      <div class="prop-body"><div class="prop-name">${esc(sp.name)}${meta && spellMeta(sp) ? `<span class="prop-metatag">${esc(spellMeta(sp))}</span>` : ""}</div>
+        ${sp.desc ? `<div class="prop-sub${clamp ? " clamp" : ""}">${perkText(sp.desc)}</div>` : ""}</div></div>`;
   // fixed artifact slot template (all artifacts, max level): 1 primary + these; nether = 1 slot
   // unlock = the artifact tier (rank) each box opens at — code-grounded (_su_extract artifact_slots.json, S15:
   // inv_ArtifactStatString / obj_bsupgrade); the nether slot also needs the post-50 awakening, taken as given at 50.
@@ -4060,12 +4069,17 @@
     return ids.filter(tid => tid != null && !seen.has(tid) && seen.add(tid))
       .map(tid => `<div class="primary-traits" style="margin-bottom:6px">${traitBanner(tid)}<div class="trait-desc">${richText((TRAIT[tid] || {}).desc || "")}</div></div>`).join("");
   }
-  // one spell-gem container: name + trigger + description (clickable to the spell's taxonomy)
-  const spellGemCard = (sp, trigger, src, ch) => `<div class="art-spellcard apx-clickable" data-action="apx-open" data-ek="spell" data-eid="${sp.id}" title="View taxonomy">
-    <div class="art-spellcard-head"><span class="prop-ico">${spellIcon(sp) ? spriteImg(spellIcon(sp), "px") : ""}</span>
-      <b>${esc(sp.name)}</b>${trigger ? `<span class="art-trigger"${ch ? ` title="Activation chance: ${esc(ch.title)}"` : ""}>${esc(trigger)}${chanceTxt(ch)}</span>` : ""}</div>
-    ${src ? `<div class="slot-sub">from ${esc(src)}</div>` : ""}
-    ${sp.desc ? `<div class="trait-desc">${perkText(sp.desc)}</div>` : ""}</div>`;
+  // a class chip in the creature-class colour (Spells page tiles; `tail` e.g. " → Nature" for a class swap)
+  const clsTag = (cls, tail = "") => cls ? `<span class="anoint-spec-tag" style="color:${clsColor(cls)}">${esc(cls)}${tail}</span>` : "";
+  // one spell-gem container: name + trigger + description (clickable to the spell's taxonomy). Shared by artifact /
+  // nether / relic / boss / owner displays and (opts.tile: class chip + stats) the Spells page's granted-spell tiles.
+  const spellGemCard = (sp, trigger, src, ch, { tile = false } = {}) => {
+    const trig = trigger ? `<span class="art-trigger"${ch ? ` title="Activation chance: ${esc(ch.title)}"` : ""}>${esc(trigger)}${chanceTxt(ch)}</span>` : "";
+    return `<div class="art-spellcard${tile ? " spell-page-tile" : ""} apx-clickable" data-action="apx-open" data-ek="spell" data-eid="${sp.id}" title="View taxonomy">
+    <div class="art-spellcard-head">${spellIco(sp)}<b>${esc(sp.name)}</b>${tile ? `<span class="spt-tags">${clsTag(sp.cls)}${trig}</span>` : trig}</div>
+    ${src ? `<div class="slot-sub" style="text-align:left">from ${esc(src)}</div>` : ""}
+    ${sp.desc ? `<div class="trait-desc">${perkText(sp.desc)}</div>` : ""}${tile ? spellStatsHtml(sp) : ""}</div>`;
+  };
   // Selectable "clean container" cards for the artifact / nether pickers: the full description shows
   // inline (no drill-in to read it), a link jumps to the trait's material/taxonomy, and the card
   // adds/toggles on click. `attrs` carries the owning wizard's action + data-* (art-confirm-add /
@@ -4078,10 +4092,6 @@
         <span class="prop-ico sm">${t.icon ? spriteImg(t.icon, "px") : ""}</span><span>${esc(t.name)}</span></button>
     </div>`;
   };
-  const spellPickCard = (sp, chosen, attrs) => `<div class="pick-card${chosen ? " chosen" : ""}" ${attrs}>
-    <div class="art-spellcard-head"><span class="prop-ico">${spellIcon(sp) ? spriteImg(spellIcon(sp), "px") : ""}</span><b>${esc(sp.name)}</b>
-      <button class="pick-card-src plain" data-action="apx-open" data-ek="spell" data-eid="${sp.id}" title="View taxonomy">tags ›</button></div>
-    ${sp.desc ? `<div class="trait-desc">${perkText(sp.desc)}</div>` : ""}</div>`;
   // spell-gem containers for an artifact: native slot fires on the type trigger; nether stones keep their own
   function artifactSpellContainers(a, slot) {
     slot = slot || build.slots.find(s => s && s.artifactId === a.id) || null;   // equipped → that creature's relic counts
@@ -4358,7 +4368,7 @@
           && (!st.bkOnly || bookmarks.traits.includes(t.traitId))).slice(0, 300)
         .map(t => traitPickCard(t, has(t.id), `data-action="art-confirm-add" data-t="trait" data-v="${t.id}"`)).join("");
     } else if (type === "spell") {   // raw spells (no sockets), like nether stones — shared spell picker
-      rows = spellPickRows(st, spellPickList(st), sp => spellPickCard(sp, has(sp.id), `data-action="art-confirm-add" data-t="spell" data-v="${sp.id}"`));
+      rows = spellPickRows(st, spellPickList(st), sp => spellRow(sp, { chosen: has(sp.id), attrs: `data-action="art-confirm-add" data-t="spell" data-v="${sp.id}"` }));
     } else {
       // nether stones: filters (has trait / has spell / hide in use) + sort (recent · name · a core stat %)
       const sum = (n) => netherBonusRows(n).core;
@@ -5149,7 +5159,7 @@
             .map(t => traitPickCard(t, false, `data-action="nether-pickprop" data-k="${t.id}"`)).join("");
         } else {   // spell: raw spells (no property modifiers) — shared spell picker
           const haveS = new Set(s.props.filter(p => p.cat === "spell").map(p => p.key));
-          rowsHtml = spellPickRows(st, spellPickList(st, haveS), sp => spellPickCard(sp, false, `data-action="nether-pickprop" data-k="${sp.id}"`));
+          rowsHtml = spellPickRows(st, spellPickList(st, haveS), sp => spellRow(sp, { attrs: `data-action="nether-pickprop" data-k="${sp.id}"` }));
         }
         const back = `<button class="chip" data-action="nether-addprop">‹ Category</button>`;
         picker = `<div class="art-picker" data-action="noop">
@@ -5234,9 +5244,7 @@
         return libRow(p && p.icon, p ? p.name : pid, p ? propShort(p, gemTier(sel)) : ""); }).join("");
       const spellBlock = sp
         ? `<div class="section-label" style="margin-top:6px">Spell</div>
-           <div class="prop-row rich"><span class="prop-ico">${spellIcon(sp) ? spriteImg(spellIcon(sp), "px") : ""}</span>
-             <div class="prop-body"><div class="prop-name">${esc(sp.name)}</div>
-               ${sp.desc ? `<div class="prop-sub">${perkText(sp.desc)}</div>` : ""}</div></div>
+           ${spellRow(sp, { clamp: false, meta: false })}
            ${spellStatsHtml(sp)}`
         : `<div class="slot-sub" style="padding:6px">No spell chosen.</div>`;
       const gcls = gemClass(sel);
@@ -5293,15 +5301,12 @@
     const st = ovState, g = st.draft, q = st.search.trim().toLowerCase();
     let body = "", footer = "";
     if (st.step === "spell") {
-      const rows = spellPickRows(st, spellPickList(st), s => `<div class="prop-row rich ${g.spellId === s.id ? "chosen" : ""}" data-action="sg-spell" data-id="${s.id}">
-          <span class="prop-ico">${spellIcon(s) ? spriteImg(spellIcon(s), "px") : ""}</span>
-          <div class="prop-body"><div class="prop-name">${esc(s.name)}${spellMeta(s) ? `<span class="prop-metatag">${esc(spellMeta(s))}</span>` : ""}</div>
-            ${s.desc ? `<div class="prop-sub clamp">${perkText(s.desc)}</div>` : ""}</div></div>`);
+      const rows = spellPickRows(st, spellPickList(st), s => spellRow(s, { chosen: g.spellId === s.id, attrs: `data-action="sg-spell" data-id="${s.id}"` }));
       // right info panel — preview the highlighted spell's full effect + stats before committing to it
       // (only shown once a spell is chosen; no empty placeholder panel)
       const chosen = g.spellId != null ? SPELL.get(g.spellId) : null;
       const info = chosen
-        ? `<div class="ns-info-head"><span class="ns-info-icon">${spellIcon(chosen) ? spriteImg(spellIcon(chosen), "px") : ""}</span><h3>${esc(chosen.name)}</h3></div>
+        ? `<div class="ns-info-head">${spellIco(chosen, "ns-info-icon")}<h3>${esc(chosen.name)}</h3></div>
            ${chosen.desc ? `<div class="prop-sub" style="margin-bottom:4px">${perkText(chosen.desc)}</div>` : ""}
            ${spellStatsHtml(chosen)}`
         : "";
@@ -5372,12 +5377,7 @@
   const capFirst = (x) => x ? x[0].toUpperCase() + x.slice(1) : "";
   const grantTrigger = (g) => g.mode === "replaceArtifactSpell" ? "Replaces artifact spell"
     : g.mode === "cast" ? `${g.chance}% · ${capFirst(g.when)}` : capFirst(String(g.when || "start of battle").split(",")[0]);
-  const grantedTile = (g) => `<div class="art-spellcard spell-page-tile apx-clickable" data-action="apx-open" data-ek="spell" data-eid="${g.sp.id}" title="View taxonomy">
-    <div class="art-spellcard-head"><span class="prop-ico">${spellIcon(g.sp) ? spriteImg(spellIcon(g.sp), "px") : ""}</span><b>${esc(g.sp.name)}</b>
-      <span class="spt-tags">${g.sp.cls ? `<span class="anoint-spec-tag" style="color:${clsColor(g.sp.cls)}">${esc(g.sp.cls)}</span>` : ""}<span class="art-trigger">${esc(grantTrigger(g))}</span></span></div>
-    <div class="slot-sub" style="text-align:left">from ${esc(grantOwnerName(g.owner))}</div>
-    ${g.sp.desc ? `<div class="trait-desc">${perkText(g.sp.desc)}</div>` : ""}
-    ${spellStatsHtml(g.sp)}</div>`;
+  const grantedTile = (g) => spellGemCard(g.sp, grantTrigger(g), grantOwnerName(g.owner), null, { tile: true });
 
   // the tile's Spells button: equipped gems / slots, then +N granted spells (they use no slot)
   function spellsBtn(slot, i) {
@@ -5419,7 +5419,7 @@
       return `<div class="art-spellcard spell-page-tile apx-clickable" data-action="spellpage-sel" data-id="${g.id}" title="Show in the Spell Gems list">
         <div class="art-spellcard-head">${mv}<span class="prop-ico">${spriteImg(gemIcon(g), "px")}</span>
           <b>${esc(gemName(g))}</b>${sp && gemName(g) !== sp.name ? `<span class="slot-sub">${esc(sp.name)}</span>` : ""}
-          <span class="spt-tags">${sp && sp.cls ? `<span class="anoint-spec-tag" style="color:${clsColor(sp.cls)}">${esc(sp.cls)}${swapped ? ` → ${esc(swapped)}` : ""}</span>` : ""}<span class="rank-badge">Lv ${tier}</span></span></div>
+          <span class="spt-tags">${sp ? clsTag(sp.cls, swapped ? ` → ${esc(swapped)}` : "") : ""}<span class="rank-badge">Lv ${tier}</span></span></div>
         ${sp && sp.desc ? `<div class="trait-desc">${perkText(sp.desc)}</div>` : ""}
         ${sp ? spellStatsHtml(sp) : ""}
         ${props ? `<div class="prop-list spt-props">${props}</div>` : ""}</div>`;
