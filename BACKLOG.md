@@ -287,9 +287,9 @@ Known limits + planned work, roughly in priority order (all now cheap to impleme
   "Burned can't be avoided".
 - [ ] **Misery → Perdition** (2026-10-11): owner set provisionally (`user-pending`, hidden). When the user confirms in-game, drop
   `nyi` from traits 568–570 (or move them back if the test says otherwise).
-- [ ] Relic `hasRoll` flags: the extract read relic gate ids in the wrong order; after the extract fix, refresh the app's relic
+- [x] Relic `hasRoll` flags (DONE: extract fix S33/S35, picked up by the 2026-10-18 rebuild — 36 ranks on 20 relics): the extract read relic gate ids in the wrong order; after the extract fix, refresh the app's relic
   `hasRoll` flags.
-- [ ] Booze spells / Top Shelf / Happy Hour `hasRoll` (if the roll attribution is approved).
+- [x] Booze spells / Top Shelf / Happy Hour `hasRoll` (DONE: approved S33h; all 15 Booze spells flagged in data).
 - [ ] Creature is Damaged tag changes (if the S24 proposal is approved).
 - [ ] Step 0b note: "including Speed gains and buffs active at the start of their last turn" (offered).
 - [ ] Faucet valve sprites: remove the 40% fade (offered).
