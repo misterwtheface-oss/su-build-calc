@@ -4,6 +4,21 @@ Every dated change entry, newest first (moved verbatim from Progress.md on 2026-
 to their own section and sorted by their date). Current state and open work: `Progress.md`, `BACKLOG.md`.
 New entries go at the TOP.
 
+## 2026-10-18 — Triggers: spec perks, anointments and party members' traits
+- The creature detail Triggers section now also lists **spec perks** (at their allocated rank) and **anointments** (full
+  rank), each "from <spec>". It also lists **party members' traits** this creature can set off or carry out ("from <owner>",
+  one entry per trait even if several members have it, skipped if the creature has the trait itself).
+- Only the creatures a perk or trait concerns get it (DECISIONS 2026-10-18). Scope values: party, race (Animatus, Herbling,
+  Godspawn, Avatar, Guardian, Familiar …), class ("your Chaos creatures"), first n in the party (Kindling, Nightstalker),
+  top n by a final stat (Solar / Lunar Eclipse, Synastry, Transit, Ascendant; n scales with rank, ties count). Checked in a
+  browser: Death and Decay shows only on the Animatus, Thrive on Death and Masterpiece on everyone, Solar Eclipse (rank 3)
+  on the top 3 Attack creatures, Congregation only on its owner.
+- Data: `perks[].trigScope` (260) and `traits[].trigScope` (1090) = `{t, a}` read by `tools/trigger-scope.mjs` from the
+  description (trigger-clause subject, main-clause subject; only sentences with trigger wording count). 45 triggered perks
+  name no creature of yours (enemy-only / "you") and get none. Code check against `perk_signatures.json` race gates: one
+  warning, Apostle (its signature shows only the Godspawn gate).
+- App: `scopeCovers(slot, scope, rank)`; perk cards in `trigItemHtml`.
+
 ## 2026-10-18 — Creature detail: Triggers section (#5)
 - **Triggers** (creature detail, after the relic): every triggered effect the build attaches to that creature, grouped by
   event. Empty groups are hidden. Groups, in order: Start of Battle, On Turn, Attack, Cast, Defend, Provoke, Damage,

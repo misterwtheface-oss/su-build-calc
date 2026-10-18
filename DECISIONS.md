@@ -4,6 +4,17 @@ Standing decisions the user made about how the app models the game. Don't "fix" 
 the assistant's working notes on 2026-10-08 (they existed nowhere in the repo). Add new rulings here when they're made.
 Taxonomy category definitions themselves live in `TAXONOMY.md`.
 
+## Creature detail Triggers (2026-10-18)
+- **Perks and party members' traits are listed too (user):** spec perks and anointments sit in the same event groups as the
+  creature's own effects. They are listed only on the creatures they concern, not on every creature. Example: Animator's
+  Death and Decay ("After an enemy is killed, your Animatus casts Corpse Explosion") shows only on the Animatus. "Concern"
+  = the creature can set the effect off (the trigger clause names it: "After your creatures attack") or carries it out (the
+  main clause names it: "your Animatus casts", "your Chaos creatures gain", "your creature with the highest Attack").
+  A party member's trait whose trigger is its bearer ("After this creature provokes, your creatures gain …") stays on the
+  bearer's page. Perks that name no creature of yours (enemy-only, "you") are not listed.
+- The scope is read off the game's own text (`tools/trigger-scope.mjs`). Code perk signatures confirm the named race
+  where they gate on one; build-data warns if they disagree (Apostle: code shows only the Godspawn gate).
+
 ## Display names (2026-10-13)
 - **Real display names only (user):** every name the app shows for a tokenized attribute or an inferred label is the game's
   own localized text. `{TOKEN}` words come from `_su_extract/data/model/token_names.json` (the game's text renderer,

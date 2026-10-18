@@ -5059,7 +5059,37 @@
     // equipped spell gems' trigger properties
     for (const gid of slot.spellGemIds || []) { const g = spellGems.find(x => x.id === gid), sp = gemSpell(g); if (!sp) continue;
       for (const pid of g.propIds || []) { const p = SPELLPROP.get(pid), k = p && TRIG_GEM_PROP[p.key]; if (k) by.get(k).push({ kind: "gemprop", g, sp, p }); } }
+    // spec perks (allocated rank) + anointments (full rank) whose trigger scope covers this creature
+    const perks = new Map(), spec = curSpec();
+    if (spec) for (const p of spec.perks) { const r = perkRank(spec, p); if (r > 0) perks.set(p.key, { p, rank: r, src: spec.label }); }
+    for (const a of equippedAnointObjs()) if (!perks.has(a.key) || perks.get(a.key).rank < perkMax(a)) perks.set(a.key, { p: a, rank: perkMax(a), src: a.spec });
+    for (const { p, rank, src } of perks.values()) if (p.trigScope && scopeCovers(slot, p.trigScope, rank))
+      for (const [k, evs] of byTags(p.taxo)) by.get(k).push({ kind: "perk", p, rank, evs, src });
+    // party members' traits that this creature can set off or carry out ("After your creatures attack …"); a trait whose
+    // trigger is its bearer ("After this creature …") stays on the bearer's page. One entry per trait, its owners listed.
+    const own = new Set(slotTraitIds(slot)), mates = new Map();
+    for (const o of build.slots) if (o !== slot && o.cid != null) for (const tid of slotTraitIds(o)) {
+      const t = TRAIT[tid]; if (!t || own.has(tid) || !t.trigScope || (t.trigScope.t || []).includes("self") || !scopeCovers(slot, t.trigScope)) continue;
+      if (!mates.has(tid)) mates.set(tid, []); mates.get(tid).push((CREA.get(o.cid) || {}).name);
+    }
+    for (const [tid, owners] of mates) for (const [k, evs] of byTags(TRAIT[tid].taxo)) by.get(k).push({ kind: "trait", tid, evs, src: owners.join(", ") });
     return TRIG_GROUPS.map(g => ({ ...g, items: by.get(g.key) })).filter(g => g.items.length);
+  }
+  // does a trigger scope ({t, a}: build-data's read of the game text) cover this party slot? party = every creature;
+  // race / class = the creature's race / class; first:n = the first n creatures in the party; top:<stat>:n = among the n
+  // highest final values of that stat (ties count). "r<x>" counts scale with the perk's rank (x per rank).
+  function scopeCovers(slot, sc, rank = 1) {
+    const filled = build.slots.filter(s => s.cid != null), c = CREA.get(slot.cid), b = baseStats(slot);
+    const n = (x) => String(x).startsWith("r") ? Math.round(parseFloat(String(x).slice(1)) * rank) : +x;
+    return [...(sc.t || []), ...(sc.a || [])].some(v => {
+      const [kind, x, y] = v.split(":");
+      if (kind === "party") return true;
+      if (kind === "race") return !!c && c.race === x;
+      if (kind === "class") return !!b && b.cls === x;
+      if (kind === "first") return filled.indexOf(slot) > -1 && filled.indexOf(slot) < n(x);
+      if (kind === "top") { const mine = finalStats(slot).final[x]; return filled.filter(s => finalStats(s).final[x] > mine).length < n(y); }
+      return false;
+    });
   }
   const trigChip = (txt) => `<span class="art-trigger">${esc(txt)}</span>`;
   function trigItemHtml(it) {
@@ -5068,6 +5098,9 @@
     if (it.kind === "trait") return `<div class="art-spellcard trig-card"><div class="art-spellcard-head">${traitBanner(it.tid)}${trigChip(it.evs.join(" · "))}</div>
         ${it.src ? `<div class="slot-sub" style="text-align:left">from ${esc(it.src)}</div>` : ""}
         <div class="trait-desc">${richText((TRAIT[it.tid] || {}).desc || "")}</div></div>`;
+    if (it.kind === "perk") return `<div class="art-spellcard"><div class="art-spellcard-head">${it.p.icon ? `<span class="prop-ico sm">${spriteImg(it.p.icon, "px")}</span>` : ""}<b>${esc(it.p.name)}</b>${trigChip(it.evs.join(" · "))}</div>
+        <div class="slot-sub" style="text-align:left">from ${esc(it.src)}</div>
+        <div class="trait-desc">${perkText(it.p.desc || "", it.rank)}</div></div>`;
     if (it.kind === "relic") { const ra = relicArt(it.relic);
       return `<div class="art-spellcard apx-clickable" data-action="apx-open" data-ek="relic" data-eid="${it.relic.id}" title="View taxonomy">
         <div class="art-spellcard-head">${ra ? `<span class="prop-ico sm">${spriteImg(ra, "px")}</span>` : ""}<b>${esc(relicShortName(it.relic))} · R${it.r.rank}</b>${trigChip(it.evs.join(" · "))}</div>

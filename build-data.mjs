@@ -13,6 +13,7 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { stampCache } from './tools/stamp-cache.mjs';
+import { triggerScope, setRaces } from './tools/trigger-scope.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = __dirname;
@@ -3525,6 +3526,31 @@ const bosses = (() => {
   console.log(`  bosses: ${out.length} encounters (${types.map(t => `${out.filter(e => e.type === t.type).length} ${t.type}`).join(' / ')}) · ${nUnits} units · ${nSteps} steps`);
   return { types, encounters: out };
 })();
+
+// ── trigger scope (creature detail Triggers): who in the party a triggered perk / trait is about, read off its game text
+// (tools/trigger-scope.mjs). Only entities with an Activates at / Activates When tag get one. Code check: a race the text
+// scope names must be among the perk signature's race gates (field:race == "<Race>") whenever the signature has any. The
+// other direction is not checked: signature race gates also come from shared host code (Seraphim → Amaranth).
+{
+  setRaces(creatures.map(c => c.race));
+  const hasTrig = (o) => (o.taxo || []).some(t => /^Activates (at|When)::/.test(t));
+  const pack = (sc) => { const o = {}; if (sc.t.length) o.t = sc.t; if (sc.a.length) o.a = sc.a; return Object.keys(o).length ? o : null; };
+  let nP = 0, nT = 0;
+  for (const sp of specs) for (const pk of sp.perks) if (hasTrig(pk)) { const sc = pack(triggerScope(pk.desc)); if (sc) { pk.trigScope = sc; nP++; } }
+  for (const t of Object.values(traits)) if (hasTrig(t)) { const sc = pack(triggerScope(t.desc)); if (sc) { t.trigScope = sc; nT++; } }
+  const sigP = path.join(MODEL, 'perk_signatures.json');
+  if (fs.existsSync(sigP)) {
+    const byKey = new Map(); for (const sp of specs) for (const pk of sp.perks) byKey.set(pk.key, pk);
+    for (const r of Object.values(readJSON(sigP).records || {})) {
+      const races = new Set(); for (const c of r.clauses || []) for (const g of (c.raw && c.raw.gcmps) || []) if (g[0] === 'field:race' && /^str:/.test(String(g[2]))) races.add(String(g[2]).slice(4));
+      const pk = byKey.get(r.key); if (!pk || !races.size || !hasTrig(pk)) continue;
+      const txt = (pk.trigScope ? [...(pk.trigScope.t || []), ...(pk.trigScope.a || [])] : []).filter(x => x.startsWith('race:')).map(x => x.slice(5));
+      for (const race of txt) if (!races.has(race)) warn(`trigger scope: perk ${pk.key} text names race ${race}, code gates on ${[...races].join('/')}`);
+    }
+  }
+  const scopeWarn = warnings.filter(w => w.startsWith('trigger scope:'));
+  console.log(`  trigger scope: ${nP} perks · ${nT} traits${scopeWarn.length ? ` · ⚠ ${scopeWarn.join(' · ')}` : ''}`);
+}
 
 const SU_DATA = {
   meta: {

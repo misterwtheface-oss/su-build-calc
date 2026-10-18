@@ -118,6 +118,7 @@ source of truth), called by both `build-data.mjs` and the **`.githooks/pre-commi
   2026-10-18: Resurrection Order is a code-order list (`RES_ORDER` rows: head / resurrection / block / qblock / note) with blocker rows.
 - **Creature detail Triggers (2026-10-18):** `slotTriggers(slot)` groups traits / relic ranks (`ranks[].trig`) / artifact + nether
   spells / gem trigger properties / "X On Damage" properties by event (`TRIG_GROUPS`); rendered by `triggersSectionHtml`.
+  + spec perks / anointments / party members' traits whose `trigScope` covers the slot (`scopeCovers`, tools/trigger-scope.mjs).
 - **Relic tag ×N (2026-10-18):** `relics[].tagRanks` (tag → ranks carrying it, N ≥ 2) → "×N" in `entityTaxHtml`. Perk `demonSpells`
   (Final Summoning) → `demonSpellsHtml` on the spec page + perk detail.
 - **Shared spell containers (2026-10-17):** `spellRow` (Spell / Artifact / Nether pickers + Spell Gem library preview) and
