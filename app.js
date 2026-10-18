@@ -321,6 +321,9 @@
   // keep an artifact game-legal for its tier: drop anything sitting in a box the tier hasn't unlocked
   const artTrim = (a) => { for (const sl of ART_SLOTS) if ((a[sl.key] || []).length > artOpen(sl, a.rank)) a[sl.key] = a[sl.key].slice(0, artOpen(sl, a.rank)); };
   const RELIC = new Map(D.relics.map(r => [r.id, r]));
+  // relic art: the large scr_RelicBigIcon sprite everywhere; the small overworld `icon` only in the badge next to the creature
+  // sprite (gearBadges). build-data errors on a relic without big art, so there's no fallback here.
+  const relicArt = (r) => r && r.iconBig;
   const CARD = new Map(D.cards.map(c => [c.id, c]));
   const CONDITION = new Map((D.conditions || []).map(c => [`${c.cat}:${c.key}`, c]));   // keyed "Buff:agile" for the taxonomy viewer
   const PERS = new Map((D.personalities || []).map(p => [p.key, p]));   // personality key -> {name,raise,lower}
@@ -2750,7 +2753,7 @@
           `<span class="anoint-spec-tag">${esc(p.spec)}</span>`, perkText(p.desc, p.ranks), bkBtn("perks", p.key), { ek: "perk", eid: p.key })),
         section("Spells", res.spells, s => line(apxStack(apxIcon(spellIcon(s))), s.name,
           `${s.cls ? `<span class="anoint-spec-tag">${esc(s.cls)}</span>` : ""}${spellMeta(s) ? `<span class="anoint-spec-tag">${esc(spellMeta(s))}</span>` : ""}`, perkText(s.desc, null), bkBtn("spells", s.id), { ek: "spell", eid: s.id }, availTagsHtml(s))),
-        section("Relics", res.relics, r => line(apxStack(apxIcon(r.icon)), r.name,
+        section("Relics", res.relics, r => line(apxStack(apxIcon(relicArt(r))), r.name,
           r.statBonus ? `<span class="anoint-spec-tag">${esc(r.statBonus)}</span>` : "", relicRanksHtml(r.ranks), null, { ek: "relic", eid: r.id })),
         section("Realm Cards", res.cards.map(c => ({ ...c, name: c.family })), c => line(apxStack(apxIcon(c.sprite)), c.family,
           c.cls ? `<span class="anoint-spec-tag">${esc(c.cls)}</span>` : "", cardTiersHtml(c.effects, c.tiers), null, { ek: "card", eid: c.id })),
@@ -2801,7 +2804,7 @@
   function resolveEntity(kind, id) {
     if (kind === "trait") { const e = TRAIT[+id]; return { e, icon: traitItemIcon(id), name: e && e.name, descHtml: e && richText(e.desc || "") + fxClarify(e), kindLabel: "Trait" }; }
     if (kind === "spell") { const e = SPELL.get(+id); return { e, icon: e && spellIcon(e), name: e && e.name, descHtml: e && perkText(e.desc || "") + fxClarify(e), kindLabel: "Spell" }; }
-    if (kind === "relic") { const e = RELIC.get(+id); return { e, icon: e && e.icon, name: e && e.name, descHtml: e && relicRanksHtml(e.ranks, true), kindLabel: "Relic" }; }
+    if (kind === "relic") { const e = RELIC.get(+id); return { e, icon: relicArt(e), name: e && e.name, descHtml: e && relicRanksHtml(e.ranks, true), kindLabel: "Relic" }; }
     if (kind === "card") { const e = CARD.get(+id); return { e, icon: e && e.sprite, name: e && e.family, descHtml: e && cardTiersHtml(e.effects, e.tiers), kindLabel: "Realm Card" }; }
     if (kind === "perk") { const e = perkByKey(id); return { e, icon: e && e.icon, name: e && e.name, descHtml: e && perkText(e.desc, e.ranks) + fxClarify(e), kindLabel: "Perk" }; }
     if (kind === "condition") { const e = CONDITION.get(id); return { e, icon: e && e.icon, name: e && e.name, descHtml: e && richText(e.desc || "") + fxClarify(e), kindLabel: e && e.cat }; }
@@ -4608,7 +4611,7 @@
       const rels = list.filter(r => r.statBonus === label);
       if (!rels.length) return "";
       const tiles = rels.map(r => { const taken = takenBy.get(r.id); return `<div class="pick-tile ${equipped && equipped.id === r.id ? "selected" : ""}${taken ? " disabled" : ""}" ${taken ? `title="Equipped by ${esc(taken)}"` : `data-action="relic-pick" data-id="${r.id}"`}>
-        <div class="pt-sprite">${r.icon ? spriteImg(r.icon, "px") : `<span class="spec-tile-plus">✦</span>`}</div>
+        <div class="pt-sprite">${relicArt(r) ? spriteImg(relicArt(r), "px") : `<span class="spec-tile-plus">✦</span>`}</div>
         <div class="pt-name">${esc(relicShortName(r))}</div></div>`; }).join("");
       return `<div class="section-label">${esc(label)}</div><div class="pick-grid relic-grid">${tiles}</div>`;
     }).join("");
@@ -4648,7 +4651,7 @@
         <h2 style="flex:1">${esc(sel.name)}</h2><button class="ovl-close" data-action="close-detail">✕</button></div>
       <div class="overlay-body"><div class="ovl-center">
         <div class="gs-detail-head apx-clickable" data-action="apx-open" data-ek="relic" data-eid="${sel.id}" title="View taxonomy">
-          ${sel.icon ? `<div class="gs-god-sprite">${spriteImg(sel.icon, "px")}</div>` : ""}
+          ${relicArt(sel) ? `<div class="gs-god-sprite">${spriteImg(relicArt(sel), "px")}</div>` : ""}
           <div class="gs-god-name">${esc(sel.name)} <span class="etax-hint">tags ›</span></div>
           <div class="slot-sub">Boosts ${esc(sel.statBonus || "—")}</div></div>
         <div class="ovl-filterbar rank-picker"><span class="slot-sub">Rank</span>
@@ -4942,7 +4945,7 @@
           ${artHtml}
           ${relic ? `<div class="section-label" style="margin-top:14px">Relic — Rank ${slot.relic.rank}${FX.ignores("relics") ? ` <span style="color:var(--bad);font-weight:700">· ignored (Deprived)</span>` : ""}</div>
             <div class="prop-list">
-              <div class="prop-row static apx-clickable" data-action="apx-open" data-ek="relic" data-eid="${slot.relic.id}" title="View taxonomy"><span class="prop-ico">${relic.icon ? spriteImg(relic.icon, "px") : ""}</span><span class="prop-name"><b>${esc(relic.name)}</b> <span class="etax-hint">tags ›</span></span></div>
+              <div class="prop-row static apx-clickable" data-action="apx-open" data-ek="relic" data-eid="${slot.relic.id}" title="View taxonomy"><span class="prop-ico">${relicArt(relic) ? spriteImg(relicArt(relic), "px") : ""}</span><span class="prop-name"><b>${esc(relic.name)}</b> <span class="etax-hint">tags ›</span></span></div>
 
               ${relic.ranks.filter(r => r.rank <= slot.relic.rank).map(r => `<div class="prop-row static">
                 <span class="prop-name" style="flex:0 0 40px;color:var(--accent)">R${r.rank}</span>

@@ -102,7 +102,7 @@ a decompile → write `_su_extract/code/HANDOFF_<topic>.md` and don't guess (bat
   a later pass. Gamepad input is not part of this item.
 
 ### G6. Relics
-- [ ] **(#10) Relic sprites.** The full-size relic display seems to use the small icon sprite. Use the icon only in the one
+- [x] **(#10) Relic sprites.** DONE 2026-10-17: `relicArt` = code big art (`scr_RelicBigIcon`) everywhere except the creature-sprite badge; build errors on a relic without big art. The full-size relic display seems to use the small icon sprite. Use the icon only in the one
   small spot (next to the creature sprite) and the higher-quality full-size sprite everywhere else. Check that the asset
   match carries a provenance tag (asset-provenance rule).
 - [ ] **(#17) Per-rank relic taxonomy.** Tag each relic rank (R1…Rn) separately instead of the relic as a whole. On the

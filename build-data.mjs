@@ -1590,6 +1590,7 @@ const relics = relicRef.map((r, i) => {
   let icon = null, iconBig = null;
   if (rc && rc.overworld && copySpriteFrame(rc.overworld, 0, OUT_RELIC, `${i}.png`)) { icon = `assets/relics/${i}.png`; relicIconCopied++; }
   if (rc && rc.big && copySpriteFrame(rc.big, 0, OUT_RELIC, `${i}_big.png`)) iconBig = `assets/relics/${i}_big.png`;
+  if (rc && !iconBig) err(`relic "${r.relic}": no scr_RelicBigIcon art (the app shows only the big art outside the creature badge)`);
   const rTaxo = correctTaxo(taxoStrs(relicTaxo[String(i)]), (r.ranks || []).map(x => x.description || '').join(' '), 'relic');
   return {
     id: i,
