@@ -726,9 +726,10 @@
   }
   function slotTraitIds(slot) {
     const b = baseStats(slot); if (!b) return [];
-    // Deprived ignores Fused traits → keep only the primary creature's innate trait (+ artifact-granted traits below)
+    // Deprived ignores Fused traits → keep only the primary creature's innate trait (+ artifact-granted traits below).
+    // Endowment's trait survives: Total Deprivation clears passive2 before Endowment sets it (HANDOFF_endowment.md Q6)
     const c = CREA.get(slot.cid);
-    const ids = FX.ignores("fusionTraits") ? [c ? c.traitId : null].filter(x => x != null) : [...b.traitIds];
+    const ids = FX.ignores("fusionTraits") ? [c ? c.traitId : null, b.endowed ? b.endowed.traitId : null].filter(x => x != null) : [...b.traitIds];
     const a = resolveArtifact(slot);
     if (a) {
       // trait-item slot → its granted trait

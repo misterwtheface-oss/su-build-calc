@@ -4,6 +4,13 @@ Every dated change entry, newest first (moved verbatim from Progress.md on 2026-
 to their own section and sorted by their date). Current state and open work: `Progress.md`, `BACKLOG.md`.
 New entries go at the TOP.
 
+## 2026-10-18 — Endowment: code answer applied
+- Extract confirmed the model (primary trait, class kept, race, slot position 2, no creature #2 scrolls, battle only).
+- Deprived now keeps the Endowment trait: in code, Total Deprivation clears the fused-trait field before Endowment sets it.
+  Checked in a browser (Deprived + anointed Endowment: Animatus keeps Cloud of Bats).
+- Open: the code averages with creature #2's primary creature's plain base, not its fused base. App keeps the user's
+  in-game model pending a ruling.
+
 ## 2026-10-18 — Endowment wired in (Animator)
 - New engine op `fuse.copy` (rule `animator-endowment`, spec+anoint): while Endowment is allocated or anointed, the
   Animatus's base stats become the fusion average with creature #2's fused base (creature #2's scrolls left out; the

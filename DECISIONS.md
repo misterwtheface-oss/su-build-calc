@@ -66,8 +66,15 @@ the spine/join source is wrong, not the data — the sprites/classes DO exist un
   primary (innate) trait, not its fused trait. Race becomes creature #2's race; class stays the Animatus's.
 - **Shown in the planner (user):** the Animatus's base stats, traits and race everywhere in the app are the endowed values,
   not a separate battle view. The detail header reads "Animatus ⚭ <creature #2>", traits "(innate + Endowment)".
-- Not yet confirmed in code: creature #2's scrolls (left out), Deprived dropping the trait (treated as a fused trait).
-  Asked in `_su_extract/code/HANDOFF_endowment.md`.
+- **Code answer (extract S36, `_su_extract/code/HANDOFF_endowment.md`):** confirms the primary trait (set in the fused-trait
+  field `passive2`), class kept (`scr_CreatureClass` returns the stored class inside battle), race = creature #2's current
+  race, slot = party position 2 exactly (empty → nothing), none of creature #2's scrolls/personality/level carried, battle
+  only (fuse fields restored at cleanup).
+- **Deprived keeps the Endowment trait** (code): Total Deprivation clears `passive2` earlier in the same Create event, then
+  Endowment sets it again. The app now keeps it.
+- **Open, user ruling needed:** the code stores only creature #2's own creature id as `fuse2`, so the stat average uses
+  creature #2's PRIMARY creature's plain table base, not its fused base. That differs from the user's observation; the
+  app keeps the user's fused-base model until the user rules (a clean test: creature #2 fused from two very different parents).
 
 ## Artifacts, nether stones, spell-gem dusts (user ground truth)
 **ARTIFACT SLOT TEMPLATE (user ground truth, 2026-09-17 — datamine couldn't extract, was runtime/level-scaled):**

@@ -117,6 +117,13 @@ a decompile → write `_su_extract/code/HANDOFF_<topic>.md` and don't guess (bat
   exactly 2**. Re-run the same comparison on the real per-rank tags when they land, then the user picks.
 
 ### G7. Taxonomy + search
+- [ ] **Taxonomy intent audit, first pass: "Modify X Calculation" sweep + an inbound damage calculation tag** (user
+  2026-10-18). (1) Check that `Modify Attack Calculation` (42), `Modify Spell Calculation` (23) and `Defense Calculation` (3)
+  catch everything they should, code-grounded. Quick text scan: 41 traits use "calculation" / "as if" wording, 15 carry a
+  Calculation tag; misses include The Crimson, Frenzy, Bloodline. (2) Add a tag for the **inbound** damage calculation (how
+  damage a creature *takes* is computed), e.g. Mindful Awareness "Intelligence added to Defense when determining the damage
+  taken", Details Matter, Twilight Zone's second half, Barbed Vines. Decide in the audit whether it replaces or sits beside
+  `Defense Calculation`. Relabels go through the review queue.
 - [x] **(#13) Search inside the taxonomy view should match subcategories** DONE 2026-10-17 (a "Tags" section heads the name results), e.g. searching "Persist" returns every
   Persist-related subcategory, not only the top level.
 - [x] **(#28) New subcategory under "Affect on Spells": "Count as Manual".** (Pandemonium Wrath CONFIRMED in code 2026-10-18: its repeats are queued with automatic = false) It covers effects that make auto-cast spells
@@ -272,8 +279,9 @@ Known limits + planned work, roughly in priority order (all now cheap to impleme
   disagree otherwise, the CSV value is kept until the user decides. List the disagreements and ask.
 
 ## Pending extract hand-offs (from `_su_extract/RESUME.md`, waiting on the user)
-- [ ] **Endowment: code check** (`_su_extract/code/HANDOFF_endowment.md`): fused vs plain base of creature #2, its scrolls,
-  class, position-2 rule, Deprived. App ships the user's in-game model (DECISIONS 2026-10-18).
+- [ ] **Endowment: fused vs plain base (user ruling).** Extract answered 2026-10-18 (`_su_extract/code/HANDOFF_endowment.md`):
+  everything matches the app except the stat partner. Code averages with creature #2's PRIMARY creature's plain table base;
+  the user saw the fused totals. App keeps the user's model until ruled. Deprived now keeps the trait (code).
 - [x] **Nether Bosses** shipped 2026-10-11 (35 pages, tier toggle, threats, stat bars, trait materials).
 - [x] **Gate of the Gods** shipped 2026-10-11 (31 god pages: threats, stat bars, difficulty table, rewards).
 - [ ] **Gate god reward skins** — the reward code gives "each of its three skins" without naming them, and each Avatar has 2–5
