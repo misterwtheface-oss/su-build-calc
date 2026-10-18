@@ -61,7 +61,7 @@ a decompile → write `_su_extract/code/HANDOFF_<topic>.md` and don't guess (bat
 - [x] **(#20) Class sort in the Spell library.** DONE 2026-10-17 (class-wheel order, Opal swap counts).
 
 ### G3. Artifact + Nether Stone wizard limits
-- [ ] **(#23) Artifact wizard: one copy per trick-slot item.** The wizard currently lets the same trick-slot item go in
+- [x] **(#23) Artifact wizard: one copy per trick-slot item.** DONE 2026-10-18 (extract S34: the blacksmith refuses a trick property already in trick1/trick2, `obj_bsupgrade_KeyPress_69`; stat slots allow repeats). The picker greys out a trick already in the other slot; saved duplicates are dropped on load. The wizard currently lets the same trick-slot item go in
   more than once, which the game doesn't allow. Get the exact uniqueness rule from the artifact creation code
   (`_su_extract`) and enforce it in the picker, e.g. hide or disable items already used.
   **2026-10-17:** not in any decompile on disk → asked in `_su_extract/code/HANDOFF_artifact_slot_uniqueness.md` §1
@@ -106,7 +106,7 @@ a decompile → write `_su_extract/code/HANDOFF_<topic>.md` and don't guess (bat
 - [x] **(#10) Relic sprites.** DONE 2026-10-17: `relicArt` = code big art (`scr_RelicBigIcon`) everywhere except the creature-sprite badge; build errors on a relic without big art. The full-size relic display seems to use the small icon sprite. Use the icon only in the one
   small spot (next to the creature sprite) and the higher-quality full-size sprite everywhere else. Check that the asset
   match carries a provenance tag (asset-provenance rule).
-- [ ] **(#17) Per-rank relic taxonomy.** Tag each relic rank (R1…Rn) separately instead of the relic as a whole. On the
+- [x] **(#17) Per-rank relic taxonomy.** DONE 2026-10-18 (user: no threshold; "×N" on a relic's tag chip when N ≥ 2 of its ranks carry the tag, from `relic_rank_taxonomy_tags.json` `relic_tag_counts` → `relics[].tagRanks`). Also shipped: Lamora `Creature of X Type Count` → `Debuff Count`; the 4 whole-relic tags no rank backs dropped (Fable, Mutatias, Salus, Starwrath; relicChanges). Arbiter R70 clarify note arrives via effect_clarifications. Later (maybe): a short prose summary per relic. Tag each relic rank (R1…Rn) separately instead of the relic as a whole. On the
   relic's own view, add up the tags across its ranks. When a tag repeats across ranks with a similar scope, show it as
   "built to support this feature", separate from tags that appear on only one rank. **User: the threshold (2+ vs 3+
   ranks) is still to decide**, so ask before shipping.
@@ -119,7 +119,7 @@ a decompile → write `_su_extract/code/HANDOFF_<topic>.md` and don't guess (bat
 ### G7. Taxonomy + search
 - [x] **(#13) Search inside the taxonomy view should match subcategories** DONE 2026-10-17 (a "Tags" section heads the name results), e.g. searching "Persist" returns every
   Persist-related subcategory, not only the top level.
-- [x] **(#28) New subcategory under "Affect on Spells": "Count as Manual".** (Pandemonium Wrath code check open) It covers effects that make auto-cast spells
+- [x] **(#28) New subcategory under "Affect on Spells": "Count as Manual".** (Pandemonium Wrath CONFIRMED in code 2026-10-18: its repeats are queued with automatic = false) It covers effects that make auto-cast spells
   count as manually cast for effect interactions (e.g. The Great Beyond). Find the members from the code flag where
   possible. Approval goes through the usual taxonomy review queue.
   **SHIPPED 2026-10-18 (user approved all 4):** value `Affect on Spells::Count as Manual`, members in code_taxo_approved.json;
@@ -127,7 +127,7 @@ a decompile → write `_su_extract/code/HANDOFF_<topic>.md` and don't guess (bat
   members (traits/perks that clear `bc_CreatureCast` arg3, ARTIFACTS.md §3): **Superfluidity** (5%), **The Great Beyond**
   (40%), **Embrace the Arcane** perk (10%). Text-only candidate: **Pandemonium Wrath** ("additional spells are considered to
   be manually cast"; its call path isn't traced). On approval: add to TAXONOMY.md + `correctTaxo` + code_taxo_approved.
-- [ ] **(#19) What counts as "interacts with minions" for Dark Summoning membership?** Define the rule the same way as
+- [x] **(#19) What counts as "interacts with minions" for Dark Summoning membership?** DONE 2026-10-18 (user: "both"): `Minion Spells` = every spell that deals with minions literally (42, +11: Crucifixion, Dark Transformation, Curse of Jimly, Dogpile, Direct Orders, Big Bang, Earthquake, Banish, Chaos Orb, Contagion, Fae Fire); Dark Summoning's real pool = the game's MINION category (26), and the 16 members outside it carry a clarify note. Parked for the taxonomy intent audit: Mega Magic, Apocalypse, Dispel / Mass Dispel / Divinity. Define the rule the same way as
   the Multi-Target rule (CHANGELOG 2026-10-06): what qualifies, what doesn't, edge cases. Get the user's approval, then
   re-audit the members.
   **User 2026-10-18: membership must be validated in code — no text rule.** Waiting on the handoff.
@@ -146,29 +146,29 @@ a decompile → write `_su_extract/code/HANDOFF_<topic>.md` and don't guess (bat
   code" item. Needed by #8.
 - [x] **(#8) Appendix: random target selection.** DONE 2026-10-17 — no handoff needed: `bc_CreatureCastSpellGem` was already decoded (ARTIFACTS.md §2). "Random Targets" section. How targets are picked for random-target effects, e.g. socketed
   spell-gem casts and Nether Stone spells. Needs code research, so write a handoff.
-- [ ] **(#14) Research: Burn the Corpses.** Find which resurrections it actually blocks. In testing, many resurrections
+- [x] **(#14) Research: Burn the Corpses.** DONE 2026-10-18: clarify notes on every blocker (what each does NOT stop) + blocker rows in the Resurrection Order (extract S35, `resurrection_blocks.json`). Rebirth report unconfirmed — code says refused. Find which resurrections it actually blocks. In testing, many resurrections
   get through, e.g. Terminus, and reportedly Rebirth and the False God resurrection effects. Find the check in code and
   list what it does and doesn't stop. Handoff.
   **2026-10-17:** the perk is **Burn Their Corpses** (Pyromancer). Asked in `_su_extract/code/HANDOFF_resurrection_blocks_final_summoning.md`
   §1 (where it's checked; what bypasses it; same for the 8 other "cannot be resurrected" sources).
-- [ ] **(#15) Resurrection Order: add a note about resurrections that don't go through `bc_onDeath`** but still count as
-  resurrection-triggering effects (e.g. Terminus, Ever Upwards). Do this together with #14. Asked in the same handoff §2 (full list of direct
+- [x] **(#15) Resurrection Order: add a note about resurrections that don't go through `bc_onDeath`** but still count as
+  resurrection-triggering effects (e.g. Terminus, Ever Upwards). DONE 2026-10-18: note row naming them; the whole list re-ordered to code order (user ruling) with blocker rows and the queue-time checks. Do this together with #14. Asked in the same handoff §2 (full list of direct
   `bc_EventResurrect` callers outside bc_OnDeath).
-- [ ] **(#30) Research: Final Summoning.** Which spell does each Greater Demon minion cast when it goes away? (Each minion
+- [x] **(#30) Research: Final Summoning.** DONE 2026-10-18: "Spell cast by each Greater Demon" table on the perk (spec page + detail; Satanachia = one of 30 at random). Which spell does each Greater Demon minion cast when it goes away? (Each minion
   has a different one.) Handoff, then show the result on the trait. **2026-10-17:** it's the Demonologist perk FINALSUMMONING; asked in the same handoff §3.
 
 ### G9. Nether Realm helpers + Nether Bosses
 - [x] **(#11) Faucet valve order is mirrored.** DONE 2026-10-17 (screen valve i = code digit 3−i; NETHER.md updated). The 40% fade item is still only offered. **User:** read the code right→left. The app currently assumes left→right
   (`app.js` FAUCET section, ~line 3394). The CHANGELOG 2026-10 check was "only the LEFT valve on → gem chest". Mirror the
   digit order and update that note. Can go out with the open "Faucet valve sprites: remove the 40% fade" item.
-- [ ] **(#7) Verify Nether Boss rewards.** Check that the reward given right after a Nether Boss fight is the quest
+- [x] **(#7) Verify Nether Boss rewards.** DONE 2026-10-18: the post-fight loot is a separate 20 bundles (+ Key Fragments), not the quest reward; the quest reward (5 bundles) is paid on entering the next room. Bosses page updated. Check that the reward given right after a Nether Boss fight is the quest
   completion reward, and that the two chests ALSO hold +3 bundles on top of it. Check against code, then fix the Bosses
   page reward text if needed.
   **2026-10-17:** chests CONFIRMED in code (2 × 9 bundles: 3 + 3 boss room + 3 Nether bonus; +5 at 10 favor-rank realms) and now
   on the Bosses page. Whether the post-fight loot roll IS the quest-450 payout is asked in `_su_extract/code/HANDOFF_nether_boss_reward.md`.
 
 ### G10. Macro
-- [ ] **(#12) Order of duplicate-name traits in the macro selector.** E.g. Head of Hydranox appears 5 times, each owned by a
+- [x] **(#12) Order of duplicate-name traits in the macro selector.** ANSWERED 2026-10-18: the game stores the runtime trait id and sorts A→Z with an unstable qsort, so same-name order depends on the save. Rule for when the macro engine emits trait conditions (it doesn't today, and macros are FEATURES-off): key by runtime id, label copies by owner (`_su_extract data/model/macro_trait_order.json`). E.g. Head of Hydranox appears 5 times, each owned by a
   different head. **User:** find the order the game itself uses, so our macros target the right owning creature for traits
   with the same name. Needs `scr_MacroProcess` / macro selector code research (see Macro roadmap item 5) → handoff, then
   match it in `MACRO_ENGINE`.

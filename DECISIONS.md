@@ -169,7 +169,16 @@ a flat modifier to base: raised **×4/3 (+33%)**, lowered **×2/3 (−33%)**, ot
   - the Nether Stone table capped at that maximum;
   - a "Visible only" chip in Threats.
 - The 7 ↔ 16 exclusion stays data-only: both are hidden from the Threats advisor as composition flavour.
-- **2026-10-18 — Dark Summoning membership is code-only.** "Interacts with minions" (Related Spells::Minion Spells) must match
-  Dark Summoning's pool in the code; no text-based rule ships (`_su_extract/code/HANDOFF_dark_summoning_pool.md`).
-- **2026-10-18 — Count as Manual** (Affect on Spells): Superfluidity, The Great Beyond, Embrace the Arcane, Pandemonium Wrath. Pandemonium
-  Wrath stays until the code says otherwise (`HANDOFF_count_as_manual.md`).
+- **2026-10-18 — Minion Spells = literal; Dark Summoning's pool = the game's MINION category ("I want both").** `Related Spells::
+  Minion Spells` lists every spell that deals with minions in a literal sense (summons, adds stacks, scales with, removes, or
+  casts them; 42). Dark Summoning picks only spells with the game's own MINION category (26, code-certain); the 16 tag members
+  outside it carry a clarify note. Supersedes the same-day "code-only membership" note. Mega Magic (Zantai's Call), Apocalypse
+  (Four Horsemen) and Dispel / Mass Dispel / Divinity stay out, parked for the taxonomy intent audit.
+- **2026-10-18 — Count as Manual** (Affect on Spells): Superfluidity, The Great Beyond, Embrace the Arcane, Pandemonium Wrath
+  (code-confirmed: its repeats are queued as manual casts).
+- **2026-10-18 — Relic tag counts: no threshold.** Every per-rank tag counts; a relic's tag chip shows "×N" when N ≥ 2 of its
+  ranks carry it (nothing for N = 1). Lamora's "Creature of X Type Count" → "Debuff Count"; whole-relic tags no rank backs are
+  dropped (Fable, Mutatias, Salus, Starwrath).
+- **2026-10-18 — Resurrection Order follows the code order** (not a note): resurrection rows in bc_OnDeath call order, blocker
+  rows where the code checks them, then the queue-time checks numbered in their check order.
+- **2026-10-18 — Artifact trick slots: one copy per trick property** (the blacksmith's rule). Stat slots allow repeats.

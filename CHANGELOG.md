@@ -4,6 +4,20 @@ Every dated change entry, newest first (moved verbatim from Progress.md on 2026-
 to their own section and sorted by their date). Current state and open work: `Progress.md`, `BACKLOG.md`.
 New entries go at the TOP.
 
+## 2026-10-18 — Extract answers applied: trick uniqueness, Minion Spells, relic ×N, resurrection order, Final Summoning
+- **Artifact wizard (#23):** a trick material whose property is already in the other trick slot is greyed out and can't be
+  added (code: the blacksmith refuses it); saved artifacts with a repeated trick drop the copy on load. Stat slots unchanged.
+- **Minion Spells (#19):** +11 members (literal rule, 42 total); 16 members Dark Summoning can't pick get a clarify note.
+- **Relics (#17):** "×N" on a relic's taxonomy chip when N ≥ 2 ranks carry the tag (`relics[].tagRanks`, 381 chips). Lamora
+  swap + 4 unsupported whole-relic tags dropped. Arbiter R70 clarify (Barrier on damage taken, not dealt).
+- **Resurrection Order (#14, #15):** re-ordered to code order (Born Again and Clean Eating move); 8 on-death blocker rows,
+  11 numbered queue-time checks, and a note naming the resurrections that don't go through bc_OnDeath. Clarify notes on each
+  blocker (what it doesn't stop), Impatience (drawback has no code) and Hate And Other Triumphs.
+- **Final Summoning (#30):** table of the spell each Greater Demon casts (Satanachia: one of 30 at random).
+- **Nether Boss (#7):** 20 bundles + Key Fragments right after the fight (separate from the quest); quest reward (5 bundles)
+  paid on entering the next room.
+- **Count as Manual (#28):** Pandemonium Wrath confirmed in code; note updated.
+
 ## 2026-10-18 — Count as Manual tag; nether "total 6" closed; relic threshold preview
 - New taxonomy value **Affect on Spells::Count as Manual** (user-approved): Superfluidity, The Great Beyond, Embrace the Arcane
   (code: they clear `bc_CreatureCast` arg3) and Pandemonium Wrath (text; code validation asked). Implies Action/Mechanic::Cast.

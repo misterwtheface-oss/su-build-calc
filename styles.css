@@ -455,6 +455,7 @@ h1, h2, h3 { margin: 0; }
    (counterpart of the grey .disabled tint) — still selectable */
 .prop-row.nether-clash { opacity: .55; border-color: var(--bad); background: rgba(224,107,107,.12); }
 .prop-row.nether-clash.locked { opacity: .4; cursor: not-allowed; }
+.prop-row.chosen.locked { opacity: .4; cursor: not-allowed; }
 .clash-note { color: var(--bad); text-align: left; padding: 6px 0; }
 .artpage-body { padding-top: 10px; }
 .prop-row.art-empty-slot { border-style: dashed; background: transparent; color: var(--accent2); cursor: pointer; }
@@ -953,6 +954,7 @@ button.apx-owner { background: none; border: 0; cursor: pointer; font: inherit; 
   background: rgba(0,0,0,.22); border: 1px solid var(--border-dim); border-radius: 999px; padding: 3px 10px; cursor: pointer; }
 @media (hover: hover) { .etax-tag:hover { border-color: var(--accent2); background: rgba(154,123,214,.14); } }
 .etax-tag .apx-src { font-size: 9px; }
+.etax-tag .etax-mult { font-size: 11px; font-weight: 700; color: var(--accent); }
 .etax-legend { color: var(--text-mute); font-size: 11px; margin-top: 12px; line-height: 1.5; }
 .etax-legend b { color: var(--text-dim); }
 .perk-rankbadge { flex: 0 0 auto; box-sizing: border-box; text-align: center; font-size: 10px; font-weight: 800; color: var(--accent2); background: rgba(201,162,75,.14); border: 1px solid var(--border-dim); border-radius: 5px; padding: 1px 6px; font-variant-numeric: tabular-nums; }
@@ -1645,6 +1647,10 @@ select.app-select { background: var(--surface); border: 1px solid var(--border-d
 /* enemy-only resurrection sources (boss traits with no player source, realm properties): whole row tinted red */
 .res-line.res-enemy { background: linear-gradient(90deg, rgba(224,107,107,.20), rgba(224,107,107,.08)); border-color: rgba(224,107,107,.45); }
 .res-note { margin-top: 3px; font-style: italic; color: #ffb3b3; }
+.res-line.res-block { border-style: dashed; }
+.res-line.res-block .res-n { color: var(--bad); font-size: 14px; }
+.res-block-tag { color: var(--bad); border-color: var(--bad); }
+.res-flow-note { margin: 6px 0 2px; text-align: left; line-height: 1.45; }
 /* RI/Runes: rewards bonus as a small chip at the top right of the row */
 .thr-reward { margin-left: auto; flex: 0 0 auto; font-size: 10px; font-weight: 700; color: var(--accent); white-space: nowrap;
   background: rgba(201,162,75,.12); border: 1px solid rgba(201,162,75,.45); border-radius: 6px; padding: 1px 6px; }
@@ -1858,3 +1864,13 @@ span.boss-chip { cursor: default; }
 .nd-row.rt-row3 { grid-template-columns: minmax(0, .9fr) minmax(0, 2fr) 3.5em; }
 .nd-row.rt-row3 > span:last-child { text-align: right; }
 .nd-row.rt-row > span:nth-child(2), .nd-row.rt-row3 > span:nth-child(2) { text-align: left; }   /* prose column */
+
+/* Final Summoning: Greater Demon → spell */
+.ds-list { display: flex; flex-direction: column; gap: 6px; }
+.ds-row { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 6px 10px; padding: 6px 8px; border: 1px solid var(--border-dim); border-radius: 6px; }
+.ds-demon { display: inline-flex; align-items: center; gap: 6px; flex: 0 0 120px; min-width: 0; }
+.ds-demon img { width: 20px; height: 20px; image-rendering: pixelated; }
+.ds-spells { display: flex; flex-wrap: wrap; gap: 4px 10px; flex: 1 1 160px; min-width: 0; }
+.ds-spell { display: inline-flex; align-items: center; gap: 4px; }
+.ds-spell img { width: 16px; height: 16px; }
+.ds-spells .slot-sub { flex-basis: 100%; }

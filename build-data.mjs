@@ -763,6 +763,8 @@ const spellTaxo = loadTaxoBy('spell_taxonomy_tags.json');
 const perkTaxo = loadTaxoBy('perk_taxonomy_tags.json');
 const cardTaxo = loadTaxoBy('card_taxonomy_tags.json');     // keyed by card id (LLM-classified)
 const relicTaxo = loadTaxoBy('relic_taxonomy_tags.json');   // keyed by relic id (LLM-classified)
+// per-rank relic tags (extract S35): how many of a relic's ranks carry each tag → the "×N" on its chip (N ≥ 2, user ruling 2026-10-18)
+const relicRankCounts = (() => { const p = path.join(MODEL, 'relic_rank_taxonomy_tags.json'); return fs.existsSync(p) ? (readJSON(p).relic_tag_counts || {}) : {}; })();
 const taxoStrs = (arr) => (arr || []).map(a => a.cat + '::' + a.val);
 // perk taxo is keyed "spec_id:perk_key" but a perk's tags are intrinsic to the perk — re-key by perk_key
 // so membership reassignment (CSV-driven) still finds each perk's tags regardless of which spec now owns it.
@@ -1615,6 +1617,7 @@ const relics = relicRef.map((r, i) => {
     ranks: (r.ranks || []).map(x => ({ rank: pct(x.rank), desc: x.description || '' })),
     taxo: rTaxo,
     taxoSrc: taxoSrcArr(relicTaxo[String(i)], rTaxo),
+    tagRanks: Object.fromEntries(Object.entries(relicRankCounts[String(i)] || {}).filter(([, v]) => v.n >= 2).map(([k, v]) => [k, v.n])),
   };
 });
 console.log(`  relic icons: ${relicIconCopied}/${relics.length} copied`);
@@ -2869,6 +2872,18 @@ const TRAIT_REJECT = fs.existsSync(APPROVED_PATH) ? (readJSON(APPROVED_PATH).tra
     console.log(`  dr-cap notes: ${hit}/${(caps.effects || []).length} effects tagged "${capTxt}" · ${capStripped} prose cap phrase(s) removed`);
     if (miss.length) warn(`dr-cap notes: ${miss.length} effect(s) not joined to app data: ${miss.join(', ')}`);
   } else warn('dr_caps.json missing — no damage-reduction cap notes');
+  // final_summoning.json — which spell each Greater Demon casts when it runs out (extract S35, code-certain). Shipped on the
+  // perk as `demonSpells: [{cond: "Minion:<key>", spells: [appSpellId…]}]` (one spell, or Satanachia's random pool).
+  const fsF = path.join(MODEL, 'final_summoning.json');
+  if (fs.existsSync(fsF)) {
+    const fsm = readJSON(fsF), fp = perkByKey.get(fsm.perk.key);
+    const appSpell = (id, name) => { const sp = spells.find(x => x.id === id - 1);
+      if (!sp || norm(sp.name) !== norm(name)) { err(`final_summoning: spell ${id} "${name}" doesn't join (got ${sp && sp.name})`); return null; } return sp.id; };
+    if (!fp) err('final_summoning: perk FINALSUMMONING not found');
+    else fp.demonSpells = fsm.demons.map(d => ({ cond: `Minion:${d.condition_key.toLowerCase()}`,
+      spells: (d.pool ? d.pool.map(x => appSpell(x.spell_id, x.spell)) : [appSpell(d.spell_id, d.spell)]).filter(x => x != null) }));
+    console.log(`  final summoning: ${fp ? fp.demonSpells.length : 0} Greater Demons`);
+  } else warn('final_summoning.json missing');
   // effect_clarifications.json — code-grounded "what it actually does" text, shipped as a SEPARATE `clarify: string[]`
   // field (the localization `desc` stays verbatim game text). Joined trait→runtime id, perk→key, relic→name+rank.
   const clarF = path.join(MODEL, 'effect_clarifications.json');

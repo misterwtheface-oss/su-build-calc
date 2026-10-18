@@ -1728,7 +1728,7 @@
     "Affect on Spells::Count as Manual"
    ],
    "approved": "2026-10-18",
-   "note": "Count as Manual from the text only (\"additional spells are considered to be manually cast\"); validate in code — _su_extract/code/HANDOFF_count_as_manual.md"
+   "note": "Code-certain (extract S35): its repeat casts are queued as manual casts (bc_EventCast automatic = false @0x140a71e7a), and each repeat rolls again — _su_extract/code/HANDOFF_count_as_manual.md"
   }
  },
  "rejected": {
@@ -2530,10 +2530,17 @@
       "Action/Mechanic::Timeline"
      ],
      "to": "Action/Mechanic::Turn Counter"
+    },
+    {
+     "from": [
+      "Activates When::Ally Trait Activates"
+     ],
+     "to": null
     }
    ],
    "add": [],
-   "approved": "2026-10-03"
+   "approved": "2026-10-03",
+   "approved_2": "2026-10-18: drop the whole-relic tag no rank backs (_su_extract HANDOFF_relic_rank_taxonomy.md)"
   },
   "4": {
    "name": "Blazefury, Flaming Soul of Vulcanar",
@@ -2627,10 +2634,17 @@
       "Affect on Attacks::Automatic/Extra Attack"
      ],
      "to": null
+    },
+    {
+     "from": [
+      "Activates When::Enemy Takes Damage"
+     ],
+     "to": null
     }
    ],
    "add": [],
-   "approved": "2026-10-06"
+   "approved": "2026-10-06",
+   "approved_2": "2026-10-18: drop the whole-relic tag no rank backs (_su_extract HANDOFF_relic_rank_taxonomy.md)"
   },
   "2": {
    "name": "Amalgam, Warped Mirror of T'mere M'rgo",
@@ -2642,7 +2656,14 @@
   },
   "8": {
    "name": "Fable, Mythical Stone of Shallan",
-   "replace": [],
+   "replace": [
+    {
+     "from": [
+      "Multiplied by::Amount of X Stat"
+     ],
+     "to": null
+    }
+   ],
    "add": [
     "Multiplied by::Attack Count",
     "Multiplied by::Cast Count",
@@ -2650,7 +2671,36 @@
     "Multiplied by::Provoke Count",
     "Multiplied by::Resurrect Count"
    ],
-   "approved": "2026-10-06"
+   "approved": "2026-10-06",
+   "approved_2": "2026-10-18: drop the whole-relic tag no rank backs (_su_extract HANDOFF_relic_rank_taxonomy.md)"
+  },
+  "13": {
+   "name": "Lamora, Gilded Scimitar of Friden",
+   "replace": [
+    {
+     "from": [
+      "Multiplied by::Creature of X Type Count"
+     ],
+     "to": "Multiplied by::Debuff Count"
+    }
+   ],
+   "add": [],
+   "approved": "2026-10-18",
+   "note": "2026-10-18 user ruling (_su_extract HANDOFF_relic_rank_taxonomy.md)"
+  },
+  "23": {
+   "name": "Starwrath, Great Spear of Yseros",
+   "replace": [
+    {
+     "from": [
+      "Affect on Mitigation::More Dodge Chance"
+     ],
+     "to": null
+    }
+   ],
+   "add": [],
+   "approved": "2026-10-18",
+   "note": "2026-10-18 user ruling (_su_extract HANDOFF_relic_rank_taxonomy.md)"
   }
  },
  "spellChanges": {
@@ -3221,6 +3271,105 @@
     "Related Spells::Multi-Target Spells"
    ],
    "approved": "2026-10-06"
+  },
+  "235": {
+   "name": "Crucifixion",
+   "replace": [],
+   "add": [
+    "Related Spells::Minion Spells"
+   ],
+   "approved": "2026-10-18",
+   "note": "Minion Spells = every spell that deals with minions in a literal sense (user ruling 2026-10-18; _su_extract minion_related_spells.json)"
+  },
+  "237": {
+   "name": "Dark Transformation",
+   "replace": [],
+   "add": [
+    "Related Spells::Minion Spells"
+   ],
+   "approved": "2026-10-18",
+   "note": "Minion Spells = every spell that deals with minions in a literal sense (user ruling 2026-10-18; _su_extract minion_related_spells.json)"
+  },
+  "269": {
+   "name": "Earthquake",
+   "replace": [],
+   "add": [
+    "Related Spells::Minion Spells"
+   ],
+   "approved": "2026-10-18",
+   "note": "Minion Spells = every spell that deals with minions in a literal sense (user ruling 2026-10-18; _su_extract minion_related_spells.json)"
+  },
+  "286": {
+   "name": "Banish",
+   "replace": [],
+   "add": [
+    "Related Spells::Minion Spells"
+   ],
+   "approved": "2026-10-18",
+   "note": "Minion Spells = every spell that deals with minions in a literal sense (user ruling 2026-10-18; _su_extract minion_related_spells.json)"
+  },
+  "527": {
+   "name": "Chaos Orb",
+   "replace": [],
+   "add": [
+    "Related Spells::Minion Spells"
+   ],
+   "approved": "2026-10-18",
+   "note": "Minion Spells = every spell that deals with minions in a literal sense (user ruling 2026-10-18; _su_extract minion_related_spells.json)"
+  },
+  "578": {
+   "name": "Curse of Jimly",
+   "replace": [],
+   "add": [
+    "Related Spells::Minion Spells"
+   ],
+   "approved": "2026-10-18",
+   "note": "Minion Spells = every spell that deals with minions in a literal sense (user ruling 2026-10-18; _su_extract minion_related_spells.json)"
+  },
+  "602": {
+   "name": "Dogpile",
+   "replace": [],
+   "add": [
+    "Related Spells::Minion Spells"
+   ],
+   "approved": "2026-10-18",
+   "note": "Minion Spells = every spell that deals with minions in a literal sense (user ruling 2026-10-18; _su_extract minion_related_spells.json)"
+  },
+  "617": {
+   "name": "Direct Orders",
+   "replace": [],
+   "add": [
+    "Related Spells::Minion Spells"
+   ],
+   "approved": "2026-10-18",
+   "note": "Minion Spells = every spell that deals with minions in a literal sense (user ruling 2026-10-18; _su_extract minion_related_spells.json)"
+  },
+  "620": {
+   "name": "Contagion",
+   "replace": [],
+   "add": [
+    "Related Spells::Minion Spells"
+   ],
+   "approved": "2026-10-18",
+   "note": "Minion Spells = every spell that deals with minions in a literal sense (user ruling 2026-10-18; _su_extract minion_related_spells.json)"
+  },
+  "656": {
+   "name": "Fae Fire",
+   "replace": [],
+   "add": [
+    "Related Spells::Minion Spells"
+   ],
+   "approved": "2026-10-18",
+   "note": "Minion Spells = every spell that deals with minions in a literal sense (user ruling 2026-10-18; _su_extract minion_related_spells.json)"
+  },
+  "703": {
+   "name": "Big Bang",
+   "replace": [],
+   "add": [
+    "Related Spells::Minion Spells"
+   ],
+   "approved": "2026-10-18",
+   "note": "Minion Spells = every spell that deals with minions in a literal sense (user ruling 2026-10-18; _su_extract minion_related_spells.json)"
   }
  },
  "cardChanges": {

@@ -393,6 +393,7 @@
       delete a.props; delete a.traitItemIds;
     }
     a.stat ||= []; a.trick ||= []; a.traits ||= []; a.spells ||= []; a.netherIds ||= [];
+    a.trick = [...new Set(a.trick)];                                 // the game refuses a repeated trick property
     if (!a._gemMigrated) { a.spells = []; a._gemMigrated = true; }   // artifact.spells now holds spell-GEM ids, not raw spells
     // slot unlocks by tier (2026-10-05): an artifact saved before this with more filled slots than its tier allows is
     // raised to the lowest tier that unlocks them (keeps the user's content, makes it game-legal)
@@ -1787,9 +1788,10 @@
     const rewards = `<div class="section-label">Rewards</div>
       ${mats ? `<div class="boss-sub">Trait materials</div>${mats}` : ""}
       <div class="boss-sub">Every win</div>
-      <ul class="boss-steps"><li>A loot roll and Gate of the Gods Key Fragments: 4–7, plus (1 + realm Instability) × (1 + Inner Darkness clears, up to 3).</li>
+      <ul class="boss-steps"><li>Right after the fight: 20 treasure bundles and Gate of the Gods Key Fragments: 4–7, plus (1 + realm Instability) × (1 + Inner Darkness clears, up to 3).</li>
         <li>Your first Nether Boss win ever gives the Nether Shop decoration instead.</li>
         <li>The boss room's 2 chests hold 9 treasure bundles each: 3, +3 for a boss room, +3 Nether bonus (+5 more each in some realms at a Favor rank).</li>
+        <li>The realm quest reward (5 treasure bundles, Fortune +1, Favor) is paid when you enter the next room after the boss room.</li>
         <li>Royal Mode: a False Nether Orb of a random False God (an Anointment and an Inscription, as after a False God fight).</li>
         ${isID ? "<li>Your 1st, 2nd and 3rd Inner Darkness wins unlock the Gate of the Gods project, the Guild projects and the mysterious realm portals.</li>" : ""}</ul>`;
     return `<div class="ovl-backdrop" data-action="detail-backdrop"><div class="overlay-panel detail">
@@ -2112,6 +2114,15 @@
     const via = (D.ultimateRoutes || []).map(r => grantOwnerName(r.owner)).filter(Boolean).join(" · ");
     return `<div class="section-label">Ultimate</div>${spellGemCard(sp, via)}`;
   }
+  // Final Summoning: the spell each Greater Demon casts when it runs out (extract S35; Satanachia = one of a pool at random)
+  function demonSpellsHtml(p) {
+    if (!p || !p.demonSpells) return "";
+    const spLink = (sp) => `<span class="ds-spell apx-clickable" data-action="apx-open" data-ek="spell" data-eid="${sp.id}">${spellIcon(sp) ? spriteImg(spellIcon(sp), "px") : ""}${esc(sp.name)}</span>`;
+    return `<div class="section-label">Spell cast by each Greater Demon</div><div class="ds-list">${p.demonSpells.map(d => {
+      const c = (D.conditions || []).find(x => `${x.cat}:${x.key}` === d.cond), sps = d.spells.map(id => SPELL.get(id)).filter(Boolean);
+      return `<div class="ds-row"><span class="ds-demon">${c && c.icon ? `<img src="${esc(c.icon)}" alt="">` : ""}<b>${esc(c ? c.name : d.cond)}</b></span>
+        <span class="ds-spells">${sps.length > 1 ? `<span class="slot-sub">One at random:</span>` : ""}${sps.map(spLink).join("")}</span></div>`; }).join("")}</div>`;
+  }
   // spell → every owner that grants it (spell entity detail)
   function spellGrantedByHtml(spellId) {
     const names = (D.spellGrants || []).filter(g => g.spells.includes(spellId)).map(g => grantOwnerName(g.owner));
@@ -2130,7 +2141,7 @@
         <div class="perk-line-body">
           <div class="perk-line-head"><b>${esc(p.name)}</b><span class="perk-line-meta">${noAnointMark(spec, p)}${asc}${badge}</span>${bkBtn("perks", p.key)}</div>
           ${p.desc ? `<div class="perk-desc">${perkText(p.desc, r)}</div>` : ""}
-          ${perkGrantCards(spec.id, p.key)}
+          ${perkGrantCards(spec.id, p.key)}${demonSpellsHtml(p)}
         </div></div>`;
     }).join("");
   }
@@ -2827,7 +2838,7 @@
     if (!groups.size) return `<div class="slot-sub" style="padding:10px">No taxonomy tags on this entry.</div>`;
     return [...groups].map(([cat, vals]) => `<div class="etax-group">
       <div class="etax-cat">${esc(cat)}</div>
-      <div class="etax-vals">${vals.map(v => `<button class="etax-tag" data-action="etax-filter" data-k="${esc(v.key)}" title="Filter the Taxonomy to “${esc(v.val)}”">${esc(v.val)}${FEATURES.taxoSource && v.src ? `<span class="apx-src s-${esc(v.src)}">${esc(v.src)}</span>` : ""}</button>`).join("")}</div>
+      <div class="etax-vals">${vals.map(v => `<button class="etax-tag" data-action="etax-filter" data-k="${esc(v.key)}" title="Filter the Taxonomy to “${esc(v.val)}”">${esc(v.val)}${e.tagRanks && e.tagRanks[v.key] ? `<span class="etax-mult">×${e.tagRanks[v.key]}</span>` : ""}${FEATURES.taxoSource && v.src ? `<span class="apx-src s-${esc(v.src)}">${esc(v.src)}</span>` : ""}</button>`).join("")}</div>
     </div>`).join("");
   }
   // trait provenance sections for the detail page: the granting material (or "No Material Exists"),
@@ -2881,7 +2892,7 @@
       <div class="overlay-body"><div class="ovl-center"><div class="ovl-center-scroll">
         ${r.descHtml ? `<div class="perk-desc" style="margin-bottom:12px">${r.descHtml}</div>` : ""}
         ${st.ekind === "condition" && e.exclusive && e.exclusive.show ? `<div class="excl-note">${e.exclusive.icon ? spriteImg(e.exclusive.icon, "px") : ""}<span>Exclusive to <b>${esc(e.exclusive.source)}</b></span></div>` : ""}
-        ${st.ekind === "perk" ? perkGrantCards((D.specs.find(x => x.perks.includes(e)) || {}).id, e.key) : ""}
+        ${st.ekind === "perk" ? perkGrantCards((D.specs.find(x => x.perks.includes(e)) || {}).id, e.key) + demonSpellsHtml(e) : ""}
         ${st.ekind === "trait" ? traitGrantCards(+st.eid) : ""}
         ${st.ekind === "relic" ? relicUltimateCard(e.id) : ""}
         ${st.ekind === "spell" ? spellGrantedByHtml(e.id) : ""}
@@ -3204,13 +3215,32 @@
   // resurrects, the rest are skipped. Only actual resurrection sources are listed (Breath of Death excluded: its gate
   // is unresolved and its text resurrects nothing — _su_extract archive/handoffs/HANDOFF_resurrection_open_questions.md). Refs: perk = name, trait = code runtime id, relic = name fragment + app rank (10–100 = extract perk 1–10),
   // cond = glossary key, realm = realm-property key (matched by text: the only realm property that resurrects).
+  // Code order (user ruling 2026-10-18): resurrection rows follow the bc_OnDeath call order 1–50, with the "cannot be
+  // resurrected" blockers inserted where the code checks them (_su_extract data/model/resurrection_blocks.json `order`).
+  // Row shapes: ["head", label] · [group, kind, ref, rank] (a resurrection) · ["block", kind, ref, desc] (unnumbered)
+  // · ["qblock", kind, ref, desc] (numbered by the queue check order) · ["note", text].
+  // Resurrection groups — "rule": Somnus, not a resurrection source here; its own rule blocks every other resurrection.
+  // "free": outside the one-per-death rule. "stop": if it fires, the chain is skipped. "chain": one per death — the
+  // first that fires resurrects, the rest are skipped. Refs: perk = name, trait = code runtime id, relic = name fragment
+  // + app rank, cond = glossary key, realm = realm-property key, spell = name, null kind = plain text (no app record).
+  // Breath of Death excluded (resurrects nothing); "Who Am I?" (call 46, runtime 1231) suppressed: nothing grants it.
   const RES_ORDER = [
+    ["head", "Before the on-death checks"],
+    ["block", "spell", "Disintegrating Arrow", "If the arrow's own damage kills the target, it can't be resurrected for the rest of the battle."],
+    ["block", null, "Death By Boredom", "When Jotun or Lister falls, the remaining parts are killed and can't be resurrected."],
+    ["head", "On death, in order"],
     ["rule", "perk", "Somnus"],
+    ["block", "perk", "Epigraphy", "A creature killed by a Relic can't be resurrected for the rest of the battle."],
     // Angry Army (Imp Impington, enemy-side) is the resurrect in the slot first read as Breath of Death (extract answer 1)
-    ["stop", "trait", 678], ["free", "trait", 1335], ["free", "trait", 769],
-    ["stop", "realm", "RESURRECT"], ["free", "trait", 1260], ["free", "trait", 1178], ["free", "trait", 891],
-    ["free", "trait", 372], ["free", "trait", 188], ["stop", "perk", "Slam Shut"],
-    ["chain", "perk", "Born Again"], ["chain", "trait", 839], ["chain", "trait", 1888], ["chain", "trait", 1927],
+    ["stop", "trait", 678], ["chain", "perk", "Born Again"], ["free", "trait", 1335],
+    ["block", "trait", 640, "Outside boss battles: when a creature dies and the other side has this trait, the rest of the on-death checks are skipped, every row below included."],
+    ["block", "trait", 2176, "A creature whose Mania damage exceeds its max Health can't be resurrected when the other side has this trait."],
+    ["block", "trait", 2117, "A creature that dies while Feared can't be resurrected when the other side has this trait."],
+    ["block", "perk", "Burn Their Corpses", "An enemy that dies while Burned can't be resurrected."],
+    ["block", "perk", "Endwalker", "An enemy that dies while Blighted can't be resurrected."],
+    ["free", "trait", 769], ["stop", "realm", "RESURRECT"], ["free", "trait", 1260], ["free", "trait", 1178], ["free", "trait", 891],
+    ["free", "trait", 372], ["free", "trait", 188], ["chain", "trait", 839], ["stop", "perk", "Slam Shut"],
+    ["chain", "trait", 1888], ["chain", "trait", 1927],
     ["chain", "trait", 1851], ["chain", "trait", 1993], ["chain", "relic", "Genaros", 100], ["chain", "trait", 1773],
     ["chain", "trait", 1715], ["chain", "trait", 1432], ["chain", "trait", 1461], ["chain", "perk", "Forbidden Magic"],
     ["chain", "relic", "Vulcanar", 100], ["chain", "trait", 1658], ["chain", "perk", "Bleed Out"], ["chain", "cond", "Buff:rebirth"],
@@ -3219,9 +3249,21 @@
     ["chain", "cond", "Minion:guardianofsurathli"], ["chain", "relic", "Surathli", 80], ["chain", "perk", "Feign Death"],
     ["chain", "trait", 354], ["chain", "trait", 331], ["chain", "trait", 97], ["chain", "trait", 486], ["chain", "trait", 454],
     ["chain", "trait", 187], ["chain", "trait", 189],
-    // "Who Am I?" (runtime 1231) is suppressed: nothing in the data grants it (no creature / boss / item) — the
-    // pre-split original of Kraynaks' three "None Of Your Business" variants, shown here as one row.
+    // Kraynaks' three "None Of Your Business" variants (calls 47–49) shown as one row
     ["chain", "trait", 1345], ["chain", "trait", 1297],
+    ["note", "Resurrections from elsewhere skip the rows above but still pass the checks below: resurrection spells, Terminus, Ever Upwards, Defy the Gods, Rescue Ride, Gambler's Fallacy, Dark Clarity, Repetitive Holiday, Bloodletting, Reinvigoration, Glaive of Prayer, Endless Swarm, Amongst Gods, Memento Vivere, Grayscale, The King Is Dead, Mass Resurrection, Secret Recipe, Revelation, Undying Exaltation, Dying Stars, Helping Hand, Live to Serve and Amalgam rank 30. Terminus, Defy the Gods, Reincarnation and Genesis set up their resurrection while the creature is still alive, so a \"can't be resurrected\" death doesn't stop it the first time. Every resurrection that happens fires the \"after a creature is resurrected\" effects."],
+    ["head", "Checked whenever a resurrection is queued"],
+    ["qblock", null, "False God battles", "Enemies in False God battles, and Vulcanar with Ultimate Ember, skip the resurrection limit, Scant Stamina, the \"can't be resurrected\" mark, Nightcap and Lay to Rest."],
+    ["qblock", null, "Lister", "An enemy Lister is never resurrected."],
+    ["qblock", null, "Jotun", "Jotun's parts are never resurrected."],
+    ["qblock", "trait", 1973, "If an enemy has it, none of your creatures can be resurrected."],
+    ["qblock", null, "Resurrection limit", "Each creature resurrects at most 10 times per battle (15 with the Phoenix card set's 3rd power, 5 fewer in Calm Mode)."],
+    ["qblock", "trait", 1151, "A creature that has already resurrected can't again when the other side has this trait."],
+    ["qblock", null, "Can't be resurrected", "Refuses every creature marked at its death by the blockers above (\"Prevented!\")."],
+    ["qblock", "perk", "Nightcap", "An enemy hit by Booze spells 3 or more times can't be resurrected."],
+    ["qblock", "perk", "Lay to Rest", "An enemy that has already resurrected can't again."],
+    ["qblock", null, "Maximum Resurrections", "Realm property: your creatures stop resurrecting at the realm's limit."],
+    ["qblock", "perk", "Somnus", "Graveborn: nothing but Somnus resurrects your creatures (not in the Arena)."],
   ];
   const specIco = (spec) => { const em = SPEC_EMBLEM.get(spec.label); return em ? { h: spriteImg(em, "px"), cls: "apx-spec", title: spec.label } : ""; };
   const icoBox = (ic) => typeof ic === "string" ? `<div class="apx-crea">${ic}</div>` : `<div class="apx-crea ${ic.cls || ""}"${ic.title ? ` title="${esc(ic.title)}"` : ""}>${ic.h}</div>`;
@@ -3233,8 +3275,14 @@
     const { creatureByTrait, itemsByTrait } = traitSources();
     // 4th field: relic rank (app scale). enemy = only enemies can have it: a boss trait with no creature/item source,
     // or a realm property (enemies only).
-    RES_ROWS = RES_ORDER.map(([group, kind, ref, rank], i) => {
+    let qn = 0;
+    RES_ROWS = RES_ORDER.map(([group, kind, ref, rank]) => {
+      if (group === "head" || group === "note") return { group, name: kind, desc: "", icons: [], chips: [] };
       let r = null;
+      const blk = group === "block" || group === "qblock";
+      if (blk && kind === null) r = { name: ref, icons: [], chips: [] };
+      else if (blk && kind === "spell") { const sp = (D.spells || []).find(x => x.name === ref);
+        if (sp) r = { name: sp.name, icons: [spellIcon(sp) ? spriteImg(spellIcon(sp), "px") : ""], chips: [], open: { ek: "spell", eid: sp.id } }; }
       // icons: up to two boxes like the Appendix (creature / boss sprite over the trait material); chips: source names
       // only (no "Trait ·" / "Perk ·" prefix) — prose labels stay where there's no named source (Buff, Minion, Realm Property)
       if (kind === "perk") { const h = perkBy.get(ref); if (h) r = { name: h.p.name, desc: h.p.desc, icons: [specIco(h.spec), h.p.icon && spriteImg(h.p.icon, "px")], chips: [h.spec.label] }; }
@@ -3250,12 +3298,13 @@
       else if (kind === "realm") { const rp = (D.realmProps || []).find(x => x.key === ref);
         if (rp) r = { name: rp.name, desc: rp.effect, icons: [spriteImg(rp.icon, "px")], chips: ["Realm Property"], enemy: true }; }
       if (!r) { console.error("RESURRECTION ORDER: unresolved", kind, ref); r = { name: String(ref), desc: "", icons: [], chips: [kind] }; }
+      if (blk) { r.desc = rank; r.blocker = true; r.icons = r.icons.slice(0, 1); r.chips = []; r.enemy = false; if (group === "qblock") r.qn = ++qn; }
       r.icons = r.icons.filter(Boolean); r.chips = r.chips.filter(Boolean);
       // Angry Army's resurrect isn't in its in-game text (bc_OnDeath only: once per creature, full Health, "(HA! HA! HA!)")
       if (kind === "trait" && ref === 1335) r.note = "Not in the trait text: each enemy creature with Angry Army also resurrects once, at 100% Health.";
       return { group, ...r };
     });
-    let n = 0; for (const r of RES_ROWS) if (r.group !== "rule") r.n = ++n;   // execution order, Somnus unnumbered
+    let n = 0; for (const r of RES_ROWS) if (["free", "stop", "chain"].includes(r.group)) r.n = ++n;   // resurrections only
     return RES_ROWS;
   }
   // ── Status Effects (Appendix section; internal ids say "gloss", its old page name) — Buff / Debuff / Minion reference
@@ -3460,18 +3509,27 @@
     return `<button class="apx-sec-head apx-cat${open ? "" : " collapsed"}" data-action="gloss-cat-toggle" data-c="${key}"><span class="apx-sec-caret">${open ? "▾" : "▸"}</span>Rodian Masters</button>${body}`;
   }
   function resOrderSection(st, q) {
-    const rows = resOrderRows().filter(r => !q || r.name.toLowerCase().includes(q) || (r.desc || "").toLowerCase().includes(q));
-    if (!rows.length) return "";
+    const all = resOrderRows(), hit = (r) => r.name.toLowerCase().includes(q) || (r.desc || "").toLowerCase().includes(q);
+    const rows = q ? all.filter(r => r.group === "head" || (r.group !== "note" && hit(r))) : all;
+    if (q && !rows.some(r => r.group !== "head")) return "";
     const key = "Resurrection", open = q ? true : !st.collapsed.has(key);
-    const row = (r) => `<div class="perk-line res-line${r.group === "rule" ? " res-rule" : ""}${r.enemy ? " res-enemy" : ""}${r.open ? " apx-clickable" : ""}"${r.open ? ` data-action="apx-open" data-ek="${r.open.ek}" data-eid="${esc(String(r.open.eid))}" title="View taxonomy"` : ""}>
-        <div class="res-n">${r.n ?? "⛔"}</div>
+    const tag = { rule: "Blocks other resurrection", stop: "Skips the rest if it fires", chain: "Once per death" };
+    const row = (r) => `<div class="perk-line res-line${r.group === "rule" ? " res-rule" : ""}${r.blocker ? " res-block" : ""}${r.enemy ? " res-enemy" : ""}${r.open ? " apx-clickable" : ""}"${r.open ? ` data-action="apx-open" data-ek="${r.open.ek}" data-eid="${esc(String(r.open.eid))}" title="View taxonomy"` : ""}>
+        <div class="res-n">${r.n ?? r.qn ?? "⛔"}</div>
         <div class="apx-iconcol">${r.icons.map(icoBox).join("")}</div>
-        <div class="perk-line-body"><div class="perk-line-head"><b>${esc(r.name)}</b></div>
-          ${r.desc ? `<div class="perk-desc">${richText(r.desc)}</div>` : ""}${r.note ? `<div class="perk-desc res-note">${esc(r.note)}</div>` : ""}
-          <div class="perk-line-meta">${r.chips.map(c => `<span class="anoint-spec-tag">${esc(c)}</span>`).join("")}</div></div></div>`;
-    const grp = (gs, label) => { const list = rows.filter(r => gs.includes(r.group));
-      return list.length ? `<div class="res-sub">${label}</div><div class="perk-list">${list.map(row).join("")}</div>` : ""; };
-    const body = open ? grp(["rule"], "Blocks other resurrection") + grp(["free", "stop"], "Checked first — outside once-per-death") + grp(["chain"], "Then once per death — the first that fires stops the rest") : "";
+        <div class="perk-line-body"><div class="perk-line-head"><b>${esc(r.name)}</b>${r.blocker ? `<span class="anoint-spec-tag res-block-tag">Blocker</span>` : tag[r.group] ? `<span class="anoint-spec-tag">${tag[r.group]}</span>` : ""}</div>
+          ${r.desc ? `<div class="perk-desc">${r.blocker ? esc(r.desc) : richText(r.desc)}</div>` : ""}${r.note ? `<div class="perk-desc res-note">${esc(r.note)}</div>` : ""}
+          ${r.chips.length ? `<div class="perk-line-meta">${r.chips.map(c => `<span class="anoint-spec-tag">${esc(c)}</span>`).join("")}</div>` : ""}</div></div>`;
+    let body = "", list = [];
+    const flush = () => { if (list.length) body += `<div class="perk-list">${list.map(row).join("")}</div>`; list = []; };
+    if (open) {
+      rows.forEach((r, i) => {
+        if (r.group === "head") { if (q && !(rows[i + 1] && rows[i + 1].group !== "head")) return; flush(); body += `<div class="res-sub">${esc(r.name)}</div>`; }
+        else if (r.group === "note") { flush(); body += `<div class="slot-sub res-flow-note">${esc(r.name)}</div>`; }
+        else list.push(r);
+      });
+      flush();
+    }
     return `<button class="apx-sec-head apx-cat${open ? "" : " collapsed"}" data-action="gloss-cat-toggle" data-c="${key}"><span class="apx-sec-caret">${open ? "▾" : "▸"}</span>Resurrection Order</button>${body}`;
   }
 
@@ -4434,10 +4492,10 @@
   const netherSearchText = (n) => [n.name, netherListSummary(n)].join(" ").toLowerCase();
   function renderArtPicker(st, a, rank) {
     const type = st.pickType, q = st.search.trim().toLowerCase();
-    // only single-slot types (trait/spell/nether) mark a row "chosen"; multi-slot types
-    // (stat/trick) allow the same item in several slots, so never grey it out
+    // single-slot types (trait/spell/nether) mark a row "chosen"; stat slots allow repeats. Trick slots don't:
+    // the blacksmith refuses a trick property already in trick1/trick2 (obj_bsupgrade_KeyPress_69, extract S34)
     const single = ((ART_SLOTS.find(s => s.pick === type) || {}).max || 1) === 1;
-    const has = (v) => single && artHas(a, type, v);
+    const has = (v) => (single || type === "trick") && artHas(a, type, v);
     const matchTaxo = (taxo) => q && (taxo || []).some(k => taxoValName(k).toLowerCase().includes(q));
     let rows = "";
     if (type === "stat" || type === "trick") {
@@ -4445,7 +4503,8 @@
       rows = pool.filter(m => !q || m.name.toLowerCase().includes(q) || m.property.toLowerCase().includes(q)).map(m => {
         const g = propGroups.get(m.property);
         const val = g ? propEffectText(g, rank) : esc(m.property);   // adds on click — no drill-in/confirm
-        return `<div class="prop-row ${has(m.property) ? "chosen" : ""}" data-action="art-confirm-add" data-t="${type}" data-v="${esc(m.property)}">
+        const dup = type === "trick" && has(m.property);
+        return `<div class="prop-row ${has(m.property) ? "chosen" : ""}${dup ? " locked" : ""}"${dup ? "" : ` data-action="art-confirm-add" data-t="${type}" data-v="${esc(m.property)}"`}>
           <span class="prop-ico">${m.icon ? spriteImg(m.icon, "px") : ""}</span>
           <span class="prop-name">${esc(m.name)}</span><span class="prop-stat">${esc(val)}</span></div>`;
       }).join("");
@@ -5896,7 +5955,8 @@
         const open = artOpen(sl, ovState.draft.rank);
         if (!open) break;                                                       // tier hasn't unlocked this group
         if (sl.max === 1) { arr[0] === v ? (arr.length = 0) : (arr[0] = v); }   // single slot toggles/replaces
-        else if (arr.length < open) arr.push(v);                                // multi slot: independent, duplicates OK
+        else if (type === "trick" && arr.includes(v)) break;                    // one copy per trick property
+        else if (arr.length < open) arr.push(v);                                // stat slots: duplicates OK
         ovState.preview = null;
         if (arr.length >= open) ovState.pickType = null;     // group full → back to the grid
         refreshOverlay(); break;
