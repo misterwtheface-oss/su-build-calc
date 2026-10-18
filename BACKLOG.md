@@ -96,7 +96,7 @@ a decompile → write `_su_extract/code/HANDOFF_<topic>.md` and don't guess (bat
 - [x] **(#27) Grey row while scrolling on touch.** DONE 2026-10-17: all 51 `:hover` rules wrapped in place in `@media (hover: hover)` (cascade order kept); selection was already click-only. **User (found the cause):** it's the "selected"/hover style showing
   during a scroll gesture that isn't a full tap. On mobile it looks like a desktop mouse hover. Fix by putting hover styles
   under `@media (hover: hover)` and/or only applying the selected state on a completed tap (not on touchstart).
-- [ ] **(#1) Intentional landscape phone layout.** Right now a phone in landscape (e.g. clipped into a controller) just gets
+- [x] **(#1) Intentional landscape phone layout — Planner pass DONE 2026-10-17** (`@media (orientation: landscape) and (max-height: 500px)`: slim top bar, Spec/Anointments strip, 6 tiles in one row, roster two-up). **Still open: the other screens** (overlays/wizards) in a later pass. Right now a phone in landscape (e.g. clipped into a controller) just gets
   the desktop layout squeezed into a short viewport. Design a real landscape-phone layout with a short-height breakpoint,
   e.g. `(orientation: landscape) and (max-height: ~500px)`. **User:** design the **Planner first**. Other screens follow in
   a later pass. Gamepad input is not part of this item.

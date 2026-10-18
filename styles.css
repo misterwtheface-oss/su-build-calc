@@ -1808,3 +1808,46 @@ span.boss-chip { cursor: default; }
 @media (max-width: 560px) { .roster-identity .slot-move { top: 6px; left: 6px; } }
 .slot .slot-move { left: 50%; transform: translateX(-50%); }   /* tiles: class/race badges own the top-left */
 .no-anoint { color: var(--text-mute); font-size: 13px; line-height: 1; cursor: help; }   /* spec overlay: perk that can't be anointed */
+
+/* ══ Landscape phone (short viewport — e.g. a phone clipped into a controller) — Planner first (#1) ══
+   One screen = the whole party: slim top bar, Spec + Anointments as a compact strip, all 6 creature tiles in one
+   row (grid view) or roster rows two-up with a smaller identity block. Other screens follow in a later pass. */
+@media (orientation: landscape) and (max-height: 500px) {
+  .topbar { padding: 2px 10px; }
+  .topbar-title h1 { font-size: 14px; }
+  .planning-main { padding: 8px 10px; }
+  /* Spec + Anointments: one-line strip tiles (icon left of label + sub), same column width as the creature tiles */
+  .home-top { grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px; margin-bottom: 8px; }
+  .spec-tile { display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: 8px; align-items: center;
+    justify-items: start; text-align: left; padding: 4px 8px; min-height: 44px; }
+  .spec-tile-icon { grid-row: span 2; width: 30px; height: 30px; }
+  .spec-tile-label, .spec-tile-sub { min-width: 0; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .spec-tile-sub { font-size: 10px; }
+  .spec-tile-icon img.tile-empty-ico { width: 24px; height: 24px; }
+  .spec-tile-icon img.tile-empty-ico.anoint-ph { width: 30px; height: 30px; }
+  .spec-tile { grid-column: span 2; }   /* room for the label + sub (spec) and 5 perk icons (anointments) */
+  .spec-tile:not(:has(.spec-tile-sub)) .spec-tile-label { grid-row: span 2; }   /* label alone → vertically centred */
+  .anoint-tile .spec-tile-icon { width: auto; min-height: 0; }
+  .anoint-tile .anoint-tile-icons { flex-wrap: nowrap; }
+  /* grid view: the full party in one row */
+  .party-grid { grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px; }
+  .slot { min-height: 0; padding: 5px; gap: 4px; }
+  .slot .tile-badges { top: 22px; }
+  .tile-badge { width: 16px; height: 16px; }
+  .slot-name { font-size: 11px; }
+  .slot-actions { gap: 3px; }
+  .slot-mini { font-size: 10px; padding: 3px 2px; }
+  /* roster view: two rows side by side, compact identity column */
+  .party-roster { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .roster-row { grid-template-columns: 116px minmax(0, 1fr); gap: 8px; padding: 8px; }
+  .roster-row + .roster-row { border-top: 0; }
+  .roster-row:nth-child(n + 3) { border-top: 1px solid var(--border-dim); }
+  .roster-row:nth-child(even) { border-left: 1px solid var(--border-dim); }
+  .roster-sprite { width: 60px; height: 60px; }
+  .roster-name { font-size: 12px; }
+  .roster-stats { gap: 1px 6px; }
+  .roster-stats .rstat { font-size: 10px; }
+  .roster-actions .slot-mini { min-width: 0; }
+  .roster-traits { gap: 5px; }
+  .roster-traits .trait-desc { font-size: 11.5px; line-height: 1.3; }
+}
