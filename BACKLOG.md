@@ -30,6 +30,122 @@ write the requirements to `_su_extract/code/HANDOFF_<topic>.md` for the extract 
 - [x] 9. **Guild Shop** — the list is always 5: lay it out as a row of 3 over a row of 2 (offset, gaps between).
 - [x] 10. **All God Shop lists** — centre text vertically in each row.
 
+## BATCH 2026-10-17 — user list of 30 (not started)
+Grouped by the app area each item touches, in suggested build order. Within a group, earlier items unblock later ones.
+`(#n)` = the user's original number. Clarifications the user gave on 2026-10-17 are marked **User:**. Research items that need
+a decompile → write `_su_extract/code/HANDOFF_<topic>.md` and don't guess (batch rule above).
+
+### G1. Spell-gem containers, Spell Wizard, Artifact Wizard spell socket (do #26 first; the others build on it)
+- [ ] **(#26) One shared spell-gem container component.** The Artifact Wizard's spell-socket step should show the same
+  containers as the Spell Wizard. Copy the Spell Wizard version over, then make both screens render from ONE shared
+  render function or partial, so changing one changes both. While doing it, list any other duplicated container markup
+  that has drifted and fold it into shared helpers too.
+- [ ] **(#4) Spell Wizard property step: show the spell's description and stats.** While picking a property, show the
+  chosen spell's description and its stats (charges, potency, target, class). **User:** this is the Spell Wizard's
+  property step, not a property detail page.
+- [ ] **(#2) Agate charge calculation.** Show how Agate changes the spell's charges (base → result) in the Spell Wizard
+  property step, and on library entries for gems that have an Agate socketed. Use the code formula. Check that Agate's
+  rounding and minimum are code-grounded before showing a number.
+- [ ] **(#3) Warn about properties that do nothing.** A property can be valid on a spell and still have no effect, e.g.
+  Defense Penetration on a spell that deals no damage, or Agate on a spell with fewer than 5 base charges. Flag these in
+  the wizard and the library. Rules come from the data (damage flag, base charges), not from a hand-written list. Keep the
+  warning minimal (a small chip, no prose).
+
+### G2. Spell library (grid / filters / sort)
+- [ ] **(#18) Grid icon size drifts with long names.** In the Spell library, a long name (e.g. Summon Doppelganger) makes
+  every icon in its column bigger than the other columns. The cause is likely that the column width follows the name
+  length and the icon scales with the column. Fix by giving icons a fixed size and letting names wrap or ellipsize. Then
+  audit every grid layout that uses the same pattern.
+- [ ] **(#16) Multiple filters at once in Spell Gem search**, so the user can narrow down to specific spells (filters
+  combine with AND).
+- [ ] **(#20) Class sort in the Spell library.**
+
+### G3. Artifact + Nether Stone wizard limits
+- [ ] **(#23) Artifact wizard: one copy per trick-slot item.** The wizard currently lets the same trick-slot item go in
+  more than once, which the game doesn't allow. Get the exact uniqueness rule from the artifact creation code
+  (`_su_extract`) and enforce it in the picker, e.g. hide or disable items already used.
+- [ ] **(#24) Nether Stone wizard: cap total effects at 6**, on top of the existing per-effect caps. Confirm in the code
+  where the 6 comes from (`inv_NetherStoneCreate` / NETHER.md).
+
+### G4. Planner, Spec overlay, creature detail
+- [ ] **(#22) Reorder creatures from the Planner screen** with arrows that swap a creature with its neighbour. **User:**
+  swap-with-neighbour (not pick-a-slot). Respect the Animatus slot-1 rule if it gets enforced (see "Rules the app doesn't
+  enforce").
+- [ ] **(#25) Perk header collision.** The perk title, the spec chip and the "current build" chip share one row and
+  overlap when the chips are too long. Let the chips wrap onto their own row under the title. Mobile first.
+- [ ] **(#29) Spec overlay: mark perks that can't be anointed** with a small visual marker (anointment flag is in
+  `anointments.json`). Minimal chrome.
+- [ ] **(#21) Something from Nothing trait chip gets no class colour.** Likely because the source creature's name is
+  numeric, so the name→class lookup misses. Fix the lookup to use the id, then check other traits whose source has a
+  numeric or odd name.
+- [ ] **(#5) Creature detail: "Triggers" section.** Subsections: **Attack, Cast, Defend, Provoke** (the 4 actions), a
+  general **Damage** subsection, and **On Turn**. Each lists every triggered effect the build attaches to that event:
+  - "On X" spells from Artifacts, socketed materials and Nether Stones;
+  - spell-gem properties that add an "On Cast: X" effect (Citrine, Azurite, Bloodstone, …);
+  - Relic effects;
+  - traits.
+  Reuse the existing taxonomy trigger tags and the nether trigger ids. Best done after G1 (shared containers) and G6 (per-Rn
+  relic data).
+
+### G5. Mobile / touch layout
+- [ ] **(#27) Grey row while scrolling on touch.** **User (found the cause):** it's the "selected"/hover style showing
+  during a scroll gesture that isn't a full tap. On mobile it looks like a desktop mouse hover. Fix by putting hover styles
+  under `@media (hover: hover)` and/or only applying the selected state on a completed tap (not on touchstart).
+- [ ] **(#1) Intentional landscape phone layout.** Right now a phone in landscape (e.g. clipped into a controller) just gets
+  the desktop layout squeezed into a short viewport. Design a real landscape-phone layout with a short-height breakpoint,
+  e.g. `(orientation: landscape) and (max-height: ~500px)`. **User:** design the **Planner first**. Other screens follow in
+  a later pass. Gamepad input is not part of this item.
+
+### G6. Relics
+- [ ] **(#10) Relic sprites.** The full-size relic display seems to use the small icon sprite. Use the icon only in the one
+  small spot (next to the creature sprite) and the higher-quality full-size sprite everywhere else. Check that the asset
+  match carries a provenance tag (asset-provenance rule).
+- [ ] **(#17) Per-rank relic taxonomy.** Tag each relic rank (R1…Rn) separately instead of the relic as a whole. On the
+  relic's own view, add up the tags across its ranks. When a tag repeats across ranks with a similar scope, show it as
+  "built to support this feature", separate from tags that appear on only one rank. **User: the threshold (2+ vs 3+
+  ranks) is still to decide**, so ask before shipping.
+
+### G7. Taxonomy + search
+- [ ] **(#13) Search inside the taxonomy view should match subcategories**, e.g. searching "Persist" returns every
+  Persist-related subcategory, not only the top level.
+- [ ] **(#28) New subcategory under "Affect on Spells": "Count as Manual".** It covers effects that make auto-cast spells
+  count as manually cast for effect interactions (e.g. The Great Beyond). Find the members from the code flag where
+  possible. Approval goes through the usual taxonomy review queue.
+- [ ] **(#19) What counts as "interacts with minions" for Dark Summoning membership?** Define the rule the same way as
+  the Multi-Target rule (CHANGELOG 2026-10-06): what qualifies, what doesn't, edge cases. Get the user's approval, then
+  re-audit the members.
+
+### G8. Appendix sections + combat research (research first → handoffs → Appendix pages)
+- [ ] **(#6) Appendix: Class Advantage.** Show the class wheel order, and explain how it applies to attacks vs spells
+  (spells use the gem's class, Class Swap first) and to class changes (e.g. Opal). Source: `_su_extract/code/COMBAT_RULES.md`.
+  This can share work with the open "Confirm class advantage in-game" item and the DPS-sim toggle.
+- [ ] **(#9) Default spell targeting.** Map each spell's default side (opponents vs the caster's side), if we don't already
+  have it. Check the code target-scope field (spell record field 5) first. This ties into the open "Spell target: CSV vs
+  code" item. Needed by #8.
+- [ ] **(#8) Appendix: random target selection.** How targets are picked for random-target effects, e.g. socketed
+  spell-gem casts and Nether Stone spells. Needs code research, so write a handoff.
+- [ ] **(#14) Research: Burn the Corpses.** Find which resurrections it actually blocks. In testing, many resurrections
+  get through, e.g. Terminus, and reportedly Rebirth and the False God resurrection effects. Find the check in code and
+  list what it does and doesn't stop. Handoff.
+- [ ] **(#15) Resurrection Order: add a note about resurrections that don't go through `bc_onDeath`** but still count as
+  resurrection-triggering effects (e.g. Terminus, Ever Upwards). Do this together with #14.
+- [ ] **(#30) Research: Final Summoning.** Which spell does each Greater Demon minion cast when it goes away? (Each minion
+  has a different one.) Handoff, then show the result on the trait.
+
+### G9. Nether Realm helpers + Nether Bosses
+- [ ] **(#11) Faucet valve order is mirrored.** **User:** read the code right→left. The app currently assumes left→right
+  (`app.js` FAUCET section, ~line 3394). The CHANGELOG 2026-10 check was "only the LEFT valve on → gem chest". Mirror the
+  digit order and update that note. Can go out with the open "Faucet valve sprites: remove the 40% fade" item.
+- [ ] **(#7) Verify Nether Boss rewards.** Check that the reward given right after a Nether Boss fight is the quest
+  completion reward, and that the two chests ALSO hold +3 bundles on top of it. Check against code, then fix the Bosses
+  page reward text if needed.
+
+### G10. Macro
+- [ ] **(#12) Order of duplicate-name traits in the macro selector.** E.g. Head of Hydranox appears 5 times, each owned by a
+  different head. **User:** find the order the game itself uses, so our macros target the right owning creature for traits
+  with the same name. Needs `scr_MacroProcess` / macro selector code research (see Macro roadmap item 5) → handoff, then
+  match it in `MACRO_ENGINE`.
+
 ## Feature ideas (user backlog, not started)
 - [ ] **DPS / effective-stat simulation** from `damageModel` (spell & melee, crit/dodge, defending). Class advantage is now
   code-known (×2 / ×0.5, `_su_extract/code/COMBAT_RULES.md`); expose it as a toggle. Spells match on the gem's class
