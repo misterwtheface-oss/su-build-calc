@@ -3243,7 +3243,7 @@
           enemy: t.ownerType === "boss" && !c && !it,
           chips: [c ? c.name : t.owner || "", ...new Set(its.map(x => x.name))], open: { ek: "trait", eid: t.id } }; } }
       else if (kind === "relic") { const rl = D.relics.find(x => x.name.includes(ref)), rk = rl && rl.ranks.find(x => x.rank === rank);
-        if (rl && rk) r = { name: rl.name.split(",")[0], desc: rk.desc, icons: [spriteImg(rl.icon, "px")], chips: [rl.name.split(",")[1].trim(), `Rank ${rank}`] }; }
+        if (rl && rk) r = { name: rl.name.split(",")[0], desc: rk.desc, icons: [spriteImg(relicArt(rl), "px")], chips: [rl.name.split(",")[1].trim(), `Rank ${rank}`] }; }
       else if (kind === "cond") { const c = (D.conditions || []).find(x => `${x.cat}:${x.key}` === ref);
         if (c) r = { name: c.name, desc: c.desc, icons: [c.icon ? `<img src="${esc(c.icon)}" alt="">` : ""], chips: [c.cat], open: { ek: "condition", eid: ref } }; }
       else if (kind === "realm") { const rp = (D.realmProps || []).find(x => x.key === ref);
@@ -3304,7 +3304,7 @@
           chips: [c ? c.name : t.owner || "", ...new Set(its.map(x => x.name))], open: { ek: "trait", eid: t.id } }; } }
       else if (ref.k === "perk") { const h = perkBy.get(ref.name); if (h) r = { name: h.p.name, desc: h.p.desc, icons: [specIco(h.spec), h.p.icon && spriteImg(h.p.icon, "px")], chips: [h.spec.label] }; }
       else if (ref.k === "relic") { const rl = D.relics.find(x => x.id === ref.id), rk = rl && rl.ranks.find(x => x.rank === ref.rank);
-        if (rl && rk) r = { name: rl.name.split(",")[0], desc: rk.desc, icons: [spriteImg(rl.icon, "px")], chips: [(rl.name.split(",")[1] || "").trim(), `Rank ${ref.rank}`] }; }
+        if (rl && rk) r = { name: rl.name.split(",")[0], desc: rk.desc, icons: [spriteImg(relicArt(rl), "px")], chips: [(rl.name.split(",")[1] || "").trim(), `Rank ${ref.rank}`] }; }
       else if (ref.k === "card") { const cd = (D.cards || []).find(x => x.family === ref.family);
         if (cd) r = { name: `${cd.family} set`, desc: cd.effects[ref.power - 1] || "", icons: [spriteImg(cd.sprite)], chips: ["Card Set", `Power ${ref.power}`] }; }
       else if (ref.k === "cond") { const c = (D.conditions || []).find(x => x.name === ref.name);
