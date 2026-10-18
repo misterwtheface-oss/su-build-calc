@@ -2745,7 +2745,14 @@
         const meta = `<span class="anoint-spec-tag apx-boss-cat">${esc(g.ownerCategory || "Boss")}</span>${itemNameMeta(g)}`;
         return line(apxStack(bossBox, matBox(g)), g.name, meta, (g.desc ? richText(g.desc) : ""), bkBtn("traits", g.id), { ek: "trait", eid: g.id }, availTagsHtml(g));
       };
+      // a name query also lists the matching taxonomy sub-categories (e.g. "Persist" → every Persist tag, whatever its
+      // category), limited to tags that still have results under the active filters; tapping one adds it as a filter
+      const tagHits = [];
+      if (q) for (const [cat, vals] of appendixBrowseIndex(tags)) for (const v of vals)
+        if (!tags.includes(v.key)) tagHits.push({ ...v, cat, name: v.val, _search: `${cat} ${v.val}` });
+      tagHits.sort((a, b) => a.val.localeCompare(b.val) || a.cat.localeCompare(b.cat));
       const body_sections = [
+        section("Tags", tagHits, v => `<button class="opt-row" data-action="appendix-tag" data-k="${esc(v.key)}"><span>${esc(v.cat)}: <b>${esc(v.val)}</b></span><span class="apx-val-n">${v.n}</span></button>`),
         section("Traits", creatureTraitRows, traitRow),
         section("Item-only Traits", itemOnlyTraitRows, traitRow),
         section("Boss Traits", bossTraitRows, bossTraitRow),
@@ -2759,7 +2766,7 @@
           c.cls ? `<span class="anoint-spec-tag">${esc(c.cls)}</span>` : "", cardTiersHtml(c.effects, c.tiers), null, { ek: "card", eid: c.id })),
       ].join("");
       const total = traitRows.length + res.perks.length + res.spells.length + res.relics.length + res.cards.length;
-      placeholder = "Search by name…";
+      placeholder = "Search by name or tag…";
       sub = `<div class="ovl-filterbar">${tagChips}
         <button class="facet add" data-action="appendix-add">＋ Filter</button>
         <span class="foot-info">${total} result${total === 1 ? "" : "s"}</span></div>`;

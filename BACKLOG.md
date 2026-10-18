@@ -109,9 +109,11 @@ a decompile → write `_su_extract/code/HANDOFF_<topic>.md` and don't guess (bat
   relic's own view, add up the tags across its ranks. When a tag repeats across ranks with a similar scope, show it as
   "built to support this feature", separate from tags that appear on only one rank. **User: the threshold (2+ vs 3+
   ranks) is still to decide**, so ask before shipping.
+  **2026-10-17:** relic tags exist only per relic (31), not per rank (310 rank perks; 295 have code signatures) → asked the
+  extract for per-rank tags + scope in `_su_extract/code/HANDOFF_relic_rank_taxonomy.md`. Threshold asked of the user.
 
 ### G7. Taxonomy + search
-- [ ] **(#13) Search inside the taxonomy view should match subcategories**, e.g. searching "Persist" returns every
+- [x] **(#13) Search inside the taxonomy view should match subcategories** DONE 2026-10-17 (a "Tags" section heads the name results), e.g. searching "Persist" returns every
   Persist-related subcategory, not only the top level.
 - [ ] **(#28) New subcategory under "Affect on Spells": "Count as Manual".** It covers effects that make auto-cast spells
   count as manually cast for effect interactions (e.g. The Great Beyond). Find the members from the code flag where
