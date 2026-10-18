@@ -132,21 +132,24 @@ a decompile → write `_su_extract/code/HANDOFF_<topic>.md` and don't guess (bat
   mention minions but aren't tagged today; *doesn't* = generic creature effects that may happen to hit a minion. 26 members now.
 
 ### G8. Appendix sections + combat research (research first → handoffs → Appendix pages)
-- [ ] **(#6) Appendix: Class Advantage.** Show the class wheel order, and explain how it applies to attacks vs spells
+- [x] **(#6) Appendix: Class Advantage.** DONE 2026-10-17 (wheel table + attacks/spells/Opal/Convoke note, COMBAT_RULES.md). Show the class wheel order, and explain how it applies to attacks vs spells
   (spells use the gem's class, Class Swap first) and to class changes (e.g. Opal). Source: `_su_extract/code/COMBAT_RULES.md`.
   This can share work with the open "Confirm class advantage in-game" item and the DPS-sim toggle.
-- [ ] **(#9) Default spell targeting.** Map each spell's default side (opponents vs the caster's side), if we don't already
+- [x] **(#9) Default spell targeting.** DONE 2026-10-17: `spell.aim` from record fields 5 + 18 (742/747; data-only, CSV `target` untouched); per-spell lookup via the Appendix search. Map each spell's default side (opponents vs the caster's side), if we don't already
   have it. Check the code target-scope field (spell record field 5) first. This ties into the open "Spell target: CSV vs
   code" item. Needed by #8.
-- [ ] **(#8) Appendix: random target selection.** How targets are picked for random-target effects, e.g. socketed
+- [x] **(#8) Appendix: random target selection.** DONE 2026-10-17 — no handoff needed: `bc_CreatureCastSpellGem` was already decoded (ARTIFACTS.md §2). "Random Targets" section. How targets are picked for random-target effects, e.g. socketed
   spell-gem casts and Nether Stone spells. Needs code research, so write a handoff.
 - [ ] **(#14) Research: Burn the Corpses.** Find which resurrections it actually blocks. In testing, many resurrections
   get through, e.g. Terminus, and reportedly Rebirth and the False God resurrection effects. Find the check in code and
   list what it does and doesn't stop. Handoff.
+  **2026-10-17:** the perk is **Burn Their Corpses** (Pyromancer). Asked in `_su_extract/code/HANDOFF_resurrection_blocks_final_summoning.md`
+  §1 (where it's checked; what bypasses it; same for the 8 other "cannot be resurrected" sources).
 - [ ] **(#15) Resurrection Order: add a note about resurrections that don't go through `bc_onDeath`** but still count as
-  resurrection-triggering effects (e.g. Terminus, Ever Upwards). Do this together with #14.
+  resurrection-triggering effects (e.g. Terminus, Ever Upwards). Do this together with #14. Asked in the same handoff §2 (full list of direct
+  `bc_EventResurrect` callers outside bc_OnDeath).
 - [ ] **(#30) Research: Final Summoning.** Which spell does each Greater Demon minion cast when it goes away? (Each minion
-  has a different one.) Handoff, then show the result on the trait.
+  has a different one.) Handoff, then show the result on the trait. **2026-10-17:** it's the Demonologist perk FINALSUMMONING; asked in the same handoff §3.
 
 ### G9. Nether Realm helpers + Nether Bosses
 - [ ] **(#11) Faucet valve order is mirrored.** **User:** read the code right→left. The app currently assumes left→right
