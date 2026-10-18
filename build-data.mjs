@@ -1222,6 +1222,7 @@ for (const m of matRecs) {
 }
 
 // ── OWNER MODEL — every shipped trait gets an innate owner (1:1) and/or an item source ──────────
+const clsFromOwner = [];
 // Ownership = "whose INNATE trait is this" (creature or boss), strictly 1:1 (one trait ↔ one owner).
 // A trait obtained from an item is item-only (owner=null); where the ITEM drops (`itemSource`) is a
 // SEPARATE attribute and never implies ownership. Fields set here: owner / ownerType ('creature'|'boss')
@@ -1280,6 +1281,9 @@ for (const m of matRecs) {
       owner = co ? co.name : null; ownerType = owner ? 'creature' : null; ownerForm = owner ? 'player' : null;
       ownerCategory = co && co.race === 'Avatar' ? 'Avatar' : null;   // Avatars are the player form of the Deities
       ownerProvenance = owner ? 'code' : null;
+      // class from the owning creature (id join) when the consolidated trait's source_creature didn't carry one
+      // (e.g. Something From Nothing → creature "8004", Robotic Armor → "4080"): the chip needs it for its colour
+      if (co && !t.cls && CLASS_SET.has(co.cls)) { t.cls = co.cls; clsFromOwner.push(t.name); }
     } else if (st === 'boss' && !hasItem) {                        // genuine boss-innate (item ⇒ item-only, handled below)
       ownerForm = 'encounter';
       if (/False God/i.test(r.detail || '')) {                    // 1:1 owner = the body-part creature (== trait name)
@@ -1301,6 +1305,7 @@ for (const m of matRecs) {
     if (!owner && !hasItem) ownGap++;                              // should be 0 — the 17 are already excluded
   }
   console.log(`  owner model: ${ownCrea} creature · ${ownBoss} boss (${Object.entries(ownerCatCount).map(([k, v]) => `${v} ${k}`).join(', ')}) · ${itemOnly} item-only · ${ownGap} unresolved-gap${ownGap ? ' ⚠' : ' ✓'}`);
+  if (clsFromOwner.length) console.log(`  trait class from owning creature: ${clsFromOwner.length} (${clsFromOwner.join(', ')})`);
   // TRUE-ID owner cross-check: every runtime id of a shipped boss-owned trait must resolve to the SAME boss in the
   // true-id owner table (creature-DB row, or key-sibling inheritance for Nether Bosses, which have no creature row).
   {

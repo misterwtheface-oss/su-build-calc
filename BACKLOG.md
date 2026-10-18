@@ -80,7 +80,7 @@ a decompile → write `_su_extract/code/HANDOFF_<topic>.md` and don't guess (bat
   overlap when the chips are too long. Let the chips wrap onto their own row under the title. Mobile first.
 - [x] **(#29) Spec overlay: mark perks that can't be anointed** DONE 2026-10-17 (⊘, same `perkAnointable` rule as the Anointments list: flag + False God + not Highborn) with a small visual marker (anointment flag is in
   `anointments.json`). Minimal chrome.
-- [ ] **(#21) Something from Nothing trait chip gets no class colour.** Likely because the source creature's name is
+- [x] **(#21) Something from Nothing trait chip gets no class colour.** DONE 2026-10-17: build-data fills trait.cls from the owning creature (id join) — 5 traits (also Robotic Armor, Numerical Nightmare, Eery Veil, Ignorance Is Bliss); CSVs already right. Likely because the source creature's name is
   numeric, so the name→class lookup misses. Fix the lookup to use the id, then check other traits whose source has a
   numeric or odd name.
 - [ ] **(#5) Creature detail: "Triggers" section.** Subsections: **Attack, Cast, Defend, Provoke** (the 4 actions), a
