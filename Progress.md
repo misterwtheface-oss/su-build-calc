@@ -114,6 +114,11 @@ source of truth), called by both `build-data.mjs` and the **`.githooks/pre-commi
 - **Glossary / Errata** (2026-10-10): Glossary = Buffs / Debuffs / Minions only. Errata (menu, below Glossary) = the
   code-grounded tables: Resurrection Order, Start of Battle Order, Nether Stone Drops, Pandemonium Shrine, Maximum Realm
   Bonus, Rodian Masters (`D.masterRealms`). Same collapsible layout; section functions are shared (`*Section(st, q)`).
+  2026-10-17: + **Class Advantage** and **Random Targets** (per-spell `aim` lookup via the Appendix search) after Start of Battle.
+- **Shared spell containers (2026-10-17):** `spellRow` (Spell / Artifact / Nether pickers + Spell Gem library preview) and
+  `spellGemCard` (artifact / nether / relic / boss / Spells-page tiles) are the only spell markup; `spellIco`, `clsTag` helpers.
+- **Landscape phone (2026-10-17):** `@media (orientation: landscape) and (max-height: 500px)` block at the end of styles.css —
+  Planner only so far. Hover styles are all inside `@media (hover: hover)` (touch scroll must not paint rows).
 - **Deleted gems / artifacts** are pruned from the current and every saved build (on delete, load and startup).
 - **Synergy** (Menu → Synergy): one overlay, **Matrix** ⇆ **List** toggle. Matrix = members (Spec /
   collapsed Anointments / creatures — each expandable to its perks/anoints/traits) × tags; cell = that

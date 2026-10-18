@@ -4,6 +4,28 @@ Every dated change entry, newest first (moved verbatim from Progress.md on 2026-
 to their own section and sorted by their date). Current state and open work: `Progress.md`, `BACKLOG.md`.
 New entries go at the TOP.
 
+## 2026-10-17 — Batch of 30 (user list): 20 shipped, rest waiting on the extract or a user call
+- **Spell gems (G1):** one shared spell row for the Spell Wizard, Artifact Wizard spell socket, Nether Stone spell picker and
+  library preview (`spellRow`); the Spells-page granted tile now renders through `spellGemCard` (the nether "from X" line was
+  centred there — drift fixed). Property step shows the spell (description + stats). **Agate** shows base → result charges
+  (code: floor, min 1; gem alone). **"No effect" chip** for Agate rounding to +0 and Azurite on a spell with no damage or stat
+  change (`spell.noDmgStat`, 266 spells: code rules + taxonomy, conservative).
+- **Spell library (G2):** fixed icon size in every fixed-count grid (`repeat(N, 1fr)` → `minmax(0, 1fr)`, 9 grids; long names
+  wrap). Stacked taxonomy filters (AND) in the shared spell picker and the library. Class sort (class-wheel order).
+- **Planner (G4/G5):** swap a creature with its neighbour (▲▼ roster, ‹ › tiles). Perk header chips wrap under the title.
+  Spec overlay marks perks that can't be anointed (⊘, same rule as the Anointments list). Something From Nothing (+4 other
+  traits) get their class colour: build-data takes the class from the owning creature when the trait source lacks it.
+  Hover styles only on hover-capable devices (no grey rows while scrolling on touch). Landscape-phone Planner layout.
+- **Relics (G6):** large code art (`scr_RelicBigIcon`) everywhere except the badge next to the creature sprite; build error
+  if a relic lacks it.
+- **Taxonomy (G7):** a name search also lists matching sub-categories ("Persist" → 4 tags).
+- **Appendix (G8):** Class Advantage and Random Targets sections; `spell.aim` (record fields 5 + 18, data-only).
+- **Nether (G9):** Faucet valve code reads right→left (user ruling; NETHER.md updated). Nether Boss page: the boss room's 2
+  chests hold 9 bundles each (code).
+- **Waiting:** handoffs `HANDOFF_artifact_slot_uniqueness` (#23, #24), `_relic_rank_taxonomy` (#17), `_dark_summoning_pool`
+  (#19), `_resurrection_blocks_final_summoning` (#14, #15, #30), `_nether_boss_reward` (#7 rest), `_macro_trait_order` (#12).
+  User calls: #24 (code says 6/3/3, not 6 total), #17 threshold, #28 Count as Manual members, #19 rule. #5 Triggers waits on G6.
+
 ## 2026-10-13 — Weaponized Spirit: roll credit and clarify note (user-approved)
 - `hasRoll` (data only): Weaponized Spirit added to the Booze end-of-turn auto-cast roll (while it's in play, Arsenal
   gems roll it too).

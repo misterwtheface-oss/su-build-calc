@@ -166,6 +166,7 @@ a decompile → write `_su_extract/code/HANDOFF_<topic>.md` and don't guess (bat
   different head. **User:** find the order the game itself uses, so our macros target the right owning creature for traits
   with the same name. Needs `scr_MacroProcess` / macro selector code research (see Macro roadmap item 5) → handoff, then
   match it in `MACRO_ENGINE`.
+  **2026-10-17:** asked in `_su_extract/code/HANDOFF_macro_trait_order.md` (list source, stored parameter = id or name, Hydranox order).
 
 ## Feature ideas (user backlog, not started)
 - [ ] **DPS / effective-stat simulation** from `damageModel` (spell & melee, crit/dodge, defending). Class advantage is now
