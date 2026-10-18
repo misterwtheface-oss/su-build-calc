@@ -169,3 +169,7 @@ a flat modifier to base: raised **×4/3 (+33%)**, lowered **×2/3 (−33%)**, ot
   - the Nether Stone table capped at that maximum;
   - a "Visible only" chip in Threats.
 - The 7 ↔ 16 exclusion stays data-only: both are hidden from the Threats advisor as composition flavour.
+- **2026-10-18 — Dark Summoning membership is code-only.** "Interacts with minions" (Related Spells::Minion Spells) must match
+  Dark Summoning's pool in the code; no text-based rule ships (`_su_extract/code/HANDOFF_dark_summoning_pool.md`).
+- **2026-10-18 — Count as Manual** (Affect on Spells): Superfluidity, The Great Beyond, Embrace the Arcane, Pandemonium Wrath. Pandemonium
+  Wrath stays until the code says otherwise (`HANDOFF_count_as_manual.md`).
