@@ -828,6 +828,11 @@
     const relB = rel && rel.icon ? `<span class="tile-badge gear" data-action="build-relic" data-slot="${i}" title="${esc(relicShortName(rel))} · Rank ${slot.relic.rank}">${spriteImg(rel.icon, "px")}</span>` : "";
     return artB + relB;
   }
+  // swap a creature with its neighbour (whole slot: fusion, artifact, relic, gems, scrolls…). ▲▼ on roster rows, ‹ › on tiles.
+  const slotMoveBtns = (i, vertical) => {
+    const last = build.slots.length - 1, [up, dn] = vertical ? ["▲", "▼"] : ["‹", "›"];
+    return `<span class="slot-move"><button class="spt-mv" data-action="slot-move" data-slot="${i}" data-d="-1" ${i ? "" : "disabled"} title="Move earlier">${up}</button><button class="spt-mv" data-action="slot-move" data-slot="${i}" data-d="1" ${i < last ? "" : "disabled"} title="Move later">${dn}</button></span>`;
+  };
   function renderRosterRow(slot, i) {
     const c = CREA.get(slot.cid);
     const locked = i >= creatureCap();   // Pariah caps the party at 3 creatures
@@ -857,6 +862,7 @@
     return `<div class="roster-row filled ${locked ? "locked" : ""}" data-slot="${i}" title="Right-click to change creature / fusion">
       <div class="roster-identity">
         <button class="slot-remove" data-action="remove-creature" data-slot="${i}" title="Remove">✕</button>
+        ${slotMoveBtns(i, true)}
         <div class="roster-sprite-row">
           <div class="tile-badges roster-badges left">${clsIco}${raceIco}</div>
           <div class="roster-sprite" data-action="creature-detail" data-slot="${i}">${slotFace(slot, c)}</div>
@@ -903,6 +909,7 @@
       <div class="tile-badges">${clsIco}${raceIco}</div>
       <div class="tile-badges gear-badges">${gearBadges(slot, i)}</div>
       <button class="slot-remove" data-action="remove-creature" data-slot="${i}" title="Remove">✕</button>
+      ${slotMoveBtns(i, false)}
       <div class="slot-sprite-wrap" data-action="creature-detail" data-slot="${i}">${slotFace(slot, c)}</div>
       <div class="slot-name">${esc(c.name)}${f ? ` <span style="color:var(--accent2)">⚭</span>` : ""}</div>
       <div class="slot-actions">
@@ -5515,6 +5522,9 @@
       case "specpage-close": closeDetail(); closeOverlay(); render(); break;
       case "specpage-edit": dovState.editing = !dovState.editing; refreshDetail(); break;
       case "specpage-confirm": { const id = dovState.specId; closeDetail(); applySpec(id); break; }
+      case "slot-move": { const i = +t.dataset.slot, j = i + +t.dataset.d;
+        if (j < 0 || j >= build.slots.length) break;
+        [build.slots[i], build.slots[j]] = [build.slots[j], build.slots[i]]; persistBuild(); render(); break; }
       case "remove-creature": armOrDo(t, () => { build.slots[+t.dataset.slot] = emptySlot(); persistBuild(); render(); }); break;
       case "clear-spec": e.stopPropagation(); build.specId = null; persistBuild(); render(); break;
       case "clear-anoints": e.stopPropagation(); build.anoints = []; persistBuild(); render(); break;

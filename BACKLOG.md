@@ -64,11 +64,16 @@ a decompile → write `_su_extract/code/HANDOFF_<topic>.md` and don't guess (bat
 - [ ] **(#23) Artifact wizard: one copy per trick-slot item.** The wizard currently lets the same trick-slot item go in
   more than once, which the game doesn't allow. Get the exact uniqueness rule from the artifact creation code
   (`_su_extract`) and enforce it in the picker, e.g. hide or disable items already used.
+  **2026-10-17:** not in any decompile on disk → asked in `_su_extract/code/HANDOFF_artifact_slot_uniqueness.md` §1
+  (key = material, property or stat group? trick only, or stat slots too?).
 - [ ] **(#24) Nether Stone wizard: cap total effects at 6**, on top of the existing per-effect caps. Confirm in the code
   where the 6 comes from (`inv_NetherStoneCreate` / NETHER.md).
+  **2026-10-17: code disagrees — waiting on the user.** NETHER.md (CODE-CERTAIN): the 6 is the *property* cap; traits (3) and
+  spells (3) are separate roll chains, so the generator allows up to 12 total. The app already enforces 6/3/3. Asked the
+  extract for any other total limit (HANDOFF_artifact_slot_uniqueness.md §2); ask the user if they have in-game evidence.
 
 ### G4. Planner, Spec overlay, creature detail
-- [ ] **(#22) Reorder creatures from the Planner screen** with arrows that swap a creature with its neighbour. **User:**
+- [x] **(#22) Reorder creatures from the Planner screen** DONE 2026-10-17 (▲▼ roster rows, ‹ › tiles; swaps the whole slot). with arrows that swap a creature with its neighbour. **User:**
   swap-with-neighbour (not pick-a-slot). Respect the Animatus slot-1 rule if it gets enforced (see "Rules the app doesn't
   enforce").
 - [ ] **(#25) Perk header collision.** The perk title, the spec chip and the "current build" chip share one row and

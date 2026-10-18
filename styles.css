@@ -1799,3 +1799,9 @@ button.boss-chip:hover { border-color: var(--accent2); }
 .prop-metatag.nofx { color: var(--bad); border: 1px solid var(--bad); border-radius: 4px; padding: 0 4px; }
 .art-slot .prop-metatag.nofx { margin: 2px 0 0; display: inline-block; }
 .taxo-bar .facet { flex: 0 1 auto; min-width: 0; }   /* stacked taxonomy filter chips wrap onto new rows */
+/* Planner: swap a creature with its neighbour — top-left corner, mirroring the ✕ */
+.slot-move { position: absolute; top: 4px; left: 5px; z-index: 3; display: inline-flex; gap: 2px; }
+.slot-move .spt-mv { width: 22px; height: 22px; font-size: 10px; }
+.roster-identity .slot-move { top: -4px; left: -2px; }
+@media (max-width: 560px) { .roster-identity .slot-move { top: 6px; left: 6px; } }
+.slot .slot-move { left: 50%; transform: translateX(-50%); }   /* tiles: class/race badges own the top-left */
