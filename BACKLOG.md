@@ -78,7 +78,7 @@ a decompile → write `_su_extract/code/HANDOFF_<topic>.md` and don't guess (bat
   enforce").
 - [x] **(#25) Perk header collision.** DONE 2026-10-17 (`.perk-line-head` wraps; 0 overlaps over 605 headers at 390px). The perk title, the spec chip and the "current build" chip share one row and
   overlap when the chips are too long. Let the chips wrap onto their own row under the title. Mobile first.
-- [ ] **(#29) Spec overlay: mark perks that can't be anointed** with a small visual marker (anointment flag is in
+- [x] **(#29) Spec overlay: mark perks that can't be anointed** DONE 2026-10-17 (⊘, same `perkAnointable` rule as the Anointments list: flag + False God + not Highborn) with a small visual marker (anointment flag is in
   `anointments.json`). Minimal chrome.
 - [ ] **(#21) Something from Nothing trait chip gets no class colour.** Likely because the source creature's name is
   numeric, so the name→class lookup misses. Fix the lookup to use the id, then check other traits whose source has a

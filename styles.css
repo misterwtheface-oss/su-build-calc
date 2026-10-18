@@ -1805,3 +1805,4 @@ button.boss-chip:hover { border-color: var(--accent2); }
 .roster-identity .slot-move { top: -4px; left: -2px; }
 @media (max-width: 560px) { .roster-identity .slot-move { top: 6px; left: 6px; } }
 .slot .slot-move { left: 50%; transform: translateX(-50%); }   /* tiles: class/race badges own the top-left */
+.no-anoint { color: var(--text-mute); font-size: 13px; line-height: 1; cursor: help; }   /* spec overlay: perk that can't be anointed */

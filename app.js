@@ -2124,7 +2124,7 @@
       const ico = `<div class="apx-iconcol">${p.icon ? `<div class="apx-crea">${spriteImg(p.icon, "px")}</div>` : ""}</div>`;   // same 48px centered icon as the Glossary
       return `<div class="perk-line apx-clickable ${on ? "on" : "off"} ${p.ascension ? "asc" : ""}" data-action="apx-open" data-ek="perk" data-eid="${esc(p.key)}">${ico}
         <div class="perk-line-body">
-          <div class="perk-line-head"><b>${esc(p.name)}</b><span class="perk-line-meta">${asc}${badge}</span>${bkBtn("perks", p.key)}</div>
+          <div class="perk-line-head"><b>${esc(p.name)}</b><span class="perk-line-meta">${noAnointMark(spec, p)}${asc}${badge}</span>${bkBtn("perks", p.key)}</div>
           ${p.desc ? `<div class="perk-desc">${perkText(p.desc, r)}</div>` : ""}
           ${perkGrantCards(spec.id, p.key)}
         </div></div>`;
@@ -2173,7 +2173,7 @@
       const ico = `<div class="apx-iconcol">${p.icon ? `<div class="apx-crea">${spriteImg(p.icon, "px")}</div>` : ""}</div>`;   // same 48px centered icon as the Glossary
       return `<div class="perk-row ${on ? "on" : "off"} ${p.ascension ? "asc" : ""}">
         ${ico}<div class="perk-row-main">
-          <div class="perk-row-head"><b>${esc(p.name)}</b><span class="perk-line-meta">${asc}${costLine}</span></div>
+          <div class="perk-row-head"><b>${esc(p.name)}</b><span class="perk-line-meta">${noAnointMark(spec, p)}${asc}${costLine}</span></div>
           ${p.desc ? `<div class="perk-desc">${perkText(p.desc, r)}</div>` : ""}
           ${stepper}</div></div>`;
     }).join("");
@@ -3883,13 +3883,15 @@
   // A single Anointment point grants the perk's FULL bonus (as if maxed), so descriptions here
   // resolve their <N> value at the perk's max rank — not rank 1.
   let ANOINTS = null;
+  // Exclude Highborn (Royal's cap-raiser — works only in your own spec tree, not as an anoint) and any
+  // spec with no affiliated False God (removes the "Other" group — Highborn was its only member).
+  const perkAnointable = (s, p) => !!(p.anointment && s.falseGod && p.key !== "HIGHBORN");
+  const noAnointMark = (s, p) => perkAnointable(s, p) ? "" : `<span class="no-anoint" title="Can't be anointed">⊘</span>`;
   function anointList() {
     if (ANOINTS) return ANOINTS;
     ANOINTS = [];
-    // Exclude Highborn (Royal's cap-raiser — works only in your own spec tree, not as an anoint) and any
-    // spec with no affiliated False God (removes the "Other" group — Highborn was its only member).
     for (const s of D.specs) for (const p of s.perks)
-      if (p.anointment && s.falseGod && p.key !== "HIGHBORN")
+      if (perkAnointable(s, p))
         ANOINTS.push({ ...p, spec: s.label, specId: s.id, falseGod: s.falseGod });
     ANOINTS.sort((a, b) => a.spec.localeCompare(b.spec) || a.name.localeCompare(b.name));
     return ANOINTS;
