@@ -135,6 +135,9 @@ a flat modifier to base: raised **×4/3 (+33%)**, lowered **×2/3 (−33%)**, ot
   trust); in-game observation beats stale CSVs (`Trait_REF` was stale for Marionette).
 
 ## Taxonomy rulings
+- **Heuristics find, code decides (user 2026-10-19).** LLM / text / token / keyword / co-tag heuristics are for working at
+  scale: reading an effect's likely intent and where to look. Validation is in the code only; an unconfirmed heuristic is
+  an extract work item, never a shipped tag. Charter: TAXONOMY_INTENT.md global rules.
 - **Taxonomy v2 ships code-backed tags only (user 2026-10-19).** Supersedes the "union" and "unverified candidates"
   rules below. Kept: code (code layer, or v1 grounded in code_taxo), code_boss, field. Everything else (llm, token, audit,
   build-time corrections, keyword, implied, undecided splits, guessed Targeting::All, v1 triggers the code lacks) is

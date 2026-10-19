@@ -7,10 +7,19 @@ this file wins and `TAXONOMY.md` gets fixed.
 **Rules for this file**
 - Only the user ratifies scope. A group is `DRAFT` until the user approves it, then `RATIFIED <date>`.
 - Changing a ratified scope needs a new dated ruling in that group's log. Old wording moves to the log, never silently edited.
-- Membership is proven from the game code (`_su_extract` `code_taxo.json`). Description text is only a lead.
+- Membership is proven from the game code (`_su_extract` code layer). Heuristics are leads, never proof (see the global
+  rule "Heuristics find, code decides").
 - Relabels that follow from a scope go through the taxonomy review queue as usual.
 
 ## Global rules (already ratified)
+- **Heuristics find, code decides (user, 2026-10-19).** Heuristics are how we work at scale. They read what each effect is
+  likely meant to do and point at where to look in the code: LLM classification, text patterns and keywords, description
+  markup tokens, co-tag implications, cross-references. Validation happens only in the game code: a tag ships when a
+  decoded code site proves it (the effect call, gate, hook or data field), recorded with that site. A heuristic result
+  that the code doesn't confirm is a work item for the extract, never a shipped tag. When the code and a heuristic
+  disagree, the code wins unless the user rules otherwise from in-game observation. If the code seems to lack something
+  the game text clearly does (Furor's turn start), the decode is incomplete: keep looking, don't fall back to the
+  heuristic. Applied 2026-10-19: the app ships code-backed tags only (`code`, `code_boss`, `field`).
 - **Action/Mechanic is a superset.** Every narrower tag also carries its Action/Mechanic parent, and the overlap is required
   (2026-10-04).
 - **Search intent.** Don't create a catch-all value nobody would search for. Map onto existing values instead (2026-10-06).
@@ -196,6 +205,8 @@ per hit (Extra repeats and area hits multiply them).
 - 2026-10-19: Build rules (user): v2 = union of the v1 tags through the crosswalk and the code layer, code deciding
   splits and attributes; undecided splits keep every candidate marked unverified; v2 ships next to v1, features move
   over one at a time, then one cutover retires v1.
+- 2026-10-19: Global rule "Heuristics find, code decides" written down (user): heuristics give scale and intent,
+  validation is in the code only.
 - 2026-10-19: Code-backed only (user, after reviewing Abnegation / Furor): the app ships only code, code_boss and field
   tags. Everything else is removed and handed to the extract (F3). Supersedes the union / unverified build rules.
 - 2026-10-19: Extract S38 parked items ruled. New Trigger::Minion Lost; new Minions::Remove; leave-chance modifiers =
