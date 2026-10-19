@@ -3562,10 +3562,11 @@ const taxonomy2 = (() => {
   if (!fs.existsSync(CLP)) { warn('taxonomy v2: taxo_v2_tags.json missing, v2 not built'); return null; }
   const X = readJSON(path.join(ROOT, 'data', 'reference', 'taxonomy_crosswalk.json'));
   const V = makeTaxoV2(X, readJSON(CLP));
-  const counts = {};
+  const counts = {}, removed = {};
   const run = (kind, id, o) => {
     const r = V.build(kind, id, o.taxo || [], o.taxoSrc);
     o.taxo2 = r.taxo2; o.theme2 = r.theme2;
+    if (r.removed.length) removed[`${kind}:${id}`] = { name: o.name || o.family || null, desc: o.desc || null, removed: r.removed };
     for (const e of r.taxo2) counts[e.t] = (counts[e.t] || 0) + 1;
   };
   for (const t of Object.values(traits)) run('trait', t.id, t);
@@ -3576,7 +3577,12 @@ const taxonomy2 = (() => {
   for (const o of conditions) run('condition', o.key, o);
   const { unknown, ...st } = V.stats;
   for (const [t, n] of Object.entries(unknown)) warn(`taxonomy v2: value ${t} (${n}×) is not in the crosswalk / new_values`);
-  console.log(`  taxonomy v2: ${st.objects} objects (${st.withCode} with code) · ${st.entries} tags: code ${st.code} · v1 ${st.v1} · unverified ${st.unverified} · Involves ${st.involves} · event scopes ${st.eventScope} resolved / ${st.eventScopeOff} off · v1 triggers the code doesn't back → unverified ${st.trigUnverified}`);
+  console.log(`  taxonomy v2: ${st.objects} objects (${st.withCode} with code) · ${st.entries} code-backed tags (code ${st.code} · field / boss ${st.other}) · Involves ${st.involves} · event scopes ${st.eventScope} resolved / ${st.eventScopeOff} off`);
+  console.log(`  taxonomy v2 removed (not code-backed, user 2026-10-19): ${st.removed} tags on ${Object.keys(removed).length} objects · ${Object.entries(st.removedBy).map(([k, n]) => `${k} ${n}`).join(' · ')}`);
+  // the extract works through the removed list (HANDOFF_taxonomy_v2.md): written into its data_dump when present
+  const dumpDir = path.join(SRC, 'code', 'data_dump', 'taxo_v2');
+  if (fs.existsSync(dumpDir)) fs.writeFileSync(path.join(dumpDir, 'app_removed_not_code_backed.json'),
+    JSON.stringify({ _note: 'Written by su-build-calc build-data (tools/taxo-v2.mjs). v2 tags removed from the app because they are not code-backed (user 2026-10-19). v = original provenance; old = the v1 tag it came from; why = the reason when it was an unverified candidate. Confirm from code (then the code layer emits it) or leave it out.', stats: { tags: st.removed, objects: Object.keys(removed).length, by: st.removedBy }, objects: removed }, null, 1));
   const A = X.attributes, categories = V.vocabulary(counts);
   const G = V.groups(readJSON(path.join(ROOT, 'data', 'reference', 'taxonomy_groups.json')), categories);
   if (G.orphans.length) warn(`taxonomy v2: ${G.orphans.length} values in no mechanic group: ${G.orphans.join(', ')}`);

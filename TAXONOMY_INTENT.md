@@ -196,6 +196,8 @@ per hit (Extra repeats and area hits multiply them).
 - 2026-10-19: Build rules (user): v2 = union of the v1 tags through the crosswalk and the code layer, code deciding
   splits and attributes; undecided splits keep every candidate marked unverified; v2 ships next to v1, features move
   over one at a time, then one cutover retires v1.
+- 2026-10-19: Code-backed only (user, after reviewing Abnegation / Furor): the app ships only code, code_boss and field
+  tags. Everything else is removed and handed to the extract (F3). Supersedes the union / unverified build rules.
 - 2026-10-19: Extract S38 parked items ruled. New Trigger::Minion Lost; new Minions::Remove; leave-chance modifiers =
   Minions::Extend; damage immunity (IMMORTALITY, Rainbow Shield) = Damage::Take Less; Tempest = Targeting::All; enemy-side
   locks = Can't Manually X (scope Enemy); new Actions::Limit Repeats; chance to avoid debuffs = Debuffs::Immune; Glitch

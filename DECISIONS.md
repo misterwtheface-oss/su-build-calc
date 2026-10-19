@@ -135,6 +135,11 @@ a flat modifier to base: raised **×4/3 (+33%)**, lowered **×2/3 (−33%)**, ot
   trust); in-game observation beats stale CSVs (`Trait_REF` was stale for Marionette).
 
 ## Taxonomy rulings
+- **Taxonomy v2 ships code-backed tags only (user 2026-10-19).** Supersedes the "union" and "unverified candidates"
+  rules below. Kept: code (code layer, or v1 grounded in code_taxo), code_boss, field. Everything else (llm, token, audit,
+  build-time corrections, keyword, implied, undecided splits, guessed Targeting::All, v1 triggers the code lacks) is
+  removed and listed for the extract (`app_removed_not_code_backed.json`, HANDOFF_taxonomy_v2 F3). User: a trigger the
+  text names must exist in code (Furor's turn start); the extract finds it.
 - **Taxonomy v2 build rules (2026-10-19).** (1) Union: every v1 tag maps through the crosswalk (keeps approved v1
   corrections) and the extract's code tags are added; where the code tags a value its entries and attributes win, and it
   decides v1 splits. (2) Splits the code can't decide ship every candidate marked `unverified`, queued for review.

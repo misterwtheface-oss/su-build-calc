@@ -4,6 +4,14 @@ Every dated change entry, newest first (moved verbatim from Progress.md on 2026-
 to their own section and sorted by their date). Current state and open work: `Progress.md`, `BACKLOG.md`.
 New entries go at the TOP.
 
+## 2026-10-19 — Taxonomy v2: code-backed tags only
+- User ruling: remove anything that isn't code-backed. v2 now keeps only code, code_boss and field tags (14,884). Removed:
+  2,083 tags on 1,099 objects (llm 594, undecided splits 548 + 32 open polarities, token 311, guessed Targeting::All 265,
+  audit 105, v1 triggers the code lacks 95, implied / correction / keyword 132). Unverified tags no longer ship.
+- build-data writes the removed list into the extract's `data_dump/taxo_v2/app_removed_not_code_backed.json` each build;
+  the extract works through it (HANDOFF_taxonomy_v2 F3). Confirmed tags come back through the code layer.
+- Example: Furor now shows Death + Dead Creature Count; its Turn Start is with the extract to find in code.
+
 ## 2026-10-19 — Taxonomy v2: side narrowing, unverified triggers and guessed targeting
 - Side toggle beside every active tag chip (Taxonomy page, ＋ Filter bars, spell / gem and perk pickers): Either side →
   Your side (Self, Ally, Self or Ally, Adjacent) → Enemy side. Scope Any counts on both; a tag with no scope gets no

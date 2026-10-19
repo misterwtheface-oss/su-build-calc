@@ -15,6 +15,7 @@ const EVENT_SIDE = { damager: 'Performer', attacker: 'Performer', healer: 'Perfo
   gainer: 'Performer', 'turn creature': 'Performer', damaged: 'Receiver', attacked: 'Receiver', healed: 'Receiver',
   dying: 'Receiver', buffed: 'Receiver', debuffed: 'Receiver', recipient: 'Receiver', 'event target': 'Receiver' };
 const FIXED_SCOPE = { 'gem owner': 'Self', 'event:each creature': 'Any' };
+const CODE_BACKED = new Set(['code', 'code_boss', 'field']);
 const SCOPE_OF_NAME = (old) => / Enemy /.test(' ' + old.slice(old.indexOf('::') + 2) + ' ') ? 'Enemy'
   : / Ally /.test(' ' + old.slice(old.indexOf('::') + 2) + ' ') ? 'Self or Ally' : null;
 
@@ -46,7 +47,7 @@ export function makeTaxoV2(X, CL) {
     if (val.includes('|')) { const [a, b] = val.split('|'); return [cat + '::' + a, cat + '::' + a.replace(/\S+$/, b)]; }
     return [tag];
   };
-  const stats = { trigUnverified: 0, eventScope: 0, eventScopeOff: 0, objects: 0, withCode: 0, entries: 0, code: 0, v1: 0, unverified: 0, involves: 0, unknown: {} };
+  const stats = { removed: 0, removedBy: {}, other: 0, trigUnverified: 0, eventScope: 0, eventScopeOff: 0, objects: 0, withCode: 0, entries: 0, code: 0, v1: 0, unverified: 0, involves: 0, unknown: {} };
 
   // vocabulary: every value the crosswalk can produce + the code-only new values (+ open families)
   const vocab = new Set(Object.keys(X.new_values).filter(k => k !== '_note'));
@@ -79,7 +80,7 @@ export function makeTaxoV2(X, CL) {
       const base = { s: rule.kind === 'scope' ? SCOPE_OF_NAME(old) : null, r: rule.role || null, v };
       for (const t of tos) {
         const srcs = rule.source ? [rule.source] : sourced(t) && coSources.length ? coSources : [null];
-        for (const so of srcs) v1.push({ t, ...base, so });
+        for (const so of srcs) v1.push({ t, ...base, so, old, ...(v === 'unverified' ? { why: rule.kind === 'dup' ? 'outcome vs trigger the code did not settle' : 'split the code did not settle' } : {}) });
       }
     });
     // code entries: replace the v1-mapped entries of every value the code tags
@@ -89,7 +90,8 @@ export function makeTaxoV2(X, CL) {
       return alts.map(t => ({ t, s: c.scope || null, so: c.source || null, r: c.role || null, p: c.phase || null,
         // Targeting::All inferred only from "no picker call" is a guess while random-by-index picks are undecoded
         // (Abnegation hits a random enemy): unverified until the extract decodes it
-        d: c.delivery || null, v: alts.length > 1 || / no picker call/.test(c.picker || '') ? 'unverified' : 'code' }));
+        d: c.delivery || null, v: alts.length > 1 || / no picker call/.test(c.picker || '') ? 'unverified' : 'code',
+        ...(alts.length > 1 ? { why: 'polarity / direction open in the code layer' } : / no picker call/.test(c.picker || '') ? { why: 'Targeting::All inferred from no picker call (random-by-index undecoded)' } : {}) }));
     });
     // event-relative scopes → the trigger's scope (see EVENT_SIDE)
     const trig = codeE.filter(e => e.t.startsWith('Trigger::') && e.s && !e.s.startsWith('event:'));
@@ -102,12 +104,11 @@ export function makeTaxoV2(X, CL) {
       e.s = m.length === 1 ? m[0] : null; stats[m.length === 1 ? 'eventScope' : 'eventScopeOff']++;
     }
     const codeVals = new Set(codeE.map(e => e.t));
-    // Triggers: a v1-only trigger on an object whose trigger(s) the code decoded is unverified, not dropped. Some are old
-    // guesses (Abnegation's "Takes Damage", user 2026-10-19), but others are the player-facing trigger the code anchors
-    // elsewhere (Living Flame / Snuff: Burning ticks at turn start) or a part the code missed (Furor's Turn Start).
+    // Triggers: a v1-only trigger on an object whose trigger(s) the code decoded is an anomaly (unverified): an old guess
+    // (Abnegation's "Takes Damage") or a trigger the code layer missed (Furor's Turn Start).
     const codeTrig = codeE.some(e => e.t.startsWith('Trigger::'));
     const v1keep = v1.filter(e => !codeVals.has(e.t)).map(e => codeTrig && e.t.startsWith('Trigger::') && e.v !== 'unverified'
-      ? (stats.trigUnverified++, { ...e, v: 'unverified' }) : e);
+      ? (stats.trigUnverified++, { ...e, v: 'unverified', why: 'trigger the code layer does not have' }) : e);
     const all = [...codeE, ...v1keep];
     // dedupe on the full attribute key (an unverified duplicate of a firm entry goes)
     const seen = new Map();
@@ -118,20 +119,30 @@ export function makeTaxoV2(X, CL) {
     }
     // an unverified candidate drops when the same value is already firm on the object
     const firm = new Set([...seen.values()].filter(e => e.v !== 'unverified').map(e => e.t));
-    const out = [...seen.values()].filter(e => e.v !== 'unverified' || !firm.has(e.t));
-    // themes: derived from the tags + Source + what the object is; Involves for old themes nothing re-derives
+    const merged = [...seen.values()].filter(e => e.v !== 'unverified' || !firm.has(e.t));
+    // CODE-BACKED ONLY (user 2026-10-19: "remove anything that isn't code backed"; the extract works through the rest).
+    // Kept: code (code layer or v1 code-grounded), code_boss, field (the game's own data fields). Removed and returned:
+    // token / llm / audit / correction (build-time text fixes) / keyword / derived / every unverified candidate.
+    const removed = merged.filter(e => !CODE_BACKED.has(e.v));
+    const out = merged.filter(e => CODE_BACKED.has(e.v));
+    // themes: derived from the tags + Source + what the object is; Involves for old code-grounded themes nothing re-derives
     const tags = out.map(e => e.t);
     const theme = new Set(themesOf(tags));
     // Source themes; a trait's spell-type "deals damage" (Inflict + Spell) is Damage, not Cast (crosswalk _theme_note)
     for (const e of out) if (e.so && sourced(e.t)) { theme.add('Damage'); if (!(e.t === 'Damage::Inflict' && e.so === 'Spell')) theme.add(SRC.themes[e.so]); }
     for (const th of X.object_themes[kind] || []) theme.add(th);
-    for (const [th, prov] of oldThemes) if (!theme.has(th)) { out.push({ t: 'Involves::' + th, v: prov }); theme.add(th); stats.involves++; }
+    for (const [th, prov] of oldThemes) if (!theme.has(th)) {
+      if (CODE_BACKED.has(prov)) { out.push({ t: 'Involves::' + th, v: prov }); theme.add(th); stats.involves++; }
+      else removed.push({ t: 'Involves::' + th, v: prov });
+    }
     for (const e of out) {
-      stats.entries++; stats[e.v === 'code' ? 'code' : e.v === 'unverified' ? 'unverified' : 'v1']++;
+      stats.entries++; stats[e.v === 'code' ? 'code' : 'other']++;
       if (!known(e.t)) stats.unknown[e.t] = (stats.unknown[e.t] || 0) + 1;
       for (const k of ['s', 'so', 'r', 'p', 'd']) if (e[k] == null) delete e[k];
+      delete e.old; delete e.why;
     }
-    return { taxo2: out, theme2: [...theme].sort() };
+    for (const e of removed) { stats.removed++; stats.removedBy[e.v] = (stats.removedBy[e.v] || 0) + 1; for (const k of ['s', 'so', 'r', 'p', 'd']) if (e[k] == null) delete e[k]; }
+    return { taxo2: out, theme2: [...theme].sort(), removed };
   }
 
   // the v2 vocabulary in layer order (TAXONOMY_INTENT.md), values by use
