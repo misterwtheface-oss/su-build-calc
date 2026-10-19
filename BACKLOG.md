@@ -206,6 +206,15 @@ a decompile → write `_su_extract/code/HANDOFF_<topic>.md` and don't guess (bat
   **2026-10-17:** asked in `_su_extract/code/HANDOFF_macro_trait_order.md` (list source, stored parameter = id or name, Hydranox order).
 
 ## Feature ideas (user backlog, not started)
+- [ ] **Consolidation review** (user 2026-10-19). Sweep the app for near-identical elements that each have their own
+  implementation, and fold each set into one shared implementation. Precedents: the **shared spell container**
+  (`spellRow` / `spellGemCard`: one spell row for the Spell, Artifact and Nether Stone wizards and the library preview,
+  which also fixed the drift where one copy centred its "from X" line) and **`TagFilter`** (2026-10-19: six separate tag
+  filters became one; the spell / anointment / trait-item copies had silently broken on Taxonomy v2). Likely candidates
+  to check: the Class / Race / Spec / False God facet chips, the ★ Bookmarked toggles, the sort segments (`sortPick`
+  users), the result-row layouts (Taxonomy page `line()` vs perk / relic / card rows), the library list + preview panels
+  (artifacts, nether stones, spell gems), and the confirm/clear-armed buttons. Output: a list of the sets found, with the
+  shared shape proposed for each, for the user to pick from before refactoring.
 - [ ] **DPS / effective-stat simulation** from `damageModel` (spell & melee, crit/dodge, defending). Class advantage is now
   code-known (×2 / ×0.5, `_su_extract/code/COMBAT_RULES.md`); expose it as a toggle. Spells match on the gem's class
   (Class Swap first), not the caster's. Effect formulas for in-app compute:
