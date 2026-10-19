@@ -135,6 +135,11 @@ a flat modifier to base: raised **×4/3 (+33%)**, lowered **×2/3 (−33%)**, ot
   trust); in-game observation beats stale CSVs (`Trait_REF` was stale for Marionette).
 
 ## Taxonomy rulings
+- **Taxonomy v2 build rules (2026-10-19).** (1) Union: every v1 tag maps through the crosswalk (keeps approved v1
+  corrections) and the extract's code tags are added; where the code tags a value its entries and attributes win, and it
+  decides v1 splits. (2) Splits the code can't decide ship every candidate marked `unverified`, queued for review.
+  (3) Rollout: v2 ships next to v1, app features move over one by one behind a script flag, one cutover retires v1
+  after the CSV parity pass.
 - **Taxonomy v2 (2026-10-18).** Later the same day: Source attribute ratified, Targeting category added, Ignore Defense → Calculation, v2 maps to decoded game functions rather than mirroring v1.
 - **Taxonomy v2 extract S38 parked items (2026-10-19).** New Trigger::Minion Lost, Minions::Remove, Actions::Limit Repeats. Leave-chance = Minions::Extend; damage immunity = Take Less; Tempest = Targeting::All; enemy-side locks = Can't Manually X (Enemy); chance to avoid debuffs = Debuffs::Immune; Glitch In The System = Can't Gain + Apply; Master of Carbuncles / Storms = More Potency only. Lord of Undeath note waits for an in-game check.
 - **Taxonomy v2 values ratified (2026-10-19).** Every domain approved by the user; log in `TAXONOMY_INTENT.md`. Changes from the draft: Extra = same creature + same action; locks are "Can't Manually X"; Inflict Direct / Indirect → Damage::Inflict (Source carries type; a trait's "deals damage" is spell-type); "as if X% stat" → Formula, Frenzy → Hit Resolution, plain multipliers → Deal More, new Calculation::Class Advantage; Buffs::Can't Gain; Debuffs::Bypass Protection; Stats::Set (general overwrite); new Condition::Turn Number; Non-Ultimate / Non-Ethereal fold into the base kind; Spell Gems keep the code split (Charges = charge writes).

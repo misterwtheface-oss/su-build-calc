@@ -131,7 +131,8 @@ effect domain.
 1. User ratifies the value lists. **Done 2026-10-19** (every domain; see the Log).
 2. Extract handoff `_su_extract/code/HANDOFF_taxonomy_v2.md` (written 2026-10-18): decode the split targets (damage type, calling host for Extra vs Auto, stat event vs getter,
    polarity), Role / Phase per trigger clause, effect-target scope, and the target picker.
-3. build-data: v2 tags + attributes; Theme derivation replaces the RULES map; the app filter gets the attribute chips.
+3. build-data: v2 tags + attributes. **Done 2026-10-19** (shipped next to v1; `tools/taxo-v2.mjs`). Then each app feature
+   moves to v2 behind a script flag, and the filter gets the attribute chips.
 4. Community CSV parity pass ([[feedback_su_app_csv_parity]]), then v1 retires.
 
 ### Open questions (to rule on)
@@ -167,6 +168,9 @@ per hit (Extra repeats and area hits multiply them).
 - 2026-10-19: Condition, Scales With and the reference lists (Named Buff / Debuff / Minion, Stat, Trait Kind, Creature
   Type, Spell Class / Kind, Named Spell) ratified. New Condition::Turn Number (~14 objects). Non-Ultimate / Non-Ethereal
   fold into Ultimate / Ethereal Spells. **All v2 values are now ratified**; next is build-data v2.
+- 2026-10-19: Build rules (user): v2 = union of the v1 tags through the crosswalk and the code layer, code deciding
+  splits and attributes; undecided splits keep every candidate marked unverified; v2 ships next to v1, features move
+  over one at a time, then one cutover retires v1.
 - 2026-10-19: Extract S38 parked items ruled. New Trigger::Minion Lost; new Minions::Remove; leave-chance modifiers =
   Minions::Extend; damage immunity (IMMORTALITY, Rainbow Shield) = Damage::Take Less; Tempest = Targeting::All; enemy-side
   locks = Can't Manually X (scope Enemy); new Actions::Limit Repeats; chance to avoid debuffs = Debuffs::Immune; Glitch

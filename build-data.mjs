@@ -14,6 +14,7 @@ import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { stampCache } from './tools/stamp-cache.mjs';
 import { triggerScope, setRaces } from './tools/trigger-scope.mjs';
+import { makeTaxoV2 } from './tools/taxo-v2.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = __dirname;
@@ -3552,6 +3553,35 @@ const bosses = (() => {
   console.log(`  trigger scope: ${nP} perks · ${nT} traits${scopeWarn.length ? ` · ⚠ ${scopeWarn.join(' · ')}` : ''}`);
 }
 
+// ── Taxonomy v2 (TAXONOMY_INTENT.md, ratified 2026-10-19), shipped NEXT TO v1 until the cutover (user 2026-10-19: parallel,
+// then one cutover). tools/taxo-v2.mjs: each object's final v1 tags through the crosswalk ∪ the extract's code layer
+// (taxo_v2_tags.json; code decides splits and supplies scope / source / role / phase / delivery). Undecided splits keep
+// every candidate as 'unverified'. Objects carry taxo2 [{t, s?, so?, r?, p?, d?, v}] and theme2 (derived themes).
+const taxonomy2 = (() => {
+  const CLP = path.join(MODEL, 'taxo_v2_tags.json');
+  if (!fs.existsSync(CLP)) { warn('taxonomy v2: taxo_v2_tags.json missing, v2 not built'); return null; }
+  const X = readJSON(path.join(ROOT, 'data', 'reference', 'taxonomy_crosswalk.json'));
+  const V = makeTaxoV2(X, readJSON(CLP));
+  const counts = {};
+  const run = (kind, id, o) => {
+    const r = V.build(kind, id, o.taxo || [], o.taxoSrc);
+    o.taxo2 = r.taxo2; o.theme2 = r.theme2;
+    for (const e of r.taxo2) counts[e.t] = (counts[e.t] || 0) + 1;
+  };
+  for (const t of Object.values(traits)) run('trait', t.id, t);
+  for (const sp of specs) for (const pk of sp.perks || []) run('perk', pk.key, pk);
+  for (const o of spells) run('spell', o.key ?? o.id, o);
+  for (const o of relics) run('relic', o.id, o);
+  for (const o of cards) run('card', o.id, o);
+  for (const o of conditions) run('condition', o.key, o);
+  const { unknown, ...st } = V.stats;
+  for (const [t, n] of Object.entries(unknown)) warn(`taxonomy v2: value ${t} (${n}×) is not in the crosswalk / new_values`);
+  console.log(`  taxonomy v2: ${st.objects} objects (${st.withCode} with code) · ${st.entries} tags: code ${st.code} · v1 ${st.v1} · unverified ${st.unverified} · Involves ${st.involves} · event scopes ${st.eventScope} resolved / ${st.eventScopeOff} off`);
+  const A = X.attributes;
+  return { categories: V.vocabulary(counts),
+    attributes: { scope: A.scope.values, source: A.source.values, role: A.role.values, phase: A.phase.values, delivery: A.delivery.values } };
+})();
+
 const SU_DATA = {
   meta: {
     generated: new Date().toISOString(),
@@ -3582,6 +3612,7 @@ const SU_DATA = {
       .filter(c => c.category !== 'Effect Limitation')
       .map(c => ({ ...c, values: c.values.filter(v => !KILLED_VALUES.has(c.category + '::' + v)) })),
     status: taxonomy.status },
+  taxonomy2,                // v2 vocabulary + attribute values (taxo2 on each object); app moves over feature by feature
   artifact: { ...artGroup, slotUnlocks: artSlotUnlocks },
   artTierMinLevel,          // code (inv_ArtifactIcon): min level for artifact icon tiers 1..6
   traitItems,

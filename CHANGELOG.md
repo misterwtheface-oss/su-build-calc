@@ -4,6 +4,16 @@ Every dated change entry, newest first (moved verbatim from Progress.md on 2026-
 to their own section and sorted by their date). Current state and open work: `Progress.md`, `BACKLOG.md`.
 New entries go at the TOP.
 
+## 2026-10-19 — Taxonomy v2 data layer (next to v1, no UI change)
+- New `tools/taxo-v2.mjs`, run by build-data: every trait, perk, spell, relic, card and condition now also carries `taxo2`
+  (v2 tags with scope / source / role / phase / delivery and provenance) and `theme2` (derived themes); `taxonomy2` ships
+  the v2 vocabulary in layer order plus the attribute values.
+- Sources: the object's final v1 tags through `taxonomy_crosswalk.json`, united with the extract's code layer
+  (`taxo_v2_tags.json`, S38d). Code decides splits and supplies attributes; event-relative effect scopes take the
+  trigger's scope when the sides match.
+- 16,552 tags: 15,012 code · 959 v1-only · 581 unverified split candidates · 675 Involves. All 3,646 objects joined.
+- The app still reads v1; features move over one by one (BACKLOG Taxonomy v2).
+
 ## 2026-10-19 — Taxonomy v2: extract answers + rulings (no data change)
 - Extract S37 decoded the v2 handoff (`taxo_v2_tags.json`). User rulings: Delivery attribute (Event / Direct) on stat
   Gain / Lose and buff / debuff Apply; Phase value During; Xyrxzy's Control = Extra Attack; Cold Blood is not Bounds.
