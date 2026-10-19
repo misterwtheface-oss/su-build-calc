@@ -126,7 +126,9 @@ a decompile → write `_su_extract/code/HANDOFF_<topic>.md` and don't guess (bat
   App-side note: worklist trait ids are app ids (output keys `trait:<app id>`, runtime ids alongside).
   **All values ratified 2026-10-19.** Extract follow-ups listed in the handoff (re-run build_taxo_v2.py with the renames). Next:
   ~~user ratifies the value lists~~ → ~~build-data v2~~ (DONE 2026-10-19: `taxo2` / `theme2` on every object + `taxonomy2`,
-  `tools/taxo-v2.mjs`) → app features onto v2 behind a script flag: taxonomy view + filters with attribute chips, spell /
+  `tools/taxo-v2.mjs`) → app features onto v2 behind a script flag (`FEATURES.taxoV2`, on): ~~taxonomy view + filters +
+  pickers by mechanic group~~ (DONE 2026-10-19; groups DRAFT for the user's review, `taxonomy_groups.json`), attribute
+  refine chips (scope / source / phase / delivery) on an active filter, spell /
   gem pickers, creature Triggers section, synergy, `noDmgStat`, relic per-rank tags → review queue for the 581 unverified
   candidates and 675 Involves → CSV parity → one cutover commit retires v1. Absorbs the Calculation sweep below, the
   parked S24 Creature is Damaged proposal and the untagged-traits review.

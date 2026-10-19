@@ -3577,8 +3577,11 @@ const taxonomy2 = (() => {
   const { unknown, ...st } = V.stats;
   for (const [t, n] of Object.entries(unknown)) warn(`taxonomy v2: value ${t} (${n}×) is not in the crosswalk / new_values`);
   console.log(`  taxonomy v2: ${st.objects} objects (${st.withCode} with code) · ${st.entries} tags: code ${st.code} · v1 ${st.v1} · unverified ${st.unverified} · Involves ${st.involves} · event scopes ${st.eventScope} resolved / ${st.eventScopeOff} off`);
-  const A = X.attributes;
-  return { categories: V.vocabulary(counts),
+  const A = X.attributes, categories = V.vocabulary(counts);
+  const G = V.groups(readJSON(path.join(ROOT, 'data', 'reference', 'taxonomy_groups.json')), categories);
+  if (G.orphans.length) warn(`taxonomy v2: ${G.orphans.length} values in no mechanic group: ${G.orphans.join(', ')}`);
+  console.log(`  taxonomy v2 groups: ${G.groups.map(g => `${g.name} ${g.keys.length}`).join(' · ')}`);
+  return { categories, groups: G.groups,
     attributes: { scope: A.scope.values, source: A.source.values, role: A.role.values, phase: A.phase.values, delivery: A.delivery.values } };
 })();
 

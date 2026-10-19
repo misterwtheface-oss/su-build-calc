@@ -136,5 +136,14 @@ export function makeTaxoV2(X, CL) {
     const cats = [...LAYERS.filter(c => byCat[c]), ...Object.keys(byCat).filter(c => !LAYERS.includes(c)).sort()];
     return cats.map(c => ({ category: c, values: byCat[c].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).map(([v]) => v) }));
   }
-  return { build, vocabulary, stats };
+  // mechanic groups (data/reference/taxonomy_groups.json): expand 'theme:X' + tag patterns over the vocabulary.
+  // Returns [{ name, keys: ['Cat::Value', …] }] in vocabulary order + the values no group reaches.
+  function groups(G, categories) {
+    const all = categories.flatMap(c => c.values.map(v => c.category + '::' + v));
+    const pats = (inc) => inc.flatMap(p => p.startsWith('theme:') ? [...(X.themes[p.slice(6)] || []), 'Involves::' + p.slice(6)] : [p]);
+    const out = G.groups.map(g => { const ps = pats(g.include); return { name: g.name, keys: all.filter(t => ps.some(p => match(p, t))) }; });
+    const reached = new Set(out.flatMap(g => g.keys));
+    return { groups: out.filter(g => g.keys.length), orphans: all.filter(t => !reached.has(t)) };
+  }
+  return { build, vocabulary, groups, stats };
 }

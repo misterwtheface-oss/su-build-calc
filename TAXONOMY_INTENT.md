@@ -112,6 +112,31 @@ provenance, so nothing is lost. Each Involves tag is a review item: either a nar
 theme was wrong (drop it). `Involves::Adjacency / Artifact / Relic / Personality` are permanent: those themes have no
 effect domain.
 
+### Mechanic groups (how the app browses tags) — `DRAFT 2026-10-19`
+User request (2026-10-19): the browse containers group tags by the mechanic they relate to, not by category. A tag can
+sit in more than one group (Calculation::Attack Formula is in Attack Effects and Damage). Defined in
+`data/reference/taxonomy_groups.json`, built from the theme lists, so a group and its theme can't drift apart; build-data
+warns on any value no group reaches (none today).
+
+| Group | Takes |
+|---|---|
+| Attack Effects | themes Attack, Dodge, Critical, Intercept; Actions::Limit Repeats |
+| Spell Gem / Cast Effects | themes Cast, Spell Gems; Spell Class, Spell Kind, Named Spell; Actions::Limit Repeats |
+| Defend & Provoke | themes Defend, Provoke |
+| Damage | theme Damage (Damage, Calculation, Trigger::Damage, damage Scales With); Involves::Indirect Damage |
+| Health & Healing | theme Healing; Condition::Health Threshold; Scales With::Current / Missing Health % |
+| Death & Resurrection | theme Resurrection; Trigger::Death; Life::Execute, Survive Lethal; Condition::Is Dead / Is Alive; Dead / Living Creature Count |
+| Buffs · Debuffs · Minions · Stats | their themes (Minions also Trigger::Minion Lost) |
+| Turns & Timeline | themes Turn Counter, Timeline; Trigger::Battle Start / Turn Start / Turn End; Condition::Turn Number / Not Their Turn / Has Done Action / Undamaged This Turn; Scales With::Turn Count |
+| Traits | Traits, Trait Kind, Trigger::Trait Activation, Scales With::Traits Gained Count |
+| Class & Race | themes Creature Class, Creature Race; Condition::Party All Same Type / Is Type; Scales With::Type Count |
+| Party & Targeting | Targeting; Condition::Creatures Missing; Scales With::Missing Creature Count; theme Adjacency |
+| Equipment & Personality | themes Artifact, Relic, Personality |
+
+Inside a group each row names its category ("Trigger: Takes Damage"). Triggers whose meaning depends on the creature's
+part show readable role rows (Attacks / Is Attacked, Deals / Takes Damage, Kills / Dies, Heals / Is Healed, Is Buffed /
+Buffs Someone, Is Debuffed / Debuffs Someone, Critically Hits / Is Critically Hit) beside the "(any)" row.
+
 ### Crosswalk and check
 `data/reference/taxonomy_crosswalk.json` maps every v1 value (`new_values` lists v2 values with no v1 source).
 `node tools/taxo_crosswalk.mjs` applies it to the shipped data. Result on 2026-10-18 data (3,646 objects):

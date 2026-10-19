@@ -4,6 +4,16 @@ Every dated change entry, newest first (moved verbatim from Progress.md on 2026-
 to their own section and sorted by their date). Current state and open work: `Progress.md`, `BACKLOG.md`.
 New entries go at the TOP.
 
+## 2026-10-19 — Taxonomy view on v2, browsed by mechanic
+- `FEATURES.taxoV2` (on): the Taxonomy page, every ＋ Filter tag picker (creatures, cards, relics, perks, spell / gem
+  pickers) and the entity detail tag list read the v2 tags. Other features (Triggers, synergy, spell roles) still read v1.
+- Browse containers are now mechanic groups (user request): Attack Effects, Spell Gem / Cast Effects, Defend & Provoke,
+  Damage, Health & Healing, Death & Resurrection, Buffs, Debuffs, Minions, Stats, Turns & Timeline, Traits, Class & Race,
+  Party & Targeting, Equipment & Personality. DRAFT in `data/reference/taxonomy_groups.json`, built from the theme lists;
+  build-data reports any value no group reaches (none).
+- Rows name their category ("Trigger: Takes Damage"). Role-dependent triggers get readable rows (Deals / Takes Damage,
+  Kills / Dies, …) beside "(any)". Detail chips show scope, source, phase and Direct delivery; unverified tags are dashed.
+
 ## 2026-10-19 — Taxonomy v2 data layer (next to v1, no UI change)
 - New `tools/taxo-v2.mjs`, run by build-data: every trait, perk, spell, relic, card and condition now also carries `taxo2`
   (v2 tags with scope / source / role / phase / delivery and provenance) and `theme2` (derived themes); `taxonomy2` ships
