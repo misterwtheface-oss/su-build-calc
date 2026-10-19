@@ -258,7 +258,7 @@ Known limits + planned work, roughly in priority order (all now cheap to impleme
 - [ ] Animatus party rules NOT enforced by the app (user ground truth 2026-10-04): Animatus is a unique standalone
   creature — never fusion material, always party slot 1, at most one. The picker currently allows any slot,
   fusing, and duplicates. (User: "one of a few" such creatures — the others aren't identified yet.)
-- [ ] Gray Matter / Army of Gods / Introversion / Total Deprivation are anointable in data but only honoured from
+- [ ] Army of Gods / Introversion / Total Deprivation are anointable in data but only honoured from
   the current spec (`via:"spec"`), never as anointments.
 - [ ] Introversion + Total Deprivation require rank > 0, though their text says "always active while your
   specialization is …, even if you haven't allocated any Perk Points".

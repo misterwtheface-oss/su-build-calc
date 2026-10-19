@@ -900,29 +900,6 @@ for (const g of FALSE_GODS) {
   falseGods.push({ key: g.key, name: g.name, img: rel, ...(hasIcon ? { icon: iconRel } : {}) });
 }
 
-// ── spell-slot grants — perks/traits that grant a creature EXTRA spell-gem slots ──
-// (the artifact's own 1 spell slot is separate; those "Spell Slot" texts are excluded by requiring
-//  "gains N Spell Slot"). Code path bc_CritGetEmptySpellSlots is opaque GML VM, so ground on the text.
-// In practice only Animator's "Gray Matter" grants creature slots (Your Animatus gains <N> Spell Slot(s)).
-const SLOT_GRANT_RE = /gains?\s+(?:<(\d+)>|(\d+))\s+spell\s+slot/i;
-const raceSet = new Set(creatures.map(c => c.race).filter(Boolean));
-const grantTarget = (desc) => {
-  const m = desc.match(/\bYour\s+([A-Z][A-Za-z]+)\b/);   // "Your Animatus …" → race/type
-  if (!m) return null;
-  const w = m[1];
-  return raceSet.has(w) ? w : (raceSet.has(w.replace(/s$/, '')) ? w.replace(/s$/, '') : w);
-};
-const spellSlotGrants = [];
-for (const s of specs) for (const p of s.perks) {
-  const m = (p.desc || '').match(SLOT_GRANT_RE); if (!m) continue;
-  spellSlotGrants.push({ kind: 'perk', specId: s.id, specLabel: s.label, key: p.key, name: p.name, targetRace: grantTarget(p.desc || ''), perRank: +(m[1] || m[2]) });
-}
-for (const id in traits) {
-  const t = traits[id]; const m = (t.desc || '').match(SLOT_GRANT_RE); if (!m) continue;
-  spellSlotGrants.push({ kind: 'trait', traitId: t.id, name: t.name, targetRace: grantTarget(t.desc || ''), self: /this creature/i.test(t.desc), perRank: +(m[1] || m[2]) });
-}
-console.log(`  spell-slot grants: ${spellSlotGrants.length} (${spellSlotGrants.map(g => g.name).join(', ') || 'none'})`);
-
 // ── artifacts (container properties) ──
 const artRef = readJSON(path.join(REF, 'artifacts_ref.json')).records;
 const artGroup = { primary: [], stat: [], trick: [] };
@@ -2962,14 +2939,8 @@ const TRAIT_REJECT = fs.existsSync(APPROVED_PATH) ? (readJSON(APPROVED_PATH).tra
 const effects = (() => {
   const rules = [];
   const add = (r, prov) => rules.push({ ...r, prov });
-  // spell-slot grants (from SLOT_GRANT_RE above). Perk grants count only from the current spec;
-  // trait grants only on the bearer (unless `self`, filtered by the bearer's race).
-  for (const g of spellSlotGrants) {
-    if (g.kind === 'perk') add({ id: `gemslots-perk-${g.specId}-${g.key}`, src: { kind: 'perk', spec: g.specId, key: g.key, via: 'spec' },
-      op: 'gemSlots', perRank: g.perRank, target: g.targetRace ? { race: g.targetRace } : null }, 'generated');
-    else add({ id: `gemslots-trait-${g.traitId}`, src: { kind: 'trait', id: g.traitId }, op: 'gemSlots', value: g.perRank,
-      target: g.self || !g.targetRace ? null : { race: g.targetRace } }, 'generated');
-  }
+  // spell-gem slot grants are hand-authored in effect_rules.json from the code (scr_GetCreatureStat case 5, "spellslots");
+  // the guard after validation checks them against the extract's code layer.
   // spell-gem class permissions (the app's former runtime regexes over trait/perk text)
   const ANYCLASS_RE = /equip (all |spell gems from any class|.*from any class)|regardless of (their|its) class/i;
   for (const id in traits) {
@@ -2999,6 +2970,16 @@ const effects = (() => {
     else if (r.src.kind === 'trait') { if (!traits[r.src.id]) throw new Error(`effect rule ${r.id}: trait ${r.src.id} not found`); }
     else throw new Error(`effect rule ${r.id}: unknown source kind ${r.src.kind}`);
   }
+  // guard: every object the code layer shows adding spell-gem slots (taxo_v2_tags "Spell Gems::Extra Gem Slot", sited in
+  // scr_GetCreatureStat case 5) has a gemSlots rule, and every gemSlots rule is one of them
+  { const f = path.join(MODEL, 'taxo_v2_tags.json');
+    if (!fs.existsSync(f)) warn('gemSlots guard: taxo_v2_tags.json missing');
+    else {
+      const code = new Set(Object.entries(readJSON(f).objects || {}).filter(([, v]) => (v.tags || []).some(t => t.tag === 'Spell Gems::Extra Gem Slot')).map(([k]) => k));
+      const have = new Set(rules.filter(r => r.op === 'gemSlots').map(r => r.src.kind === 'perk' ? `perk:${r.src.key}` : `trait:${r.src.id}`));
+      for (const k of code) if (!have.has(k)) err(`gemSlots: code layer adds spell-gem slots for ${k}, no effect rule`);
+      for (const k of have) if (!code.has(k)) err(`gemSlots: effect rule for ${k}, but the code layer has no spell-slot clause`);
+    } }
   const byOp = {}; for (const r of rules) byOp[r.op] = (byOp[r.op] || 0) + 1;
   console.log(`  effect rules: ${rules.length} (${Object.entries(byOp).map(([k, v]) => `${k} ${v}`).join(' · ')}; manual ${rules.filter(r => r.prov === 'manual').length})`);
   return { rules };

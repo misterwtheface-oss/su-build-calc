@@ -111,17 +111,27 @@
     }
     const raceOf = (slot) => { const c = env.CREA.get(slot.cid); return c ? c.race : null; };
     const targets = (t, slot) => !t || (t.race == null || raceOf(slot) === t.race);
-    // spell-gem slots: base 3 + the equipped artifact's "Spell Gem Slots" property (trick slot or a socketed nether
-    // stone; flat +N by rank) + perk grants (targeted by race) + trait grants on the bearer
-    const SLOT_STAT = "Spell Gem Slot";
+    // spell-gem slots = the game's scr_GetCreatureStat case 5 ("spellslots"): base 3 + the equipped artifact's "Spell Gem
+    // Slots" property (trick slot or a socketed nether stone; flat +N by rank) + every gemSlots rule (effect_rules.json,
+    // each with its code site). A rule applies to this creature when its source is live (perk: rank via scr_PerkLevel, so
+    // anointments count; trait: on this creature, or scope "party" = on any creature on your side) and `target` (race)
+    // matches. Amount: perRank x rank (perks) or value, x `per`: raceOnSide (your creatures of the target race),
+    // uniqueClasses (distinct classes among your creatures), missingCreatures (6 - party size).
+    const SLOT_STAT = "Spell Gem Slot", PARTY_SIZE = 6;
     function gemSlotMax(slot) {
       if (!env.CREA.get(slot.cid)) return GEM_SLOT_BASE;
       let max = GEM_SLOT_BASE;
       for (const c of artifactContribs(env.resolveArtifact(slot))) if (c.stat === SLOT_STAT) max += c.value || 0;
+      const party = env.build().slots.filter(s => env.CREA.get(s.cid));
       for (const r of rules) {
-        if (r.op !== "gemSlots") continue;
-        if (r.src.kind === "perk") { const rank = perkRuleRank(r.src); if (rank > 0 && targets(r.target, slot)) max += r.perRank * rank; }
-        else if (env.slotTraitIds(slot).includes(r.src.id) && targets(r.target, slot)) max += r.value;
+        if (r.op !== "gemSlots" || !targets(r.target, slot)) continue;
+        let amt;
+        if (r.src.kind === "perk") { const rank = perkRuleRank(r.src); if (!rank) continue; amt = r.perRank != null ? r.perRank * rank : r.value; }
+        else { const on = r.scope === "party" ? party.some(s => slotHasTrait(s, r.src.id)) : slotHasTrait(slot, r.src.id); if (!on) continue; amt = r.value; }
+        if (r.per === "raceOnSide") amt *= party.filter(s => raceOf(s) === r.target.race).length;
+        else if (r.per === "uniqueClasses") amt *= new Set(party.map(s => env.slotClass(s)).filter(Boolean)).size;
+        else if (r.per === "missingCreatures") amt *= Math.max(0, PARTY_SIZE - party.length);
+        max += amt;
       }
       return max;
     }

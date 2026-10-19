@@ -17,8 +17,9 @@ only when a genuinely new *kind* of mechanic appears, and then it is written onc
    `foldCore` (% per core stat) feeds `finalStats`; `foldBonus` (core + non-core by property) feeds the
    artifact / nether bonus tables. `slotBonusPct(slot)` = artifact + relic, 2-dp rounded (the stat grid's Bonus).
 2. **Rules** — `D.effects.rules`, built + validated by `build-data.mjs` from two tiers (each rule carries `prov`):
-   - `generated` — derived from shipped descriptions: spell-slot grants (`SLOT_GRANT_RE`) and spell-gem class
-     permissions (the exact patterns `app.js` used at runtime before the engine).
+   - `generated` — derived from shipped descriptions: spell-gem class permissions (the exact patterns `app.js` used
+     at runtime before the engine). Spell-gem slot grants are no longer text-derived (2026-10-19): they're `manual`
+     rules from the code (`scr_GetCreatureStat` case 5), and build-data checks them against the extract's code layer.
    - `manual` — `data/reference/effect_rules.json` (hand-authored; `_why` notes are stripped at build).
 3. **Ops** — the evaluator for each rule kind (below). The engine has no per-trait/per-perk branches.
 
@@ -71,7 +72,7 @@ live on a party slot that carries the trait (innate / fusion / artifact / nether
 |---|---|---|
 | `cap` | `cap` (anoints/creatures/avatars), `mode` add\|set, `value`, `perRank` | `FX.cap(name)` — base `CAP_BASE`, adds, then sets |
 | `ignore` | `what` (relics / fusionTraits) | `FX.ignores(what)` |
-| `gemSlots` | `perRank` (perk) / `value` (trait), `target` | `FX.gemSlotMax(slot)` — base 3 + the equipped artifact's "Spell Gem Slots" property (trick slot or socketed nether stone, stat `Spell Gem Slot`, flat) |
+| `gemSlots` | `perRank` (perk) / `value`, `target` {race}, `scope` party (trait on any of your creatures; default: on this one), `per` raceOnSide \| uniqueClasses \| missingCreatures | `FX.gemSlotMax(slot)` = the game's `scr_GetCreatureStat` case 5: base 3 + the equipped artifact's "Spell Gem Slots" property (trick slot or socketed nether stone, stat `Spell Gem Slot`, flat) + every rule. 10 rules, each with its code site in `_why`; build-data errors if the code layer's "Extra Gem Slot" objects and the rules disagree |
 | `equip.anyClass` | `scope` self\|party | `FX.equipClasses(slot, ownClass)` → null = any |
 | `equip.addClass` | `cls` | `FX.equipClasses` |
 | `stat.share` | `target`, `from`, `stats`, `pctPerRank`, `phase` | `FX.battleStart()` → per slot `{gain, ledger}` |
@@ -120,7 +121,7 @@ naming a perk/trait that doesn't exist (a typo can never silently do nothing).
   Molecular Betrayal / Gray Matter target it by race, which is equivalent under that rule. The app doesn't
   enforce the rule yet (Progress.md backlog).
 - Preserved pre-engine quirks (tracked in Progress.md → Backlog → Effect-engine quirks) (now explicit rules, so each is a one-line change if the game says otherwise):
-  Army of Gods / Introversion / Total Deprivation / Gray Matter are spec-only (`via:"spec"`) although the data
+  Army of Gods / Introversion / Total Deprivation are spec-only (`via:"spec"`) although the data
   marks them anointable; Introversion and Total Deprivation require rank > 0 though their text says "always
   active while your specialization is …"; Highborn assumes the ascended +5. The text-derived equip rules
   inherit the old patterns: Master of Gemlings ("If all … are Gemlings") and Spectrometry ("Your Spelljuggler

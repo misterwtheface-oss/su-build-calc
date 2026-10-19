@@ -4,6 +4,21 @@ Every dated change entry, newest first (moved verbatim from Progress.md on 2026-
 to their own section and sorted by their date). Current state and open work: `Progress.md`, `BACKLOG.md`.
 New entries go at the TOP.
 
+## 2026-10-19 — Spell-gem slots from the code (Adept Wizarding and 8 more)
+- User: spell gem slots for Adept Wizarding weren't working. Cause: slot grants were found by a text pattern ("gains N
+  Spell Slot"), which only caught Gray Matter. The game's slot count (`scr_GetCreatureStat` case 5, "spellslots") has
+  10 grant clauses, which the extract's code layer already tags "Extra Gem Slot".
+- All 10 are now effect rules with their code site: Adept Wizarding (+1 to all your creatures if any has it),
+  Prismagic and Spell Tap (+3 on the bearer), Conduit Strike (+1 per unique class in your party), Master of
+  Shapeshifters / Proof Is In the Pudding (your Shapeshifters / Dumplings, +1 per one on your side), Expanded Mind
+  (+1 per rank), Sovereignty (+1 per creature missing from the party), Taste For Treasure (+5 for Guardians), Gray
+  Matter (Animatus, +1 per rank).
+- Perk grants read `scr_PerkLevel`, so anointments count (Gray Matter was spec-only before).
+- build-data errors if a code-layer "Extra Gem Slot" object has no slot rule, or a rule has no code clause.
+- Engine: `gemSlots` gains `scope: "party"` and `per` (raceOnSide / uniqueClasses / missingCreatures).
+- Checked in the browser: Adept Wizarding on creature 3's artifact takes every creature from 3 to 4 slots (the
+  Animatus with Gray Matter 5: 8 → 9).
+
 ## 2026-10-19 — One tag filter for the whole app (TagFilter)
 - User: "a single filter object used across the application", like the shared spell container. The spell filter came up
   empty after Taxonomy v2: spells, anointments and trait items still built their picker from v1 `taxo` while the picker
