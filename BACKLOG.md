@@ -144,10 +144,13 @@ a decompile → write `_su_extract/code/HANDOFF_<topic>.md` and don't guess (bat
   Orders, Dogpile, Dark Transformation) and removes minions (Banish, Earthquake, Chaos Orb, Contagion, Big Bang) — 10 spells
   mention minions but aren't tagged today; *doesn't* = generic creature effects that may happen to hit a minion. 26 members now.
 
-- [ ] **Taxonomy review: traits with no tags (user 2026-10-18: "an error, should have code tied to it").** 7 traits ship with
-  zero tags: Nature of the Beast, Blood Thirst, Hound Legion (Dire Wolves), Conspiracy Theory, Boon of the Hee Hoo Hay Ho,
-  Nether Orbs, Anatidaephobia. Nature of the Beast's pending `Related Minion::Dire Wolves` proposal has no code src. Asked the
-  extract for code-grounded tags + why they fell through (`_su_extract/code/HANDOFF_untagged_traits.md`); approve in review.
+- [ ] **Taxonomy review: traits with no tags** (user 2026-10-18). Extract answered (S36, `_su_extract/code/HANDOFF_untagged_traits.md`).
+  Cause was the app's Dire Wolves minion stem (plural "Wolves" never matched): FIXED 2026-10-18, restoring the extract's
+  existing tags on 8 traits (Blood Thirst, Hound Legion, Nature of the Beast, Fingertip Nip, Vicious Bite, Summon the Pack,
+  Master of Hounds, Backup Packup). Left for the review: 15 code proposals (Nature of the Beast Start of Battle; Boon of the
+  Hee Hoo Hay Ho 5; Nether Orbs Cast ×2; Conspiracy Theory 7, which supersede its `trait:1656` audit removal on approval because
+  approved code changes apply after the audit layer), and the LLM's Additional Stacks on Nature of the Beast (code: 3 starting
+  stacks, no cap change). Anatidaephobia stays empty (flavour, code-confirmed).
 
 ### G8. Appendix sections + combat research (research first → handoffs → Appendix pages)
 - [x] **(#6) Appendix: Class Advantage.** DONE 2026-10-17 (wheel table + attacks/spells/Opal/Convoke note, COMBAT_RULES.md). Show the class wheel order, and explain how it applies to attacks vs spells

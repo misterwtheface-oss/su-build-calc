@@ -4,6 +4,15 @@ Every dated change entry, newest first (moved verbatim from Progress.md on 2026-
 to their own section and sorted by their date). Current state and open work: `Progress.md`, `BACKLOG.md`.
 New entries go at the TOP.
 
+## 2026-10-18 — Dire Wolves tags restored (extract S36)
+- `build-data.mjs` `MINION_STEMS`: `dire ?wolf` never matched the plural "Dire Wolves", so the minion grounding check
+  dropped every Minion tag on traits that name them (trait text is pre-rendered, no minion token). Stem now
+  `dire ?wol(?:f|ve)`. Not a relabel: restores the extract's existing tags on 8 traits (Blood Thirst, Hound Legion and
+  Nature of the Beast had none at all).
+- Rebuild brings the extract's 15 code proposals for Nature of the Beast, Boon of the Hee Hoo Hay Ho, Nether Orbs and
+  Conspiracy Theory into the review queue (not shipped), and 2 new clarify notes (Conspiracy Theory's five +10% stats;
+  Boon: enemy-only, debuff immunity, random cast each turn).
+
 ## 2026-10-18 — Endowment: plain base of creature #2 (code)
 - User ruling: go with the code. The Animatus's base stats now average with creature #2's PRIMARY creature's plain base
   (code stores only its creature id as `fuse2`), not creature #2's fused base. Trait, race, class unchanged.

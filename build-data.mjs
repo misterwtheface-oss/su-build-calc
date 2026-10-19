@@ -290,7 +290,7 @@ const MINION_STEMS = [
   'asmodeus', 'beelzebub', 'belphegor', 'lucifer', 'mammon', 'satanachia', 'leviathan',
   'brim ?fiend', 'chaos ?satyr', 'fire ?imp',            // Lesser Demons
   'war', 'death', 'conquest', 'famine',                  // Four Horsemen
-  'dire ?wolf', 'doppelganger', 'guardian of surathli', 'illusion',
+  'dire ?wol(?:f|ve)', 'doppelganger', 'guardian of surathli', 'illusion',
   'torun', 'littletorun', 'microbot', 'spiderling', 'unstable horror', 'shambling horror', 'writheling', 'zombie',
 ];
 const minionNameRe = new RegExp('\\b(' + MINION_STEMS.join('|') + ')s?\\b', 'i');
