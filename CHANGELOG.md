@@ -4,6 +4,10 @@ Every dated change entry, newest first (moved verbatim from Progress.md on 2026-
 to their own section and sorted by their date). Current state and open work: `Progress.md`, `BACKLOG.md`.
 New entries go at the TOP.
 
+## 2026-10-19 — Spell Gems sort by Class by default
+- User: the Spell Gems library (and the equip list opened from a creature's Spells) now opens sorted by Class (game
+  class order, then name) instead of most recent. The Recent sort is still one tap away.
+
 ## 2026-10-19 — Spell-gem slots from the code (Adept Wizarding and 8 more)
 - User: spell gem slots for Adept Wizarding weren't working. Cause: slot grants were found by a text pattern ("gains N
   Spell Slot"), which only caught Gray Matter. The game's slot count (`scr_GetCreatureStat` case 5, "spellslots") has

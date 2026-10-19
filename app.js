@@ -5556,13 +5556,13 @@
 
   // ── spell gems: library + stepped wizard (1 spell + up to 3 property items) ──
   function openSpellGems() {   // library (manage mode when equipCtx is null)
-    ovState = { kind: "spellgemlib", equipCtx: null, hideEquipped: false, sel: null, search: "", libCls: null, libSort: "recent", render: renderSpellGemLib };
+    ovState = { kind: "spellgemlib", equipCtx: null, hideEquipped: false, sel: null, search: "", libCls: null, libSort: "cls", render: renderSpellGemLib };
     openOverlay(ovState.render());
   }
   function renderSpellGemLib() {
     const st = ovState, ctx = st.equipCtx;   // {kind:'artifact'|'creature'} when equipping
     const equipped = ctx ? new Set(ctx.equipped()) : null;
-    const q = (st.search || "").trim().toLowerCase(), sortK = st.libSort || "recent", d = sortSign(st.libSortRev);
+    const q = (st.search || "").trim().toLowerCase(), sortK = st.libSort || "cls", d = sortSign(st.libSortRev);
     const gemText = (g) => { const sp = gemSpell(g); return [gemName(g), sp ? sp.name : "", sp ? sp.desc || "" : "",
       ...(g.propIds || []).map(pid => (SPELLPROP.get(pid) || {}).name || "")].join(" ").toLowerCase(); };
     let list = spellGems.filter(g => (!st.libCls || gemClass(g) === st.libCls) && (!q || gemText(g).includes(q)) && TagFilter.match(st, "spell", gemSpell(g)));
@@ -5805,7 +5805,7 @@
 
   // creature spell slots (up to 3 equipped spell gems) — equip from the library
   function openCreatureSpells(slotIdx) {
-    ovState = { kind: "spellgemlib", hideEquipped: false, sel: null, search: "", libCls: null, libSort: "recent", equipCtx: {
+    ovState = { kind: "spellgemlib", hideEquipped: false, sel: null, search: "", libCls: null, libSort: "cls", equipCtx: {
       kind: "creature", slotIdx,
       equipped: () => build.slots[slotIdx].spellGemIds,
       max: creatureSlotMax(build.slots[slotIdx]),
