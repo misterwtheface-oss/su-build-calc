@@ -624,9 +624,8 @@
   };
   // the side toggle beside an active tag chip: Either → Your side → Enemy side (only when that tag carries scopes)
   const sideNext = (k) => { const b = keyNoSide(k), sd = keySide(k); return sd === null ? b + "@s=ally" : sd === "ally" ? b + "@s=enemy" : b; };
-  const sideBtn = (k) => !TV2 || !((taxoUse().get(keyNoSide(k) + "@s=ally") || 0) + (taxoUse().get(keyNoSide(k) + "@s=enemy") || 0)) ? ""
-    : `<button class="facet${keySide(k) ? " on" : ""}" data-action="taxo-side" data-k="${esc(k)}" title="Narrow this tag to one side">${keySide(k) ? SIDE_LABEL[keySide(k)] : "Either side"}</button>`;
-  const tagHas = (o, k) => tagKeys(o).includes(k);
+  const sideBtn = (k, src, L, avail) => !TV2 || !avail ? ""
+    : `<button class="facet${keySide(k) ? " on" : ""}" data-action="taxo-side" data-src="${src}" data-l="${L}" data-k="${esc(k)}" title="Narrow this tag to one side">${keySide(k) ? SIDE_LABEL[keySide(k)] : "Either side"}</button>`;
   // browse containers: v2 = mechanic groups (each base key followed by its role keys); v1 = the categories
   let _taxoGroups = null;
   function taxoGroups() {
@@ -680,14 +679,50 @@
     TAXO_IDX_CACHE[key] = byCat;
     return byCat;
   }
-  const taxoIndex = () => taxoIndexFor("crea", D.creatures, creatureTaxo);
-  const cardTaxoIndex = () => taxoIndexFor("cards", D.cards, tagKeys);
-  const relicTaxoIndex = () => taxoIndexFor("relics", D.relics, tagKeys);
-  // shared ＋Filter bar (active tag chips + add button) for taxo-filterable list overlays (cards, relics)
-  const taxoFilterBar = (st) => st.taxoFilters.map((k, i) =>
-    `<button class="facet on tag" data-action="rm-taxo" data-i="${i}">${esc(taxoCatName(k))}: <b>${esc(taxoValName(k))}</b> <span class="facet-x">✕</span></button>` + sideBtn(k)).join("")
-    + `<button class="facet add" data-action="facet-taxo">＋ Filter</button>`;
-  const taxoMatch = (st, item) => !st.taxoFilters.length || st.taxoFilters.every(k => tagHas(item, k));
+  // ── TagFilter: the one tag filter for the whole app (user 2026-10-19, like the shared spell container). Every
+  // taxonomy-filterable list keeps its active tags on its own state as st.tf[src] (AND). The chips, the side toggle,
+  // ＋ Filter (the facet picker), the picker's index and the match all come from here. A source names the objects it
+  // lists and how one maps to tag keys (creatures and trait items read their trait's tags).
+  const TF_SRC = {
+    creature: { items: () => D.creatures, keys: (c) => creatureTaxo(c), changed: () => resetCreaPage() },
+    card: { items: () => D.cards, keys: tagKeys },
+    relic: { items: () => D.relics, keys: tagKeys },
+    anoint: { items: () => anointList(), keys: tagKeys },
+    spell: { items: () => (D.spells || []).filter(sp => !sp.battleOnly && !sp.unused), keys: tagKeys },
+    trait: { items: () => (D.traitItems || []).filter(t => t.traitName), keys: (ti) => tagKeys(TRAIT[ti.traitId]) },
+    perk: { items: (st) => (SPEC.get(st.specId) || { perks: [] }).perks, keys: tagKeys },
+    appendix: { changed: (st) => { st.search = ""; } },   // the Taxonomy page browses its own way; chips + side shared
+  };
+  const TagFilter = {
+    get: (st, src) => (st && st.tf && st.tf[src]) || [],
+    set(st, src, arr) { (st.tf || (st.tf = {}))[src] = arr; const c = TF_SRC[src].changed; if (c) c(st); },
+    add(st, src, k) { const a = TagFilter.get(st, src); if (!a.includes(k)) TagFilter.set(st, src, [...a, k]); },
+    rm(st, src, k) { TagFilter.set(st, src, TagFilter.get(st, src).filter(x => x !== k)); },
+    side(st, src, k) { const nk = sideNext(k); TagFilter.set(st, src, TagFilter.get(st, src).map(x => x === k ? nk : x)); },
+    keys: (src, o) => o ? TF_SRC[src].keys(o) || [] : [],
+    match: (st, src, o) => TagFilter.get(st, src).every(k => TagFilter.keys(src, o).includes(k)),
+    // picker rows (mechanic group → tags) over the source's objects that pass the active tags, so a pick never empties the list
+    index(st, src) {
+      const tags = TagFilter.get(st, src), S = TF_SRC[src];
+      const items = S.items(st).filter(o => tags.every(k => TagFilter.keys(src, o).includes(k)));
+      return taxoIndexFor(`tf:${src}:${src === "perk" ? st.specId : ""}:${tags.join("|")}`, items, (o) => TagFilter.keys(src, o));
+    },
+    // the side toggle shows only when a listed object that passes the other tags carries this tag with a scope
+    sided(st, src, k) {
+      const b = keyNoSide(k), sides = [b + "@s=ally", b + "@s=enemy"];
+      if (!TF_SRC[src].items) return sides.some(x => taxoUse().get(x));   // Taxonomy page: anything in the game
+      const others = TagFilter.get(st, src).filter(x => x !== k);
+      return TF_SRC[src].items(st).some(o => { const ks = TagFilter.keys(src, o); return others.every(x => ks.includes(x)) && sides.some(x => ks.includes(x)); });
+    },
+    // st lives on the selector (ovState) or the detail layer (dovState); data-l tells the click handler which
+    layer: (st) => st === dovState ? "d" : "o",
+    chips: (st, src) => TagFilter.get(st, src).map(k =>
+      `<button class="facet on tag" data-action="tf-rm" data-src="${src}" data-l="${TagFilter.layer(st)}" data-k="${esc(k)}">${esc(taxoCatName(k))}: <b>${esc(taxoValName(k))}</b> <span class="facet-x">✕</span></button>`
+      + sideBtn(k, src, TagFilter.layer(st), TagFilter.sided(st, src, k))).join(""),
+    bar: (st, src) => TagFilter.chips(st, src) + `<button class="facet add" data-action="tf-add" data-src="${src}" data-l="${TagFilter.layer(st)}">＋ Filter</button>`,
+    open: (st, src) => openFacetPicker("taxo-cat", { idxFn: () => TagFilter.index(st, src), onPick: (k) => TagFilter.add(st, src, k),
+      parent: st === dovState ? st : null }),
+  };
   // "Trigger::Damage@r=Receiver" → value "Takes Damage" (TRIG_ROLE_LABEL); plain keys → their value
   const taxoValName = (k0) => {
     const k = keyNoSide(k0), at = k.indexOf("@r="), base = at < 0 ? k : k.slice(0, at), i = base.indexOf("::"), val = i < 0 ? base : base.slice(i + 2);
@@ -1090,7 +1125,14 @@
 
   // DOM-only closes; the Back handler above and the UI wrappers both use these.
   function closeOverlayReal() { if (specAnimTimer) { clearInterval(specAnimTimer); specAnimTimer = null; } stopWardrobeAnims(); OV.classList.add("hidden"); OV.innerHTML = ""; ovState = null; }
-  function closeDetailReal() { if (specAnimTimer) { clearInterval(specAnimTimer); specAnimTimer = null; } stopWardrobeAnims(); DOV.classList.add("hidden"); DOV.innerHTML = ""; dovState = null; }
+  function closeDetailReal() {
+    if (dovState && dovState.parent) {   // a facet picker opened from a detail page → back to that page, scroll kept
+      const p = dovState.parent; dovState = p; DOV.innerHTML = p.render();
+      const p2 = DOV.querySelector(".overlay-panel");
+      SCROLLERS.forEach((sel, k) => { const e = p2 && p2.querySelector(sel); if (e && p._scroll) e.scrollTop = p._scroll[k]; });
+      return;
+    }
+    if (specAnimTimer) { clearInterval(specAnimTimer); specAnimTimer = null; } stopWardrobeAnims(); DOV.classList.add("hidden"); DOV.innerHTML = ""; dovState = null; }
 
   function openOverlay(html) { OV.innerHTML = html; OV.classList.remove("hidden"); reconcileHistory(); }
   function closeOverlay() { closeOverlayReal(); reconcileHistory(); }
@@ -1166,7 +1208,7 @@
       primaryId: slot.cid, fusionId: slot.fusion, skinId: slot.skinId != null ? slot.skinId : null,
       personality: slot.personality || null, scrolls: { ...(slot.scrolls || {}) },
       fuseColor: slot.fuseColor != null ? slot.fuseColor : FUSE_UNTINTED,
-      search: "", clsFilter: null, raceFilter: null, taxoFilters: [], limit: CREA_PAGE, sort: null, view: "traits",
+      search: "", clsFilter: null, raceFilter: null, limit: CREA_PAGE, sort: null, view: "traits",
       render: renderCreaturePicker,
     };
     openOverlay(ovState.render()); maybeFocusSearch(OV);
@@ -1178,7 +1220,7 @@
     if (st.step === "fusion" && st.primaryId != null && c.id === st.primaryId) return false;  // can't fuse a creature with itself
     if (st.clsFilter && c.cls !== st.clsFilter) return false;
     if (st.raceFilter && c.race !== st.raceFilter) return false;
-    if (st.taxoFilters.length) { const tx = creatureTaxo(c); if (!st.taxoFilters.every(k => tx.includes(k))) return false; }
+    if (!TagFilter.match(st, "creature", c)) return false;
     if (st.bkOnly && !(c.traitId != null && bookmarks.traits.includes(c.traitId))) return false;
     if (st.search) {
       const q = st.search.toLowerCase();
@@ -1232,13 +1274,10 @@
 
     const facet = (lbl, val, action) =>
       `<button class="facet ${val ? "on" : ""}" data-action="${action}">${lbl}${val ? `: ${action === "facet-class" ? classIco(val) : action === "facet-race" && D.raceIcons && D.raceIcons[val] ? `<span class="tag-ico">${spriteImg(D.raceIcons[val], "px")}</span>` : ""}<b>${esc(val)}</b>` : ""}${val ? ` <span class="facet-x" data-action="${action}-clear">✕</span>` : " ▾"}</button>`;
-    const taxoChips = st.taxoFilters.map((k, i) =>
-      `<button class="facet on tag" data-action="rm-taxo" data-i="${i}">${esc(taxoCatName(k))}: <b>${esc(taxoValName(k))}</b> <span class="facet-x">✕</span></button>` + sideBtn(k)).join("");
     const filterbar = `<div class="ovl-filterbar">
       ${facet("Class", st.clsFilter, "facet-class")}
       ${facet("Race", st.raceFilter, "facet-race")}
-      ${taxoChips}
-      <button class="facet add" data-action="facet-taxo">＋ Filter</button>
+      ${TagFilter.bar(st, "creature")}
       ${bookmarks.traits.length ? `<button class="facet ${st.bkOnly ? "on" : ""}" data-action="crea-bkonly" title="Show only creatures whose trait you bookmarked">★ Bookmarked</button>` : ""}
     </div>`;
     // stat sort — highest first; picking a stat draws a magnitude bar (value / roster max) on each tile
@@ -2032,15 +2071,19 @@
   }
 
   // ── facet sub-picker (Class / Race / Tag) on the detail layer ───────────────
-  // opts.idx = taxonomy index to browse (defaults to creatures); opts.onPick = callback for taxo-val
+  // opts.idxFn = taxonomy index to browse (TagFilter.index); opts.onPick = callback for the picked value;
+  // opts.parent = the detail-layer page that opened it (e.g. the perk picker): closing or picking returns there
   function openFacetPicker(kind, opts = {}) {
-    dovState = { kind: "facet", facet: kind, search: "", render: renderFacetPicker,
+    const parent = opts.parent || null;
+    if (parent) { const panel = DOV.querySelector(".overlay-panel");
+      parent._scroll = SCROLLERS.map(sel => { const e = panel && panel.querySelector(sel); return e ? e.scrollTop : 0; }); }
+    dovState = { kind: "facet", facet: kind, search: "", render: renderFacetPicker, parent,
                  idxFn: opts.idxFn || null, onPick: opts.onPick || null };   // idxFn: recomputed so display toggles apply live
     openDetail(dovState.render()); maybeFocusSearch(DOV);
   }
   function renderFacetPicker() {
     const st = dovState, q = st.search.trim().toLowerCase();
-    const idx = st.idxFn ? st.idxFn() : taxoIndex();
+    const idx = st.idxFn ? st.idxFn() : new Map();
     let opts, title, back = "";
     if (st.facet === "class") { title = "Filter by Class"; opts = D.classes.map(c => ({ v: c.key, label: c.key, icon: D.classIcons && D.classIcons[c.key], color: D.classIcons && D.classIcons[c.key] ? null : c.color })); }
     else if (st.facet === "anoint-spec") { title = "Filter by Specialization"; opts = anointSpecs().map(s => ({ v: s, label: s, icon: SPEC_EMBLEM.get(s) })); }
@@ -2262,22 +2305,7 @@
     const st = dovState, spec = SPEC.get(st.specId);
     const q = st.search.trim().toLowerCase();
     const list = spec.perks.filter(p => (!q || p.name.toLowerCase().includes(q) || (p.desc || "").toLowerCase().includes(q))
-      && (!st.perkTaxo || tagHas(p, st.perkTaxo)));
-    // inline taxonomy drill-down over THIS spec's perks (values with ≥1 member only), by mechanic group (v2) or category
-    const valsByCat = new Map(), used = new Set(spec.perks.flatMap(tagKeys).filter(taxoValVisible));
-    for (const g of taxoGroups()) { const ks = g.keys.filter(k => used.has(k)); if (ks.length) valsByCat.set(g.name, new Set(ks)); }
-    // taxonomy filter — mirrors the standard facet-picker drill-down (Category → Value as opt-rows,
-    // not inline chips) so it matches the ＋ Filter used across the creature selector / artifact builder.
-    const perkBrowsing = st.perkBrowse || !!st.perkCat;
-    let taxobar, browseBody = "";
-    if (st.perkTaxo) taxobar = `<button class="facet on tag" data-action="perk-taxo-clear">${esc(taxoCatName(st.perkTaxo))}: <b>${esc(taxoValName(st.perkTaxo))}</b> <span class="facet-x">✕</span></button>` + sideBtn(st.perkTaxo);
-    else if (st.perkCat) taxobar = `<button class="facet" data-action="perk-taxo-back">‹ Categories</button><span class="facet on">${esc(st.perkCat)}</span>${singlesToggle()}`;
-    else if (st.perkBrowse) taxobar = `<button class="facet" data-action="perk-taxo-back">‹ Perks</button><span class="facet on">Filter by mechanic</span>${singlesToggle()}`;
-    else taxobar = `<button class="facet add" data-action="perk-taxo-open">＋ Filter</button>`;
-    if (st.perkCat) browseBody = `<div class="opt-list">${[...valsByCat.get(st.perkCat) || []].map(k => ({ key: k, val: taxoValName(k) })).sort(taxoRowSort).map(({ key: k }) =>
-      `<button class="opt-row" data-action="perk-taxo-val" data-v="${esc(k)}"><span>${esc(taxoRowLabel(k))}</span></button>`).join("")}</div>`;
-    else if (st.perkBrowse) browseBody = `<div class="opt-list">${(TV2 ? [...valsByCat.keys()] : [...valsByCat.keys()].sort()).map(c =>
-      `<button class="opt-row" data-action="perk-taxo-cat" data-c="${esc(c)}"><span>${esc(c)}</span><span class="opt-chev">›</span></button>`).join("")}</div>`;
+      && TagFilter.match(st, "perk", p));
     const allocCount = allocatedPerks(spec).length, pts = specPoints(spec);
     const rows = perkEditRowsHtml(spec, list);
     return `<div class="ovl-backdrop" data-action="facet-backdrop"><div class="overlay-panel detail">
@@ -2285,8 +2313,8 @@
         <input class="ovl-search" placeholder="Search perks…" value="${esc(st.search)}" data-action="perk-search">
         <button class="ovl-close" data-action="close-detail">✕</button></div>
       <div class="overlay-body"><div class="ovl-center">
-        <div class="ovl-filterbar"><button class="chip" data-action="perk-all">Max all</button><button class="chip" data-action="perk-none">Clear all</button>${taxobar}</div>
-        <div class="ovl-center-scroll">${perkBrowsing ? browseBody : `<div class="perk-picker">${rows}</div>`}</div>
+        <div class="ovl-filterbar"><button class="chip" data-action="perk-all">Max all</button><button class="chip" data-action="perk-none">Clear all</button>${TagFilter.bar(st, "perk")}</div>
+        <div class="ovl-center-scroll"><div class="perk-picker">${rows}</div></div>
       </div></div>
       <div class="overlay-footer"><span class="foot-info">${allocCount}/${spec.perks.length} allocated · ${pts} pts</span>
         <button class="btn-confirm" data-action="close-detail">Done</button></div>
@@ -2704,21 +2732,20 @@
   }
   // Taxonomy page (internal ids say "appendix"/"apx", its old name; the page now titled Appendix is openErrata)
   function openAppendix() {
-    ovState = { kind: "appendix", search: "", tags: [], browsing: false, bkScope: null,
+    ovState = { kind: "appendix", search: "", browsing: false, bkScope: null,
       collapsed: new Set(), expanded: new Set(), render: renderAppendix };
     openOverlay(ovState.render()); maybeFocusSearch(OV);
   }
   function renderAppendix() {
     const st = ovState, q = st.search.trim().toLowerCase();
-    const tags = st.tags;
+    const tags = TagFilter.get(st, "appendix");
     const bk = appendixBkCounts();
     const bkCount = bk.all;
     // Browse (filter-picking) view = the landing when nothing is applied, or when ＋ Filter is tapped.
     // Results view = whenever a taxonomy tag, a bookmark scope, or a name query is active.
     const browsing = st.browsing || (tags.length === 0 && !st.bkScope && !q);
     // active-tag chips (removable) — mirror the creature selector's multi-AND facet chips
-    const tagChips = tags.map(k =>
-      `<button class="facet on tag" data-action="appendix-rm-tag" data-k="${esc(k)}">${esc(taxoCatName(k))}: <b>${esc(taxoValName(k))}</b> <span class="facet-x">✕</span></button>` + sideBtn(k)).join("");
+    const tagChips = TagFilter.chips(st, "appendix");
     // Bookmark filtering is now a single footer button (toggles the "all-bookmarks" scope); the
     // creature-innate / item-only split logic stays wired (appendixBkCounts / appendixUniverse) for the
     // Item-only Traits section and future use, it's just no longer exposed as a chip row.
@@ -4090,12 +4117,11 @@
   const anointEquipped = (a) => build.anoints.some(x => x.specId === a.specId && x.key === a.key);
   const equippedAnointObjs = () => build.anoints.map(x => anointList().find(a => a.specId === x.specId && a.key === x.key)).filter(Boolean);
   function openAnoint() {
-    ovState = { kind: "anoint", search: "", taxoFilters: [], specFilter: null, godFilter: null, collapsedGods: [], render: renderAnoint };
+    ovState = { kind: "anoint", search: "", specFilter: null, godFilter: null, collapsedGods: [], render: renderAnoint };
     openOverlay(ovState.render()); maybeFocusSearch(OV);
   }
   let ANOINT_SPECS = null;
   const anointSpecs = () => ANOINT_SPECS || (ANOINT_SPECS = [...new Set(anointList().map(a => a.spec))].sort());
-  const anointTaxoIndex = () => taxoIndexFor("anoint", anointList(), a => a.taxo || []);
   function renderAnoint() {
     const st = ovState, q = st.search.trim().toLowerCase();
     const list = anointList().filter(a =>
@@ -4103,17 +4129,15 @@
       (!st.godFilter || a.falseGod === st.godFilter) &&
       (!st.specFilter || a.spec === st.specFilter) &&
       (!st.bkOnly || bookmarks.perks.includes(a.key)) &&
-      (!st.taxoFilters.length || st.taxoFilters.every(k => (a.taxo || []).includes(k))));
+      TagFilter.match(st, "anoint", a));
     const godChip = st.godFilter
       ? `<button class="facet on" data-action="anoint-fgod">False God: ${(godByKey.get(st.godFilter) || {}).icon ? `<span class="tag-ico">${spriteImg(godByKey.get(st.godFilter).icon, "px")}</span>` : ""}<b>${esc(godName(st.godFilter))}</b> <span class="facet-x" data-action="anoint-fgod-clear">✕</span></button>`
       : `<button class="facet" data-action="anoint-fgod">False God ▾</button>`;
     const specChip = st.specFilter
       ? `<button class="facet on" data-action="anoint-spec">Spec: ${specEmblemIco(st.specFilter)}<b>${esc(st.specFilter)}</b> <span class="facet-x" data-action="anoint-spec-clear">✕</span></button>`
       : `<button class="facet" data-action="anoint-spec">Spec ▾</button>`;
-    const taxoChips = st.taxoFilters.map((k, i) =>
-      `<button class="facet on tag" data-action="rm-taxo" data-i="${i}">${esc(taxoCatName(k))}: <b>${esc(taxoValName(k))}</b> <span class="facet-x">✕</span></button>` + sideBtn(k)).join("");
     const bkChip = bookmarks.perks.length ? `<button class="facet ${st.bkOnly ? "on" : ""}" data-action="anoint-bkonly" title="Show only bookmarked perks">★ Bookmarked</button>` : "";
-    const filterbar = `<div class="ovl-filterbar">${godChip}${specChip}${taxoChips}<button class="facet add" data-action="anoint-taxo">＋ Filter</button>${bkChip}</div>`;
+    const filterbar = `<div class="ovl-filterbar">${godChip}${specChip}${TagFilter.bar(st, "anoint")}${bkChip}</div>`;
     const full = build.anoints.length >= anointMax();
     const anointRow = (a) => { const on = anointEquipped(a); const inCur = a.specId === build.specId;
       // a perk from your current spec is already in your tree — block anointing it (removal still allowed)
@@ -4504,22 +4528,16 @@
   const SPELL_TARGETS = [["Target", "Single target"], ["Enemies", "Enemies"], ["Your Creatures", "Your creatures"], ["All Creatures", "All creatures"], ["Self", "Self"]]
     .filter(([v]) => (D.spells || []).some(sp => sp.target === v));
   // ── shared spell picker (Spell Gem, Artifact and Nether Stone wizards) ──
-  // state on the wizard's ovState: search, spellTarget, spellCls, spellSort, spellTaxos (tags, AND), bkOnly
+  // state on the wizard's ovState: search, spellTarget, spellCls, spellSort, bkOnly, tags = TagFilter "spell"
   // Only spells that exist as holdable gems: battle-only spells (Ultimates, Runes, Mega Magic, Colorwave, boss kits) reach a
   // creature through their owner instead (FX.grantedSpells), and never-created spells don't reach play at all.
-  // stacked taxonomy filters (spell pickers + Spell Gem library): every chosen tag must match (AND). One chip per tag
-  // (✕ drops that tag) and ＋ Filter adds another.
-  const taxosMatch = (st, sp) => !(st.spellTaxos || []).length || (!!sp && st.spellTaxos.every(k => tagHas(sp, k)));
-  const taxoChips = (st) => (st.spellTaxos || []).map(k =>
-      `<button class="facet on tag" data-action="sg-taxofilter-clear" data-v="${esc(k)}">${esc(taxoCatName(k))}: <b>${esc(taxoValName(k))}</b> <span class="facet-x">✕</span></button>` + sideBtn(k)).join("")
-    + `<button class="facet add" data-action="sg-taxofilter">＋ Filter</button>`;
   function spellPickList(st, exclude) {
     const q = (st.search || "").trim().toLowerCase(), sort = st.spellSort || "name";
     return (D.spells || []).filter(sp => !sp.battleOnly && !sp.unused && !(exclude && exclude.has(sp.id))
         && (!q || sp.name.toLowerCase().includes(q) || (sp.desc || "").toLowerCase().includes(q) || tagKeys(sp).some(k => taxoValName(k).toLowerCase().includes(q)))
         && (!st.spellCls || sp.cls === st.spellCls)
         && (st.spellTarget == null || sp.target === st.spellTarget)
-        && taxosMatch(st, sp)
+        && TagFilter.match(st, "spell", sp)
         && (!st.bkOnly || bookmarks.spells.includes(sp.id)))
       .sort((x, y) => {
         const d = sortSign(st.spellSortRev), byName = x.name.localeCompare(y.name);
@@ -4543,7 +4561,7 @@
   // the identical two-row bar: [lead] search · ＋ Filter · ★ Bookmarked  /  Target ▾ · Class ▾ · A–Z | Potency | Charges
   function spellFilterBar(st, searchAction, lead = "") {
     const sort = sortCur(st.spellSort, "name");
-    const taxo = taxoChips(st);
+    const taxo = TagFilter.bar(st, "spell");
     const bk = bookmarks.spells.length ? `<button class="facet ${st.bkOnly ? "on" : ""}" data-action="spf-bk" title="Show only bookmarked spells">★ Bookmarked</button>` : "";
     return `<div class="ovl-filterbar spf-row">${lead}<input class="ovl-search" placeholder="Search spells…" value="${esc(st.search || "")}" data-action="${searchAction}">${taxo}${bk}</div>
       <div class="ovl-filterbar sg-dropbar">
@@ -4573,7 +4591,7 @@
     // the blacksmith refuses a trick property already in trick1/trick2 (obj_bsupgrade_KeyPress_69, extract S34)
     const single = ((ART_SLOTS.find(s => s.pick === type) || {}).max || 1) === 1;
     const has = (v) => (single || type === "trick") && artHas(a, type, v);
-    const matchTaxo = (taxo) => q && (taxo || []).some(k => taxoValName(k).toLowerCase().includes(q));
+    const matchTaxo = (keys) => q && keys.some(k => taxoValName(k).toLowerCase().includes(q));
     let rows = "";
     if (type === "stat" || type === "trick") {
       const pool = type === "stat" ? STATMAT : TRICKMAT;
@@ -4588,8 +4606,8 @@
     } else if (type === "trait") {
       // clean trait containers (banner + description + material link) that add on click — no drill-in
       rows = D.traitItems.filter(t => t.traitName
-          && (!q || t.name.toLowerCase().includes(q) || (t.traitName || "").toLowerCase().includes(q) || matchTaxo(t.taxo))
-          && (!st.traitTaxo || (t.taxo || []).includes(st.traitTaxo))
+          && (!q || t.name.toLowerCase().includes(q) || (t.traitName || "").toLowerCase().includes(q) || matchTaxo(TagFilter.keys("trait", t)))
+          && TagFilter.match(st, "trait", t)
           && (!st.bkOnly || bookmarks.traits.includes(t.traitId))).slice(0, 300)
         .map(t => traitPickCard(t, has(t.id), `data-action="art-confirm-add" data-t="trait" data-v="${t.id}"`)).join("");
     } else if (type === "spell") {   // raw spells (no sockets), like nether stones — shared spell picker
@@ -4620,10 +4638,7 @@
           : `<div class="slot-sub" style="padding:8px">No Nether Stones yet — add them from the top-bar “Nether Stones” button.</div>`);
     }
     const traitFilter = type === "trait"
-      ? (st.traitTaxo
-          ? `<button class="facet on tag" data-action="artb-traitfilter-clear">${esc(taxoCatName(st.traitTaxo))}: <b>${esc(taxoValName(st.traitTaxo))}</b> <span class="facet-x">✕</span></button>`
-          : `<button class="facet add" data-action="artb-traitfilter">＋ Filter</button>`)
-      : "";
+      ? TagFilter.bar(st, "trait") : "";
     const bkKind = type === "trait" ? "traits" : type === "spell" ? "spells" : null;
     const bkFilter = bkKind && bookmarks[bkKind].length
       ? `<button class="facet ${st.bkOnly ? "on" : ""}" data-action="artb-bkonly" title="Show only bookmarked ${type === "trait" ? "traits" : "spells"}">★ Bookmarked</button>` : "";
@@ -4782,7 +4797,7 @@
   // Relic name = "<Name>, <Item> of <God>" — the tile shows just the recognizable name (pre-comma).
   const relicShortName = (r) => String(r.name || "").split(",")[0].trim();
   function openRelicBuilder(slotIdx) {
-    ovState = { kind: "relic", slotIdx, search: "", taxoFilters: [], render: renderRelicBuilder };
+    ovState = { kind: "relic", slotIdx, search: "", render: renderRelicBuilder };
     openOverlay(ovState.render());
   }
   // List overlay: a tile grid like the God Shop / creature selector, sectioned by the stat each relic boosts.
@@ -4793,7 +4808,7 @@
     const takenBy = new Map();
     build.slots.forEach((sl, i) => { if (i !== st.slotIdx && sl.relic) takenBy.set(sl.relic.id, (CREA.get(sl.cid) || {}).name || `slot ${i + 1}`); });
     const q = st.search.trim().toLowerCase();
-    const list = D.relics.filter(r => (!q || r.name.toLowerCase().includes(q) || (r.statBonus || "").toLowerCase().includes(q)) && taxoMatch(st, r));
+    const list = D.relics.filter(r => (!q || r.name.toLowerCase().includes(q) || (r.statBonus || "").toLowerCase().includes(q)) && TagFilter.match(st, "relic", r));
     // one section per stat, in the app's canonical stat order; picking a tile opens the rank overlay
     const sections = STAT_KEYS.map(k => {
       const label = STAT_LABEL[k];
@@ -4808,7 +4823,7 @@
       <div class="overlay-header"><h2>Relic — ${esc(c ? c.name : "")}</h2>
         <input class="ovl-search" placeholder="Search relic / stat…" value="${esc(st.search)}" data-action="relic-search">
         <button class="ovl-close" data-action="close-ovl">✕</button></div>
-      <div class="overlay-body"><div class="ovl-center"><div class="ovl-filterbar">${taxoFilterBar(st)}</div>
+      <div class="overlay-body"><div class="ovl-center"><div class="ovl-filterbar">${TagFilter.bar(st, "relic")}</div>
         <div class="ovl-center-scroll">${sections || `<div class="slot-sub" style="padding:10px">No relics match.</div>`}</div></div></div>
       <div class="overlay-footer"><span class="foot-info"></span>
         <div>${equipped ? `<button class="btn-ghost" data-action="relic-clear">Clear equipped</button>` : ""}
@@ -5276,11 +5291,11 @@
   }
 
   // ── realm cards (leveled collection) ───────────────────────────────────────
-  function openCards() { ovState = { kind: "cards", search: "", clsFilter: null, taxoFilters: [], render: renderCards }; openOverlay(ovState.render()); maybeFocusSearch(OV); }
+  function openCards() { ovState = { kind: "cards", search: "", clsFilter: null, render: renderCards }; openOverlay(ovState.render()); maybeFocusSearch(OV); }
   function renderCards() {
     const st = ovState, q = st.search.trim().toLowerCase();
     const applyAll = cards.applyAll;
-    const list = D.cards.filter(c => (!q || c.family.toLowerCase().includes(q)) && (!st.clsFilter || c.cls === st.clsFilter) && taxoMatch(st, c));
+    const list = D.cards.filter(c => (!q || c.family.toLowerCase().includes(q)) && (!st.clsFilter || c.cls === st.clsFilter) && TagFilter.match(st, "card", c));
     const clsChip = st.clsFilter
       ? `<button class="facet on" data-action="facet-class">Class: ${classIco(st.clsFilter)}<b>${esc(st.clsFilter)}</b> <span class="facet-x" data-action="facet-class-clear">✕</span></button>`
       : `<button class="facet" data-action="facet-class">Class ▾</button>`;
@@ -5313,7 +5328,7 @@
         <input class="ovl-search" placeholder="Search family…" value="${esc(st.search)}" data-action="cards-search">
         <button class="ovl-close" data-action="close-ovl">✕</button></div>
       <div class="overlay-body"><div class="ovl-center"><div class="ovl-filterbar">
-        ${clsChip}${taxoFilterBar(st)}
+        ${clsChip}${TagFilter.bar(st, "card")}
         <button class="facet" data-action="cards-all-on" ${applyAll ? "disabled" : ""}>All on</button>
         <button class="facet" data-action="cards-all-off" ${applyAll ? "disabled" : ""}>All off</button>
         <button class="facet ${applyAll ? "on" : ""}" data-action="cards-applyall" title="Ignore saved selections and treat every card as maxed">Apply all</button></div>
@@ -5550,7 +5565,7 @@
     const q = (st.search || "").trim().toLowerCase(), sortK = st.libSort || "recent", d = sortSign(st.libSortRev);
     const gemText = (g) => { const sp = gemSpell(g); return [gemName(g), sp ? sp.name : "", sp ? sp.desc || "" : "",
       ...(g.propIds || []).map(pid => (SPELLPROP.get(pid) || {}).name || "")].join(" ").toLowerCase(); };
-    let list = spellGems.filter(g => (!st.libCls || gemClass(g) === st.libCls) && (!q || gemText(g).includes(q)) && taxosMatch(st, gemSpell(g)));
+    let list = spellGems.filter(g => (!st.libCls || gemClass(g) === st.libCls) && (!q || gemText(g).includes(q)) && TagFilter.match(st, "spell", gemSpell(g)));
     if (st.hideEquipped) list = list.filter(g => !spellGemEquippedInBuild(g.id) || (equipped && equipped.has(g.id)));
     const potOf = (g) => { const sp = gemSpell(g); return sp ? potencyRank(sp) : POTENCY_ORDER.length; };
     const clsRank = (g) => { const i = SPELL_CLASSES.indexOf(gemClass(g)); return i < 0 ? SPELL_CLASSES.length : i; };   // game class order (Opal swap counts)
@@ -5566,7 +5581,7 @@
           <option value="" ${!st.libCls ? "selected" : ""}>Class</option>${SPELL_CLASSES.map(cl => `<option value="${cl}" ${st.libCls === cl ? "selected" : ""}>${cl}</option>`).join("")}</select>
         <span class="sg-sort-gap"></span>
         ${libSortSeg(st, [["recent", "Recent", true], ["name", "A–Z", false], ["cls", "Class", false], ["level", "Level", true], ["potency", "Potency", true]])}</div>
-      <div class="ovl-filterbar taxo-bar">${taxoChips(st)}</div>`;
+      <div class="ovl-filterbar taxo-bar">${TagFilter.bar(st, "spell")}</div>`;
     const sel = st.sel != null ? spellGems.find(g => g.id === st.sel) : null;
     // when equipping onto a creature, gems of a class the creature can't use are blocked (unless a
     // trait/perk permits cross-class or an Opal has re-classed the gem) — matches the in-game rule.
@@ -5971,11 +5986,9 @@
       case "appendix-cat-toggle": { const c = t.dataset.c; ovState.expanded.has(c) ? ovState.expanded.delete(c) : ovState.expanded.add(c); refreshOverlay(); break; }
       case "appendix-bkscope": { const sc = t.dataset.scope; ovState.bkScope = ovState.bkScope === sc ? null : sc; ovState.browsing = false; ovState.search = ""; refreshOverlay(); break; }
       case "appendix-tag": {           // add a tag to the AND set, then show results
-        const k = t.dataset.k;
-        if (!ovState.tags.includes(k)) ovState.tags.push(k);
-        ovState.browsing = false; ovState.search = ""; refreshOverlay(); break;
+        TagFilter.add(ovState, "appendix", t.dataset.k);
+        ovState.browsing = false; refreshOverlay(); break;
       }
-      case "appendix-rm-tag": e.stopPropagation(); ovState.tags = ovState.tags.filter(x => x !== t.dataset.k); ovState.search = ""; refreshOverlay(); break;
       case "appendix-add": ovState.browsing = true; ovState.search = ""; refreshOverlay(); break;
       case "appendix-toggle-sec": { const s = t.dataset.sec; ovState.collapsed.has(s) ? ovState.collapsed.delete(s) : ovState.collapsed.add(s); refreshOverlay(); break; }
       case "apx-bookmark": { e.stopPropagation(); const k = t.dataset.kind;   // perks key by string, traits/spells by numeric id
@@ -6059,13 +6072,6 @@
         try { localStorage.setItem("subc.taxoSingles", taxoShowSingles ? "1" : "0"); } catch {}
         if (dovState) refreshDetail(); if (ovState) refreshOverlay(); break;
       }
-      case "facet-taxo": {
-        const idxByKind = { cards: cardTaxoIndex, relic: relicTaxoIndex };
-        const f = idxByKind[ovState.kind];
-        openFacetPicker("taxo-cat", f ? { idxFn: f } : {});   // creature default = taxoIndex()
-        break;
-      }
-      case "anoint-taxo": openFacetPicker("taxo-cat", { idxFn: anointTaxoIndex }); break;
       case "anoint-bkonly": ovState.bkOnly = !ovState.bkOnly; refreshOverlay(); break;
       case "anoint-spec": openFacetPicker("anoint-spec"); break;
       case "anoint-spec-clear": e.stopPropagation(); ovState.specFilter = null; refreshOverlay(); break;
@@ -6076,16 +6082,14 @@
       case "taxo-back": dovState.facet = "taxo-cat"; dovState.taxoCat = null; dovState.search = ""; refreshDetail(); break;
       case "facet-class-clear": e.stopPropagation(); ovState.clsFilter = null; resetCreaPage(); refreshOverlay(); break;
       case "facet-race-clear": e.stopPropagation(); ovState.raceFilter = null; resetCreaPage(); refreshOverlay(); break;
-      case "rm-taxo": ovState.taxoFilters.splice(+t.dataset.i, 1); resetCreaPage(); refreshOverlay(); break;
-      case "taxo-side": {   // cycle an active tag through Either / Your side / Enemy side
+      // TagFilter (every tag-filterable list): ＋ Filter, ✕ on a chip, the side toggle
+      case "tf-add": case "tf-rm": case "taxo-side": {
         e.stopPropagation();
-        const k = t.dataset.k, nk = sideNext(k), swap = (arr) => arr && arr.includes(k) ? arr.map(x => x === k ? nk : x) : arr;
-        if (dovState && dovState.perkTaxo === k) { dovState.perkTaxo = nk; refreshDetail(); break; }
-        if (ovState) {
-          ovState.tags = swap(ovState.tags); ovState.spellTaxos = swap(ovState.spellTaxos);
-          if (ovState.taxoFilters && ovState.taxoFilters.includes(k)) { ovState.taxoFilters = swap(ovState.taxoFilters); resetCreaPage(); }
-          refreshOverlay();
-        }
+        const st = t.dataset.l === "d" ? dovState : ovState, src = t.dataset.src;
+        if (!st || !TF_SRC[src]) break;
+        if (A === "tf-add") { TagFilter.open(st, src); break; }
+        if (A === "tf-rm") TagFilter.rm(st, src, t.dataset.k); else TagFilter.side(st, src, t.dataset.k);
+        if (st === dovState) refreshDetail(); else refreshOverlay();
         break;
       }
       case "facet-pick": {
@@ -6095,8 +6099,7 @@
         else if (dovState.facet === "anoint-fgod") { ovState.godFilter = v; closeDetail(); refreshOverlay(); }
         else if (dovState.facet === "race") { ovState.raceFilter = v; resetCreaPage(); closeDetail(); refreshOverlay(); }
         else if (dovState.facet === "taxo-cat") { dovState.facet = "taxo-val"; dovState.taxoCat = v; dovState.search = ""; refreshDetail(); }
-        else if (dovState.onPick) { dovState.onPick(v); closeDetail(); refreshOverlay(); }  // context-specific target (e.g. trait-item picker)
-        else { if (!ovState.taxoFilters.includes(v)) ovState.taxoFilters.push(v); resetCreaPage(); closeDetail(); refreshOverlay(); }
+        else if (dovState.onPick) { dovState.onPick(v); closeDetail(); if (ovState) refreshOverlay(); }  // TagFilter.add, trait-item picker, …
         break;
       }
 
@@ -6130,27 +6133,12 @@
       case "artb-next": ovState.step = ovState.step === "type" ? "slots" : "name"; ovState.pickType = null; ovState.preview = null; ovState.search = ""; refreshOverlay(true); break;
       case "artb-back": ovState.step = ovState.step === "name" ? "slots" : "type"; ovState.pickType = null; ovState.preview = null; ovState.search = ""; refreshOverlay(true); break;
       case "artb-closecat": ovState.pickType = null; ovState.preview = null; ovState.search = ""; ovState.bkOnly = false; refreshOverlay(true); break;
-      case "artb-traitfilter": openFacetPicker("taxo-cat", {
-        idxFn: () => taxoIndexFor("titem", D.traitItems, ti => ti.taxo || []),
-        onPick: (v) => { ovState.traitTaxo = v; } }); break;
-      case "artb-traitfilter-clear": ovState.traitTaxo = null; refreshOverlay(); break;
       case "artb-bkonly": ovState.bkOnly = !ovState.bkOnly; refreshOverlay(); break;
       // shared spell picker bar (Spell Gem / Artifact / Nether Stone wizards)
       case "spf-sort": if (ovState.spellSort === undefined) ovState.spellSort = "name"; sortPick(ovState, "spellSort", "spellSortRev", t.dataset.v); refreshOverlay(); break;
       case "spf-bk": ovState.bkOnly = !ovState.bkOnly; refreshOverlay(); break;
       case "artb-nsfilter": ovState[t.dataset.f] = !ovState[t.dataset.f]; refreshOverlay(); break;
       case "artb-nssort": if (ovState.nsSort === undefined) ovState.nsSort = "recent"; sortPick(ovState, "nsSort", "nsSortRev", t.dataset.v); refreshOverlay(); break;
-      // spell-gem builder spell picker filter (reuses the facet detail picker)
-      case "sg-taxofilter": openFacetPicker("taxo-cat", {
-        idxFn: () => taxoIndexFor("spell", D.spells, s => s.taxo || []),
-        onPick: (v) => { const a = ovState.spellTaxos || (ovState.spellTaxos = []); if (!a.includes(v)) a.push(v); } }); break;
-      case "sg-taxofilter-clear": ovState.spellTaxos = (ovState.spellTaxos || []).filter(k => k !== t.dataset.v); refreshOverlay(); break;
-      // perk picker inline taxonomy filter
-      case "perk-taxo-open": dovState.perkBrowse = true; refreshDetail(); break;
-      case "perk-taxo-cat": dovState.perkCat = t.dataset.c; refreshDetail(); break;
-      case "perk-taxo-val": dovState.perkTaxo = t.dataset.v; dovState.perkBrowse = false; dovState.perkCat = null; refreshDetail(); break;
-      case "perk-taxo-clear": dovState.perkTaxo = null; dovState.perkCat = null; dovState.perkBrowse = false; refreshDetail(); break;
-      case "perk-taxo-back": if (dovState.perkCat) dovState.perkCat = null; else dovState.perkBrowse = false; refreshDetail(); break;
       case "art-primary": ovState.draft.primary = ovState.draft.primary === t.dataset.p ? null : t.dataset.p; refreshOverlay(); break;
       case "art-slot": ovState.pickType = ovState.pickType === t.dataset.t && !ovState.preview ? null : t.dataset.t;   // tap the open slot again → close
         ovState.preview = null; ovState.search = ""; ovState.bkOnly = false; refreshOverlay(true); break;
@@ -6315,7 +6303,7 @@
       case "entity-backdrop": if (e.target === t) closeEntityDetail(); break;
       case "etax-filter": {   // jump to the Appendix filtered by the tapped tag
         const k = t.dataset.k; closeDetail();
-        openAppendix(); ovState.tags = [k]; ovState.browsing = false; refreshOverlay(); break;
+        openAppendix(); TagFilter.set(ovState, "appendix", [k]); ovState.browsing = false; refreshOverlay(); break;
       }
     }
   }

@@ -4,6 +4,23 @@ Every dated change entry, newest first (moved verbatim from Progress.md on 2026-
 to their own section and sorted by their date). Current state and open work: `Progress.md`, `BACKLOG.md`.
 New entries go at the TOP.
 
+## 2026-10-19 — One tag filter for the whole app (TagFilter)
+- User: "a single filter object used across the application", like the shared spell container. The spell filter came up
+  empty after Taxonomy v2: spells, anointments and trait items still built their picker from v1 `taxo` while the picker
+  groups are v2.
+- `TagFilter` in app.js now owns every taxonomy filter: the active-tag chips, the side toggle, ＋ Filter (the facet
+  picker), the picker index and the match. Each list keeps its tags on its own state as `st.tf[src]` (AND). Sources:
+  creature, card, relic, anoint, spell (spell pickers + Spell Gem library), trait (artifact trait items, via their
+  trait), perk, appendix (the Taxonomy page keeps its own browse view and shares the chips and side toggle).
+- The picker lists only tags that still have results under the tags already picked, on every list (the Taxonomy page
+  already did this).
+- The side toggle shows only when a listed object that passes the other tags carries that tag with a scope (no more
+  toggles that always give 0, e.g. Crit Chance on spells).
+- Perk picker: its own inline browse is gone. ＋ Filter opens the same picker as everywhere else and returns to the perk
+  list (scroll kept), and the perk picker now takes several tags, not one.
+- Retired: taxoFilters / spellTaxos / traitTaxo / perkTaxo state and the facet-taxo, anoint-taxo, sg-taxofilter,
+  artb-traitfilter, perk-taxo-*, rm-taxo and appendix-rm-tag actions.
+
 ## 2026-10-19 — Taxonomy v2: code-backed tags only
 - User ruling: remove anything that isn't code-backed. v2 now keeps only code, code_boss and field tags (14,884). Removed:
   2,083 tags on 1,099 objects (llm 594, undecided splits 548 + 32 open polarities, token 311, guessed Targeting::All 265,

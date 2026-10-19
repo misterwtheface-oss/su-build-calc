@@ -97,6 +97,9 @@ Nature=gem_nature, Chaos=gem_chaos, Sorcery=gem_sorceryB(blue), Death=gem_sorcer
 - Nether spells carry ONLY a trigger (no visible chance); migration strips the old `chance` (user).
 
 ## Creatures and UI
+- **One tag filter (user, 2026-10-19).** Every taxonomy filter in the app goes through `TagFilter` (app.js): chips, side
+  toggle, ＋ Filter, picker index and match. A new filterable list adds a `TF_SRC` entry (objects + their tag keys) and
+  calls `TagFilter.bar` / `TagFilter.match`, never its own filter state or picker.
 - **Page names (user, 2026-10-11):** Appendix → **Taxonomy**, Glossary → **Status Effects**, Errata → **Appendix**. Internal
   ids keep the old names; notes dated before this use the old names.
 - **Status Effects live in the Appendix (user, 2026-10-12):** one "Status Effects" section of the Appendix, with Buffs,
