@@ -4,6 +4,17 @@ Every dated change entry, newest first (moved verbatim from Progress.md on 2026-
 to their own section and sorted by their date). Current state and open work: `Progress.md`, `BACKLOG.md`.
 New entries go at the TOP.
 
+## 2026-10-19 — Taxonomy v2: side narrowing, unverified triggers and guessed targeting
+- Side toggle beside every active tag chip (Taxonomy page, ＋ Filter bars, spell / gem and perk pickers): Either side →
+  Your side (Self, Ally, Self or Ally, Adjacent) → Enemy side. Scope Any counts on both; a tag with no scope gets no
+  toggle. Keys carry `@s=ally|enemy`.
+- User review: Abnegation showed a "Takes Damage" trigger the code doesn't have (old audit tag; its code trigger is the
+  heal). A v1-only trigger on an object whose trigger(s) the code decoded is now unverified (95 tags, 88 objects), not
+  firm. They're not dropped, because some are the player-facing trigger the code anchors elsewhere (Furor's turn start,
+  Burning reactions). Listed for the extract: HANDOFF_taxonomy_v2.md F1.
+- Targeting::All the extract inferred only from "no picker call" is unverified (302; e.g. Abnegation hits a random enemy).
+  Extract F2.
+
 ## 2026-10-19 — Taxonomy view on v2, browsed by mechanic
 - `FEATURES.taxoV2` (on): the Taxonomy page, every ＋ Filter tag picker (creatures, cards, relics, perks, spell / gem
   pickers) and the entity detail tag list read the v2 tags. Other features (Triggers, synergy, spell roles) still read v1.

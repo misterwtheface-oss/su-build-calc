@@ -604,15 +604,28 @@
     Debuff: { Receiver: "Is Debuffed", Applier: "Debuffs Someone" },
     "Critical Hit": { Performer: "Critically Hits", Receiver: "Is Critically Hit" } };
   const roleKey = (e) => e.r && e.t.startsWith("Trigger::") && (TRIG_ROLE_LABEL[e.t.slice(9)] || {})[e.r] ? e.t + "@r=" + e.r : null;
+  // Side narrowing (user 2026-10-19): a key may end "@s=ally" (your side: Self, Ally, Self or Ally, Adjacent) or
+  // "@s=enemy" (Enemy). A scope of Any matches both sides; a tag with no scope matches neither.
+  const SIDES_OF_SCOPE = { Self: ["ally"], Ally: ["ally"], "Self or Ally": ["ally"], Adjacent: ["ally"], Enemy: ["enemy"], Any: ["ally", "enemy"] };
+  const SIDE_LABEL = { ally: "Your side", enemy: "Enemy side" };
+  const keySide = (k) => { const m = /@s=(\w+)$/.exec(k); return m ? m[1] : null; };
+  const keyNoSide = (k) => k.replace(/@s=\w+$/, "");
   // every filter key an object matches (v1: its taxo)
   const tagKeys = (o) => {
     if (!o) return [];
     if (!TV2) return o.taxo || [];
     if (o._tk) return o._tk;
     const s = new Set();
-    for (const e of o.taxo2 || []) { s.add(e.t); const rk = roleKey(e); if (rk) s.add(rk); }
+    for (const e of o.taxo2 || []) {
+      const ks = [e.t], rk = roleKey(e); if (rk) ks.push(rk);
+      for (const k of ks) { s.add(k); for (const sd of SIDES_OF_SCOPE[e.s] || []) s.add(k + "@s=" + sd); }
+    }
     return (o._tk = [...s]);
   };
+  // the side toggle beside an active tag chip: Either → Your side → Enemy side (only when that tag carries scopes)
+  const sideNext = (k) => { const b = keyNoSide(k), sd = keySide(k); return sd === null ? b + "@s=ally" : sd === "ally" ? b + "@s=enemy" : b; };
+  const sideBtn = (k) => !TV2 || !((taxoUse().get(keyNoSide(k) + "@s=ally") || 0) + (taxoUse().get(keyNoSide(k) + "@s=enemy") || 0)) ? ""
+    : `<button class="facet${keySide(k) ? " on" : ""}" data-action="taxo-side" data-k="${esc(k)}" title="Narrow this tag to one side">${keySide(k) ? SIDE_LABEL[keySide(k)] : "Either side"}</button>`;
   const tagHas = (o, k) => tagKeys(o).includes(k);
   // browse containers: v2 = mechanic groups (each base key followed by its role keys); v1 = the categories
   let _taxoGroups = null;
@@ -672,12 +685,12 @@
   const relicTaxoIndex = () => taxoIndexFor("relics", D.relics, tagKeys);
   // shared ＋Filter bar (active tag chips + add button) for taxo-filterable list overlays (cards, relics)
   const taxoFilterBar = (st) => st.taxoFilters.map((k, i) =>
-    `<button class="facet on tag" data-action="rm-taxo" data-i="${i}">${esc(taxoCatName(k))}: <b>${esc(taxoValName(k))}</b> <span class="facet-x">✕</span></button>`).join("")
+    `<button class="facet on tag" data-action="rm-taxo" data-i="${i}">${esc(taxoCatName(k))}: <b>${esc(taxoValName(k))}</b> <span class="facet-x">✕</span></button>` + sideBtn(k)).join("")
     + `<button class="facet add" data-action="facet-taxo">＋ Filter</button>`;
   const taxoMatch = (st, item) => !st.taxoFilters.length || st.taxoFilters.every(k => tagHas(item, k));
   // "Trigger::Damage@r=Receiver" → value "Takes Damage" (TRIG_ROLE_LABEL); plain keys → their value
-  const taxoValName = (k) => {
-    const at = k.indexOf("@r="), base = at < 0 ? k : k.slice(0, at), i = base.indexOf("::"), val = i < 0 ? base : base.slice(i + 2);
+  const taxoValName = (k0) => {
+    const k = keyNoSide(k0), at = k.indexOf("@r="), base = at < 0 ? k : k.slice(0, at), i = base.indexOf("::"), val = i < 0 ? base : base.slice(i + 2);
     return at < 0 ? val : ((TRIG_ROLE_LABEL[val] || {})[k.slice(at + 3)] || val);
   };
   const taxoCatName = (k) => { const i = k.indexOf("::"); return i < 0 ? "" : k.slice(0, i); };
@@ -1220,7 +1233,7 @@
     const facet = (lbl, val, action) =>
       `<button class="facet ${val ? "on" : ""}" data-action="${action}">${lbl}${val ? `: ${action === "facet-class" ? classIco(val) : action === "facet-race" && D.raceIcons && D.raceIcons[val] ? `<span class="tag-ico">${spriteImg(D.raceIcons[val], "px")}</span>` : ""}<b>${esc(val)}</b>` : ""}${val ? ` <span class="facet-x" data-action="${action}-clear">✕</span>` : " ▾"}</button>`;
     const taxoChips = st.taxoFilters.map((k, i) =>
-      `<button class="facet on tag" data-action="rm-taxo" data-i="${i}">${esc(taxoCatName(k))}: <b>${esc(taxoValName(k))}</b> <span class="facet-x">✕</span></button>`).join("");
+      `<button class="facet on tag" data-action="rm-taxo" data-i="${i}">${esc(taxoCatName(k))}: <b>${esc(taxoValName(k))}</b> <span class="facet-x">✕</span></button>` + sideBtn(k)).join("");
     const filterbar = `<div class="ovl-filterbar">
       ${facet("Class", st.clsFilter, "facet-class")}
       ${facet("Race", st.raceFilter, "facet-race")}
@@ -2257,7 +2270,7 @@
     // not inline chips) so it matches the ＋ Filter used across the creature selector / artifact builder.
     const perkBrowsing = st.perkBrowse || !!st.perkCat;
     let taxobar, browseBody = "";
-    if (st.perkTaxo) taxobar = `<button class="facet on tag" data-action="perk-taxo-clear">${esc(taxoCatName(st.perkTaxo))}: <b>${esc(taxoValName(st.perkTaxo))}</b> <span class="facet-x">✕</span></button>`;
+    if (st.perkTaxo) taxobar = `<button class="facet on tag" data-action="perk-taxo-clear">${esc(taxoCatName(st.perkTaxo))}: <b>${esc(taxoValName(st.perkTaxo))}</b> <span class="facet-x">✕</span></button>` + sideBtn(st.perkTaxo);
     else if (st.perkCat) taxobar = `<button class="facet" data-action="perk-taxo-back">‹ Categories</button><span class="facet on">${esc(st.perkCat)}</span>${singlesToggle()}`;
     else if (st.perkBrowse) taxobar = `<button class="facet" data-action="perk-taxo-back">‹ Perks</button><span class="facet on">Filter by mechanic</span>${singlesToggle()}`;
     else taxobar = `<button class="facet add" data-action="perk-taxo-open">＋ Filter</button>`;
@@ -2705,7 +2718,7 @@
     const browsing = st.browsing || (tags.length === 0 && !st.bkScope && !q);
     // active-tag chips (removable) — mirror the creature selector's multi-AND facet chips
     const tagChips = tags.map(k =>
-      `<button class="facet on tag" data-action="appendix-rm-tag" data-k="${esc(k)}">${esc(taxoCatName(k))}: <b>${esc(taxoValName(k))}</b> <span class="facet-x">✕</span></button>`).join("");
+      `<button class="facet on tag" data-action="appendix-rm-tag" data-k="${esc(k)}">${esc(taxoCatName(k))}: <b>${esc(taxoValName(k))}</b> <span class="facet-x">✕</span></button>` + sideBtn(k)).join("");
     // Bookmark filtering is now a single footer button (toggles the "all-bookmarks" scope); the
     // creature-innate / item-only split logic stays wired (appendixBkCounts / appendixUniverse) for the
     // Item-only Traits section and future use, it's just no longer exposed as a chip row.
@@ -4098,7 +4111,7 @@
       ? `<button class="facet on" data-action="anoint-spec">Spec: ${specEmblemIco(st.specFilter)}<b>${esc(st.specFilter)}</b> <span class="facet-x" data-action="anoint-spec-clear">✕</span></button>`
       : `<button class="facet" data-action="anoint-spec">Spec ▾</button>`;
     const taxoChips = st.taxoFilters.map((k, i) =>
-      `<button class="facet on tag" data-action="rm-taxo" data-i="${i}">${esc(taxoCatName(k))}: <b>${esc(taxoValName(k))}</b> <span class="facet-x">✕</span></button>`).join("");
+      `<button class="facet on tag" data-action="rm-taxo" data-i="${i}">${esc(taxoCatName(k))}: <b>${esc(taxoValName(k))}</b> <span class="facet-x">✕</span></button>` + sideBtn(k)).join("");
     const bkChip = bookmarks.perks.length ? `<button class="facet ${st.bkOnly ? "on" : ""}" data-action="anoint-bkonly" title="Show only bookmarked perks">★ Bookmarked</button>` : "";
     const filterbar = `<div class="ovl-filterbar">${godChip}${specChip}${taxoChips}<button class="facet add" data-action="anoint-taxo">＋ Filter</button>${bkChip}</div>`;
     const full = build.anoints.length >= anointMax();
@@ -4498,7 +4511,7 @@
   // (✕ drops that tag) and ＋ Filter adds another.
   const taxosMatch = (st, sp) => !(st.spellTaxos || []).length || (!!sp && st.spellTaxos.every(k => tagHas(sp, k)));
   const taxoChips = (st) => (st.spellTaxos || []).map(k =>
-      `<button class="facet on tag" data-action="sg-taxofilter-clear" data-v="${esc(k)}">${esc(taxoCatName(k))}: <b>${esc(taxoValName(k))}</b> <span class="facet-x">✕</span></button>`).join("")
+      `<button class="facet on tag" data-action="sg-taxofilter-clear" data-v="${esc(k)}">${esc(taxoCatName(k))}: <b>${esc(taxoValName(k))}</b> <span class="facet-x">✕</span></button>` + sideBtn(k)).join("")
     + `<button class="facet add" data-action="sg-taxofilter">＋ Filter</button>`;
   function spellPickList(st, exclude) {
     const q = (st.search || "").trim().toLowerCase(), sort = st.spellSort || "name";
@@ -6064,6 +6077,17 @@
       case "facet-class-clear": e.stopPropagation(); ovState.clsFilter = null; resetCreaPage(); refreshOverlay(); break;
       case "facet-race-clear": e.stopPropagation(); ovState.raceFilter = null; resetCreaPage(); refreshOverlay(); break;
       case "rm-taxo": ovState.taxoFilters.splice(+t.dataset.i, 1); resetCreaPage(); refreshOverlay(); break;
+      case "taxo-side": {   // cycle an active tag through Either / Your side / Enemy side
+        e.stopPropagation();
+        const k = t.dataset.k, nk = sideNext(k), swap = (arr) => arr && arr.includes(k) ? arr.map(x => x === k ? nk : x) : arr;
+        if (dovState && dovState.perkTaxo === k) { dovState.perkTaxo = nk; refreshDetail(); break; }
+        if (ovState) {
+          ovState.tags = swap(ovState.tags); ovState.spellTaxos = swap(ovState.spellTaxos);
+          if (ovState.taxoFilters && ovState.taxoFilters.includes(k)) { ovState.taxoFilters = swap(ovState.taxoFilters); resetCreaPage(); }
+          refreshOverlay();
+        }
+        break;
+      }
       case "facet-pick": {
         const v = t.dataset.v;
         if (dovState.facet === "class") { ovState.clsFilter = v; resetCreaPage(); closeDetail(); refreshOverlay(); }

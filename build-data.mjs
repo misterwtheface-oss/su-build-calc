@@ -3576,7 +3576,7 @@ const taxonomy2 = (() => {
   for (const o of conditions) run('condition', o.key, o);
   const { unknown, ...st } = V.stats;
   for (const [t, n] of Object.entries(unknown)) warn(`taxonomy v2: value ${t} (${n}×) is not in the crosswalk / new_values`);
-  console.log(`  taxonomy v2: ${st.objects} objects (${st.withCode} with code) · ${st.entries} tags: code ${st.code} · v1 ${st.v1} · unverified ${st.unverified} · Involves ${st.involves} · event scopes ${st.eventScope} resolved / ${st.eventScopeOff} off`);
+  console.log(`  taxonomy v2: ${st.objects} objects (${st.withCode} with code) · ${st.entries} tags: code ${st.code} · v1 ${st.v1} · unverified ${st.unverified} · Involves ${st.involves} · event scopes ${st.eventScope} resolved / ${st.eventScopeOff} off · v1 triggers the code doesn't back → unverified ${st.trigUnverified}`);
   const A = X.attributes, categories = V.vocabulary(counts);
   const G = V.groups(readJSON(path.join(ROOT, 'data', 'reference', 'taxonomy_groups.json')), categories);
   if (G.orphans.length) warn(`taxonomy v2: ${G.orphans.length} values in no mechanic group: ${G.orphans.join(', ')}`);

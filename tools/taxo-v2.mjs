@@ -46,7 +46,7 @@ export function makeTaxoV2(X, CL) {
     if (val.includes('|')) { const [a, b] = val.split('|'); return [cat + '::' + a, cat + '::' + a.replace(/\S+$/, b)]; }
     return [tag];
   };
-  const stats = { eventScope: 0, eventScopeOff: 0, objects: 0, withCode: 0, entries: 0, code: 0, v1: 0, unverified: 0, involves: 0, unknown: {} };
+  const stats = { trigUnverified: 0, eventScope: 0, eventScopeOff: 0, objects: 0, withCode: 0, entries: 0, code: 0, v1: 0, unverified: 0, involves: 0, unknown: {} };
 
   // vocabulary: every value the crosswalk can produce + the code-only new values (+ open families)
   const vocab = new Set(Object.keys(X.new_values).filter(k => k !== '_note'));
@@ -87,7 +87,9 @@ export function makeTaxoV2(X, CL) {
     const codeE = ((code && code.tags) || []).flatMap(c => {
       const alts = expand(c.tag);
       return alts.map(t => ({ t, s: c.scope || null, so: c.source || null, r: c.role || null, p: c.phase || null,
-        d: c.delivery || null, v: alts.length > 1 ? 'unverified' : 'code' }));
+        // Targeting::All inferred only from "no picker call" is a guess while random-by-index picks are undecoded
+        // (Abnegation hits a random enemy): unverified until the extract decodes it
+        d: c.delivery || null, v: alts.length > 1 || / no picker call/.test(c.picker || '') ? 'unverified' : 'code' }));
     });
     // event-relative scopes → the trigger's scope (see EVENT_SIDE)
     const trig = codeE.filter(e => e.t.startsWith('Trigger::') && e.s && !e.s.startsWith('event:'));
@@ -100,7 +102,13 @@ export function makeTaxoV2(X, CL) {
       e.s = m.length === 1 ? m[0] : null; stats[m.length === 1 ? 'eventScope' : 'eventScopeOff']++;
     }
     const codeVals = new Set(codeE.map(e => e.t));
-    const all = [...codeE, ...v1.filter(e => !codeVals.has(e.t))];
+    // Triggers: a v1-only trigger on an object whose trigger(s) the code decoded is unverified, not dropped. Some are old
+    // guesses (Abnegation's "Takes Damage", user 2026-10-19), but others are the player-facing trigger the code anchors
+    // elsewhere (Living Flame / Snuff: Burning ticks at turn start) or a part the code missed (Furor's Turn Start).
+    const codeTrig = codeE.some(e => e.t.startsWith('Trigger::'));
+    const v1keep = v1.filter(e => !codeVals.has(e.t)).map(e => codeTrig && e.t.startsWith('Trigger::') && e.v !== 'unverified'
+      ? (stats.trigUnverified++, { ...e, v: 'unverified' }) : e);
+    const all = [...codeE, ...v1keep];
     // dedupe on the full attribute key (an unverified duplicate of a firm entry goes)
     const seen = new Map();
     for (const e of all) {
