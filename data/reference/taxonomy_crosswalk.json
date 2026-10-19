@@ -1,0 +1,1451 @@
+{
+ "_note": "DRAFT taxonomy v2 crosswalk (user-approved shape 2026-10-18; values DRAFT until ratified in TAXONOMY_INTENT.md). Old 'Category::Value' -> new tag(s). kind: rename = 1:1 | scope = 1:1 value, the Ally/Enemy part moves to the scope attribute | split = several targets, code decides per object (rule) | dup = trigger-like outcome: drop if the object already has the trigger, else code decides | derive = Action/Mechanic, recomputed from the new tags | drop. Checked by tools/taxo_crosswalk.mjs.",
+ "map": {
+  "Activates When::Ally Attacks": {
+   "kind": "scope",
+   "to": [
+    "Trigger::Attack"
+   ],
+   "role": "Performer"
+  },
+  "Activates When::Enemy Attacks": {
+   "kind": "scope",
+   "to": [
+    "Trigger::Attack"
+   ],
+   "role": "Performer"
+  },
+  "Activates When::Ally Casts": {
+   "kind": "scope",
+   "to": [
+    "Trigger::Cast"
+   ],
+   "role": "Performer"
+  },
+  "Activates When::Enemy Casts": {
+   "kind": "scope",
+   "to": [
+    "Trigger::Cast"
+   ],
+   "role": "Performer"
+  },
+  "Activates When::Ally Defends": {
+   "kind": "scope",
+   "to": [
+    "Trigger::Defend"
+   ],
+   "role": "Performer"
+  },
+  "Activates When::Enemy Defends": {
+   "kind": "scope",
+   "to": [
+    "Trigger::Defend"
+   ],
+   "role": "Performer"
+  },
+  "Activates When::Ally Provokes": {
+   "kind": "scope",
+   "to": [
+    "Trigger::Provoke"
+   ],
+   "role": "Performer"
+  },
+  "Activates When::Enemy Provokes": {
+   "kind": "scope",
+   "to": [
+    "Trigger::Provoke"
+   ],
+   "role": "Performer"
+  },
+  "Activates When::Ally Dodges": {
+   "kind": "scope",
+   "to": [
+    "Trigger::Dodge"
+   ],
+   "role": "Performer"
+  },
+  "Activates When::Enemy Dodges": {
+   "kind": "scope",
+   "to": [
+    "Trigger::Dodge"
+   ],
+   "role": "Performer"
+  },
+  "Activates When::Ally Critically Hits": {
+   "kind": "scope",
+   "to": [
+    "Trigger::Critical Hit"
+   ],
+   "role": "Performer"
+  },
+  "Activates When::Enemy Critically Hits": {
+   "kind": "scope",
+   "to": [
+    "Trigger::Critical Hit"
+   ],
+   "role": "Performer"
+  },
+  "Activates When::Ally Deals Damage": {
+   "kind": "scope",
+   "to": [
+    "Trigger::Damage"
+   ],
+   "role": "Performer"
+  },
+  "Activates When::Enemy Deals Damage": {
+   "kind": "scope",
+   "to": [
+    "Trigger::Damage"
+   ],
+   "role": "Performer"
+  },
+  "Activates When::Ally Takes Damage": {
+   "kind": "scope",
+   "to": [
+    "Trigger::Damage"
+   ],
+   "role": "Receiver"
+  },
+  "Activates When::Enemy Takes Damage": {
+   "kind": "scope",
+   "to": [
+    "Trigger::Damage"
+   ],
+   "role": "Receiver"
+  },
+  "Activates When::Ally Indirectly Damaged": {
+   "kind": "scope",
+   "to": [
+    "Trigger::Damage"
+   ],
+   "role": "Receiver",
+   "source": "Indirect"
+  },
+  "Activates When::Enemy Indirectly Damaged": {
+   "kind": "scope",
+   "to": [
+    "Trigger::Damage"
+   ],
+   "role": "Receiver",
+   "source": "Indirect"
+  },
+  "Activates When::Ally is Healed": {
+   "kind": "scope",
+   "to": [
+    "Trigger::Heal"
+   ],
+   "role": "Receiver"
+  },
+  "Activates When::Enemy Is Healed": {
+   "kind": "scope",
+   "to": [
+    "Trigger::Heal"
+   ],
+   "note": "case-variant duplicate of 'Enemy is Healed' (11 + 2 objects): merge",
+   "role": "Receiver"
+  },
+  "Activates When::Enemy is Healed": {
+   "kind": "scope",
+   "to": [
+    "Trigger::Heal"
+   ],
+   "role": "Receiver"
+  },
+  "Activates When::Ally Dies": {
+   "kind": "scope",
+   "to": [
+    "Trigger::Death"
+   ],
+   "role": "Receiver"
+  },
+  "Activates When::Enemy Dies": {
+   "kind": "scope",
+   "to": [
+    "Trigger::Death"
+   ],
+   "role": "Receiver"
+  },
+  "Activates When::Ally Resurrects": {
+   "kind": "scope",
+   "to": [
+    "Trigger::Resurrection"
+   ],
+   "role": "Receiver"
+  },
+  "Activates When::Enemy Resurrects": {
+   "kind": "scope",
+   "to": [
+    "Trigger::Resurrection"
+   ],
+   "role": "Receiver"
+  },
+  "Activates When::Ally is Buffed": {
+   "kind": "scope",
+   "to": [
+    "Trigger::Buff"
+   ],
+   "role": "Receiver"
+  },
+  "Activates When::Enemy is Buffed": {
+   "kind": "scope",
+   "to": [
+    "Trigger::Buff"
+   ],
+   "role": "Receiver"
+  },
+  "Activates When::Ally is Debuffed": {
+   "kind": "scope",
+   "to": [
+    "Trigger::Debuff"
+   ],
+   "role": "Receiver"
+  },
+  "Activates When::Enemy is Debuffed": {
+   "kind": "scope",
+   "to": [
+    "Trigger::Debuff"
+   ],
+   "note": "user 2026-10-18: meant \"an enemy has a debuff applied\". Code decides per object: bc_OnBuffDebuff \"is Debuffed\" = role Receiver, phase After; \"Applies Buff/Debuff\" = role Applier (scope = the applier); bc_EventDebuff = phase Would if it issues a new effect, otherwise the tag is an Effect only (e.g. Master of Smogs -> Debuffs::Strengthen, Blazing Soul -> Calculation::DoT Formula)",
+   "role": "Receiver"
+  },
+  "Activates When::Ally Loses Buff/Debuff": {
+   "kind": "split",
+   "to": [
+    "Trigger::Buff Removed",
+    "Trigger::Debuff Removed"
+   ],
+   "rule": "polarity of the condition id lost (buff vs debuff table)"
+  },
+  "Activates When::Enemy Loses Buff/Debuff": {
+   "kind": "split",
+   "to": [
+    "Trigger::Buff Removed",
+    "Trigger::Debuff Removed"
+   ],
+   "rule": "polarity of the condition id lost"
+  },
+  "Activates When::Ally Gains Stats": {
+   "kind": "scope",
+   "to": [
+    "Trigger::Stat Gain"
+   ],
+   "role": "Performer"
+  },
+  "Activates When::Enemy Gains Stats": {
+   "kind": "scope",
+   "to": [
+    "Trigger::Stat Gain"
+   ],
+   "role": "Performer"
+  },
+  "Activates When::Ally Loses Stats": {
+   "kind": "scope",
+   "to": [
+    "Trigger::Stat Loss"
+   ],
+   "role": "Performer"
+  },
+  "Activates When::Enemy Loses Stats": {
+   "kind": "scope",
+   "to": [
+    "Trigger::Stat Loss"
+   ],
+   "role": "Performer"
+  },
+  "Activates When::Ally Moves on Timeline": {
+   "kind": "scope",
+   "to": [
+    "Trigger::Timeline Move"
+   ],
+   "role": "Performer"
+  },
+  "Activates When::Enemy Moves on Timeline": {
+   "kind": "scope",
+   "to": [
+    "Trigger::Timeline Move"
+   ],
+   "role": "Performer"
+  },
+  "Activates When::Ally Minion Gain/Action": {
+   "kind": "split",
+   "to": [
+    "Trigger::Minion Gained",
+    "Trigger::Minion Action"
+   ],
+   "rule": "bc_OnMinion (gain) vs bc_EventMinion (minion action)"
+  },
+  "Activates When::Enemy Minion Gain/Action": {
+   "kind": "split",
+   "to": [
+    "Trigger::Minion Gained",
+    "Trigger::Minion Action"
+   ],
+   "rule": "bc_OnMinion vs bc_EventMinion"
+  },
+  "Activates When::Ally Trait Activates": {
+   "kind": "scope",
+   "to": [
+    "Trigger::Trait Activation"
+   ],
+   "role": "Performer"
+  },
+  "Activates at::Start of Battle": {
+   "kind": "rename",
+   "to": [
+    "Trigger::Battle Start"
+   ]
+  },
+  "Activates at::Start of Ally Turn": {
+   "kind": "scope",
+   "to": [
+    "Trigger::Turn Start"
+   ]
+  },
+  "Activates at::Start of Enemy Turn": {
+   "kind": "scope",
+   "to": [
+    "Trigger::Turn Start"
+   ]
+  },
+  "Activates at::End of Ally Turn": {
+   "kind": "scope",
+   "to": [
+    "Trigger::Turn End"
+   ]
+  },
+  "Activates at::End of Enemy Turn": {
+   "kind": "scope",
+   "to": [
+    "Trigger::Turn End"
+   ]
+  },
+  "Active If::Has taken X Action Once": {
+   "kind": "rename",
+   "to": [
+    "Condition::Has Done Action"
+   ]
+  },
+  "Active If::Buffed with X": {
+   "kind": "rename",
+   "to": [
+    "Condition::Has Buff"
+   ]
+  },
+  "Active If::Debuffed with X": {
+   "kind": "rename",
+   "to": [
+    "Condition::Has Debuff"
+   ]
+  },
+  "Active If::Creature is Alive": {
+   "kind": "rename",
+   "to": [
+    "Condition::Is Alive"
+   ]
+  },
+  "Active If::Creature is Dead": {
+   "kind": "rename",
+   "to": [
+    "Condition::Is Dead"
+   ]
+  },
+  "Active If::Creature is X Type": {
+   "kind": "rename",
+   "to": [
+    "Condition::Is Type"
+   ]
+  },
+  "Active If::All Creatures Are X": {
+   "kind": "rename",
+   "to": [
+    "Condition::Party All Same Type"
+   ]
+  },
+  "Active If::Defending": {
+   "kind": "rename",
+   "to": [
+    "Condition::Defending"
+   ]
+  },
+  "Active If::Provoking": {
+   "kind": "rename",
+   "to": [
+    "Condition::Provoking"
+   ]
+  },
+  "Active If::Health is X%": {
+   "kind": "rename",
+   "to": [
+    "Condition::Health Threshold"
+   ]
+  },
+  "Active If::Not Their Turn": {
+   "kind": "rename",
+   "to": [
+    "Condition::Not Their Turn"
+   ]
+  },
+  "Active If::Stat is Unmodified": {
+   "kind": "rename",
+   "to": [
+    "Condition::Stats Unmodified"
+   ]
+  },
+  "Active If::Undamaged Turn": {
+   "kind": "rename",
+   "to": [
+    "Condition::Undamaged This Turn"
+   ]
+  },
+  "Active If::Creatures Missing": {
+   "kind": "rename",
+   "to": [
+    "Condition::Creatures Missing"
+   ]
+  },
+  "Affect on Damage::Deal More Damage": {
+   "kind": "rename",
+   "to": [
+    "Damage::Deal More"
+   ]
+  },
+  "Affect on Damage::Deal Less Damage": {
+   "kind": "rename",
+   "to": [
+    "Damage::Deal Less"
+   ]
+  },
+  "Affect on Damage::Take More Damage": {
+   "kind": "rename",
+   "to": [
+    "Damage::Take More"
+   ]
+  },
+  "Affect on Damage::Take Less Damage": {
+   "kind": "rename",
+   "to": [
+    "Damage::Take Less"
+   ]
+  },
+  "Affect on Damage::More Critical Chance": {
+   "kind": "rename",
+   "to": [
+    "Hit Resolution::Crit Chance"
+   ]
+  },
+  "Affect on Damage::Ignore Defense": {
+   "kind": "rename",
+   "to": [
+    "Calculation::Ignore Defense"
+   ],
+   "note": "user 2026-10-18: Calculation"
+  },
+  "Affect on Life::Creature is Damaged": {
+   "kind": "split",
+   "to": [
+    "Damage::Inflict"
+   ],
+   "rule": "per object from code: Damage::Inflict with Source from dtype (0 Attack, 1 Spell, -1 Indirect; trait 'deals damage' is dtype 1 = Spell); or Life::Execute / via its own attack / modifier only (extract S37 D1). Direct/Indirect merged into Inflict + Source (user 2026-10-19)"
+  },
+  "Affect on Life::Creature is Healed": {
+   "kind": "dup",
+   "to": [
+    "Life::Heal"
+   ],
+   "trigger": "Trigger::Heal",
+   "rule": "keep Life::Heal only where the effect itself heals (does: Heal)"
+  },
+  "Affect on Life::Creature is Killed": {
+   "kind": "dup",
+   "to": [
+    "Life::Execute"
+   ],
+   "trigger": "Trigger::Death",
+   "rule": "keep Life::Execute only where the effect itself kills"
+  },
+  "Affect on Life::Creature is Resurrected": {
+   "kind": "dup",
+   "to": [
+    "Life::Resurrect"
+   ],
+   "trigger": "Trigger::Resurrection",
+   "rule": "keep Life::Resurrect only where the effect itself resurrects"
+  },
+  "Affect on Life::More Healing": {
+   "kind": "rename",
+   "to": [
+    "Life::Healing Up"
+   ]
+  },
+  "Affect on Life::Less Healing": {
+   "kind": "rename",
+   "to": [
+    "Life::Healing Down"
+   ]
+  },
+  "Affect on Life::Cannot Be Resurrected": {
+   "kind": "rename",
+   "to": [
+    "Life::Can't Resurrect"
+   ]
+  },
+  "Affect on Mitigation::Survive with X Health": {
+   "kind": "rename",
+   "to": [
+    "Life::Survive Lethal"
+   ]
+  },
+  "Affect on Attacks::Modify Attack Calculation": {
+   "kind": "rename",
+   "to": [
+    "Calculation::Attack Formula"
+   ],
+   "note": "ruled 2026-10-19: as-if stat effects stay (The Crimson); plain multipliers (Vital Shot, Aimed Shot, One-Hit Wonder) -> Damage::Deal More; forced class advantage -> Calculation::Class Advantage"
+  },
+  "Affect on Spells::Modify Spell Calculation": {
+   "kind": "rename",
+   "to": [
+    "Calculation::Spell Formula"
+   ],
+   "note": "ruled 2026-10-19: as-if stat effects stay (Infusion, Sacrimony, Necronomicon)"
+  },
+  "Affect on Mitigation::Defense Calculation": {
+   "kind": "rename",
+   "to": [
+    "Calculation::Damage-Taken Formula"
+   ],
+   "note": "G7 open question 1 answered by structure: this is the inbound tag"
+  },
+  "Affect on Mitigation::More Dodge Chance": {
+   "kind": "rename",
+   "to": [
+    "Hit Resolution::Dodge Chance"
+   ]
+  },
+  "Affect on Mitigation::Can't Dodge Attacks": {
+   "kind": "rename",
+   "to": [
+    "Hit Resolution::Can't Dodge"
+   ]
+  },
+  "Affect on Attacks::Chance to Fail (Attack)": {
+   "kind": "rename",
+   "to": [
+    "Hit Resolution::Attack Fails"
+   ]
+  },
+  "Affect on Spells::Chance to Fail (Spell)": {
+   "kind": "rename",
+   "to": [
+    "Hit Resolution::Spell Fails"
+   ]
+  },
+  "Affect on Attacks::Automatic/Extra Attack": {
+   "kind": "split",
+   "to": [
+    "Actions::Extra Attack",
+    "Actions::Auto Attack"
+   ],
+   "rule": "Extra = the creature's own attack repeats / hits more times (count change inside bc_CreatureAttack with no new attack call, or a re-issue of the same attack); Auto = a new attack call (bc_CreatureAttack effect). Who attacks = effect scope."
+  },
+  "Affect on Spells::Automatic/Extra Cast": {
+   "kind": "split",
+   "to": [
+    "Actions::Extra Cast",
+    "Actions::Auto Cast"
+   ],
+   "rule": "Extra = the creature's own cast repeats (count change inside bc_CreatureCast, or a re-issue of the same spell, e.g. Pandemonium Wrath); Auto = a new cast call (bc_CreatureCastSpellGem / bc_CreatureCastRandomSpell). Who casts = effect scope."
+  },
+  "Affect on Attacks::Can't Manually Attack": {
+   "kind": "rename",
+   "to": [
+    "Actions::Can't Manually Attack"
+   ]
+  },
+  "Affect on Spells::Can't Manually Cast": {
+   "kind": "rename",
+   "to": [
+    "Actions::Can't Manually Cast"
+   ]
+  },
+  "Affect on Mitigation::Can't Manually Defend": {
+   "kind": "rename",
+   "to": [
+    "Actions::Can't Manually Defend"
+   ]
+  },
+  "Affect on Mitigation::Can't Manually Provoke": {
+   "kind": "rename",
+   "to": [
+    "Actions::Can't Manually Provoke"
+   ]
+  },
+  "Affect on Mitigation::Automatically Defend": {
+   "kind": "rename",
+   "to": [
+    "Actions::Auto Defend"
+   ]
+  },
+  "Affect on Mitigation::Automatically Provoke": {
+   "kind": "rename",
+   "to": [
+    "Actions::Auto Provoke"
+   ]
+  },
+  "Affect on Spells::Count as Manual": {
+   "kind": "rename",
+   "to": [
+    "Actions::Counts as Manual"
+   ]
+  },
+  "Affect on Spells::Redirect Spell": {
+   "kind": "rename",
+   "to": [
+    "Actions::Redirect Spell"
+   ]
+  },
+  "Action/Mechanic::Intercept": {
+   "kind": "rename",
+   "to": [
+    "Actions::Intercept"
+   ],
+   "note": "the one Action/Mechanic value with no outcome tag today; becomes a real outcome"
+  },
+  "Affect on Spells::Extra/Gain a Spell Gem": {
+   "kind": "split",
+   "to": [
+    "Spell Gems::Gain Gem",
+    "Spell Gems::Extra Gem Slot"
+   ],
+   "rule": "creates / grants a gem (Ethereal etc.) vs adds a spell slot"
+  },
+  "Affect on Spells::Modify Charges/Behavior": {
+   "kind": "split",
+   "to": [
+    "Spell Gems::Charges",
+    "Spell Gems::Behavior"
+   ],
+   "rule": "charge count write vs any other change to how the spell acts"
+  },
+  "Affect on Spells::Modify Spell Gem Property": {
+   "kind": "rename",
+   "to": [
+    "Spell Gems::Property"
+   ]
+  },
+  "Affect on Spells::More Spell Potency": {
+   "kind": "rename",
+   "to": [
+    "Spell Gems::Potency Up"
+   ]
+  },
+  "Affect on Spells::Less Spell Potency": {
+   "kind": "rename",
+   "to": [
+    "Spell Gems::Potency Down"
+   ]
+  },
+  "Affect on Spells::Seal Spell Gem": {
+   "kind": "rename",
+   "to": [
+    "Spell Gems::Seal"
+   ]
+  },
+  "Affect on Spells::Cannot be Sealed": {
+   "kind": "rename",
+   "to": [
+    "Spell Gems::Can't Be Sealed"
+   ]
+  },
+  "Affect on Spells::Equip from Other Classes": {
+   "kind": "rename",
+   "to": [
+    "Spell Gems::Off-Class Equip"
+   ]
+  },
+  "Affect on Status::Apply/Gain a Buff": {
+   "kind": "scope",
+   "to": [
+    "Buffs::Apply"
+   ],
+   "note": "the slash (apply to others vs gain yourself) is answered by scope, not a code split"
+  },
+  "Affect on Status::Remove Buff": {
+   "kind": "rename",
+   "to": [
+    "Buffs::Remove"
+   ]
+  },
+  "Affect on Status::More Powerful Buff": {
+   "kind": "rename",
+   "to": [
+    "Buffs::Strengthen"
+   ]
+  },
+  "Affect on Status::Buffs Persist": {
+   "kind": "rename",
+   "to": [
+    "Buffs::Persist"
+   ]
+  },
+  "Affect on Status::Share/Gain Copy of Buff": {
+   "kind": "scope",
+   "to": [
+    "Buffs::Copy"
+   ]
+  },
+  "Affect on Status::Limit/Prevent Buff Gain": {
+   "kind": "rename",
+   "to": [
+    "Buffs::Can't Gain"
+   ]
+  },
+  "Affect on Status::Afflict with/Gain a Debuff": {
+   "kind": "scope",
+   "to": [
+    "Debuffs::Apply"
+   ],
+   "note": "afflict an enemy vs debuff yourself = scope"
+  },
+  "Affect on Status::Remove Debuff": {
+   "kind": "rename",
+   "to": [
+    "Debuffs::Remove"
+   ]
+  },
+  "Affect on Status::Increase Debuff Potency": {
+   "kind": "rename",
+   "to": [
+    "Debuffs::Strengthen"
+   ]
+  },
+  "Affect on Status::Debuffs Persist": {
+   "kind": "rename",
+   "to": [
+    "Debuffs::Persist"
+   ]
+  },
+  "Affect on Status::Resistant to Debuff": {
+   "kind": "rename",
+   "to": [
+    "Debuffs::Resist"
+   ]
+  },
+  "Affect on Status::Avoid/Immune to Debuff": {
+   "kind": "rename",
+   "to": [
+    "Debuffs::Immune"
+   ]
+  },
+  "Affect on Status::Cannot be Immune": {
+   "kind": "rename",
+   "to": [
+    "Debuffs::Bypass Protection"
+   ],
+   "note": "user 2026-10-19: Bypass Protection covers can't be immune and can't be resistant (Sucked Dry)"
+  },
+  "Affect on Status::Always Has X Buff/Debuff": {
+   "kind": "split",
+   "to": [
+    "Buffs::Always Has",
+    "Debuffs::Always Has"
+   ],
+   "rule": "polarity of the condition id held"
+  },
+  "Affect on Status::Count Additional (Status)": {
+   "kind": "split",
+   "to": [
+    "Buffs::Count Extra",
+    "Debuffs::Count Extra"
+   ],
+   "rule": "polarity"
+  },
+  "Affect on Status::Extend Duration (Status)": {
+   "kind": "split",
+   "to": [
+    "Buffs::Extend",
+    "Debuffs::Extend"
+   ],
+   "rule": "polarity"
+  },
+  "Affect on Status::Reduce Duration": {
+   "kind": "split",
+   "to": [
+    "Buffs::Shorten",
+    "Debuffs::Shorten"
+   ],
+   "rule": "polarity"
+  },
+  "Affect on Stats::Stat is Increased": {
+   "kind": "split",
+   "to": [
+    "Stats::Gain",
+    "Stats::Has More"
+   ],
+   "rule": "stat-gain event (bc_EventGain*, fires on-gain effects, diminishing returns) vs passive stat getter modifier (crit_attack / crit_intelligence / crit_defense / crit_speed, \"has X% more\")"
+  },
+  "Affect on Stats::Stat is Decreased": {
+   "kind": "split",
+   "to": [
+    "Stats::Lose",
+    "Stats::Has Less"
+   ],
+   "rule": "stat-loss event (bc_EventLose*) vs passive getter modifier (\"has X% less\")"
+  },
+  "Affect on Stats::Stat is Stolen": {
+   "kind": "rename",
+   "to": [
+    "Stats::Steal"
+   ]
+  },
+  "Affect on Stats::Stat/Change is Shared": {
+   "kind": "split",
+   "to": [
+    "Stats::Share Stat",
+    "Stats::Share Stat Change"
+   ],
+   "rule": "reads another creature's stat value vs copies a gain/loss event"
+  },
+  "Affect on Stats::Stats are Averaged": {
+   "kind": "rename",
+   "to": [
+    "Stats::Average"
+   ]
+  },
+  "Affect on Stats::Stat Set to Minimum": {
+   "kind": "rename",
+   "to": [
+    "Stats::Set"
+   ],
+   "note": "user 2026-10-19: general Stats::Set (overwrite a stat: to its minimum, to another stat, to a %)"
+  },
+  "Affect on Stats::Cannot Gain Stats": {
+   "kind": "rename",
+   "to": [
+    "Stats::Can't Gain"
+   ]
+  },
+  "Affect on Stats::Cannot Lose Stats": {
+   "kind": "rename",
+   "to": [
+    "Stats::Can't Lose"
+   ]
+  },
+  "Affect on Stats::Persist (Stat Change)": {
+   "kind": "rename",
+   "to": [
+    "Stats::Persist"
+   ]
+  },
+  "Affect on Minions::Gain Minion": {
+   "kind": "rename",
+   "to": [
+    "Minions::Summon"
+   ]
+  },
+  "Affect on Minions::Additional Stacks": {
+   "kind": "rename",
+   "to": [
+    "Minions::Extra Stacks"
+   ]
+  },
+  "Affect on Minions::More Powerful Minion": {
+   "kind": "rename",
+   "to": [
+    "Minions::Strengthen"
+   ]
+  },
+  "Affect on Minions::Extend Duration (Minion)": {
+   "kind": "rename",
+   "to": [
+    "Minions::Extend"
+   ]
+  },
+  "Affect on Minions::Persist (Minion)": {
+   "kind": "rename",
+   "to": [
+    "Minions::Persist Through Death"
+   ]
+  },
+  "Affect on Minions::Count Additional (Minion)": {
+   "kind": "rename",
+   "to": [
+    "Minions::Count Extra"
+   ]
+  },
+  "Affect on Timeline::Additional Turn": {
+   "kind": "rename",
+   "to": [
+    "Turns::Extra Turn"
+   ]
+  },
+  "Affect on Timeline::Lose Turn": {
+   "kind": "rename",
+   "to": [
+    "Turns::Lose Turn"
+   ]
+  },
+  "Affect on Timeline::Count Additional (Turns)": {
+   "kind": "rename",
+   "to": [
+    "Turns::Count Extra"
+   ]
+  },
+  "Affect on Timeline::Send to Top": {
+   "kind": "rename",
+   "to": [
+    "Timeline::Move Up"
+   ]
+  },
+  "Affect on Timeline::Send to Bottom": {
+   "kind": "rename",
+   "to": [
+    "Timeline::Move Down"
+   ]
+  },
+  "Affect on Timeline::Shuffle Randomly": {
+   "kind": "rename",
+   "to": [
+    "Timeline::Shuffle"
+   ]
+  },
+  "Affect on Timeline::Modify Starting Placement": {
+   "kind": "rename",
+   "to": [
+    "Timeline::Starting Position"
+   ]
+  },
+  "Affect on Traits::Gain a Trait": {
+   "kind": "rename",
+   "to": [
+    "Traits::Gain"
+   ]
+  },
+  "Affect on Traits::Share Trait": {
+   "kind": "rename",
+   "to": [
+    "Traits::Share"
+   ]
+  },
+  "Affect on Traits::Steal Trait": {
+   "kind": "rename",
+   "to": [
+    "Traits::Steal"
+   ]
+  },
+  "Affect on Traits::More Activations/Potency": {
+   "kind": "split",
+   "to": [
+    "Traits::More Activations",
+    "Traits::More Potency"
+   ],
+   "rule": "trait fires extra times vs its numbers are scaled (amplifier traits, CODE_TAXO S4)"
+  },
+  "Affect on Traits::Trait Effect is Ignored": {
+   "kind": "rename",
+   "to": [
+    "Traits::Suppress"
+   ]
+  },
+  "Affect on Traits::Gain a Perk": {
+   "kind": "rename",
+   "to": [
+    "Traits::Gain Perk"
+   ]
+  },
+  "Affect on Type::Change Class": {
+   "kind": "rename",
+   "to": [
+    "Type::Change Class"
+   ]
+  },
+  "Affect on Type::Change Race": {
+   "kind": "rename",
+   "to": [
+    "Type::Change Race"
+   ]
+  },
+  "Affect on Type::Count Additional (Class)": {
+   "kind": "rename",
+   "to": [
+    "Type::Count Extra Class"
+   ]
+  },
+  "Affect on Type::Count Additional (Race)": {
+   "kind": "rename",
+   "to": [
+    "Type::Count Extra Race"
+   ]
+  },
+  "Effect Limitation::Limit Actions per Turn": {
+   "kind": "drop",
+   "note": "category retired; one leftover object",
+   "to": []
+  },
+  "Multiplied by::Current/Missing Health %": {
+   "kind": "split",
+   "to": [
+    "Scales With::Current Health %",
+    "Scales With::Missing Health %"
+   ],
+   "rule": "grows with remaining HP vs grows as HP drops (opposite build intents)"
+  },
+  "Multiplied by::Spell Gem/Charge Count": {
+   "kind": "split",
+   "to": [
+    "Scales With::Gem Count",
+    "Scales With::Charge Count"
+   ],
+   "rule": "counts gems vs counts charges"
+  },
+  "Multiplied by::Above/Below on TL Count": {
+   "kind": "split",
+   "to": [
+    "Scales With::Creatures Ahead",
+    "Scales With::Creatures Behind"
+   ],
+   "rule": "direction on the timeline"
+  },
+  "Multiplied by::Creature of X Type Count": {
+   "kind": "rename",
+   "to": [
+    "Scales With::Type Count"
+   ]
+  },
+  "Multiplied by::*": {
+   "kind": "rename",
+   "to": [
+    "Scales With::*"
+   ],
+   "note": "every other value keeps its name"
+  },
+  "Related Buff::*": {
+   "kind": "rename",
+   "to": [
+    "Named Buff::*"
+   ]
+  },
+  "Related Debuff::*": {
+   "kind": "rename",
+   "to": [
+    "Named Debuff::*"
+   ]
+  },
+  "Related Minion::*": {
+   "kind": "rename",
+   "to": [
+    "Named Minion::*"
+   ]
+  },
+  "Related Stat::*": {
+   "kind": "rename",
+   "to": [
+    "Stat::*"
+   ]
+  },
+  "Related Trait::*": {
+   "kind": "rename",
+   "to": [
+    "Trait Kind::*"
+   ]
+  },
+  "Related Types::*": {
+   "kind": "rename",
+   "to": [
+    "Creature Type::*"
+   ]
+  },
+  "Related Spells::*": {
+   "kind": "split3",
+   "to": [
+    "Spell Class::*",
+    "Spell Kind::*",
+    "Named Spell::*"
+   ],
+   "rule": "mechanical by value list: 5 class values / kind values (… Spells) / everything else is a named spell"
+  },
+  "Action/Mechanic::Adjacency": {
+   "kind": "rename",
+   "to": [
+    "Involves::Adjacency"
+   ]
+  },
+  "Action/Mechanic::Artifact": {
+   "kind": "rename",
+   "to": [
+    "Involves::Artifact"
+   ]
+  },
+  "Action/Mechanic::Relic": {
+   "kind": "rename",
+   "to": [
+    "Involves::Relic"
+   ]
+  },
+  "Action/Mechanic::Personality": {
+   "kind": "rename",
+   "to": [
+    "Involves::Personality"
+   ]
+  },
+  "Action/Mechanic::*": {
+   "kind": "derive",
+   "note": "recomputed as Theme from the new tags (themes below); the coverage check lists every object whose old tag would not come back",
+   "to": []
+  },
+  "Related Spells::Non-Ultimate Spells": {
+   "kind": "rename",
+   "to": [
+    "Spell Kind::Ultimate Spells"
+   ],
+   "note": "user 2026-10-19: negation folds into the base kind"
+  },
+  "Related Spells::Non-Ethereal Spells": {
+   "kind": "rename",
+   "to": [
+    "Spell Kind::Ethereal Spells"
+   ],
+   "note": "user 2026-10-19: negation folds into the base kind"
+  }
+ },
+ "themes": {
+  "_note": "Theme X is carried by any object with a tag matching one of these patterns (superset rule, structural). Scope never affects themes. Indirect Damage derives from Source = Indirect only (Inflict Direct/Indirect merged 2026-10-19).",
+  "Attack": [
+   "Trigger::Attack",
+   "Actions::Extra Attack",
+   "Actions::Auto Attack",
+   "Actions::Can't Manually Attack",
+   "Calculation::Attack Formula",
+   "Hit Resolution::Attack Fails",
+   "Scales With::Attack Count"
+  ],
+  "Cast": [
+   "Trigger::Cast",
+   "Actions::Extra Cast",
+   "Actions::Auto Cast",
+   "Actions::Can't Manually Cast",
+   "Actions::Counts as Manual",
+   "Actions::Redirect Spell",
+   "Calculation::Spell Formula",
+   "Hit Resolution::Spell Fails",
+   "Scales With::Cast Count"
+  ],
+  "Defend": [
+   "Trigger::Defend",
+   "Actions::Auto Defend",
+   "Actions::Can't Manually Defend",
+   "Condition::Defending",
+   "Scales With::Defend Count"
+  ],
+  "Provoke": [
+   "Trigger::Provoke",
+   "Actions::Auto Provoke",
+   "Actions::Can't Manually Provoke",
+   "Condition::Provoking",
+   "Scales With::Provoke Count"
+  ],
+  "Intercept": [
+   "Actions::Intercept"
+  ],
+  "Dodge": [
+   "Trigger::Dodge",
+   "Hit Resolution::Dodge Chance",
+   "Hit Resolution::Can't Dodge",
+   "Scales With::Dodge Count"
+  ],
+  "Critical": [
+   "Trigger::Critical Hit",
+   "Hit Resolution::Crit Chance",
+   "Scales With::Critical Count"
+  ],
+  "Damage": [
+   "Damage::*",
+   "Trigger::Damage",
+   "Calculation::*",
+   "Scales With::Amount of Damage Dealt",
+   "Scales With::Amount of Damage Taken",
+   "Scales With::Damage Taken Count",
+   "Calculation::Ignore Defense"
+  ],
+  "Indirect Damage": [],
+  "Healing": [
+   "Trigger::Heal",
+   "Life::Heal",
+   "Life::Healing Up",
+   "Life::Healing Down",
+   "Scales With::Amount Healed"
+  ],
+  "Resurrection": [
+   "Trigger::Resurrection",
+   "Life::Resurrect",
+   "Life::Can't Resurrect",
+   "Scales With::Resurrect Count"
+  ],
+  "Buff": [
+   "Buffs::*",
+   "Named Buff::*",
+   "Trigger::Buff",
+   "Trigger::Buff Removed",
+   "Condition::Has Buff",
+   "Scales With::Buff Count",
+   "Scales With::Buff Potency"
+  ],
+  "Debuff": [
+   "Debuffs::*",
+   "Named Debuff::*",
+   "Trigger::Debuff",
+   "Trigger::Debuff Removed",
+   "Condition::Has Debuff",
+   "Scales With::Debuff Count",
+   "Scales With::Debuff Potency"
+  ],
+  "Minion": [
+   "Minions::*",
+   "Named Minion::*",
+   "Trigger::Minion Gained",
+   "Trigger::Minion Action",
+   "Scales With::Minion Count"
+  ],
+  "Stats": [
+   "Stats::*",
+   "Stat::*",
+   "Trigger::Stat Gain",
+   "Trigger::Stat Loss",
+   "Condition::Stats Unmodified",
+   "Scales With::Amount of X Stat",
+   "Scales With::Amount of Stat Change"
+  ],
+  "Spell Gems": [
+   "Spell Gems::*",
+   "Scales With::Gem Count",
+   "Scales With::Charge Count"
+  ],
+  "Turn Counter": [
+   "Turns::*",
+   "Scales With::Turns Taken Count"
+  ],
+  "Timeline": [
+   "Timeline::*",
+   "Trigger::Timeline Move",
+   "Scales With::Creatures Ahead",
+   "Scales With::Creatures Behind"
+  ],
+  "Creature Class": [
+   "Type::Change Class",
+   "Type::Count Extra Class",
+   "Creature Type::Fused Class",
+   "Creature Type::Parent Class",
+   "Creature Type::Chaos Creature",
+   "Creature Type::Death Creature",
+   "Creature Type::Life Creature",
+   "Creature Type::Nature Creature",
+   "Creature Type::Sorcery Creature"
+  ],
+  "Creature Race": [
+   "Type::Change Race",
+   "Type::Count Extra Race",
+   "Creature Type::*!class"
+  ],
+  "Artifact": [
+   "Involves::Artifact",
+   "Trait Kind::Artifact Trait"
+  ],
+  "Adjacency": [
+   "Involves::Adjacency"
+  ],
+  "Relic": [
+   "Involves::Relic"
+  ],
+  "Personality": [
+   "Involves::Personality"
+  ]
+ },
+ "object_themes": {
+  "_note": "Themes an object has by what it is: a spell is a Cast.",
+  "spell": [
+   "Cast"
+  ]
+ },
+ "involves_rule": "An old Action/Mechanic tag that the new tags, Source and object_themes do not re-derive becomes Involves::<theme> with its old provenance. Theme = derived ∪ Involves. Each Involves tag is a review item: either a narrower tag is missing (add it) or the theme was wrong (drop it).",
+ "attributes": {
+  "scope": {
+   "status": "RATIFIED 2026-10-18",
+   "values": [
+    "Self",
+    "Ally",
+    "Self or Ally",
+    "Enemy",
+    "Any",
+    "Adjacent"
+   ],
+   "code": {
+    "self": "Self",
+    "ally": "Ally",
+    "ally_or_self": "Self or Ally",
+    "enemy": "Enemy",
+    "any": "Any",
+    "adjacent": "Adjacent"
+   },
+   "filter": "Filtering 'Ally side' matches Self, Ally and Self or Ally. 'Ally' alone means another ally, never the bearer."
+  },
+  "source": {
+   "status": "RATIFIED 2026-10-18",
+   "_note": "Second per-tag attribute (with scope). Which action a damage / hit / calculation tag applies to. Migrated from the object's existing code-grounded Action/Mechanic Attack / Cast / Indirect Damage tags; none = applies to any damage.",
+   "values": [
+    "Attack",
+    "Spell",
+    "Indirect"
+   ],
+   "applies_to": [
+    "Damage::*",
+    "Hit Resolution::*",
+    "Calculation::*",
+    "Trigger::Damage"
+   ],
+   "from_old": {
+    "Action/Mechanic::Attack": "Attack",
+    "Action/Mechanic::Cast": "Spell",
+    "Action/Mechanic::Indirect Damage": "Indirect"
+   },
+   "themes": {
+    "Attack": "Attack",
+    "Spell": "Cast",
+    "Indirect": "Indirect Damage"
+   },
+   "_theme_note": "Damage::Inflict + Spell (a trait's 'deals damage', dtype 1) derives Damage only, not Cast: spell-type damage outside a cast is not casting (2026-10-19)."
+  },
+  "role": {
+   "status": "DRAFT",
+   "applies_to": [
+    "Trigger::*"
+   ],
+   "values": [
+    "Performer",
+    "Receiver",
+    "Applier"
+   ],
+   "_note": "Performer = the creature doing the event (attacker, caster, damager, healer, killer); Receiver = the creature it happens to (attacked, damaged, healed, dying, debuffed); Applier = the creature that applies a buff/debuff. Code: holder_anchor / holder_rel and bc_EventDamage damager-damaged role."
+  },
+  "phase": {
+   "status": "RATIFIED",
+   "applies_to": [
+    "Trigger::*"
+   ],
+   "values": [
+    "Would",
+    "During",
+    "After",
+    "Repeat"
+   ],
+   "_note": "Would = hook inside the event (bc_Event*), before it resolves, and the effect issues something new or replaces it (\"when X would be debuffed\"). An in-event hook that only changes the number is an Effect, not a Trigger. After = reaction (bc_On*, start/end-of-turn, startup). Repeat = \"effects that activate when X activate N more times\" (bc_ExecuteEvents). During = a hook inside the creature's own bc_CreatureAttack / bc_CreatureCast that issues something before the action resolves (user 2026-10-19).",
+   "code": {
+    "Would": [
+     "bc_EventBuff",
+     "bc_EventDebuff",
+     "bc_EventHeal",
+     "bc_EventResurrect",
+     "bc_EventGain*",
+     "bc_EventLose*",
+     "bc_EventDamage",
+     "bc_CreatureCastRandomSpell"
+    ],
+    "After": [
+     "bc_On*",
+     "bc_CreatureStartOfTurn",
+     "bc_CreatureEndOfTurn",
+     "bc_Startup*"
+    ],
+    "Repeat": [
+     "bc_ExecuteEvents"
+    ],
+    "During": [
+     "bc_CreatureAttack",
+     "bc_CreatureCast"
+    ]
+   }
+  },
+  "delivery": {
+   "status": "RATIFIED",
+   "applies_to": [
+    "Stats::Gain",
+    "Stats::Lose",
+    "Buffs::Apply",
+    "Debuffs::Apply"
+   ],
+   "values": [
+    "Event",
+    "Direct"
+   ],
+   "_note": "Event = goes through the game event: reactions fire, diminishing returns and the per-turn action limit apply. Direct = written straight onto the creature: no reactions, no limit (immunity still checked). Ruled 2026-10-19 from extract Q1/Q2.",
+   "code": {
+    "Event": [
+     "bc_EventGain*",
+     "bc_EventLose*",
+     "bc_EventBuff",
+     "bc_EventDebuff"
+    ],
+    "Direct": [
+     "bc_StartupStatGain",
+     "bc_StartupStatLoss",
+     "scr_CritAddCondition (bare)"
+    ]
+   }
+  }
+ },
+ "new_values": {
+  "_note": "v2 values with no v1 source; filled from code only.",
+  "Calculation::DoT Formula": "bc_CalculateBurnDamage / bc_CalculatePoisonDamage / bc_CalculateBleedDamage (e.g. Blazing Soul, Villainy Thrives)",
+  "Calculation::Bounds": "min/max clamps in the damage formula (Cold Blood, Phasers)",
+  "Targeting::Random": "random index pick (no named picker; needs decode)",
+  "Targeting::Highest Stat": "scr_GetCritNthHighestStat / bc_GetCreaturesWithHighestStat",
+  "Targeting::Lowest Stat": "scr_GetCritNthHighestStat (low end)",
+  "Targeting::Lowest Health": "bc_GetCreatureWithLowestHealthByArray",
+  "Targeting::Adjacent": "bc_GetAdjacentCreatures",
+  "Targeting::Timeline Position": "closest above / below on the timeline (Ambush)",
+  "Targeting::Most Common Race": "scr_GetDominantCreatures / scr_GetDominantRace",
+  "Targeting::All": "loop over bc_GetAlliesOf / bc_GetEnemiesOf with no filter",
+  "Targeting::Target Rules": "scr_MacroProcess / scr_MacroGetList (can target Invisible creatures)",
+  "Calculation::Class Advantage": {
+   "note": "forced class advantage in the damage formula (user 2026-10-19): Bloodline, Details Matter, True Strike",
+   "code": [
+    "bc_EventDamage class-advantage multiplier (COMBAT_RULES attacker class)"
+   ]
+  },
+  "Condition::Turn Number": {
+   "note": "gated on the turn count: until the first turn, on the Nth turn, every N turns (user 2026-10-19); ~14 objects, extract confirms each",
+   "code": [
+    "creature turn counter (bc_CreatureStartOfTurn)"
+   ]
+  },
+  "Trigger::Minion Lost": {
+   "note": "minion stacks go away by the natural leave roll at the holder's turn start (user 2026-10-19); spell removal never counts",
+   "code": [
+    "bc_CreatureStartOfTurn leave roll (scr_MinionLeaveChance, minions_left)"
+   ]
+  },
+  "Minions::Remove": {
+   "note": "spells that remove minions (user 2026-10-19)",
+   "code": [
+    "bc_EventRemoveCondition under scr_ConditionIsMinion"
+   ]
+  },
+  "Actions::Limit Repeats": {
+   "note": "'only once at a time' limits (Languid Limbs, Somber Spirits): repeat counter set to 1 (user 2026-10-19)",
+   "code": [
+    "bc_CreatureAttack / bc_CreatureCast repeat cell"
+   ]
+  }
+ },
+ "rulings": [
+  "2026-10-19 Xyrxzy's Control: Actions::Extra Attack (code re-issues bc_CreatureAttack(attacker, attacked)); clarify note for the text.",
+  "2026-10-19 Cold Blood: Damage::Deal More only; Calculation::Bounds = clamps and forced values (incl. Phasers' 0).",
+  "2026-10-19 Frenzy ('as if more Speed' for dodge/crit) -> Hit Resolution::Dodge Chance + Crit Chance, not Calculation.",
+  "2026-10-19 Damage immunity (IMMORTALITY, Rainbow Shield) = Damage::Take Less.",
+  "2026-10-19 Tempest = Targeting::All.",
+  "2026-10-19 Enemy-side locks (Deadly Calm, SCRAAAW!, Sensory Deprivation) = Actions::Can't Manually X, scope Enemy.",
+  "2026-10-19 Chance to avoid debuffs (Anti-Magic Field, Quahn Harbinger, Uninterrupted) = Debuffs::Immune.",
+  "2026-10-19 Glitch In The System = Buffs::Can't Gain + Debuffs::Apply.",
+  "2026-10-19 Master of Carbuncles / Storms = Traits::More Potency only.",
+  "2026-10-19 Leave-chance modifiers (Permanence, Midnight Bargain) = Minions::Extend."
+ ]
+}

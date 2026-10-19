@@ -135,6 +135,16 @@ a flat modifier to base: raised **×4/3 (+33%)**, lowered **×2/3 (−33%)**, ot
   trust); in-game observation beats stale CSVs (`Trait_REF` was stale for Marionette).
 
 ## Taxonomy rulings
+- **Taxonomy v2 (2026-10-18).** Later the same day: Source attribute ratified, Targeting category added, Ignore Defense → Calculation, v2 maps to decoded game functions rather than mirroring v1.
+- **Taxonomy v2 extract S38 parked items (2026-10-19).** New Trigger::Minion Lost, Minions::Remove, Actions::Limit Repeats. Leave-chance = Minions::Extend; damage immunity = Take Less; Tempest = Targeting::All; enemy-side locks = Can't Manually X (Enemy); chance to avoid debuffs = Debuffs::Immune; Glitch In The System = Can't Gain + Apply; Master of Carbuncles / Storms = More Potency only. Lord of Undeath note waits for an in-game check.
+- **Taxonomy v2 values ratified (2026-10-19).** Every domain approved by the user; log in `TAXONOMY_INTENT.md`. Changes from the draft: Extra = same creature + same action; locks are "Can't Manually X"; Inflict Direct / Indirect → Damage::Inflict (Source carries type; a trait's "deals damage" is spell-type); "as if X% stat" → Formula, Frenzy → Hit Resolution, plain multipliers → Deal More, new Calculation::Class Advantage; Buffs::Can't Gain; Debuffs::Bypass Protection; Stats::Set (general overwrite); new Condition::Turn Number; Non-Ultimate / Non-Ethereal fold into the base kind; Spell Gems keep the code split (Charges = charge writes).
+- **Taxonomy v2 extract rulings (2026-10-19).** New Delivery attribute (Event / Direct) on Stats::Gain / Lose and Buffs / Debuffs::Apply: direct writes fire no reactions and skip limits. Phase gains During (mid-action hooks). Xyrxzy's Control = Extra Attack (code wins, clarify note). Cold Blood is not Bounds.
+- **Taxonomy v2 Role, Phase, Stats split (2026-10-18).** Ratified: Role (Performer / Receiver / Applier) and Phase (Would / After / Repeat) as Trigger attributes; Stats split into Gain / Lose (stat events) vs Has More / Has Less (passive getters).
+- **Taxonomy v2 shape (2026-10-18).** Rebuild the taxonomy from scratch, keeping every distinction. The user approved
+  four calls: scope is a per-tag attribute (not in value names); Action/Mechanic is derived as Theme, not hand-tagged
+  (the superset rule holds structurally); Extra vs Automatic is split for attacks and casts; Buffs and Debuffs are two
+  parallel domains. Charter, draft values and open questions: `TAXONOMY_INTENT.md` "Taxonomy v2". Values stay DRAFT
+  until ratified.
   Single/Multi-Target from `Spell_REF.target` (Target=single; Enemies/All Creatures/Your Creatures=multi; 663
   spells, src=`field`). **Combined:** Indirect Damage = LLM status/DoT + proc "deals damage to X equal to Y%"
   (ADD-only, +68). **Dropped by user:** Effect Limitation (whole category, −808), Active If::Spell/Gem is X Type

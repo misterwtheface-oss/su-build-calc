@@ -4,6 +4,18 @@ Every dated change entry, newest first (moved verbatim from Progress.md on 2026-
 to their own section and sorted by their date). Current state and open work: `Progress.md`, `BACKLOG.md`.
 New entries go at the TOP.
 
+## 2026-10-19 — Taxonomy v2: extract answers + rulings (no data change)
+- Extract S37 decoded the v2 handoff (`taxo_v2_tags.json`). User rulings: Delivery attribute (Event / Direct) on stat
+  Gain / Lose and buff / debuff Apply; Phase value During; Xyrxzy's Control = Extra Attack; Cold Blood is not Bounds.
+- User ratified every v2 value list (see DECISIONS "Taxonomy v2 values ratified"). Crosswalk updated; check still 0
+  unmapped, 0 themes lost. Decode follow-ups appended to the extract handoff.
+
+## 2026-10-18 — Taxonomy v2 draft (no data change)
+- The user approved the v2 shape (scope attribute, derived Theme, Extra/Auto split, parallel Buffs/Debuffs). Charter in
+  `TAXONOMY_INTENT.md`, crosswalk `data/reference/taxonomy_crosswalk.json`, check `tools/taxo_crosswalk.mjs`.
+- Check on current data: 0 unmapped values, 0 themes lost. 1,771 split items need code; 660 Involves review items;
+  171 superset gaps that v1 had.
+
 ## 2026-10-18 — Dire Wolves tags restored (extract S36)
 - `build-data.mjs` `MINION_STEMS`: `dire ?wolf` never matched the plural "Dire Wolves", so the minion grounding check
   dropped every Minion tag on traits that name them (trait text is pre-rendered, no minion token). Stem now

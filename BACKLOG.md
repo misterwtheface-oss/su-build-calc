@@ -117,6 +117,16 @@ a decompile → write `_su_extract/code/HANDOFF_<topic>.md` and don't guess (bat
   exactly 2**. Re-run the same comparison on the real per-rank tags when they land, then the user picks.
 
 ### G7. Taxonomy + search
+- [ ] **In-game check: Lord of Undeath** (extract S38b). Code runs it at each of your creatures' turn start for every minion they
+  have, whether or not a stack left (text: "after a minion goes away"). Confirm in game before adding a clarify note.
+- [ ] **Taxonomy v2 rebuild** (user 2026-10-18, shape ratified). Charter + draft: `TAXONOMY_INTENT.md` "Taxonomy v2";
+  check: `node tools/taxo_crosswalk.mjs`. Ratified so far: Scope, Source, Role, Phase attributes; Targeting; Ignore Defense → Calculation; Stats Gain / Has More split.
+  Extract handoff ANSWERED S37 (2026-10-19): `_su_extract/data/model/taxo_v2_tags.json` (2,001 of 2,415 splits decided; 414 open,
+  not blocking). Ruled 2026-10-19: Delivery attribute (Event / Direct), Phase During, Xyrxzy's Control = Extra Attack, Cold Blood not Bounds.
+  App-side note: worklist trait ids are app ids (output keys `trait:<app id>`, runtime ids alongside).
+  **All values ratified 2026-10-19.** Extract follow-ups listed in the handoff (re-run build_taxo_v2.py with the renames). Next:
+  ~~user ratifies the value lists~~ → build-data v2 + scope chip in the filter → CSV parity → retire v1. Absorbs the Calculation sweep below, the
+  parked S24 Creature is Damaged proposal and the untagged-traits review.
 - [ ] **Taxonomy intent audit, first pass: "Modify X Calculation" sweep + an inbound damage calculation tag** (user
   2026-10-18). (1) Check that `Modify Attack Calculation` (42), `Modify Spell Calculation` (23) and `Defense Calculation` (3)
   catch everything they should, code-grounded. Quick text scan: 41 traits use "calculation" / "as if" wording, 15 carry a
