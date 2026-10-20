@@ -527,8 +527,9 @@
   // button label with the live direction arrow on the active sort (▼ descending, ▲ ascending)
   const sortLbl = (label, active, rev, natDesc) => active ? `${label} <span class="sort-dir">${(natDesc !== !!rev) ? "▼" : "▲"}</span>` : label;
   // saved-library sort control (Artifacts / Nether Stones / Spell Gems): opts = [[value, label, naturallyDescending]]
+  // (noDir: a one-direction sort, no arrow)
   const libSortSeg = (st, opts) => { const cur = sortCur(st.libSort, opts[0][0]);
-    return `<div class="seg">${opts.map(([v, l, nd]) => `<button class="seg-btn ${cur === v ? "on" : ""}" data-action="lib-sort" data-v="${v}">${sortLbl(l, cur === v, st.libSortRev, nd)}</button>`).join("")}</div>`; };
+    return `<div class="seg">${opts.map(([v, l, nd, noDir]) => `<button class="seg-btn ${cur === v ? "on" : ""}" data-action="lib-sort" data-v="${v}">${noDir ? l : sortLbl(l, cur === v, st.libSortRev, nd)}</button>`).join("")}</div>`; };
 
   // ── util ─────────────────────────────────────────────────────────────────
   const el = (id) => document.getElementById(id);
@@ -4814,21 +4815,24 @@
     build.slots.forEach((sl, i) => { if (i !== st.slotIdx && sl.relic) takenBy.set(sl.relic.id, (CREA.get(sl.cid) || {}).name || `slot ${i + 1}`); });
     const q = st.search.trim().toLowerCase();
     const list = D.relics.filter(r => (!q || r.name.toLowerCase().includes(q) || relicGod(r).toLowerCase().includes(q) || (r.statBonus || "").toLowerCase().includes(q)) && TagFilter.match(st, "relic", r));
-    // one section per stat, in the app's canonical stat order; picking a tile opens the rank overlay
-    const sections = STAT_KEYS.map(k => {
-      const label = STAT_LABEL[k];
-      const rels = list.filter(r => r.statBonus === label);
-      if (!rels.length) return "";
-      const tiles = rels.map(r => { const taken = takenBy.get(r.id); return `<div class="pick-tile ${equipped && equipped.id === r.id ? "selected" : ""}${taken ? " disabled" : ""}" ${taken ? `title="Equipped by ${esc(taken)}"` : `data-action="relic-pick" data-id="${r.id}"`}>
+    // sort: Stat (default) = one section per stat in the app's canonical stat order; Name / God = one A–Z grid.
+    // picking a tile opens the rank overlay
+    const sortK = st.relicSort || "stat";
+    const tileGrid = (rels) => `<div class="pick-grid relic-grid">${rels.map(r => { const taken = takenBy.get(r.id); return `<div class="pick-tile ${equipped && equipped.id === r.id ? "selected" : ""}${taken ? " disabled" : ""}" ${taken ? `title="Equipped by ${esc(taken)}"` : `data-action="relic-pick" data-id="${r.id}"`}>
         <div class="pt-sprite">${relicArt(r) ? spriteImg(relicArt(r), "px") : `<span class="spec-tile-plus">✦</span>`}</div>
-        <div class="pt-name">${esc(relicShortName(r))}</div><div class="pt-god">${esc(relicGod(r))}</div></div>`; }).join("");
-      return `<div class="section-label">${esc(label)}</div><div class="pick-grid relic-grid">${tiles}</div>`;
-    }).join("");
+        <div class="pt-name">${esc(relicShortName(r))}</div><div class="pt-god">${esc(relicGod(r))}</div></div>`; }).join("")}</div>`;
+    const byName = (x, y) => relicShortName(x).localeCompare(relicShortName(y));
+    const sections = sortK === "stat"
+      ? STAT_KEYS.map(k => { const label = STAT_LABEL[k], rels = list.filter(r => r.statBonus === label);
+          return rels.length ? `<div class="section-label">${esc(label)}</div>${tileGrid(rels)}` : ""; }).join("")
+      : list.length ? tileGrid(list.slice().sort(sortK === "god" ? (x, y) => relicGod(x).localeCompare(relicGod(y)) || byName(x, y) : byName)) : "";
     return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel">
       <div class="overlay-header"><h2>Relic — ${esc(c ? c.name : "")}</h2>
         <input class="ovl-search" placeholder="Search relic / god / stat…" value="${esc(st.search)}" data-action="relic-search">
         <button class="ovl-close" data-action="close-ovl">✕</button></div>
-      <div class="overlay-body"><div class="ovl-center"><div class="ovl-filterbar">${TagFilter.bar(st, "relic")}</div>
+      <div class="overlay-body"><div class="ovl-center"><div class="ovl-filterbar lib-bar"><span class="sg-sort-gap"></span>
+          <div class="seg">${[["stat", "Stat"], ["name", "Name"], ["god", "God"]].map(([v, l]) => `<button class="seg-btn ${sortK === v ? "on" : ""}" data-action="relic-sort" data-v="${v}">${l}</button>`).join("")}</div></div>
+        <div class="ovl-filterbar">${TagFilter.bar(st, "relic")}</div>
         <div class="ovl-center-scroll">${sections || `<div class="slot-sub" style="padding:10px">No relics match.</div>`}</div></div></div>
       <div class="overlay-footer"><span class="foot-info"></span>
         <div>${equipped ? `<button class="btn-ghost" data-action="relic-clear">Clear equipped</button>` : ""}
@@ -5586,7 +5590,7 @@
         <select class="app-select${st.libCls ? " on" : ""}" data-action="lib-cls" title="Filter by class">
           <option value="" ${!st.libCls ? "selected" : ""}>Class</option>${SPELL_CLASSES.map(cl => `<option value="${cl}" ${st.libCls === cl ? "selected" : ""}>${cl}</option>`).join("")}</select>
         <span class="sg-sort-gap"></span>
-        ${libSortSeg(st, [["recent", "Recent", true], ["name", "A–Z", false], ["cls", st.libSortBase ? "Base class" : "Class", false], ["level", "Level", true], ["potency", "Potency", true]])}</div>
+        ${libSortSeg(st, [["recent", "Recent", true], ["name", "A–Z", false], ["cls", st.libSortBase ? "Base class" : "Class", false, true], ["level", "Level", true], ["potency", "Potency", true]])}</div>
       <div class="ovl-filterbar taxo-bar">${TagFilter.bar(st, "spell")}</div>`;
     const sel = st.sel != null ? spellGems.find(g => g.id === st.sel) : null;
     // when equipping onto a creature, gems of a class the creature can't use are blocked (unless a
@@ -6189,6 +6193,7 @@
 
       // relic
       case "relic-pick": openRelicDetail(+t.dataset.id); break;
+      case "relic-sort": ovState.relicSort = t.dataset.v; refreshOverlay(); break;
       case "relic-back": closeDetail(); break;
       case "relic-clear": build.slots[ovState.slotIdx].relic = null; persistBuild(); closeOverlay(); render(); break;
       case "relic-confirm": build.slots[dovState.slotIdx].relic = { id: dovState.sel, rank: dovState.rank }; persistBuild(); closeDetail(); closeOverlay(); render(); break;
@@ -6296,12 +6301,14 @@
       case "noop": break;
       // saved-library header bars (Artifacts / Nether Stones / Spell Gems)
       case "lib-sort": {
-        // Spell Gems' Class cycles current class ▲ ▼, then base class (ignoring an Opal swap) ▲ ▼, then off
+        // Spell Gems' Class (the default, ascending only) cycles current class → base class (ignoring an Opal swap) → off
         const s = ovState, v = t.dataset.v;
-        if (s.kind === "spellgemlib" && v === "cls" && sortCur(s.libSort, "recent") === "cls" && s.libSortRev && !s.libSortBase) { s.libSortBase = true; s.libSortRev = false; }
-        else if (s.libSortBase && v === "cls" && !s.libSortRev) s.libSortRev = true;
-        else if (s.libSortBase && v === "cls") { s.libSort = null; s.libSortRev = false; s.libSortBase = false; }
-        else { s.libSortBase = false; sortPick(s, "libSort", "libSortRev", v); }
+        if (s.kind === "spellgemlib" && v === "cls") {
+          if (s.libSort !== "cls") { s.libSort = "cls"; s.libSortBase = false; }
+          else if (!s.libSortBase) s.libSortBase = true;
+          else { s.libSort = null; s.libSortBase = false; }
+          s.libSortRev = false;
+        } else { s.libSortBase = false; sortPick(s, "libSort", "libSortRev", v); }
         refreshOverlay(); break;
       }
       case "lib-flag": ovState[t.dataset.f] = !ovState[t.dataset.f]; refreshOverlay(); break;
