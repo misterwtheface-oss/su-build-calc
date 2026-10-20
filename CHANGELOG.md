@@ -5,7 +5,7 @@ to their own section and sorted by their date). Current state and open work: `Pr
 New entries go at the TOP.
 
 ## 2026-10-19 — Data rebuild: taxonomy v2 code layer after the extract's F3 pass (S39)
-- Rebuilt from `_su_extract`. Code-backed v2 tags: 16,090 (was 15,231). Tags removed as not code-backed: 826 on 640 objects
+- Rebuilt from `_su_extract`. Code-backed v2 tags: 16,091 (was 15,231). Tags removed as not code-backed: 825 on 640 objects
   (was 1,797 on 1,002).
 - New from the extract:
   - Trigger::DoT Tick (with the debuff), damage-type `sources` on damage triggers and modifiers, and spell `heal_basis`.
