@@ -4,7 +4,7 @@
   { "name": "Attack Effects", "include": ["theme:Attack", "theme:Dodge", "theme:Critical", "theme:Intercept", "Actions::Limit Repeats"] },
   { "name": "Spell Gem / Cast Effects", "include": ["theme:Cast", "theme:Spell Gems", "Spell Class::*", "Spell Kind::*", "Named Spell::*", "Actions::Limit Repeats"] },
   { "name": "Defend & Provoke", "include": ["theme:Defend", "theme:Provoke"] },
-  { "name": "Damage", "include": ["theme:Damage", "Involves::Indirect Damage"] },
+  { "name": "Damage", "include": ["theme:Damage", "Involves::Indirect Damage", "Trigger::DoT Tick"] },
   { "name": "Health & Healing", "include": ["theme:Healing", "Condition::Health Threshold", "Scales With::Current Health %", "Scales With::Missing Health %"] },
   { "name": "Death & Resurrection", "include": ["theme:Resurrection", "Trigger::Death", "Life::Execute", "Life::Survive Lethal", "Condition::Is Dead", "Condition::Is Alive", "Scales With::Dead Creature Count", "Scales With::Living Creature Count"] },
   { "name": "Buffs", "include": ["theme:Buff"] },

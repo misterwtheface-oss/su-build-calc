@@ -138,6 +138,9 @@ a flat modifier to base: raised **×4/3 (+33%)**, lowered **×2/3 (−33%)**, ot
   trust); in-game observation beats stale CSVs (`Trait_REF` was stale for Marionette).
 
 ## Taxonomy rulings
+- **Involves = umbrella view (user 2026-10-20).** `Involves::<theme>` is on every object for each of its themes (the old
+  generic Action/Mechanic role: everything touching a mechanic at once). Theme-only objects (theme from a v1 tag, no v2 tag
+  re-derives it) get a narrower tag from the extract (HANDOFF F5); they are no longer shipped as Involves tags.
 - **Taxonomy v2 rollout (user 2026-10-20).** Mechanic groups accepted as drafted (may be tweaked in use). Refinements
   (source / timing / delivery) work like the side toggle. Every feature reads v2. No CSV parity pass for the taxonomy (the
   CSV is personal). One cutover retires v1 once the extract's remaining items (F4, F5) are resolved.

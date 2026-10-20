@@ -4,6 +4,17 @@ Every dated change entry, newest first (moved verbatim from Progress.md on 2026-
 to their own section and sorted by their date). Current state and open work: `Progress.md`, `BACKLOG.md`.
 New entries go at the TOP.
 
+## 2026-10-20 — Involves is the umbrella view
+- User: Involves replaces the old generic Action/Mechanic tags: one tag shows every effect that involves a mechanic, no
+  narrow focus. build-data now gives every object `Involves::<theme>` for each of its v2 themes (theme2), e.g.
+  Involves::Damage 1,495 results vs Damage::Inflict 543. It heads its mechanic group in the pickers and the Taxonomy page,
+  and stays out of Synergy (it would double-count every effect).
+- The old meaning ("theme from a v1 tag that no v2 tag re-derives") is now a review list for the extract to find each a
+  narrower tag: `app_involves_review.json`, 801 themes on 681 objects (HANDOFF_taxonomy_v2 F5). The theme still counts
+  for the umbrella meanwhile.
+- Grouping: Trigger::DoT Tick had no mechanic group since F3 (the warning ran after the summary, so it never showed);
+  it's in Damage now, and the orphan check prints.
+
 ## 2026-10-20 — Everything reads taxonomy v2
 - User: repoint everything to v2. v1 tags are no longer read anywhere while the v2 flag is on:
   - Synergy (matrix + list): one key per v2 tag (a trigger with a role counts as its role, e.g. "Takes Damage"); the

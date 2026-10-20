@@ -116,12 +116,16 @@ filter by it while building, and (b) the code can tell it apart from its neighbo
 pass, the two never share a slash name.
 
 **Theme.** Theme X = the object has a tag in X's pattern list, its Source implies X, or the object is that kind of thing
-(a spell is a Cast). An old Action/Mechanic tag that none of these re-derive is kept as `Involves::<theme>` with its old
-provenance, so nothing is lost. Each Involves tag is a review item: either a narrower tag is missing (add it) or the
-theme was wrong (drop it). `Involves::Adjacency / Artifact / Relic / Personality` are permanent: those themes have no
-effect domain.
+(a spell is a Cast). An old code-grounded Action/Mechanic tag that none of these re-derive still sets the theme, so nothing
+is lost; such a **theme-only** object is a review item: a narrower tag is missing (the extract finds it in code) or the
+theme was wrong. Adjacency / Artifact / Relic / Personality have no narrower tags (permanent).
 
-### Mechanic groups (how the app browses tags) — `DRAFT 2026-10-19`
+**Involves = the umbrella view (user 2026-10-20).** Every object carries `Involves::<theme>` for each of its themes, so one
+tag lists everything that touches a mechanic without a narrow focus (the role the old generic Action/Mechanic tags had):
+Involves::Damage 1,495 vs Damage::Inflict 543. It heads its mechanic group in the pickers and stays out of Synergy (it
+would double-count every effect).
+
+### Mechanic groups (how the app browses tags) — accepted 2026-10-20 (may be tweaked in use)
 User request (2026-10-19): the browse containers group tags by the mechanic they relate to, not by category. A tag can
 sit in more than one group (Calculation::Attack Formula is in Attack Effects and Damage). Defined in
 `data/reference/taxonomy_groups.json`, built from the theme lists, so a group and its theme can't drift apart; build-data

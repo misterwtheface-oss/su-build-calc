@@ -3546,8 +3546,10 @@ const taxonomy2 = (() => {
   const X = readJSON(path.join(ROOT, 'data', 'reference', 'taxonomy_crosswalk.json'));
   const V = makeTaxoV2(X, readJSON(CLP));
   const counts = {}, removed = {}, involves = {};
-  // Involves::<theme> = a code-grounded v1 theme no v2 tag re-derives: each is a review item (a narrower tag is missing, or
-  // the theme is wrong). Adjacency / Artifact / Relic / Personality are permanent (TAXONOMY_INTENT.md).
+  // Involves (user 2026-10-20) = the umbrella view: every object carries Involves::<theme> for EACH of its themes (theme2),
+  // so one tag lists everything touching a mechanic (the old Action/Mechanic role). A theme that came only from a v1
+  // Action/Mechanic tag (no v2 tag re-derives it) stays in theme2 but is a review item for the extract: find its narrower
+  // tag (app_involves_review.json, HANDOFF F5). Adjacency / Artifact / Relic / Personality have no narrower tags.
   const INVOLVES_PERMANENT = new Set(['Adjacency', 'Artifact', 'Relic', 'Personality']);
   const relicSig = readJSON(path.join(MODEL, 'relic_signatures.json')).records || [];
   const relicRankBySite = new Map();
@@ -3556,10 +3558,12 @@ const taxonomy2 = (() => {
   const run = (kind, id, o) => {
     const r = V.build(kind, id, o.taxo || [], o.taxoSrc, kind === 'relic' ? { rankOf: (site) => relicRankBySite.get(`${id}:${site}`) ?? null } : {});
     if (kind === 'relic') for (const e of r.taxo2) if (e.v === 'code' && e.rk == null) relicNoRank.push(`${o.name.split(',')[0]} ${e.t}`);
-    o.taxo2 = r.taxo2; o.theme2 = r.theme2;
+    const themeOnly = r.taxo2.filter(e => e.t.startsWith('Involves::')).map(e => e.t.slice(10));
+    o.taxo2 = [...r.taxo2.filter(e => !e.t.startsWith('Involves::')), ...r.theme2.map(th => ({ t: 'Involves::' + th, v: 'theme' }))];
+    o.theme2 = r.theme2;
     if (r.removed.length) removed[`${kind}:${id}`] = { name: o.name || o.family || null, desc: o.desc || null, removed: r.removed };
-    for (const e of r.taxo2) counts[e.t] = (counts[e.t] || 0) + 1;
-    const inv = r.taxo2.filter(e => e.t.startsWith('Involves::') && !INVOLVES_PERMANENT.has(e.t.slice(10))).map(e => e.t.slice(10));
+    for (const e of o.taxo2) counts[e.t] = (counts[e.t] || 0) + 1;
+    const inv = themeOnly.filter(th => !INVOLVES_PERMANENT.has(th));
     if (inv.length) involves[`${kind}:${id}`] = { name: o.name || o.family || null, desc: o.desc || null, involves: inv, v2: r.taxo2.filter(e => !e.t.startsWith('Involves::')).map(e => e.t) };
   };
   for (const t of Object.values(traits)) run('trait', t.id, t);
@@ -3578,13 +3582,14 @@ const taxonomy2 = (() => {
   if (fs.existsSync(dumpDir)) fs.writeFileSync(path.join(dumpDir, 'app_removed_not_code_backed.json'),
     JSON.stringify({ _note: 'Written by su-build-calc build-data (tools/taxo-v2.mjs). v2 tags removed from the app because they are not code-backed (user 2026-10-19). v = original provenance; old = the v1 tag it came from; why = the reason when it was an unverified candidate. Confirm from code (then the code layer emits it) or leave it out.', stats: { tags: st.removed, objects: Object.keys(removed).length, by: st.removedBy }, objects: removed }, null, 1));
   if (fs.existsSync(dumpDir)) fs.writeFileSync(path.join(dumpDir, 'app_involves_review.json'),
-    JSON.stringify({ _note: 'Written by su-build-calc build-data. Every non-permanent Involves::<theme> tag the app ships (a code-grounded v1 theme no v2 tag re-derives). HANDOFF_taxonomy_v2 F5: per object, name the narrower v2 tag(s) from the code (then the code layer emits them and the Involves goes), or say the theme is wrong. v2 = the other v2 tags on the object.', count: Object.values(involves).reduce((n, x) => n + x.involves.length, 0), objects: involves }, null, 1));
-  console.log(`  taxonomy v2 Involves to review: ${Object.values(involves).reduce((n, x) => n + x.involves.length, 0)} on ${Object.keys(involves).length} objects (permanent kinds excluded)`);
+    JSON.stringify({ _note: 'Written by su-build-calc build-data. Theme-only objects: each theme listed came only from a code-grounded v1 Action/Mechanic tag; no v2 tag re-derives it (permanent Adjacency / Artifact / Relic / Personality left out). Involves::<theme> is now the umbrella view on every object, so this is not a tag list. HANDOFF_taxonomy_v2 F5: per object, name the narrower v2 tag(s) from the code (the code layer then emits them), or say the theme is wrong. v2 = the other v2 tags on the object.', count: Object.values(involves).reduce((n, x) => n + x.involves.length, 0), objects: involves }, null, 1));
+  console.log(`  taxonomy v2 theme-only (needs a narrower tag): ${Object.values(involves).reduce((n, x) => n + x.involves.length, 0)} on ${Object.keys(involves).length} objects (permanent kinds excluded)`);
   if (fs.existsSync(dumpDir)) fs.writeFileSync(path.join(dumpDir, 'app_relic_tags_no_rank.json'),
     JSON.stringify({ _note: 'Written by su-build-calc build-data. Relic v2 tags with no rank: the tag site is in no relic_signatures.json rank clause (or the tag is a whole-relic v1 code tag). The app shows them for the whole relic. HANDOFF_taxonomy_v2 F5: give each a rank where the code gates it.', tags: relicNoRank }, null, 1));
   const A = X.attributes, categories = V.vocabulary(counts);
   const G = V.groups(readJSON(path.join(ROOT, 'data', 'reference', 'taxonomy_groups.json')), categories);
-  if (G.orphans.length) warn(`taxonomy v2: ${G.orphans.length} values in no mechanic group: ${G.orphans.join(', ')}`);
+  // (console, not warn(): this runs after the warning summary is printed)
+  if (G.orphans.length) console.log(`  ⚠ taxonomy v2: ${G.orphans.length} values in no mechanic group: ${G.orphans.join(', ')}`);
   console.log(`  taxonomy v2 groups: ${G.groups.map(g => `${g.name} ${g.keys.length}`).join(' · ')}`);
   return { categories, groups: G.groups,
     attributes: { scope: A.scope.values, source: A.source.values, role: A.role.values, phase: A.phase.values, delivery: A.delivery.values } };

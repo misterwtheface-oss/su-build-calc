@@ -660,14 +660,17 @@
   function taxoGroups() {
     if (_taxoGroups) return _taxoGroups;
     if (!TV2) return (_taxoGroups = (D.taxonomy ? D.taxonomy.categories : []).map(c => ({ name: c.category, keys: c.values.map(v => c.category + "::" + v) })));
-    return (_taxoGroups = D.taxonomy2.groups.map(g => ({ name: g.name, keys: g.keys.flatMap(k => {
+    // Involves (the umbrella: every effect touching the theme) heads its group
+    const invFirst = (keys) => [...keys.filter(k => k.startsWith("Involves::")), ...keys.filter(k => !k.startsWith("Involves::"))];
+    return (_taxoGroups = D.taxonomy2.groups.map(g => ({ name: g.name, keys: invFirst(g.keys).flatMap(k => {
       const roles = k.startsWith("Trigger::") ? Object.keys(TRIG_ROLE_LABEL[k.slice(9)] || {}) : [];
       return [k, ...roles.map(r => k + "@r=" + r)];
     }) })));
   }
   // v2 category order (layer order) for sorting a group's rows
   const TAXO_CAT_ORDER = new Map(((D.taxonomy2 && D.taxonomy2.categories) || []).map((c, i) => [c.category, i]));
-  const taxoRowSort = (a, b) => TV2 ? (TAXO_CAT_ORDER.get(taxoCatName(a.key)) ?? 99) - (TAXO_CAT_ORDER.get(taxoCatName(b.key)) ?? 99)
+  const catRank = (k) => taxoCatName(k) === "Involves" ? -1 : (TAXO_CAT_ORDER.get(taxoCatName(k)) ?? 99);   // Involves heads its group
+  const taxoRowSort = (a, b) => TV2 ? catRank(a.key) - catRank(b.key)
       || taxoValName(a.key).localeCompare(taxoValName(b.key)) : a.val.localeCompare(b.val);
   // a row's label inside a group: v2 rows name their category ("Trigger: Takes Damage"), v1 rows are bare values
   // (a trigger that also has role rows reads "Damage (any)": it matches either side)
@@ -3059,8 +3062,9 @@
   // same data grouped per shared tag, showing each contributing effect's description + owner.
 
   // an effect's tags: one key per v2 tag (a trigger with a role counts as its role key, e.g. "Takes Damage"); a relic counts
-  // only the tags of ranks up to the equipped rank (rk; unranked relic tags count for the whole relic)
-  const synTags = (o, rank) => !o ? [] : [...new Set((o.taxo2 || []).filter(e => rank == null || e.rk == null || e.rk <= rank).map(e => roleKey(e) || e.t))];
+  // only the tags of ranks up to the equipped rank (rk; unranked relic tags count for the whole relic). Involves (the
+  // umbrella theme view) stays out: it would double-count every effect under its themes.
+  const synTags = (o, rank) => !o ? [] : [...new Set((o.taxo2 || []).filter(e => !e.t.startsWith("Involves::") && (rank == null || e.rk == null || e.rk <= rank)).map(e => roleKey(e) || e.t))];
 
   // matrix data: one entry per build MEMBER, each a CONTAINER of individual effects. Spec = 1 row of its
   // allocated perks; ALL anointments collapse into 1 row of the equipped anoints; each creature = 1 row of
