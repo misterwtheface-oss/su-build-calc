@@ -5573,7 +5573,8 @@
     let list = spellGems.filter(g => (!st.libCls || gemClass(g) === st.libCls) && (!q || gemText(g).includes(q)) && TagFilter.match(st, "spell", gemSpell(g)));
     if (st.hideEquipped) list = list.filter(g => !spellGemEquippedInBuild(g.id) || (equipped && equipped.has(g.id)));
     const potOf = (g) => { const sp = gemSpell(g); return sp ? potencyRank(sp) : POTENCY_ORDER.length; };
-    const clsRank = (g) => { const i = SPELL_CLASSES.indexOf(gemClass(g)); return i < 0 ? SPELL_CLASSES.length : i; };   // game class order (Opal swap counts)
+    // game class order: the gem's current class (Opal swap counts), or with libSortBase the spell's own class
+    const clsRank = (g) => { const i = SPELL_CLASSES.indexOf(st.libSortBase ? (gemSpell(g) || {}).cls : gemClass(g)); return i < 0 ? SPELL_CLASSES.length : i; };
     list = list.slice().sort(sortK === "name" ? (x, y) => d * gemName(x).localeCompare(gemName(y))
       : sortK === "level" ? (x, y) => d * (gemTier(y) - gemTier(x)) || gemName(x).localeCompare(gemName(y))
       : sortK === "cls" ? (x, y) => d * (clsRank(x) - clsRank(y)) || gemName(x).localeCompare(gemName(y))
@@ -5585,7 +5586,7 @@
         <select class="app-select${st.libCls ? " on" : ""}" data-action="lib-cls" title="Filter by class">
           <option value="" ${!st.libCls ? "selected" : ""}>Class</option>${SPELL_CLASSES.map(cl => `<option value="${cl}" ${st.libCls === cl ? "selected" : ""}>${cl}</option>`).join("")}</select>
         <span class="sg-sort-gap"></span>
-        ${libSortSeg(st, [["recent", "Recent", true], ["name", "A–Z", false], ["cls", "Class", false], ["level", "Level", true], ["potency", "Potency", true]])}</div>
+        ${libSortSeg(st, [["recent", "Recent", true], ["name", "A–Z", false], ["cls", st.libSortBase ? "Base class" : "Class", false], ["level", "Level", true], ["potency", "Potency", true]])}</div>
       <div class="ovl-filterbar taxo-bar">${TagFilter.bar(st, "spell")}</div>`;
     const sel = st.sel != null ? spellGems.find(g => g.id === st.sel) : null;
     // when equipping onto a creature, gems of a class the creature can't use are blocked (unless a
@@ -5609,6 +5610,7 @@
         : eqHere ? "Equipped on this creature" : eqOtherMarker ? "Equipped on another creature" : "";
       return `
       <div class="pick-tile ${st.sel === g.id ? "selected" : ""}${eqHere ? " eq-here" : ""}${blocked ? " disabled" : ""}${eqOtherMarker ? " eq-other" : ""}" data-action="sg-sel" data-id="${g.id}"${title ? ` title="${esc(title)}"` : ""}>
+        ${gemSwapClass(g) ? `<span class="pt-cls sg-opal" style="--pt-cls:${clsColor((gemSpell(g) || {}).cls)}" title="Opal: ${esc((gemSpell(g) || {}).cls || "")} spell, now ${esc(gcls)}"></span>` : ""}
         <div class="pt-sprite">${spriteImg(gemIcon(g), "px")}</div>
         <div class="pt-name">${esc(gemName(g))}</div></div>`; }).join("")
       || `<div class="slot-sub" style="padding:10px">No spell gems${spellGems.length ? " match" : " yet — build one"}.</div>`;
@@ -6293,7 +6295,15 @@
       case "dlib-deselect": if (dovState && dovState.sel != null) { dovState.sel = null; refreshDetail(); } break;
       case "noop": break;
       // saved-library header bars (Artifacts / Nether Stones / Spell Gems)
-      case "lib-sort": sortPick(ovState, "libSort", "libSortRev", t.dataset.v); refreshOverlay(); break;
+      case "lib-sort": {
+        // Spell Gems' Class cycles current class ▲ ▼, then base class (ignoring an Opal swap) ▲ ▼, then off
+        const s = ovState, v = t.dataset.v;
+        if (s.kind === "spellgemlib" && v === "cls" && sortCur(s.libSort, "recent") === "cls" && s.libSortRev && !s.libSortBase) { s.libSortBase = true; s.libSortRev = false; }
+        else if (s.libSortBase && v === "cls" && !s.libSortRev) s.libSortRev = true;
+        else if (s.libSortBase && v === "cls") { s.libSort = null; s.libSortRev = false; s.libSortBase = false; }
+        else { s.libSortBase = false; sortPick(s, "libSort", "libSortRev", v); }
+        refreshOverlay(); break;
+      }
       case "lib-flag": ovState[t.dataset.f] = !ovState[t.dataset.f]; refreshOverlay(); break;
       case "ns-spellcycle": ovState.nsSpell = nsSpellNext(ovState.nsSpell); refreshOverlay(); break;
 

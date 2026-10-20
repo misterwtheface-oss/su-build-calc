@@ -4,6 +4,11 @@ Every dated change entry, newest first (moved verbatim from Progress.md on 2026-
 to their own section and sorted by their date). Current state and open work: `Progress.md`, `BACKLOG.md`.
 New entries go at the TOP.
 
+## 2026-10-20 — Spell Gem library: Opal dot, base-class sort
+- User: a gem re-classed by an Opal (Class Swap) shows a ringed dot in its spell's own class colour (top-left of the
+  tile; the gem icon already shows the new class).
+- The Class sort button now cycles current class ▲ ▼ → base class ▲ ▼ (the spell's own class, ignoring the Opal) → off.
+
 ## 2026-10-20 — Spell Gems can't be named; relic picker shows the god
 - User: Spell Gems can't be named in game (the name field was copied from the Artifact / Nether Stone builders). The Name
   field is gone. A gem is always called by its spell, names saved earlier are ignored, and shared builds no longer
