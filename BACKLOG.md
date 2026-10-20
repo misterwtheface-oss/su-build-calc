@@ -119,6 +119,14 @@ a decompile → write `_su_extract/code/HANDOFF_<topic>.md` and don't guess (bat
 ### G7. Taxonomy + search
 - [ ] **In-game check: Lord of Undeath** (extract S38b). Code runs it at each of your creatures' turn start for every minion they
   have, whether or not a stack left (text: "after a minion goes away"). Confirm in game before adding a clarify note.
+- [ ] **In-game check: Rodian Aftermath vs Oathbreaker** (extract S39 F3). The "+30% damage for each time each creature has died"
+  bonus in bc_EventDamage is gated on runtime trait id 1797 (Oathbreaker in the id table), not on Rodian Aftermath's 1798
+  (@0x140e40e99). Test which of the two traits gives the bonus. The extract currently carries a clarify note saying the effect
+  sits on Oathbreaker; remove it if the id table turns out to have the two swapped.
+- [ ] **In-game check: Covenant without the perk** (extract S39 F3). The rune bonus (once all five Rune spells have been cast,
+  on-attack effects activate an extra time) runs in the shared Rune case of bc_CreatureCast with no perk check (all-five test
+  @0x1408bdf5a, bc_OnAttack loop @0x1408be264). Test without Covenant: cast all five Runes, then a sixth Rune. Do on-attack
+  effects activate twice? If yes, write a bug report like `bug_report_master_of_gorgons.md`.
 - [ ] **Taxonomy v2 rebuild** (user 2026-10-18, shape ratified). Charter + draft: `TAXONOMY_INTENT.md` "Taxonomy v2";
   check: `node tools/taxo_crosswalk.mjs`. Ratified so far: Scope, Source, Role, Phase attributes; Targeting; Ignore Defense → Calculation; Stats Gain / Has More split.
   Extract handoff ANSWERED S37 (2026-10-19): `_su_extract/data/model/taxo_v2_tags.json` (2,001 of 2,415 splits decided; 414 open,
