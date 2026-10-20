@@ -1714,7 +1714,7 @@
       debuffMult: /debuffs on the target/.test(f), reflect: has("reflect_on_damaged"),
     };
     // a spell that deals damage (its tags or text), vs heals / buffs / control
-    const dmgSpell = (id) => { const x = D.spells[id]; return x && ((x.taxo || []).some(t => /Creature is Damaged|Direct Damage|Indirect Damage/.test(t)) || /damage/i.test(x.desc || "")); };
+    const dmgSpell = (id) => { const x = D.spells[id]; return x && (tagKeys(x).some(t => t === "Damage::Inflict" || t === "Spell Kind::Damaging Spells") || /damage/i.test(x.desc || "")); };
     const unitOf = (pred) => (e.units.find(u => [...(u.turn || []), ...u.passives].some(pred)) || {}).name;
     // why a longer fight helps this boss (null = it doesn't, much)
     const longBad = p.revive ? `the ${unitOf(s => s.kind === "revive")} has to go down ${steps.find(s => s.kind === "revive").count + 1} times, so anything that slows your damage stretches an already long fight`
@@ -2957,11 +2957,15 @@
   // v2: one chip per tag entry, by category in layer order. The chip names the tag (trigger role as its readable label)
   // and its attributes: scope, source, phase (After is the default and stays unsaid), delivery (only Direct is said).
   // Unverified = a split the code couldn't settle (every candidate kept; dashed).
+  // Relic tags carry the rank whose code clause holds them (rk): the same tag on several ranks is one chip, "×N" when N ≥ 2.
   function entityTaxHtmlV2(e) {
-    const groups = new Map();
+    const groups = new Map(), seen = new Map();
     for (const x of e.taxo2 || []) {
+      const id = [x.t, x.s, x.so, x.r, x.p, x.d, x.v].join("|");
+      if (seen.has(id)) { if (x.rk != null) seen.get(id).n++; continue; }
+      const y = { ...x, n: x.rk != null ? 1 : 0 }; seen.set(id, y);
       const cat = taxoCatName(x.t); if (!groups.has(cat)) groups.set(cat, []);
-      groups.get(cat).push(x);
+      groups.get(cat).push(y);
     }
     if (!groups.size) return `<div class="slot-sub" style="padding:10px">No taxonomy tags on this entry.</div>`;
     const cats = [...groups.keys()].sort((a, b) => (TAXO_CAT_ORDER.get(a) ?? 99) - (TAXO_CAT_ORDER.get(b) ?? 99));
@@ -2970,7 +2974,7 @@
       <div class="etax-vals">${groups.get(cat).map(x => {
         const k = roleKey(x) || x.t, attrs = [x.s, x.so, x.p && x.p !== "After" ? x.p : null, x.d === "Direct" ? "Direct" : null].filter(Boolean);
         const unv = x.v === "unverified";
-        return `<button class="etax-tag${unv ? " etax-unv" : ""}" data-action="etax-filter" data-k="${esc(k)}" title="${unv ? "Unverified: the game code hasn't settled this tag. " : ""}Filter the Taxonomy to “${esc(taxoValName(k))}”">${esc(taxoValName(k))}${attrs.length ? `<span class="etax-attr">${esc(attrs.join(" · "))}</span>` : ""}${FEATURES.taxoSource && x.v ? `<span class="apx-src s-${esc(x.v)}">${esc(x.v)}</span>` : ""}</button>`;
+        return `<button class="etax-tag${unv ? " etax-unv" : ""}" data-action="etax-filter" data-k="${esc(k)}" title="${unv ? "Unverified: the game code hasn't settled this tag. " : ""}Filter the Taxonomy to “${esc(taxoValName(k))}”">${esc(taxoValName(k))}${x.n >= 2 ? `<span class="etax-mult">×${x.n}</span>` : ""}${attrs.length ? `<span class="etax-attr">${esc(attrs.join(" · "))}</span>` : ""}${FEATURES.taxoSource && x.v ? `<span class="apx-src s-${esc(x.v)}">${esc(x.v)}</span>` : ""}</button>`;
       }).join("")}</div>
     </div>`).join("");
   }
@@ -3027,7 +3031,7 @@
     if (!e) return `<div class="ovl-backdrop" data-action="entity-backdrop"><div class="overlay-panel detail">
       <div class="overlay-header"><h2>Not found</h2><button class="ovl-close" data-action="close-entity">✕</button></div>
       <div class="overlay-body"><div class="ovl-center"><div class="slot-sub" style="padding:16px">This entry could not be resolved.</div></div></div></div></div>`;
-    const n = (TV2 ? e.taxo2 : e.taxo || []).length;
+    const n = TV2 ? new Set((e.taxo2 || []).map(x => [x.t, x.s, x.so, x.r, x.p, x.d, x.v].join("|"))).size : (e.taxo || []).length;   // one per chip
     return `<div class="ovl-backdrop" data-action="entity-backdrop"><div class="overlay-panel detail">
       <div class="overlay-header">${r.icon ? `<span class="hdr-ico">${spriteImg(r.icon, "px")}</span>` : ""}
         <h2>${esc(r.name || "—")}</h2><span class="anoint-spec-tag">${esc(r.kindLabel)}</span>
@@ -3054,9 +3058,9 @@
   // row sums each TAG (how many members carry it — that's the synergy strength). List = the
   // same data grouped per shared tag, showing each contributing effect's description + owner.
 
-  // "Does not stack" is on ~hundreds of traits and never indicates a synergy — drop it from both views.
-  const SYN_EXCLUDE = new Set(["Effect Limitation::Does not stack"]);
-  const synTags = (taxo) => (taxo || []).filter(k => !SYN_EXCLUDE.has(k));
+  // an effect's tags: one key per v2 tag (a trigger with a role counts as its role key, e.g. "Takes Damage"); a relic counts
+  // only the tags of ranks up to the equipped rank (rk; unranked relic tags count for the whole relic)
+  const synTags = (o, rank) => !o ? [] : [...new Set((o.taxo2 || []).filter(e => rank == null || e.rk == null || e.rk <= rank).map(e => roleKey(e) || e.t))];
 
   // matrix data: one entry per build MEMBER, each a CONTAINER of individual effects. Spec = 1 row of its
   // allocated perks; ALL anointments collapse into 1 row of the equipped anoints; each creature = 1 row of
@@ -3069,47 +3073,47 @@
     const mk = (id, label, kind) => ({ id, label, kind, sub: null, tags: new Set(), counts: new Map(), children: [] });
     const bump = (m, k) => { m.tags.add(k); m.counts.set(k, (m.counts.get(k) || 0) + 1); };
     // add one effect (perk/anoint/trait/spell) to a member: it contributes +1 to each of its tags
-    const addEffect = (m, label, taxo, sub) => { const t = synTags(taxo); if (!t.length) return; m.children.push({ label, sub, tags: new Set(t) }); for (const k of t) bump(m, k); };
+    const addEffect = (m, label, o, sub, rank) => { const t = synTags(o, rank); if (!t.length) return; m.children.push({ label, sub, tags: new Set(t) }); for (const k of t) bump(m, k); };
     if (build.specId != null) {
       const s = SPEC.get(build.specId);
       if (s) { const m = mk("spec", s.label, "spec");
-        for (const p of allocatedPerks(s)) addEffect(m, p.name, p.taxo);
+        for (const p of allocatedPerks(s)) addEffect(m, p.name, p);
         if (m.tags.size) members.push(m); }
     }
     const anoints = equippedAnointObjs();
     if (anoints.length) { const m = mk("anoints", "Anointments", "anoint");
-      for (const a of anoints) addEffect(m, a.name, a.taxo, a.spec);
+      for (const a of anoints) addEffect(m, a.name, a, a.spec);
       if (m.tags.size) { m.sub = `${m.children.length} equipped`; members.push(m); } }
     build.slots.forEach((slot, i) => {
       const c = CREA.get(slot.cid); if (!c) return;
       const m = mk("crea" + i, c.name, "crea");
       // the creature is just the container; each TRAIT (innate/fusion/artifact/nether) and spell-gem spell
       // it carries is the counted effect — the creature's own name never contributes.
-      for (const tid of slotTraitIds(slot)) { const tr = TRAIT[tid]; if (tr) addEffect(m, tr.name, tr.taxo, "trait"); }
-      for (const gid of slot.spellGemIds || []) { const g = spellGems.find(x => x.id === gid); const sp = g ? gemSpell(g) : null; if (sp) addEffect(m, sp.name, sp.taxo, "spell gem"); }
-      for (const g of grantedSpellList(slot)) addEffect(m, g.sp.name, g.sp.taxo, "granted spell");
+      for (const tid of slotTraitIds(slot)) { const tr = TRAIT[tid]; if (tr) addEffect(m, tr.name, tr, "trait"); }
+      for (const gid of slot.spellGemIds || []) { const g = spellGems.find(x => x.id === gid); const sp = g ? gemSpell(g) : null; if (sp) addEffect(m, sp.name, sp, "spell gem"); }
+      for (const g of grantedSpellList(slot)) addEffect(m, g.sp.name, g.sp, "granted spell");
       // relic (equipped per creature; Deprived ignores relics) + nether spell props
       const rel = slot.relic && !FX.ignores("relics") ? RELIC.get(slot.relic.id) : null;
-      if (rel) addEffect(m, rel.name, rel.taxo, "relic");
-      for (const sp of slotNetherSpells(slot)) addEffect(m, sp.name, sp.taxo, "nether spell");
+      if (rel) addEffect(m, rel.name, rel, "relic", slot.relic.rank);
+      for (const sp of slotNetherSpells(slot)) addEffect(m, sp.name, sp, "nether spell");
       if (m.tags.size) members.push(m);
     });
     return members;
   }
   // list data: one entry per individual EFFECT (perk / anoint / trait / spell) with its description
   function buildTagEffects() {
-    const effects = [];   // {name, desc, tags:[], owner, kind}
-    const push = (name, desc, taxo, owner, kind) => { const tags = synTags(taxo); if (tags.length) effects.push({ name, desc, tags, owner, kind }); };
-    if (build.specId != null) { const s = SPEC.get(build.specId); if (s) for (const p of allocatedPerks(s)) push(p.name, perkText(p.desc, perkRank(s, p)), p.taxo, s.label, "Perk"); }
-    for (const a of equippedAnointObjs()) push(a.name, perkText(a.desc, a.ranks), a.taxo, a.spec || "Anointment", "Anointment");
+    const effects = [];   // {name, desc, tags:[], themes:[], owner, kind}
+    const push = (name, desc, o, owner, kind, rank) => { const tags = synTags(o, rank); if (tags.length) effects.push({ name, desc, tags, themes: o.theme2 || [], owner, kind }); };
+    if (build.specId != null) { const s = SPEC.get(build.specId); if (s) for (const p of allocatedPerks(s)) push(p.name, perkText(p.desc, perkRank(s, p)), p, s.label, "Perk"); }
+    for (const a of equippedAnointObjs()) push(a.name, perkText(a.desc, a.ranks), a, a.spec || "Anointment", "Anointment");
     for (const slot of build.slots) {
       const c = CREA.get(slot.cid); if (!c) continue;
-      for (const tid of slotTraitIds(slot)) { const tr = TRAIT[tid]; if (tr) push(tr.name, richText(tr.desc || ""), tr.taxo, c.name, "Trait"); }
-      for (const gid of slot.spellGemIds || []) { const g = spellGems.find(x => x.id === gid); const sp = g ? gemSpell(g) : null; if (sp) push(sp.name, richText(sp.desc || ""), sp.taxo, c.name, "Spell"); }
-      for (const g of grantedSpellList(slot)) push(g.sp.name, richText(g.sp.desc || ""), g.sp.taxo, c.name, "Spell");
+      for (const tid of slotTraitIds(slot)) { const tr = TRAIT[tid]; if (tr) push(tr.name, richText(tr.desc || ""), tr, c.name, "Trait"); }
+      for (const gid of slot.spellGemIds || []) { const g = spellGems.find(x => x.id === gid); const sp = g ? gemSpell(g) : null; if (sp) push(sp.name, richText(sp.desc || ""), sp, c.name, "Spell"); }
+      for (const g of grantedSpellList(slot)) push(g.sp.name, richText(g.sp.desc || ""), g.sp, c.name, "Spell");
       const rel = slot.relic && !FX.ignores("relics") ? RELIC.get(slot.relic.id) : null;
-      if (rel) push(rel.name, rel.ranks.map(r => r.desc).join(" · "), rel.taxo, c.name, "Relic");
-      for (const sp of slotNetherSpells(slot)) push(sp.name, richText(sp.desc || ""), sp.taxo, c.name, "Spell");
+      if (rel) push(rel.name, rel.ranks.filter(r => r.rank <= slot.relic.rank).map(r => r.desc).join(" · "), rel, c.name, "Relic", slot.relic.rank);
+      for (const sp of slotNetherSpells(slot)) push(sp.name, richText(sp.desc || ""), sp, c.name, "Spell");
     }
     return effects;
   }
@@ -3117,12 +3121,12 @@
   // ── Threats advisor — realm properties + False God runes to avoid for the detected build theme ──
   const THEMES = D.buildThemes || [];
   const themeLabel = (k) => { const t = THEMES.find(x => x.key === k); return t ? t.label : k; };
-  // tally how many build effects touch each theme's tags (reuses the synergy effect gathering)
+  // tally how many build effects touch each theme (v2 theme2; reuses the synergy effect gathering)
   function detectBuildThemes() {
     const w = {};
     for (const e of buildTagEffects()) {
-      const set = new Set(e.tags);
-      for (const t of THEMES) if (t.tags.some(tag => set.has(tag))) w[t.key] = (w[t.key] || 0) + 1;
+      const set = new Set(e.themes);
+      for (const t of THEMES) if (t.themes.some(th => set.has(th))) w[t.key] = (w[t.key] || 0) + 1;
     }
     return w;   // { attack: n, cast: n, ... }
   }
@@ -4053,7 +4057,7 @@
     if (!tags.length) return { meta, body: `<div class="slot-sub" style="padding:14px">No ${st.sharedOnly ? "shared " : ""}tags in the current build yet.</div>` };
     const kindCls = { spec: "k-spec", anoint: "k-anoint", crea: "k-crea" };
     const head = `<thead><tr><th class="xref-corner">Member \\ Tag</th>${tags.map(k =>
-      `<th><div class="xref-colhead"><span class="xc-dot ${shareClass(k)}"></span><span class="xc-name" title="${esc(taxoCatName(k))} → ${esc(taxoValName(k))}">${esc(taxoValName(k))}</span></div></th>`).join("")}</tr></thead>`;
+      `<th><div class="xref-colhead"><span class="xc-dot ${shareClass(k)}"></span><span class="xc-name" title="${esc(taxoCatName(k))} → ${esc(taxoValName(k))}">${esc(taxoCatName(k))}: ${esc(taxoValName(k))}</span></div></th>`).join("")}</tr></thead>`;
     const rowFor = (m) => {
       const expandable = m.children && m.children.length;
       const isExp = expandable && st.expanded.has(m.id);
@@ -4948,11 +4952,12 @@
   // (e.g. Antidote is tagged "Healing" but really cures debuffs → { "Antidote": { purpose: "cleanse" } }).
   const SPELL_OVERRIDES = {};
   // classify one spell → { sp, name, purpose, side, multi } (taxonomy-driven, then per-spell override)
+  // v2: am = the spell's theme (theme2, the old Action/Mechanic values), rs = its Spell Kind
   function classifySpell(sp) {
-    const tx = sp.taxo || [], am = (v) => tx.includes("Action/Mechanic::" + v), rs = (v) => tx.includes("Related Spells::" + v);
+    const tx = tagKeys(sp), th = new Set(sp.theme2 || []), am = (v) => th.has(v), rs = (v) => tx.includes("Spell Kind::" + v);
     const multi = rs("Multi-Target Spells");
-    const statUp = tx.includes("Affect on Stats::Stat is Increased");
-    const statDown = tx.includes("Affect on Stats::Stat is Decreased");
+    const statUp = tx.includes("Stats::Gain") || tx.includes("Stats::Has More");
+    const statDown = tx.includes("Stats::Lose") || tx.includes("Stats::Has Less");
     let purpose, side;
     if (am("Resurrection")) { purpose = "rez"; side = "ally"; }
     else if ((am("Healing") || rs("Healing Spells")) && !rs("Damaging Spells")) { purpose = "heal"; side = "ally"; }
@@ -4977,7 +4982,7 @@
     for (const g of grantedSpellList(slot)) if (g.mode === "gem") add(g.sp);
     return out;
   }
-  const TAUNT_TAGS = new Set(["Action/Mechanic::Provoke", "Action/Mechanic::Defend"]);
+  const TAUNT_THEMES = new Set(["Provoke", "Defend"]);
   // line + target helpers shared by the rules
   const mLine = (en, why, chain) => ({ en, why, chain: !!chain });
   const allyT = (s) => s.multi ? "ally (all)" : "that creature";
@@ -4988,14 +4993,14 @@
     const fs = finalStats(slot), st = fs.final;
     const spells = gatherSlotSpells(slot).map(classifySpell);
     const by = (p) => spells.filter(s => s.purpose === p);
-    const traitTags = new Set();
-    slotTraitIds(slot).forEach(tid => (TRAIT[tid] || {}).taxo && TRAIT[tid].taxo.forEach(t => traitTags.add(t)));
+    const traitThemes = new Set();
+    slotTraitIds(slot).forEach(tid => ((TRAIT[tid] || {}).theme2 || []).forEach(t => traitThemes.add(t)));
     const dom = STAT_KEYS.reduce((a, k) => st[k] > st[a] ? k : a, "hp");
     const dmg = by("damage");
     return {
       c, slot, st, spells, by, T: MACRO_TUNING,
       heals: by("heal"), dmg, singleDmg: dmg.filter(s => !s.multi), aoe: dmg.filter(s => s.multi),
-      hasTauntTrait: [...traitTags].some(t => TAUNT_TAGS.has(t)),
+      hasTauntTrait: [...traitThemes].some(t => TAUNT_THEMES.has(t)),
       dom, tanky: dom === "def" || dom === "hp", squishy: dom === "int" || dom === "spd",
       physical: st.atk >= st.int, canAttack: !!(dmg.length || st.atk >= st.int),
     };
@@ -5136,33 +5141,38 @@
   // code (Citrine bc_OnAttack/Defend/Provoke/Heal, Bloodstone/Carnelian/Emerald/Garnet after a cast, Jade at battle
   // start); artifact "X On Damage" properties roll in bc_EventDamage on the attacker's artifact (roll_sites) → Deals Damage.
   // Tag matching is case-insensitive (the taxonomy carries both "Enemy Is Healed" and "Enemy is Healed").
+  // v2: a group = the Trigger values it shows; an entry's chip = its side + the trigger (role label when it has one)
   const TRIG_GROUPS = [
-    { key: "battle", label: "Start of Battle", tags: ["Activates at::Start of Battle"] },
-    { key: "turn", label: "On Turn", tags: ["Start of Ally Turn", "Start of Enemy Turn", "End of Ally Turn", "End of Enemy Turn"].map(v => "Activates at::" + v), slot: "On Turn" },
-    { key: "attack", label: "Attack", ev: ["Attacks"], slot: "On Attack" },
-    { key: "cast", label: "Cast", ev: ["Casts"], slot: "On Cast" },
-    { key: "defend", label: "Defend", ev: ["Defends"], slot: "On Defend" },
-    { key: "provoke", label: "Provoke", ev: ["Provokes"], slot: "On Provoke" },
-    { key: "damage", label: "Damage", ev: ["Deals Damage", "Takes Damage", "Indirectly Damaged"] },
-    { key: "crit", label: "Critical Hits", ev: ["Critically Hits"] },
-    { key: "dodge", label: "Dodge", ev: ["Dodges"] },
-    { key: "heal", label: "Healing", ev: ["is Healed"] },
-    { key: "status", label: "Buffs & Debuffs", ev: ["is Buffed", "is Debuffed", "Loses Buff/Debuff"] },
-    { key: "stats", label: "Stats", ev: ["Gains Stats", "Loses Stats"] },
-    { key: "death", label: "Death & Resurrection", ev: ["Dies", "Resurrects"] },
-    { key: "timeline", label: "Timeline", ev: ["Moves on Timeline"] },
-    { key: "minion", label: "Minions", ev: ["Minion Gain/Action"] },
-    { key: "trait", label: "Trait Activates", ev: ["Trait Activates"] },
+    { key: "battle", label: "Start of Battle", trig: ["Battle Start"] },
+    { key: "turn", label: "On Turn", trig: ["Turn Start", "Turn End"], slot: "On Turn" },
+    { key: "attack", label: "Attack", trig: ["Attack"], slot: "On Attack" },
+    { key: "cast", label: "Cast", trig: ["Cast"], slot: "On Cast" },
+    { key: "defend", label: "Defend", trig: ["Defend"], slot: "On Defend" },
+    { key: "provoke", label: "Provoke", trig: ["Provoke"], slot: "On Provoke" },
+    { key: "damage", label: "Damage", trig: ["Damage", "DoT Tick"] },
+    { key: "crit", label: "Critical Hits", trig: ["Critical Hit"] },
+    { key: "dodge", label: "Dodge", trig: ["Dodge"] },
+    { key: "heal", label: "Healing", trig: ["Heal"] },
+    { key: "status", label: "Buffs & Debuffs", trig: ["Buff", "Debuff", "Buff Removed", "Debuff Removed"] },
+    { key: "stats", label: "Stats", trig: ["Stat Gain", "Stat Loss"] },
+    { key: "death", label: "Death & Resurrection", trig: ["Death", "Resurrection"] },
+    { key: "timeline", label: "Timeline", trig: ["Timeline Move"] },
+    { key: "minion", label: "Minions", trig: ["Minion Gained", "Minion Lost", "Minion Action"] },
+    { key: "trait", label: "Trait Activates", trig: ["Trait Activation"] },
   ];
-  for (const g of TRIG_GROUPS) if (g.ev) g.tags = g.ev.flatMap(e => ["Ally", "Enemy"].map(a => `Activates When::${a} ${e}`));
-  const TRIG_TAG_GROUP = new Map(TRIG_GROUPS.flatMap(g => g.tags.map(t => [t.toLowerCase(), g.key])));
+  const TRIG_VAL_GROUP = new Map(TRIG_GROUPS.flatMap(g => g.trig.map(v => [v, g.key])));
+  const TRIG_SIDE_WORD = { Self: "This creature", Ally: "Ally", "Self or Ally": "Ally", Adjacent: "Adjacent", Enemy: "Enemy", Any: "Any creature" };
+  const trigEvLabel = (e) => { const val = e.t.slice(9), verb = ((TRIG_ROLE_LABEL[val] || {})[e.r]) || val, side = TRIG_SIDE_WORD[e.s];
+    return side ? `${side}: ${verb}` : verb; };
   const TRIG_GEM_PROP = { CITRINE_ATTACK: "attack", CITRINE_DEFEND: "defend", CITRINE_PROVOKE: "provoke", CITRINE_HEAL: "heal",
     BLOODSTONE: "cast", CARNELIAN: "cast", EMERALD: "cast", GARNET: "cast", JADE: "battle" };
   function slotTriggers(slot) {
     const by = new Map(TRIG_GROUPS.map(g => [g.key, []]));
-    // tag list → Map(group key → the matched event names, for the chip)
-    const byTags = (tags) => { const m = new Map();
-      for (const t of tags || []) { const k = TRIG_TAG_GROUP.get(t.toLowerCase()); if (!k) continue; if (!m.has(k)) m.set(k, []); m.get(k).push(t.split("::")[1]); }
+    // an object's v2 Trigger tags → Map(group key → the event labels, for the chip); keep(e) picks entries (relic ranks)
+    const byTags = (o, keep) => { const m = new Map();
+      for (const e of (o && o.taxo2) || []) { if (!e.t.startsWith("Trigger::") || (keep && !keep(e))) continue;
+        const k = TRIG_VAL_GROUP.get(e.t.slice(9)); if (!k) continue; if (!m.has(k)) m.set(k, []);
+        const ev = trigEvLabel(e); if (!m.get(k).includes(ev)) m.get(k).push(ev); }
       return m; };
     const art = resolveArtifact(slot);
     // traits (innate / fusion / artifact material / nether stone); non-innate ones say where they come from
@@ -5178,12 +5188,16 @@
     for (const tid of slotTraitIds(slot)) {
       const t = TRAIT[tid]; if (!t) continue;
       const src = innate.has(tid) ? null : traitSrc.get(tid) || null;
-      for (const [k, evs] of byTags(t.taxo)) by.get(k).push({ kind: "trait", tid, evs, src });
+      for (const [k, evs] of byTags(t)) by.get(k).push({ kind: "trait", tid, evs, src });
     }
-    // relic ranks up to the equipped rank (Deprived ignores relics)
+    // relic ranks up to the equipped rank, by the rank whose code clause holds each tag (rk; Deprived ignores relics).
+    // A trigger tag with no rank (its site is in no rank clause) shows once for the relic as a whole.
     const relic = slot.relic && !FX.ignores("relics") ? RELIC.get(slot.relic.id) : null;
-    if (relic) for (const r of relic.ranks) if (r.rank <= slot.relic.rank)
-      for (const [k, evs] of byTags(r.trig)) by.get(k).push({ kind: "relic", relic, r, evs });
+    if (relic) {
+      for (const r of relic.ranks) if (r.rank <= slot.relic.rank)
+        for (const [k, evs] of byTags(relic, (e) => e.rk === r.rank)) by.get(k).push({ kind: "relic", relic, r, evs });
+      for (const [k, evs] of byTags(relic, (e) => e.rk == null)) by.get(k).push({ kind: "relic", relic, r: null, evs });
+    }
     if (art) {
       // spells socketed in the artifact: the native slot fires on the type trigger, nether stone spells on their own
       const slotGroup = (trig) => (TRIG_GROUPS.find(g => g.slot === trig) || {}).key;
@@ -5203,7 +5217,7 @@
     if (spec) for (const p of spec.perks) { const r = perkRank(spec, p); if (r > 0) perks.set(p.key, { p, rank: r, src: spec.label }); }
     for (const a of equippedAnointObjs()) if (!perks.has(a.key) || perks.get(a.key).rank < perkMax(a)) perks.set(a.key, { p: a, rank: perkMax(a), src: a.spec });
     for (const { p, rank, src } of perks.values()) if (p.trigScope && scopeCovers(slot, p.trigScope, rank))
-      for (const [k, evs] of byTags(p.taxo)) by.get(k).push({ kind: "perk", p, rank, evs, src });
+      for (const [k, evs] of byTags(p)) by.get(k).push({ kind: "perk", p, rank, evs, src });
     // party members' traits that this creature can set off or carry out ("After your creatures attack …"); a trait whose
     // trigger is its bearer ("After this creature …") stays on the bearer's page. One entry per trait, its owners listed.
     const own = new Set(slotTraitIds(slot)), mates = new Map();
@@ -5211,7 +5225,7 @@
       const t = TRAIT[tid]; if (!t || own.has(tid) || !t.trigScope || (t.trigScope.t || []).includes("self") || !scopeCovers(slot, t.trigScope)) continue;
       if (!mates.has(tid)) mates.set(tid, []); mates.get(tid).push((CREA.get(o.cid) || {}).name);
     }
-    for (const [tid, owners] of mates) for (const [k, evs] of byTags(TRAIT[tid].taxo)) by.get(k).push({ kind: "trait", tid, evs, src: owners.join(", ") });
+    for (const [tid, owners] of mates) for (const [k, evs] of byTags(TRAIT[tid])) by.get(k).push({ kind: "trait", tid, evs, src: owners.join(", ") });
     return TRIG_GROUPS.map(g => ({ ...g, items: by.get(g.key) })).filter(g => g.items.length);
   }
   // does a trigger scope ({t, a}: build-data's read of the game text) cover this party slot? party = every creature;
@@ -5242,8 +5256,8 @@
         <div class="trait-desc">${perkText(it.p.desc || "", it.rank)}</div></div>`;
     if (it.kind === "relic") { const ra = relicArt(it.relic);
       return `<div class="art-spellcard apx-clickable" data-action="apx-open" data-ek="relic" data-eid="${it.relic.id}" title="View taxonomy">
-        <div class="art-spellcard-head">${ra ? `<span class="prop-ico sm">${spriteImg(ra, "px")}</span>` : ""}<b>${esc(relicShortName(it.relic))} · R${it.r.rank}</b>${trigChip(it.evs.join(" · "))}</div>
-        <div class="trait-desc">${richText(it.r.desc || "")}</div></div>`; }
+        <div class="art-spellcard-head">${ra ? `<span class="prop-ico sm">${spriteImg(ra, "px")}</span>` : ""}<b>${esc(relicShortName(it.relic))}${it.r ? ` · R${it.r.rank}` : ""}</b>${trigChip(it.evs.join(" · "))}</div>
+        ${it.r ? `<div class="trait-desc">${richText(it.r.desc || "")}</div>` : ""}</div>`; }
     if (it.kind === "artprop") { const ic = artIcon(it.art);
       return `<div class="art-spellcard"><div class="art-spellcard-head">${ic ? `<span class="prop-ico sm">${spriteImg(ic, "px")}</span>` : ""}<b>${esc(it.prop)}</b>${trigChip(`Deals Damage · ${it.value}${it.unit === "%" ? "%" : ""}`)}</div>
         <div class="slot-sub" style="text-align:left">from ${esc(it.art.name)}</div></div>`; }

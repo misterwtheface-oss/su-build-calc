@@ -2423,19 +2423,19 @@ console.log(`  skins: ${skins.length} applicable (${skinFrames.size} frames, cod
 const runesRaw = readJSON(path.join(MODEL, 'runes.json'));
 const realmPropsRaw = readJSON(path.join(MODEL, 'realm_properties.json'));
 
-// The build intents we can detect from the Action/Mechanic taxonomy category.
+// The build intents we can detect, by taxonomy v2 Theme (objects' theme2; the old Action/Mechanic values).
 const BUILD_THEMES = [
-  { key: 'attack',   label: 'Attack',           tags: ['Action/Mechanic::Attack'] },
-  { key: 'cast',     label: 'Cast / Spells',    tags: ['Action/Mechanic::Cast', 'Action/Mechanic::Spell Gems'] },
-  { key: 'indirect', label: 'Indirect Damage',  tags: ['Action/Mechanic::Indirect Damage'] },
-  { key: 'crit',     label: 'Critical',         tags: ['Action/Mechanic::Critical'] },
-  { key: 'buff',     label: 'Buffs',            tags: ['Action/Mechanic::Buff'] },
-  { key: 'debuff',   label: 'Debuffs',          tags: ['Action/Mechanic::Debuff'] },
-  { key: 'dodge',    label: 'Dodge',            tags: ['Action/Mechanic::Dodge'] },
-  { key: 'heal',     label: 'Healing',          tags: ['Action/Mechanic::Healing'] },
-  { key: 'minion',   label: 'Minions',          tags: ['Action/Mechanic::Minion'] },
-  { key: 'provoke',  label: 'Provoke / Defend', tags: ['Action/Mechanic::Provoke', 'Action/Mechanic::Defend'] },
-  { key: 'stats',    label: 'Stat Stacking',    tags: ['Action/Mechanic::Stats'] },
+  { key: 'attack',   label: 'Attack',           themes: ['Attack'] },
+  { key: 'cast',     label: 'Cast / Spells',    themes: ['Cast', 'Spell Gems'] },
+  { key: 'indirect', label: 'Indirect Damage',  themes: ['Indirect Damage'] },
+  { key: 'crit',     label: 'Critical',         themes: ['Critical'] },
+  { key: 'buff',     label: 'Buffs',            themes: ['Buff'] },
+  { key: 'debuff',   label: 'Debuffs',          themes: ['Debuff'] },
+  { key: 'dodge',    label: 'Dodge',            themes: ['Dodge'] },
+  { key: 'heal',     label: 'Healing',          themes: ['Healing'] },
+  { key: 'minion',   label: 'Minions',          themes: ['Minion'] },
+  { key: 'provoke',  label: 'Provoke / Defend', themes: ['Provoke', 'Defend'] },
+  { key: 'stats',    label: 'Stat Stacking',    themes: ['Stats'] },
 ];
 
 // modifier key -> [theme keys it directly counters]. Empty + no counterClass => "generally punishing".
@@ -3537,18 +3537,30 @@ const bosses = (() => {
 // ── Taxonomy v2 (TAXONOMY_INTENT.md, ratified 2026-10-19), shipped NEXT TO v1 until the cutover (user 2026-10-19: parallel,
 // then one cutover). tools/taxo-v2.mjs: each object's final v1 tags through the crosswalk ∪ the extract's code layer
 // (taxo_v2_tags.json; code decides splits and supplies scope / source / role / phase / delivery). Undecided splits keep
-// every candidate as 'unverified'. Objects carry taxo2 [{t, s?, so?, r?, p?, d?, v}] and theme2 (derived themes).
+// every candidate as 'unverified'. Objects carry taxo2 [{t, s?, so?, r?, p?, d?, rk?, v}] and theme2 (derived themes).
+// rk (relics): the relic rank whose code clause holds the tag's site (relic_signatures.json records[].clauses[].site);
+// a relic tag whose site is in no rank clause has no rk and counts for the whole relic.
 const taxonomy2 = (() => {
   const CLP = path.join(MODEL, 'taxo_v2_tags.json');
   if (!fs.existsSync(CLP)) { warn('taxonomy v2: taxo_v2_tags.json missing, v2 not built'); return null; }
   const X = readJSON(path.join(ROOT, 'data', 'reference', 'taxonomy_crosswalk.json'));
   const V = makeTaxoV2(X, readJSON(CLP));
-  const counts = {}, removed = {};
+  const counts = {}, removed = {}, involves = {};
+  // Involves::<theme> = a code-grounded v1 theme no v2 tag re-derives: each is a review item (a narrower tag is missing, or
+  // the theme is wrong). Adjacency / Artifact / Relic / Personality are permanent (TAXONOMY_INTENT.md).
+  const INVOLVES_PERMANENT = new Set(['Adjacency', 'Artifact', 'Relic', 'Personality']);
+  const relicSig = readJSON(path.join(MODEL, 'relic_signatures.json')).records || [];
+  const relicRankBySite = new Map();
+  for (const p of relicSig) for (const c of p.clauses || []) relicRankBySite.set(`${p.app_relic_id}:${c.site}`, p.rank);
+  const relicNoRank = [];
   const run = (kind, id, o) => {
-    const r = V.build(kind, id, o.taxo || [], o.taxoSrc);
+    const r = V.build(kind, id, o.taxo || [], o.taxoSrc, kind === 'relic' ? { rankOf: (site) => relicRankBySite.get(`${id}:${site}`) ?? null } : {});
+    if (kind === 'relic') for (const e of r.taxo2) if (e.v === 'code' && e.rk == null) relicNoRank.push(`${o.name.split(',')[0]} ${e.t}`);
     o.taxo2 = r.taxo2; o.theme2 = r.theme2;
     if (r.removed.length) removed[`${kind}:${id}`] = { name: o.name || o.family || null, desc: o.desc || null, removed: r.removed };
     for (const e of r.taxo2) counts[e.t] = (counts[e.t] || 0) + 1;
+    const inv = r.taxo2.filter(e => e.t.startsWith('Involves::') && !INVOLVES_PERMANENT.has(e.t.slice(10))).map(e => e.t.slice(10));
+    if (inv.length) involves[`${kind}:${id}`] = { name: o.name || o.family || null, desc: o.desc || null, involves: inv, v2: r.taxo2.filter(e => !e.t.startsWith('Involves::')).map(e => e.t) };
   };
   for (const t of Object.values(traits)) run('trait', t.id, t);
   for (const sp of specs) for (const pk of sp.perks || []) run('perk', pk.key, pk);
@@ -3556,6 +3568,7 @@ const taxonomy2 = (() => {
   for (const o of relics) run('relic', o.id, o);
   for (const o of cards) run('card', o.id, o);
   for (const o of conditions) run('condition', o.key, o);
+  if (relicNoRank.length) console.log(`  taxonomy v2: ${relicNoRank.length} relic tags have no rank (site in no relic_signatures clause; HANDOFF_taxonomy_v2 F5): ${relicNoRank.slice(0, 8).join(' · ')}${relicNoRank.length > 8 ? ' …' : ''}`);
   const { unknown, ...st } = V.stats;
   for (const [t, n] of Object.entries(unknown)) warn(`taxonomy v2: value ${t} (${n}×) is not in the crosswalk / new_values`);
   console.log(`  taxonomy v2: ${st.objects} objects (${st.withCode} with code) · ${st.entries} code-backed tags (code ${st.code} · field / boss ${st.other}) · Involves ${st.involves} · event scopes ${st.eventScope} resolved / ${st.eventScopeOff} off`);
@@ -3564,6 +3577,11 @@ const taxonomy2 = (() => {
   const dumpDir = path.join(SRC, 'code', 'data_dump', 'taxo_v2');
   if (fs.existsSync(dumpDir)) fs.writeFileSync(path.join(dumpDir, 'app_removed_not_code_backed.json'),
     JSON.stringify({ _note: 'Written by su-build-calc build-data (tools/taxo-v2.mjs). v2 tags removed from the app because they are not code-backed (user 2026-10-19). v = original provenance; old = the v1 tag it came from; why = the reason when it was an unverified candidate. Confirm from code (then the code layer emits it) or leave it out.', stats: { tags: st.removed, objects: Object.keys(removed).length, by: st.removedBy }, objects: removed }, null, 1));
+  if (fs.existsSync(dumpDir)) fs.writeFileSync(path.join(dumpDir, 'app_involves_review.json'),
+    JSON.stringify({ _note: 'Written by su-build-calc build-data. Every non-permanent Involves::<theme> tag the app ships (a code-grounded v1 theme no v2 tag re-derives). HANDOFF_taxonomy_v2 F5: per object, name the narrower v2 tag(s) from the code (then the code layer emits them and the Involves goes), or say the theme is wrong. v2 = the other v2 tags on the object.', count: Object.values(involves).reduce((n, x) => n + x.involves.length, 0), objects: involves }, null, 1));
+  console.log(`  taxonomy v2 Involves to review: ${Object.values(involves).reduce((n, x) => n + x.involves.length, 0)} on ${Object.keys(involves).length} objects (permanent kinds excluded)`);
+  if (fs.existsSync(dumpDir)) fs.writeFileSync(path.join(dumpDir, 'app_relic_tags_no_rank.json'),
+    JSON.stringify({ _note: 'Written by su-build-calc build-data. Relic v2 tags with no rank: the tag site is in no relic_signatures.json rank clause (or the tag is a whole-relic v1 code tag). The app shows them for the whole relic. HANDOFF_taxonomy_v2 F5: give each a rank where the code gates it.', tags: relicNoRank }, null, 1));
   const A = X.attributes, categories = V.vocabulary(counts);
   const G = V.groups(readJSON(path.join(ROOT, 'data', 'reference', 'taxonomy_groups.json')), categories);
   if (G.orphans.length) warn(`taxonomy v2: ${G.orphans.length} values in no mechanic group: ${G.orphans.join(', ')}`);
@@ -3641,7 +3659,7 @@ const SU_DATA = {
   favorCommonVals,          // rank → [value per common column] (identical in every realm)
   pandShrine: _ym.pandemonium_shrine,   // Pandemonium shrine outcome table (code: obj_demonstatue, 1/13 each)
   favorCommon,              // Favor_REF: [{rank,effect,blessing}] — the shared favor-rank tier schedule
-  buildThemes: BUILD_THEMES,// detectable build intents (Action/Mechanic taxonomy) for the Threats advisor
+  buildThemes: BUILD_THEMES,// detectable build intents (taxonomy v2 themes) for the Threats advisor
   skinIdMigration: SKIN_ID_MIGRATION,   // old (shifted) skin id -> code skin id, for saved builds
   skins,                    // alternate creature skins, gated by code-grounded race/creature restriction
   scrollMax: 15,            // creatures consume up to 15 stat scrolls total, each +1 base stat (L_ID_SCROLL_*)
@@ -3776,13 +3794,15 @@ const SU_DATA = {
   // indirect damage is incomplete, e.g. Aftermath). The app shows a "no effect" chip from it.
   {
     const DS_OPS = new Set(['dmg.deal', 'stat.add', 'stat.set', 'stat.mult']);
-    const DS_TAXO = /^(Action\/Mechanic::(Damage|Indirect Damage|Stats)|Affect on Life::Creature is Damaged|Related Spells::Damaging Spells|Affect on Stats::)/;
+    // v2: a damage / stat theme, or a tag that inflicts damage or writes a stat
+    const DS_THEME = new Set(['Damage', 'Indirect Damage', 'Stats', 'Attack']);   // Attack: spells that make creatures attack (conservative, as v1)
+    const DS_TAXO = /^(Damage::Inflict|Spell Kind::Damaging Spells|Stats::)/;
     const opsBySpell = new Map();
     for (const r of rules) if (r.src.kind === 'spell') { if (!opsBySpell.has(r.src.id)) opsBySpell.set(r.src.id, new Set()); opsBySpell.get(r.src.id).add(r.op); }
     let n = 0;
     for (const sp of spells) {
       const ops = opsBySpell.get(sp.id);
-      if (ops && ![...ops].some(o => DS_OPS.has(o)) && !(sp.taxo || []).some(t => DS_TAXO.test(t))) { sp.noDmgStat = true; n++; }
+      if (ops && ![...ops].some(o => DS_OPS.has(o)) && !(sp.theme2 || []).some(t => DS_THEME.has(t)) && !(sp.taxo2 || []).some(e => DS_TAXO.test(e.t))) { sp.noDmgStat = true; n++; }
     }
     console.log(`  spells with no damage / stat change (Azurite no-op): ${n}`);
   }

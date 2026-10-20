@@ -55,7 +55,8 @@ export function makeTaxoV2(X, CL) {
   const known = (t) => vocab.has(t) || [...vocab].some(v => v.endsWith('::*') && t.startsWith(v.slice(0, -1)))
     || /^(Creature Type|Named Spell|Spell Class|Spell Kind|Involves)::/.test(t);
 
-  function build(kind, id, taxo, taxoSrc) {
+  // opts.rankOf(site) → the relic rank whose code clause holds that site (relics only; null when the site is in no clause)
+  function build(kind, id, taxo, taxoSrc, opts = {}) {
     stats.objects++;
     const code = CL.objects[`${kind}:${id}`] || null;
     if (code && code.has_signature) stats.withCode++;
@@ -87,7 +88,8 @@ export function makeTaxoV2(X, CL) {
     // An open polarity / direction ("Buffs|Debuffs::Apply", "Stats::Has More|Less") is both candidates, unverified.
     const codeE = ((code && code.tags) || []).flatMap(c => {
       const alts = expand(c.tag);
-      return alts.map(t => ({ t, s: c.scope || null, so: c.source || null, r: c.role || null, p: c.phase || null,
+      const rk = opts.rankOf ? opts.rankOf(c.site) : null;
+      return alts.map(t => ({ t, s: c.scope || null, so: c.source || null, r: c.role || null, p: c.phase || null, rk,
         // Targeting::All inferred only from "no picker call" is a guess while random-by-index picks are undecoded
         // (Abnegation hits a random enemy): unverified until the extract decodes it
         d: c.delivery || null, v: alts.length > 1 || / no picker call/.test(c.picker || '') ? 'unverified' : 'code',
@@ -113,7 +115,7 @@ export function makeTaxoV2(X, CL) {
     // dedupe on the full attribute key (an unverified duplicate of a firm entry goes)
     const seen = new Map();
     for (const e of all) {
-      const k = [e.t, e.s, e.so, e.r, e.p, e.d].join('|');
+      const k = [e.t, e.s, e.so, e.r, e.p, e.d, e.rk].join('|');
       const prev = seen.get(k);
       if (!prev || (prev.v === 'unverified' && e.v !== 'unverified')) seen.set(k, e);
     }
@@ -138,10 +140,10 @@ export function makeTaxoV2(X, CL) {
     for (const e of out) {
       stats.entries++; stats[e.v === 'code' ? 'code' : 'other']++;
       if (!known(e.t)) stats.unknown[e.t] = (stats.unknown[e.t] || 0) + 1;
-      for (const k of ['s', 'so', 'r', 'p', 'd']) if (e[k] == null) delete e[k];
+      for (const k of ['s', 'so', 'r', 'p', 'd', 'rk']) if (e[k] == null) delete e[k];
       delete e.old; delete e.why;
     }
-    for (const e of removed) { stats.removed++; stats.removedBy[e.v] = (stats.removedBy[e.v] || 0) + 1; for (const k of ['s', 'so', 'r', 'p', 'd']) if (e[k] == null) delete e[k]; }
+    for (const e of removed) { stats.removed++; stats.removedBy[e.v] = (stats.removedBy[e.v] || 0) + 1; for (const k of ['s', 'so', 'r', 'p', 'd', 'rk']) if (e[k] == null) delete e[k]; }
     return { taxo2: out, theme2: [...theme].sort(), removed };
   }
 

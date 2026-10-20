@@ -4,6 +4,28 @@ Every dated change entry, newest first (moved verbatim from Progress.md on 2026-
 to their own section and sorted by their date). Current state and open work: `Progress.md`, `BACKLOG.md`.
 New entries go at the TOP.
 
+## 2026-10-20 — Everything reads taxonomy v2
+- User: repoint everything to v2. v1 tags are no longer read anywhere while the v2 flag is on:
+  - Synergy (matrix + list): one key per v2 tag (a trigger with a role counts as its role, e.g. "Takes Damage"); the
+    matrix columns name the category ("Buffs: Apply", since v2 values repeat across categories). A relic counts only the
+    tags of ranks up to the equipped rank.
+  - Threats advisor: build themes come from each effect's v2 themes (buildThemes now lists themes, not v1 tags).
+  - Creature Triggers section: groups read v2 Trigger values; each chip names side + trigger ("Ally: Attacks"). Relic
+    rows are per rank from the code (below); a relic trigger with no rank shows once for the relic.
+  - Spell roles (macros, flag off) and the taunt-trait check read v2 themes / Spell Kind / Stats (696 of 705 spells keep
+    their role; the 9 that move follow code-backed tags, e.g. Soul Sacrifice is Stats::Set).
+  - Boss advisor "damaging spell": Damage::Inflict or Spell Kind::Damaging Spells.
+  - `noDmgStat` (Azurite does nothing): v2 themes Damage / Indirect Damage / Stats / Attack or a Damage::Inflict,
+    Damaging Spells or Stats tag. 266 → 253: the 13 that drop are spells that make creatures attack (v1 skipped only some
+    of them), plus Lycanthropy and Hero's Blessing.
+- Relic per-rank tags from the code: build-data gives each relic v2 tag the rank whose relic_signatures clause holds its
+  code site (`rk`; 535 of 580 code-layer tags). The relic page merges a tag found on several ranks into one chip with ×N.
+  The 272 tags with no rank are listed for the extract (HANDOFF_taxonomy_v2 F5).
+- build-data writes `app_involves_review.json` (801 Involves tags on 681 objects) and `app_relic_tags_no_rank.json` to
+  the extract's data_dump for F5.
+- Checked in the browser: Synergy, Threats, Triggers for three creatures (Ferro R10–R100 per rank), the Arbiter page
+  (Healing Up ×2); no JS errors.
+
 ## 2026-10-20 — Tag filter: source / timing / delivery toggles
 - User: more narrowing, the same way as the side toggle. An active tag chip now shows a toggle for every v2 attribute its
   tag carries on the listed items: side (Either / Your / Enemy), source (Attack / Spell / Indirect), timing (Would /
