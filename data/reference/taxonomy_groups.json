@@ -8,7 +8,7 @@
   { "name": "Health & Healing", "include": ["theme:Healing", "Condition::Health Threshold", "Scales With::Current Health %", "Scales With::Missing Health %"] },
   { "name": "Death & Resurrection", "include": ["theme:Resurrection", "Trigger::Death", "Life::Execute", "Life::Survive Lethal", "Condition::Is Dead", "Condition::Is Alive", "Scales With::Dead Creature Count", "Scales With::Living Creature Count"] },
   { "name": "Buffs", "include": ["theme:Buff"] },
-  { "name": "Debuffs", "include": ["theme:Debuff", "Trigger::DoT Tick"] },
+  { "name": "Debuffs", "include": ["theme:Debuff", "Trigger::DoT Tick", "Calculation::DoT Formula"] },
   { "name": "Minions", "include": ["theme:Minion", "Trigger::Minion Lost"] },
   { "name": "Stats", "include": ["theme:Stats"] },
   { "name": "Turns & Timeline", "include": ["theme:Turn Counter", "theme:Timeline", "Trigger::Battle Start", "Trigger::Turn Start", "Trigger::Turn End", "Condition::Turn Number", "Condition::Not Their Turn", "Condition::Has Done Action", "Condition::Undamaged This Turn", "Scales With::Turn Count"] },
