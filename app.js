@@ -606,28 +606,55 @@
     Debuff: { Receiver: "Is Debuffed", Applier: "Debuffs Someone" },
     "Critical Hit": { Performer: "Critically Hits", Receiver: "Is Critically Hit" } };
   const roleKey = (e) => e.r && e.t.startsWith("Trigger::") && (TRIG_ROLE_LABEL[e.t.slice(9)] || {})[e.r] ? e.t + "@r=" + e.r : null;
-  // Side narrowing (user 2026-10-19): a key may end "@s=ally" (your side: Self, Ally, Self or Ally, Adjacent) or
-  // "@s=enemy" (Enemy). A scope of Any matches both sides; a tag with no scope matches neither.
+  // Refinements (user 2026-10-19 side, 2026-10-20 source / timing / delivery): an active tag can be narrowed by the v2
+  // attributes on the tag itself. Key = base key + "@s=…@so=…@p=…@d=…" (fixed order). Side: "ally" = Self, Ally, Self or
+  // Ally, Adjacent; "enemy" = Enemy; a scope of Any matches both, a tag with no scope neither. The others match the
+  // attribute value exactly. An object matches when ONE of its tag entries has the base key and every refinement.
   const SIDES_OF_SCOPE = { Self: ["ally"], Ally: ["ally"], "Self or Ally": ["ally"], Adjacent: ["ally"], Enemy: ["enemy"], Any: ["ally", "enemy"] };
-  const SIDE_LABEL = { ally: "Your side", enemy: "Enemy side" };
-  const keySide = (k) => { const m = /@s=(\w+)$/.exec(k); return m ? m[1] : null; };
-  const keyNoSide = (k) => k.replace(/@s=\w+$/, "");
-  // every filter key an object matches (v1: its taxo)
+  const REFINE = [
+    { a: "s", any: "Either side", label: (v) => ({ ally: "Your side", enemy: "Enemy side" })[v], title: "Narrow this tag to one side",
+      vals: (e) => SIDES_OF_SCOPE[e.s] || [] },
+    { a: "so", any: "Any source", label: (v) => `Source: ${v}`, title: "Narrow this tag to one damage source", vals: (e) => e.so ? [e.so] : [] },
+    { a: "p", any: "Any timing", label: (v) => `Timing: ${v}`, title: "Narrow this trigger to one timing (Would / During / After / Repeat)", vals: (e) => e.p ? [e.p] : [] },
+    { a: "d", any: "Any delivery", label: (v) => `Delivery: ${v}`, title: "Event: fires reactions and counts toward limits. Direct: a silent write", vals: (e) => e.d ? [e.d] : [] },
+  ];
+  const REFINE_ORDER = (D.taxonomy2 && D.taxonomy2.attributes) || {};
+  const REFINE_ATTR = { s: null, so: "source", p: "phase", d: "delivery" };   // value order from taxonomy2.attributes
+  const keyParse = (k) => { const ref = {}; const base = k.replace(/@(s|so|p|d)=([^@]+)/g, (_, a, v) => { ref[a] = v; return ""; }); return { base, ref }; };
+  const keyBuild = (base, ref) => base + REFINE.map(R => ref[R.a] ? `@${R.a}=${ref[R.a]}` : "").join("");
+  const keyBase = (k) => keyParse(k).base;
+  const entryKeys = (e) => { const rk = roleKey(e); return rk ? [e.t, rk] : [e.t]; };
+  const refineOk = (e, ref) => REFINE.every(R => !ref[R.a] || R.vals(e).includes(ref[R.a]));
+  // every base filter key an object matches (v1: its taxo)
   const tagKeys = (o) => {
     if (!o) return [];
     if (!TV2) return o.taxo || [];
     if (o._tk) return o._tk;
     const s = new Set();
-    for (const e of o.taxo2 || []) {
-      const ks = [e.t], rk = roleKey(e); if (rk) ks.push(rk);
-      for (const k of ks) { s.add(k); for (const sd of SIDES_OF_SCOPE[e.s] || []) s.add(k + "@s=" + sd); }
-    }
+    for (const e of o.taxo2 || []) for (const k of entryKeys(e)) s.add(k);
     return (o._tk = [...s]);
   };
-  // the side toggle beside an active tag chip: Either → Your side → Enemy side (only when that tag carries scopes)
-  const sideNext = (k) => { const b = keyNoSide(k), sd = keySide(k); return sd === null ? b + "@s=ally" : sd === "ally" ? b + "@s=enemy" : b; };
-  const sideBtn = (k, src, L, avail) => !TV2 || !avail ? ""
-    : `<button class="facet${keySide(k) ? " on" : ""}" data-action="taxo-side" data-src="${src}" data-l="${L}" data-k="${esc(k)}" title="Narrow this tag to one side">${keySide(k) ? SIDE_LABEL[keySide(k)] : "Either side"}</button>`;
+  // does the object carry this (possibly refined) key?
+  const objHasKey = (o, k) => {
+    if (!o) return false;
+    const { base, ref } = keyParse(k);
+    if (!TV2 || !Object.keys(ref).length) return tagKeys(o).includes(base);
+    return (o.taxo2 || []).some(e => entryKeys(e).includes(base) && refineOk(e, ref));
+  };
+  // the values attribute R can take for key k over these objects (entries with k's base and its OTHER refinements)
+  const refineVals = (objs, k, R) => {
+    const { base, ref } = keyParse(k), rest = { ...ref }; delete rest[R.a];
+    const out = new Set();
+    for (const o of objs) for (const e of (o && o.taxo2) || []) if (entryKeys(e).includes(base) && refineOk(e, rest)) R.vals(e).forEach(v => out.add(v));
+    const order = REFINE_ATTR[R.a] ? REFINE_ORDER[REFINE_ATTR[R.a]] || [] : ["ally", "enemy"];
+    return [...out].sort((x, y) => order.indexOf(x) - order.indexOf(y));
+  };
+  // the toggles beside an active tag chip, one per attribute that has a value on the listed objects: Any → each value → Any
+  const refineBtns = (k, src, L, objs) => !TV2 ? "" : REFINE.map(R => {
+    const cur = keyParse(k).ref[R.a], vals = refineVals(objs, k, R);
+    if (!cur && !vals.length) return "";
+    return `<button class="facet${cur ? " on" : ""}" data-action="taxo-refine" data-a="${R.a}" data-src="${src}" data-l="${L}" data-k="${esc(k)}" title="${esc(R.title)}">${esc(cur ? R.label(cur) : R.any)}</button>`;
+  }).join("");
   // browse containers: v2 = mechanic groups (each base key followed by its role keys); v1 = the categories
   let _taxoGroups = null;
   function taxoGroups() {
@@ -647,7 +674,6 @@
   const taxoRowLabel = (k) => !TV2 ? taxoValName(k)
     : `${taxoCatName(k)}: ${taxoValName(k)}${k.startsWith("Trigger::") && TRIG_ROLE_LABEL[k.slice(9)] ? " (any)" : ""}`;
   // taxonomy filter: a creature's innate trait's human-facing tags ("Category::Value")
-  const creatureTaxo = (c) => tagKeys(c.traitId != null ? TRAIT[c.traitId] : null);
   // index of taxonomy values that match ≥1 member of a source list, grouped by category
   // (counts only hide empty values — never displayed, per minimal-chrome). Source-parameterized so
   // creatures, trait-items, (later) spell gems / perks can each reuse the same drill-down picker.
@@ -686,48 +712,60 @@
   // ＋ Filter (the facet picker), the picker's index and the match all come from here. A source names the objects it
   // lists and how one maps to tag keys (creatures and trait items read their trait's tags).
   const TF_SRC = {
-    creature: { items: () => D.creatures, keys: (c) => creatureTaxo(c), changed: () => resetCreaPage() },
-    card: { items: () => D.cards, keys: tagKeys },
-    relic: { items: () => D.relics, keys: tagKeys },
-    anoint: { items: () => anointList(), keys: tagKeys },
-    spell: { items: () => (D.spells || []).filter(sp => !sp.battleOnly && !sp.unused), keys: tagKeys },
-    trait: { items: () => (D.traitItems || []).filter(t => t.traitName), keys: (ti) => tagKeys(TRAIT[ti.traitId]) },
-    perk: { items: (st) => (SPEC.get(st.specId) || { perks: [] }).perks, keys: tagKeys },
-    appendix: { changed: (st) => { st.search = ""; } },   // the Taxonomy page browses its own way; chips + side shared
+    // obj: the object whose tags a listed item carries (creatures and trait items: their trait)
+    creature: { items: () => D.creatures, obj: (c) => c.traitId != null ? TRAIT[c.traitId] : null, changed: () => resetCreaPage() },
+    card: { items: () => D.cards },
+    relic: { items: () => D.relics },
+    anoint: { items: () => anointList() },
+    spell: { items: () => (D.spells || []).filter(sp => !sp.battleOnly && !sp.unused) },
+    trait: { items: () => (D.traitItems || []).filter(t => t.traitName), obj: (ti) => TRAIT[ti.traitId] },
+    perk: { items: (st) => (SPEC.get(st.specId) || { perks: [] }).perks },
+    // the Taxonomy page browses its own way; chips + refinements shared (refinement values over everything in the game)
+    appendix: { pool: () => { const r = appendixResults([]); return [...r.traits, ...r.perks, ...r.spells, ...r.relics, ...r.cards]; },
+      changed: (st) => { st.search = ""; } },
   };
   const TagFilter = {
     get: (st, src) => (st && st.tf && st.tf[src]) || [],
     set(st, src, arr) { (st.tf || (st.tf = {}))[src] = arr; const c = TF_SRC[src].changed; if (c) c(st); },
     add(st, src, k) { const a = TagFilter.get(st, src); if (!a.includes(k)) TagFilter.set(st, src, [...a, k]); },
     rm(st, src, k) { TagFilter.set(st, src, TagFilter.get(st, src).filter(x => x !== k)); },
-    side(st, src, k) { const nk = sideNext(k); TagFilter.set(st, src, TagFilter.get(st, src).map(x => x === k ? nk : x)); },
-    keys: (src, o) => o ? TF_SRC[src].keys(o) || [] : [],
-    match: (st, src, o) => TagFilter.get(st, src).every(k => TagFilter.keys(src, o).includes(k)),
+    // cycle one refinement of an active tag (Any → each value the listed objects have → Any)
+    refine(st, src, k, a) {
+      const R = REFINE.find(x => x.a === a); if (!R) return;
+      const { base, ref } = keyParse(k), vals = refineVals(TagFilter.pool(st, src, k), k, R);
+      const i = ref[a] ? vals.indexOf(ref[a]) : -1;
+      const nref = { ...ref }; if (i + 1 < vals.length) nref[a] = vals[i + 1]; else delete nref[a];
+      const nk = keyBuild(base, nref);
+      TagFilter.set(st, src, TagFilter.get(st, src).map(x => x === k ? nk : x));
+    },
+    tagObj: (src, o) => TF_SRC[src].obj ? TF_SRC[src].obj(o) : o,
+    keys: (src, o) => o ? tagKeys(TagFilter.tagObj(src, o)) : [],
+    has: (src, o, k) => !!o && objHasKey(TagFilter.tagObj(src, o), k),
+    match: (st, src, o) => TagFilter.get(st, src).every(k => TagFilter.has(src, o, k)),
     // picker rows (mechanic group → tags) over the source's objects that pass the active tags, so a pick never empties the list
     index(st, src) {
       const tags = TagFilter.get(st, src), S = TF_SRC[src];
-      const items = S.items(st).filter(o => tags.every(k => TagFilter.keys(src, o).includes(k)));
+      const items = S.items(st).filter(o => tags.every(k => TagFilter.has(src, o, k)));
       return taxoIndexFor(`tf:${src}:${src === "perk" ? st.specId : ""}:${tags.join("|")}`, items, (o) => TagFilter.keys(src, o));
     },
-    // the side toggle shows only when a listed object that passes the other tags carries this tag with a scope
-    sided(st, src, k) {
-      const b = keyNoSide(k), sides = [b + "@s=ally", b + "@s=enemy"];
-      if (!TF_SRC[src].items) return sides.some(x => taxoUse().get(x));   // Taxonomy page: anything in the game
+    // the tag objects a refinement toggle reads: the listed objects that pass the OTHER active tags
+    pool(st, src, k) {
+      const S = TF_SRC[src]; if (S.pool) return S.pool(st);
       const others = TagFilter.get(st, src).filter(x => x !== k);
-      return TF_SRC[src].items(st).some(o => { const ks = TagFilter.keys(src, o); return others.every(x => ks.includes(x)) && sides.some(x => ks.includes(x)); });
+      return S.items(st).filter(o => others.every(x => TagFilter.has(src, o, x))).map(o => TagFilter.tagObj(src, o));
     },
     // st lives on the selector (ovState) or the detail layer (dovState); data-l tells the click handler which
     layer: (st) => st === dovState ? "d" : "o",
     chips: (st, src) => TagFilter.get(st, src).map(k =>
       `<button class="facet on tag" data-action="tf-rm" data-src="${src}" data-l="${TagFilter.layer(st)}" data-k="${esc(k)}">${esc(taxoCatName(k))}: <b>${esc(taxoValName(k))}</b> <span class="facet-x">✕</span></button>`
-      + sideBtn(k, src, TagFilter.layer(st), TagFilter.sided(st, src, k))).join(""),
+      + refineBtns(k, src, TagFilter.layer(st), TagFilter.pool(st, src, k))).join(""),
     bar: (st, src) => TagFilter.chips(st, src) + `<button class="facet add" data-action="tf-add" data-src="${src}" data-l="${TagFilter.layer(st)}">＋ Filter</button>`,
     open: (st, src) => openFacetPicker("taxo-cat", { idxFn: () => TagFilter.index(st, src), onPick: (k) => TagFilter.add(st, src, k),
       parent: st === dovState ? st : null }),
   };
   // "Trigger::Damage@r=Receiver" → value "Takes Damage" (TRIG_ROLE_LABEL); plain keys → their value
   const taxoValName = (k0) => {
-    const k = keyNoSide(k0), at = k.indexOf("@r="), base = at < 0 ? k : k.slice(0, at), i = base.indexOf("::"), val = i < 0 ? base : base.slice(i + 2);
+    const k = keyBase(k0), at = k.indexOf("@r="), base = at < 0 ? k : k.slice(0, at), i = base.indexOf("::"), val = i < 0 ? base : base.slice(i + 2);
     return at < 0 ? val : ((TRIG_ROLE_LABEL[val] || {})[k.slice(at + 3)] || val);
   };
   const taxoCatName = (k) => { const i = k.indexOf("::"); return i < 0 ? "" : k.slice(0, i); };
@@ -2687,7 +2725,7 @@
   // trait-items that grant it both carry the same inherited taxo, so they fold into one row.
   function appendixResults(tags) {
     const u = appendixUniverse();
-    const has = (x) => { const s = tagKeys(x); return tags.every(t => s.includes(t)); };
+    const has = (x) => tags.every(t => objHasKey(x, t));
     return {
       traits: u.traits.filter(has),
       perks: u.perks.filter(has),
@@ -2705,7 +2743,7 @@
     const counts = new Map();
     const bump = (arr) => { for (const it of arr) for (const k of tagKeys(it)) counts.set(k, (counts.get(k) || 0) + 1); };
     bump(res.traits); bump(res.perks); bump(res.spells); bump(res.relics); bump(res.cards);
-    const tagSet = new Set(tags);
+    const tagSet = new Set(tags.map(keyBase));   // a refined tag still counts as applied
     const byCat = new Map();
     for (const g of taxoGroups()) {
       const rows = [];
@@ -6090,13 +6128,13 @@
       case "taxo-back": dovState.facet = "taxo-cat"; dovState.taxoCat = null; dovState.search = ""; refreshDetail(); break;
       case "facet-class-clear": e.stopPropagation(); ovState.clsFilter = null; resetCreaPage(); refreshOverlay(); break;
       case "facet-race-clear": e.stopPropagation(); ovState.raceFilter = null; resetCreaPage(); refreshOverlay(); break;
-      // TagFilter (every tag-filterable list): ＋ Filter, ✕ on a chip, the side toggle
-      case "tf-add": case "tf-rm": case "taxo-side": {
+      // TagFilter (every tag-filterable list): ＋ Filter, ✕ on a chip, the refinement toggles
+      case "tf-add": case "tf-rm": case "taxo-refine": {
         e.stopPropagation();
         const st = t.dataset.l === "d" ? dovState : ovState, src = t.dataset.src;
         if (!st || !TF_SRC[src]) break;
         if (A === "tf-add") { TagFilter.open(st, src); break; }
-        if (A === "tf-rm") TagFilter.rm(st, src, t.dataset.k); else TagFilter.side(st, src, t.dataset.k);
+        if (A === "tf-rm") TagFilter.rm(st, src, t.dataset.k); else TagFilter.refine(st, src, t.dataset.k, t.dataset.a);
         if (st === dovState) refreshDetail(); else refreshOverlay();
         break;
       }

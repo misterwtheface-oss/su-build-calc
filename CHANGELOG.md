@@ -4,6 +4,16 @@ Every dated change entry, newest first (moved verbatim from Progress.md on 2026-
 to their own section and sorted by their date). Current state and open work: `Progress.md`, `BACKLOG.md`.
 New entries go at the TOP.
 
+## 2026-10-20 — Tag filter: source / timing / delivery toggles
+- User: more narrowing, the same way as the side toggle. An active tag chip now shows a toggle for every v2 attribute its
+  tag carries on the listed items: side (Either / Your / Enemy), source (Attack / Spell / Indirect), timing (Would /
+  During / After / Repeat) and delivery (Event / Direct). Each cycles Any → the values present → Any, and they combine
+  (an item matches when one of its tags has the tag and every chosen value).
+- One mechanism for all four: filter keys are "base@s=…@so=…@p=…@d=…"; the side-only code (keySide / sideBtn / sided)
+  is gone. Works on every TagFilter list and the Taxonomy page.
+- Checked: Taxonomy page Takes Damage 123 → Timing: Would 80 / After 5; Deal More 424 → Attack 141 / Spell 146 /
+  Indirect 3; Stats Gain 388 → Event 333 / Direct 49; all 8 picker lists still filter.
+
 ## 2026-10-20 — Spell Gem library: Opal dot, base-class sort; relic sort
 - User: a gem re-classed by an Opal (Class Swap) shows a ringed dot in its spell's own class colour (top-left of the
   tile; the gem icon already shows the new class).

@@ -137,7 +137,7 @@ a decompile → write `_su_extract/code/HANDOFF_<topic>.md` and don't guess (bat
   `tools/taxo-v2.mjs`) → app features onto v2 behind a script flag (`FEATURES.taxoV2`, on): ~~taxonomy view + filters +
   pickers by mechanic group~~ (DONE 2026-10-19; groups DRAFT for the user's review, `taxonomy_groups.json`), attribute
   ~~code-backed only~~ (DONE 2026-10-19, user ruling; extract works through 2,083 removed tags, HANDOFF F3) → refine
-  chips: ~~side (Either / Your side / Enemy side)~~ DONE 2026-10-19; source / phase / delivery still to do; spell /
+  chips: ~~side (Either / Your side / Enemy side)~~ DONE 2026-10-19; ~~source / phase / delivery~~ DONE 2026-10-20 (same toggle); spell /
   gem pickers, creature Triggers section, synergy, `noDmgStat`, relic per-rank tags → review queue for the 581 unverified
   candidates and 675 Involves → CSV parity → one cutover commit retires v1. Absorbs the Calculation sweep below, the
   parked S24 Creature is Damaged proposal and the untagged-traits review.
