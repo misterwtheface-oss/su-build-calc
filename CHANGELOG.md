@@ -4,6 +4,11 @@ Every dated change entry, newest first (moved verbatim from Progress.md on 2026-
 to their own section and sorted by their date). Current state and open work: `Progress.md`, `BACKLOG.md`.
 New entries go at the TOP.
 
+## 2026-10-20 — Stat order: Health, Attack, Intelligence, Defense, Speed, Total
+- User: every stat list in the app (creature stats, picker sort columns, scrolls, personality, relic stat sections,
+  Nether Stone / artifact library sorts, boss stats) now reads Health, Attack, Intelligence, Defense, Speed, then Total,
+  matching the game and the build export. `STAT_KEYS` in app.js drives them all; the engine's key list is unchanged.
+
 ## 2026-10-20 — Involves is the umbrella view
 - User: Involves replaces the old generic Action/Mechanic tags: one tag shows every effect that involves a mechanic, no
   narrow focus. build-data now gives every object `Involves::<theme>` for each of its v2 themes (theme2), e.g.

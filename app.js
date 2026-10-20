@@ -180,9 +180,9 @@
   }
   const slotFace = (slot, c) => fusedFace(c, slot.skinId, slot.fusion != null ? CREA.get(slot.fusion) : null, slot.fuseColor);
 
-  const STAT_KEYS = ["hp", "atk", "def", "int", "spd"];
+  const STAT_KEYS = ["hp", "atk", "int", "def", "spd"];
   const STAT_LABEL = { hp: "Health", atk: "Attack", def: "Defense", int: "Intelligence", spd: "Speed" };
-  const CORE_STATS = ["Health", "Attack", "Defense", "Intelligence", "Speed"];
+  const CORE_STATS = ["Health", "Attack", "Intelligence", "Defense", "Speed"];
   const PROP_STAT = { Health: "hp", Attack: "atk", Defense: "def", Intelligence: "int", Speed: "spd" };
 
   // artifact property groups + primary type icons
