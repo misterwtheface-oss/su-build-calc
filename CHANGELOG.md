@@ -4,6 +4,18 @@ Every dated change entry, newest first (moved verbatim from Progress.md on 2026-
 to their own section and sorted by their date). Current state and open work: `Progress.md`, `BACKLOG.md`.
 New entries go at the TOP.
 
+## 2026-10-19 — Data rebuild: taxonomy v2 code layer after the extract's F3 pass (S39)
+- Rebuilt from `_su_extract`. Code-backed v2 tags: 16,090 (was 15,231). Tags removed as not code-backed: 826 on 640 objects
+  (was 1,797 on 1,002).
+- New from the extract:
+  - Trigger::DoT Tick (with the debuff), damage-type `sources` on damage triggers and modifiers, and spell `heal_basis`.
+  - 12 damage-modifier directions corrected, and the "chance to avoid damage" effects read as Take Less.
+  - The 44 DoT appliers lose Damage::Inflict (user ruling: literal damage source only).
+  - About 70 new clarify notes (Counterspell / Spell Blast notes retracted).
+  - Formula per-unit factors fixed (Counterspell, Spell Blast, Lingering Insanity, Mind Explosion).
+- The extract now decides F3 over a cumulative question set, so confirmed tags no longer drop out when this app's removed
+  list shrinks.
+
 ## 2026-10-19 — Spell Gems sort by Class by default
 - User: the Spell Gems library (and the equip list opened from a creature's Spells) now opens sorted by Class (game
   class order, then name) instead of most recent. The Recent sort is still one tap away.
