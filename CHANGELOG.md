@@ -13,7 +13,8 @@ New entries go at the TOP.
   narrower tag: `app_involves_review.json`, 801 themes on 681 objects (HANDOFF_taxonomy_v2 F5). The theme still counts
   for the umbrella meanwhile.
 - Grouping: Trigger::DoT Tick had no mechanic group since F3 (the warning ran after the summary, so it never showed);
-  it's in Damage now, and the orphan check prints.
+  it's in Damage now, and the orphan check prints. User: also in Debuffs (DoT damage comes from a debuff); a tag can sit in
+  several groups.
 
 ## 2026-10-20 — Everything reads taxonomy v2
 - User: repoint everything to v2. v1 tags are no longer read anywhere while the v2 flag is on:
