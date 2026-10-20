@@ -4830,9 +4830,8 @@
       <div class="overlay-header"><h2>Relic — ${esc(c ? c.name : "")}</h2>
         <input class="ovl-search" placeholder="Search relic / god / stat…" value="${esc(st.search)}" data-action="relic-search">
         <button class="ovl-close" data-action="close-ovl">✕</button></div>
-      <div class="overlay-body"><div class="ovl-center"><div class="ovl-filterbar lib-bar"><span class="sg-sort-gap"></span>
+      <div class="overlay-body"><div class="ovl-center"><div class="ovl-filterbar relic-bar">${TagFilter.bar(st, "relic")}
           <div class="seg">${[["stat", "Stat"], ["name", "Name"], ["god", "God"]].map(([v, l]) => `<button class="seg-btn ${sortK === v ? "on" : ""}" data-action="relic-sort" data-v="${v}">${l}</button>`).join("")}</div></div>
-        <div class="ovl-filterbar">${TagFilter.bar(st, "relic")}</div>
         <div class="ovl-center-scroll">${sections || `<div class="slot-sub" style="padding:10px">No relics match.</div>`}</div></div></div>
       <div class="overlay-footer"><span class="foot-info"></span>
         <div>${equipped ? `<button class="btn-ghost" data-action="relic-clear">Clear equipped</button>` : ""}

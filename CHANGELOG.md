@@ -11,6 +11,7 @@ New entries go at the TOP.
   ignoring the Opal) → off → Class.
 - Relic picker: a Stat / Name / God sort. Stat (default) keeps the per-stat sections; Name and God are one A–Z grid
   (God ties by relic name).
+- Relic picker: the sort sits in the filter row (right side; wraps to its own line, still right-aligned, when tag chips fill it).
 
 ## 2026-10-20 — Spell Gems can't be named; relic picker shows the god
 - User: Spell Gems can't be named in game (the name field was copied from the Artifact / Nether Stone builders). The Name
