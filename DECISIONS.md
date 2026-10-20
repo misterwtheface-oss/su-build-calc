@@ -138,6 +138,9 @@ a flat modifier to base: raised **×4/3 (+33%)**, lowered **×2/3 (−33%)**, ot
   trust); in-game observation beats stale CSVs (`Trait_REF` was stale for Marionette).
 
 ## Taxonomy rulings
+- **Taxonomy v2 rollout (user 2026-10-20).** Mechanic groups accepted as drafted (may be tweaked in use). Refinements
+  (source / timing / delivery) work like the side toggle. Every feature reads v2. No CSV parity pass for the taxonomy (the
+  CSV is personal). One cutover retires v1 once the extract's remaining items (F4, F5) are resolved.
 - **Heuristics find, code decides (user 2026-10-19).** LLM / text / token / keyword / co-tag heuristics are for working at
   scale: reading an effect's likely intent and where to look. Validation is in the code only; an unconfirmed heuristic is
   an extract work item, never a shipped tag. Charter: TAXONOMY_INTENT.md global rules.
