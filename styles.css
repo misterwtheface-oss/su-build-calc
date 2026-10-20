@@ -447,6 +447,7 @@ h1, h2, h3 { margin: 0; }
   display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow-wrap: anywhere;
 }
 .pick-tile .pt-total { font-size: 10px; color: var(--text-dim); }
+.pick-tile .pt-god { font-size: 10px; line-height: 1.1; color: var(--text-dim); text-align: center; width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .crea-sortbar { margin-top: -4px; align-items: center; }   /* keep left-aligned, vertically centre the label + segments */
 /* selection reads through busy icons: inset ring + tint, not just a border */
 .pick-tile.disabled { opacity: .32; cursor: not-allowed; filter: grayscale(.6); }

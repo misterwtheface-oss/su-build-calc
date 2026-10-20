@@ -4,6 +4,13 @@ Every dated change entry, newest first (moved verbatim from Progress.md on 2026-
 to their own section and sorted by their date). Current state and open work: `Progress.md`, `BACKLOG.md`.
 New entries go at the TOP.
 
+## 2026-10-20 — Spell Gems can't be named; relic picker shows the god
+- User: Spell Gems can't be named in game (the name field was copied from the Artifact / Nether Stone builders). The Name
+  field is gone. A gem is always called by its spell, names saved earlier are ignored, and shared builds no longer
+  carry a gem name.
+- Relic picker: each tile shows its god under the relic name (from the end of the game's relic name, e.g. "of
+  Gonfurian", cased like the realm's god; Caliban has no realm). Search matches the god too.
+
 ## 2026-10-19 — Data rebuild: taxonomy v2 code layer after the extract's F3 pass (S39)
 - Rebuilt from `_su_extract`. Code-backed v2 tags: 16,091 (was 15,231). Tags removed as not code-backed: 825 on 640 objects
   (was 1,797 on 1,002).

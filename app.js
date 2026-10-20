@@ -258,7 +258,8 @@
   const gemClass = (g) => { const s = gemSpell(g); return gemSwapClass(g) || (s ? s.cls : null); };
   const gemIcon = (g) => { const cls = gemClass(g); if (!cls) return null;
     const ic = GT.icons[cls]; return (ic && ic[GT.iconTier[gemTier(g) - 1]]) || SPELLGEM[cls]; };   // icon tier follows level
-  const gemName = (g) => g ? (g.name || (gemSpell(g) ? gemSpell(g).name : "Spell Gem")) : "";
+  // spell gems can't be named in game: a gem is always called by its spell (old saved names are ignored)
+  const gemName = (g) => g ? (gemSpell(g) ? gemSpell(g).name : "Spell Gem") : "";
   const gemSummary = (g) => { const s = gemSpell(g); const np = (g.propIds || []).length;
     return (s ? s.name : "—") + (np ? ` · ${np} propert${np === 1 ? "y" : "ies"}` : ""); };
   // compact stat readout for a spell — whatever we have (charges = code-certain; potency/target/source
@@ -2495,8 +2496,8 @@
     const ensureGem = (g) => {
       const sid = spellId(g.spell); if (sid == null) { warnings.push(`Spell "${g.spell}" not found — gem skipped.`); return null; }
       const propIds = (g.props || []).map(k => (bio().PROP_BY_KEY.get(k) || {}).id).filter(x => x != null);
-      const body = { name: g.name || "", spellId: sid, tier: g.tier ?? GT.max, propIds };
-      const hit = spellGems.find(x => !usedGems.has(x.id) && sameContent({ name: x.name || "", spellId: x.spellId, tier: x.tier ?? GT.max, propIds: x.propIds || [] }, body));
+      const body = { name: "", spellId: sid, tier: g.tier ?? GT.max, propIds };
+      const hit = spellGems.find(x => !usedGems.has(x.id) && sameContent({ name: "", spellId: x.spellId, tier: x.tier ?? GT.max, propIds: x.propIds || [] }, body));
       const id = hit ? hit.id : nextSpellGemId++;
       if (!hit) spellGems.push({ id, ...body });
       usedGems.add(id); return id;
@@ -4796,6 +4797,10 @@
   // ── relic builder ──────────────────────────────────────────────────────────
   // Relic name = "<Name>, <Item> of <God>" — the tile shows just the recognizable name (pre-comma).
   const relicShortName = (r) => String(r.name || "").split(",")[0].trim();
+  // the relic's god = the end of its game name ("Ferro, Great Axe of Gonfurian"), cased as the realm's god name when one
+  // matches (the game spells "SPARE BOOT OF TORUN" in caps); Caliban has no realm, so his comes from the name as is
+  const relicGod = (r) => { const m = / of ([^,]+)$/i.exec(String(r.name || "")); if (!m) return "";
+    const realm = (D.realms || []).find(x => normNm(x.godName) === normNm(m[1])); return realm ? realm.godName : m[1].trim(); };
   function openRelicBuilder(slotIdx) {
     ovState = { kind: "relic", slotIdx, search: "", render: renderRelicBuilder };
     openOverlay(ovState.render());
@@ -4808,7 +4813,7 @@
     const takenBy = new Map();
     build.slots.forEach((sl, i) => { if (i !== st.slotIdx && sl.relic) takenBy.set(sl.relic.id, (CREA.get(sl.cid) || {}).name || `slot ${i + 1}`); });
     const q = st.search.trim().toLowerCase();
-    const list = D.relics.filter(r => (!q || r.name.toLowerCase().includes(q) || (r.statBonus || "").toLowerCase().includes(q)) && TagFilter.match(st, "relic", r));
+    const list = D.relics.filter(r => (!q || r.name.toLowerCase().includes(q) || relicGod(r).toLowerCase().includes(q) || (r.statBonus || "").toLowerCase().includes(q)) && TagFilter.match(st, "relic", r));
     // one section per stat, in the app's canonical stat order; picking a tile opens the rank overlay
     const sections = STAT_KEYS.map(k => {
       const label = STAT_LABEL[k];
@@ -4816,12 +4821,12 @@
       if (!rels.length) return "";
       const tiles = rels.map(r => { const taken = takenBy.get(r.id); return `<div class="pick-tile ${equipped && equipped.id === r.id ? "selected" : ""}${taken ? " disabled" : ""}" ${taken ? `title="Equipped by ${esc(taken)}"` : `data-action="relic-pick" data-id="${r.id}"`}>
         <div class="pt-sprite">${relicArt(r) ? spriteImg(relicArt(r), "px") : `<span class="spec-tile-plus">✦</span>`}</div>
-        <div class="pt-name">${esc(relicShortName(r))}</div></div>`; }).join("");
+        <div class="pt-name">${esc(relicShortName(r))}</div><div class="pt-god">${esc(relicGod(r))}</div></div>`; }).join("");
       return `<div class="section-label">${esc(label)}</div><div class="pick-grid relic-grid">${tiles}</div>`;
     }).join("");
     return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel">
       <div class="overlay-header"><h2>Relic — ${esc(c ? c.name : "")}</h2>
-        <input class="ovl-search" placeholder="Search relic / stat…" value="${esc(st.search)}" data-action="relic-search">
+        <input class="ovl-search" placeholder="Search relic / god / stat…" value="${esc(st.search)}" data-action="relic-search">
         <button class="ovl-close" data-action="close-ovl">✕</button></div>
       <div class="overlay-body"><div class="ovl-center"><div class="ovl-filterbar">${TagFilter.bar(st, "relic")}</div>
         <div class="ovl-center-scroll">${sections || `<div class="slot-sub" style="padding:10px">No relics match.</div>`}</div></div></div>
@@ -5717,8 +5722,6 @@
       body = `<div class="ovl-center" data-action="lib-deselect">
         <div class="sgb-top${st.picking ? " picking" : ""}">
           ${gemSpell(g) ? `<div class="build-section sgb-spell"><h3>Spell</h3>${spellRow(gemSpell(g), { clamp: false, meta: false })}${spellStatsHtml(gemSpell(g), g)}</div>` : ""}
-          <div class="build-section"><h3>Name</h3>
-            <input class="ovl-search name-field" placeholder="${esc(gemSpell(g) ? gemSpell(g).name : "Spell gem name")}" value="${esc(g.name)}" data-action="sg-name" style="max-width:320px"></div>
           <div class="build-section"><h3>Level</h3>
             <div class="rank-picker"><input type="range" min="${GT.min}" max="${GT.max}" value="${tier}" data-action="sg-tier"><span class="rank-badge">${tier}</span></div></div>
           <div class="art-slot-group"><div class="section-label">Property items</div><div class="art-slot-grid">${boxes.join("")}</div></div>
@@ -6268,7 +6271,7 @@
         const d = ovState.draft;
         if (d.spellId == null) break;
         if (d.propIds.length > gemSlots(d)) break;   // more properties than the level allows
-        if (!d.name || !d.name.trim()) d.name = (SPELL.get(d.spellId) || {}).name || `Spell Gem ${nextSpellGemId}`;
+        delete d.name;
         if (ovState.editId != null) { const idx = spellGems.findIndex(g => g.id === ovState.editId); if (idx >= 0) spellGems[idx] = d; }
         else { d.id = nextSpellGemId++; spellGems.push(d); }
         persistSpellGems(); backToGemList(ovState.retSlot, d.id); break;
@@ -6365,7 +6368,6 @@
     // name fields (no re-render — keep focus/caret)
     if (A === "artb-name") { ovState.draft.name = v; return; }
     if (A === "nether-name") { ovState.draft.name = v; return; }
-    if (A === "sg-name") { ovState.draft.name = v; return; }
     if (A === "builds-name") { ovState.draft.name = v; return; }
     if (A === "bio-text") { ovState.text = v; ovState.error = null; return; }
     if (A === "share-name") { ovState.name = v; return; }

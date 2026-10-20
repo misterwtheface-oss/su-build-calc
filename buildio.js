@@ -84,7 +84,7 @@
             relic: s.relic ? { id: s.relic.id, rank: s.relic.rank } : null,
             artifact: a ? { name: a.name, rank: a.rank || 50, primary: a.primary || null, stat: a.stat || [], trick: a.trick || [], traits: a.traits || [],
               spells: (a.spells || []).map(spellKey).filter(Boolean), nether: stoneOut(stone((a.netherIds || [])[0])) } : null,
-            gems: (s.spellGemIds || []).map(gem).filter(Boolean).map(g => ({ name: g.name || "", spell: spellKey(g.spellId), tier: g.tier ?? null,
+            gems: (s.spellGemIds || []).map(gem).filter(Boolean).map(g => ({ name: "", spell: spellKey(g.spellId), tier: g.tier ?? null,
               props: (g.propIds || []).map(pid => (env.SPELLPROP.get(pid) || {}).key).filter(Boolean) })) };
         }) };
     }
