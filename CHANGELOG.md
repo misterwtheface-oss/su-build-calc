@@ -4,6 +4,22 @@ Every dated change entry, newest first (moved verbatim from Progress.md on 2026-
 to their own section and sorted by their date). Current state and open work: `Progress.md`, `BACKLOG.md`.
 New entries go at the TOP.
 
+## 2026-10-21 — Appendix: effect order for every fixed-order combat function
+- User: the extract's evaluation order for each static-order function goes in the Appendix like Start of Battle and
+  Resurrection. build-data reads `effect_order_all.json` (S41, HANDOFF_effect_order_app.md) into `D.effectOrder`:
+  13 sections (Battle-Start Timeline, Start of Turn, Cast, Spell Amount, Attack, On Attack, Damage, Heal / Defend /
+  Provoke / Minion, Buff and Debuff, Stat Change, Death, End of Turn, Event Queue and End of Battle), 48 functions,
+  3,644 rows. Rows are the app's own objects (name, text, icons, source chips, rank / power) in execution order;
+  structural code steps with no app object and blacklisted traits are left out. Step headings are the extract's
+  phases reworded in plain words (an unmapped one fails the build); start of turn is split by its code line ranges.
+- A "How Effect Order Works" section gives the extract's cross-cutting rules in plain words (code position decides,
+  side-wide effects run once, queued events resolve oldest first, trigger lists run whole and repeat from the top,
+  bonuses add / reductions multiply, a cancel stops the rest).
+- Start of Battle fix: the relic id pair in `start_of_battle_order.json` is [rank index, relic] on most rows but
+  [relic, rank index] on a few. build-data read every row one way, so 11 rows showed the wrong relic (Wintermaul rank 70
+  as Salus rank 10, ...). It now takes the order whose relic name matches the row: 7 rows fixed, 4 with no mappable
+  rank dropped.
+
 ## 2026-10-20 — Stat order: Health, Attack, Intelligence, Defense, Speed, Total
 - User: every stat list in the app (creature stats, picker sort columns, scrolls, personality, relic stat sections,
   Nether Stone / artifact library sorts, boss stats) now reads Health, Attack, Intelligence, Defense, Speed, then Total,

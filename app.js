@@ -13,6 +13,7 @@
   if (!FEATURES.nyi) {
     for (const id of Object.keys(D.traits)) if (D.traits[id].nyi) delete D.traits[id];
     D.falseGods = (D.falseGods || []).filter(g => !g.nyi);
+    for (const s of D.effectOrder || []) for (const f of s.fns) for (const st of f.steps) st.rows = st.rows.filter(r => !/^trait:/.test(r[0]) || D.traits[r[0].slice(6)]);
   }
 
   // ── runtime 404 alert — surface any asset the app requests but can't load (no silent hiding) ──
@@ -3344,16 +3345,16 @@
 
   // ── Appendix page (internal ids say "errata", its old name) — code-grounded mechanics the game doesn't show, plus the Status Effects reference. ──
   function openErrata() {
-    ovState = { kind: "errata", search: "", collapsed: new Set(["StatusEffects", "Resurrection", "StartOfBattle", "ClassAdv", "RandomTargets", "NetherDrops", "PandShrine", "RealmBonusMax", "Masters"]), ndDiff: "normal", render: renderErrata };
+    ovState = { kind: "errata", search: "", collapsed: new Set(["StatusEffects", "EffectOrderRules", "Resurrection", "StartOfBattle", ...(D.effectOrder || []).map(s => "EO:" + s.key), "ClassAdv", "RandomTargets", "NetherDrops", "PandShrine", "RealmBonusMax", "Masters"]), ndDiff: "normal", render: renderErrata };
     openOverlay(ovState.render()); maybeFocusSearch(OV);
   }
   function renderErrata() {
     const st = ovState, q = st.search.trim().toLowerCase();
-    const body = statusSection(st, q) + resOrderSection(st, q) + sobSection(st, q) + classAdvSection(st, q) + randomTargetSection(st, q) + netherDropSection(st, q) + pandShrineSection(st, q) + realmBonusSection(st, q) + mastersSection(st, q)
+    const body = statusSection(st, q) + eoRulesSection(st, q) + resOrderSection(st, q) + sobSection(st, q) + (D.effectOrder || []).map(s => effectOrderSection(st, q, s)).join("") + classAdvSection(st, q) + randomTargetSection(st, q) + netherDropSection(st, q) + pandShrineSection(st, q) + realmBonusSection(st, q) + mastersSection(st, q)
       || `<div class="slot-sub" style="padding:10px">Nothing matches “${esc(st.search)}”.</div>`;
     return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel">
       <div class="overlay-header"><h2>Appendix</h2>
-        <input class="ovl-search" placeholder="Search status effects / resurrection / spells / realms…" value="${esc(st.search)}" data-action="errata-search">
+        <input class="ovl-search" placeholder="Search status effects / effect order / spells / realms…" value="${esc(st.search)}" data-action="errata-search">
         <button class="ovl-close" data-action="close-ovl">✕</button></div>
       <div class="overlay-body"><div class="ovl-center"><div class="ovl-center-scroll">${body}</div></div></div>
       <div class="overlay-footer"><span class="foot-info"></span><button class="btn-confirm" data-action="close-ovl">Done</button></div>
@@ -3546,6 +3547,82 @@
     }).join("");
     const body = open ? `<div class="slot-sub sob-intro">Each step resolves fully before the next. Within a step, one effect at a time in this order — your side before the enemy's, and per-creature effects in timeline order (fastest first; before step 6 that's last battle's order, see step 0a).</div>${steps}` : "";
     return `<button class="apx-sec-head apx-cat${open ? "" : " collapsed"}" data-action="gloss-cat-toggle" data-c="${key}"><span class="apx-sec-caret">${open ? "▾" : "▸"}</span>Start of Battle Order</button>${body}`;
+  }
+
+  // ── Effect order: every other fixed-order combat function (D.effectOrder, built from _su_extract effect_order_all.json;
+  // code/EFFECT_ORDER_FINDINGS.md). One Appendix section per pipeline, laid out like Start of Battle: rows numbered in execution
+  // order per function. A section with one function opens its steps as the collapsible groups; with several, each function is
+  // a collapsible group and its steps are sub-headings. Row keys are the app's refs (see build-data.mjs effectOrder).
+  // How order works (_su_extract effect_order_all.json `rules`, in plain words)
+  const EO_RULES = [
+    "Effects run in the order listed. Each one finishes, or queues its event, before the next is checked. Nothing is sorted by Speed, slot or priority.",
+    "An effect that covers a whole side (“your creatures…”, “this trait does not stack”) runs once for that side, however many creatures have it. When several creatures each check their own copy, they go in party slot order, or timeline order for effects on “each creature”.",
+    "Most effects queue an event (damage, healing, buffs, attacks, casts) instead of happening on the spot. Queued events resolve after the current list, oldest first.",
+    "A trigger list (after an attack, a critical hit, a death…) runs in full at once, and everything it queues goes to the back. So every hit of an attack on all enemies resolves before any of their follow-ups.",
+    "When a trigger list repeats (Illusion, Fable, Master of Rift Dancers…), the whole list runs again from the top, not each effect twice in a row.",
+    "Bonuses from different effects add together and reductions multiply, so their order doesn't change the result. Order matters for effects that cancel, cap or replace the amount: an effect that cancels a hit (Prevented!, Immune, a dodge) stops everything listed after it.",
+  ];
+  function eoRulesSection(st, q) {
+    if (q && !"effect order rules queue trigger".includes(q) && !EO_RULES.some(r => r.toLowerCase().includes(q))) return "";
+    const key = "EffectOrderRules", open = q ? true : !st.collapsed.has(key);
+    const body = open ? `<div class="nd-wrap">${EO_RULES.map(r => `<div class="slot-sub eo-rule">${esc(r)}</div>`).join("")}</div>` : "";
+    return `<button class="apx-sec-head apx-cat${open ? "" : " collapsed"}" data-action="gloss-cat-toggle" data-c="${key}"><span class="apx-sec-caret">${open ? "▾" : "▸"}</span>How Effect Order Works</button>${body}`;
+  }
+  const EO_TAG = { top: "Placed first", bottom: "Placed last" };
+  const EO_CACHE = new Map();
+  function eoRef(key, extra) {
+    const ck = key + "|" + extra; if (EO_CACHE.has(ck)) return EO_CACHE.get(ck);
+    const [k, ...rest] = key.split(":"), id = rest.join(":");
+    let r = null;
+    if (k === "trait") { const t = D.traits[id]; if (t) { const { creatureByTrait, itemsByTrait } = traitSources();
+      const c = creatureByTrait.get(t.id), boss = bossSpriteFor(t), its = itemsByTrait.get(t.id) || [], it = its.find(x => x.icon);
+      r = { name: t.name, desc: t.desc, icons: [c ? critFace(c) : boss ? spriteImg(boss) : "", it ? spriteImg(it.icon, "px") : ""],
+        chips: [c ? c.name : t.owner || "", ...new Set(its.map(x => x.name))], open: { ek: "trait", eid: t.id } }; } }
+    else if (k === "perk") { const [sid, pk] = [rest[0], rest.slice(1).join(":")], sp = D.specs.find(x => String(x.id) === sid), p = sp && sp.perks.find(x => x.key === pk);
+      if (p) r = { name: p.name, desc: p.desc, icons: [specIco(sp), p.icon && spriteImg(p.icon, "px")], chips: [sp.label] }; }
+    else if (k === "relic") { const rl = D.relics.find(x => String(x.id) === id), rk = rl && extra != null && rl.ranks.find(x => x.rank === extra);
+      if (rl) r = { name: rl.name.split(",")[0], desc: rk ? rk.desc : "", icons: [spriteImg(relicArt(rl), "px")], chips: [(rl.name.split(",")[1] || "").trim(), rk ? `Rank ${extra}` : ""] }; }
+    else if (k === "card") { const cd = (D.cards || []).find(x => String(x.id) === id);
+      if (cd) r = { name: `${cd.family} set`, desc: extra ? cd.effects[extra - 1] || "" : "", icons: [spriteImg(cd.sprite)], chips: ["Card Set", extra ? `Power ${extra}` : ""] }; }
+    else if (k === "spell") { const sp = (D.spells || []).find(x => String(x.id) === id);
+      if (sp) r = { name: sp.name, desc: sp.desc, icons: [spellIcon(sp) ? spriteImg(spellIcon(sp), "px") : ""], chips: ["Spell"], open: { ek: "spell", eid: sp.id } }; }
+    else if (k === "cond") { const c = (D.conditions || []).find(x => `${x.cat}:${x.key}` === id);
+      if (c) r = { name: c.name, desc: c.desc, icons: [c.icon ? `<img src="${esc(c.icon)}" alt="">` : ""], chips: [c.cat], open: { ek: "condition", eid: id } }; }
+    else if (k === "realm") { const rp = (D.realmProps || []).find(x => x.key === id);
+      if (rp) r = { name: rp.name, desc: rp.effect, icons: [spriteImg(rp.icon, "px")], chips: ["Realm Property"] }; }
+    else if (k === "spec") { const sp = D.specs.find(x => String(x.id) === id);
+      if (sp) r = { name: sp.label, desc: "", icons: [specIco(sp)], chips: ["Specialization"] }; }
+    if (!r) { console.error("EFFECT ORDER: unresolved", key); r = { name: key, desc: "", icons: [], chips: [] }; }
+    r.icons = r.icons.filter(Boolean); r.chips = r.chips.filter(Boolean);
+    EO_CACHE.set(ck, r); return r;
+  }
+  function effectOrderSection(st, q, sec) {
+    const hit = (r) => r.name.toLowerCase().includes(q) || (r.desc || "").toLowerCase().includes(q);
+    const fns = sec.fns.map(f => { let n = 0;
+      const steps = f.steps.map((s, i) => ({ t: s.t, i, rows: s.rows.map(([k, x, tag]) => ({ ...eoRef(k, x), n: ++n, tag })) }))
+        .map(s => q ? { ...s, rows: s.rows.filter(hit) } : s).filter(s => s.rows.length);
+      return { ...f, steps };
+    }).filter(f => f.steps.length);
+    if (!fns.length) return "";
+    const key = "EO:" + sec.key, open = q ? true : !st.collapsed.has(key);
+    const row = (r) => `<div class="perk-line res-line${r.open ? " apx-clickable" : ""}"${r.open ? ` data-action="apx-open" data-ek="${r.open.ek}" data-eid="${esc(String(r.open.eid))}" title="View taxonomy"` : ""}>
+        <div class="res-n">${r.n}</div>
+        <div class="apx-iconcol">${r.icons.map(icoBox).join("")}</div>
+        <div class="perk-line-body"><div class="perk-line-head"><b>${esc(r.name)}</b>${r.tag ? `<span class="anoint-spec-tag">${EO_TAG[r.tag]}</span>` : ""}</div>
+          ${r.desc ? `<div class="perk-desc">${richText(r.desc)}</div>` : ""}
+          ${r.chips.length ? `<div class="perk-line-meta">${r.chips.map(c => `<span class="anoint-spec-tag">${esc(c)}</span>`).join("")}</div>` : ""}</div></div>`;
+    const list = (rows) => `<div class="perk-list">${rows.map(row).join("")}</div>`;
+    const group = (k, title, inner) => { const sk = `${key}:${k}`, sopen = q ? true : st.sobOpen && st.sobOpen.has(sk);
+      return `<button class="sob-step${sopen ? " open" : ""}" data-action="sob-step" data-k="${esc(sk)}"><span class="apx-sec-caret">${sopen ? "▾" : "▸"}</span>${esc(title)}</button>${sopen ? inner() : ""}`; };
+    let body = "";
+    if (open) {
+      // one function: its steps are the groups (numbered like Start of Battle); several: one group per function
+      if (sec.fns.length === 1) { const f = fns[0];
+        body = f.steps.length === 1 && !f.steps[0].t ? list(f.steps[0].rows)
+          : f.steps.map(s => group(s.i, `${s.i + 1}. ${s.t || ""}`, () => list(s.rows))).join(""); }
+      else body = fns.map(f => group(f.id, f.title, () => f.steps.map(s => (s.t ? `<div class="res-sub">${esc(s.t)}</div>` : "") + list(s.rows)).join(""))).join("");
+    }
+    return `<button class="apx-sec-head apx-cat${open ? "" : " collapsed"}" data-action="gloss-cat-toggle" data-c="${key}"><span class="apx-sec-caret">${open ? "▾" : "▸"}</span>${esc(sec.title)}</button>${body}`;
   }
 
   // ── Nether Stone drop breakpoints (code: inv_Loot, _su_extract code/LOOT.md +

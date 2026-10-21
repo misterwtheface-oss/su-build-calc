@@ -3124,8 +3124,13 @@ for (const e of sobRaw) {
   }
   else if (e.family === 'perk') ref = sobPerkNames.has(sobName(e.name)) ? { k: 'perk', name: sobName(e.name) } : null;
   else if (e.family === 'relic') {
-    const [idx, code] = e.ids, app = relicCodeToApp.get(code), rel = relics.find(r => r.id === app);
-    if (rel && rel.ranks.some(x => x.rank === idx * 10)) ref = { k: 'relic', id: app, rank: idx * 10 };
+    // the ids pair is [perk index, relic code] on most rows, [relic code, perk index] on a few (Wintermaul rank 70 = [1, 7]):
+    // take the order whose relic name matches the row's own name (HANDOFF_effect_order_app.md, Migration)
+    const nm = sobName(e.name).split(',')[0].toLowerCase();
+    for (const [idx, code] of [e.ids, [e.ids[1], e.ids[0]]]) {
+      const app = relicCodeToApp.get(code), rel = relics.find(r => r.id === app);
+      if (rel && rel.name.split(',')[0].toLowerCase() === nm.replace(/ rank \d+$/, '') && rel.ranks.some(x => x.rank === idx * 10)) { ref = { k: 'relic', id: app, rank: idx * 10 }; break; }
+    }
   }
   else if (e.family === 'card') { const fam = e.name.replace(/ set power \d+$/, ''); ref = cards.some(c => c.family === fam) ? { k: 'card', family: fam, power: e.ids[0] } : null; }
   else if (e.family === 'condition') ref = { k: 'cond', name: condDisplay(e.name.replace(/\s*\(\d+\)$/, '')) };
@@ -3140,6 +3145,147 @@ for (const e of sobRaw) {
   startOfBattle.push({ phase: e.phase_num, sub: e.subphase || null, ref, name: e.name, effect: e.effect || '', enemy: !!e.enemy_only,
     ...(e.codex_note ? { note: e.codex_note } : {}) });
 }
+// ── Effect order: every other fixed-order combat function (code: _su_extract data/model/effect_order_all.json,
+// code/EFFECT_ORDER_FINDINGS.md, HANDOFF_effect_order_app.md). One Appendix section per pipeline; each function lists its
+// object-gated blocks in execution order (code position is the order). Structural blocks (no app object) and blacklisted
+// traits are dropped; a block gated by several shipped traits (one runtime id) gives a row each; the same object twice in a
+// row inside one step is one row. Step headings: the extract's `when`, reworded below (an unmapped one fails the build so
+// no code wording ships), or for start of turn its GML line ranges (FINDINGS items 1-2 "Headline order").
+// Row: [key, rank | power | null, tag | null] with the app's own refs (trait:<id>, perk:<specId>:<KEY>, relic:<id>, card:<id>,
+// spell:<id>, cond:<Cat:key>, realm:<KEY>, spec:<id>).
+const effectOrder = (() => {
+  const src = readJSON(path.join(MODEL, 'effect_order_all.json'));
+  const F = new Map(src.functions.map(f => [f.id, f]));
+  const SOT_LINES = [[1, 'Turn counter'], [107, 'Early start-of-turn effects'], [270, 'Buffs, debuffs and minions tick down'],
+    [473, 'Expired buffs and debuffs are removed'], [594, 'Summons and Health resets'], [643, 'Healing every turn'],
+    [689, 'Buff and debuff reactions'], [748, 'Master of Cataclysms'], [831, 'Before damage over time'], [1048, 'Damage every turn'],
+    [1059, 'Bleeding deals damage'], [1252, 'Eternal Rest'], [1268, 'Poisoned deals damage'], [1519, 'Bomb explodes'],
+    [1632, 'Between Bomb and Burning'], [1693, 'Burning deals damage'], [1867, 'After damage over time'],
+    [2565, 'Curse and damage traits'], [2619, "The creature's own start-of-turn effects"], [3320, 'Spell Gems that cast themselves'],
+    [3349, 'Start-of-turn attacks and minions'], [3672, 'Start-of-turn effects, continued'], [4057, 'Artifact spell slots'],
+    [4099, 'Before the turn-skip checks'], [4308, 'Turn-skip checks'], [4479, 'After the turn-skip checks'],
+    [4667, 'Automaton and Priest traits'], [5087, 'Arena and Nemesis rules'], [5121, 'Poisoned, Burning and Bomb potency'],
+    [5284, 'Last start-of-turn effects']];
+  const DMG = { 'A': 'Cancels, redirects, Shell and damage taken', 'B A': 'Damage taken reductions',
+    'B B': 'Damage dealt bonuses, before class advantage', 'B C': 'Class advantage', 'B D': 'Damage dealt bonuses, after class advantage',
+    'B E': 'Critical hit decision', 'C A': 'Critical hit chance overrides and damage', 'C B': 'Bonus pool, Defense share and damage cap',
+    'C C': 'Immunity, Prevented! and dodges (the hit stops here)', 'C D': 'Per-hit caps and delays', 'C E': 'After-damage reactions, part 1',
+    'C F': 'Friendly damage turned into healing', 'C G': 'After-damage reactions, part 2', 'C H': 'The hit moves to another creature',
+    'C I': 'After-damage reactions, part 3', 'C J': 'Spiritual Attunement', 'C K': 'After-damage reactions, part 4',
+    'C L': 'Scripted battles and rounding', 'C M': 'After-damage reactions, part 5', 'C N': 'Inverted: damage becomes healing',
+    'C O': 'Barrier', 'C P': 'Late reactions', 'C Q': "Attacker's artifact: on-hit buffs and debuffs", 'C R': 'Final damage, counters and bookkeeping' };
+  const ATK = { 'Entry: attack action limit': 'Action limit',
+    'Attack fails / target changes BEFORE the stat snapshot': 'The attack fails or changes target, before Attack and Defense are read',
+    'Attack-stat / Defense snapshot': 'Attack and Defense are read',
+    'Redirects AFTER the stat snapshot (provoke, intercept, Blind)': 'The target changes after Attack and Defense are read (Provoke, intercepts, Blind)',
+    'Number of hits (repeat count)': 'Number of hits', 'Per hit: limit, messages, animation': 'Each hit: limit',
+    'Per hit: base damage': 'Each hit: base damage', 'Per hit: dodge decision': 'Each hit: dodge',
+    'Per hit: cannot-be-dodged overrides': "Each hit: can't be dodged", 'Per hit: Periphery, the last word on dodging': 'Each hit: Periphery',
+    'Per hit: damage adjustments, then the bonus pool is applied': 'Each hit: damage adjustments',
+    'Per hit: side effects before the hit resolves': 'Each hit: before it lands', 'Per hit: dodged branch': 'Each hit: dodged',
+    'Per hit: the damage event': 'Each hit: damage', 'Per hit: after the hit (still in the loop)': 'Each hit: after it lands',
+    'After all hits': 'After all hits' };
+  const CAST = { A: 'Before the spell (once per cast)', B1: 'Each cast: limits and charges', B2: "Each cast: the spell's own effect",
+    B3: 'Each cast: after the spell', B4: 'Each cast: on-cast triggers', B5: 'Each cast: after the on-cast triggers', C: 'After every cast' };
+  const DODGE = { Entry: 'First', "The dodger's own effects": 'The creature that dodged',
+    "Effects held by the attacker's side ('after an enemy dodges')": "The attacker's side" };
+  const EVT = { setup: 'The event is created', limit: 'Per-turn limit', block: 'Prevented', resist: 'Resisted', convert: 'Converted',
+    redirect: 'Redirected', duration: 'Duration', potency: 'Potency', existing: 'Already has it', reduce: 'Reduced', pool: 'Amount',
+    queue: 'Reactions', immediate: 'Immediate reactions', finish: 'Applied' };
+  const ONBD = { pre: 'Before', exit: 'Stops here', spread: 'Spreads', after: 'Reactions', recurse: 'Repeats' };
+  const STAT = { attack: 'Attack', defense: 'Defense', intelligence: 'Intelligence', maxhp: 'Health', speed: 'Speed' };
+  const QUEUE = { damage: 'Damage', heal: 'Healing', actionqueue: 'Queued actions', ohko: 'Instant kills', resurrect: 'Resurrection',
+    removecondition: 'A buff or debuff is removed', buff: 'Buff', debuff: 'Debuff', summon: 'Summon', gem: 'Spell Gem', minion: 'Minion',
+    'after every event': 'After every event' };
+  const END = { 'bc_ExecuteEvents (damage case)': 'The last enemy falls', '___struct___289 (battle Step, victory branch)': 'Victory',
+    'victory screen close (host labelled inv_SpellGemManaCost by the name map)': 'The victory screen closes',
+    'bc_CleanUpBattle': 'Battle clean-up', 'bc_HandleBattleAftermath': 'After the battle', 'bc_GetRewardResources': 'Resource rewards',
+    'bc_GetRewardExperience': 'Experience rewards' };
+  const stepOf = {
+    bc_CreatureStartOfTurn: (b) => { let t = null; for (const [l, n] of SOT_LINES) if (b.line >= l) t = n; return t; },
+    bc_EventDamage: (b) => { const m = /^part (A|B [A-E]|C [A-R])\b/.exec(b.when || ''); return m ? DMG[m[1]] : undefined; },
+    bc_CreatureAttack: (b) => ATK[b.when], bc_CreatureCast: (b) => CAST[b.when], bc_OnDodge: (b) => DODGE[b.when],
+    bc_OnBuffDebuff: (b) => ONBD[b.when], battle_end_victory: (b) => END[b.when],
+    bc_ExecuteEvents: (b) => { const m = /^(?:block|core|queue): (.+)$/.exec(b.when || ''), k = m && m[1];
+      if (!k) return undefined; const s = /^stat(gain|loss)_(\w+)$/.exec(k);
+      return s ? `${STAT[s[2]]} ${s[1] === 'gain' ? 'gain' : 'loss'}` : QUEUE[k]; },
+  };
+  for (const id of ['bc_EventBuff', 'bc_EventDebuff', ...['Gain', 'Lose'].flatMap(g => ['MaxHP', 'Attack', 'Intelligence', 'Defense', 'Speed'].map(s => `bc_Event${g}${s}`))])
+    stepOf[id] = (b) => EVT[b.when];
+  // sections in battle order; stat events in the app's stat order (Health, Attack, Intelligence, Defense, Speed)
+  const stats = (g, w) => ['MaxHP', 'Attack', 'Intelligence', 'Defense', 'Speed'].map(s => [`bc_Event${g}${s}`, `${s === 'MaxHP' ? 'Health' : s} ${w}`]);
+  const SECTIONS = [
+    ['Timeline', 'Battle-Start Timeline', [['timeline_build', null]]],
+    ['StartOfTurn', 'Start of Turn Order', [['bc_CreatureStartOfTurn', 'Start of turn'], ['bc_CalculateBleedDamage', 'Bleeding damage amount'],
+      ['bc_CalculatePoisonDamage', 'Poisoned damage amount'], ['bc_CalculateBombDamage', 'Bomb damage amount'],
+      ['bc_CalculateBurnDamage', 'Burning damage amount'], ['bc_CalculateManiaDamage', 'Mania damage amount']]],
+    ['Cast', 'Cast Order', [['bc_CreatureCast', 'Casting a spell'], ['bc_OnCast', 'On-cast triggers'], ['bc_CreatureCastSpellGem', 'Automatic casts']]],
+    ['SpellAmount', 'Spell Amount Order', [['bc_SpellDamage', 'Spell damage'], ['bc_SpellHealing', 'Spell healing'], ['bc_SpellStat', 'Spell stat changes']]],
+    ['Attack', 'Attack Order', [['bc_CreatureAttack', 'Attacking'], ['bc_GetDodgeChance', 'Dodge chance'], ['bc_OnDodge', 'After a dodge'],
+      ['bc_GetCriticalChance', 'Critical chance'], ['bc_OnCritical', 'After a critical hit']]],
+    ['OnAttack', 'On Attack Order', [['bc_OnAttack', null]]],
+    ['Damage', 'Damage Order', [['bc_EventDamage', null]]],
+    ['Actions', 'Heal, Defend, Provoke and Minion Order', [['bc_EventHeal', 'A heal is created'], ['bc_ExecuteEvents: heal case', 'The heal lands'],
+      ['bc_OnHeal', 'After a heal'], ['bc_CreatureDefend', 'Defending'], ['bc_OnDefend', 'After Defending'], ['bc_CreatureProvoke', 'Provoking'],
+      ['bc_OnProvoke', 'After Provoking'], ['bc_EventMinion', 'A minion is created'], ['bc_ExecuteEvents: minion case', 'The minion is summoned'],
+      ['bc_OnMinion', 'After a minion is summoned']]],
+    ['BuffDebuff', 'Buff and Debuff Order', [['bc_EventBuff', 'Gaining a buff'], ['bc_EventDebuff', 'Gaining a debuff'], ['bc_OnBuffDebuff', 'After a buff or debuff']]],
+    ['Stats', 'Stat Change Order', [...stats('Gain', 'gain'), ...stats('Lose', 'loss')]],
+    ['Death', 'Death Order', [['bc_OnDeath', 'On death'], ['bc_HandleDeath', 'Death clean-up'], ['bc_OnResurrect', 'After a resurrection']]],
+    ['EndOfTurn', 'End of Turn Order', [['bc_CreatureEndOfTurn', null]]],
+    ['Events', 'Event Queue and End of Battle', [['bc_ExecuteEvents', 'Event queue'], ['battle_end_victory', 'End of battle (victory)']]],
+  ];
+  const skipped = new Set(['start_of_battle', 'resurrection_chain', 'macro_trait_picker', 'bc_ExecuteEvents~attack']);
+  const listed = new Set(SECTIONS.flatMap(s => s[2].map(f => f[0])));
+  for (const f of src.functions) if (!listed.has(f.id) && !skipped.has(f.id)) err(`effect order: function ${f.id} has no Appendix section`);
+  // app object check (the extract's keys are the app's refs; condition → its glossary Cat:key)
+  const perkKeys = new Set(specs.flatMap(sc => sc.perks.map(p => `${sc.id}:${p.key}`)));
+  const condKeys = new Set(conditions.map(c => `${c.cat}:${c.key}`));
+  let unresolved = [], dropped = 0, blk = 0;
+  const appKey = (key) => {
+    const o = src.objects[key] || {}, [k, ...rest] = key.split(':'), id = rest.join(':');
+    if (o.blacklisted) { blk++; return null; }
+    let ok = false, out = key;
+    if (k === 'trait') ok = !!traits[id] && !excludedTraitIds.has(+id);
+    else if (k === 'perk') ok = perkKeys.has(id);
+    else if (k === 'relic') ok = relics.some(r => String(r.id) === id);
+    else if (k === 'card') ok = cards.some(c => String(c.id) === id);
+    else if (k === 'spell') ok = spells.some(s => String(s.id) === id);
+    else if (k === 'condition') { out = 'cond:' + (o.app_ref || ''); ok = condKeys.has(o.app_ref); }
+    else if (k === 'realm') ok = realmProps.some(r => r.key === id);
+    else if (k === 'spec') ok = specs.some(s => String(s.id) === id);
+    if (!ok) { unresolved.push(key); return null; }
+    return out;
+  };
+  const out = SECTIONS.map(([key, title, fns]) => ({ key, title, fns: fns.map(([fid, ftitle]) => {
+    const f = F.get(fid); if (!f) { err(`effect order: no function ${fid} in effect_order_all.json`); return null; }
+    if (!f.order_fixed) err(`effect order: ${fid} is not a fixed order`);
+    const steps = []; let n = 0;
+    for (const b of f.blocks) {
+      const keys = (b.gate && b.gate.keys) || []; if (!keys.length) continue;
+      const st = stepOf[fid] ? stepOf[fid](b) : null;
+      if (st === undefined) { err(`effect order: ${fid} step "${b.when}" has no plain-words heading`); continue; }
+      const extra = b.gate.rank ?? b.gate.power ?? null;
+      const tag = fid === 'timeline_build' ? (/-> TOP\b/.test(b.does || '') ? 'top' : /-> BOTTOM\b/.test(b.does || '') ? 'bottom' : null) : null;
+      let last = steps[steps.length - 1];
+      if (!last || last.t !== st) steps.push(last = { t: st, rows: [] });
+      for (const k0 of keys) {
+        const k = appKey(k0); if (!k) { dropped++; continue; }
+        const prev = last.rows[last.rows.length - 1];
+        if (prev && prev[0] === k && prev[1] === extra) continue;
+        last.rows.push([k, extra, tag]); n++;
+      }
+    }
+    const kept = steps.filter(s => s.rows.length);
+    // adjacent steps with the same heading (an emptied step between them) merge
+    const merged = []; for (const s of kept) { const p = merged[merged.length - 1]; if (p && p.t === s.t) p.rows.push(...s.rows); else merged.push(s); }
+    return n ? { id: fid, title: ftitle, steps: merged } : null;
+  }).filter(Boolean) })).filter(s => s.fns.length);
+  const rows = out.reduce((a, s) => a + s.fns.reduce((b, f) => b + f.steps.reduce((c, x) => c + x.rows.length, 0), 0), 0);
+  console.log(`  effect order: ${out.length} sections · ${out.reduce((a, s) => a + s.fns.length, 0)} functions · ${rows} rows · blacklisted dropped ${blk} · unresolved ${unresolved.length}${unresolved.length ? ': ' + [...new Set(unresolved)].slice(0, 12).join(' ') : ''}`);
+  if (unresolved.length) err(`effect order: ${unresolved.length} object keys not in the app`);
+  return out;
+})();
 console.log(`  start-of-battle order: ${startOfBattle.length} rows from ${sobRaw.length} entries · text-only ${startOfBattle.filter(r => r.ref.k === 'text').length} · blacklisted ${sobBlacklisted.length} (${[...new Set(sobBlacklisted)].join(', ')}) · skipped (no app join) ${sobSkipped.length}: ${sobSkipped.join(' | ')}${sobNameDiff.length ? ` · ⚠ trait name mismatches ${sobNameDiff.length}: ${sobNameDiff.join(' | ')}` : ''}`);
 
 // ── Spell gem availability + spells granted by an owner — code (_su_extract spell_owners.json + spell_property_compat.json,
@@ -3615,6 +3761,7 @@ const SU_DATA = {
   falseGods,
   // the game's own menu glyphs for empty home tiles (menu_character / codex_anointments; G = greyed variant)
   startOfBattle,            // start-of-battle effect order (Glossary), code-grounded
+  effectOrder,              // every other fixed-order combat function (Appendix), code-grounded (effect_order_all.json)
   netherHelpers,            // Nether Realm helper tables (Faucet / Mimic Mike), code-grounded
   uiIcons: { specEmpty: 'assets/ui/menu_characterG_0.png', anointEmpty: 'assets/ui/codex_anointmentsG_0.png' },
   bossSprites,              // normalized Deity owner name → bspr_ battle sprite (Appendix boss rows)

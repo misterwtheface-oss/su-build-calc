@@ -1883,3 +1883,6 @@ span.boss-chip { cursor: default; }
 .trig-group { margin-bottom: 10px; }
 .trig-group .art-spellcard-head { flex-wrap: wrap; }
 .trig-card .trait-banner { flex: 1; min-width: 0; }
+
+/* Appendix: How Effect Order Works */
+.eo-rule { margin: 0 0 8px; line-height: 1.45; }
