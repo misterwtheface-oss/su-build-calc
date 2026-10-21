@@ -26,6 +26,10 @@ New entries go at the TOP.
   - The 29 new values without a mechanic group are placed (Redirect / Turn Action Limit: Attack + Cast; Count Threshold:
     Turns & Timeline; Set Health: Health; Perks / Cards / Conditions More Activations, Activation Count, Re-roll: Traits;
     Conditions More Activations also Buffs + Debuffs; Damage group now takes theme:Indirect Damage).
+- Theme-only count fix: it counted every Involves tag, including the code layer's own general Involves tags whose theme
+  a narrower tag already gives (Cesspool's Indirect Damage). It now counts a theme only when nothing but an Involves tag
+  carries it: 21 on 19 objects, all old v1 themes on live objects (none blacklisted), 11 of them "spells cost no Charges"
+  effects whose only narrow tag is Spell Gems::Charges (Spell Gems, not Cast).
 - Result: theme-only objects 399 → 47 (38 objects), old-tag Involves 373 → 21, relic tags with no rank 76 → 38
   (mostly the relic's own Involves::Relic).
 

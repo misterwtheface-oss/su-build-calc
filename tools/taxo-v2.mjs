@@ -164,6 +164,12 @@ export function makeTaxoV2(X, CL) {
     const wrong = new Set([...((code && code.involves_wrong) || []).map(w => w.theme),
       ...[...drops].filter(t => t.startsWith('Involves::')).map(t => t.slice(10))]);
     for (const th of wrong) if (theme.delete(th)) stats.wrongDropped++;
+    // theme-only = a theme carried only by an Involves tag (the code layer's own general tag, or an old v1 theme below):
+    // no narrower tag, Source, marker or object kind gives it
+    const narrow = new Set(themesOf(tags.filter(t => !t.startsWith('Involves::'))));
+    for (const e of out) if (e.so && sourced(e.t)) { if (srcDamage(e.t)) narrow.add('Damage'); narrow.add(SRC.themes[e.so]); }
+    for (const e of out) for (const th of e.mth || []) narrow.add(th);
+    for (const th of X.object_themes[kind] || []) narrow.add(th);
     for (const [th, prov] of oldThemes) if (!theme.has(th) && !wrong.has(th)) {
       if (CODE_BACKED.has(prov)) { out.push({ t: 'Involves::' + th, v: prov }); theme.add(th); stats.involves++; }
       else removed.push({ t: 'Involves::' + th, v: prov });
@@ -175,7 +181,7 @@ export function makeTaxoV2(X, CL) {
       delete e.old; delete e.why; delete e.mth;
     }
     for (const e of removed) { stats.removed++; stats.removedBy[e.v] = (stats.removedBy[e.v] || 0) + 1; for (const k of ['s', 'so', 'r', 'p', 'd', 'rk', 'cf', 'co', 'cn', 'ig', 'x']) if (e[k] == null) delete e[k]; delete e.mth; }
-    return { taxo2: out, theme2: [...theme].sort(), removed };
+    return { taxo2: out, theme2: [...theme].sort(), removed, themeOnly: [...theme].filter(th => !narrow.has(th)).sort() };
   }
 
   // the v2 vocabulary in layer order (TAXONOMY_INTENT.md), values by use

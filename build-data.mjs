@@ -3704,7 +3704,7 @@ const taxonomy2 = (() => {
   const run = (kind, id, o) => {
     const r = V.build(kind, id, o.taxo || [], o.taxoSrc, kind === 'relic' ? { rankOf: (site) => relicRankBySite.get(`${id}:${site}`) ?? null } : {});
     if (kind === 'relic') for (const e of r.taxo2) if (e.v === 'code' && e.rk == null) relicNoRank.push(`${o.name.split(',')[0]} ${e.t}`);
-    const themeOnly = r.taxo2.filter(e => e.t.startsWith('Involves::')).map(e => e.t.slice(10));
+    const themeOnly = r.themeOnly;
     o.taxo2 = [...r.taxo2.filter(e => !e.t.startsWith('Involves::')), ...r.theme2.map(th => ({ t: 'Involves::' + th, v: 'theme' }))];
     o.theme2 = r.theme2;
     if (r.removed.length) removed[`${kind}:${id}`] = { name: o.name || o.family || null, desc: o.desc || null, removed: r.removed };
