@@ -138,6 +138,9 @@ a flat modifier to base: raised **×4/3 (+33%)**, lowered **×2/3 (−33%)**, ot
   trust); in-game observation beats stale CSVs (`Trait_REF` was stale for Marionette).
 
 ## Taxonomy rulings
+- **A theme needs a narrow tag (user 2026-10-21):** a theme carried only by a general Involves tag, with no narrow tag of
+  that theme, is dropped. E.g. "spells cost no Charges" effects keep Spell Gems (Spell Gems::Charges) and lose Cast.
+  Per-object drops live in `taxonomy_crosswalk.json` `object_drops`.
 - **Involves = umbrella view (user 2026-10-20).** `Involves::<theme>` is on every object for each of its themes (the old
   generic Action/Mechanic role: everything touching a mechanic at once). Theme-only objects (theme from a v1 tag, no v2 tag
   re-derives it) get a narrower tag from the extract (HANDOFF F5); they are no longer shipped as Involves tags.

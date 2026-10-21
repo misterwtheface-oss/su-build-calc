@@ -4,6 +4,14 @@ Every dated change entry, newest first (moved verbatim from Progress.md on 2026-
 to their own section and sorted by their date). Current state and open work: `Progress.md`, `BACKLOG.md`.
 New entries go at the TOP.
 
+## 2026-10-21 — Taxonomy v2: theme-only leftovers ruled
+- User: the "spells cost no Charges" effects already carry Spell Gems::Charges; with no narrow Cast tag they drop
+  Involves::Cast (Curse of the Silent, Ascendancy, Higher Understanding, Furness' Decadence, False Epiphany,
+  Prestidigitation, Efficiency, Mental Clarity, Kindle the Flame, Energy Efficient, On the House). Themes already ruled
+  against go: Head of Nebodar Damage (DoT potency is Indirect Damage), Master of Krakens Stats and Commanding Presence
+  Damage (More Potency), Prosperity Stats (a heal). Crosswalk `object_drops` (Involves::X = theme wrong on that object).
+- Theme-only left: 7 on 5 objects (Soul Rending, Domination, Salus, Animation, Siren), waiting on the user.
+
 ## 2026-10-21 — Taxonomy v2: extract F5 rulings taken
 - The extract's F5 rounds (1-4, final, leftovers; HANDOFF_taxonomy_v2.md "App needs") are in. New tags and drops already
   came with each rebuild; this adds the app side:
