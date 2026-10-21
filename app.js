@@ -617,11 +617,17 @@
       vals: (e) => SIDES_OF_SCOPE[e.s] || [] },
     { a: "so", any: "Any source", label: (v) => `Source: ${v}`, title: "Narrow this tag to one damage source", vals: (e) => e.so ? [e.so] : [] },
     { a: "p", any: "Any timing", label: (v) => `Timing: ${v}`, title: "Narrow this trigger to one timing (Would / During / After / Repeat)", vals: (e) => e.p ? [e.p] : [] },
-    { a: "d", any: "Any delivery", label: (v) => `Delivery: ${v}`, title: "Event: fires reactions and counts toward limits. Direct: a silent write", vals: (e) => e.d ? [e.d] : [] },
+    { a: "d", any: "Any delivery", label: (v) => `Delivery: ${v}`, title: "Event: fires reactions and counts toward limits. No Event: a silent write", vals: (e) => e.d ? [e.d] : [] },
+    // code-layer markers (extract F5, user-ratified 2026-10-21)
+    { a: "cf", any: "Any spell", label: (v) => `Cast from: ${v}`, title: "Narrow to where the cast spell comes from", vals: (e) => e.cf ? [e.cf] : [] },
+    { a: "co", any: "Any casts", label: (v) => `Counts: ${v}`, title: "Narrow to which casts are counted", vals: (e) => e.co ? [e.co] : [] },
+    { a: "cn", any: "Any count", label: (v) => `Count: ${v}`, title: "Narrow to what is counted", vals: (e) => e.cn ? [e.cn] : [] },
+    { a: "ig", any: "Ignores any", label: (v) => `Ignores ${v}`, title: "Narrow to what this tag ignores", vals: (e) => e.ig ? [e.ig] : [] },
+    { a: "x", any: "Any detail", label: (v) => v, title: "Narrow to a detail the game code marks on this tag", vals: (e) => e.x || [] },
   ];
   const REFINE_ORDER = (D.taxonomy2 && D.taxonomy2.attributes) || {};
   const REFINE_ATTR = { s: null, so: "source", p: "phase", d: "delivery" };   // value order from taxonomy2.attributes
-  const keyParse = (k) => { const ref = {}; const base = k.replace(/@(s|so|p|d)=([^@]+)/g, (_, a, v) => { ref[a] = v; return ""; }); return { base, ref }; };
+  const keyParse = (k) => { const ref = {}; const base = k.replace(/@(s|so|p|d|cf|co|cn|ig|x)=([^@]+)/g, (_, a, v) => { ref[a] = v; return ""; }); return { base, ref }; };
   const keyBuild = (base, ref) => base + REFINE.map(R => ref[R.a] ? `@${R.a}=${ref[R.a]}` : "").join("");
   const keyBase = (k) => keyParse(k).base;
   const entryKeys = (e) => { const rk = roleKey(e); return rk ? [e.t, rk] : [e.t]; };
@@ -647,8 +653,8 @@
     const { base, ref } = keyParse(k), rest = { ...ref }; delete rest[R.a];
     const out = new Set();
     for (const o of objs) for (const e of (o && o.taxo2) || []) if (entryKeys(e).includes(base) && refineOk(e, rest)) R.vals(e).forEach(v => out.add(v));
-    const order = REFINE_ATTR[R.a] ? REFINE_ORDER[REFINE_ATTR[R.a]] || [] : ["ally", "enemy"];
-    return [...out].sort((x, y) => order.indexOf(x) - order.indexOf(y));
+    const order = R.a === "s" ? ["ally", "enemy"] : REFINE_ATTR[R.a] ? REFINE_ORDER[REFINE_ATTR[R.a]] || [] : [];
+    return [...out].sort((x, y) => order.indexOf(x) - order.indexOf(y) || String(x).localeCompare(String(y)));
   };
   // the toggles beside an active tag chip, one per attribute that has a value on the listed objects: Any → each value → Any
   const refineBtns = (k, src, L, objs) => !TV2 ? "" : REFINE.map(R => {
@@ -2959,13 +2965,13 @@
   // grouped taxonomy: Category → its values, each a chip that (a) shows the provenance source and
   // (b) jumps to the Appendix filtered by that tag
   // v2: one chip per tag entry, by category in layer order. The chip names the tag (trigger role as its readable label)
-  // and its attributes: scope, source, phase (After is the default and stays unsaid), delivery (only Direct is said).
+  // and its attributes: scope, source, phase (After is the default and stays unsaid), delivery (only No Event is said), markers.
   // Unverified = a split the code couldn't settle (every candidate kept; dashed).
   // Relic tags carry the rank whose code clause holds them (rk): the same tag on several ranks is one chip, "×N" when N ≥ 2.
   function entityTaxHtmlV2(e) {
     const groups = new Map(), seen = new Map();
     for (const x of e.taxo2 || []) {
-      const id = [x.t, x.s, x.so, x.r, x.p, x.d, x.v].join("|");
+      const id = [x.t, x.s, x.so, x.r, x.p, x.d, x.cf, x.co, x.cn, x.ig, (x.x || []).join(","), x.v].join("|");
       if (seen.has(id)) { if (x.rk != null) seen.get(id).n++; continue; }
       const y = { ...x, n: x.rk != null ? 1 : 0 }; seen.set(id, y);
       const cat = taxoCatName(x.t); if (!groups.has(cat)) groups.set(cat, []);
@@ -2976,7 +2982,8 @@
     return cats.map(cat => `<div class="etax-group">
       <div class="etax-cat">${esc(cat)}</div>
       <div class="etax-vals">${groups.get(cat).map(x => {
-        const k = roleKey(x) || x.t, attrs = [x.s, x.so, x.p && x.p !== "After" ? x.p : null, x.d === "Direct" ? "Direct" : null].filter(Boolean);
+        const k = roleKey(x) || x.t, attrs = [x.s, x.so, x.p && x.p !== "After" ? x.p : null, x.d === "No Event" ? "No Event" : null,
+          x.cf, x.co, x.cn, x.ig ? `Ignores ${x.ig}` : null, ...(x.x || [])].filter(Boolean);
         const unv = x.v === "unverified";
         return `<button class="etax-tag${unv ? " etax-unv" : ""}" data-action="etax-filter" data-k="${esc(k)}" title="${unv ? "Unverified: the game code hasn't settled this tag. " : ""}Filter the Taxonomy to “${esc(taxoValName(k))}”">${esc(taxoValName(k))}${x.n >= 2 ? `<span class="etax-mult">×${x.n}</span>` : ""}${attrs.length ? `<span class="etax-attr">${esc(attrs.join(" · "))}</span>` : ""}${FEATURES.taxoSource && x.v ? `<span class="apx-src s-${esc(x.v)}">${esc(x.v)}</span>` : ""}</button>`;
       }).join("")}</div>

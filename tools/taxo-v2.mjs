@@ -6,7 +6,11 @@
 // candidate marked unverified (v: 'unverified') for the review queue. Theme (old Action/Mechanic) is derived; an old
 // Action/Mechanic tag nothing re-derives is kept as Involves::<theme>.
 //
-// Shipped entry: { t: 'Category::Value', s?: scope, so?: source, r?: role, p?: phase, d?: delivery, v: provenance }
+// Shipped entry: { t: 'Category::Value', s?: scope, so?: source, r?: role, p?: phase, d?: delivery, rk?: relic rank,
+//   cf?: cast_from, co?: count_of, cn?: count, ig?: ignores, x?: [other markers: crit / tick_kind / property / except / suppresses],
+//   v: provenance }
+// Themes (F5, user-ratified 2026-10-21): the crosswalk theme lines, a Source's own theme (Damage too only for adds_damage tags),
+// marker themes (crosswalk marker_themes), what the object is; minus the object's code-layer involves_wrong themes.
 // provenance = 'code' | the v1 tag's source (token / field / audit / llm / derived / …) | 'unverified'.
 
 // An effect aimed at a participant of the triggering event ("event:damaged") takes the scope of the object's own trigger
@@ -34,12 +38,21 @@ export function makeTaxoV2(X, CL) {
   };
   const match = (pat, tag) => {
     if (pat.endsWith('*!class')) { const p = pat.slice(0, -7); return tag.startsWith(p) && !CLASS_TYPES.has(tag.slice(p.length)); }
+    if (pat.includes('*!')) { const [p, ex] = pat.split('*!'); return tag.startsWith(p) && !ex.split('|').includes(tag.slice(p.length)); }
     return pat.endsWith('*') ? tag.startsWith(pat.slice(0, -1)) : tag === pat;
   };
   const themesOf = (tags) => Object.entries(X.themes).filter(([k]) => k !== '_note')
     .filter(([, pats]) => tags.some(t => pats.some(p => match(p, t)))).map(([k]) => k);
   const SRC = X.attributes.source;
   const sourced = (t) => SRC.applies_to.some(p => match(p, t));
+  const srcDamage = (t) => (SRC.adds_damage || []).some(p => match(p, t));
+  // markers: the code layer's tag markers the app filters on / derives themes from
+  const MT = X.marker_themes || {};
+  const markerX = (c) => [c.crit ? 'Critical hits only' : null, c.tick_kind || null, c.property || null, c.except ? `Except ${c.except}` : null,
+    ...(c.suppresses || []).map(t => `Suppresses ${t.slice(t.indexOf('::') + 2)}`)].filter(Boolean);
+  const markerThemes = (c) => [c.crit ? (MT.crit || {}).true : null, (MT.count || {})[String(c.count || '').replace(/\s*\(.*\)$/, '')],
+    (MT.tick_kind || {})[c.tick_kind], (MT.property || {})[c.property], (MT.except || {})[c.except], (MT.cast_from || {})[c.cast_from],
+    (MT.count_of || {})[c.count_of], ...(c.suppresses || []).map(t => (MT.suppresses || {})[t])].filter(Boolean);
   // "Buffs|Debuffs::Apply" / "Stats::Has More|Less" = an open polarity or direction: both candidates
   const expand = (tag) => {
     const cat = tag.slice(0, tag.indexOf('::')), val = tag.slice(tag.indexOf('::') + 2);
@@ -47,7 +60,14 @@ export function makeTaxoV2(X, CL) {
     if (val.includes('|')) { const [a, b] = val.split('|'); return [cat + '::' + a, cat + '::' + a.replace(/\S+$/, b)]; }
     return [tag];
   };
-  const stats = { removed: 0, removedBy: {}, other: 0, trigUnverified: 0, eventScope: 0, eventScopeOff: 0, objects: 0, withCode: 0, entries: 0, code: 0, v1: 0, unverified: 0, involves: 0, unknown: {} };
+  // values the code layer dropped or retagged (f5.corrections) and no longer tags on that object, + the app-only drops
+  // the extract named (crosswalk object_drops): a v1-mapped entry of that value goes too; a dropped Involves::X = theme X wrong
+  const codeDrops = new Map();
+  const addDrop = (key, t) => { if (!codeDrops.has(key)) codeDrops.set(key, new Set()); codeDrops.get(key).add(t); };
+  for (const c of ((CL.f5 && CL.f5.corrections) || [])) if ((c.action === 'drop' || c.action === 'retag')
+    && !(((CL.objects[c.key] || {}).tags) || []).some(t => t.tag === c.t)) addDrop(c.key, c.t);
+  for (const [key, ts] of Object.entries(X.object_drops || {})) if (key !== '_note') for (const t of ts) addDrop(key, t);
+  const stats = { removed: 0, codeDropped: 0, removedBy: {}, other: 0, trigUnverified: 0, eventScope: 0, eventScopeOff: 0, objects: 0, withCode: 0, entries: 0, code: 0, v1: 0, unverified: 0, involves: 0, wrongDropped: 0, unknown: {} };
 
   // vocabulary: every value the crosswalk can produce + the code-only new values (+ open families)
   const vocab = new Set(Object.keys(X.new_values).filter(k => k !== '_note'));
@@ -88,8 +108,13 @@ export function makeTaxoV2(X, CL) {
     // An open polarity / direction ("Buffs|Debuffs::Apply", "Stats::Has More|Less") is both candidates, unverified.
     const codeE = ((code && code.tags) || []).flatMap(c => {
       const alts = expand(c.tag);
-      const rk = opts.rankOf ? opts.rankOf(c.site) : null;
+      // relic rank: the code layer's own `rank` (F5), else the rank clause that holds the site
+      const rk = c.rank != null ? +c.rank : opts.rankOf ? opts.rankOf(c.site) : null;
+      const mx = markerX(c);
       return alts.map(t => ({ t, s: c.scope || null, so: c.source || null, r: c.role || null, p: c.phase || null, rk,
+        // "Cast Count (count_of Side Casts)" = count Cast Count + count_of Side Casts
+        cf: c.cast_from || null, co: c.count_of || (/\(count_of ([^)]+)\)/.exec(c.count || '') || [])[1] || null,
+        cn: c.count ? String(c.count).replace(/\s*\(count_of [^)]+\)$/, '') : null, ig: c.ignores || null, x: mx.length ? mx : null, mth: markerThemes(c),
         // Targeting::All inferred only from "no picker call" is a guess while random-by-index picks are undecoded
         // (Abnegation hits a random enemy): unverified until the extract decodes it
         d: c.delivery || null, v: alts.length > 1 || / no picker call/.test(c.picker || '') ? 'unverified' : 'code',
@@ -109,13 +134,14 @@ export function makeTaxoV2(X, CL) {
     // Triggers: a v1-only trigger on an object whose trigger(s) the code decoded is an anomaly (unverified): an old guess
     // (Abnegation's "Takes Damage") or a trigger the code layer missed (Furor's Turn Start).
     const codeTrig = codeE.some(e => e.t.startsWith('Trigger::'));
-    const v1keep = v1.filter(e => !codeVals.has(e.t)).map(e => codeTrig && e.t.startsWith('Trigger::') && e.v !== 'unverified'
+    const drops = codeDrops.get(`${kind}:${id}`) || new Set();
+    const v1keep = v1.filter(e => !codeVals.has(e.t) && !(drops.has(e.t) && ++stats.codeDropped)).map(e => codeTrig && e.t.startsWith('Trigger::') && e.v !== 'unverified'
       ? (stats.trigUnverified++, { ...e, v: 'unverified', why: 'trigger the code layer does not have' }) : e);
     const all = [...codeE, ...v1keep];
     // dedupe on the full attribute key (an unverified duplicate of a firm entry goes)
     const seen = new Map();
     for (const e of all) {
-      const k = [e.t, e.s, e.so, e.r, e.p, e.d, e.rk].join('|');
+      const k = [e.t, e.s, e.so, e.r, e.p, e.d, e.rk, e.cf, e.co, e.cn, e.ig, (e.x || []).join(',')].join('|');
       const prev = seen.get(k);
       if (!prev || (prev.v === 'unverified' && e.v !== 'unverified')) seen.set(k, e);
     }
@@ -131,19 +157,24 @@ export function makeTaxoV2(X, CL) {
     const tags = out.map(e => e.t);
     const theme = new Set(themesOf(tags));
     // Source themes; a trait's spell-type "deals damage" (Inflict + Spell) is Damage, not Cast (crosswalk _theme_note)
-    for (const e of out) if (e.so && sourced(e.t)) { theme.add('Damage'); if (!(e.t === 'Damage::Inflict' && e.so === 'Spell')) theme.add(SRC.themes[e.so]); }
+    for (const e of out) if (e.so && sourced(e.t)) { if (srcDamage(e.t)) theme.add('Damage'); if (!(e.t === 'Damage::Inflict' && e.so === 'Spell')) theme.add(SRC.themes[e.so]); }
+    for (const e of out) for (const th of e.mth || []) theme.add(th);
     for (const th of X.object_themes[kind] || []) theme.add(th);
-    for (const [th, prov] of oldThemes) if (!theme.has(th)) {
+    // the code layer's per-object rulings: a theme it found wrong on this object goes (involves_wrong, F5)
+    const wrong = new Set([...((code && code.involves_wrong) || []).map(w => w.theme),
+      ...[...drops].filter(t => t.startsWith('Involves::')).map(t => t.slice(10))]);
+    for (const th of wrong) if (theme.delete(th)) stats.wrongDropped++;
+    for (const [th, prov] of oldThemes) if (!theme.has(th) && !wrong.has(th)) {
       if (CODE_BACKED.has(prov)) { out.push({ t: 'Involves::' + th, v: prov }); theme.add(th); stats.involves++; }
       else removed.push({ t: 'Involves::' + th, v: prov });
     }
     for (const e of out) {
       stats.entries++; stats[e.v === 'code' ? 'code' : 'other']++;
       if (!known(e.t)) stats.unknown[e.t] = (stats.unknown[e.t] || 0) + 1;
-      for (const k of ['s', 'so', 'r', 'p', 'd', 'rk']) if (e[k] == null) delete e[k];
-      delete e.old; delete e.why;
+      for (const k of ['s', 'so', 'r', 'p', 'd', 'rk', 'cf', 'co', 'cn', 'ig', 'x']) if (e[k] == null) delete e[k];
+      delete e.old; delete e.why; delete e.mth;
     }
-    for (const e of removed) { stats.removed++; stats.removedBy[e.v] = (stats.removedBy[e.v] || 0) + 1; for (const k of ['s', 'so', 'r', 'p', 'd', 'rk']) if (e[k] == null) delete e[k]; }
+    for (const e of removed) { stats.removed++; stats.removedBy[e.v] = (stats.removedBy[e.v] || 0) + 1; for (const k of ['s', 'so', 'r', 'p', 'd', 'rk', 'cf', 'co', 'cn', 'ig', 'x']) if (e[k] == null) delete e[k]; delete e.mth; }
     return { taxo2: out, theme2: [...theme].sort(), removed };
   }
 

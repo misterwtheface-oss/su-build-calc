@@ -139,8 +139,10 @@ a decompile → write `_su_extract/code/HANDOFF_<topic>.md` and don't guess (bat
   ~~code-backed only~~ (DONE 2026-10-19, user ruling; extract works through 2,083 removed tags, HANDOFF F3) → refine
   chips: ~~side (Either / Your side / Enemy side)~~ DONE 2026-10-19; ~~source / phase / delivery~~ DONE 2026-10-20 (same toggle); ~~spell /
   gem pickers, creature Triggers section, synergy, `noDmgStat`, relic per-rank tags~~ DONE 2026-10-20 (everything reads v2;
-  relic ranks from code sites) → ~~review queue for the 581 unverified candidates~~ (gone: code-backed only, F3) → Involves
-  review (801 on 681 objects) + relic tags with no rank + Takes Damage phase: extract HANDOFF F5 → ~~CSV parity~~ (dropped,
+  relic ranks from code sites) → ~~review queue for the 581 unverified candidates~~ (gone: code-backed only, F3) → ~~Involves
+  review (801 on 681 objects) + relic tags with no rank + Takes Damage phase: extract HANDOFF F5~~ (F5 taken 2026-10-21: theme
+  lines, Source rule, markers, wrong themes, code drops; left: 47 theme-only on 38 objects in `app_involves_review.json`, 38 relic
+  tags with no rank) → ~~CSV parity~~ (dropped,
   user 2026-10-20: that CSV is personal) → **one cutover commit retires v1 once F4 / F5 and the open extract items are
   resolved** (user 2026-10-20). Absorbs the Calculation sweep below, the
   parked S24 Creature is Damaged proposal and the untagged-traits review.

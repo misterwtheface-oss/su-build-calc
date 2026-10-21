@@ -601,8 +601,9 @@
   "Affect on Spells::Redirect Spell": {
    "kind": "rename",
    "to": [
-    "Actions::Redirect Spell"
-   ]
+    "Actions::Redirect"
+   ],
+   "source": "Spell"
   },
   "Action/Mechanic::Intercept": {
    "kind": "rename",
@@ -1109,7 +1110,7 @@
   }
  },
  "themes": {
-  "_note": "Theme X is carried by any object with a tag matching one of these patterns (superset rule, structural). Scope never affects themes. Indirect Damage derives from Source = Indirect only (Inflict Direct/Indirect merged 2026-10-19).",
+  "_note": "Theme X is carried by any object with a tag matching one of these patterns (superset rule, structural). Scope never affects themes. Indirect Damage derives from Source = Indirect only (Inflict Direct/Indirect merged 2026-10-19). F5 (extract HANDOFF_taxonomy_v2, rounds 1-4 + final + leftovers, user-ratified 2026-10-20/21): the new values'theme lines; \"X::*!A|B\" = the family except those values (U3: DoT Formula is Indirect Damage only, never Damage).",
   "Attack": [
    "Trigger::Attack",
    "Actions::Extra Attack",
@@ -1125,24 +1126,28 @@
    "Actions::Auto Cast",
    "Actions::Can't Manually Cast",
    "Actions::Counts as Manual",
-   "Actions::Redirect Spell",
    "Calculation::Spell Formula",
    "Hit Resolution::Spell Fails",
-   "Scales With::Cast Count"
+   "Scales With::Cast Count",
+   "Spell Gems::Potency Up",
+   "Spell Gems::Potency Down",
+   "Actions::Can Manually Cast"
   ],
   "Defend": [
    "Trigger::Defend",
    "Actions::Auto Defend",
    "Actions::Can't Manually Defend",
    "Condition::Defending",
-   "Scales With::Defend Count"
+   "Scales With::Defend Count",
+   "Actions::Stop Defending"
   ],
   "Provoke": [
    "Trigger::Provoke",
    "Actions::Auto Provoke",
    "Actions::Can't Manually Provoke",
    "Condition::Provoking",
-   "Scales With::Provoke Count"
+   "Scales With::Provoke Count",
+   "Actions::Stop Provoking"
   ],
   "Intercept": [
    "Actions::Intercept"
@@ -1151,7 +1156,8 @@
    "Trigger::Dodge",
    "Hit Resolution::Dodge Chance",
    "Hit Resolution::Can't Dodge",
-   "Scales With::Dodge Count"
+   "Scales With::Dodge Count",
+   "Scales With::Dodge Chance"
   ],
   "Critical": [
    "Trigger::Critical Hit",
@@ -1161,25 +1167,37 @@
   "Damage": [
    "Damage::*",
    "Trigger::Damage",
-   "Calculation::*",
+   "Calculation::*!DoT Formula",
    "Scales With::Amount of Damage Dealt",
    "Scales With::Amount of Damage Taken",
    "Scales With::Damage Taken Count",
-   "Calculation::Ignore Defense"
+   "Calculation::Ignore Defense",
+   "Trigger::Critical Hit"
   ],
-  "Indirect Damage": [],
+  "Indirect Damage": [
+   "Calculation::DoT Formula",
+   "Debuffs::DoT Potency",
+   "Trigger::DoT Tick",
+   "Scales With::Blighted Damage Count"
+  ],
   "Healing": [
    "Trigger::Heal",
    "Life::Heal",
    "Life::Healing Up",
    "Life::Healing Down",
-   "Scales With::Amount Healed"
+   "Scales With::Amount Healed",
+   "Spell Kind::Healing Spells",
+   "Life::Heal at Full Health",
+   "Life::Redirect Heal",
+   "Scales With::Heals Received Count"
   ],
   "Resurrection": [
    "Trigger::Resurrection",
    "Life::Resurrect",
    "Life::Can't Resurrect",
-   "Scales With::Resurrect Count"
+   "Scales With::Resurrect Count",
+   "Life::Resurrect Health Up",
+   "Life::Resurrect Health Down"
   ],
   "Buff": [
    "Buffs::*",
@@ -1188,7 +1206,8 @@
    "Trigger::Buff Removed",
    "Condition::Has Buff",
    "Scales With::Buff Count",
-   "Scales With::Buff Potency"
+   "Scales With::Buff Potency",
+   "Scales With::Trick Buffs Gained Count"
   ],
   "Debuff": [
    "Debuffs::*",
@@ -1197,14 +1216,18 @@
    "Trigger::Debuff Removed",
    "Condition::Has Debuff",
    "Scales With::Debuff Count",
-   "Scales With::Debuff Potency"
+   "Scales With::Debuff Potency",
+   "Scales With::Trick Debuffs Applied Count"
   ],
   "Minion": [
    "Minions::*",
    "Named Minion::*",
    "Trigger::Minion Gained",
    "Trigger::Minion Action",
-   "Scales With::Minion Count"
+   "Scales With::Minion Count",
+   "Spell Kind::Minion Spells",
+   "Trigger::Minion Lost",
+   "Scales With::Minions Lost Count"
   ],
   "Stats": [
    "Stats::*",
@@ -1218,17 +1241,21 @@
   "Spell Gems": [
    "Spell Gems::*",
    "Scales With::Gem Count",
-   "Scales With::Charge Count"
+   "Scales With::Charge Count",
+   "Spell Kind::Ethereal Spells"
   ],
   "Turn Counter": [
    "Turns::*",
-   "Scales With::Turns Taken Count"
+   "Scales With::Turns Taken Count",
+   "Condition::Turn Number"
   ],
   "Timeline": [
    "Timeline::*",
    "Trigger::Timeline Move",
    "Scales With::Creatures Ahead",
-   "Scales With::Creatures Behind"
+   "Scales With::Creatures Behind",
+   "Targeting::Timeline Position",
+   "Condition::Timeline Position"
   ],
   "Creature Class": [
    "Type::Change Class",
@@ -1239,22 +1266,30 @@
    "Creature Type::Death Creature",
    "Creature Type::Life Creature",
    "Creature Type::Nature Creature",
-   "Creature Type::Sorcery Creature"
+   "Creature Type::Sorcery Creature",
+   "Calculation::Class Advantage",
+   "Spell Gems::Off-Class Equip",
+   "Condition::Class Match",
+   "Scales With::Class Count"
   ],
   "Creature Race": [
    "Type::Change Race",
    "Type::Count Extra Race",
-   "Creature Type::*!class"
+   "Creature Type::*!class",
+   "Condition::Race Match",
+   "Scales With::Race Count"
   ],
   "Artifact": [
    "Involves::Artifact",
-   "Trait Kind::Artifact Trait"
+   "Trait Kind::Artifact Trait",
+   "Artifacts::More Activations"
   ],
   "Adjacency": [
    "Involves::Adjacency"
   ],
   "Relic": [
-   "Involves::Relic"
+   "Involves::Relic",
+   "Relics::More Activations"
   ],
   "Personality": [
    "Involves::Personality"
@@ -1300,7 +1335,18 @@
     "Damage::*",
     "Hit Resolution::*",
     "Calculation::*",
-    "Trigger::Damage"
+    "Trigger::Damage",
+    "Actions::Turn Action Limit",
+    "Trigger::DoT Tick",
+    "Actions::Intercept",
+    "Actions::Limit Repeats",
+    "Condition::Has Done Action",
+    "Buffs::Persist",
+    "Debuffs::Persist",
+    "Traits::Suppress",
+    "Targeting::Target Rules",
+    "Actions::Redirect",
+    "Stat::*"
    ],
    "from_old": {
     "Action/Mechanic::Attack": "Attack",
@@ -1312,7 +1358,14 @@
     "Spell": "Cast",
     "Indirect": "Indirect Damage"
    },
-   "_theme_note": "Damage::Inflict + Spell (a trait's 'deals damage', dtype 1) derives Damage only, not Cast: spell-type damage outside a cast is not casting (2026-10-19)."
+   "_theme_note": "Damage::Inflict + Spell (a trait's 'deals damage', dtype 1) derives Damage only, not Cast: spell-type damage outside a cast is not casting (2026-10-19).",
+   "adds_damage": [
+    "Damage::*",
+    "Hit Resolution::*",
+    "Calculation::*!DoT Formula",
+    "Trigger::Damage"
+   ],
+   "_rule_note": "F5 Source rule fix (user 2026-10-21): a sourced tag adds its Source theme (Attack -> Attack, Spell -> Cast, Indirect -> Indirect Damage). Only tags in adds_damage also add Damage."
   },
   "role": {
    "status": "DRAFT",
@@ -1335,7 +1388,8 @@
     "Would",
     "During",
     "After",
-    "Repeat"
+    "Repeat",
+    "Direct"
    ],
    "_note": "Would = hook inside the event (bc_Event*), before it resolves, and the effect issues something new or replaces it (\"when X would be debuffed\"). An in-event hook that only changes the number is an Effect, not a Trigger. After = reaction (bc_On*, start/end-of-turn, startup). Repeat = \"effects that activate when X activate N more times\" (bc_ExecuteEvents). During = a hook inside the creature's own bc_CreatureAttack / bc_CreatureCast that issues something before the action resolves (user 2026-10-19).",
    "code": {
@@ -1362,7 +1416,8 @@
      "bc_CreatureAttack",
      "bc_CreatureCast"
     ]
-   }
+   },
+   "_f5_note": "Direct (round 3 ratification): the handler is called directly and reactions do fire. Not the old delivery value."
   },
   "delivery": {
    "status": "RATIFIED",
@@ -1370,11 +1425,15 @@
     "Stats::Gain",
     "Stats::Lose",
     "Buffs::Apply",
-    "Debuffs::Apply"
+    "Debuffs::Apply",
+    "Minions::Summon",
+    "Life::Heal",
+    "Life::Execute",
+    "Actions::Auto Defend"
    ],
    "values": [
     "Event",
-    "Direct"
+    "No Event"
    ],
    "_note": "Event = goes through the game event: reactions fire, diminishing returns and the per-turn action limit apply. Direct = written straight onto the creature: no reactions, no limit (immunity still checked). Ruled 2026-10-19 from extract Q1/Q2.",
    "code": {
@@ -1389,7 +1448,8 @@
      "bc_StartupStatLoss",
      "scr_CritAddCondition (bare)"
     ]
-   }
+   },
+   "_f5_note": "F5 round 4 ruling C (user 2026-10-21): Direct renamed No Event; applies_to + Minions::Summon, Life::Heal, Life::Execute, Actions::Auto Defend."
   }
  },
  "new_values": {
@@ -1434,7 +1494,48 @@
    "code": [
     "bc_CreatureAttack / bc_CreatureCast repeat cell"
    ]
-  }
+  },
+  "Debuffs::DoT Potency": "F5 (extract HANDOFF_taxonomy_v2), user-ratified 2026-10-20/21",
+  "Condition::Class Match": "F5 (extract HANDOFF_taxonomy_v2), user-ratified 2026-10-20/21",
+  "Condition::Race Match": "F5 (extract HANDOFF_taxonomy_v2), user-ratified 2026-10-20/21",
+  "Scales With::Heals Received Count": "F5 (extract HANDOFF_taxonomy_v2), user-ratified 2026-10-20/21",
+  "Scales With::Minions Lost Count": "F5 (extract HANDOFF_taxonomy_v2), user-ratified 2026-10-20/21",
+  "Scales With::Trick Buffs Gained Count": "F5 (extract HANDOFF_taxonomy_v2), user-ratified 2026-10-20/21",
+  "Scales With::Trick Debuffs Applied Count": "F5 (extract HANDOFF_taxonomy_v2), user-ratified 2026-10-20/21",
+  "Scales With::Blighted Damage Count": "F5 (extract HANDOFF_taxonomy_v2), user-ratified 2026-10-20/21",
+  "Scales With::Activation Count": "F5 (extract HANDOFF_taxonomy_v2), user-ratified 2026-10-20/21",
+  "Scales With::Race Count": "F5 (extract HANDOFF_taxonomy_v2), user-ratified 2026-10-20/21",
+  "Scales With::Class Count": "F5 (extract HANDOFF_taxonomy_v2), user-ratified 2026-10-20/21",
+  "Actions::Turn Action Limit": "F5 (extract HANDOFF_taxonomy_v2), user-ratified 2026-10-20/21",
+  "Artifacts::More Activations": "F5 (extract HANDOFF_taxonomy_v2), user-ratified 2026-10-20/21",
+  "Condition::Count Threshold": "F5 (extract HANDOFF_taxonomy_v2), user-ratified 2026-10-20/21",
+  "Actions::Redirect": "F5 (extract HANDOFF_taxonomy_v2), user-ratified 2026-10-20/21",
+  "Actions::Stop Defending": "F5 (extract HANDOFF_taxonomy_v2), user-ratified 2026-10-20/21",
+  "Actions::Stop Provoking": "F5 (extract HANDOFF_taxonomy_v2), user-ratified 2026-10-20/21",
+  "Life::Heal at Full Health": "F5 (extract HANDOFF_taxonomy_v2), user-ratified 2026-10-20/21",
+  "Actions::Can Manually Cast": "F5 (extract HANDOFF_taxonomy_v2), user-ratified 2026-10-20/21",
+  "Timeline::Can't Be Sent to Bottom": "F5 (extract HANDOFF_taxonomy_v2), user-ratified 2026-10-20/21",
+  "Turns::Set Count": "F5 (extract HANDOFF_taxonomy_v2), user-ratified 2026-10-20/21",
+  "Life::Resurrect Health Up": "F5 (extract HANDOFF_taxonomy_v2), user-ratified 2026-10-20/21",
+  "Life::Resurrect Health Down": "F5 (extract HANDOFF_taxonomy_v2), user-ratified 2026-10-20/21",
+  "Chance::Re-roll": "F5 (extract HANDOFF_taxonomy_v2), user-ratified 2026-10-20/21",
+  "Life::Set Health": "F5 (extract HANDOFF_taxonomy_v2), user-ratified 2026-10-20/21",
+  "Perks::More Activations": "F5 (extract HANDOFF_taxonomy_v2), user-ratified 2026-10-20/21",
+  "Relics::More Activations": "F5 (extract HANDOFF_taxonomy_v2), user-ratified 2026-10-20/21",
+  "Conditions::More Activations": "F5 (extract HANDOFF_taxonomy_v2), user-ratified 2026-10-20/21",
+  "Cards::More Activations": "F5 (extract HANDOFF_taxonomy_v2), user-ratified 2026-10-20/21",
+  "Timeline::Skip to Next Turn": "F5 (extract HANDOFF_taxonomy_v2), user-ratified 2026-10-20/21",
+  "Life::Redirect Heal": "F5 (extract HANDOFF_taxonomy_v2), user-ratified 2026-10-20/21",
+  "Scales With::Dodge Chance": "F5 (extract HANDOFF_taxonomy_v2), user-ratified 2026-10-20/21",
+  "Scales With::Missing Creature Count": "F5 (extract HANDOFF_taxonomy_v2), user-ratified 2026-10-20/21",
+  "Spell Kind::Stat Spells": "F5 (extract HANDOFF_taxonomy_v2), user-ratified 2026-10-20/21",
+  "Spell Gems::Can't Lose": "F5 (extract HANDOFF_taxonomy_v2), user-ratified 2026-10-20/21",
+  "Spell Gems::Unseal": "F5 (extract HANDOFF_taxonomy_v2), user-ratified 2026-10-20/21",
+  "Traits::Can't Lose": "F5 (extract HANDOFF_taxonomy_v2), user-ratified 2026-10-20/21",
+  "Buffs::Bypass": "F5 (extract HANDOFF_taxonomy_v2), user-ratified 2026-10-20/21",
+  "Condition::Timeline Position": "F5 (extract HANDOFF_taxonomy_v2), user-ratified 2026-10-20/21",
+  "Named Minion::Microbots": "F5 (extract HANDOFF_taxonomy_v2), user-ratified 2026-10-20/21",
+  "Named Minion::Chaos Satyrs": "F5 (extract HANDOFF_taxonomy_v2), user-ratified 2026-10-20/21"
  },
  "rulings": [
   "2026-10-19 Xyrxzy's Control: Actions::Extra Attack (code re-issues bc_CreatureAttack(attacker, attacked)); clarify note for the text.",
@@ -1447,5 +1548,57 @@
   "2026-10-19 Glitch In The System = Buffs::Can't Gain + Debuffs::Apply.",
   "2026-10-19 Master of Carbuncles / Storms = Traits::More Potency only.",
   "2026-10-19 Leave-chance modifiers (Permanence, Midnight Bargain) = Minions::Extend."
- ]
+ ],
+ "marker_themes": {
+  "_note": "Themes a code-layer tag marker adds (extract HANDOFF_taxonomy_v2 F5, user-ratified 2026-10-21). count: the theme of the counted thing (Count Threshold / Has Done Action / More Potency); a \"(count_of ...)\" suffix is ignored. Times Killed / Dead Creature Count: no theme.",
+  "crit": {
+   "true": "Critical"
+  },
+  "count": {
+   "Buff Count": "Buff",
+   "Debuff Count": "Debuff",
+   "Minion Count": "Minion",
+   "Resurrect Count": "Resurrection",
+   "Cast Count": "Cast",
+   "Attack Count": "Attack",
+   "Defend Count": "Defend",
+   "Provoke Count": "Provoke",
+   "Amount of Damage Dealt": "Damage",
+   "Damage Taken Count": "Damage"
+  },
+  "tick_kind": {
+   "Damage or Heal": "Healing"
+  },
+  "property": {
+   "Buff Trick": "Buff",
+   "Debuff Trick": "Debuff"
+  },
+  "suppresses": {
+   "Trigger::Buff": "Buff",
+   "Trigger::Debuff": "Debuff"
+  },
+  "except": {
+   "Blighted": "Indirect Damage"
+  },
+  "cast_from": {
+   "Equipped Gem": "Spell Gems",
+   "Ally Gem": "Spell Gems",
+   "Enemy Gem": "Spell Gems"
+  },
+  "count_of": {
+   "This Gem": "Spell Gems"
+  }
+ },
+ "object_drops": {
+  "_note": "v1-mapped values the extract says have no code behind them on that object (HANDOFF_taxonomy_v2 F5 \"App needs\"). Values the code layer itself dropped (f5.corrections drop / retag) are removed automatically.",
+  "perk:UNNATURALCAUSES": [
+   "Condition::Has Done Action"
+  ],
+  "spell:VOIDFLARE": [
+   "Condition::Has Done Action"
+  ],
+  "trait:1975": [
+   "Timeline::Move Down"
+  ]
+ }
 }

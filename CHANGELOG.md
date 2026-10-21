@@ -4,6 +4,31 @@ Every dated change entry, newest first (moved verbatim from Progress.md on 2026-
 to their own section and sorted by their date). Current state and open work: `Progress.md`, `BACKLOG.md`.
 New entries go at the TOP.
 
+## 2026-10-21 — Taxonomy v2: extract F5 rulings taken
+- The extract's F5 rounds (1-4, final, leftovers; HANDOFF_taxonomy_v2.md "App needs") are in. New tags and drops already
+  came with each rebuild; this adds the app side:
+  - **Theme lines** for the new values (crosswalk `themes`), e.g. Spell Kind::Healing Spells → Healing, Class Match →
+    Creature Class, DoT Potency / DoT Tick / DoT Formula / Blighted Damage Count → Indirect Damage. U3: DoT Formula is no
+    longer Damage (`Calculation::*!DoT Formula`).
+  - **Source rule fix:** Source applies to Turn Action Limit, DoT Tick, Intercept, Limit Repeats, Has Done Action,
+    Persist, Suppress, Target Rules, Redirect and Stat::* too, and there it adds only its own theme. Only Damage /
+    Hit Resolution / Calculation / Trigger::Damage tags also add Damage.
+  - **Markers** from the code layer ride on each tag and are refine toggles next to the side / source / timing / delivery
+    ones: Cast from, Counts (count_of), Count, Ignores, and one detail toggle (Critical hits only, Damage or Heal, Buff /
+    Debuff Trick, Except Blighted, Suppresses ...). Marker themes: crit → Critical, count → its counted thing, etc.
+    The entity detail shows them on the tag chip.
+  - **Wrong themes** (`involves_wrong`, 151 objects) are dropped per object (Cauterize: Damage, Master of Watchers: Damage...).
+  - **Code drops:** a value the code layer dropped or retagged (f5.corrections) and no longer tags is removed from the
+    v1-mapped tags too (52; e.g. Prosperity Stats::Set, Brewmaster's Spell Gems). App-only drops the extract named:
+    Has Done Action on Unnatural Causes / Void Flare, Move Down on Of Hearts Unbowed (crosswalk `object_drops`).
+  - Delivery Direct → **No Event** (applies to Minions::Summon, Life::Heal / Execute, Actions::Auto Defend too); phase
+    Direct added; Actions::Redirect Spell → Actions::Redirect [Spell]; relic tags take the code layer's own `rank`.
+  - The 29 new values without a mechanic group are placed (Redirect / Turn Action Limit: Attack + Cast; Count Threshold:
+    Turns & Timeline; Set Health: Health; Perks / Cards / Conditions More Activations, Activation Count, Re-roll: Traits;
+    Conditions More Activations also Buffs + Debuffs; Damage group now takes theme:Indirect Damage).
+- Result: theme-only objects 399 → 47 (38 objects), old-tag Involves 373 → 21, relic tags with no rank 76 → 38
+  (mostly the relic's own Involves::Relic).
+
 ## 2026-10-21 — Appendix: effect order for every fixed-order combat function
 - User: the extract's evaluation order for each static-order function goes in the Appendix like Start of Battle and
   Resurrection. build-data reads `effect_order_all.json` (S41, HANDOFF_effect_order_app.md) into `D.effectOrder`:
