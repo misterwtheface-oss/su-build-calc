@@ -4,6 +4,12 @@ Every dated change entry, newest first (moved verbatim from Progress.md on 2026-
 to their own section and sorted by their date). Current state and open work: `Progress.md`, `BACKLOG.md`.
 New entries go at the TOP.
 
+## 2026-10-21 — Start of Battle: secondary calls indented
+- User: keep the checks an effect makes inside its own block (Triple Take in 1a is Master of Golems' "already has this trait"
+  check), shown indented under that effect, unnumbered, with "Secondary call: checked by X". The extract marks them with
+  `secondary_of` (asked in `_su_extract/code/HANDOFF_start_of_battle_regen.md`); until then build-data marks two by
+  layout + text (`SOB_SECONDARY_PROVISIONAL`: Triple Take under Master of Golems, Rebirth under Master of Sphinxes).
+
 ## 2026-10-21 — Taxonomy v2: theme-only leftovers ruled
 - User: the "spells cost no Charges" effects already carry Spell Gems::Charges; with no narrow Cast tag they drop
   Involves::Cast (Curse of the Silent, Ascendancy, Higher Understanding, Furness' Decadence, False Epiphany,

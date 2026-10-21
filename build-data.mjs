@@ -3083,13 +3083,19 @@ const SOB_REALM_TEXT = {};
 const sobShippedNames = new Set(Object.values(traits).map(t => t.name));
 const sobBlackNames = new Set(consolidated.filter(t => excludedTraitIds.has(t.id)).map(t => t.name).filter(n => !sobShippedNames.has(n)));
 let sobAlways = null;
-const startOfBattle = [], sobSeen = new Set(), sobSkipped = [], sobNameDiff = [];
+const startOfBattle = [], sobSeen = new Map(), sobSkipped = [], sobNameDiff = [];
 const sobName = (n) => String(n || '').replace(/\s*\(\d+\)$/, '').trim();          // "In Formation (423)" → "In Formation"
 const sobTraitByRt = new Map(); for (const t of Object.values(traits)) for (const r of t.runtimeIds || []) sobTraitByRt.set(r, t);
 const sobPerkNames = new Set(specs.flatMap(sp => sp.perks.map(p => p.name)));
 // blacklisted traits (UNRECONCILED / NYI / legacy / duplicate copies) never ship — their start-of-battle entries are dropped too
 const sobRtToTraitId = new Map(); for (const [tid, rts] of Object.entries(RT_GROUPS)) for (const r of rts || []) sobRtToTraitId.set(r, +tid);
 const sobBlacklisted = [];
+// Secondary calls (user 2026-10-21: keep them, indented under the effect that makes the check). A gate tested inside another
+// effect's block is not a start-of-battle effect of its own. The extract marks them (`secondary_of` = the parent's
+// global_order; HANDOFF_start_of_battle_regen.md). Until it does, the two cases whose parent is clear from layout + text:
+// Triple Take = Master of Golems' "if they already have this trait" check; Rebirth = Master of Sphinxes' grant check.
+const SOB_SECONDARY_PROVISIONAL = { 39: 38, 305: 304 };
+const sobByOrder = new Map();                                                       // global_order → shipped row (dedupe-aware)
 for (const e of sobRaw) {
   if (/open|unreachable/i.test(e.confidence) || e.never_rolled || ['tavern', 'tavern rule', 'system'].includes(e.family)) continue;
   if (/battle-wide rule/i.test(e.kind || '')) continue;                                 // set at setup, not a start-of-battle event
@@ -3139,11 +3145,14 @@ for (const e of sobRaw) {
       : tx ? { k: 'text', name: tx.name, desc: e.effect || '', icon: threatIcon(tx.sprite, `start-of-battle realm property ${id}`), chip: 'Realm Property' } : null; }
   else if (e.family === 'realm boost') ref = { k: 'boost', id: e.ids[0], name: e.name.replace(/^Realm boost \d+:\s*/, '') };
   if (!ref) { sobSkipped.push(`${e.global_order} ${e.family} ${e.name}`); continue; }
-  const key = `${e.phase_num}|${e.subphase || ''}|${JSON.stringify(ref)}`;
-  if (sobSeen.has(key)) continue;
-  sobSeen.add(key);
-  startOfBattle.push({ phase: e.phase_num, sub: e.subphase || null, ref, name: e.name, effect: e.effect || '', enemy: !!e.enemy_only,
-    ...(e.codex_note ? { note: e.codex_note } : {}) });
+  const secOf = e.secondary_of ?? SOB_SECONDARY_PROVISIONAL[e.global_order], parent = secOf != null ? sobByOrder.get(secOf) : null;
+  if (secOf != null && !parent) err(`START OF BATTLE: secondary row ${e.global_order} ${e.name}: parent ${secOf} not shipped`);
+  const key = `${e.phase_num}|${e.subphase || ''}|${JSON.stringify(ref)}${parent ? '|sec:' + parent.name : ''}`;
+  if (sobSeen.has(key)) { sobByOrder.set(e.global_order, sobSeen.get(key)); continue; }
+  const row = { phase: e.phase_num, sub: e.subphase || null, ref, name: e.name, effect: e.effect || '', enemy: !!e.enemy_only,
+    ...(e.codex_note ? { note: e.codex_note } : {}), ...(parent ? { secOf: sobName(parent.name) } : {}) };
+  sobSeen.set(key, row); sobByOrder.set(e.global_order, row);
+  startOfBattle.push(row);
 }
 // ── Effect order: every other fixed-order combat function (code: _su_extract data/model/effect_order_all.json,
 // code/EFFECT_ORDER_FINDINGS.md, HANDOFF_effect_order_app.md). One Appendix section per pipeline; each function lists its

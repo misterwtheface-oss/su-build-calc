@@ -1712,6 +1712,8 @@ select.app-select { background: var(--surface); border: 1px solid var(--border-d
 /* start-of-battle: unnumbered marker row (where setup sorts the timeline) */
 .sob-marker { background: var(--surface3); border: 1px dashed rgba(154,123,214,.55); }
 .sob-marker .res-n { font-size: 16px; }
+/* start-of-battle: secondary call (a check made inside the effect above), indented under it */
+.sob-sec { margin-left: 28px; border-style: dashed; border-color: rgba(154,123,214,.45); }
 
 /* ── Bosses (Menu → Bosses + boss detail page) — mobile first ── */
 .boss-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-bottom: 14px; }

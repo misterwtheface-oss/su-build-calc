@@ -3524,8 +3524,10 @@
       else if (ref.k === "boost") r = { name: "Realm Boost", desc: ref.name.charAt(0).toUpperCase() + ref.name.slice(1) + ".", icons: [], chips: [] };
       if (!r) { console.error("START OF BATTLE: unresolved", ref, e.name); r = { name: e.name, desc: e.effect, icons: [], chips: [] }; }
       r.icons = r.icons.filter(Boolean); r.chips = r.chips.filter(Boolean);
-      return { ...r, n: i + 1, step: e.sub || String(e.phase), enemy: e.enemy, note: r.note || e.note || null };
+      return { ...r, step: e.sub || String(e.phase), enemy: e.enemy, note: r.note || e.note || null, secOf: e.secOf || null };
     });
+    // secondary calls (a check made inside another effect) are not steps of their own: unnumbered, indented under the parent
+    let n = 0; for (const r of SOB_ROWS) if (!r.secOf) r.n = ++n;
     // setup sorts the timeline between Pact of the Gods and Lust (bc_CreateCreatureList @0x1469b346c) using each creature's
     // RECORDED Speed (global.calc_stats off) — findings: "What the timeline is before phase 6" (S26). Unnumbered marker row.
     const at = SOB_ROWS.findIndex(r => r.step === "0a" && r.name === "Pact of the Gods");
@@ -3538,10 +3540,10 @@
     const all = sobRows().filter(r => !q || r.name.toLowerCase().includes(q) || (r.desc || "").toLowerCase().includes(q) || (r.members || []).some(m => m.toLowerCase().includes(q)));
     if (!all.length) return "";
     const key = "StartOfBattle", open = q ? true : !st.collapsed.has(key);
-    const row = (r) => `<div class="perk-line res-line${r.enemy ? " res-enemy" : ""}${r.marker ? " sob-marker" : ""}${r.open ? " apx-clickable" : ""}"${r.open ? ` data-action="apx-open" data-ek="${r.open.ek}" data-eid="${esc(String(r.open.eid))}" title="View taxonomy"` : ""}>
-        <div class="res-n">${r.marker ? "⏱" : r.n}</div>
+    const row = (r) => `<div class="perk-line res-line${r.enemy ? " res-enemy" : ""}${r.marker ? " sob-marker" : ""}${r.secOf ? " sob-sec" : ""}${r.open ? " apx-clickable" : ""}"${r.open ? ` data-action="apx-open" data-ek="${r.open.ek}" data-eid="${esc(String(r.open.eid))}" title="View taxonomy"` : ""}>
+        <div class="res-n">${r.marker ? "⏱" : r.secOf ? "↳" : r.n}</div>
         <div class="apx-iconcol">${r.icons.map(icoBox).join("")}</div>
-        <div class="perk-line-body"><div class="perk-line-head"><b>${esc(r.name)}</b></div>
+        <div class="perk-line-body"><div class="perk-line-head"><b>${esc(r.name)}</b></div>${r.secOf ? `<div class="perk-desc res-note">Secondary call: checked by ${esc(r.secOf)}</div>` : ""}
           ${r.desc ? `<div class="perk-desc">${richText(r.desc)}</div>` : ""}${r.note ? `<div class="perk-desc res-note">${esc(r.note)}</div>` : ""}
           ${r.members ? `<button class="facet sob-mem-toggle" data-action="sob-members">${st.sobMembers || q ? "▾" : "▸"} ${r.members.length} effects</button>
             ${st.sobMembers || q ? `<div class="perk-line-meta sob-members">${r.members.filter(m => !q || m.toLowerCase().includes(q) || r.name.toLowerCase().includes(q)).map(m => `<span class="anoint-spec-tag">${esc(m)}</span>`).join("")}</div>` : ""}` : ""}
