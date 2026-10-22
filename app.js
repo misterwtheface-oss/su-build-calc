@@ -2258,7 +2258,17 @@
     ${c.desc ? `<div class="trait-desc">${esc(c.desc)}</div>` : ""}</div>`;
   const usedCondCards = (obj, rank) => (obj && obj.condsUsed || []).filter(e => rank == null || e.rk === rank)
     .map(e => COND_BY_ID.get(e.c)).filter(Boolean).map(condCard).join("");
-  const spellRowWrap = (cards, flat) => cards ? `<div class="perk-spell-row${flat ? " flat" : ""}">${cards}</div>` : "";
+  // collapsed by default: the arrow row previews each card's icon + name; open rows stay open across re-renders (keyed by content)
+  const subOpen = new Set();
+  const subKey = (s) => { let h = 0; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0; return (h >>> 0).toString(36); };
+  const spellRowWrap = (cards, flat) => {
+    if (!cards) return "";
+    const k = subKey(cards), open = subOpen.has(k);
+    const names = [...cards.matchAll(/<div class="art-spellcard-head">([\s\S]*?<\/b>)/g)].map(m => `<span class="sub-name">${m[1]}</span>`).join("");
+    return `<div class="perk-spell-row${flat ? " flat" : ""}${open ? " open" : ""}" data-sk="${k}">
+      <button type="button" class="sub-toggle" data-action="sub-toggle" aria-expanded="${open}"><span class="sub-arrow">▸</span>${names}</button>
+      <div class="sub-body">${cards}</div></div>`;
+  };
   const perkSpellRow = (specId, p, flat) => {
     const granted = new Set(grantsOf("perk", o => o.spec === specId && o.key === p.key).flatMap(g => g.spells));
     return spellRowWrap(usedSpellCards(p, granted) + perkGrantCards(specId, p.key) + usedCondCards(p), flat);
@@ -5981,6 +5991,8 @@
     if (menu && A !== "toggle-menu") menu.classList.add("hidden");
     if (!t) return;
     switch (A) {
+      case "sub-toggle": { const row = t.closest(".perk-spell-row"), k = row.dataset.sk, on = !row.classList.contains("open");
+        row.classList.toggle("open", on); t.setAttribute("aria-expanded", on); on ? subOpen.add(k) : subOpen.delete(k); break; }
       // home
       case "pick-creature": { const si = +t.dataset.slot; if (si >= creatureCap()) break; openCreaturePicker(si); break; }
       // with something equipped, open its page first; backing out lands on the list to pick another

@@ -4,6 +4,11 @@ Every dated change entry, newest first (moved verbatim from Progress.md on 2026-
 to their own section and sorted by their date). Current state and open work: `Progress.md`, `BACKLOG.md`.
 New entries go at the TOP.
 
+## 2026-10-22 — Collapsible spell / status rows
+- User: the indented spell and buff/debuff rows under perks, traits, relic ranks and effect-order rows now start collapsed behind
+  an arrow; the closed row shows each card's icon and name, a click opens the full cards. A row you open stays open across
+  re-renders (keyed by its content).
+
 ## 2026-10-22 — Effect Order page
 - User: the effect-order sections move to their own page, Effect Order (menu button just above Appendix), same layout as the
   Appendix: How Effect Order Works, Resurrection Order, Start of Battle Order and every effect-order section. The Appendix keeps
