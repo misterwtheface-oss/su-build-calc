@@ -4138,6 +4138,18 @@ if (errors.length) {
 }
 // v1 cutover (2026-10-22; extract HANDOFF_taxonomy_v2 F3 / F4 / F5 closed): the app reads only taxo2 / taxonomy2. The v1 tags stay
 // a build-time input (old themes, the removed-tags list the extract reads) but no longer ship.
+// The extract's builders read the v1 tags (build_taxo_v2.py load_app, build_relic_rank_taxonomy.py, build_code_taxo.py,
+// classify_residual.py): they get them from code/data_dump/taxo_v2/app_v1_tags.json (HANDOFF_taxonomy_v2 § "v1 cutover").
+{ const dumpDir = path.join(SRC, 'code', 'data_dump', 'taxo_v2');
+  if (fs.existsSync(dumpDir)) {
+    const o = [], add = (kind, x, extra) => { if (Array.isArray(x.taxo)) o.push({ kind, id: x.key ?? x.id, name: x.name || x.key || x.id, taxo: x.taxo, src: x.taxoSrc || [], ...extra }); };
+    for (const t of Object.values(SU_DATA.traits)) add('trait', t, { rids: t.runtimeIds || [], desc: t.desc });
+    for (const sp of SU_DATA.specs) for (const p of sp.perks) add('perk', p, { spec: sp.id, desc: p.desc });
+    for (const k of ['spells', 'relics', 'cards', 'conditions']) for (const x of Object.values(SU_DATA[k] || {}))
+      add(k.replace(/s$/, ''), x, { desc: x.desc || (x.effects || []).join(' | ') || null, family: x.family, ...(k === 'spells' ? { appId: x.id } : {}) });
+    for (const x of SU_DATA.traitItems || []) add('traitItem', x, {});
+    fs.writeFileSync(path.join(dumpDir, 'app_v1_tags.json'), JSON.stringify({ _note: 'Written by su-build-calc build-data on every build. The v1 tags (taxo / taxoSrc) the app no longer ships after the v1 cutover (2026-10-22). Same shape as build_taxo_v2.py load_app() output: {kind, id, name, taxo, src, ...}; perks also carry spec, spells appId (id = key), relics their app id.', objects: o }));
+  } }
 { let n = 0;
   const strip = (o) => { if (o && (o.taxo || o.taxoSrc)) { delete o.taxo; delete o.taxoSrc; n++; } };
   Object.values(SU_DATA.traits).forEach(strip); SU_DATA.specs.forEach(sp => sp.perks.forEach(strip));
