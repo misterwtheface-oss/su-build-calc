@@ -3347,18 +3347,23 @@
     </div></div>`;
   }
 
-  // ── Appendix page (internal ids say "errata", its old name) — code-grounded mechanics the game doesn't show, plus the Status Effects reference. ──
-  function openErrata() {
-    ovState = { kind: "errata", search: "", collapsed: new Set(["StatusEffects", "EffectOrderRules", "Resurrection", "StartOfBattle", ...(D.effectOrder || []).map(s => "EO:" + s.key), "ClassAdv", "RandomTargets", "NetherDrops", "PandShrine", "RealmBonusMax", "Masters"]), ndDiff: "normal", render: renderErrata };
+  // ── Appendix page (internal ids say "errata", its old name) — code-grounded mechanics the game doesn't show, plus the Status Effects
+  // reference. The Effect Order page (user 2026-10-22: its own page, same layout) is the same overlay with page "order": the
+  // effect-order rules, resurrection order, start of battle and every effect-order section.
+  function openErrata(page = "appendix") {
+    ovState = { kind: "errata", page, search: "", collapsed: new Set(["StatusEffects", "EffectOrderRules", "Resurrection", "StartOfBattle", ...(D.effectOrder || []).map(s => "EO:" + s.key), "ClassAdv", "RandomTargets", "NetherDrops", "PandShrine", "RealmBonusMax", "Masters"]), ndDiff: "normal", render: renderErrata };
     openOverlay(ovState.render()); maybeFocusSearch(OV);
   }
   function renderErrata() {
     const st = ovState, q = st.search.trim().toLowerCase();
-    const body = statusSection(st, q) + eoRulesSection(st, q) + resOrderSection(st, q) + sobSection(st, q) + (D.effectOrder || []).map(s => effectOrderSection(st, q, s)).join("") + classAdvSection(st, q) + randomTargetSection(st, q) + netherDropSection(st, q) + pandShrineSection(st, q) + realmBonusSection(st, q) + mastersSection(st, q)
+    const order = st.page === "order";
+    const body = (order
+      ? eoRulesSection(st, q) + resOrderSection(st, q) + sobSection(st, q) + (D.effectOrder || []).map(s => effectOrderSection(st, q, s)).join("")
+      : statusSection(st, q) + classAdvSection(st, q) + randomTargetSection(st, q) + netherDropSection(st, q) + pandShrineSection(st, q) + realmBonusSection(st, q) + mastersSection(st, q))
       || `<div class="slot-sub" style="padding:10px">Nothing matches “${esc(st.search)}”.</div>`;
     return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel">
-      <div class="overlay-header"><h2>Appendix</h2>
-        <input class="ovl-search" placeholder="Search status effects / effect order / spells / realms…" value="${esc(st.search)}" data-action="errata-search">
+      <div class="overlay-header"><h2>${order ? "Effect Order" : "Appendix"}</h2>
+        <input class="ovl-search" placeholder="${order ? "Search effects / steps…" : "Search status effects / spells / realms…"}" value="${esc(st.search)}" data-action="errata-search">
         <button class="ovl-close" data-action="close-ovl">✕</button></div>
       <div class="overlay-body"><div class="ovl-center"><div class="ovl-center-scroll">${body}</div></div></div>
       <div class="overlay-footer"><span class="foot-info"></span><button class="btn-confirm" data-action="close-ovl">Done</button></div>
@@ -6083,6 +6088,7 @@
       case "open-riddle": openRiddle(); break;
       case "riddle-search": break;   // handled in onInput
       case "open-errata": openErrata(); break;
+      case "open-effect-order": openErrata("order"); break;
       case "errata-search": break;   // handled in onInput
       case "open-bosses": openBosses(); break;
       case "bosses-search": break;   // handled in onInput

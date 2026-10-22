@@ -4,6 +4,12 @@ Every dated change entry, newest first (moved verbatim from Progress.md on 2026-
 to their own section and sorted by their date). Current state and open work: `Progress.md`, `BACKLOG.md`.
 New entries go at the TOP.
 
+## 2026-10-22 — Effect Order page
+- User: the effect-order sections move to their own page, Effect Order (menu button just above Appendix), same layout as the
+  Appendix: How Effect Order Works, Resurrection Order, Start of Battle Order and every effect-order section. The Appendix keeps
+  Status Effects, Class Advantage, Random Targets, Nether Stone Drops, Pandemonium Shrine, Maximum Realm Bonus, Rodian Masters.
+  One renderer (`openErrata(page)`), each page with its own search.
+
 ## 2026-10-22 — Effect order: when each change lands (extract resolution merge S44 / S44c)
 - Every Appendix effect-order row and Start of Battle row shows when its change lands, from the extract's `resolution`: At once,
   Runs now (a whole attack / cast on the spot, its hits queued), Queued, Jumps the queue, Changes the amount, Check only (the
