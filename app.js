@@ -5003,10 +5003,8 @@
     const ranks = sel.ranks.map(rk => {
       const row = `<div class="prop-row ${st.rank >= rk.rank ? "chosen" : ""}">
         <span class="prop-name" style="flex:0 0 44px;color:var(--accent)">R${rk.rank}</span>
-        <span class="prop-stat" style="flex:1;text-align:left">${richText(rk.desc)}</span></div>`;
-      // if this rank casts a named spell, show its spell-gem container (icon + description) beneath the row
-      const cards = usedSpellCards(sel, null, rk.rank) + usedCondCards(sel, rk.rank);
-      return cards ? row + `<div class="relic-cast-spells">${cards}</div>` : row;
+        <span class="prop-stat" style="flex:1;text-align:left">${richText(rk.desc)}</span>${spellRowWrap(usedSpellCards(sel, null, rk.rank) + usedCondCards(sel, rk.rank))}</div>`;
+      return row;
     }).join("");
     return `<div class="ovl-backdrop" data-action="detail-backdrop"><div class="overlay-panel detail">
       <div class="overlay-header"><button class="btn-ghost" data-action="relic-back">‹ Relics</button>

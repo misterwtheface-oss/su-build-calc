@@ -8,6 +8,8 @@ New entries go at the TOP.
 - User: the spell and buff/debuff cards under perks, traits, relic ranks and effect-order rows sit inside their owner's
   container (the Planner trait look everywhere), collapsed behind a small arrow; no preview names. A row you open stays open
   across re-renders (keyed by its content).
+- The arrow takes no row of its own: it sits at the right end of the text's last line. Relic rank rows use the same
+  collapsible cards (their separate spell list under the rank is gone).
 
 ## 2026-10-22 — Effect Order page
 - User: the effect-order sections move to their own page, Effect Order (menu button just above Appendix), same layout as the
