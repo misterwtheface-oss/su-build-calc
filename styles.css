@@ -941,19 +941,15 @@ button.apx-owner { background: none; border: 0; cursor: pointer; font: inherit; 
 .av-pipe { color: var(--border-dim); }
 .art-spellcards { display: flex; flex-direction: column; gap: 8px; }
 /* spell-gem container(s) shown beneath a relic rank row that casts a named spell */
-.perk-spell-row { display: flex; flex-direction: column; gap: 6px; margin: -2px 0 8px 28px; }
-.perk-spell-row.flat { margin: 0 0 12px; }
-.sub-toggle { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; width: 100%; text-align: left;
-  background: none; border: 1px dashed rgba(154,123,214,.45); border-radius: 9px; padding: 6px 8px; cursor: pointer;
-  color: var(--text-mute); font: inherit; font-size: 12px; }
-.sub-toggle .sub-arrow { color: var(--accent2); font-size: 15px; line-height: 1; transition: transform .15s; }
+.perk-spell-row { display: flex; flex-direction: column; gap: 6px; margin: 2px 0 0; }
+.perk-spell-row.flat { margin: 2px 0 4px; }
+.sub-toggle { align-self: flex-start; background: none; border: 0; padding: 2px 6px 2px 0; cursor: pointer; line-height: 1;
+  color: var(--text-mute); font-size: 15px; }
+.sub-toggle .sub-arrow { display: inline-block; transition: transform .15s; }
 .perk-spell-row.open .sub-arrow { transform: rotate(90deg); }
-.sub-name { display: inline-flex; align-items: center; gap: 5px; }
-.sub-name b { font-weight: 600; }
-.sub-name .prop-ico.sm, .sub-name img { max-height: 18px; }
 .perk-spell-row .sub-body { display: none; flex-direction: column; gap: 6px; }
 .perk-spell-row.open .sub-body { display: flex; }
-@media (hover: hover) { .sub-toggle:hover { color: var(--text); border-color: var(--accent2); } }
+@media (hover: hover) { .sub-toggle:hover { color: var(--accent2); } }
 .relic-cast-spells { display: flex; flex-direction: column; gap: 6px; margin: 4px 0 8px 44px; }
 .art-spellcard { border: 1px solid var(--accent2); border-radius: 9px;
   padding: 8px; background: rgba(154,123,214,.08); }

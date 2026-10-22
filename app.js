@@ -2258,15 +2258,14 @@
     ${c.desc ? `<div class="trait-desc">${esc(c.desc)}</div>` : ""}</div>`;
   const usedCondCards = (obj, rank) => (obj && obj.condsUsed || []).filter(e => rank == null || e.rk === rank)
     .map(e => COND_BY_ID.get(e.c)).filter(Boolean).map(condCard).join("");
-  // collapsed by default: the arrow row previews each card's icon + name; open rows stay open across re-renders (keyed by content)
+  // collapsed by default behind a small arrow inside the owner's container; open rows stay open across re-renders (keyed by content)
   const subOpen = new Set();
   const subKey = (s) => { let h = 0; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0; return (h >>> 0).toString(36); };
   const spellRowWrap = (cards, flat) => {
     if (!cards) return "";
     const k = subKey(cards), open = subOpen.has(k);
-    const names = [...cards.matchAll(/<div class="art-spellcard-head">([\s\S]*?<\/b>)/g)].map(m => `<span class="sub-name">${m[1]}</span>`).join("");
     return `<div class="perk-spell-row${flat ? " flat" : ""}${open ? " open" : ""}" data-sk="${k}">
-      <button type="button" class="sub-toggle" data-action="sub-toggle" aria-expanded="${open}"><span class="sub-arrow">▸</span>${names}</button>
+      <button type="button" class="sub-toggle" data-action="sub-toggle" aria-expanded="${open}" aria-label="Show spells and status effects"><span class="sub-arrow">▸</span></button>
       <div class="sub-body">${cards}</div></div>`;
   };
   const perkSpellRow = (specId, p, flat) => {
@@ -2311,8 +2310,8 @@
         <div class="perk-line-body">
           <div class="perk-line-head"><b>${esc(p.name)}</b><span class="perk-line-meta">${noAnointMark(spec, p)}${asc}${badge}</span>${bkBtn("perks", p.key)}</div>
           ${p.desc ? `<div class="perk-desc">${perkText(p.desc, r)}</div>` : ""}
-          ${demonSpellsHtml(p)}
-        </div></div>${perkSpellRow(spec.id, p)}`;
+          ${demonSpellsHtml(p)}${perkSpellRow(spec.id, p)}
+        </div></div>`;
     }).join("");
   }
   function renderSpecPage() {
@@ -3559,7 +3558,7 @@
           ${r.desc ? `<div class="perk-desc">${richText(r.desc)}</div>` : ""}${r.note ? `<div class="perk-desc res-note">${esc(r.note)}</div>` : ""}
           ${r.members ? `<button class="facet sob-mem-toggle" data-action="sob-members">${st.sobMembers || q ? "▾" : "▸"} ${r.members.length} effects</button>
             ${st.sobMembers || q ? `<div class="perk-line-meta sob-members">${r.members.filter(m => !q || m.toLowerCase().includes(q) || r.name.toLowerCase().includes(q)).map(m => `<span class="anoint-spec-tag">${esc(m)}</span>`).join("")}</div>` : ""}` : ""}
-          <div class="perk-line-meta">${r.chips.map(c => `<span class="anoint-spec-tag">${esc(c)}</span>`).join("")}</div></div></div>${r.spells || ""}`;
+          <div class="perk-line-meta">${r.chips.map(c => `<span class="anoint-spec-tag">${esc(c)}</span>`).join("")}</div>${r.spells || ""}</div></div>`;
     const steps = SOB_STEPS.map(([k, title]) => {
       const list = all.filter(r => r.step === k); if (!list.length) return "";
       const sk = "SOB:" + k, sopen = q ? true : st.sobOpen && st.sobOpen.has(sk);
@@ -3638,7 +3637,7 @@
         <div class="apx-iconcol">${r.icons.map(icoBox).join("")}</div>
         <div class="perk-line-body"><div class="perk-line-head"><b>${esc(r.name)}</b>${r.tag ? `<span class="anoint-spec-tag">${EO_TAG[r.tag]}</span>` : ""}${resChip(r.res)}</div>
           ${r.desc ? `<div class="perk-desc">${richText(r.desc)}</div>` : ""}
-          ${r.chips.length ? `<div class="perk-line-meta">${r.chips.map(c => `<span class="anoint-spec-tag">${esc(c)}</span>`).join("")}</div>` : ""}</div></div>${r.spells || ""}`;
+          ${r.chips.length ? `<div class="perk-line-meta">${r.chips.map(c => `<span class="anoint-spec-tag">${esc(c)}</span>`).join("")}</div>` : ""}${r.spells || ""}</div></div>`;
     const list = (rows) => `<div class="perk-list">${rows.map(row).join("")}</div>`;
     const group = (k, title, inner) => { const sk = `${key}:${k}`, sopen = q ? true : st.sobOpen && st.sobOpen.has(sk);
       return `<button class="sob-step${sopen ? " open" : ""}" data-action="sob-step" data-k="${esc(sk)}"><span class="apx-sec-caret">${sopen ? "▾" : "▸"}</span>${esc(title)}</button>${sopen ? inner() : ""}`; };

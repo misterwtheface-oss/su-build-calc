@@ -5,9 +5,9 @@ to their own section and sorted by their date). Current state and open work: `Pr
 New entries go at the TOP.
 
 ## 2026-10-22 — Collapsible spell / status rows
-- User: the indented spell and buff/debuff rows under perks, traits, relic ranks and effect-order rows now start collapsed behind
-  an arrow; the closed row shows each card's icon and name, a click opens the full cards. A row you open stays open across
-  re-renders (keyed by its content).
+- User: the spell and buff/debuff cards under perks, traits, relic ranks and effect-order rows sit inside their owner's
+  container (the Planner trait look everywhere), collapsed behind a small arrow; no preview names. A row you open stays open
+  across re-renders (keyed by its content).
 
 ## 2026-10-22 — Effect Order page
 - User: the effect-order sections move to their own page, Effect Order (menu button just above Appendix), same layout as the
