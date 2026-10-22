@@ -2256,15 +2256,22 @@
     if (!list.some(e => e.l)) list.sort((a, b) => at(a) - at(b));
     return list.map(e => SPELL.get(e.s) ? spellGemCard(SPELL.get(e.s), e.l || "") : "").join("");
   };
+  // buffs / debuffs the object applies or always has (code: obj.condsUsed) as status-effect containers, same look as spell cards
+  const COND_BY_ID = new Map((D.conditions || []).map(c => [`${c.cat}:${c.key}`, c]));
+  const condCard = (c) => `<div class="art-spellcard apx-clickable" data-action="apx-open" data-ek="condition" data-eid="${esc(c.cat + ":" + c.key)}" title="View taxonomy">
+    <div class="art-spellcard-head">${c.icon ? `<span class="prop-ico sm"><img src="${esc(c.icon)}" alt=""></span>` : ""}<b>${esc(c.name)}</b></div>
+    ${c.desc ? `<div class="trait-desc">${esc(c.desc)}</div>` : ""}</div>`;
+  const usedCondCards = (obj, rank) => (obj && obj.condsUsed || []).filter(e => rank == null || e.rk === rank)
+    .map(e => COND_BY_ID.get(e.c)).filter(Boolean).map(condCard).join("");
   const spellRowWrap = (cards, flat) => cards ? `<div class="perk-spell-row${flat ? " flat" : ""}">${cards}</div>` : "";
   const perkSpellRow = (specId, p, flat) => {
     const granted = new Set(grantsOf("perk", o => o.spec === specId && o.key === p.key).flatMap(g => g.spells));
-    return spellRowWrap(usedSpellCards(p, granted) + perkGrantCards(specId, p.key), flat);
+    return spellRowWrap(usedSpellCards(p, granted) + perkGrantCards(specId, p.key) + usedCondCards(p), flat);
   };
   const traitSpellRow = (tid, flat, rtIds) => {
     const t = TRAIT[tid]; if (!t) return "";
     const gs = grantsOf("trait", o => o.id === tid || (rtIds && ((TRAIT[o.id] || {}).runtimeIds || []).some(r => rtIds.includes(r))));
-    return spellRowWrap(usedSpellCards(t, new Set(gs.flatMap(g => g.spells))) + grantCards(gs), flat);
+    return spellRowWrap(usedSpellCards(t, new Set(gs.flatMap(g => g.spells))) + grantCards(gs) + usedCondCards(t), flat);
   };
   // a relic's Ultimate (scr_GetUltimateSpellByRelic) and who hands it out (Idolatry / Weapons of Mass Distortion)
   function relicUltimateCard(relicId) {
@@ -3060,7 +3067,7 @@
         ${st.ekind === "perk" ? perkSpellRow((D.specs.find(x => x.perks.includes(e)) || {}).id, e, true) + demonSpellsHtml(e) : ""}
         ${st.ekind === "trait" ? traitSpellRow(+st.eid, true) : ""}
         ${st.ekind === "relic" ? relicUltimateCard(e.id) : ""}
-        ${st.ekind === "spell" ? spellRowWrap(usedSpellCards(e), true) + spellGrantedByHtml(e.id) : ""}
+        ${st.ekind === "spell" ? spellRowWrap(usedSpellCards(e) + usedCondCards(e), true) + spellGrantedByHtml(e.id) : ""}
         ${st.ekind === "trait" ? `<div class="section-label">Source</div>${traitDetailSections(e)}` : ""}
         <div class="section-label">Taxonomy — ${n} tag${n === 1 ? "" : "s"}</div>
         ${entityTaxHtml(e)}
@@ -3520,7 +3527,7 @@
           chips: [c ? c.name : t.owner || "", ...new Set(its.map(x => x.name))], open: { ek: "trait", eid: t.id }, spells: traitSpellRow(t.id) }; } }
       else if (ref.k === "perk") { const h = perkBy.get(ref.name); if (h) r = { name: h.p.name, desc: h.p.desc, icons: [specIco(h.spec), h.p.icon && spriteImg(h.p.icon, "px")], chips: [h.spec.label], spells: perkSpellRow(h.spec.id, h.p) }; }
       else if (ref.k === "relic") { const rl = D.relics.find(x => x.id === ref.id), rk = rl && rl.ranks.find(x => x.rank === ref.rank);
-        if (rl && rk) r = { name: rl.name.split(",")[0], desc: rk.desc, icons: [spriteImg(relicArt(rl), "px")], chips: [(rl.name.split(",")[1] || "").trim(), `Rank ${ref.rank}`], spells: spellRowWrap(usedSpellCards(rl, null, ref.rank)) }; }
+        if (rl && rk) r = { name: rl.name.split(",")[0], desc: rk.desc, icons: [spriteImg(relicArt(rl), "px")], chips: [(rl.name.split(",")[1] || "").trim(), `Rank ${ref.rank}`], spells: spellRowWrap(usedSpellCards(rl, null, ref.rank) + usedCondCards(rl, ref.rank)) }; }
       else if (ref.k === "card") { const cd = (D.cards || []).find(x => x.family === ref.family);
         if (cd) r = { name: `${cd.family} set`, desc: cd.effects[ref.power - 1] || "", icons: [spriteImg(cd.sprite)], chips: ["Card Set", `Power ${ref.power}`] }; }
       else if (ref.k === "cond") { const c = (D.conditions || []).find(x => x.name === ref.name);
@@ -3596,7 +3603,7 @@
     else if (k === "perk") { const [sid, pk] = [rest[0], rest.slice(1).join(":")], sp = D.specs.find(x => String(x.id) === sid), p = sp && sp.perks.find(x => x.key === pk);
       if (p) r = { name: p.name, desc: p.desc, icons: [specIco(sp), p.icon && spriteImg(p.icon, "px")], chips: [sp.label], spells: perkSpellRow(sp.id, p) }; }
     else if (k === "relic") { const rl = D.relics.find(x => String(x.id) === id), rk = rl && extra != null && rl.ranks.find(x => x.rank === extra);
-      if (rl) r = { name: rl.name.split(",")[0], desc: rk ? rk.desc : "", icons: [spriteImg(relicArt(rl), "px")], chips: [(rl.name.split(",")[1] || "").trim(), rk ? `Rank ${extra}` : ""], spells: rk ? spellRowWrap(usedSpellCards(rl, null, extra)) : "" }; }
+      if (rl) r = { name: rl.name.split(",")[0], desc: rk ? rk.desc : "", icons: [spriteImg(relicArt(rl), "px")], chips: [(rl.name.split(",")[1] || "").trim(), rk ? `Rank ${extra}` : ""], spells: rk ? spellRowWrap(usedSpellCards(rl, null, extra) + usedCondCards(rl, extra)) : "" }; }
     else if (k === "card") { const cd = (D.cards || []).find(x => String(x.id) === id);
       if (cd) r = { name: `${cd.family} set`, desc: extra ? cd.effects[extra - 1] || "" : "", icons: [spriteImg(cd.sprite)], chips: ["Card Set", extra ? `Power ${extra}` : ""] }; }
     else if (k === "spell") { const sp = (D.spells || []).find(x => String(x.id) === id);
@@ -4993,7 +5000,7 @@
         <span class="prop-name" style="flex:0 0 44px;color:var(--accent)">R${rk.rank}</span>
         <span class="prop-stat" style="flex:1;text-align:left">${richText(rk.desc)}</span></div>`;
       // if this rank casts a named spell, show its spell-gem container (icon + description) beneath the row
-      const cards = usedSpellCards(sel, null, rk.rank);
+      const cards = usedSpellCards(sel, null, rk.rank) + usedCondCards(sel, rk.rank);
       return cards ? row + `<div class="relic-cast-spells">${cards}</div>` : row;
     }).join("");
     return `<div class="ovl-backdrop" data-action="detail-backdrop"><div class="overlay-panel detail">

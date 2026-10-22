@@ -3437,6 +3437,43 @@ const { spellGrants, relicUltimates, ultimateRoutes } = (() => {
   return { spellGrants: grants, relicUltimates: ult, ultimateRoutes: routes };
 })();
 
+// ── Buffs / debuffs an object applies or always has (user 2026-10-22: the same container idea as spells) — code layer
+// (taxo_v2_tags.json) Buffs:: / Debuffs:: Apply and Always Has tags: `named` (registry name) or `condition_ids` (registry ids).
+// Only code-grounded names (conf code / code-flow; the 64 `inferred` names are left out); random / "existing" picks name no
+// single status effect. Registry name → the game's display name (token_names) → the app condition of that category.
+// Shipped as `condsUsed: [{c: "<cat>:<key>", k: 'apply'|'always', rk?}]` on perks / traits / relics / spells.
+{
+  const CL = readJSON(path.join(MODEL, 'taxo_v2_tags.json')).objects;
+  const REG = readJSON(path.join(MODEL, 'condition_registry.json')).conditions, regById = new Map(REG.map(c => [c.id, c]));
+  const appCond = (cat, name, regKey) => conditions.find(c => c.cat === cat && (c.name === condDisplay(name) || c.name === name
+    || (regKey && c.key === regKey.toLowerCase()) || c.key === String(name).toLowerCase()));
+  let nObj = 0, nInferred = 0; const unmapped = new Set(), by = {};
+  const used = (key, obj) => {
+    const o = CL[key]; if (!o) return;
+    const out = [], seen = new Set();
+    for (const t of o.tags) {
+      const m = /^(Buffs|Debuffs)::(Apply|Always Has)$/.exec(t.tag); if (!m) continue;
+      const cat = m[1] === 'Buffs' ? 'Buff' : 'Debuff', k = m[2] === 'Apply' ? 'apply' : 'always';
+      if (!/^code/.test(t.conf || '')) { if (t.named || t.condition_ids) nInferred++; continue; }
+      const names = t.named ? [[t.named, null]] : (t.condition_ids || []).map(id => regById.get(id)).filter(Boolean).map(r => [r.name, r.key]);
+      for (const [n, rk0] of names) {
+        if (/random|existing/i.test(n)) continue;
+        const c = appCond(cat, n, rk0); if (!c) { unmapped.add(`${cat} ${n}`); continue; }
+        const rk = t.rank != null ? +t.rank : null, id = `${c.cat}:${c.key}`, dk = `${id}|${rk}`;
+        if (seen.has(dk)) continue; seen.add(dk);
+        out.push({ c: id, k, ...(rk != null ? { rk } : {}) });
+      }
+    }
+    if (out.length) { obj.condsUsed = out; nObj++; by[key.split(':')[0]] = (by[key.split(':')[0]] || 0) + 1; }
+  };
+  for (const sp of specs) for (const pk of sp.perks) used(`perk:${pk.key}`, pk);
+  for (const t of Object.values(traits)) used(`trait:${t.id}`, t);
+  for (const r of relics) used(`relic:${r.id}`, r);
+  for (const x of spells) used(`spell:${x.key}`, x);
+  for (const u of unmapped) err(`buffs/debuffs used: ${u} has no app status effect`);
+  console.log(`  buffs/debuffs used (code named / condition_ids): ${nObj} objects · ${Object.entries(by).map(([k, n]) => `${k} ${n}`).join(' · ')} · ${nInferred} inferred names left out`);
+}
+
 // ── Rodian Creature Masters per realm — code (_su_extract master_realms.json, S28–S28c; code/MASTER_SPAWN_FINDINGS.md,
 // archive/handoffs/HANDOFF_rodian_masters.md). pool = the realm's spawn races (scr_GetRaceArrayByRealm) + Master-only extras
 // (scr_GetMasterRaces), in code order. Joined to the app realm by name (& ↔ and); every pool race must have its Master trait.

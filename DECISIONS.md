@@ -97,6 +97,8 @@ Nature=gem_nature, Chaos=gem_chaos, Sorcery=gem_sorceryB(blue), Death=gem_sorcer
 - Nether spells carry ONLY a trigger (no visible chance); migration strips the old `chance` (user).
 
 ## Creatures and UI
+- **Containers under objects** (user 2026-10-21/22): spells an object casts or grants, and buffs / debuffs it applies or always has,
+  show as spell-gem / status-effect containers in one row under it, from the code layer only (no text matching).
 - **Effect order: secondary calls stay, indented** (user 2026-10-21): a check an effect makes inside its own block (Triple Take
   under Master of Golems) is kept in the Start of Battle list, indented under that effect, unnumbered, marked "Secondary call".
 - **One tag filter (user, 2026-10-19).** Every taxonomy filter in the app goes through `TagFilter` (app.js): chips, side

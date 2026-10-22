@@ -4,6 +4,12 @@ Every dated change entry, newest first (moved verbatim from Progress.md on 2026-
 to their own section and sorted by their date). Current state and open work: `Progress.md`, `BACKLOG.md`.
 New entries go at the TOP.
 
+## 2026-10-22 — Buff / debuff containers next to the spell ones
+- User: the same container under objects for the buffs / debuffs they apply or always have. Code layer Buffs:: / Debuffs:: Apply
+  and Always Has tags (`named` or registry `condition_ids`; conf code only, the 64 `inferred` names left out; random / existing
+  picks name no single effect). build-data ships `condsUsed` ({c: "<cat>:<key>", k apply|always, rk}) on 64 perks, 204 traits,
+  16 relics, 190 spells. Cards (icon, name, description, click → status effect) sit in the same row after the spell cards.
+
 ## 2026-10-22 — Spell-gem containers for every object that casts or grants a spell
 - Extract S47 / S48: runtime-picked pools (Pyroblast, Prophecy, It's Called a Lance, Colorblind, Avenged Sevenfold, Chaos Through
   Creation, Lunar Ending) and granted gems (`gem_spell_ids`, 66 tags). build-data ships `spellsUsed` ({s, k cast|gem, l pick label,
