@@ -446,6 +446,8 @@ h1, h2, h3 { margin: 0; }
   font-size: 11px; text-align: center; line-height: 1.1; height: 2.2em; width: 100%; overflow: hidden;
   display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow-wrap: anywhere;
 }
+.spec-pick .pt-name.pt-long { display: block; white-space: nowrap; overflow: visible; letter-spacing: -.3px;
+  margin: 0 -5px; width: calc(100% + 10px); font-size: 10px; }
 .pick-tile .pt-total { font-size: 10px; color: var(--text-dim); }
 .pick-tile .pt-god { font-size: 10px; line-height: 1.1; color: var(--text-dim); text-align: center; width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .crea-sortbar { margin-top: -4px; align-items: center; }   /* keep left-aligned, vertically centre the label + segments */
@@ -688,9 +690,10 @@ h1, h2, h3 { margin: 0; }
 .xref-rowhead .xr-dot.k-spec { background: var(--accent); }
 .xref-rowhead .xr-dot.k-anoint { background: var(--accent2); }
 .xref-rowhead .xr-dot.k-crea { background: #9fd0ff; }
-.xref-rowhead .xr-exp { display: inline-block; width: 12px; margin-right: 2px; color: var(--text-mute); cursor: pointer; user-select: none; }
+.xref-rowhead .xr-exp { display: inline-block; width: 32px; padding: 6px 0; margin: -8px 2px -8px -8px; font-size: 22px; line-height: 1; vertical-align: middle;
+  text-align: center; color: var(--text-mute); cursor: pointer; user-select: none; }
 @media (hover: hover) { .xref-rowhead .xr-exp:hover { color: var(--text); } }
-.xref-rowhead .xr-exp-sp { display: inline-block; width: 12px; margin-right: 2px; }
+.xref-rowhead .xr-exp-sp { display: inline-block; width: 32px; margin: 0 2px 0 -8px; }
 .xref-subrow .xref-subhead { font-weight: 400; color: var(--text-dim); font-size: 10px; padding-right: 14px; }
 .xref-subrow td { background: rgba(255,255,255,.02); color: var(--text-mute); }
 .xref-shared td, .xref-shared th { position: sticky; bottom: 0; z-index: 1; background: var(--surface3); font-weight: 700; }
@@ -886,8 +889,11 @@ button.apx-owner { background: none; border: 0; cursor: pointer; font: inherit; 
 .perk-line { font-size: 13.5px; line-height: 1.4; padding: 10px 12px; border-radius: 8px; background: var(--surface); display: flex; gap: 10px; align-items: flex-start; }
 .perk-line.off { opacity: .5; }
 .perk-line.equipped { background: rgba(154,123,214,.12); box-shadow: inset 0 0 0 1px var(--accent2); }
-.perk-line .anoint-eq { flex: 0 0 auto; align-self: center; white-space: nowrap; min-width: 74px; }
-.perk-line .anoint-eq:disabled { opacity: .35; cursor: not-allowed; }
+.perk-line.anoint-pick { cursor: pointer; }
+.perk-line.anoint-pick.blocked { cursor: not-allowed; }
+.perk-line.anoint-pick.blocked:not(.anoint-incur) .perk-line-body { opacity: .5; }
+.perk-line.anoint-pick .apx-iconcol { cursor: pointer; }
+.anoint-check { flex: 0 0 auto; align-self: center; color: var(--accent2); font-weight: 800; font-size: 16px; }
 .perk-line-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; align-self: stretch; }
 .perk-line-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 3px 8px; }   /* chips drop under the title instead of colliding */
 .perk-line-head > b { min-width: 0; margin-right: auto; }
@@ -1160,6 +1166,7 @@ button.apx-owner { background: none; border: 0; cursor: pointer; font: inherit; 
 .rcmp-controls .fav-slider { width: 100%; }
 .rcmp-controls > .slot-sub { width: 100%; text-align: center; }
 .rcmp-controls .fav-rankmode { margin: 0; justify-content: center; }
+.rcmp-controls .art-view-toggle { margin: 0; padding: 4px 0 6px; }
 .rcmp-row { display: grid; grid-template-columns: minmax(120px, 1.1fr) 96px auto; gap: 10px; align-items: center;
   width: 100%; background: transparent; border: 0; color: var(--text); text-align: left; cursor: pointer; font: inherit;
   padding: 3px 4px; border-radius: 5px; }
@@ -1492,6 +1499,7 @@ select.app-select { background: var(--surface); border: 1px solid var(--border-d
   .lib-info { flex: 0 0 45vh; height: 45vh; max-height: 45vh; }   /* roomier bottom info panel */
   .spec-grid { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }        /* ≥5 per row */
   .spec-pick .pt-name { font-size: 9px; line-height: 1.05; }
+  .spec-pick .pt-name.pt-long { font-size: 8.5px; }
   .spec-right, .nether-form { width: auto; }
   .card-grid { grid-template-columns: 1fr; }
   .lib-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }   /* saved builds: 4 per row on phones */
@@ -1662,7 +1670,7 @@ select.app-select { background: var(--surface); border: 1px solid var(--border-d
 /* enemy-only resurrection sources (boss traits with no player source, realm properties): whole row tinted red */
 .res-line.res-enemy { background: linear-gradient(90deg, rgba(224,107,107,.20), rgba(224,107,107,.08)); border-color: rgba(224,107,107,.45); }
 .res-note { margin-top: 3px; font-style: italic; color: #ffb3b3; }
-.res-line.res-block { border-style: dashed; }
+.res-line.res-block { border: 1px dashed var(--accent2); }
 .res-line.res-block .res-n { color: var(--bad); font-size: 14px; }
 .res-block-tag { color: var(--bad); border-color: var(--bad); }
 .res-flow-note { margin: 6px 0 2px; text-align: left; line-height: 1.45; }
@@ -1698,7 +1706,9 @@ select.app-select { background: var(--surface); border: 1px solid var(--border-d
 .nd-hd { background: var(--surface3); font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--text-dim); }
 .nd-pct { font-weight: 700; color: var(--accent); display: flex; align-items: baseline; gap: 8px; }
 .nd-pct small { font-weight: 400; font-size: 11px; color: var(--text-mute); }
-.nd-note { margin-top: 6px; }
+.nd-note { margin-top: 6px; text-align: left; }
+.res-sub { text-align: left; }
+.nd-row.ca-row span { text-align: left; }
 .nd-row.ps-row { grid-template-columns: 1fr 52px 1.6fr; }
 .nd-row.ps-row span { text-align: left; }
 .nd-row.ps-row span:nth-child(2) { text-align: right; }
@@ -1720,10 +1730,10 @@ select.app-select { background: var(--surface); border: 1px solid var(--border-d
 .sob-mem-toggle { align-self: flex-start; margin-top: 4px; font-size: 11px; padding: 2px 8px; }
 .sob-members { margin-top: 4px; padding-top: 0; }
 /* start-of-battle: unnumbered marker row (where setup sorts the timeline) */
-.sob-marker { background: var(--surface3); border: 1px dashed rgba(154,123,214,.55); }
+.sob-marker { background: var(--surface3); border: 1px dashed var(--accent2); }
 .sob-marker .res-n { font-size: 16px; }
 /* start-of-battle: secondary call (a check made inside the effect above), indented under it */
-.sob-sec { margin-left: 28px; border-style: dashed; border-color: rgba(154,123,214,.45); }
+.sob-sec { margin-left: 28px; border: 1px dashed var(--accent2); }
 
 /* ── Bosses (Menu → Bosses + boss detail page) — mobile first ── */
 .boss-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-bottom: 14px; }
@@ -1883,14 +1893,6 @@ span.boss-chip { cursor: default; }
 .nd-row.rt-row > span:nth-child(2), .nd-row.rt-row3 > span:nth-child(2) { text-align: left; }   /* prose column */
 
 /* Final Summoning: Greater Demon → spell */
-.ds-list { display: flex; flex-direction: column; gap: 6px; }
-.ds-row { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 6px 10px; padding: 6px 8px; border: 1px solid var(--border-dim); border-radius: 6px; }
-.ds-demon { display: inline-flex; align-items: center; gap: 6px; flex: 0 0 120px; min-width: 0; }
-.ds-demon img { width: 20px; height: 20px; image-rendering: pixelated; }
-.ds-spells { display: flex; flex-wrap: wrap; gap: 4px 10px; flex: 1 1 160px; min-width: 0; }
-.ds-spell { display: inline-flex; align-items: center; gap: 4px; }
-.ds-spell img { width: 16px; height: 16px; }
-.ds-spells .slot-sub { flex-basis: 100%; }
 /* creature detail Triggers (BACKLOG #5): one block per event, the shared spell-gem containers inside */
 .trig-group { margin-bottom: 10px; }
 .trig-group .art-spellcard-head { flex-wrap: wrap; }

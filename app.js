@@ -2180,7 +2180,7 @@
     const sel = st.sel != null ? SPEC.get(st.sel) : null;
     const tiles = list.map(s => `
       <div class="pick-tile spec-pick ${st.sel === s.id ? "selected" : ""}" data-action="spec-pick" data-id="${s.id}">
-        <div class="pt-sprite emblem">${spriteImg(s.emblem || s.sprite, "px")}</div><div class="pt-name">${esc(s.label)}</div></div>`).join("");
+        <div class="pt-sprite emblem">${spriteImg(s.emblem || s.sprite, "px")}</div><div class="pt-name${/\S{13,}/.test(s.label) ? " pt-long" : ""}">${esc(s.label)}</div></div>`).join("");
     let info = "";
     const phone = isPhone();
     if (sel && !phone) {
@@ -2270,7 +2270,7 @@
   };
   const perkSpellRow = (specId, p, flat) => {
     const granted = new Set(grantsOf("perk", o => o.spec === specId && o.key === p.key).flatMap(g => g.spells));
-    return spellRowWrap(usedSpellCards(p, granted) + perkGrantCards(specId, p.key) + usedCondCards(p), flat);
+    return spellRowWrap(demonSpellCards(p) + usedSpellCards(p, granted) + perkGrantCards(specId, p.key) + usedCondCards(p), flat);
   };
   const traitSpellRow = (tid, flat, rtIds) => {
     const t = TRAIT[tid]; if (!t) return "";
@@ -2283,14 +2283,14 @@
     const via = (D.ultimateRoutes || []).map(r => grantOwnerName(r.owner)).filter(Boolean).join(" · ");
     return `<div class="section-label">Ultimate</div>${spellGemCard(sp, via)}`;
   }
-  // Final Summoning: the spell each Greater Demon casts when it runs out (extract S35; Satanachia = one of a pool at random)
-  function demonSpellsHtml(p) {
+  // Final Summoning: the spell each Greater Demon casts when it runs out (extract S35; Satanachia = one of a pool at random),
+  // as spell cards labelled with their demon, inside the perk's collapsible spell row
+  function demonSpellCards(p) {
     if (!p || !p.demonSpells) return "";
-    const spLink = (sp) => `<span class="ds-spell apx-clickable" data-action="apx-open" data-ek="spell" data-eid="${sp.id}">${spellIcon(sp) ? spriteImg(spellIcon(sp), "px") : ""}${esc(sp.name)}</span>`;
-    return `<div class="section-label">Spell cast by each Greater Demon</div><div class="ds-list">${p.demonSpells.map(d => {
-      const c = (D.conditions || []).find(x => `${x.cat}:${x.key}` === d.cond), sps = d.spells.map(id => SPELL.get(id)).filter(Boolean);
-      return `<div class="ds-row"><span class="ds-demon">${c && c.icon ? `<img src="${esc(c.icon)}" alt="">` : ""}<b>${esc(c ? c.name : d.cond)}</b></span>
-        <span class="ds-spells">${sps.length > 1 ? `<span class="slot-sub">One at random:</span>` : ""}${sps.map(spLink).join("")}</span></div>`; }).join("")}</div>`;
+    return p.demonSpells.map(d => {
+      const c = COND_BY_ID.get(d.cond), sps = d.spells.map(id => SPELL.get(id)).filter(Boolean);
+      return sps.map(sp => spellGemCard(sp, c ? c.name : d.cond)).join("");
+    }).join("");
   }
   // spell → every owner that grants it (spell entity detail)
   function spellGrantedByHtml(spellId) {
@@ -2310,7 +2310,7 @@
         <div class="perk-line-body">
           <div class="perk-line-head"><b>${esc(p.name)}</b><span class="perk-line-meta">${noAnointMark(spec, p)}${asc}${badge}</span>${bkBtn("perks", p.key)}</div>
           ${p.desc ? `<div class="perk-desc">${perkText(p.desc, r)}</div>` : ""}
-          ${demonSpellsHtml(p)}${perkSpellRow(spec.id, p)}
+          ${perkSpellRow(spec.id, p)}
         </div></div>`;
     }).join("");
   }
@@ -3057,7 +3057,7 @@
       <div class="overlay-body"><div class="ovl-center"><div class="ovl-center-scroll">
         ${r.descHtml ? `<div class="perk-desc" style="margin-bottom:12px">${r.descHtml}</div>` : ""}
         ${st.ekind === "condition" && e.exclusive && e.exclusive.show ? `<div class="excl-note">${e.exclusive.icon ? spriteImg(e.exclusive.icon, "px") : ""}<span>Exclusive to <b>${esc(e.exclusive.source)}</b></span></div>` : ""}
-        ${st.ekind === "perk" ? perkSpellRow((D.specs.find(x => x.perks.includes(e)) || {}).id, e, true) + demonSpellsHtml(e) : ""}
+        ${st.ekind === "perk" ? perkSpellRow((D.specs.find(x => x.perks.includes(e)) || {}).id, e, true) : ""}
         ${st.ekind === "trait" ? traitSpellRow(+st.eid, true) : ""}
         ${st.ekind === "relic" ? relicUltimateCard(e.id) : ""}
         ${st.ekind === "spell" ? spellRowWrap(usedSpellCards(e) + usedCondCards(e), true) + spellGrantedByHtml(e.id) : ""}
@@ -3282,7 +3282,7 @@
         const nmTitle = it.nameSrc ? ` title="Not statically resolvable in code — name from the God Shop reference"` : "";
         return `<div class="perk-line gs-line${go ? " apx-clickable" : ""}"${go}>${shopItemIcon(it)}
           <div class="perk-line-body"><div class="perk-line-head"><b${nmTitle}>${esc(shopItemName(it))}</b>
-            <span class="perk-line-meta">${it.rank != null ? `<span class="anoint-spec-tag" title="Guild Reputation rank">Rank ${it.rank}</span>` : ""}${it.favorRank != null ? `<span class="anoint-spec-tag" title="Favor Rank required (community reference)">Rank ${it.favorRank}</span>` : ""}${it.price != null ? `<span class="gs-price"${cur ? ` title="${esc(cur)}"` : ""}>${it.price}${curIco ? `<span class="gs-cur-ico">${spriteImg(curIco, "px")}</span>` : cur ? ` <span class="gs-cur">${esc(cur)}</span>` : ""}</span>` : ""}</span></div>
+            <span class="perk-line-meta">${it.rank != null ? `<span class="anoint-spec-tag" title="Guild Reputation rank">Rank ${it.rank}</span>` : ""}${it.favorRank != null ? `<span class="anoint-spec-tag" title="Favor Rank required">Rank ${it.favorRank}</span>` : ""}${it.price != null ? `<span class="gs-price"${cur ? ` title="${esc(cur)}"` : ""}>${it.price}${curIco ? `<span class="gs-cur-ico">${spriteImg(curIco, "px")}</span>` : cur ? ` <span class="gs-cur">${esc(cur)}</span>` : ""}</span>` : ""}</span></div>
             ${tr ? `<div class="perk-desc">${esc(tr.name)}</div>` : ""}</div></div>`;
       }).join("") : "";
       return `<button class="apx-sec-head apx-cat${open ? "" : " collapsed"}" data-action="shop-sec" data-c="${esc(t)}"><span class="apx-sec-caret">${open ? "▾" : "▸"}</span>${esc(t)}</button>${rows}`;
@@ -3676,7 +3676,7 @@
         <div class="seg nd-diff">${[["normal", "Normal"], ["relaxed", "Relaxed"], ["ruthless", "Ruthless"]].map(([v, l]) =>
           `<button class="seg-btn ${diff === v ? "on" : ""}" data-action="nd-diff" data-v="${v}">${l}</button>`).join("")}</div>
         <div class="nd-table">
-          <div class="nd-row nd-hd"><span>Drop chance</span><span>Realm bonus</span><span>With Pariah ascended</span></div>
+          <div class="nd-row nd-hd"><span>Drop chance</span><span>Realm item bonus</span><span>With Pariah ascended</span></div>
           ${netherDropRows().map(r => `<div class="nd-row"><span class="nd-pct">${pct(r.k)}<small>1 in ${Math.round(N / r.k).toLocaleString()}</small></span>
             <span>${r.plain != null ? `${r.plain}%` : "—"}</span><span>${r.pariah}%</span></div>`).join("")}
         </div>
@@ -3702,8 +3702,8 @@
     const key = "ClassAdv", open = q ? true : !st.collapsed.has(key), n = CLASS_WHEEL.length;
     const cl = (c) => `<span class="ca-cls">${D.classIcons && D.classIcons[c] ? spriteImg(D.classIcons[c], "px") : ""}<b style="color:${clsColor(c)}">${esc(c)}</b></span>`;
     const body = open ? `<div class="nd-wrap"><div class="nd-table">
-        <div class="nd-row nd-hd"><span>Class</span><span>Strong vs (×2)</span><span>Weak vs (×0.5)</span></div>
-        ${CLASS_WHEEL.map((c, i) => `<div class="nd-row"><span>${cl(c)}</span><span>${cl(CLASS_WHEEL[(i + 1) % n])}</span><span>${cl(CLASS_WHEEL[(i + n - 1) % n])}</span></div>`).join("")}
+        <div class="nd-row ca-row nd-hd"><span>Class</span><span>Strong vs (×2)</span><span>Weak vs (×0.5)</span></div>
+        ${CLASS_WHEEL.map((c, i) => `<div class="nd-row ca-row"><span>${cl(c)}</span><span>${cl(CLASS_WHEEL[(i + 1) % n])}</span><span>${cl(CLASS_WHEEL[(i + n - 1) % n])}</span></div>`).join("")}
       </div><div class="slot-sub nd-note">Attacks use the attacker's class. Spells use the Spell Gem's class, not the caster's: a Class Swap (Opal) property changes it, and Convoke the Spirits always counts as the class the target is weak against. The defender's current class is used. Widdershins reverses the wheel; True Strike, Bloodline and the Aurum relic always hit as strong.</div></div>` : "";
     return `<button class="apx-sec-head apx-cat${open ? "" : " collapsed"}" data-action="gloss-cat-toggle" data-c="${key}"><span class="apx-sec-caret">${open ? "▾" : "▸"}</span>Class Advantage</button>${body}`;
   }
@@ -3744,7 +3744,7 @@
         <div class="nd-row nd-hd"><span>Instability</span><span>Deepest depth</span><span>Below deepest</span></div>
         ${Object.entries(M).map(([ri, m]) => `<div class="nd-row"><span>${ri}</span><span>${m.deep}%</span><span>${m.below}%</span></div>`).join("")}
       </div></div>` : "";
-    return `<button class="apx-sec-head apx-cat${open ? "" : " collapsed"}" data-action="gloss-cat-toggle" data-c="${key}"><span class="apx-sec-caret">${open ? "▾" : "▸"}</span>Maximum Realm Bonus</button>${body}`;
+    return `<button class="apx-sec-head apx-cat${open ? "" : " collapsed"}" data-action="gloss-cat-toggle" data-c="${key}"><span class="apx-sec-caret">${open ? "▾" : "▸"}</span>Maximum Realm Item Bonus</button>${body}`;
   }
   // Rodian Creature Masters per realm (code: D.masterRealms from master_realms.json, _su_extract code/MASTER_SPAWN_FINDINGS.md).
   // Master-only races (scr_GetMasterRaces extras, not realm spawns) get a dashed chip.
@@ -4007,16 +4007,12 @@
         <span class="rcmp-meta">top ${esc(top.r.realm)} ${fmtFav(g.col, top.v)}</span></button>
         ${open ? `<div class="rcmp-bars">${bars}</div>` : ""}</div>`;
     }).join("") : `<div class="slot-sub" style="padding:12px">No yields yet${q ? ` matching “${esc(st.search)}”` : ""}.</div>`;
-    const intro = uc
-      ? `Each realm's yields at <b>your</b> tracked favor rank. Tap ⚙ to edit ranks; tap a realm to open it.`
-      : `Each realm's yields at favor rank <b data-favrank-text>${favRank()}</b>. Tap a category to rank realms; tap a realm to open it.`;
     return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel">
       <div class="overlay-header"><h2>Realms</h2>
         <input class="ovl-search" placeholder="Search category / realm…" value="${esc(st.search)}" data-action="realm-search">
         <button class="ovl-close" data-action="close-ovl">✕</button></div>
       <div class="overlay-body"><div class="ovl-center">
-        <div class="rcmp-controls">${realmModeToggle("compare")}${rankSourceCtl()}${yieldDiffToggle()}${uc ? "" : favorSlider()}
-        <div class="slot-sub" style="margin:0">${intro}</div></div>
+        <div class="rcmp-controls">${realmModeToggle("compare")}${rankSourceCtl()}${yieldDiffToggle()}${uc ? "" : favorSlider()}</div>
         <div class="ovl-center-scroll"><div class="rcmp-list">${body}</div></div>
       </div></div>
       <div class="overlay-footer"><button class="btn-ghost" data-action="realm-editranks">⚙ Customize ranks</button>
@@ -4269,7 +4265,7 @@
   const anointEquipped = (a) => build.anoints.some(x => x.specId === a.specId && x.key === a.key);
   const equippedAnointObjs = () => build.anoints.map(x => anointList().find(a => a.specId === x.specId && a.key === x.key)).filter(Boolean);
   function openAnoint() {
-    ovState = { kind: "anoint", search: "", specFilter: null, godFilter: null, collapsedGods: [], render: renderAnoint };
+    ovState = { kind: "anoint", search: "", specFilter: null, godFilter: null, collapsedGods: [], draft: build.anoints.map(x => ({ ...x })), render: renderAnoint };
     openOverlay(ovState.render()); maybeFocusSearch(OV);
   }
   let ANOINT_SPECS = null;
@@ -4290,20 +4286,19 @@
       : `<button class="facet" data-action="anoint-spec">Spec ▾</button>`;
     const bkChip = bookmarks.perks.length ? `<button class="facet ${st.bkOnly ? "on" : ""}" data-action="anoint-bkonly" title="Show only bookmarked perks">★ Bookmarked</button>` : "";
     const filterbar = `<div class="ovl-filterbar">${godChip}${specChip}${TagFilter.bar(st, "anoint")}${bkChip}</div>`;
-    const full = build.anoints.length >= anointMax();
-    const anointRow = (a) => { const on = anointEquipped(a); const inCur = a.specId === build.specId;
-      // a perk from your current spec is already in your tree — block anointing it (removal still allowed)
-      const btn = (inCur && !on)
-        ? `<button class="slot-mini anoint-eq" disabled title="Already available in your current specialization">In your spec</button>`
-        : `<button class="slot-mini anoint-eq ${on ? "on" : ""}" data-action="anoint-toggle" data-sid="${a.specId}" data-k="${esc(a.key)}" ${(!on && full) ? "disabled" : ""}>${on ? "Equipped ✓" : "Equip"}</button>`;
-      return `<div class="perk-line apx-clickable ${on ? "equipped" : ""} ${inCur ? "anoint-incur" : ""}" data-action="apx-open" data-ek="perk" data-eid="${esc(a.key)}">
-        <div class="apx-iconcol">${a.icon ? `<div class="apx-crea">${spriteImg(a.icon, "px")}</div>` : ""}</div>
+    const draft = st.draft, full = draft.length >= anointMax();
+    const picked = (a) => draft.some(x => x.specId === a.specId && x.key === a.key);
+    const anointRow = (a) => { const on = picked(a), inCur = a.specId === build.specId;
+      // a perk from your current spec is already in your tree: it can't be picked (removing it stays allowed)
+      const blocked = !on && (inCur || full);
+      return `<div class="perk-line anoint-pick${on ? " equipped" : ""}${blocked ? " blocked" : ""}${inCur ? " anoint-incur" : ""}"${blocked ? "" : ` data-action="anoint-pick" data-sid="${a.specId}" data-k="${esc(a.key)}"`}${inCur && !on ? ` title="Already available in your current specialization"` : ""}>
+        <div class="apx-iconcol apx-clickable" data-action="apx-open" data-ek="perk" data-eid="${esc(a.key)}" title="View taxonomy">${a.icon ? `<div class="apx-crea">${spriteImg(a.icon, "px")}</div>` : ""}</div>
         <div class="perk-line-body">
           <div class="perk-line-head"><b>${esc(a.name)}</b>
             <span class="perk-line-meta">${specTagHtml(a.spec)}${inCur ? `<span class="anoint-badge">Current spec</span>` : ""}${a.ascension ? `<span class="anoint-badge asc">Ascension</span>` : ""}</span>${bkBtn("perks", a.key)}</div>
           ${a.desc ? `<div class="perk-desc">${perkText(a.desc, a.ranks)}</div>` : ""}
         </div>
-        ${btn}
+        ${on ? `<span class="anoint-check">✓</span>` : ""}
         </div>`; };
     const byName = (a, b) => a.spec.localeCompare(b.spec) || a.name.localeCompare(b.name);
     // group by the affiliated False God (pipeline order), sub-sorted by spec → name
@@ -4332,8 +4327,8 @@
         ${filterbar}
         <div class="ovl-center-scroll"><div class="perk-list">${body}</div></div>
       </div></div>
-      <div class="overlay-footer"><span class="foot-info">${build.anoints.length}/${anointMax()} equipped${full ? " · full" : ""}</span>
-        <button class="btn-confirm" data-action="close-ovl">Done</button></div>
+      <div class="overlay-footer"><span class="foot-info">${draft.length}/${anointMax()} selected${full ? " · full" : ""}</span>
+        <button class="btn-confirm" data-action="anoint-commit">Equip</button></div>
     </div></div>`;
   }
 
@@ -4391,10 +4386,14 @@
         ? `<div class="prop-row art-empty-slot" ${act} data-t="${sl.pick}" title="Add a ${esc(sl.label)}">
         <span class="prop-ico">＋</span><span class="prop-name">Empty ${esc(sl.label)} slot</span></div>`
         : `<div class="prop-row art-empty-slot locked"><span class="prop-ico">🔒</span><span class="prop-name">${esc(sl.label)} slot</span><span class="prop-stat">Tier ${sl.unlock[i]}</span></div>`); };
-    if (a.primary) r.push(libRow(primaryIconAt(a.primary, a.rank), a.primary, "primary"));
-    for (const n of a.stat || []) { const m = MAT_BY_PROP.get(n); r.push(libRow(m && m.icon, m ? m.name : n, n)); }
+    // right side = what the socket adds at this rank (same numbers as the Bonuses view), e.g. "+59% Attack"
+    const eff = (part, dflt) => { const { core, extra } = FX.foldBonus(FX.artifactContribs({ rank: a.rank || 50, ...part }));
+      return [...STAT_KEYS.filter(k => core[k]).map(k => `+${fmtNum(core[k])}% ${STAT_LABEL[k]}`),
+        ...[...extra].map(([p, { value, unit }]) => `+${fmtNum(value)}${unit === "%" ? "%" : ""} ${p}`)].join(" · ") || dflt; };
+    if (a.primary) r.push(libRow(primaryIconAt(a.primary, a.rank), a.primary, eff({ primary: a.primary }, "primary")));
+    for (const n of a.stat || []) { const m = MAT_BY_PROP.get(n); r.push(libRow(m && m.icon, m ? m.name : n, eff({ stat: [n] }, n))); }
     empty("stat");
-    for (const n of a.trick || []) { const m = MAT_BY_PROP.get(n); r.push(libRow(m && m.icon, m ? m.name : n, n)); }
+    for (const n of a.trick || []) { const m = MAT_BY_PROP.get(n); r.push(libRow(m && m.icon, m ? m.name : n, eff({ trick: [n] }, n))); }
     empty("trick");
     for (const id of a.traits || []) { const t = TRAITITEM.get(id); r.push(libTraitRow(t && t.icon, t ? t.name : id, t ? t.traitId : null)); }
     empty("traits");
@@ -4469,8 +4468,21 @@
   const clsTag = (cls, tail = "") => cls ? `<span class="anoint-spec-tag" style="color:${clsColor(cls)}">${esc(cls)}${tail}</span>` : "";
   // one spell-gem container: name + trigger + description (clickable to the spell's taxonomy). Shared by artifact /
   // nether / relic / boss / owner displays and (opts.tile: class chip + stats) the Spells page's granted-spell tiles.
+  let ULT_AVATAR = null;
+  const ultAvatar = (spellId) => {
+    if (!ULT_AVATAR) {
+      ULT_AVATAR = new Map();
+      const av = new Map(D.creatures.filter(c => c.race === "Avatar").map(c => [c.name.toLowerCase(), c.name]));
+      for (const [rid, sid] of Object.entries(D.relicUltimates || {})) {
+        const rl = RELIC.get(+rid), m = rl && /\bof\s+(.+)$/i.exec(rl.name), n = m && av.get(m[1].trim().toLowerCase());
+        if (n) ULT_AVATAR.set(sid, n); else console.error("ULTIMATE AVATAR: no Avatar for relic", rid, rl && rl.name);
+      }
+    }
+    return ULT_AVATAR.get(spellId) || null;
+  };
   const spellGemCard = (sp, trigger, src, ch, { tile = false } = {}) => {
-    const trig = trigger ? `<span class="art-trigger"${ch ? ` title="Activation chance: ${esc(ch.title)}"` : ""}>${esc(trigger)}${chanceTxt(ch)}</span>` : "";
+    const av = ultAvatar(sp.id), avChip = av ? `<span class="anoint-spec-tag ult-avatar" title="Avatar">${esc(av)}</span>` : "";
+    const trig = (trigger ? `<span class="art-trigger"${ch ? ` title="Activation chance: ${esc(ch.title)}"` : ""}>${esc(trigger)}${chanceTxt(ch)}</span>` : "") + avChip;
     return `<div class="art-spellcard${tile ? " spell-page-tile" : ""} apx-clickable" data-action="apx-open" data-ek="spell" data-eid="${sp.id}" title="View taxonomy">
     <div class="art-spellcard-head">${spellIco(sp)}<b>${esc(sp.name)}</b>${tile ? `<span class="spt-tags">${clsTag(sp.cls)}${trig}</span>` : trig}</div>
     ${src ? `<div class="slot-sub" style="text-align:left">from ${esc(src)}</div>` : ""}
@@ -6171,14 +6183,14 @@
       case "open-anoint": openAnoint(); break;
       case "anoint-detail": openAnointDetail(); break;
       case "anoint-edit": closeDetail(); openAnoint(); break;
-      case "anoint-toggle": {
-        const sid = +t.dataset.sid, k = t.dataset.k;
-        const i = build.anoints.findIndex(x => x.specId === sid && x.key === k);
-        if (i >= 0) build.anoints.splice(i, 1);                 // removing is always allowed
-        else if (sid === build.specId) break;                  // guard: can't anoint a perk from your current spec
-        else if (build.anoints.length < anointMax()) build.anoints.push({ specId: sid, key: k });
-        persistBuild(); refreshOverlay(); render(); break;   // refresh overlay + home tile count
+      case "anoint-pick": {                                    // toggles the picker's draft; nothing changes until Equip
+        const sid = +t.dataset.sid, k = t.dataset.k, d = ovState.draft;
+        const i = d.findIndex(x => x.specId === sid && x.key === k);
+        if (i >= 0) d.splice(i, 1);                            // removing is always allowed
+        else if (sid !== build.specId && d.length < anointMax()) d.push({ specId: sid, key: k });
+        refreshOverlay(); break;
       }
+      case "anoint-commit": build.anoints = ovState.draft.map(x => ({ ...x })); persistBuild(); closeOverlay(); render(); break;
       case "open-cards": openCards(); break;
       case "open-nether": openNether(); break;
 

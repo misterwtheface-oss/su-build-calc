@@ -1722,6 +1722,7 @@ const slimShopItem = (i) => {
   if (i.sprite) o.sprite = i.sprite;
   if (i.kind === 'trait_item') o.forCreature = i.for_creature || null;
   if (i.unresolved) o.unresolved = i.unresolved;
+  if (i.favor_rank != null) o.favorRank = i.favor_rank;   // God Shop: the item's own scr_GodShopSetup rank guard (code, S32)
   return o;
 };
 let guildBannerHits = 0;
@@ -1756,24 +1757,22 @@ for (const g of shops[0].groups) for (const it of g.items) {
     if (ref) { it.name = ref.item; it.nameSrc = 'csv'; it.type = 'Crafting Material'; delete it.unresolved; }
   }
 }
-// Favor Rank that unlocks a God Shop item — community reference (god_shop_ref "tier", user-curated tracker; secondary info
-// like the Guild ranks). Joined by god + item name; scr_GodShopSetup itself carries no rank gate in the extract (verify:
-// _su_extract/code/HANDOFF_god_shop_favor_rank.md). Cosmetics (backgrounds/decorations/music) have no reference rank.
+// Favor Rank that unlocks a God Shop item: CODE, `favor_rank` on every god item in shops.json (scr_GodShopSetup's per-item
+// `if (scr_GodLevel(god) >= N)` guard; _su_extract/code/HANDOFF_god_shop_favor_rank.md "Answer", S32), copied by
+// slimShopItem. The community reference (god_shop_ref "tier", 630 rows, no cosmetics) is now only a cross-check: a
+// mismatch warns, the code value is kept (standing rule: CSV errata, not an app override).
 {
-  // reference type → code item kind (a god can sell a spell and a decoration of the same name, e.g. Vulcanar's Inferno)
   const KIND_OF_REF = { 'Mana': 'creature', 'Trait': 'trait_item', 'Inscription': 'spell', 'Heart': 'project_item', 'Crafting Material': 'dust' };
-  const favorByKey = new Map();
-  for (const [god, rows] of godShopMap) for (const r of rows) {
-    if (!r.tier) continue;
-    const kind = KIND_OF_REF[r.type]; if (!kind) { warn(`god shop ref type "${r.type}" has no code kind (${god} / ${r.item})`); continue; }
-    favorByKey.set([norm(god), kind, norm(r.item)].join('|'), r.tier);
-  }
-  let hits = 0;
+  const refByKey = new Map();
+  for (const [god, rows] of godShopMap) for (const r of rows) { const kind = KIND_OF_REF[r.type]; if (r.tier && kind) refByKey.set([norm(god), kind, norm(r.item)].join('|'), r.tier); }
+  let n = 0, none = 0; const diff = [];
   for (const g of shops[0].groups) for (const it of g.items) {
-    const t = favorByKey.get([norm(g.name), it.kind, norm(it.name)].join('|')); if (t != null) { it.favorRank = t; hits++; }
+    if (it.favorRank == null) { none++; continue; } n++;
+    const t = refByKey.get([norm(g.name), it.kind, norm(it.name)].join('|'));
+    if (t != null && +t !== it.favorRank) diff.push(`${g.name} / ${it.name}: code ${it.favorRank}, reference ${t}`);
   }
-  if (hits < favorByKey.size) warn(`god shop favor ranks: ${favorByKey.size - hits} reference row(s) matched no code item`);
-  console.log(`  god shop favor ranks (community ref): ${hits}/${favorByKey.size} joined`);
+  if (diff.length) warn(`god shop favor rank: code ≠ community reference (code kept): ${diff.join('; ')}`);
+  console.log(`  god shop favor ranks (code): ${n} items · ${none} without a rank guard`);
 }
 for (const sh of shops) for (const g of (sh.groups || [sh])) { if (!g.currency) err(`shop ${sh.key}/${g.key || ''} has no currency`); if (!g.currencyIcon) err(`shop ${sh.key}/${g.key || ''} has no currency icon`); }
 console.log(`  shops (code): God ${shops[0].groups.length} gods · ${GUILD_ORDER.length} guilds (${guildBannerHits} banners) · Arena · Tavern · ${allShopItems().length} items`);
@@ -3420,7 +3419,7 @@ const { spellGrants, relicUltimates, ultimateRoutes } = (() => {
           const rk = t.rank != null ? +t.rank : null, dk = `${x.id}|${rk}`;
           if (seen.has(dk)) continue; seen.add(dk);
           const l = labels.get(cid), e = { s: x.id, k };
-          if (l && l !== x.name) e.l = l;
+          if (l && l !== x.name && l !== 'temp gem of spell') e.l = l;   // the generic code phrase is no pick case (user 2026-10-22)
           if (rk != null) e.rk = rk;
           out.push(e);
         }

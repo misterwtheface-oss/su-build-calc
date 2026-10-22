@@ -4,6 +4,21 @@ Every dated change entry, newest first (moved verbatim from Progress.md on 2026-
 to their own section and sorted by their date). Current state and open work: `Progress.md`, `BACKLOG.md`.
 New entries go at the TOP.
 
+## 2026-10-22 — UI batch (13 items)
+- Spell cards: the generic "temp gem of spell" chip is gone. Ultimate spells carry an Avatar chip (the god of the Relic
+  that grants the Ultimate, e.g. Holy Strike → Surathli). Final Summoning's demon spells are full spell cards behind the
+  perk's arrow, chipped with the demon's name (old demon list removed).
+- Anointments: tap a row to select (the icon opens the taxonomy); the footer Equip commits and replaces Done; ✕ discards.
+- Artifact Sockets rows show each socket's effect and value ("+59% Attack") instead of the property / "primary".
+- God Shop Favor Rank chips now come from code (`favor_rank`, scr_GodShopSetup guards): all 1,437 gated items,
+  cosmetics included (was 630 from the community CSV, now a cross-check only). Shop items with no icon (196) handed to the
+  extract: `_su_extract/code/HANDOFF_shop_icons.md`.
+- "Realm bonus" → "Realm item bonus" (Nether Stone Drops column, Maximum Realm Item Bonus section).
+- Spec picker: Shadowbringer stays on one line. Synergy matrix row arrow is bigger (32 px tap target).
+- Realms Compare: the favor bar's prose is gone; the Browse|Compare and Same rank|My ranks toggles sit closer.
+- Appendix / Effect Order: notes and step headings left-aligned, Class Advantage columns left-aligned; blocker and
+  secondary rows use a 1 px violet dashed outline (was a thick dashed border in the text colour).
+
 ## 2026-10-22 — Code text leaking into spell-card labels
 - User: raw code showed on some spell cards' source labels (Idolatry). The label parser in `build-data.mjs` read the pick
   list after the FIRST colon of the extract's `gem_from_how` / `cast_from_how`, so code prose with its own colons leaked in.
