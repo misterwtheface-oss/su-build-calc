@@ -3384,28 +3384,44 @@ const { spellGrants, relicUltimates, ultimateRoutes } = (() => {
     }
     grants.push(out);
   }
-  // perk casts (user 2026-10-21: the spell-gem container under perks that cast spells): the code layer's Actions::Auto Cast
-  // tags carry the cast spell's code ids (taxo_v2_tags.json `cast_spell_ids`, from the temp-gem site). Code id → key via
-  // spell_property_compat. "choose(...)" sites cast one of them at random. Final Summoning keeps its per-demon list instead.
-  let nCast = 0;
-  const PERK_CAST_HELD = { PYROBLAST: 'Scourge by enemy class', PROPHECY: "the Avatar's Ultimate", ITSCALLEDALANCE: 'Living Lance by caster class' };
+  // Spells an object casts or grants (user 2026-10-21/22: the spell-gem container under the object). Code layer
+  // (taxo_v2_tags.json): Actions::Auto Cast `cast_spell_ids` + `cast_from_how` (S47 runtime pools) and Spell Gems::Gain Gem
+  // `gem_spell_ids` + `gem_from_how` (S48). Code id → app spell via spell_property_compat. A runtime pool labels each spell with
+  // its pick case ("by the enemy's class: Chaos 166, ..." → Chaos); "choose(...)" = one of them at random. Relic entries carry the
+  // rank of their code clause. Shipped as `spellsUsed: [{s, k: 'cast'|'gem', l?, rk?}]` on perks / traits / relics / spells.
+  // Final Summoning keeps its per-demon list (demonSpells) instead.
+  let nUsed = 0; const usedBy = {};
   { const CL = readJSON(path.join(MODEL, 'taxo_v2_tags.json')).objects;
-    for (const sp of specs) for (const pk of sp.perks) {
-      if (pk.demonSpells) continue;
-      // the spell is picked at runtime (enemy class / Avatar / caster class); the code layer lists one id only → held until the
-      // extract lists the pool (HANDOFF_perk_cast_pools.md)
-      if (PERK_CAST_HELD[pk.key]) continue;
-      const o = CL[`perk:${pk.key}`]; if (!o) continue;
-      const ids = [], oneOf = [];
-      for (const t of o.tags) if (t.tag === 'Actions::Auto Cast' && t.cast_spell_ids) {
-        if (/choose|one of/.test(t.cast_from_how || '')) oneOf.push(true);
-        for (const cid of t.cast_spell_ids) { const r = codeById.get(cid), x = r && spByKey.get(r.key);
-          if (!x) { err(`perk casts: ${sp.label} / ${pk.name}: code spell ${cid} not in the app`); continue; }
-          if (!ids.includes(x.id)) ids.push(x.id); }
+    const labelsOf = (how) => {                                       // "<label> <id>[ / <id>…]" items after the colon
+      const m = new Map(), tail = String(how || '').slice(String(how || '').indexOf(':') + 1);
+      for (const it of tail.split(/,\s*/)) { const x = /^\s*(.+?) (\d+(?: \/ \d+)*)\s*$/.exec(it); if (x) for (const id of x[2].split(' / ')) m.set(+id, x[1]); }
+      return m;
+    };
+    const used = (key, obj, label) => {
+      const o = CL[key]; if (!o) return;
+      const out = [], seen = new Set();
+      for (const t of o.tags) {
+        const k = t.cast_spell_ids ? 'cast' : t.gem_spell_ids ? 'gem' : null; if (!k) continue;
+        const ids = t.cast_spell_ids || t.gem_spell_ids, labels = labelsOf(t.cast_from_how || t.gem_from_how);
+        for (const cid of ids) {
+          const r = codeById.get(cid), x = r && spByKey.get(r.key);
+          if (!x) { err(`spells used: ${label}: code spell ${cid} not in the app`); continue; }
+          const rk = t.rank != null ? +t.rank : null, dk = `${x.id}|${rk}`;
+          if (seen.has(dk)) continue; seen.add(dk);
+          const l = labels.get(cid), e = { s: x.id, k };
+          if (l && l !== x.name) e.l = l;
+          if (rk != null) e.rk = rk;
+          out.push(e);
+        }
       }
-      if (ids.length) { pk.casts = ids; if (oneOf.length && ids.length > 1) pk.castOneOf = true; nCast++; }
-    } }
-  console.log(`  perk casts (code layer cast_spell_ids): ${nCast} perks`);
+      if (out.length) { obj.spellsUsed = out; nUsed++; usedBy[key.split(':')[0]] = (usedBy[key.split(':')[0]] || 0) + 1; }
+    };
+    for (const sp of specs) for (const pk of sp.perks) if (!pk.demonSpells) used(`perk:${pk.key}`, pk, `${sp.label} / ${pk.name}`);
+    for (const t of Object.values(traits)) used(`trait:${t.id}`, t, `trait ${t.name}`);
+    for (const r of relics) used(`relic:${r.id}`, r, `relic ${r.name}`);
+    for (const x of spells) used(`spell:${x.key}`, x, `spell ${x.name}`);
+  }
+  console.log(`  spells used (code cast_spell_ids / gem_spell_ids): ${nUsed} objects · ${Object.entries(usedBy).map(([k, n]) => `${k} ${n}`).join(' · ')}`);
   const ult = {};
   for (const u of so.ultimate_by_relic) {
     const r = relicByName.get(norm(u.owner.relic_name)), id = appSpell(u.spell_key);

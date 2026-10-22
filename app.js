@@ -219,21 +219,8 @@
   const SPELL = new Map((D.spells || []).map(s => [s.id, s]));
   // name → spell, plus names sorted longest-first for greedy matching ("Major Healing" before "Healing")
   const SPELL_BY_NAME = new Map((D.spells || []).map(s => [s.name, s]));
-  const SPELL_NAMES_DESC = [...SPELL_BY_NAME.keys()].sort((a, b) => b.length - a.length);
   const SPELLGEM = D.spellGems || {};                       // class -> class-coloured gem icon
   const spellIcon = (s) => s && s.cls ? SPELLGEM[s.cls] : null;
-  // spells a piece of rules text triggers: match each "Cast(s) <Spell Name>" against the spell DB.
-  // Generic casts ("Casts a spell", "Casts a random spell") start lowercase → never match a Title-Case name.
-  const spellsCastInText = (desc) => {
-    const out = [], re = /\bCasts?\s+/g; let m;
-    while ((m = re.exec(desc || ""))) {
-      const rest = desc.slice(m.index + m[0].length);
-      const name = SPELL_NAMES_DESC.find(n => rest.startsWith(n) && (rest.length === n.length || /[^A-Za-z]/.test(rest[n.length])));
-      const sp = name && SPELL_BY_NAME.get(name);
-      if (sp && !out.includes(sp)) out.push(sp);
-    }
-    return out;
-  };
   const SPELLPROP = new Map((D.spellProps || []).map(p => [p.id, p]));   // spell-gem property items (Slates/Curios)
   const SPELLGEM_MAX_PROPS = 3;                             // each spell gem holds up to 3 property items (at level 15)
   // spell gem LEVEL ("tier" in code, 1..15; D.spellGemTiers): drives property slots (0/1/2/3 at 1/5/10/15), the icon
@@ -1002,7 +989,7 @@
       ? `<span class="tile-badge" title="${esc(race)}">${spriteImg(D.raceIcons[race], "px")}</span>` : "";
     const traitIds = slotTraitIds(slot);
     const traitHtml = traitIds.length
-      ? traitIds.map(tid => `<div class="primary-traits">${traitBanner(tid)}<div class="trait-desc">${richText((TRAIT[tid] || {}).desc || "")}</div></div>`).join("")
+      ? traitIds.map(tid => `<div class="primary-traits">${traitBanner(tid)}<div class="trait-desc">${richText((TRAIT[tid] || {}).desc || "")}</div>${traitSpellRow(tid, true)}</div>`).join("")
       : `<div class="slot-sub" style="text-align:left">No traits.</div>`;
     const statLine = STAT_KEYS.map(k => `<span class="rstat"><i>${STAT_LABEL[k].slice(0, 3)}</i>${fs.final[k]}</span>`).join("")
       + `<span class="rstat total"><i>Total</i>${fs.total}</span>`;
@@ -1372,7 +1359,7 @@
             <div class="ctr-stats">${STAT_KEYS.map(k => `<span class="ctr-stat"><span class="ctr-stat-k">${STAT_LABEL[k]}</span> <b>${c[k] ?? "—"}</b></span>`).join("")}
 </div></div>`;
         return `<div class="crea-trait-row primary-traits ${sel === c.id ? "selected" : ""} ${blk ? "disabled" : ""}"${blk ? ` data-action="noop"` : ` data-action="crea-pick" data-id="${c.id}"`}>
-          ${head}${traitBanner(c.traitId, { noNav: true })}<div class="trait-desc">${richText(tr ? tr.desc || "" : "")}</div></div>`; }).join("")}
+          ${head}${traitBanner(c.traitId, { noNav: true })}<div class="trait-desc">${richText(tr ? tr.desc || "" : "")}</div>${traitSpellRow(c.traitId, true)}</div>`; }).join("")}
     </div>` : "";
 
     const title = fusion ? "Fusion partner" : "Choose creature";
@@ -1420,7 +1407,7 @@
       <h3 style="text-align:center;margin:6px 0">${esc(c.name)}</h3>
       <div class="slot-sub" style="margin-bottom:10px"><span style="color:${clsColor(c.cls)};font-weight:700">${esc(c.cls || "—")}</span>${c.race ? " · " + esc(c.race) : ""}</div>
       ${c.traitId != null ? `<div class="section-label">Innate trait</div>
-        <div class="primary-traits" style="margin-bottom:12px">${traitBanner(c.traitId)}<div class="trait-desc">${richText((TRAIT[c.traitId] || {}).desc || "")}</div></div>` : ""}
+        <div class="primary-traits" style="margin-bottom:12px">${traitBanner(c.traitId)}<div class="trait-desc">${richText((TRAIT[c.traitId] || {}).desc || "")}</div>${traitSpellRow(c.traitId, true)}</div>` : ""}
       <div class="section-label">Base stats</div>
       <div class="stat-grid single mag">
         ${STAT_KEYS.map(k => `<div class="stat-row"><span class="stat-name">${STAT_LABEL[k]}</span>
@@ -1468,8 +1455,7 @@
       const tr = p.traitId != null ? TRAIT[p.traitId] : null;
       return `<div class="primary-traits" style="margin-bottom:8px">
         <div class="fg-part-name"><b>${esc(p.name)}</b>${tr ? "" : `<span class="slot-sub"> · no distinct trait</span>`}</div>
-        ${tr ? `${traitBanner(p.traitId)}<div class="trait-desc">${richText(tr.desc || "")}</div>` : ""}
-        ${traitGrantCards(p.traitId, p.runtimeIds || [])}
+        ${tr ? `${traitBanner(p.traitId)}<div class="trait-desc">${richText(tr.desc || "")}</div>${traitSpellRow(p.traitId, true, p.runtimeIds || [])}` : ""}
         ${p.stats ? `<div class="slot-sub">${STAT_KEYS.map(k => `${STAT_LABEL[k].slice(0, 3)} ${p.stats[k]}`).join(" · ")}</div>` : ""}
       </div>`;
     }).join("");
@@ -1864,7 +1850,7 @@
       return `<div class="boss-unit" id="boss-unit-${u.slot}">
         <div class="boss-unit-head"><span class="boss-unit-spr">${u.img ? spriteImg(u.img, "px") : ""}</span>
           <div class="boss-unit-name"><b>${esc(u.name)}</b></div></div>
-        ${tr ? `<div class="primary-traits">${traitBanner(u.traitId)}<div class="trait-desc">${richText(tr.desc || "")}</div></div>` : ""}
+        ${tr ? `<div class="primary-traits">${traitBanner(u.traitId)}<div class="trait-desc">${richText(tr.desc || "")}</div>${traitSpellRow(u.traitId, true)}</div>` : ""}
         ${sameStats ? "" : statLine(u.stats)}
         <div class="boss-sub">On its turn</div>
         ${u.turn ? lines(u.turn) : `<div class="slot-sub">Normal enemy AI: attacks or casts a spell</div>`}
@@ -1926,12 +1912,12 @@
       return `<div class="boss-unit" id="boss-unit-${u.slot}">
         <div class="boss-unit-head"><span class="boss-unit-spr">${nbUnitImg(u) ? spriteImg(nbUnitImg(u), "px") : ""}</span>
           <div class="boss-unit-name"><b>${esc(soloBoss && u.tiers ? e.name : u.name)}${n > 1 ? ` ×${n}` : ""}</b></div></div>
-        ${bt != null && TRAIT[bt] ? `<div class="boss-sub">Boss trait</div><div class="primary-traits">${traitBanner(bt)}<div class="trait-desc">${richText(TRAIT[bt].desc || "")}</div></div>${(adv.noteUnit ? u.name === adv.noteUnit : u.tiers === lead.tiers && u.slot === groups[0].u.slot) ? (adv.notes[tier - 1] || []).map(t => `<div class="fx-clarify">${esc(t)}</div>`).join("") : ""}` : ""}
+        ${bt != null && TRAIT[bt] ? `<div class="boss-sub">Boss trait</div><div class="primary-traits">${traitBanner(bt)}<div class="trait-desc">${richText(TRAIT[bt].desc || "")}</div>${traitSpellRow(bt, true)}</div>${(adv.noteUnit ? u.name === adv.noteUnit : u.tiers === lead.tiers && u.slot === groups[0].u.slot) ? (adv.notes[tier - 1] || []).map(t => `<div class="fx-clarify">${esc(t)}</div>`).join("") : ""}` : ""}
         ${sameStats ? "" : bossStatTable(u.stats)}
       </div>`;
     }).join("");
     const mats = (e.materials || []).map(m => { const ti = TRAITITEM.get(m.item), tr = TRAIT[m.traitId];
-      return ti ? `<div class="boss-mat"><div class="boss-mat-head">${ti.icon ? `<span class="prop-ico">${spriteImg(ti.icon, "px")}</span>` : ""}<b>${esc(ti.name)}</b></div>${tr ? `<div class="primary-traits">${traitBanner(m.traitId)}<div class="trait-desc">${richText(tr.desc || "")}</div></div>` : ""}</div>` : ""; }).join("");
+      return ti ? `<div class="boss-mat"><div class="boss-mat-head">${ti.icon ? `<span class="prop-ico">${spriteImg(ti.icon, "px")}</span>` : ""}<b>${esc(ti.name)}</b></div>${tr ? `<div class="primary-traits">${traitBanner(m.traitId)}<div class="trait-desc">${richText(tr.desc || "")}</div>${traitSpellRow(m.traitId, true)}</div>` : ""}</div>` : ""; }).join("");
     const isID = e.key === "NB_SHADOWS";
     const rewards = `<div class="section-label">Rewards</div>
       ${mats ? `<div class="boss-sub">Trait materials</div>${mats}` : ""}
@@ -1970,7 +1956,7 @@
     const card = `<div class="boss-unit" id="boss-unit-1">
         <div class="boss-unit-head"><span class="boss-unit-spr">${c && c.sprite ? spriteImg(c.sprite, "px") : ""}</span>
           <div class="boss-unit-name"><b>${esc(u.name)}</b> <span class="anoint-spec-tag">Avatar</span></div></div>
-        ${gt ? `<div class="boss-sub">God trait</div><div class="primary-traits">${traitBanner(u.godTraitId)}<div class="trait-desc">${richText(gt.desc || "")}</div></div>${(adv.notes || []).map(t => `<div class="fx-clarify">${esc(t)}</div>`).join("")}` : ""}
+        ${gt ? `<div class="boss-sub">God trait</div><div class="primary-traits">${traitBanner(u.godTraitId)}<div class="trait-desc">${richText(gt.desc || "")}</div>${traitSpellRow(u.godTraitId, true)}</div>${(adv.notes || []).map(t => `<div class="fx-clarify">${esc(t)}</div>`).join("")}` : ""}
       </div>`;
     const diffRows = GG_MULT.map((m, i) => { const d = i + 1; return `<tr><td>${d}</td><td>${m}</td><td>${d}</td><td>${d * 10}</td><td>${3 * d}%</td></tr>`; }).join("")
       + `<tr class="boss-diff-more"><td>11+</td><td>+×5 each</td><td>10</td><td>100</td><td>+3% each</td></tr>`;
@@ -2040,7 +2026,7 @@
       <div class="cd-sprite">${fusedFace(primary, st.skinId, secondary, st.step === "color" || st.fuseColor != null ? st.fuseColor : null)}</div>
       <h3 style="text-align:center;margin:6px 0">${esc(primary.name)}${secondary ? ` <span style="color:var(--accent2)">⚭</span> ${esc(secondary.name)}` : ""}</h3>
       <div class="slot-sub" style="margin-bottom:10px"><span style="color:${clsColor(b.cls)};font-weight:700">${esc(b.cls || "—")}</span></div>
-      ${traitIds.length ? `<div class="section-label">Traits</div><div style="margin-bottom:10px">${traitIds.map(tid => `<div class="primary-traits" style="margin-bottom:6px">${traitBanner(tid)}<div class="trait-desc">${richText((TRAIT[tid] || {}).desc || "")}</div></div>`).join("")}</div>` : ""}
+      ${traitIds.length ? `<div class="section-label">Traits</div><div style="margin-bottom:10px">${traitIds.map(tid => `<div class="primary-traits" style="margin-bottom:6px">${traitBanner(tid)}<div class="trait-desc">${richText((TRAIT[tid] || {}).desc || "")}</div>${traitSpellRow(tid, true)}</div>`).join("")}</div>` : ""}
       <div class="section-label">Stats</div>
       <div class="stat-grid single mag">
         ${STAT_KEYS.map(k => magRow(k, STAT_LABEL[k], fs.final[k], fs0.final[k])).join("")}
@@ -2259,15 +2245,27 @@
   // perk spell cards carry no casting chip: the perk text right above already states when / how often it casts
   const perkGrantCards = (specId, key) => grantCards(grantsOf("perk", o => o.spec === specId && o.key === key), true);
   // the spells a perk casts (code: Auto Cast sites) + the gems it grants, as one indented row of spell-gem containers under the perk
-  const perkSpellRow = (specId, p, flat) => {
-    const granted = new Set(grantsOf("perk", o => o.spec === specId && o.key === p.key).flatMap(g => g.spells));
-    const at = (sp) => { const i = (p.desc || "").indexOf(sp.name); return i < 0 ? 1e9 : i; };   // the order the perk text names them
-    const cards = (p.casts || []).filter(id => !granted.has(id)).map(id => SPELL.get(id)).filter(Boolean).sort((a, b) => at(a) - at(b))
-      .map(sp => spellGemCard(sp)).join("") + perkGrantCards(specId, p.key);
-    return cards ? `<div class="perk-spell-row${flat ? " flat" : ""}">${cards}</div>` : "";
-  };
   const traitGrantCards = (traitId, rtIds) => grantCards(grantsOf("trait", o => o.id === traitId
     || (rtIds && ((TRAIT[o.id] || {}).runtimeIds || []).some(r => rtIds.includes(r)))));
+  // the spells an object casts or grants (code: obj.spellsUsed, build-data) as spell-gem containers; `granted` = spell ids the
+  // owner's spellGrants cards already show; `rank` = a relic rank (only that rank's spells). A runtime pool keeps the code's
+  // order and labels each card with its pick case; otherwise the order the object's text names them.
+  const usedSpellCards = (obj, granted, rank) => {
+    const list = (obj && obj.spellsUsed || []).filter(e => (rank == null || e.rk === rank) && !(granted && granted.has(e.s)));
+    const at = (e) => { const sp = SPELL.get(e.s), i = sp ? (obj.desc || "").indexOf(sp.name) : -1; return i < 0 ? 1e9 : i; };
+    if (!list.some(e => e.l)) list.sort((a, b) => at(a) - at(b));
+    return list.map(e => SPELL.get(e.s) ? spellGemCard(SPELL.get(e.s), e.l || "") : "").join("");
+  };
+  const spellRowWrap = (cards, flat) => cards ? `<div class="perk-spell-row${flat ? " flat" : ""}">${cards}</div>` : "";
+  const perkSpellRow = (specId, p, flat) => {
+    const granted = new Set(grantsOf("perk", o => o.spec === specId && o.key === p.key).flatMap(g => g.spells));
+    return spellRowWrap(usedSpellCards(p, granted) + perkGrantCards(specId, p.key), flat);
+  };
+  const traitSpellRow = (tid, flat, rtIds) => {
+    const t = TRAIT[tid]; if (!t) return "";
+    const gs = grantsOf("trait", o => o.id === tid || (rtIds && ((TRAIT[o.id] || {}).runtimeIds || []).some(r => rtIds.includes(r))));
+    return spellRowWrap(usedSpellCards(t, new Set(gs.flatMap(g => g.spells))) + grantCards(gs), flat);
+  };
   // a relic's Ultimate (scr_GetUltimateSpellByRelic) and who hands it out (Idolatry / Weapons of Mass Distortion)
   function relicUltimateCard(relicId) {
     const sp = SPELL.get((D.relicUltimates || {})[relicId]); if (!sp) return "";
@@ -3060,9 +3058,9 @@
         ${r.descHtml ? `<div class="perk-desc" style="margin-bottom:12px">${r.descHtml}</div>` : ""}
         ${st.ekind === "condition" && e.exclusive && e.exclusive.show ? `<div class="excl-note">${e.exclusive.icon ? spriteImg(e.exclusive.icon, "px") : ""}<span>Exclusive to <b>${esc(e.exclusive.source)}</b></span></div>` : ""}
         ${st.ekind === "perk" ? perkSpellRow((D.specs.find(x => x.perks.includes(e)) || {}).id, e, true) + demonSpellsHtml(e) : ""}
-        ${st.ekind === "trait" ? traitGrantCards(+st.eid) : ""}
+        ${st.ekind === "trait" ? traitSpellRow(+st.eid, true) : ""}
         ${st.ekind === "relic" ? relicUltimateCard(e.id) : ""}
-        ${st.ekind === "spell" ? spellGrantedByHtml(e.id) : ""}
+        ${st.ekind === "spell" ? spellRowWrap(usedSpellCards(e), true) + spellGrantedByHtml(e.id) : ""}
         ${st.ekind === "trait" ? `<div class="section-label">Source</div>${traitDetailSections(e)}` : ""}
         <div class="section-label">Taxonomy — ${n} tag${n === 1 ? "" : "s"}</div>
         ${entityTaxHtml(e)}
@@ -3458,7 +3456,7 @@
         const c = creatureByTrait.get(t.id), boss = bossSpriteFor(t), its = itemsByTrait.get(t.id) || [], it = its.find(x => x.icon);
         r = { name: t.name, desc: t.desc, icons: [c ? critFace(c) : boss ? spriteImg(boss) : "", it ? spriteImg(it.icon, "px") : ""],
           enemy: t.ownerType === "boss" && !c && !it,
-          chips: [c ? c.name : t.owner || "", ...new Set(its.map(x => x.name))], open: { ek: "trait", eid: t.id } }; } }
+          chips: [c ? c.name : t.owner || "", ...new Set(its.map(x => x.name))], open: { ek: "trait", eid: t.id }, spells: traitSpellRow(t.id) }; } }
       else if (kind === "relic") { const rl = D.relics.find(x => x.name.includes(ref)), rk = rl && rl.ranks.find(x => x.rank === rank);
         if (rl && rk) r = { name: rl.name.split(",")[0], desc: rk.desc, icons: [spriteImg(relicArt(rl), "px")], chips: [rl.name.split(",")[1].trim(), `Rank ${rank}`] }; }
       else if (kind === "cond") { const c = (D.conditions || []).find(x => `${x.cat}:${x.key}` === ref);
@@ -3519,10 +3517,10 @@
       else if (ref.k === "trait") { const t = D.traits[ref.id]; if (t) {
         const c = creatureByTrait.get(t.id), boss = bossSpriteFor(t), its = itemsByTrait.get(t.id) || [], it = its.find(x => x.icon);
         r = { name: t.name, desc: t.desc, icons: [c ? critFace(c) : boss ? spriteImg(boss) : "", it ? spriteImg(it.icon, "px") : ""],
-          chips: [c ? c.name : t.owner || "", ...new Set(its.map(x => x.name))], open: { ek: "trait", eid: t.id } }; } }
+          chips: [c ? c.name : t.owner || "", ...new Set(its.map(x => x.name))], open: { ek: "trait", eid: t.id }, spells: traitSpellRow(t.id) }; } }
       else if (ref.k === "perk") { const h = perkBy.get(ref.name); if (h) r = { name: h.p.name, desc: h.p.desc, icons: [specIco(h.spec), h.p.icon && spriteImg(h.p.icon, "px")], chips: [h.spec.label], spells: perkSpellRow(h.spec.id, h.p) }; }
       else if (ref.k === "relic") { const rl = D.relics.find(x => x.id === ref.id), rk = rl && rl.ranks.find(x => x.rank === ref.rank);
-        if (rl && rk) r = { name: rl.name.split(",")[0], desc: rk.desc, icons: [spriteImg(relicArt(rl), "px")], chips: [(rl.name.split(",")[1] || "").trim(), `Rank ${ref.rank}`] }; }
+        if (rl && rk) r = { name: rl.name.split(",")[0], desc: rk.desc, icons: [spriteImg(relicArt(rl), "px")], chips: [(rl.name.split(",")[1] || "").trim(), `Rank ${ref.rank}`], spells: spellRowWrap(usedSpellCards(rl, null, ref.rank)) }; }
       else if (ref.k === "card") { const cd = (D.cards || []).find(x => x.family === ref.family);
         if (cd) r = { name: `${cd.family} set`, desc: cd.effects[ref.power - 1] || "", icons: [spriteImg(cd.sprite)], chips: ["Card Set", `Power ${ref.power}`] }; }
       else if (ref.k === "cond") { const c = (D.conditions || []).find(x => x.name === ref.name);
@@ -3594,11 +3592,11 @@
     if (k === "trait") { const t = D.traits[id]; if (t) { const { creatureByTrait, itemsByTrait } = traitSources();
       const c = creatureByTrait.get(t.id), boss = bossSpriteFor(t), its = itemsByTrait.get(t.id) || [], it = its.find(x => x.icon);
       r = { name: t.name, desc: t.desc, icons: [c ? critFace(c) : boss ? spriteImg(boss) : "", it ? spriteImg(it.icon, "px") : ""],
-        chips: [c ? c.name : t.owner || "", ...new Set(its.map(x => x.name))], open: { ek: "trait", eid: t.id } }; } }
+        chips: [c ? c.name : t.owner || "", ...new Set(its.map(x => x.name))], open: { ek: "trait", eid: t.id }, spells: traitSpellRow(t.id) }; } }
     else if (k === "perk") { const [sid, pk] = [rest[0], rest.slice(1).join(":")], sp = D.specs.find(x => String(x.id) === sid), p = sp && sp.perks.find(x => x.key === pk);
       if (p) r = { name: p.name, desc: p.desc, icons: [specIco(sp), p.icon && spriteImg(p.icon, "px")], chips: [sp.label], spells: perkSpellRow(sp.id, p) }; }
     else if (k === "relic") { const rl = D.relics.find(x => String(x.id) === id), rk = rl && extra != null && rl.ranks.find(x => x.rank === extra);
-      if (rl) r = { name: rl.name.split(",")[0], desc: rk ? rk.desc : "", icons: [spriteImg(relicArt(rl), "px")], chips: [(rl.name.split(",")[1] || "").trim(), rk ? `Rank ${extra}` : ""] }; }
+      if (rl) r = { name: rl.name.split(",")[0], desc: rk ? rk.desc : "", icons: [spriteImg(relicArt(rl), "px")], chips: [(rl.name.split(",")[1] || "").trim(), rk ? `Rank ${extra}` : ""], spells: rk ? spellRowWrap(usedSpellCards(rl, null, extra)) : "" }; }
     else if (k === "card") { const cd = (D.cards || []).find(x => String(x.id) === id);
       if (cd) r = { name: `${cd.family} set`, desc: extra ? cd.effects[extra - 1] || "" : "", icons: [spriteImg(cd.sprite)], chips: ["Card Set", extra ? `Power ${extra}` : ""] }; }
     else if (k === "spell") { const sp = (D.spells || []).find(x => String(x.id) === id);
@@ -4453,7 +4451,7 @@
       for (const pr of n.props || []) if (pr.cat === "trait") { const ti = TRAITITEM.get(pr.key); if (ti) ids.push(ti.traitId); } }
     const seen = new Set();
     return ids.filter(tid => tid != null && !seen.has(tid) && seen.add(tid))
-      .map(tid => `<div class="primary-traits" style="margin-bottom:6px">${traitBanner(tid)}<div class="trait-desc">${richText((TRAIT[tid] || {}).desc || "")}</div></div>`).join("");
+      .map(tid => `<div class="primary-traits" style="margin-bottom:6px">${traitBanner(tid)}<div class="trait-desc">${richText((TRAIT[tid] || {}).desc || "")}</div>${traitSpellRow(tid, true)}</div>`).join("");
   }
   // a class chip in the creature-class colour (Spells page tiles; `tail` e.g. " → Nature" for a class swap)
   const clsTag = (cls, tail = "") => cls ? `<span class="anoint-spec-tag" style="color:${clsColor(cls)}">${esc(cls)}${tail}</span>` : "";
@@ -4815,7 +4813,7 @@
       const t = TRAITITEM.get(v), tr = t && t.traitId != null ? TRAIT[t.traitId] : null;
       icon = t && t.icon; name = t ? t.name : v; sub = t ? `grants ${t.traitName}` : "";
       // full trait-container style (banner + description), same as a creature's innate trait
-      lines = tr ? `<div class="primary-traits">${traitBanner(t.traitId)}<div class="trait-desc">${richText(tr.desc || "")}</div></div>`
+      lines = tr ? `<div class="primary-traits">${traitBanner(t.traitId)}<div class="trait-desc">${richText(tr.desc || "")}</div>${traitSpellRow(t.traitId, true)}</div>`
         : `<div class="slot-sub">${esc(t ? t.traitName : "")}</div>`;
       if (tr) open = ` data-action="apx-open" data-ek="trait" data-eid="${t.traitId}"`;
     } else if (type === "spell") {
@@ -4995,7 +4993,7 @@
         <span class="prop-name" style="flex:0 0 44px;color:var(--accent)">R${rk.rank}</span>
         <span class="prop-stat" style="flex:1;text-align:left">${richText(rk.desc)}</span></div>`;
       // if this rank casts a named spell, show its spell-gem container (icon + description) beneath the row
-      const cards = spellsCastInText(rk.desc).map(sp => spellGemCard(sp)).join("");
+      const cards = usedSpellCards(sel, null, rk.rank);
       return cards ? row + `<div class="relic-cast-spells">${cards}</div>` : row;
     }).join("");
     return `<div class="ovl-backdrop" data-action="detail-backdrop"><div class="overlay-panel detail">
@@ -5391,7 +5389,7 @@
     const innateN = new Set([c.traitId, f ? f.traitId : null, en ? en.traitId : null].filter(x => x != null)).size;
     const hasArtifactTrait = traitIds.length > innateN;
     const traitHtml = traitIds.map(tid => `<div class="primary-traits" style="margin-bottom:6px">${traitBanner(tid)}
-      <div class="trait-desc">${richText((TRAIT[tid] || {}).desc || "")}</div></div>`).join("");
+      <div class="trait-desc">${richText((TRAIT[tid] || {}).desc || "")}</div>${traitSpellRow(tid, true)}</div>`).join("");
     const relic = slot.relic ? RELIC.get(slot.relic.id) : null;
     // equipped artifact: header row + spell gems + resolved stat bonuses. Its traits are already listed
     // under Traits above (labelled "+ artifact"), so they aren't repeated here.
@@ -5556,7 +5554,7 @@
   const netherBonusRows = (n) => FX.foldBonus(FX.netherContribs(n));
   function netherTraitContainers(n) {
     return (n.props || []).filter(p => p.cat === "trait").map(p => { const ti = TRAITITEM.get(p.key), tid = ti ? ti.traitId : null; if (tid == null) return "";
-      return `<div class="primary-traits" style="margin-bottom:6px">${traitBanner(tid)}<div class="trait-desc">${richText((TRAIT[tid] || {}).desc || "")}</div></div>`; }).join("");
+      return `<div class="primary-traits" style="margin-bottom:6px">${traitBanner(tid)}<div class="trait-desc">${richText((TRAIT[tid] || {}).desc || "")}</div>${traitSpellRow(tid, true)}</div>`; }).join("");
   }
   function netherSpellContainers(n) {
     return (n.props || []).filter(p => p.cat === "spell").map(p => { const sp = SPELL.get(p.key); return sp ? spellGemCard(sp, p.trigger) : ""; }).join("");

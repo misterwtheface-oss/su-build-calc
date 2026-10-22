@@ -4,6 +4,14 @@ Every dated change entry, newest first (moved verbatim from Progress.md on 2026-
 to their own section and sorted by their date). Current state and open work: `Progress.md`, `BACKLOG.md`.
 New entries go at the TOP.
 
+## 2026-10-22 — Spell-gem containers for every object that casts or grants a spell
+- Extract S47 / S48: runtime-picked pools (Pyroblast, Prophecy, It's Called a Lance, Colorblind, Avenged Sevenfold, Chaos Through
+  Creation, Lunar Ending) and granted gems (`gem_spell_ids`, 66 tags). build-data ships `spellsUsed` ({s, k cast|gem, l pick label,
+  rk relic rank}) on 42 perks, 134 traits, 20 relics and 4 spells; `PERK_CAST_HELD` is gone.
+- The app shows them under perks (as before), under every full trait display (creature, bosses, gods, artifacts, nether stones,
+  trait detail), under Start of Battle / effect-order trait and relic rows, on relic rank rows (code clause rank; replaces the
+  "Casts <Spell>" text match) and on spell detail. A pool labels each card with its pick case (class, Avatar).
+
 ## 2026-10-21 — Spells under perks that cast them; Start of Battle secondary calls from code
 - User: perks that cast a spell show its spell-gem container as an indented row under the perk (spec perk list, Start of Battle
   and effect-order rows; un-indented on the perk's detail page). Code-grounded: the code layer's Actions::Auto Cast

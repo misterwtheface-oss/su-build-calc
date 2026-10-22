@@ -336,8 +336,7 @@ Known limits + planned work, roughly in priority order (all now cheap to impleme
 - [ ] In-game checks the Bosses page shows as unverified: Jotun's 24-turn count, Mindwurm saddle "nothing" pick, Nebodar
   "Burned can't be avoided".
 - [x] **Start of Battle secondary calls** DONE 2026-10-21 (extract S42 `secondary_of`; 13 indented, self re-checks folded).
-- [ ] **Perk cast pools** (2026-10-21): Pyroblast / Prophecy / It's Called a Lance pick their spell at runtime; asked in
-  `_su_extract/code/HANDOFF_perk_cast_pools.md`, then drop `PERK_CAST_HELD` in build-data.
+- [x] **Perk cast pools** DONE 2026-10-22 (extract S47 / S48; spellsUsed on perks, traits, relics, spells).
 - [ ] **Misery → Perdition** (2026-10-11): owner set provisionally (`user-pending`, hidden). When the user confirms in-game, drop
   `nyi` from traits 568–570 (or move them back if the test says otherwise).
 - [x] Relic `hasRoll` flags (DONE: extract fix S33/S35, picked up by the 2026-10-18 rebuild — 36 ranks on 20 relics): the extract read relic gate ids in the wrong order; after the extract fix, refresh the app's relic
