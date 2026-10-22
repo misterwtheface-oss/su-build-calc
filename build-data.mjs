@@ -4148,7 +4148,7 @@ if (errors.length) {
     for (const k of ['spells', 'relics', 'cards', 'conditions']) for (const x of Object.values(SU_DATA[k] || {}))
       add(k.replace(/s$/, ''), x, { desc: x.desc || (x.effects || []).join(' | ') || null, family: x.family, ...(k === 'spells' ? { appId: x.id } : {}) });
     for (const x of SU_DATA.traitItems || []) add('traitItem', x, {});
-    fs.writeFileSync(path.join(dumpDir, 'app_v1_tags.json'), JSON.stringify({ _note: 'Written by su-build-calc build-data on every build. The v1 tags (taxo / taxoSrc) the app no longer ships after the v1 cutover (2026-10-22). Same shape as build_taxo_v2.py load_app() output: {kind, id, name, taxo, src, ...}; perks also carry spec, spells appId (id = key), relics their app id.', objects: o }));
+    fs.writeFileSync(path.join(dumpDir, 'app_v1_tags.json'), JSON.stringify({ _note: 'Written by su-build-calc build-data on every build. The v1 tags (taxo / taxoSrc) the app no longer ships after the v1 cutover (2026-10-22). Same shape as build_taxo_v2.py load_app() output: {kind, id, name, taxo, src, ...}; perks also carry spec, spells appId (id = key), relics their app id. taxonomy / tagLabels = the v1 lists data.js used to carry. Read via _su_extract/code/app_data.py.', objects: o, taxonomy: SU_DATA.taxonomy, tagLabels: SU_DATA.tagLabels }));
   } }
 { let n = 0;
   const strip = (o) => { if (o && (o.taxo || o.taxoSrc)) { delete o.taxo; delete o.taxoSrc; n++; } };
