@@ -4,6 +4,12 @@ Every dated change entry, newest first (moved verbatim from Progress.md on 2026-
 to their own section and sorted by their date). Current state and open work: `Progress.md`, `BACKLOG.md`.
 New entries go at the TOP.
 
+## 2026-10-22 — Code text leaking into spell-card labels
+- User: raw code showed on some spell cards' source labels (Idolatry). The label parser in `build-data.mjs` read the pick
+  list after the FIRST colon of the extract's `gem_from_how` / `cast_from_how`, so code prose with its own colons leaked in.
+  It now reads after the LAST colon. Fixed: Idolatry and Weapons of Mass Distortion ("Arbiter"), Ultimate Manifestation
+  and trait 534 ("Chaos"). No other label changed.
+
 ## 2026-10-22 — Collapsible spell / status rows
 - User: the spell and buff/debuff cards under perks, traits, relic ranks and effect-order rows sit inside their owner's
   container (the Planner trait look everywhere), collapsed behind a small arrow; no preview names. A row you open stays open

@@ -3403,8 +3403,8 @@ const { spellGrants, relicUltimates, ultimateRoutes } = (() => {
   // Final Summoning keeps its per-demon list (demonSpells) instead.
   let nUsed = 0; const usedBy = {};
   { const CL = readJSON(path.join(MODEL, 'taxo_v2_tags.json')).objects;
-    const labelsOf = (how) => {                                       // "<label> <id>[ / <id>…]" items after the colon
-      const m = new Map(), tail = String(how || '').slice(String(how || '').indexOf(':') + 1);
+    const labelsOf = (how) => {                                       // "<label> <id>[ / <id>…]" items after the LAST colon
+      const m = new Map(), tail = String(how || '').slice(String(how || '').lastIndexOf(':') + 1);   // the code prose before it holds colons too
       for (const it of tail.split(/,\s*/)) { const x = /^\s*(.+?) (\d+(?: \/ \d+)*)\s*$/.exec(it); if (x) for (const id of x[2].split(' / ')) m.set(+id, x[1]); }
       return m;
     };
