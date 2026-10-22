@@ -1890,3 +1890,5 @@ span.boss-chip { cursor: default; }
 
 /* Appendix: How Effect Order Works */
 .eo-rule { margin: 0 0 8px; line-height: 1.45; }
+/* effect order: when the change lands (At once / Runs now / Queued …) */
+.eo-res { margin-left: 6px; white-space: nowrap; color: var(--accent2); }

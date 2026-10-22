@@ -3521,7 +3521,7 @@
       else if (ref.k === "boost") r = { name: "Realm Boost", desc: ref.name.charAt(0).toUpperCase() + ref.name.slice(1) + ".", icons: [], chips: [] };
       if (!r) { console.error("START OF BATTLE: unresolved", ref, e.name); r = { name: e.name, desc: e.effect, icons: [], chips: [] }; }
       r.icons = r.icons.filter(Boolean); r.chips = r.chips.filter(Boolean);
-      return { ...r, step: e.sub || String(e.phase), enemy: e.enemy, note: r.note || e.note || null, secOf: e.secOf || null };
+      return { ...r, step: e.sub || String(e.phase), enemy: e.enemy, note: r.note || e.note || null, secOf: e.secOf || null, res: e.res || null };
     });
     // secondary calls (a check made inside another effect) are not steps of their own: unnumbered, indented under the parent
     let n = 0; for (const r of SOB_ROWS) if (!r.secOf) r.n = ++n;
@@ -3540,7 +3540,7 @@
     const row = (r) => `<div class="perk-line res-line${r.enemy ? " res-enemy" : ""}${r.marker ? " sob-marker" : ""}${r.secOf ? " sob-sec" : ""}${r.open ? " apx-clickable" : ""}"${r.open ? ` data-action="apx-open" data-ek="${r.open.ek}" data-eid="${esc(String(r.open.eid))}" title="View taxonomy"` : ""}>
         <div class="res-n">${r.marker ? "⏱" : r.secOf ? "↳" : r.n}</div>
         <div class="apx-iconcol">${r.icons.map(icoBox).join("")}</div>
-        <div class="perk-line-body"><div class="perk-line-head"><b>${esc(r.name)}</b></div>${r.secOf ? `<div class="perk-desc res-note">Secondary call: checked by ${esc(r.secOf)}</div>` : ""}
+        <div class="perk-line-body"><div class="perk-line-head"><b>${esc(r.name)}</b>${resChip(r.res)}</div>${r.secOf ? `<div class="perk-desc res-note">Secondary call: checked by ${esc(r.secOf)}</div>` : ""}
           ${r.desc ? `<div class="perk-desc">${richText(r.desc)}</div>` : ""}${r.note ? `<div class="perk-desc res-note">${esc(r.note)}</div>` : ""}
           ${r.members ? `<button class="facet sob-mem-toggle" data-action="sob-members">${st.sobMembers || q ? "▾" : "▸"} ${r.members.length} effects</button>
             ${st.sobMembers || q ? `<div class="perk-line-meta sob-members">${r.members.filter(m => !q || m.toLowerCase().includes(q) || r.name.toLowerCase().includes(q)).map(m => `<span class="anoint-spec-tag">${esc(m)}</span>`).join("")}</div>` : ""}` : ""}
@@ -3563,7 +3563,7 @@
   const EO_RULES = [
     "Effects run in the order listed. Each one finishes, or queues its event, before the next is checked. Nothing is sorted by Speed, slot or priority.",
     "An effect that covers a whole side (“your creatures…”, “this trait does not stack”) runs once for that side, however many creatures have it. When several creatures each check their own copy, they go in party slot order, or timeline order for effects on “each creature”.",
-    "Most effects queue an event (damage, healing, buffs, attacks, casts) instead of happening on the spot. Queued events resolve after the current list, oldest first.",
+    "Where an effect sits says when its code runs, not when its change lands. Each row says which: “At once” = in place before the next row; “Runs now” = a whole attack or cast happens on the spot, but its hits are queued; “Queued” = lands later, when the queue reaches it (oldest first, after the current list); “Jumps the queue” = queued at the front; “Changes the amount” = only alters the number being worked out; “Check only” = just a check, its effect is in the rows that follow.",
     "A trigger list (after an attack, a critical hit, a death…) runs in full at once, and everything it queues goes to the back. So every hit of an attack on all enemies resolves before any of their follow-ups.",
     "When a trigger list repeats (Illusion, Fable, Master of Rift Dancers…), the whole list runs again from the top, not each effect twice in a row.",
     "Bonuses from different effects add together and reductions multiply, so their order doesn't change the result. Order matters for effects that cancel, cap or replace the amount: an effect that cancels a hit (Prevented!, Immune, a dodge) stops everything listed after it.",
@@ -3575,6 +3575,13 @@
     return `<button class="apx-sec-head apx-cat${open ? "" : " collapsed"}" data-action="gloss-cat-toggle" data-c="${key}"><span class="apx-sec-caret">${open ? "▾" : "▸"}</span>How Effect Order Works</button>${body}`;
   }
   const EO_TAG = { top: "Placed first", bottom: "Placed last" };
+  // when an effect's change lands (extract `resolution`, S44 / S44c); a mix joins its parts ("At once + Queued"); none = not judged
+  const EO_RES = { immediate: "At once", inline: "Runs now", queued: "Queued", "queued-front": "Jumps the queue", value: "Changes the amount", container: "Check only" };
+  const EO_RES_TIP = { immediate: "In place at once: every later row already sees it", inline: "A whole attack / cast runs right now, inside this step; its hits and spell effects are queued",
+    queued: "Lands later, when the event queue reaches it", "queued-front": "Queued at the front: lands before the events already waiting",
+    value: "Only changes the number being worked out (damage, healing, chance)", container: "Only a check: its effect is in the rows that follow" };
+  const resChip = (res) => { if (!res) return ""; const parts = res.split("+").filter(p => EO_RES[p]); if (!parts.length) return "";
+    return `<span class="anoint-spec-tag eo-res" title="${esc(parts.map(p => EO_RES_TIP[p]).join(" · "))}">${esc(parts.map(p => EO_RES[p]).join(" + "))}</span>`; };
   const EO_CACHE = new Map();
   function eoRef(key, extra) {
     const ck = key + "|" + extra; if (EO_CACHE.has(ck)) return EO_CACHE.get(ck);
@@ -3605,7 +3612,7 @@
   function effectOrderSection(st, q, sec) {
     const hit = (r) => r.name.toLowerCase().includes(q) || (r.desc || "").toLowerCase().includes(q);
     const fns = sec.fns.map(f => { let n = 0;
-      const steps = f.steps.map((s, i) => ({ t: s.t, i, rows: s.rows.map(([k, x, tag]) => ({ ...eoRef(k, x), n: ++n, tag })) }))
+      const steps = f.steps.map((s, i) => ({ t: s.t, i, rows: s.rows.map(([k, x, tag, res]) => ({ ...eoRef(k, x), n: ++n, tag, res })) }))
         .map(s => q ? { ...s, rows: s.rows.filter(hit) } : s).filter(s => s.rows.length);
       return { ...f, steps };
     }).filter(f => f.steps.length);
@@ -3614,7 +3621,7 @@
     const row = (r) => `<div class="perk-line res-line${r.open ? " apx-clickable" : ""}"${r.open ? ` data-action="apx-open" data-ek="${r.open.ek}" data-eid="${esc(String(r.open.eid))}" title="View taxonomy"` : ""}>
         <div class="res-n">${r.n}</div>
         <div class="apx-iconcol">${r.icons.map(icoBox).join("")}</div>
-        <div class="perk-line-body"><div class="perk-line-head"><b>${esc(r.name)}</b>${r.tag ? `<span class="anoint-spec-tag">${EO_TAG[r.tag]}</span>` : ""}</div>
+        <div class="perk-line-body"><div class="perk-line-head"><b>${esc(r.name)}</b>${r.tag ? `<span class="anoint-spec-tag">${EO_TAG[r.tag]}</span>` : ""}${resChip(r.res)}</div>
           ${r.desc ? `<div class="perk-desc">${richText(r.desc)}</div>` : ""}
           ${r.chips.length ? `<div class="perk-line-meta">${r.chips.map(c => `<span class="anoint-spec-tag">${esc(c)}</span>`).join("")}</div>` : ""}</div></div>${r.spells || ""}`;
     const list = (rows) => `<div class="perk-list">${rows.map(row).join("")}</div>`;

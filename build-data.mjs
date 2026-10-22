@@ -3075,7 +3075,16 @@ const COND_DISPLAY = (() => {
   return m;
 })();
 const condDisplay = (n) => COND_DISPLAY.get(n) || n;
-const sobRaw = readJSON(path.join(MODEL, 'start_of_battle_order.json')).entries.slice().sort((a, b) => a.global_order - b.global_order);
+const sobEntries = readJSON(path.join(MODEL, 'start_of_battle_order.json')).entries;
+const sobRaw = sobEntries.slice().sort((a, b) => a.global_order - b.global_order);
+// effect_order_all.json (the extract's combined effect-order dataset) — read once: start of battle takes its `resolution` per entry
+// (the start_of_battle function's blocks point back at their entry: src.index), the Appendix effect-order sections the rest
+const EO_ALL = readJSON(path.join(MODEL, 'effect_order_all.json'));
+const sobResByOrder = new Map();
+for (const b of (EO_ALL.functions.find(f => f.id === 'start_of_battle') || { blocks: [] }).blocks) {
+  const e = b.src && b.src.list === 'entries' ? sobEntries[b.src.index] : null;
+  if (e && b.resolution) sobResByOrder.set(e.global_order, b.resolution);
+}
 const relicCodeToApp = new Map(readJSON(path.join(MODEL, 'relic_signatures.json')).records.map(r => [r.relic_code_id, r.app_relic_id]));
 // scr_RealmPropertyName case → app realm-property key. 13 COPYTRAITS is never rolled (scr_RealmGetProperties redraws it;
 // _su_extract code/REALM_PROPERTIES.md) → dropped via never_rolled above.
@@ -3151,7 +3160,8 @@ for (const e of sobRaw) {
   if (parent && JSON.stringify(parent.ref) === JSON.stringify(ref)) { sobByOrder.set(e.global_order, parent); sobSelf++; continue; }
   const key = `${e.phase_num}|${e.subphase || ''}|${JSON.stringify(ref)}${parent ? '|sec:' + parent.name : ''}`;
   if (sobSeen.has(key)) { sobByOrder.set(e.global_order, sobSeen.get(key)); continue; }
-  const row = { phase: e.phase_num, sub: e.subphase || null, ref, name: e.name, effect: e.effect || '', enemy: !!e.enemy_only,
+  const res = sobResByOrder.get(e.global_order);
+  const row = { phase: e.phase_num, sub: e.subphase || null, ref, name: e.name, effect: e.effect || '', enemy: !!e.enemy_only, ...(res ? { res } : {}),
     ...(e.codex_note ? { note: e.codex_note } : {}), ...(parent ? { secOf: sobName(parent.name) } : {}) };
   sobSeen.set(key, row); sobByOrder.set(e.global_order, row);
   startOfBattle.push(row);
@@ -3165,7 +3175,7 @@ for (const e of sobRaw) {
 // Row: [key, rank | power | null, tag | null] with the app's own refs (trait:<id>, perk:<specId>:<KEY>, relic:<id>, card:<id>,
 // spell:<id>, cond:<Cat:key>, realm:<KEY>, spec:<id>).
 const effectOrder = (() => {
-  const src = readJSON(path.join(MODEL, 'effect_order_all.json'));
+  const src = EO_ALL;
   const F = new Map(src.functions.map(f => [f.id, f]));
   const SOT_LINES = [[1, 'Turn counter'], [107, 'Early start-of-turn effects'], [270, 'Buffs, debuffs and minions tick down'],
     [473, 'Expired buffs and debuffs are removed'], [594, 'Summons and Health resets'], [643, 'Healing every turn'],
@@ -3283,8 +3293,9 @@ const effectOrder = (() => {
       for (const k0 of keys) {
         const k = appKey(k0); if (!k) { dropped++; continue; }
         const prev = last.rows[last.rows.length - 1];
-        if (prev && prev[0] === k && prev[1] === extra) continue;
-        last.rows.push([k, extra, tag]); n++;
+        // row = [app key, rank | power, timeline tag, resolution (when its change lands: extract S44 / S44c; null = not judged)]
+        if (prev && prev[0] === k && prev[1] === extra && prev[3] === (b.resolution || null)) continue;
+        last.rows.push([k, extra, tag, b.resolution || null]); n++;
       }
     }
     const kept = steps.filter(s => s.rows.length);

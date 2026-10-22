@@ -4,6 +4,14 @@ Every dated change entry, newest first (moved verbatim from Progress.md on 2026-
 to their own section and sorted by their date). Current state and open work: `Progress.md`, `BACKLOG.md`.
 New entries go at the TOP.
 
+## 2026-10-22 — Effect order: when each change lands (extract resolution merge S44 / S44c)
+- Every Appendix effect-order row and Start of Battle row shows when its change lands, from the extract's `resolution`: At once,
+  Runs now (a whole attack / cast on the spot, its hits queued), Queued, Jumps the queue, Changes the amount, Check only (the
+  effect is in the rows that follow); mixes join ("At once + Queued", e.g. Ultimate Trickery). Not judged = no label.
+  Tooltip = the longer meaning. Start of Battle joins it through the combined file's start_of_battle blocks (src.index).
+- "How Effect Order Works" rule 3 rewritten: it said most effects queue; the labels now say per row.
+- Rebuild picks up the S44 / S44c timing and text fixes and realm property 25 (Debuff) now on your side.
+
 ## 2026-10-22 — Taxonomy v1 cutover
 - v1 tags (`taxo` / `taxoSrc` on 5,399 objects incl. trait items), the v1 category list (`taxonomy`) and `tagLabels` no longer
   ship (data.js 7.67 → 6.27 MB). The app's v1 branches and `FEATURES.taxoV2` are gone; v2 is the only taxonomy. build-data still
