@@ -172,7 +172,7 @@ Buffs Someone, Is Debuffed / Debuffs Someone, Critically Hits / Is Critically Hi
 3. build-data: v2 tags + attributes. **Done 2026-10-19** (shipped next to v1; `tools/taxo-v2.mjs`). Then each app feature
    moves to v2 behind a script flag, and the filter gets the attribute chips.
 4. ~~Community CSV parity pass~~ dropped (user 2026-10-20: that CSV is personal, not community). v1 retires in one cutover
-   once the extract settles HANDOFF F4 / F5 (Involves review, relic tag ranks) and the open items.
+   once the extract settles HANDOFF F4 / F5 (Involves review, relic tag ranks) and the open items. **Done 2026-10-22.**
 
 ### Open questions (to rule on)
 _None on the shape. Next: the user ratifies the value lists domain by domain against `_su_extract/data/model/taxo_v2_tags.json`._

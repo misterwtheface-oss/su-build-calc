@@ -143,8 +143,9 @@ a decompile → write `_su_extract/code/HANDOFF_<topic>.md` and don't guess (bat
   review (801 on 681 objects) + relic tags with no rank + Takes Damage phase: extract HANDOFF F5~~ (F5 taken 2026-10-21: theme
   lines, Source rule, markers, wrong themes, code drops; left: 47 theme-only on 38 objects in `app_involves_review.json`, 38 relic
   tags with no rank) → ~~CSV parity~~ (dropped,
-  user 2026-10-20: that CSV is personal) → **one cutover commit retires v1 once F4 / F5 and the open extract items are
-  resolved** (user 2026-10-20). Absorbs the Calculation sweep below, the
+  user 2026-10-20: that CSV is personal) → ~~one cutover commit retires v1~~ **DONE 2026-10-22** (F3 / F4 / F5 closed, rounds
+  5-6b taken; v1 no longer ships, the app has no v1 path). **Open: the user's audit of the provisional round-5 theme lines** (crosswalk
+  `theme_status`; Spell Kind / Spell Class / Named Spell -> Cast pending the user's own review). Absorbs the Calculation sweep below, the
   parked S24 Creature is Damaged proposal and the untagged-traits review.
 - [ ] **Taxonomy intent audit, first pass: "Modify X Calculation" sweep + an inbound damage calculation tag** (user
   2026-10-18). (1) Check that `Modify Attack Calculation` (42), `Modify Spell Calculation` (23) and `Defense Calculation` (3)

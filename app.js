@@ -9,7 +9,7 @@
   // Feature flags — flip to true to re-enable. Macros (battle-AI proposal) is WIP: hidden for now.
   // nyi: content that is in the data but NOT live in the game yet (e.g. the Misery False God). Stripped from D here —
   // before anything indexes D.traits / D.falseGods — so with the flag off the app sees exactly the live-game data.
-  const FEATURES = { macros: false, projects: false, nyi: false, taxoSource: false, taxoSinglesToggle: false, taxoV2: true };   // taxoV2: taxonomy view + tag filters read the v2 tags (mechanic groups); off = v1   // taxoSinglesToggle: "Show single-use tags" button   // taxoSource: show each tag's provenance chip (code / token / implied / llm …)
+  const FEATURES = { macros: false, projects: false, nyi: false, taxoSource: false, taxoSinglesToggle: false };   // taxoSinglesToggle: "Show single-use tags" button   // taxoSource: show each tag's provenance chip (code / token / implied / llm …)
   if (!FEATURES.nyi) {
     for (const id of Object.keys(D.traits)) if (D.traits[id].nyi) delete D.traits[id];
     D.falseGods = (D.falseGods || []).filter(g => !g.nyi);
@@ -583,11 +583,10 @@
   // shown ONLY on the entity taxonomy detail page
   const fxClarify = (o) => o && o.clarify && o.clarify.length ? o.clarify.map(c => `<div class="fx-clarify">${esc(c)}</div>`).join("") : "";
 
-  // ── Taxonomy v2 (FEATURES.taxoV2; TAXONOMY_INTENT.md). The taxonomy view and the tag filters read each object's taxo2
-  // and browse by MECHANIC GROUP (D.taxonomy2.groups), not by category. A filter key is "Cat::Value", or for a trigger
-  // whose meaning depends on the creature's part in it, "Trigger::Damage@r=Receiver" shown as "Takes Damage" (ratified:
-  // Kill / Is Attacked / Takes Damage = Trigger + Role, readable labels, no values). Other features still read v1 taxo.
-  const TV2 = FEATURES.taxoV2 && !!D.taxonomy2;
+  // ── Taxonomy v2 (TAXONOMY_INTENT.md; the only taxonomy since the v1 cutover, 2026-10-22). The taxonomy view and the tag
+  // filters read each object's taxo2 and browse by MECHANIC GROUP (D.taxonomy2.groups), not by category. A filter key is
+  // "Cat::Value", or for a trigger whose meaning depends on the creature's part in it, "Trigger::Damage@r=Receiver" shown as
+  // "Takes Damage" (ratified: Kill / Is Attacked / Takes Damage = Trigger + Role, readable labels, no values).
   const TRIG_ROLE_LABEL = { Attack: { Performer: "Attacks", Receiver: "Is Attacked" },
     Damage: { Performer: "Deals Damage", Receiver: "Takes Damage" }, Death: { Performer: "Kills", Receiver: "Dies" },
     Heal: { Performer: "Heals", Receiver: "Is Healed" }, Buff: { Receiver: "Is Buffed", Applier: "Buffs Someone" },
@@ -619,10 +618,9 @@
   const keyBase = (k) => keyParse(k).base;
   const entryKeys = (e) => { const rk = roleKey(e); return rk ? [e.t, rk] : [e.t]; };
   const refineOk = (e, ref) => REFINE.every(R => !ref[R.a] || R.vals(e).includes(ref[R.a]));
-  // every base filter key an object matches (v1: its taxo)
+  // every base filter key an object matches
   const tagKeys = (o) => {
     if (!o) return [];
-    if (!TV2) return o.taxo || [];
     if (o._tk) return o._tk;
     const s = new Set();
     for (const e of o.taxo2 || []) for (const k of entryKeys(e)) s.add(k);
@@ -632,7 +630,7 @@
   const objHasKey = (o, k) => {
     if (!o) return false;
     const { base, ref } = keyParse(k);
-    if (!TV2 || !Object.keys(ref).length) return tagKeys(o).includes(base);
+    if (!Object.keys(ref).length) return tagKeys(o).includes(base);
     return (o.taxo2 || []).some(e => entryKeys(e).includes(base) && refineOk(e, ref));
   };
   // the values attribute R can take for key k over these objects (entries with k's base and its OTHER refinements)
@@ -644,16 +642,15 @@
     return [...out].sort((x, y) => order.indexOf(x) - order.indexOf(y) || String(x).localeCompare(String(y)));
   };
   // the toggles beside an active tag chip, one per attribute that has a value on the listed objects: Any → each value → Any
-  const refineBtns = (k, src, L, objs) => !TV2 ? "" : REFINE.map(R => {
+  const refineBtns = (k, src, L, objs) => REFINE.map(R => {
     const cur = keyParse(k).ref[R.a], vals = refineVals(objs, k, R);
     if (!cur && !vals.length) return "";
     return `<button class="facet${cur ? " on" : ""}" data-action="taxo-refine" data-a="${R.a}" data-src="${src}" data-l="${L}" data-k="${esc(k)}" title="${esc(R.title)}">${esc(cur ? R.label(cur) : R.any)}</button>`;
   }).join("");
-  // browse containers: v2 = mechanic groups (each base key followed by its role keys); v1 = the categories
+  // browse containers: the mechanic groups (each base key followed by its role keys)
   let _taxoGroups = null;
   function taxoGroups() {
     if (_taxoGroups) return _taxoGroups;
-    if (!TV2) return (_taxoGroups = (D.taxonomy ? D.taxonomy.categories : []).map(c => ({ name: c.category, keys: c.values.map(v => c.category + "::" + v) })));
     // Involves (the umbrella: every effect touching the theme) heads its group
     const invFirst = (keys) => [...keys.filter(k => k.startsWith("Involves::")), ...keys.filter(k => !k.startsWith("Involves::"))];
     return (_taxoGroups = D.taxonomy2.groups.map(g => ({ name: g.name, keys: invFirst(g.keys).flatMap(k => {
@@ -664,12 +661,10 @@
   // v2 category order (layer order) for sorting a group's rows
   const TAXO_CAT_ORDER = new Map(((D.taxonomy2 && D.taxonomy2.categories) || []).map((c, i) => [c.category, i]));
   const catRank = (k) => taxoCatName(k) === "Involves" ? -1 : (TAXO_CAT_ORDER.get(taxoCatName(k)) ?? 99);   // Involves heads its group
-  const taxoRowSort = (a, b) => TV2 ? catRank(a.key) - catRank(b.key)
-      || taxoValName(a.key).localeCompare(taxoValName(b.key)) : a.val.localeCompare(b.val);
-  // a row's label inside a group: v2 rows name their category ("Trigger: Takes Damage"), v1 rows are bare values
-  // (a trigger that also has role rows reads "Damage (any)": it matches either side)
-  const taxoRowLabel = (k) => !TV2 ? taxoValName(k)
-    : `${taxoCatName(k)}: ${taxoValName(k)}${k.startsWith("Trigger::") && TRIG_ROLE_LABEL[k.slice(9)] ? " (any)" : ""}`;
+  const taxoRowSort = (a, b) => catRank(a.key) - catRank(b.key) || taxoValName(a.key).localeCompare(taxoValName(b.key));
+  // a row's label inside a group names its category ("Trigger: Takes Damage"); a trigger that also has role rows reads
+  // "Damage (any)": it matches either side
+  const taxoRowLabel = (k) => `${taxoCatName(k)}: ${taxoValName(k)}${k.startsWith("Trigger::") && TRIG_ROLE_LABEL[k.slice(9)] ? " (any)" : ""}`;
   // taxonomy filter: a creature's innate trait's human-facing tags ("Category::Value")
   // index of taxonomy values that match ≥1 member of a source list, grouped by category
   // (counts only hide empty values — never displayed, per minimal-chrome). Source-parameterized so
@@ -2821,7 +2816,7 @@
       // auto-expands whatever matches.
       const idx = appendixBrowseIndex(tags);
       const parts = [];
-      for (const cat of TV2 ? [...idx.keys()] : [...idx.keys()].sort()) {   // v2: mechanic groups in their set order
+      for (const cat of idx.keys()) {   // mechanic groups in their set order
         let vals = idx.get(cat);
         const catMatch = cat.toLowerCase().includes(q);
         if (q && !catMatch) vals = vals.filter(v => v.val.toLowerCase().includes(q));
@@ -2872,7 +2867,7 @@
         // the False God's full display name (Althea part → "Saint Althea"), so searching a boss/False God
         // name surfaces its traits the same way a creature name does.
         const fg = falseGodFor(t);
-        return { id: t.id, name: t.name, desc: t.desc, creature, items, itemNames, taxo: t.taxo, taxoSrc: t.taxoSrc,
+        return { id: t.id, name: t.name, desc: t.desc, creature, items, itemNames, taxo2: t.taxo2,
           depth: t.depth, gate: t.gate,
           ownerType: t.ownerType, ownerCategory: t.ownerCategory, owner: t.owner, ownerGroup: t.ownerGroup,
           _search: [t.name, creature ? creature.name : "", t.owner || "", t.ownerGroup || "", fg ? fg.name : "", itemNames.join(" ")].join(" ") };
@@ -2907,7 +2902,7 @@
       const tagHits = [];
       const seenHit = new Set();   // v2: a tag in several mechanic groups is listed once
       if (q) for (const [cat, vals] of appendixBrowseIndex(tags)) for (const v of vals)
-        if (!tags.includes(v.key) && !seenHit.has(v.key)) { seenHit.add(v.key); tagHits.push({ ...v, cat: TV2 ? taxoCatName(v.key) : cat, val: taxoValName(v.key), name: taxoValName(v.key), _search: `${cat} ${v.val}` }); }
+        if (!tags.includes(v.key) && !seenHit.has(v.key)) { seenHit.add(v.key); tagHits.push({ ...v, cat: taxoCatName(v.key), val: taxoValName(v.key), name: taxoValName(v.key), _search: `${cat} ${v.val}` }); }
       tagHits.sort((a, b) => a.val.localeCompare(b.val) || a.cat.localeCompare(b.cat));
       const body_sections = [
         section("Tags", tagHits, v => `<button class="opt-row" data-action="appendix-tag" data-k="${esc(v.key)}"><span>${esc(v.cat)}: <b>${esc(v.val)}</b></span><span class="apx-val-n">${v.n}</span></button>`),
@@ -3002,17 +2997,6 @@
       }).join("")}</div>
     </div>`).join("");
   }
-  function entityTaxHtml(e) {
-    if (TV2) return entityTaxHtmlV2(e);
-    const groups = new Map();
-    (e.taxo || []).forEach((k, i) => { const cat = taxoCatName(k); if (!groups.has(cat)) groups.set(cat, []);
-      groups.get(cat).push({ val: taxoValName(k), src: e.taxoSrc ? e.taxoSrc[i] : null, key: k }); });
-    if (!groups.size) return `<div class="slot-sub" style="padding:10px">No taxonomy tags on this entry.</div>`;
-    return [...groups].map(([cat, vals]) => `<div class="etax-group">
-      <div class="etax-cat">${esc(cat)}</div>
-      <div class="etax-vals">${vals.map(v => `<button class="etax-tag" data-action="etax-filter" data-k="${esc(v.key)}" title="Filter the Taxonomy to “${esc(v.val)}”">${esc(v.val)}${e.tagRanks && e.tagRanks[v.key] ? `<span class="etax-mult">×${e.tagRanks[v.key]}</span>` : ""}${FEATURES.taxoSource && v.src ? `<span class="apx-src s-${esc(v.src)}">${esc(v.src)}</span>` : ""}</button>`).join("")}</div>
-    </div>`).join("");
-  }
   // trait provenance sections for the detail page: the granting material (or "No Material Exists"),
   // where that item is obtained, and the innate owner (a clickable creature, or the boss + category).
   function traitDetailSections(e) {
@@ -3055,7 +3039,7 @@
     if (!e) return `<div class="ovl-backdrop" data-action="entity-backdrop"><div class="overlay-panel detail">
       <div class="overlay-header"><h2>Not found</h2><button class="ovl-close" data-action="close-entity">✕</button></div>
       <div class="overlay-body"><div class="ovl-center"><div class="slot-sub" style="padding:16px">This entry could not be resolved.</div></div></div></div></div>`;
-    const n = TV2 ? new Set((e.taxo2 || []).map(x => [x.t, x.s, x.so, x.r, x.p, x.d, x.v].join("|"))).size : (e.taxo || []).length;   // one per chip
+    const n = new Set((e.taxo2 || []).map(x => [x.t, x.s, x.so, x.r, x.p, x.d, x.v].join("|"))).size;   // one per chip
     return `<div class="ovl-backdrop" data-action="entity-backdrop"><div class="overlay-panel detail">
       <div class="overlay-header">${r.icon ? `<span class="hdr-ico">${spriteImg(r.icon, "px")}</span>` : ""}
         <h2>${esc(r.name || "—")}</h2><span class="anoint-spec-tag">${esc(r.kindLabel)}</span>
@@ -3070,7 +3054,7 @@
         ${st.ekind === "spell" ? spellRowWrap(usedSpellCards(e) + usedCondCards(e), true) + spellGrantedByHtml(e.id) : ""}
         ${st.ekind === "trait" ? `<div class="section-label">Source</div>${traitDetailSections(e)}` : ""}
         <div class="section-label">Taxonomy — ${n} tag${n === 1 ? "" : "s"}</div>
-        ${entityTaxHtml(e)}
+        ${entityTaxHtmlV2(e)}
       </div></div></div>
       <div class="overlay-footer"><span class="foot-info"></span><button class="btn-confirm" data-action="close-entity">Done</button></div>
     </div></div>`;

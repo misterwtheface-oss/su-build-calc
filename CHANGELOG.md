@@ -4,6 +4,11 @@ Every dated change entry, newest first (moved verbatim from Progress.md on 2026-
 to their own section and sorted by their date). Current state and open work: `Progress.md`, `BACKLOG.md`.
 New entries go at the TOP.
 
+## 2026-10-22 — Taxonomy v1 cutover
+- v1 tags (`taxo` / `taxoSrc` on 5,399 objects incl. trait items), the v1 category list (`taxonomy`) and `tagLabels` no longer
+  ship (data.js 7.67 → 6.27 MB). The app's v1 branches and `FEATURES.taxoV2` are gone; v2 is the only taxonomy. build-data still
+  reads v1 as an input (old themes, the removed-tags list it writes for the extract).
+
 ## 2026-10-22 — Taxonomy v2: extract F5 rounds 5-6b + F4 taken
 - Theme lines (provisional, user audits after the v2 pass; crosswalk `theme_status`): new themes Traits, Death, Turn Timing,
   Targeting, Health, On-Event; Cast += Named Spell::* and Spell Kind Arrow / Damaging / Multi-Target / Single-Target / Stat (pending
