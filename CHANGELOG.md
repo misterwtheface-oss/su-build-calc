@@ -4,6 +4,17 @@ Every dated change entry, newest first (moved verbatim from Progress.md on 2026-
 to their own section and sorted by their date). Current state and open work: `Progress.md`, `BACKLOG.md`.
 New entries go at the TOP.
 
+## 2026-10-21 — Spells under perks that cast them; Start of Battle secondary calls from code
+- User: perks that cast a spell show its spell-gem container as an indented row under the perk (spec perk list, Start of Battle
+  and effect-order rows; un-indented on the perk's detail page). Code-grounded: the code layer's Actions::Auto Cast
+  `cast_spell_ids` (code id → app spell via spell_property_compat), 28 perks; a "one of" pick shows all, in the perk text's order.
+  Gems the perk grants (spell_owners) join the same row (no duplicates). Final Summoning keeps its per-demon list. Held:
+  Pyroblast, Prophecy, It's Called a Lance (spell picked at runtime; one id listed) → `_su_extract/code/HANDOFF_perk_cast_pools.md`.
+- Start of Battle secondary calls now come from the extract (S42 `secondary_of`, control-flow reachability): 13 rows under the
+  effect that checks them (Triple Take, Ruse, the ten elemental traits under Master of Elementasaurs, Rebirth); an effect's own
+  re-check of itself (25) folds into its row. The provisional map is gone.
+- gemSlots guard: Godforged (extract F4, S40p) scales Godforge upgrade 9's slots, which the app doesn't model → exempt, tag ships.
+
 ## 2026-10-21 — Start of Battle: secondary calls indented
 - User: keep the checks an effect makes inside its own block (Triple Take in 1a is Master of Golems' "already has this trait"
   check), shown indented under that effect, unnumbered, with "Secondary call: checked by X". The extract marks them with

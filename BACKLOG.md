@@ -335,9 +335,9 @@ Known limits + planned work, roughly in priority order (all now cheap to impleme
   cast-spell `source` / `exceptions` / `boss_exclusive`. The False God is the source; show spec starts as exceptions. Show the list on each boss page as spell-gem containers. (Data only so far, 2026-10-11.)
 - [ ] In-game checks the Bosses page shows as unverified: Jotun's 24-turn count, Mindwurm saddle "nothing" pick, Nebodar
   "Burned can't be avoided".
-- [ ] **Start of Battle order: mark secondary calls** (2026-10-21) — the list gives every check in the startup code its own row.
-  User: keep them, indented under the effect that makes the check (shipped for 2 provisional cases). The extract marks the rest
-  with `secondary_of` (`_su_extract/code/HANDOFF_start_of_battle_regen.md`); then rebuild and drop `SOB_SECONDARY_PROVISIONAL`.
+- [x] **Start of Battle secondary calls** DONE 2026-10-21 (extract S42 `secondary_of`; 13 indented, self re-checks folded).
+- [ ] **Perk cast pools** (2026-10-21): Pyroblast / Prophecy / It's Called a Lance pick their spell at runtime; asked in
+  `_su_extract/code/HANDOFF_perk_cast_pools.md`, then drop `PERK_CAST_HELD` in build-data.
 - [ ] **Misery → Perdition** (2026-10-11): owner set provisionally (`user-pending`, hidden). When the user confirms in-game, drop
   `nyi` from traits 568–570 (or move them back if the test says otherwise).
 - [x] Relic `hasRoll` flags (DONE: extract fix S33/S35, picked up by the 2026-10-18 rebuild — 36 ranks on 20 relics): the extract read relic gate ids in the wrong order; after the extract fix, refresh the app's relic

@@ -2258,6 +2258,14 @@
   const grantCards = (gs, noTrigger) => gs.map(g => g.spells.map(id => SPELL.get(id)).filter(Boolean).map(sp => spellGemCard(sp, noTrigger ? "" : grantCardTrigger(g))).join("")).join("");
   // perk spell cards carry no casting chip: the perk text right above already states when / how often it casts
   const perkGrantCards = (specId, key) => grantCards(grantsOf("perk", o => o.spec === specId && o.key === key), true);
+  // the spells a perk casts (code: Auto Cast sites) + the gems it grants, as one indented row of spell-gem containers under the perk
+  const perkSpellRow = (specId, p, flat) => {
+    const granted = new Set(grantsOf("perk", o => o.spec === specId && o.key === p.key).flatMap(g => g.spells));
+    const at = (sp) => { const i = (p.desc || "").indexOf(sp.name); return i < 0 ? 1e9 : i; };   // the order the perk text names them
+    const cards = (p.casts || []).filter(id => !granted.has(id)).map(id => SPELL.get(id)).filter(Boolean).sort((a, b) => at(a) - at(b))
+      .map(sp => spellGemCard(sp)).join("") + perkGrantCards(specId, p.key);
+    return cards ? `<div class="perk-spell-row${flat ? " flat" : ""}">${cards}</div>` : "";
+  };
   const traitGrantCards = (traitId, rtIds) => grantCards(grantsOf("trait", o => o.id === traitId
     || (rtIds && ((TRAIT[o.id] || {}).runtimeIds || []).some(r => rtIds.includes(r)))));
   // a relic's Ultimate (scr_GetUltimateSpellByRelic) and who hands it out (Idolatry / Weapons of Mass Distortion)
@@ -2293,8 +2301,8 @@
         <div class="perk-line-body">
           <div class="perk-line-head"><b>${esc(p.name)}</b><span class="perk-line-meta">${noAnointMark(spec, p)}${asc}${badge}</span>${bkBtn("perks", p.key)}</div>
           ${p.desc ? `<div class="perk-desc">${perkText(p.desc, r)}</div>` : ""}
-          ${perkGrantCards(spec.id, p.key)}${demonSpellsHtml(p)}
-        </div></div>`;
+          ${demonSpellsHtml(p)}
+        </div></div>${perkSpellRow(spec.id, p)}`;
     }).join("");
   }
   function renderSpecPage() {
@@ -3051,7 +3059,7 @@
       <div class="overlay-body"><div class="ovl-center"><div class="ovl-center-scroll">
         ${r.descHtml ? `<div class="perk-desc" style="margin-bottom:12px">${r.descHtml}</div>` : ""}
         ${st.ekind === "condition" && e.exclusive && e.exclusive.show ? `<div class="excl-note">${e.exclusive.icon ? spriteImg(e.exclusive.icon, "px") : ""}<span>Exclusive to <b>${esc(e.exclusive.source)}</b></span></div>` : ""}
-        ${st.ekind === "perk" ? perkGrantCards((D.specs.find(x => x.perks.includes(e)) || {}).id, e.key) + demonSpellsHtml(e) : ""}
+        ${st.ekind === "perk" ? perkSpellRow((D.specs.find(x => x.perks.includes(e)) || {}).id, e, true) + demonSpellsHtml(e) : ""}
         ${st.ekind === "trait" ? traitGrantCards(+st.eid) : ""}
         ${st.ekind === "relic" ? relicUltimateCard(e.id) : ""}
         ${st.ekind === "spell" ? spellGrantedByHtml(e.id) : ""}
@@ -3512,7 +3520,7 @@
         const c = creatureByTrait.get(t.id), boss = bossSpriteFor(t), its = itemsByTrait.get(t.id) || [], it = its.find(x => x.icon);
         r = { name: t.name, desc: t.desc, icons: [c ? critFace(c) : boss ? spriteImg(boss) : "", it ? spriteImg(it.icon, "px") : ""],
           chips: [c ? c.name : t.owner || "", ...new Set(its.map(x => x.name))], open: { ek: "trait", eid: t.id } }; } }
-      else if (ref.k === "perk") { const h = perkBy.get(ref.name); if (h) r = { name: h.p.name, desc: h.p.desc, icons: [specIco(h.spec), h.p.icon && spriteImg(h.p.icon, "px")], chips: [h.spec.label] }; }
+      else if (ref.k === "perk") { const h = perkBy.get(ref.name); if (h) r = { name: h.p.name, desc: h.p.desc, icons: [specIco(h.spec), h.p.icon && spriteImg(h.p.icon, "px")], chips: [h.spec.label], spells: perkSpellRow(h.spec.id, h.p) }; }
       else if (ref.k === "relic") { const rl = D.relics.find(x => x.id === ref.id), rk = rl && rl.ranks.find(x => x.rank === ref.rank);
         if (rl && rk) r = { name: rl.name.split(",")[0], desc: rk.desc, icons: [spriteImg(relicArt(rl), "px")], chips: [(rl.name.split(",")[1] || "").trim(), `Rank ${ref.rank}`] }; }
       else if (ref.k === "card") { const cd = (D.cards || []).find(x => x.family === ref.family);
@@ -3547,7 +3555,7 @@
           ${r.desc ? `<div class="perk-desc">${richText(r.desc)}</div>` : ""}${r.note ? `<div class="perk-desc res-note">${esc(r.note)}</div>` : ""}
           ${r.members ? `<button class="facet sob-mem-toggle" data-action="sob-members">${st.sobMembers || q ? "▾" : "▸"} ${r.members.length} effects</button>
             ${st.sobMembers || q ? `<div class="perk-line-meta sob-members">${r.members.filter(m => !q || m.toLowerCase().includes(q) || r.name.toLowerCase().includes(q)).map(m => `<span class="anoint-spec-tag">${esc(m)}</span>`).join("")}</div>` : ""}` : ""}
-          <div class="perk-line-meta">${r.chips.map(c => `<span class="anoint-spec-tag">${esc(c)}</span>`).join("")}</div></div></div>`;
+          <div class="perk-line-meta">${r.chips.map(c => `<span class="anoint-spec-tag">${esc(c)}</span>`).join("")}</div></div></div>${r.spells || ""}`;
     const steps = SOB_STEPS.map(([k, title]) => {
       const list = all.filter(r => r.step === k); if (!list.length) return "";
       const sk = "SOB:" + k, sopen = q ? true : st.sobOpen && st.sobOpen.has(sk);
@@ -3588,7 +3596,7 @@
       r = { name: t.name, desc: t.desc, icons: [c ? critFace(c) : boss ? spriteImg(boss) : "", it ? spriteImg(it.icon, "px") : ""],
         chips: [c ? c.name : t.owner || "", ...new Set(its.map(x => x.name))], open: { ek: "trait", eid: t.id } }; } }
     else if (k === "perk") { const [sid, pk] = [rest[0], rest.slice(1).join(":")], sp = D.specs.find(x => String(x.id) === sid), p = sp && sp.perks.find(x => x.key === pk);
-      if (p) r = { name: p.name, desc: p.desc, icons: [specIco(sp), p.icon && spriteImg(p.icon, "px")], chips: [sp.label] }; }
+      if (p) r = { name: p.name, desc: p.desc, icons: [specIco(sp), p.icon && spriteImg(p.icon, "px")], chips: [sp.label], spells: perkSpellRow(sp.id, p) }; }
     else if (k === "relic") { const rl = D.relics.find(x => String(x.id) === id), rk = rl && extra != null && rl.ranks.find(x => x.rank === extra);
       if (rl) r = { name: rl.name.split(",")[0], desc: rk ? rk.desc : "", icons: [spriteImg(relicArt(rl), "px")], chips: [(rl.name.split(",")[1] || "").trim(), rk ? `Rank ${extra}` : ""] }; }
     else if (k === "card") { const cd = (D.cards || []).find(x => String(x.id) === id);
@@ -3619,7 +3627,7 @@
         <div class="apx-iconcol">${r.icons.map(icoBox).join("")}</div>
         <div class="perk-line-body"><div class="perk-line-head"><b>${esc(r.name)}</b>${r.tag ? `<span class="anoint-spec-tag">${EO_TAG[r.tag]}</span>` : ""}</div>
           ${r.desc ? `<div class="perk-desc">${richText(r.desc)}</div>` : ""}
-          ${r.chips.length ? `<div class="perk-line-meta">${r.chips.map(c => `<span class="anoint-spec-tag">${esc(c)}</span>`).join("")}</div>` : ""}</div></div>`;
+          ${r.chips.length ? `<div class="perk-line-meta">${r.chips.map(c => `<span class="anoint-spec-tag">${esc(c)}</span>`).join("")}</div>` : ""}</div></div>${r.spells || ""}`;
     const list = (rows) => `<div class="perk-list">${rows.map(row).join("")}</div>`;
     const group = (k, title, inner) => { const sk = `${key}:${k}`, sopen = q ? true : st.sobOpen && st.sobOpen.has(sk);
       return `<button class="sob-step${sopen ? " open" : ""}" data-action="sob-step" data-k="${esc(sk)}"><span class="apx-sec-caret">${sopen ? "▾" : "▸"}</span>${esc(title)}</button>${sopen ? inner() : ""}`; };

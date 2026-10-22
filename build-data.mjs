@@ -2977,7 +2977,9 @@ const effects = (() => {
     else {
       const code = new Set(Object.entries(readJSON(f).objects || {}).filter(([, v]) => (v.tags || []).some(t => t.tag === 'Spell Gems::Extra Gem Slot')).map(([k]) => k));
       const have = new Set(rules.filter(r => r.op === 'gemSlots').map(r => r.src.kind === 'perk' ? `perk:${r.src.key}` : `trait:${r.src.id}`));
-      for (const k of code) if (!have.has(k)) err(`gemSlots: code layer adds spell-gem slots for ${k}, no effect rule`);
+      // code-layer slot clauses the app can't compute (reason): no rule, the tag still ships
+      const NO_RULE = { 'perk:GODFORGED': 'scales Godforge upgrade 9 (+3 slots) by 1.5; the app does not model Godforge upgrades (extract F4, S40p)' };
+      for (const k of code) if (!have.has(k) && !NO_RULE[k]) err(`gemSlots: code layer adds spell-gem slots for ${k}, no effect rule`);
       for (const k of have) if (!code.has(k)) err(`gemSlots: effect rule for ${k}, but the code layer has no spell-slot clause`);
     } }
   const byOp = {}; for (const r of rules) byOp[r.op] = (byOp[r.op] || 0) + 1;
@@ -3091,14 +3093,13 @@ const sobPerkNames = new Set(specs.flatMap(sp => sp.perks.map(p => p.name)));
 const sobRtToTraitId = new Map(); for (const [tid, rts] of Object.entries(RT_GROUPS)) for (const r of rts || []) sobRtToTraitId.set(r, +tid);
 const sobBlacklisted = [];
 // Secondary calls (user 2026-10-21: keep them, indented under the effect that makes the check). A gate tested inside another
-// effect's block is not a start-of-battle effect of its own. The extract marks them (`secondary_of` = the parent's
-// global_order; HANDOFF_start_of_battle_regen.md). Until it does, the two cases whose parent is clear from layout + text:
-// Triple Take = Master of Golems' "if they already have this trait" check; Rebirth = Master of Sphinxes' grant check.
-const SOB_SECONDARY_PROVISIONAL = { 39: 38, 305: 304 };
-const sobByOrder = new Map();                                                       // global_order → shipped row (dedupe-aware)
+// effect's block is not a start-of-battle effect of its own: the extract marks them `secondary_of` = the parent's global_order
+// (S42, control-flow reachability; START_OF_BATTLE_FINDINGS.md "Secondary calls"). An effect re-checking itself (its own rank
+// read, 28 of the 52) folds into the parent row.
+const sobByOrder = new Map(), sobDropped = new Set(); let sobSelf = 0;                                                       // global_order → shipped row (dedupe-aware)
 for (const e of sobRaw) {
-  if (/open|unreachable/i.test(e.confidence) || e.never_rolled || ['tavern', 'tavern rule', 'system'].includes(e.family)) continue;
-  if (/battle-wide rule/i.test(e.kind || '')) continue;                                 // set at setup, not a start-of-battle event
+  if (/open|unreachable/i.test(e.confidence) || e.never_rolled || ['tavern', 'tavern rule', 'system'].includes(e.family)) { sobDropped.add(e.global_order); continue; }
+  if (/battle-wide rule/i.test(e.kind || '')) { sobDropped.add(e.global_order); continue; }                                 // set at setup, not a start-of-battle event
   if (e.family === 'maintenance pass') {                                                // 0b: both always-on passes → ONE row
     // raw code labels → app names: "realm 26 BUFF" → that realm property's name, "relic [idx, code]" → relic + rank;
     // register-held ids and tavern rules have no name → dropped
@@ -3122,7 +3123,7 @@ for (const e of sobRaw) {
     const rt = e.ids[0], nm = sobName(e.name);
     if (rt == null) { const byName = Object.values(traits).filter(t => t.name === nm);   // no gate id: unique shipped name (Tools of Creation)
       ref = byName.length === 1 && !/held in a variable/.test(e.name) ? { k: 'trait', id: byName[0].id } : null; }
-    else if (excludedTraitIds.has(sobRtToTraitId.get(rt))) { sobBlacklisted.push(nm); continue; }
+    else if (excludedTraitIds.has(sobRtToTraitId.get(rt))) { sobBlacklisted.push(nm); sobDropped.add(e.global_order); continue; }
     else if (sobTraitByRt.has(rt)) { ref = { k: 'trait', id: sobTraitByRt.get(rt).id }; if (sobTraitByRt.get(rt).name !== nm) sobNameDiff.push(`${rt}: ${nm} ≠ app ${sobTraitByRt.get(rt).name}`); }
     else { const byName = Object.values(traits).filter(t => t.name === nm);
       // not in the app under this runtime id: same-name app trait if unique, else a text-only row (real source, no app record)
@@ -3144,9 +3145,10 @@ for (const e of sobRaw) {
     ref = SOB_REALM_PROP[id] ? { k: 'realm', key: SOB_REALM_PROP[id] }
       : tx ? { k: 'text', name: tx.name, desc: e.effect || '', icon: threatIcon(tx.sprite, `start-of-battle realm property ${id}`), chip: 'Realm Property' } : null; }
   else if (e.family === 'realm boost') ref = { k: 'boost', id: e.ids[0], name: e.name.replace(/^Realm boost \d+:\s*/, '') };
-  if (!ref) { sobSkipped.push(`${e.global_order} ${e.family} ${e.name}`); continue; }
-  const secOf = e.secondary_of ?? SOB_SECONDARY_PROVISIONAL[e.global_order], parent = secOf != null ? sobByOrder.get(secOf) : null;
-  if (secOf != null && !parent) err(`START OF BATTLE: secondary row ${e.global_order} ${e.name}: parent ${secOf} not shipped`);
+  if (!ref) { sobSkipped.push(`${e.global_order} ${e.family} ${e.name}`); sobDropped.add(e.global_order); continue; }
+  const secOf = e.secondary_of, parent = secOf != null ? sobByOrder.get(secOf) : null;
+  if (secOf != null && !parent) { if (!sobDropped.has(secOf)) err(`START OF BATTLE: secondary row ${e.global_order} ${e.name}: parent ${secOf} not shipped`); continue; }
+  if (parent && JSON.stringify(parent.ref) === JSON.stringify(ref)) { sobByOrder.set(e.global_order, parent); sobSelf++; continue; }
   const key = `${e.phase_num}|${e.subphase || ''}|${JSON.stringify(ref)}${parent ? '|sec:' + parent.name : ''}`;
   if (sobSeen.has(key)) { sobByOrder.set(e.global_order, sobSeen.get(key)); continue; }
   const row = { phase: e.phase_num, sub: e.subphase || null, ref, name: e.name, effect: e.effect || '', enemy: !!e.enemy_only,
@@ -3295,7 +3297,7 @@ const effectOrder = (() => {
   if (unresolved.length) err(`effect order: ${unresolved.length} object keys not in the app`);
   return out;
 })();
-console.log(`  start-of-battle order: ${startOfBattle.length} rows from ${sobRaw.length} entries · text-only ${startOfBattle.filter(r => r.ref.k === 'text').length} · blacklisted ${sobBlacklisted.length} (${[...new Set(sobBlacklisted)].join(', ')}) · skipped (no app join) ${sobSkipped.length}: ${sobSkipped.join(' | ')}${sobNameDiff.length ? ` · ⚠ trait name mismatches ${sobNameDiff.length}: ${sobNameDiff.join(' | ')}` : ''}`);
+console.log(`  start-of-battle order: ${startOfBattle.length} rows from ${sobRaw.length} entries · text-only ${startOfBattle.filter(r => r.ref.k === 'text').length} · secondary calls ${startOfBattle.filter(r => r.secOf).length} (+${sobSelf} self re-checks folded) · blacklisted ${sobBlacklisted.length} (${[...new Set(sobBlacklisted)].join(', ')}) · skipped (no app join) ${sobSkipped.length}: ${sobSkipped.join(' | ')}${sobNameDiff.length ? ` · ⚠ trait name mismatches ${sobNameDiff.length}: ${sobNameDiff.join(' | ')}` : ''}`);
 
 // ── Spell gem availability + spells granted by an owner — code (_su_extract spell_owners.json + spell_property_compat.json,
 // S28; code/SPELL_GEMS.md, HANDOFF_spell_owners.md). Per spell:
@@ -3382,6 +3384,28 @@ const { spellGrants, relicUltimates, ultimateRoutes } = (() => {
     }
     grants.push(out);
   }
+  // perk casts (user 2026-10-21: the spell-gem container under perks that cast spells): the code layer's Actions::Auto Cast
+  // tags carry the cast spell's code ids (taxo_v2_tags.json `cast_spell_ids`, from the temp-gem site). Code id → key via
+  // spell_property_compat. "choose(...)" sites cast one of them at random. Final Summoning keeps its per-demon list instead.
+  let nCast = 0;
+  const PERK_CAST_HELD = { PYROBLAST: 'Scourge by enemy class', PROPHECY: "the Avatar's Ultimate", ITSCALLEDALANCE: 'Living Lance by caster class' };
+  { const CL = readJSON(path.join(MODEL, 'taxo_v2_tags.json')).objects;
+    for (const sp of specs) for (const pk of sp.perks) {
+      if (pk.demonSpells) continue;
+      // the spell is picked at runtime (enemy class / Avatar / caster class); the code layer lists one id only → held until the
+      // extract lists the pool (HANDOFF_perk_cast_pools.md)
+      if (PERK_CAST_HELD[pk.key]) continue;
+      const o = CL[`perk:${pk.key}`]; if (!o) continue;
+      const ids = [], oneOf = [];
+      for (const t of o.tags) if (t.tag === 'Actions::Auto Cast' && t.cast_spell_ids) {
+        if (/choose|one of/.test(t.cast_from_how || '')) oneOf.push(true);
+        for (const cid of t.cast_spell_ids) { const r = codeById.get(cid), x = r && spByKey.get(r.key);
+          if (!x) { err(`perk casts: ${sp.label} / ${pk.name}: code spell ${cid} not in the app`); continue; }
+          if (!ids.includes(x.id)) ids.push(x.id); }
+      }
+      if (ids.length) { pk.casts = ids; if (oneOf.length && ids.length > 1) pk.castOneOf = true; nCast++; }
+    } }
+  console.log(`  perk casts (code layer cast_spell_ids): ${nCast} perks`);
   const ult = {};
   for (const u of so.ultimate_by_relic) {
     const r = relicByName.get(norm(u.owner.relic_name)), id = appSpell(u.spell_key);
