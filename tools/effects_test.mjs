@@ -93,6 +93,10 @@ eq('spec-only perks are NOT honoured as anointments (pre-engine behaviour)', (e 
   engine(B(12, party(), { anoints: [{ specId: 21, key: 'ARMYOFGODS' }, { specId: 37, key: 'INTROVERSION' }, { specId: 38, key: 'TOTALDEPRIVATION' }] }))), [1, 6, false]);
 
 console.log('spell-gem slots + class permissions');
+{ // Sovereignty x bc_GetMissingCreatureCount: empty slots + Companion level, capped at 5 (extract F4, S40p)
+  const sov = (n, comp) => engine(B(15, party(...Array(n).fill(0).map(() => slot(OTHER))), { perkAlloc: { 15: { SOVEREIGNTY: 1, COMPANION: comp } } })).gemSlotMax(slot(OTHER));
+  eq('Sovereignty 1: 4 creatures → +2; + Companion 3 → +5 (capped); 1 creature + Companion 3 → +5 (capped)', [sov(4, 0), sov(4, 3), sov(1, 3), sov(5, 1)], [5, 8, 8, 5]);
+}
 eq('Gray Matter rank 3 → Animatus 6 slots, others 3', (e => [e.gemSlotMax(slot(ANIMATUS)), e.gemSlotMax(slot(OTHER))])(engine(B(1, party(), { perkAlloc: { 1: { GRAYMATTER: 3 } } }))), [6, 3]);
 {
   const pump = { id: 9, rank: 50, primary: 'Helmet', stat: [], trick: ['Spell Gem Slots'], netherIds: [] };

@@ -1131,7 +1131,13 @@
    "Scales With::Cast Count",
    "Spell Gems::Potency Up",
    "Spell Gems::Potency Down",
-   "Actions::Can Manually Cast"
+   "Actions::Can Manually Cast",
+   "Named Spell::*",
+   "Spell Kind::Arrow Spells",
+   "Spell Kind::Damaging Spells",
+   "Spell Kind::Multi-Target Spells",
+   "Spell Kind::Single-Target Spells",
+   "Spell Kind::Stat Spells"
   ],
   "Defend": [
    "Trigger::Defend",
@@ -1217,7 +1223,8 @@
    "Condition::Has Debuff",
    "Scales With::Debuff Count",
    "Scales With::Debuff Potency",
-   "Scales With::Trick Debuffs Applied Count"
+   "Scales With::Trick Debuffs Applied Count",
+   "Trigger::DoT Tick"
   ],
   "Minion": [
    "Minions::*",
@@ -1247,7 +1254,8 @@
   "Turn Counter": [
    "Turns::*",
    "Scales With::Turns Taken Count",
-   "Condition::Turn Number"
+   "Condition::Turn Number",
+   "Scales With::Turn Count"
   ],
   "Timeline": [
    "Timeline::*",
@@ -1277,7 +1285,8 @@
    "Type::Count Extra Race",
    "Creature Type::*!class",
    "Condition::Race Match",
-   "Scales With::Race Count"
+   "Scales With::Race Count",
+   "Condition::Party All Same Type"
   ],
   "Artifact": [
    "Involves::Artifact",
@@ -1293,6 +1302,48 @@
   ],
   "Personality": [
    "Involves::Personality"
+  ],
+  "Traits": [
+   "Traits::*!Gain Perk",
+   "Trait Kind::*!Artifact Trait",
+   "Trigger::Trait Activation",
+   "Scales With::Traits Gained Count",
+   "Perks::More Activations",
+   "Cards::More Activations",
+   "Conditions::More Activations"
+  ],
+  "Death": [
+   "Trigger::Death",
+   "Life::Execute",
+   "Life::Survive Lethal",
+   "Condition::Is Dead",
+   "Condition::Is Alive",
+   "Scales With::Dead Creature Count",
+   "Scales With::Living Creature Count"
+  ],
+  "Turn Timing": [
+   "Trigger::Battle Start",
+   "Trigger::Turn Start",
+   "Trigger::Turn End",
+   "Condition::Not Their Turn",
+   "Condition::Undamaged This Turn"
+  ],
+  "Targeting": [
+   "Targeting::*!Timeline Position|Target Rules",
+   "Condition::Creatures Missing",
+   "Scales With::Missing Creature Count"
+  ],
+  "Health": [
+   "Scales With::Current Health %",
+   "Scales With::Missing Health %",
+   "Condition::Health Threshold",
+   "Life::Set Health",
+   "Targeting::Lowest Health",
+   "Life::Resurrect Health Up",
+   "Life::Resurrect Health Down"
+  ],
+  "On-Event": [
+   "Trigger::*!Battle Start|Turn Start|Turn End|DoT Tick"
   ]
  },
  "object_themes": {
@@ -1503,7 +1554,6 @@
   "Scales With::Trick Buffs Gained Count": "F5 (extract HANDOFF_taxonomy_v2), user-ratified 2026-10-20/21",
   "Scales With::Trick Debuffs Applied Count": "F5 (extract HANDOFF_taxonomy_v2), user-ratified 2026-10-20/21",
   "Scales With::Blighted Damage Count": "F5 (extract HANDOFF_taxonomy_v2), user-ratified 2026-10-20/21",
-  "Scales With::Activation Count": "F5 (extract HANDOFF_taxonomy_v2), user-ratified 2026-10-20/21",
   "Scales With::Race Count": "F5 (extract HANDOFF_taxonomy_v2), user-ratified 2026-10-20/21",
   "Scales With::Class Count": "F5 (extract HANDOFF_taxonomy_v2), user-ratified 2026-10-20/21",
   "Actions::Turn Action Limit": "F5 (extract HANDOFF_taxonomy_v2), user-ratified 2026-10-20/21",
@@ -1564,7 +1614,9 @@
    "Defend Count": "Defend",
    "Provoke Count": "Provoke",
    "Amount of Damage Dealt": "Damage",
-   "Damage Taken Count": "Damage"
+   "Damage Taken Count": "Damage",
+   "Dead Creature Count": "Death",
+   "Times Killed": "Death"
   },
   "tick_kind": {
    "Damage or Heal": "Healing"
@@ -1645,5 +1697,48 @@
   "trait:2024": [
    "Involves::Damage"
   ]
+ },
+ "theme_status": {
+  "_note": "Extract HANDOFF_taxonomy_v2 F5 rounds 5 / 5b / 5c / 5d (S40l-S40o): theme lines the user ruled provisionally on 2026-10-21 and audits after the v2 pass. \"<theme> <- <pattern>\" = that line. Values with no line on purpose: Spell Class::*, Spell Kind Arsenal / Booze / Scourge / Ultimate, Traits::Gain Perk, Chance::Re-roll, Targeting::Target Rules, Condition::Count Threshold (theme from its count marker), Condition::Has Done Action, Scales With::Type Count.",
+  "Traits <- Traits::*!Gain Perk": "provisional (user 2026-10-21, audit after the v2 pass)",
+  "Traits <- Trait Kind::*!Artifact Trait": "provisional (user 2026-10-21, audit after the v2 pass)",
+  "Traits <- Trigger::Trait Activation": "provisional (user 2026-10-21, audit after the v2 pass)",
+  "Traits <- Scales With::Traits Gained Count": "provisional (user 2026-10-21, audit after the v2 pass)",
+  "Traits <- Perks::More Activations": "provisional (user 2026-10-21, audit after the v2 pass)",
+  "Traits <- Cards::More Activations": "provisional (user 2026-10-21, audit after the v2 pass)",
+  "Traits <- Conditions::More Activations": "provisional (user 2026-10-21, audit after the v2 pass)",
+  "Death <- Trigger::Death": "provisional (user 2026-10-21, audit after the v2 pass)",
+  "Death <- Life::Execute": "provisional (user 2026-10-21, audit after the v2 pass)",
+  "Death <- Life::Survive Lethal": "provisional (user 2026-10-21, audit after the v2 pass)",
+  "Death <- Condition::Is Dead": "provisional (user 2026-10-21, audit after the v2 pass)",
+  "Death <- Condition::Is Alive": "provisional (user 2026-10-21, audit after the v2 pass)",
+  "Death <- Scales With::Dead Creature Count": "provisional (user 2026-10-21, audit after the v2 pass)",
+  "Death <- Scales With::Living Creature Count": "provisional (user 2026-10-21, audit after the v2 pass)",
+  "Turn Timing <- Trigger::Battle Start": "provisional (user 2026-10-21, audit after the v2 pass)",
+  "Turn Timing <- Trigger::Turn Start": "provisional (user 2026-10-21, audit after the v2 pass)",
+  "Turn Timing <- Trigger::Turn End": "provisional (user 2026-10-21, audit after the v2 pass)",
+  "Turn Timing <- Condition::Not Their Turn": "provisional (user 2026-10-21, audit after the v2 pass)",
+  "Turn Timing <- Condition::Undamaged This Turn": "provisional (user 2026-10-21, audit after the v2 pass)",
+  "Targeting <- Targeting::*!Timeline Position|Target Rules": "provisional (user 2026-10-21, audit after the v2 pass)",
+  "Targeting <- Condition::Creatures Missing": "provisional (user 2026-10-21, audit after the v2 pass)",
+  "Targeting <- Scales With::Missing Creature Count": "provisional (user 2026-10-21, audit after the v2 pass)",
+  "Health <- Scales With::Current Health %": "provisional (user 2026-10-21, audit after the v2 pass)",
+  "Health <- Scales With::Missing Health %": "provisional (user 2026-10-21, audit after the v2 pass)",
+  "Health <- Condition::Health Threshold": "provisional (user 2026-10-21, audit after the v2 pass)",
+  "Health <- Life::Set Health": "provisional (user 2026-10-21, audit after the v2 pass)",
+  "Health <- Targeting::Lowest Health": "provisional (user 2026-10-21, audit after the v2 pass)",
+  "Health <- Life::Resurrect Health Up": "provisional (user 2026-10-21, audit after the v2 pass)",
+  "Health <- Life::Resurrect Health Down": "provisional (user 2026-10-21, audit after the v2 pass)",
+  "On-Event <- Trigger::*!Battle Start|Turn Start|Turn End|DoT Tick": "provisional (user 2026-10-21, audit after the v2 pass)",
+  "Cast <- Named Spell::*": "provisional (user 2026-10-21, audit after the v2 pass); Spell Kind / Spell Class / Named Spell -> Cast pending the user's own review",
+  "Cast <- Spell Kind::Arrow Spells": "provisional (user 2026-10-21, audit after the v2 pass); Spell Kind / Spell Class / Named Spell -> Cast pending the user's own review",
+  "Cast <- Spell Kind::Damaging Spells": "provisional (user 2026-10-21, audit after the v2 pass); Spell Kind / Spell Class / Named Spell -> Cast pending the user's own review",
+  "Cast <- Spell Kind::Multi-Target Spells": "provisional (user 2026-10-21, audit after the v2 pass); Spell Kind / Spell Class / Named Spell -> Cast pending the user's own review",
+  "Cast <- Spell Kind::Single-Target Spells": "provisional (user 2026-10-21, audit after the v2 pass); Spell Kind / Spell Class / Named Spell -> Cast pending the user's own review",
+  "Cast <- Spell Kind::Stat Spells": "provisional (user 2026-10-21, audit after the v2 pass); Spell Kind / Spell Class / Named Spell -> Cast pending the user's own review",
+  "Creature Race <- Condition::Party All Same Type": "provisional (user 2026-10-21, audit after the v2 pass)",
+  "Turn Counter <- Scales With::Turn Count": "provisional (user 2026-10-21, audit after the v2 pass)",
+  "Debuff <- Trigger::DoT Tick": "provisional (user 2026-10-21, audit after the v2 pass)",
+  "marker_themes.count Dead Creature Count / Times Killed -> Death": "provisional (user 2026-10-21, audit after the v2 pass)"
  }
 }

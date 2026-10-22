@@ -49,7 +49,10 @@ export function makeTaxoV2(X, CL) {
   // markers: the code layer's tag markers the app filters on / derives themes from
   const MT = X.marker_themes || {};
   const markerX = (c) => [c.crit ? 'Critical hits only' : null, c.tick_kind || null, c.property || null, c.except ? `Except ${c.except}` : null,
-    ...(c.suppresses || []).map(t => `Suppresses ${t.slice(t.indexOf('::') + 2)}`)].filter(Boolean);
+    ...(c.suppresses || []).map(t => `Suppresses ${t.slice(t.indexOf('::') + 2)}`),
+    // F5 rounds 5b-6b (no theme): counts = the hook raises a counter the effect reads, not a firing event; match = Class / Race Match
+    // against one named type (Fixed) or another creature's (Same as); first_only = the creature's first death this battle
+    c.counts === 'Activation Count' ? 'Counter' : null, c.match ? `Match: ${c.match}` : null, c.first_only ? 'First death only' : null].filter(Boolean);
   const markerThemes = (c) => [c.crit ? (MT.crit || {}).true : null, (MT.count || {})[String(c.count || '').replace(/\s*\(.*\)$/, '')],
     (MT.tick_kind || {})[c.tick_kind], (MT.property || {})[c.property], (MT.except || {})[c.except], (MT.cast_from || {})[c.cast_from],
     (MT.count_of || {})[c.count_of], ...(c.suppresses || []).map(t => (MT.suppresses || {})[t])].filter(Boolean);

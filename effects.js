@@ -116,7 +116,7 @@
     // each with its code site). A rule applies to this creature when its source is live (perk: rank via scr_PerkLevel, so
     // anointments count; trait: on this creature, or scope "party" = on any creature on your side) and `target` (race)
     // matches. Amount: perRank x rank (perks) or value, x `per`: raceOnSide (your creatures of the target race),
-    // uniqueClasses (distinct classes among your creatures), missingCreatures (6 - party size).
+    // uniqueClasses (distinct classes among your creatures), missingCreatures (6 - party size + perPlus perk ranks, max perCap).
     const SLOT_STAT = "Spell Gem Slot", PARTY_SIZE = 6;
     function gemSlotMax(slot) {
       if (!env.CREA.get(slot.cid)) return GEM_SLOT_BASE;
@@ -130,7 +130,10 @@
         else { const on = r.scope === "party" ? party.some(s => slotHasTrait(s, r.src.id)) : slotHasTrait(slot, r.src.id); if (!on) continue; amt = r.value; }
         if (r.per === "raceOnSide") amt *= party.filter(s => raceOf(s) === r.target.race).length;
         else if (r.per === "uniqueClasses") amt *= new Set(party.map(s => env.slotClass(s)).filter(Boolean)).size;
-        else if (r.per === "missingCreatures") amt *= Math.max(0, PARTY_SIZE - party.length);
+        else if (r.per === "missingCreatures") {   // bc_GetMissingCreatureCount: empty slots + perPlus perk ranks (Companion), capped
+          const n = Math.max(0, PARTY_SIZE - party.length) + (r.perPlus || []).reduce((t, p) => t + (perkRuleRank(p) || 0), 0);
+          amt *= r.perCap != null ? Math.min(r.perCap, n) : n;
+        }
         max += amt;
       }
       return max;

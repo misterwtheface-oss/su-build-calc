@@ -4,6 +4,19 @@ Every dated change entry, newest first (moved verbatim from Progress.md on 2026-
 to their own section and sorted by their date). Current state and open work: `Progress.md`, `BACKLOG.md`.
 New entries go at the TOP.
 
+## 2026-10-22 — Taxonomy v2: extract F5 rounds 5-6b + F4 taken
+- Theme lines (provisional, user audits after the v2 pass; crosswalk `theme_status`): new themes Traits, Death, Turn Timing,
+  Targeting, Health, On-Event; Cast += Named Spell::* and Spell Kind Arrow / Damaging / Multi-Target / Single-Target / Stat (pending
+  the user's review); Creature Race += Party All Same Type; Turn Counter += Scales With::Turn Count; Debuff += Trigger::DoT Tick;
+  count marker Dead Creature Count / Times Killed -> Death. Mechanic groups: the new themes join Death & Resurrection, Traits,
+  Turns & Timeline, Party & Targeting, Health & Healing; new group Events (On-Event).
+- Markers (no theme, shown on the chip and filterable): Counter (`counts`: the hook raises a counter, not a firing event), Match:
+  Fixed / Same as (`match` on Class / Race Match), First death only (`first_only` on Trigger::Death).
+- Retired from the vocabulary: Condition::Is Type, Scales With::Activation Count (Is Class / Is Race never shipped).
+- Rebuild picks up rounds 5-6b tags and corrections (Party All Same Type on the Masters, counters on Juggernaut / Outburst /
+  Siegebreaker / Detainment / Recklessness / Fable, Type Count retags, Voidlords clarify note). Theme-only objects: 0.
+- F4: Sovereignty's missing-creature count = empty slots + Companion level, capped at 5 (effect rule `perPlus` / `perCap`; test added).
+
 ## 2026-10-22 — Buff / debuff containers next to the spell ones
 - User: the same container under objects for the buffs / debuffs they apply or always have. Code layer Buffs:: / Debuffs:: Apply
   and Always Has tags (`named` or registry `condition_ids`; conf code only, the 64 `inferred` names left out; random / existing
