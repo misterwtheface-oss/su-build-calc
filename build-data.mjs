@@ -2874,7 +2874,7 @@ const TRAIT_REJECT = fs.existsSync(APPROVED_PATH) ? (readJSON(APPROVED_PATH).tra
     console.log(`  final summoning: ${fp ? fp.demonSpells.length : 0} Greater Demons`);
   } else warn('final_summoning.json missing');
   // effect_clarifications.json — code-grounded "what it actually does" text, shipped as a SEPARATE `clarify: string[]`
-  // field (the localization `desc` stays verbatim game text). Joined trait→runtime id, perk→key, relic→name+rank.
+  // field (the localization `desc` stays verbatim game text). Joined trait→runtime id, perk→key, relic→name+rank, card→app id + family.
   const clarF = path.join(MODEL, 'effect_clarifications.json');
   if (fs.existsSync(clarF)) {
     const traitByRuntime = new Map(); for (const t of Object.values(traits)) for (const r of t.runtimeIds || []) traitByRuntime.set(r, t);
@@ -2883,12 +2883,13 @@ const TRAIT_REJECT = fs.existsSync(APPROVED_PATH) ? (readJSON(APPROVED_PATH).tra
       const tgt = e.kind === 'trait' ? traitByRuntime.get(e.trait_runtime_id)
         : e.kind === 'perk' ? perkByKey.get(e.perk_key)
         : e.kind === 'relic' ? relicRank(e.relic_name || e.name, e.rank)
-        : e.kind === 'spell' ? spells.find(sp => sp.id === e.spell_id && (!e.name || norm(sp.name) === norm(e.name)))
-        : e.kind === 'condition' ? conditions.find(c => c.cat !== 'Minion' && norm(c.name) === norm(e.name)) : null;
+        : e.kind === 'spell' ? spells.find(sp => (e.spell_key ? sp.key === e.spell_key : sp.id === e.spell_id) && (!e.name || norm(sp.name) === norm(e.name)))
+        : e.kind === 'condition' ? conditions.find(c => c.cat !== 'Minion' && norm(c.name) === norm(e.name))
+        : e.kind === 'card' ? cards.find(c => c.id === e.app_card_id && norm(c.family) === norm(e.card_family || e.name)) : null;
       if (tgt && (!e.name || e.kind !== 'trait' || norm(tgt.name) === norm(e.name))) { ((tgt.clarify ||= []).includes(e.text)) || tgt.clarify.push(e.text); hit++; }
       else miss.push(`${e.kind}:${e.name}`);
     }
-    console.log(`  effect clarifications: ${hit} attached`);
+    console.log(`  effect clarifications: ${hit} attached${miss.length ? ` · ⚠ ${miss.length} not joined: ${[...new Set(miss)].slice(0, 15).join(", ")}` : ""}`);
     if (miss.length) warn(`effect clarifications not joined to app data: ${miss.join(', ')}`);
   }
   // has_roll.json — `hasRoll` boolean per object: does any scr_Roll call site (a chance roll) belong to it

@@ -4,6 +4,15 @@ Every dated change entry, newest first (moved verbatim from Progress.md on 2026-
 to their own section and sorted by their date). Current state and open work: `Progress.md`, `BACKLOG.md`.
 New entries go at the TOP.
 
+## 2026-10-23 — Buff / debuff source clarify notes (693, user-approved)
+- User approved the extract's S50 review as proposed. 693 notes now say who the game counts as having applied a buff or
+  debuff: a creature (the holder, the attacker, the dodger, the first holder in party order), no creature, or "put on
+  directly" (no normal buff / debuff step, so nothing that reacts to one activates). Shown with the other clarify notes on
+  traits, perks, spells, relic ranks and now Realm Cards (card detail shows `clarify`; Sanctus power 3 is the one card note).
+- Egg-log: its note leads with "The game's text says Defensive, but the code gives Proficient" (code condition 7).
+- build-data: clarify spell rows can join by `spell_key` (the review's spell ids are runtime ids, not app ids); card rows
+  join by app id + family; the log line now lists clarify rows that don't join (4, all older entries for unshipped objects).
+
 ## 2026-10-23 — Extract pickup: effect-order nesting + "Stops the action", shop icons, backlog tidy
 - Effect Order page (extract S49-S49g, `HANDOFF_effect_order_app.md`): rows that run inside another effect's check are
   indented under it, unnumbered, like start-of-battle secondary calls: "Secondary call: checked by X" (inside an object's

@@ -303,6 +303,9 @@ Known limits + planned work, roughly in priority order (all now cheap to impleme
   execute are matched by the hit's display label, not the spell id (`bc_EventDamage` #831 / #945 `gate.note`); same for
   Disintegrating Arrow on kill (`bc_ExecuteEvents` #41) and the boss-battle instant-kill branch (#84, battle types 37 / 39).
   Needs player-facing wording (what actually differs in play) before shipping; Celerity's row note is data provenance, not a note.
+- [ ] **Egg-log taxonomy: Named Buff::Defensive vs code Proficient** (2026-10-23). The trait's always-on buff is condition 7
+  = Proficient in code (`bc_MaintainPermanentEffects` @0x1412ae058); the text and the v2 tag say Defensive. The clarify note
+  says so; the tag needs the user's OK before it changes (no relabel without approval).
 - [ ] **Bosses page: Inscriptions** — bosses.json now has `encounters[].inscriptions` (the god's 5–6 Inscription spells, one
   random unknown per anointment pick; `exceptions` (e.g. Shadowbringer starts with Plague) / `also_cast_by` per spell) and per
   cast-spell `source` / `exceptions` / `boss_exclusive`. The False God is the source; show spec starts as exceptions. Show the list on each boss page as spell-gem containers. (Data only so far, 2026-10-11.)

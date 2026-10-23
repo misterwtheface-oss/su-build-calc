@@ -4,6 +4,14 @@ Standing decisions the user made about how the app models the game. Don't "fix" 
 the assistant's working notes on 2026-10-08 (they existed nowhere in the repo). Add new rulings here when they're made.
 Taxonomy category definitions themselves live in `TAXONOMY.md`.
 
+## Buff / debuff source notes (2026-10-23)
+- **Approved as proposed (user):** the extract's S50-reviewed "who counts as the source" notes ship as clarify notes (693:
+  the 31 approved medium entries, the reworded high ones, the fixed refuted ones, 7 new entries; Anagnorisis and Unbound
+  Hatred dropped). Wording as reviewed. Source: `_su_extract/code/COMBAT_RULES.md` § Buff / debuff source "Merge rule".
+- **Enemy-side-only traits are boss traits (user: "most of those are known to me as boss only"):** Night Terrors,
+  Protective Wing, Cornered, Curse of the Barrens, Body of Althea, Curse of the Deep only work for an enemy holder in code.
+  Consistent with the code; no app change.
+
 ## Creature detail Triggers (2026-10-18)
 - **Perks and party members' traits are listed too (user):** spec perks and anointments sit in the same event groups as the
   creature's own effects. They are listed only on the creatures they concern, not on every creature. Example: Animator's
