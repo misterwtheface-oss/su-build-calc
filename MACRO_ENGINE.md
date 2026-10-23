@@ -62,6 +62,21 @@ Helpers: `mLine(en, why, chain)` builds a line (`chain: true` = "test next line"
 Current rules, in order: `rez · heal-emergency · self-preserve · provoke-spell · provoke-tank ·
 heal-sustain · debuff · buff · summon · aoe · damage-single · basic-attack · fallback`.
 
+## Authoring rules (in-game, 2026-10-23; see `_su_extract/code/MACRO_MODEL.md` "Authoring patterns")
+Every proposed macro must satisfy these. The current engine breaks the three marked ✗ (BACKLOG Macro roadmap 7–9).
+- ✗ **Health % values are multiples of 10.** The in-game picker steps in 10s. `MACRO_TUNING` has 25 for
+  `healEmergency`, `finishHp` and `selfPreserveHp`, which the player can't enter.
+- ✗ **Chains don't narrow targets.** "test next line" is a yes/no gate; the last line picks its own target from
+  the whole side. The `basic-attack` rule's "doesn't have Shell → doesn't have Barrier → lowest Defense" chain does
+  not skip enemies with Shell or Barrier, despite its note. AND on one creature needs a per-slot chain (`enemy (n)` on
+  every line, 6 copies).
+- ✗ **Always act.** End with a tail that survives the blockers: attack the lowest-Health enemy (also covers
+  Silence and blocked casts), then `If this creature has > 0% Health, defend` (Scorned + Silenced, every enemy
+  Invisible). The current `fallback` emits one line, which Scorn (attack) or realm property 53 (defend) can block.
+- Gated best-of: `If any enemy has < X% Health → test next line` / `If any enemy has lowest Health → <act>`. This
+  acts on the most nearly dead enemy, but only when one is in range.
+- 30 lines per macro. Prefer covering all six slots of a smaller tier over a partial band.
+
 ## How to make common changes
 
 - **Change a threshold** → edit `MACRO_TUNING` (one place; used everywhere).

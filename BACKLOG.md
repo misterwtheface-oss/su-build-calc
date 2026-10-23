@@ -261,11 +261,20 @@ Known limits + planned work, roughly in priority order (all now cheap to impleme
    debuffs). Add targeted overrides / a secondary signal (Affect on Status vs Affect on Life).
 4. **Spec + anointment context** in role inference (e.g. a summoner spec → Support/Tank lean; damage-amp
    anoints → Caster). Currently role uses only the creature's own spells + stats + traits.
-5. **Deeper `scr_MacroProcess` mining** (from the on-disk 337 KB decompile): exact chain candidate-scoping
-   (does a chain re-test the whole side or narrow the candidate set?) and the save-format field order
+5. **Deeper `scr_MacroProcess` mining** (from the on-disk 337 KB decompile): ~~exact chain candidate-scoping~~
+   (answered: chains don't narrow, MACRO_MODEL "Current answer" 2) and the save-format field order
    (`scr_MacroArrayToString`) if we ever add in-game import/export. Confirm the 32-line cap is per-macro.
 6. **Multi-line-per-role & priority UX**: let the user reorder/toggle proposed lines, and handle creatures
    with many spells without bloating the list.
+7. **Health thresholds in 10s** (2026-10-23, user in game: the picker steps in 10s). `MACRO_TUNING` 25s
+   (`healEmergency`, `finishHp`, `selfPreserveHp`) can't be entered → use 20 or 30.
+8. **`basic-attack` chain is wrong**: its "doesn't have Shell / Barrier → test next line" lines don't filter the
+   final "lowest Defense" target (chains don't narrow). Either drop them, or emit per-slot chains
+   (`enemy (n)` on every line) and accept the line cost.
+9. **Always-act tail** (user rule: a macro must never hand the turn back): replace the single `fallback` line with
+   `If this creature has Silence → test next line` / `If any enemy has lowest Health → attack that creature` /
+   `If this creature has > 0% Health → defend`. Patterns + a full worked 30-line macro: MACRO_ENGINE.md
+   "Authoring rules", `_su_extract/code/MACRO_MODEL.md` "Authoring patterns".
 
 
 ## Rules the app doesn't enforce / model yet
