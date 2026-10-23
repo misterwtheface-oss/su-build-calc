@@ -3754,6 +3754,7 @@ const bosses = (() => {
     const threats = ((a || {}).threats || []).map((x, i) => { for (const f of ['title', 'what', 'why']) { if (!x[f]) err(`gate advice: ${where} threat ${i + 1} has no ${f}`); else if (CODEY.test(x[f])) err(`gate advice: ${where} threat ${i + 1} reads like code: ${x[f]}`); }
       return { title: x.title, what: x.what, why: x.why }; });
     const notes = ((a || {}).notes || []); for (const n of notes) if (CODEY.test(n)) err(`gate advice: ${where} note reads like code: ${n}`);
+    for (const x of (a || {}).sections || []) if (!['flat_bonus'].includes(x)) err(`gate advice: ${where} section "${x}" is not one the page knows`);
     const units = e.units.map(u => {
       const w = `${where} / ${u.creature}`, c = crByName.get(norm(u.creature));
       if (!c) err(`bosses: ${w} Avatar not in the app roster`);
@@ -3779,7 +3780,7 @@ const bosses = (() => {
       fill: +((/^(\d+) random/.exec(e.battle.random_fill) || [])[1] || 0), units,
       unlock: e.unlock, ascension: !!e.counts_for_ascension,
       costume: costume ? costume.key : null, rewardSkins,
-      advice: { threats, notes },
+      advice: { threats, notes, ...((a || {}).sections ? { sections: a.sections } : {}) },
     });
   }
   // rune code checks: only the clarify (code ≠ text, e.g. Damage Cap) ships, shown on the boss page's rune advice

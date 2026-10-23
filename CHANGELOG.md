@@ -4,6 +4,13 @@ Every dated change entry, newest first (moved verbatim from Progress.md on 2026-
 to their own section and sorted by their date). Current state and open work: `Progress.md`, `BACKLOG.md`.
 New entries go at the TOP.
 
+## 2026-10-23 — Flat Bonus Damage: Appendix section + Shallan page section
+- User: the 46 flat-bonus effects sit inside Damage Order's two bonus steps, mixed in with 246 percent bonuses and other effects,
+  so they get their own list. Appendix → **Flat Bonus Damage** (collapsed by default, searchable): every effect that skips
+  damage reduction, grouped by which hits it joins (Attacks only 5 · Attacks and spells 19 · Any hit from a creature 21 ·
+  Every hit 1), A→Z. The same list (one shared renderer) is a collapsible section on Shallan's Gate of the Gods page, switched
+  on by `sections: ["flat_bonus"]` in `gate_god_advice.json` (build-data rejects an unknown section name).
+
 ## 2026-10-23 — Flat bonus damage skips damage reduction (extract Q15) + Gate of the Gods reward skins
 - How Effect Order Works: the bonus rule is split in two. Percent bonuses add and reductions multiply (order among them doesn't
   matter); new rule: in Damage Order bonuses come after every reduction, so flat "additional damage equal to X% of a stat"

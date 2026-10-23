@@ -1974,6 +1974,7 @@
         ${bossImg(e) ? `<div class="gg-portrait">${spriteImg(bossImg(e), "px")}</div>` : ""}
         ${adv.threats.length ? `<div class="section-label">Threats</div>${adv.threats.map(t => `<div class="boss-threat"><div class="boss-threat-head">${esc(t.title)}</div>
           <div class="boss-threat-body"><div class="trait-desc">${esc(t.what)}</div><p class="boss-why">${esc(t.why)}</p></div></div>`).join("")}` : ""}
+        ${(adv.sections || []).includes("flat_bonus") ? sec("flat", "Flat Bonus Damage", `<div class="slot-sub sob-intro">${esc(FLAT_INTRO)}</div>${flatBonusList("")}`) : ""}
         <div class="section-label">Base stats</div>${bossStatTable(u.stats)}
         <div class="section-label">Creatures</div>
         ${card}
@@ -3362,7 +3363,7 @@
   // reference. The Effect Order page (user 2026-10-22: its own page, same layout) is the same overlay with page "order": the
   // effect-order rules, resurrection order, start of battle and every effect-order section.
   function openErrata(page = "appendix") {
-    ovState = { kind: "errata", page, search: "", collapsed: new Set(["StatusEffects", "EffectOrderRules", "Resurrection", "StartOfBattle", ...(D.effectOrder || []).map(s => "EO:" + s.key), "ClassAdv", "RandomTargets", "NetherDrops", "PandShrine", "RealmBonusMax", "Masters"]), ndDiff: "normal", render: renderErrata };
+    ovState = { kind: "errata", page, search: "", collapsed: new Set(["StatusEffects", "EffectOrderRules", "Resurrection", "StartOfBattle", ...(D.effectOrder || []).map(s => "EO:" + s.key), "ClassAdv", "FlatBonus", "RandomTargets", "NetherDrops", "PandShrine", "RealmBonusMax", "Masters"]), ndDiff: "normal", render: renderErrata };
     openOverlay(ovState.render()); maybeFocusSearch(OV);
   }
   function renderErrata() {
@@ -3370,7 +3371,7 @@
     const order = st.page === "order";
     const body = (order
       ? eoRulesSection(st, q) + resOrderSection(st, q) + sobSection(st, q) + (D.effectOrder || []).map(s => effectOrderSection(st, q, s)).join("")
-      : statusSection(st, q) + classAdvSection(st, q) + randomTargetSection(st, q) + netherDropSection(st, q) + pandShrineSection(st, q) + realmBonusSection(st, q) + mastersSection(st, q))
+      : statusSection(st, q) + classAdvSection(st, q) + flatBonusSection(st, q) + randomTargetSection(st, q) + netherDropSection(st, q) + pandShrineSection(st, q) + realmBonusSection(st, q) + mastersSection(st, q))
       || `<div class="slot-sub" style="padding:10px">Nothing matches “${esc(st.search)}”.</div>`;
     return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel">
       <div class="overlay-header"><h2>${order ? "Effect Order" : "Appendix"}</h2>
@@ -3664,6 +3665,40 @@
       else body = fns.map(f => group(f.id, f.title, () => f.steps.map(s => (s.t ? `<div class="res-sub">${esc(s.t)}</div>` : "") + list(s.rows)).join(""))).join("");
     }
     return `<button class="apx-sec-head apx-cat${open ? "" : " collapsed"}" data-action="gloss-cat-toggle" data-c="${key}"><span class="apx-sec-caret">${open ? "▾" : "▸"}</span>${esc(sec.title)}</button>${body}`;
+  }
+
+  // ── Flat bonus damage (extract Q15 `flat_bonus`): the Damage Order rows that skip damage reduction, pulled out of the two
+  // bonus steps where they sit among the percent bonuses, grouped by which hits they join. ONE list for the Appendix section
+  // and the Gate god page section (advice `sections: ["flat_bonus"]`, Shallan).
+  const FLAT_GROUPS = [["attack", "Attacks only"], ["attack_spell", "Attacks and spells"], ["sourced", "Any hit from a creature"], ["none", "Every hit"]];
+  let FLAT_ROWS = null;
+  function flatBonusRows() {
+    if (FLAT_ROWS) return FLAT_ROWS;
+    const seen = new Set(), out = [], sec = (D.effectOrder || []).find(s => s.key === "Damage");
+    for (const f of sec ? sec.fns : []) for (const s of f.steps) for (const [k, x, , , , flat] of s.rows) {
+      if (!flat || seen.has(k + "|" + x)) continue; seen.add(k + "|" + x);
+      out.push({ ...eoRef(k, x), flat });
+    }
+    return (FLAT_ROWS = out.sort((a, b) => a.name.localeCompare(b.name)));
+  }
+  const flatHit = (q) => (r) => r.name.toLowerCase().includes(q) || (r.desc || "").toLowerCase().includes(q);
+  function flatBonusList(q) {
+    const rows = flatBonusRows().filter(r => !q || flatHit(q)(r));
+    const row = (r) => `<div class="perk-line res-line${r.open ? " apx-clickable" : ""}"${r.open ? ` data-action="apx-open" data-ek="${r.open.ek}" data-eid="${esc(String(r.open.eid))}" title="View taxonomy"` : ""}>
+        <div class="apx-iconcol">${r.icons.map(icoBox).join("")}</div>
+        <div class="perk-line-body"><div class="perk-line-head"><b>${esc(r.name)}</b></div>
+          ${r.desc ? `<div class="perk-desc">${richText(r.desc)}</div>` : ""}
+          ${r.chips.length ? `<div class="perk-line-meta">${r.chips.map(c => `<span class="anoint-spec-tag">${esc(c)}</span>`).join("")}</div>` : ""}${r.spells || ""}</div></div>`;
+    return FLAT_GROUPS.map(([g, title]) => { const list = rows.filter(r => r.flat === g);
+      return list.length ? `<div class="res-sub">${esc(title)}</div><div class="perk-list">${list.map(row).join("")}</div>` : ""; }).join("");
+  }
+  const FLAT_INTRO = "Added after every damage reduction: reductions don't shrink these, and class advantage doesn't double or halve them.";
+  function flatBonusSection(st, q) {
+    const kw = q && "flat bonus additional damage reduction".includes(q);
+    if (q && !kw && !flatBonusRows().some(flatHit(q))) return "";
+    const key = "FlatBonus", open = q ? true : !st.collapsed.has(key);
+    const body = open ? `<div class="slot-sub sob-intro">${esc(FLAT_INTRO)}</div>${flatBonusList(kw ? "" : q)}` : "";
+    return `<button class="apx-sec-head apx-cat${open ? "" : " collapsed"}" data-action="gloss-cat-toggle" data-c="${key}"><span class="apx-sec-caret">${open ? "▾" : "▸"}</span>Flat Bonus Damage</button>${body}`;
   }
 
   // ── Nether Stone drop breakpoints (code: inv_Loot, _su_extract code/LOOT.md +
