@@ -222,11 +222,11 @@
     },
     "SHALLAN": {
       "threats": [
-        { "title": "No damage for their first 20 actions",
-          "what": "Each creature on Shallan's side takes 120% less damage minus 1% for every attack and cast it has made this battle. Above 100% it takes no damage (it isn't healed), and the reduction isn't held to the usual 80% cap.",
-          "why": "Each enemy is untouchable until it has acted 20 times, and only takes full damage after 120 actions. A long fight: survive while they act, and save your damage for when their count is high." }
+        { "title": "Only flat bonus damage hurts them for their first 20 actions",
+          "what": "Each creature on Shallan's side takes 120% less damage minus 1% for every attack and cast it has made this battle. Above 100% the hit turns negative, and it's only set back to 0 at the very end, after damage bonuses are added. It's never healed, and the reduction isn't held to the usual 80% cap.",
+          "why": "In that window only flat bonus damage (\"additional damage equal to X% of a stat\", e.g. Calamity, Bloodseeker, Subjugation) gets through. Percent damage bonuses, critical hits and strong class hits make the negative hit bigger and work against you. After 20 actions the hit is 0 and flat bonuses land in full; full damage only after 120 actions." }
       ],
-      "notes": ["The text's 120% less would read as healing; the code takes no damage instead, and the reduction isn't capped at 80% like most."]
+      "notes": ["The text's 120% less would read as healing; the code takes no damage instead, and the reduction isn't capped at 80% like most. The 0 floor comes after the damage bonuses, so flat bonus damage still hurts them."]
     },
     "T'MEREM'RGO": {
       "threats": [

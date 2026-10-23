@@ -4,6 +4,22 @@ Every dated change entry, newest first (moved verbatim from Progress.md on 2026-
 to their own section and sorted by their date). Current state and open work: `Progress.md`, `BACKLOG.md`.
 New entries go at the TOP.
 
+## 2026-10-23 — Flat bonus damage skips damage reduction (extract Q15) + Gate of the Gods reward skins
+- How Effect Order Works: the bonus rule is split in two. Percent bonuses add and reductions multiply (order among them doesn't
+  matter); new rule: in Damage Order bonuses come after every reduction, so flat "additional damage equal to X% of a stat"
+  bonuses skip damage reduction and class advantage, and percent bonuses after Class advantage are doubled / halved.
+- Damage Order: a "Skips damage reduction" chip on the flat-bonus rows (extract `flat_bonus`, 50 blocks, 46 rows; Stimulation and
+  Carbuncle p1 / p2 left unmarked per the extract's caveats). Tooltip names which hits it joins (attacks only / attacks and
+  spells / any hit from a creature / every hit).
+- Gate of the Gods: new "Damage" section on every god page (god-side base cut to 35% after the bonuses; Torun 12.25%).
+  Shallan's threat rewritten: only flat bonus damage hurts her side for their first 20 actions; percent bonuses, crits and
+  strong class hits work against you. Her clarify note adds that the 0 floor comes after the bonuses.
+- Gate reward skins (extract `gate_reward_skins.json`, answered 2026-10-12): each god page lists its 2-5 code-named skins as
+  chips (5% each per win if not owned) instead of "its three skins". Tartarith's list includes Halloween Torun: shown with a
+  clarify note. Names are the game's skin names; the reward file's short labels (and "Fox" for Halloween Apocranox) are logged.
+- Clarify notes: Master of Ghouls and ASSKICKER rank 70 say "attacks and spells" but their bonus has no hit-type check, so it
+  can also join indirect damage from the creature.
+
 ## 2026-10-23 — Egg-log: Named Buff::Proficient added beside Defensive (user ruling)
 - Egg-log's text says Defensive; the code adds Proficient. User: keep both, and if Defensive is ever seen added in the code,
   drop Proficient. New crosswalk section `object_adds` (user-ruled tag adds); each add carries `unless_code_named` and drops

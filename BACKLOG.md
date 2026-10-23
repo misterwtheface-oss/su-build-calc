@@ -293,9 +293,6 @@ Known limits + planned work, roughly in priority order (all now cheap to impleme
   average uses creature #2's primary creature's plain base. Deprived keeps the trait.
 - [x] **Nether Bosses** shipped 2026-10-11 (35 pages, tier toggle, threats, stat bars, trait materials).
 - [x] **Gate of the Gods** shipped 2026-10-11 (31 god pages: threats, stat bars, difficulty table, rewards).
-- [ ] **Gate god reward skins** — the reward code gives "each of its three skins" without naming them, and each Avatar has 2–5
-  creature-locked skins (seasonal ones included), so the page lists no skins. Needs the skin ids from the btype-39 aftermath
-  per-god blocks (extract ask, low priority).
 - [ ] **Nether Boss trait materials: code source** — the boss ↔ material link and unlock depth come from the wiki table
   (`nether_boss_trait_depths.json`, asserted against the item reconciliation's boss source); the drop isn't in the loot
   code docs (the treasure-only pool doesn't hold them). Asked in `_su_extract/code/HANDOFF_nether_material_source.md`.

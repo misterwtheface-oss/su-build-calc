@@ -3270,7 +3270,7 @@ const effectOrder = (() => {
   // app object check (the extract's keys are the app's refs; condition → its glossary Cat:key)
   const perkKeys = new Set(specs.flatMap(sc => sc.perks.map(p => `${sc.id}:${p.key}`)));
   const condKeys = new Set(conditions.map(c => `${c.cat}:${c.key}`));
-  let unresolved = [], dropped = 0, blk = 0, eoNested = 0, eoSelf = 0;
+  let unresolved = [], dropped = 0, blk = 0, eoNested = 0, eoSelf = 0, eoFlat = 0;
   const appKey = (key) => {
     const o = src.objects[key] || {}, [k, ...rest] = key.split(':'), id = rest.join(':');
     if (o.blacklisted) { blk++; return null; }
@@ -3311,6 +3311,10 @@ const effectOrder = (() => {
       // parent cell: [parent key, parent rank | power, 's' secondary | 'n' nested, [[key, rank] …] when the body is shared by `a || b`]
       const any = (b.parent_any_of || []).map(rowRef).filter(Boolean);
       const par = pr ? [pr[0], pr[1], b.kind === 'secondary' ? 's' : 'n', ...(any.length > 1 ? [any] : [])] : null;
+      // flat bonus (extract Q15 `flat_bonus`): added after every damage reduction; the cell is its hit gate (attack | attack_spell |
+      // sourced | none). Rows with a `caveat` (Stimulation = fatigue, Carbuncle p1 / p2 flat tag unverified) stay unmarked.
+      const flat = b.flat_bonus && b.flat_bonus.dr_bypass && !b.flat_bonus.caveat ? b.flat_bonus.gate : null;
+      if (flat) eoFlat++;
       let last = steps[steps.length - 1];
       if (!last || last.t !== st) steps.push(last = { t: st, rows: [] });
       for (const k of keys) {
@@ -3320,8 +3324,8 @@ const effectOrder = (() => {
           if (pr && pr[0] === k && pr[1] === extra) { eoSelf++; continue; }
           const prev = last.rows[last.rows.length - 1];
           // row = [app key, rank | power, timeline tag, resolution (when its change lands: extract S44-S49g; null = not judged), parent cell | null]
-          if (prev && prev[0] === k && prev[1] === extra && prev[3] === (b.resolution || null) && JSON.stringify(prev[4]) === JSON.stringify(par)) continue;
-          last.rows.push([k, extra, tag, b.resolution || null, par]); n++;
+          if (prev && prev[0] === k && prev[1] === extra && prev[3] === (b.resolution || null) && JSON.stringify(prev[4]) === JSON.stringify(par) && (prev[5] || null) === flat) continue;
+          last.rows.push([k, extra, tag, b.resolution || null, par, ...(flat ? [flat] : [])]); n++;
           if (par) eoNested++;
         }
       }
@@ -3332,7 +3336,7 @@ const effectOrder = (() => {
     return n ? { id: fid, title: ftitle, steps: merged } : null;
   }).filter(Boolean) })).filter(s => s.fns.length);
   const rows = out.reduce((a, s) => a + s.fns.reduce((b, f) => b + f.steps.reduce((c, x) => c + x.rows.length, 0), 0), 0);
-  console.log(`  effect order: ${out.length} sections · ${out.reduce((a, s) => a + s.fns.length, 0)} functions · ${rows} rows (${eoNested} nested, +${eoSelf} self re-checks folded) · blacklisted dropped ${blk} · unresolved ${unresolved.length}${unresolved.length ? ': ' + [...new Set(unresolved)].slice(0, 12).join(' ') : ''}`);
+  console.log(`  effect order: ${out.length} sections · ${out.reduce((a, s) => a + s.fns.length, 0)} functions · ${rows} rows (${eoNested} nested, +${eoSelf} self re-checks folded, ${eoFlat} flat-bonus blocks) · blacklisted dropped ${blk} · unresolved ${unresolved.length}${unresolved.length ? ': ' + [...new Set(unresolved)].slice(0, 12).join(' ') : ''}`);
   if (unresolved.length) err(`effect order: ${unresolved.length} object keys not in the app`);
   return out;
 })();
@@ -3737,6 +3741,13 @@ const bosses = (() => {
   const GG_ADV = readJSON(path.join(ROOT, 'data', 'reference', 'gate_god_advice.json')).gods;
   const ggKeys = new Set(bj.encounters.filter(e => e.type === 'gate_god').map(e => e.units[0].key));
   for (const k in GG_ADV) if (!ggKeys.has(k)) err(`gate advice: ${k} is not a god Avatar key`);
+  // reward skins (code: gate_reward_skins.json, bc_HandleBattleAftermath btype 39): 2-5 per god, each 5% per win if not owned.
+  // Joined by the app skin id (= skin_code_id), asserted on the locked creature; the name shown is the game's L_SKIN_* name
+  // (the file's own names are short labels, "Xmas" / "Spring", and 397 says "Fox" for Halloween Apocranox, a generator slip
+  // reported in HANDOFF_boss_encounters.md). Tartarith's list holds Halloween Torun (a Torun-locked skin): shown as the code
+  // has it, with a clarify note.
+  const GG_SKINS = new Map(readJSON(path.join(MODEL, 'gate_reward_skins.json')).gods.map(g => [norm(g.god), g.skins]));
+  const skinById = new Map(skins.map(k => [k.id, k])), ggSkinNameDiff = [];
   for (const e of bj.encounters.filter(e => e.type === 'gate_god')) {
     const where = e.name, u0 = e.units[0], a = GG_ADV[u0.key];
     if (!a) err(`gate advice: ${where} has no entry`);
@@ -3752,7 +3763,12 @@ const bosses = (() => {
       nUnits++;
       return { slot: u.slot, name: u.creature, creature: c ? c.id : null, stats: u.base_stats, ownTraitId: own, godTraitId: god };
     });
-    // (its "three skins" aren't named in the reward code, and the Avatar's creature-locked skins include seasonal ones: not listed)
+    const rs = GG_SKINS.get(norm(e.name));
+    if (!rs) err(`gate skins: ${where} has no reward skin list`);
+    const rewardSkins = (rs || []).map(s => { const k = skinById.get(s.skin_code_id);
+      if (!k || norm(k.creature || '') !== norm(s.locked_creature)) { err(`gate skins: ${where} skin ${s.skin_code_id} "${s.name}" (${s.locked_creature}) doesn't join (got ${k && k.name} / ${k && k.creature})`); return null; }
+      if (!norm(k.name).includes(norm(s.name)) && !(s.name === 'Xmas' && /^christmas /i.test(k.name)) && !(s.name === 'Spring' && /^springtime /i.test(k.name))) ggSkinNameDiff.push(`${s.skin_code_id} "${s.name}" = ${k.name}`);
+      return { id: k.id, pct: s.chance_pct, ...(norm(s.locked_creature) !== norm(e.name) ? { other: s.locked_creature } : {}) }; }).filter(Boolean);
     const costume = wardrobe.find(x => x.category === 'god' && norm(x.name) === norm(e.name));
     if (!costume) warn(`bosses: ${where} has no god costume in the wardrobe`);
     out.push({
@@ -3762,7 +3778,7 @@ const bosses = (() => {
         return ds.filter((d, i) => !ds.some((o, j) => j !== i && o.includes(d) && (o.length > d.length || j < i))).join('\n\n') || null; })(),
       fill: +((/^(\d+) random/.exec(e.battle.random_fill) || [])[1] || 0), units,
       unlock: e.unlock, ascension: !!e.counts_for_ascension,
-      costume: costume ? costume.key : null,
+      costume: costume ? costume.key : null, rewardSkins,
       advice: { threats, notes },
     });
   }
@@ -3777,7 +3793,13 @@ const bosses = (() => {
   const types = ['nether_boss', 'false_god', 'gate_god'].map(t => ({ type: t, label: TYPE_LABEL[t] }));
   for (const t of new Set(out.map(e => e.type))) if (!TYPE_LABEL[t]) err(`bosses: encounter type ${t} has no label`);
   console.log(`  bosses: ${out.length} encounters (${types.map(t => `${out.filter(e => e.type === t.type).length} ${t.type}`).join(' / ')}) · ${nUnits} units · ${nSteps} steps`);
-  return { types, encounters: out };
+  if (ggSkinNameDiff.length) warn(`gate skins: reward-file name ≠ game skin name (game name shown): ${ggSkinNameDiff.join(' · ')}`);
+  // every Gate fight: the god-side base cut (bosses.json gate_rules.god_side_damage, extract Q15; plain wording from
+  // HANDOFF_effect_order_app.md "Extract ask (Q15)" item 4, the data sentence carries code refs). Torun's own 65% stacks: 12.25%.
+  if (!(bj.gate_rules || {}).god_side_damage) err('bosses: gate_rules.god_side_damage missing (extract Q15)');
+  const gateRules = { godSide: "Every hit on the god side has its base cut to 35% after the damage bonuses are added, so bonuses aren't cut. Flat bonus damage (\"additional damage equal to X% of a stat\") also skips every damage reduction.",
+    godSideTorun: "On Torun the base is 12.25%: his own 65% cut stacks with it." };
+  return { types, encounters: out, gateRules };
 })();
 
 // ── trigger scope (creature detail Triggers): who in the party a triggered perk / trait is about, read off its game text
