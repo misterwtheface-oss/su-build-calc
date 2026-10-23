@@ -4,6 +4,10 @@ Every dated change entry, newest first (moved verbatim from Progress.md on 2026-
 to their own section and sorted by their date). Current state and open work: `Progress.md`, `BACKLOG.md`.
 New entries go at the TOP.
 
+## 2026-10-23 — Shallan note reworded
+- The note said "the code takes no damage instead", which clashed with flat bonus damage getting through. Now: in code the hit
+  goes negative and is set back to 0 at the end, so it's never healed; not capped at 80%; flat bonus damage still hurts them.
+
 ## 2026-10-23 — Flat Bonus Damage: Appendix section + Shallan page section
 - User: the 46 flat-bonus effects sit inside Damage Order's two bonus steps, mixed in with 246 percent bonuses and other effects,
   so they get their own list. Appendix → **Flat Bonus Damage** (collapsed by default, searchable): every effect that skips
