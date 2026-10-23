@@ -1720,6 +1720,7 @@ const slimShopItem = (i) => {
   if (i.id != null) o.id = i.id;
   if (i.key) o.key = i.key;
   if (i.sprite) o.sprite = i.sprite;
+  if (i.icon_frame != null) o.iconFrame = i.icon_frame;   // the shop list's fallback art: a frame of the `icons` sheet (inv_ItemIconIndex; extract S50)
   if (i.kind === 'trait_item') o.forCreature = i.for_creature || null;
   if (i.unresolved) o.unresolved = i.unresolved;
   if (i.favor_rank != null) o.favorRank = i.favor_rank;   // God Shop: the item's own scr_GodShopSetup rank guard (code, S32)
@@ -2814,8 +2815,11 @@ const TRAIT_REJECT = fs.existsSync(APPROVED_PATH) ? (readJSON(APPROVED_PATH).tra
     else if (it.kind === 'dust') { const d = dustBy.get(norm(it.name)); if (d) it.icon = d.icon; else ok = false; }
     else if (it.kind === 'skin') { const k = skinBy.get(it.id); if (k) it.icon = k.img; else ok = false; }
     else if (it.sprite) { ok = copyNamedSprite(it.sprite, OUT_SHOPICON, `${it.sprite}.png`); if (ok) it.icon = `assets/shopicons/${it.sprite}.png`; }
-    else ok = null;                                                   // no art in code (walls/floors/music/chests/keys)
-    delete it.sprite;
+    // walls / floors / music / chests / keys / weather: the list draws one icons-sheet frame per kind (obj_shop Draw GUI,
+    // inv_ItemIconIndex; extract S50). `sprite` stays first so items with both (backgrounds, skins) keep their own picture.
+    else if (it.iconFrame != null) { it.icon = curIcon(it.iconFrame); ok = !!it.icon; }
+    else ok = null;                                                   // no art in code
+    delete it.sprite; delete it.iconFrame;
     if (ok !== null) { bump(it.kind, ok); if (!ok) (miss[it.kind] = miss[it.kind] || new Set()).add(it.name); }
   }
   console.log(`  shop joins: ${Object.entries(stat).map(([k, [o, m]]) => `${k} ${o}/${o + m}`).join(' · ')}`);
@@ -3075,7 +3079,11 @@ const COND_DISPLAY = (() => {
 })();
 const condDisplay = (n) => COND_DISPLAY.get(n) || n;
 const sobEntries = readJSON(path.join(MODEL, 'start_of_battle_order.json')).entries;
-const sobRaw = sobEntries.slice().sort((a, b) => a.global_order - b.global_order);
+// one code site can test several card powers (Satyr: for i = 1..3 around inv_CardSetPowerUnlocked, extract S49) → one row per power
+const sobRaw = sobEntries.flatMap(e => {
+  const m = e.family === 'card' && e.ids.length > 1 && /^(.+?) card set, powers /.exec(e.name || '');
+  return m ? e.ids.map(p => ({ ...e, ids: [p], name: `${m[1]} set power ${p}` })) : [e];
+}).sort((a, b) => a.global_order - b.global_order);
 // effect_order_all.json (the extract's combined effect-order dataset) — read once: start of battle takes its `resolution` per entry
 // (the start_of_battle function's blocks point back at their entry: src.index), the Appendix effect-order sections the rest
 const EO_ALL = readJSON(path.join(MODEL, 'effect_order_all.json'));
@@ -3261,7 +3269,7 @@ const effectOrder = (() => {
   // app object check (the extract's keys are the app's refs; condition → its glossary Cat:key)
   const perkKeys = new Set(specs.flatMap(sc => sc.perks.map(p => `${sc.id}:${p.key}`)));
   const condKeys = new Set(conditions.map(c => `${c.cat}:${c.key}`));
-  let unresolved = [], dropped = 0, blk = 0;
+  let unresolved = [], dropped = 0, blk = 0, eoNested = 0, eoSelf = 0;
   const appKey = (key) => {
     const o = src.objects[key] || {}, [k, ...rest] = key.split(':'), id = rest.join(':');
     if (o.blacklisted) { blk++; return null; }
@@ -3281,20 +3289,40 @@ const effectOrder = (() => {
     const f = F.get(fid); if (!f) { err(`effect order: no function ${fid} in effect_order_all.json`); return null; }
     if (!f.order_fixed) err(`effect order: ${fid} is not a fixed order`);
     const steps = []; let n = 0;
+    // nesting (extract S49-S49g): a block's `parent` = {order} of the check it runs inside (`kind` secondary = inside a game
+    // object's check, nested = inside a step of the function; `parent_any_of` = a body shared by `a || b`). Pass 1 resolves
+    // every block's app keys so a row can name its nearest SHIPPED ancestor (keyless or dropped parents are walked past;
+    // 11 parents come after their children, so one pass can't do it).
+    const byOrder = new Map(f.blocks.map(b => [b.order, b]));
+    const keysOf = new Map();
+    for (const b of f.blocks) { const ks = (b.gate && b.gate.keys) || []; if (ks.length) keysOf.set(b.order, ks.map(appKey)); }
+    const extraOf = (b) => { const x = b.gate.rank ?? b.gate.power ?? null; return Array.isArray(x) ? x : [x]; };
+    const rowRef = (o) => { const b = byOrder.get(o), k = b && (keysOf.get(o) || []).find(Boolean); return k ? [k, extraOf(b)[0]] : null; };
+    const parentOf = (b) => { const seen = new Set(); let p = b.parent;
+      while (p && !seen.has(p.order)) { seen.add(p.order); const r = rowRef(p.order); if (r) return r; p = (byOrder.get(p.order) || {}).parent; }
+      return null; };
     for (const b of f.blocks) {
-      const keys = (b.gate && b.gate.keys) || []; if (!keys.length) continue;
+      const keys = keysOf.get(b.order); if (!keys) continue;
       const st = stepOf[fid] ? stepOf[fid](b) : null;
       if (st === undefined) { err(`effect order: ${fid} step "${b.when}" has no plain-words heading`); continue; }
-      const extra = b.gate.rank ?? b.gate.power ?? null;
       const tag = fid === 'timeline_build' ? (/-> TOP\b/.test(b.does || '') ? 'top' : /-> BOTTOM\b/.test(b.does || '') ? 'bottom' : null) : null;
+      const pr = b.parent ? parentOf(b) : null;
+      // parent cell: [parent key, parent rank | power, 's' secondary | 'n' nested, [[key, rank] …] when the body is shared by `a || b`]
+      const any = (b.parent_any_of || []).map(rowRef).filter(Boolean);
+      const par = pr ? [pr[0], pr[1], b.kind === 'secondary' ? 's' : 'n', ...(any.length > 1 ? [any] : [])] : null;
       let last = steps[steps.length - 1];
       if (!last || last.t !== st) steps.push(last = { t: st, rows: [] });
-      for (const k0 of keys) {
-        const k = appKey(k0); if (!k) { dropped++; continue; }
-        const prev = last.rows[last.rows.length - 1];
-        // row = [app key, rank | power, timeline tag, resolution (when its change lands: extract S44 / S44c; null = not judged)]
-        if (prev && prev[0] === k && prev[1] === extra && prev[3] === (b.resolution || null)) continue;
-        last.rows.push([k, extra, tag, b.resolution || null]); n++;
+      for (const k of keys) {
+        if (!k) { dropped++; continue; }
+        for (const extra of extraOf(b)) {                            // gate.power can list several powers at one code site
+          // an object re-checking itself inside its own block folds into the parent row (as start of battle does)
+          if (pr && pr[0] === k && pr[1] === extra) { eoSelf++; continue; }
+          const prev = last.rows[last.rows.length - 1];
+          // row = [app key, rank | power, timeline tag, resolution (when its change lands: extract S44-S49g; null = not judged), parent cell | null]
+          if (prev && prev[0] === k && prev[1] === extra && prev[3] === (b.resolution || null) && JSON.stringify(prev[4]) === JSON.stringify(par)) continue;
+          last.rows.push([k, extra, tag, b.resolution || null, par]); n++;
+          if (par) eoNested++;
+        }
       }
     }
     const kept = steps.filter(s => s.rows.length);
@@ -3303,7 +3331,7 @@ const effectOrder = (() => {
     return n ? { id: fid, title: ftitle, steps: merged } : null;
   }).filter(Boolean) })).filter(s => s.fns.length);
   const rows = out.reduce((a, s) => a + s.fns.reduce((b, f) => b + f.steps.reduce((c, x) => c + x.rows.length, 0), 0), 0);
-  console.log(`  effect order: ${out.length} sections · ${out.reduce((a, s) => a + s.fns.length, 0)} functions · ${rows} rows · blacklisted dropped ${blk} · unresolved ${unresolved.length}${unresolved.length ? ': ' + [...new Set(unresolved)].slice(0, 12).join(' ') : ''}`);
+  console.log(`  effect order: ${out.length} sections · ${out.reduce((a, s) => a + s.fns.length, 0)} functions · ${rows} rows (${eoNested} nested, +${eoSelf} self re-checks folded) · blacklisted dropped ${blk} · unresolved ${unresolved.length}${unresolved.length ? ': ' + [...new Set(unresolved)].slice(0, 12).join(' ') : ''}`);
   if (unresolved.length) err(`effect order: ${unresolved.length} object keys not in the app`);
   return out;
 })();

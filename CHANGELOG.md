@@ -4,6 +4,24 @@ Every dated change entry, newest first (moved verbatim from Progress.md on 2026-
 to their own section and sorted by their date). Current state and open work: `Progress.md`, `BACKLOG.md`.
 New entries go at the TOP.
 
+## 2026-10-23 — Extract pickup: effect-order nesting + "Stops the action", shop icons, backlog tidy
+- Effect Order page (extract S49-S49g, `HANDOFF_effect_order_app.md`): rows that run inside another effect's check are
+  indented under it, unnumbered, like start-of-battle secondary calls: "Secondary call: checked by X" (inside an object's
+  check) or "Inside X" (inside a step); a body shared by `a || b` says "Runs if any of these passed: …". The parent is the
+  nearest shipped ancestor (keyless checks are walked past); an object re-checking itself folds into its row (22).
+  197 nested rows across 48 functions.
+- New resolution label `cancel` = **Stops the action** (tooltip: the rest of the attack / cast / hit / event doesn't
+  happen); shown last in a mix. Scorned, Dissolve, Sure-footed, the Relic guards and the Robodomi saves carry it (S49g).
+  "How Effect Order Works" explains it and the indent in one sentence.
+- Start of Battle: the Satyr card set row (one code site for powers 1-3) ships as three rows (was dropped: no app join).
+- Shops (extract S50, `HANDOFF_shop_icons.md`): all 196 blank items have code-grounded art. Music / floors / walls /
+  Treasure Chests / Gate of the Gods Key / Torun's weather item draw one `icons`-sheet frame per kind (`icon_frame`, the
+  game's own shop-list fallback); Heart of Alakadan / Heart of 8004 get their sprites. Every shop kind now joins 100%.
+  Torun's weather item is named **It's Raining Men** (was "Weather").
+- Data rebuilt from the extract (effect order S49-S49g, S50 shops / project items, current effect formulas).
+- BACKLOG tidy: the done 2026-10-09 batch section removed (its God Shop code gate shipped 2026-10-22), Rodian Aftermath
+  in-game check closed (confirmed 2026-10-20), the Taxonomy v2 rebuild item reduced to the open round-5 audit.
+
 ## 2026-10-23 — Macro Proposal engine v2 (still behind FEATURES.macros)
 - In-game rules: 30-line cap, Health % in steps of 10, no "chains narrow targets" lines, whole-side spells cast with no
   target, and an always-act tail (attack if worth it → defend → skip turn) that is never trimmed.

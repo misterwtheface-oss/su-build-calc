@@ -5,35 +5,10 @@ Progress.md; original text kept, with a status note where later work changed thi
 recorded in `CHANGELOG.md`. Full pre-consolidation text: `archive/Progress_until_2026-10-08.md`.
 Extract-side research questions live in `_su_extract/RESUME.md`.
 
-## BATCH 2026-10-09 — DONE and deployed together (details in CHANGELOG). Still open: the God Shop code gate (#8 follow-up).
-## Delete this section once it lands.
-Commit each item locally; push ONCE when the whole batch is finished. Anything that needs a decompile → don't attempt it,
-write the requirements to `_su_extract/code/HANDOFF_<topic>.md` for the extract session. Tick items here as they land.
-- [x] 1. **Mobile Artifact wizard** — slots become a single-row header, locked, scrolling horizontally, so the rest of the
-  screen is the selector list.
-- [x] 2. **Nether stone spell filter** — toggle between the "On X" trigger variants; a stone counts if ANY of its spells
-  meets the condition (stones can hold several spells).
-- [x] 3. **Artifact library preview → Sockets tab** doesn't show EMPTY sockets (seen on a Helmet with empty spell + nether
-  slots; probably not helmet-specific). The editor is fine.
-- [x] 4. **Fusion colours need the internet** — offline (airplane mode) every build showed default colours and the 6 fusion
-  colour options were all default. Find why (asset not precached / fetched from GitHub at runtime?) and fix.
-- [x] 5. **Spell-gem property conflicts** — RESOLVED 2026-10-10 (extract verdict b): two extractor bugs (c13 read from the
-  else-branch only; every record shifted by one spell). Jade is allowed on 685 spells (same set as Citrine); data rebuilt,
-  735 spells' allowed sets changed. No clarify note needed.
-- [x] 6. **Mobile Spec selector redesign** — no info panel: tapping a spec opens a full-page screen (back arrow → selector
-  grid) with the animated spec sprite, description prose and perk containers. One **Edit** button (replaces "Customize")
-  turns the perk containers into their editable form. Tapping the Spec tile when a spec is active opens the SAME page
-  (Edit available; back arrow → grid to pick a replacement). Confirm button becomes **Done** when reached from an active spec.
-- [x] 7. **Anointment tile** — add the "✕" clear like the other Planner tiles; centre the perk icons horizontally without
-  changing their size or wrapping (exactly 5 per row).
-- [x] 8. **God Shop** — show Favor Rank requirements. Shipped from the community reference (630/630 joined); code gate → `_su_extract/code/HANDOFF_god_shop_favor_rank.md`.
-- [x] 9. **Guild Shop** — the list is always 5: lay it out as a row of 3 over a row of 2 (offset, gaps between).
-- [x] 10. **All God Shop lists** — centre text vertically in each row.
-
-## BATCH 2026-10-17 — user list of 30 (not started)
+## BATCH 2026-10-17 — user list of 30 (mostly done; open items are the unticked ones)
 Grouped by the app area each item touches, in suggested build order. Within a group, earlier items unblock later ones.
 `(#n)` = the user's original number. Clarifications the user gave on 2026-10-17 are marked **User:**. Research items that need
-a decompile → write `_su_extract/code/HANDOFF_<topic>.md` and don't guess (batch rule above).
+a decompile → write `_su_extract/code/HANDOFF_<topic>.md` and don't guess.
 
 ### G1. Spell-gem containers, Spell Wizard, Artifact Wizard spell socket (do #26 first; the others build on it)
 - [x] **(#26) One shared spell-gem container component.** DONE 2026-10-17: `spellRow` (pickers + library preview), `spellGemCard` (now also the Spells-page granted tile), `spellIco`, `clsTag`. The Artifact Wizard's spell-socket step should show the same
@@ -119,34 +94,14 @@ a decompile → write `_su_extract/code/HANDOFF_<topic>.md` and don't guess (bat
 ### G7. Taxonomy + search
 - [ ] **In-game check: Lord of Undeath** (extract S38b). Code runs it at each of your creatures' turn start for every minion they
   have, whether or not a stack left (text: "after a minion goes away"). Confirm in game before adding a clarify note.
-- [ ] **In-game check: Rodian Aftermath vs Oathbreaker** (extract S39 F3). The "+30% damage for each time each creature has died"
-  bonus in bc_EventDamage is gated on runtime trait id 1797 (Oathbreaker in the id table), not on Rodian Aftermath's 1798
-  (@0x140e40e99). Test which of the two traits gives the bonus. The extract currently carries a clarify note saying the effect
-  sits on Oathbreaker; remove it if the id table turns out to have the two swapped.
 - [ ] **In-game check: Covenant without the perk** (extract S39 F3). The rune bonus (once all five Rune spells have been cast,
   on-attack effects activate an extra time) runs in the shared Rune case of bc_CreatureCast with no perk check (all-five test
   @0x1408bdf5a, bc_OnAttack loop @0x1408be264). Test without Covenant: cast all five Runes, then a sixth Rune. Do on-attack
   effects activate twice? If yes, write a bug report like `bug_report_master_of_gorgons.md`.
-- [ ] **Taxonomy v2 rebuild** (user 2026-10-18, shape ratified). Charter + draft: `TAXONOMY_INTENT.md` "Taxonomy v2";
-  check: `node tools/taxo_crosswalk.mjs`. Ratified so far: Scope, Source, Role, Phase attributes; Targeting; Ignore Defense → Calculation; Stats Gain / Has More split.
-  Extract handoff ANSWERED S37 (2026-10-19): `_su_extract/data/model/taxo_v2_tags.json` (2,001 of 2,415 splits decided; 414 open,
-  not blocking). Ruled 2026-10-19: Delivery attribute (Event / Direct), Phase During, Xyrxzy's Control = Extra Attack, Cold Blood not Bounds.
-  App-side note: worklist trait ids are app ids (output keys `trait:<app id>`, runtime ids alongside).
-  **All values ratified 2026-10-19.** Extract follow-ups listed in the handoff (re-run build_taxo_v2.py with the renames). Next:
-  ~~user ratifies the value lists~~ → ~~build-data v2~~ (DONE 2026-10-19: `taxo2` / `theme2` on every object + `taxonomy2`,
-  `tools/taxo-v2.mjs`) → app features onto v2 behind a script flag (`FEATURES.taxoV2`, on): ~~taxonomy view + filters +
-  pickers by mechanic group~~ (DONE 2026-10-19; groups accepted by the user 2026-10-20, may be tweaked in use), attribute
-  ~~code-backed only~~ (DONE 2026-10-19, user ruling; extract works through 2,083 removed tags, HANDOFF F3) → refine
-  chips: ~~side (Either / Your side / Enemy side)~~ DONE 2026-10-19; ~~source / phase / delivery~~ DONE 2026-10-20 (same toggle); ~~spell /
-  gem pickers, creature Triggers section, synergy, `noDmgStat`, relic per-rank tags~~ DONE 2026-10-20 (everything reads v2;
-  relic ranks from code sites) → ~~review queue for the 581 unverified candidates~~ (gone: code-backed only, F3) → ~~Involves
-  review (801 on 681 objects) + relic tags with no rank + Takes Damage phase: extract HANDOFF F5~~ (F5 taken 2026-10-21: theme
-  lines, Source rule, markers, wrong themes, code drops; left: 47 theme-only on 38 objects in `app_involves_review.json`, 38 relic
-  tags with no rank) → ~~CSV parity~~ (dropped,
-  user 2026-10-20: that CSV is personal) → ~~one cutover commit retires v1~~ **DONE 2026-10-22** (F3 / F4 / F5 closed, rounds
-  5-6b taken; v1 no longer ships, the app has no v1 path). **Open: the user's audit of the provisional round-5 theme lines** (crosswalk
-  `theme_status`; Spell Kind / Spell Class / Named Spell -> Cast pending the user's own review). Absorbs the Calculation sweep below, the
-  parked S24 Creature is Damaged proposal and the untagged-traits review.
+- [ ] **Taxonomy v2: user audit of the provisional round-5 theme lines** (v2 rebuild + v1 cutover DONE 2026-10-22, history in
+  CHANGELOG and `TAXONOMY_INTENT.md` "Taxonomy v2"). Crosswalk `theme_status`: Traits / Death / Turn Timing / Targeting / Health /
+  On-Event lines, markers counts / match / first_only; Spell Kind / Spell Class / Named Spell -> Cast pending the user's own review.
+  Absorbs the Calculation sweep below, the parked S24 Creature is Damaged proposal and the untagged-traits review.
 - [ ] **Taxonomy intent audit, first pass: "Modify X Calculation" sweep + an inbound damage calculation tag** (user
   2026-10-18). (1) Check that `Modify Attack Calculation` (42), `Modify Spell Calculation` (23) and `Defense Calculation` (3)
   catch everything they should, code-grounded. Quick text scan: 41 traits use "calculation" / "as if" wording, 15 carry a
@@ -344,6 +299,10 @@ Known limits + planned work, roughly in priority order (all now cheap to impleme
 - [ ] **Nether Boss trait materials: code source** — the boss ↔ material link and unlock depth come from the wiki table
   (`nether_boss_trait_depths.json`, asserted against the item reconciliation's boss source); the drop isn't in the loot
   code docs (the treasure-only pool doesn't hold them). Asked in `_su_extract/code/HANDOFF_nether_material_source.md`.
+- [ ] **Effect-order clarify-note candidates (optional, extract S49 / S49d / S49f):** Fragmenting Arrow overflow and Butcher
+  execute are matched by the hit's display label, not the spell id (`bc_EventDamage` #831 / #945 `gate.note`); same for
+  Disintegrating Arrow on kill (`bc_ExecuteEvents` #41) and the boss-battle instant-kill branch (#84, battle types 37 / 39).
+  Needs player-facing wording (what actually differs in play) before shipping; Celerity's row note is data provenance, not a note.
 - [ ] **Bosses page: Inscriptions** — bosses.json now has `encounters[].inscriptions` (the god's 5–6 Inscription spells, one
   random unknown per anointment pick; `exceptions` (e.g. Shadowbringer starts with Plague) / `also_cast_by` per spell) and per
   cast-spell `source` / `exceptions` / `boss_exclusive`. The False God is the source; show spec starts as exceptions. Show the list on each boss page as spell-gem containers. (Data only so far, 2026-10-11.)

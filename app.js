@@ -3577,7 +3577,7 @@
   const EO_RULES = [
     "Effects run in the order listed. Each one finishes, or queues its event, before the next is checked. Nothing is sorted by Speed, slot or priority.",
     "An effect that covers a whole side (“your creatures…”, “this trait does not stack”) runs once for that side, however many creatures have it. When several creatures each check their own copy, they go in party slot order, or timeline order for effects on “each creature”.",
-    "Where an effect sits says when its code runs, not when its change lands. Each row says which: “At once” = in place before the next row; “Runs now” = a whole attack or cast happens on the spot, but its hits are queued; “Queued” = lands later, when the queue reaches it (oldest first, after the current list); “Jumps the queue” = queued at the front; “Changes the amount” = only alters the number being worked out; “Check only” = just a check, its effect is in the rows that follow.",
+    "Where an effect sits says when its code runs, not when its change lands. Each row says which: “At once” = in place before the next row; “Runs now” = a whole attack or cast happens on the spot, but its hits are queued; “Queued” = lands later, when the queue reaches it (oldest first, after the current list); “Jumps the queue” = queued at the front; “Changes the amount” = only alters the number being worked out; “Check only” = just a check, its effect is in the rows that follow; “Stops the action” = when the check passes, the rest of the attack, cast, hit or event doesn't happen. An indented row runs inside the check of the effect it names.",
     "A trigger list (after an attack, a critical hit, a death…) runs in full at once, and everything it queues goes to the back. So every hit of an attack on all enemies resolves before any of their follow-ups.",
     "When a trigger list repeats (Illusion, Fable, Master of Rift Dancers…), the whole list runs again from the top, not each effect twice in a row.",
     "Bonuses from different effects add together and reductions multiply, so their order doesn't change the result. Order matters for effects that cancel, cap or replace the amount: an effect that cancels a hit (Prevented!, Immune, a dodge) stops everything listed after it.",
@@ -3590,11 +3590,12 @@
   }
   const EO_TAG = { top: "Placed first", bottom: "Placed last" };
   // when an effect's change lands (extract `resolution`, S44 / S44c); a mix joins its parts ("At once + Queued"); none = not judged
-  const EO_RES = { immediate: "At once", inline: "Runs now", queued: "Queued", "queued-front": "Jumps the queue", value: "Changes the amount", container: "Check only" };
+  const EO_RES = { immediate: "At once", inline: "Runs now", queued: "Queued", "queued-front": "Jumps the queue", value: "Changes the amount", container: "Check only", cancel: "Stops the action" };
   const EO_RES_TIP = { immediate: "In place at once: every later row already sees it", inline: "A whole attack / cast runs right now, inside this step; its hits and spell effects are queued",
     queued: "Lands later, when the event queue reaches it", "queued-front": "Queued at the front: lands before the events already waiting",
-    value: "Only changes the number being worked out (damage, healing, chance)", container: "Only a check: its effect is in the rows that follow" };
-  const resChip = (res) => { if (!res) return ""; const parts = res.split("+").filter(p => EO_RES[p]); if (!parts.length) return "";
+    value: "Only changes the number being worked out (damage, healing, chance)", container: "Only a check: its effect is in the rows that follow",
+    cancel: "When this check passes, the rest of the action does not happen: the event is dropped, the hit does nothing, or the attack / cast / turn ends" };
+  const resChip = (res) => { if (!res) return ""; const parts = res.split("+").filter(p => EO_RES[p]).sort((a, b) => (a === "cancel") - (b === "cancel")); if (!parts.length) return "";
     return `<span class="anoint-spec-tag eo-res" title="${esc(parts.map(p => EO_RES_TIP[p]).join(" · "))}">${esc(parts.map(p => EO_RES[p]).join(" + "))}</span>`; };
   const EO_CACHE = new Map();
   function eoRef(key, extra) {
@@ -3626,16 +3627,22 @@
   function effectOrderSection(st, q, sec) {
     const hit = (r) => r.name.toLowerCase().includes(q) || (r.desc || "").toLowerCase().includes(q);
     const fns = sec.fns.map(f => { let n = 0;
-      const steps = f.steps.map((s, i) => ({ t: s.t, i, rows: s.rows.map(([k, x, tag, res]) => ({ ...eoRef(k, x), n: ++n, tag, res })) }))
+      const steps = f.steps.map((s, i) => ({ t: s.t, i, rows: s.rows.map(([k, x, tag, res, par]) => ({ ...eoRef(k, x), n: par ? null : ++n, tag, res, par })) }))
         .map(s => q ? { ...s, rows: s.rows.filter(hit) } : s).filter(s => s.rows.length);
       return { ...f, steps };
     }).filter(f => f.steps.length);
     if (!fns.length) return "";
     const key = "EO:" + sec.key, open = q ? true : !st.collapsed.has(key);
-    const row = (r) => `<div class="perk-line res-line${r.open ? " apx-clickable" : ""}"${r.open ? ` data-action="apx-open" data-ek="${r.open.ek}" data-eid="${esc(String(r.open.eid))}" title="View taxonomy"` : ""}>
-        <div class="res-n">${r.n}</div>
+    // nested row (extract S49 `parent`): secondary = checked inside another object's effect, nested = inside its step;
+    // a body shared by `a || b` names every alternative
+    const parNote = (p) => { if (!p) return ""; const nm = (k, x) => eoRef(k, x).name;
+      const t = p[3] ? `Runs if any of these passed: ${[...new Set(p[3].map(([k, x]) => nm(k, x)))].join(", ")}`
+        : `${p[2] === "s" ? "Secondary call: checked by" : "Inside"} ${nm(p[0], p[1])}`;
+      return `<div class="perk-desc res-note">${esc(t)}</div>`; };
+    const row = (r) => `<div class="perk-line res-line${r.par ? " sob-sec" : ""}${r.open ? " apx-clickable" : ""}"${r.open ? ` data-action="apx-open" data-ek="${r.open.ek}" data-eid="${esc(String(r.open.eid))}" title="View taxonomy"` : ""}>
+        <div class="res-n">${r.par ? "↳" : r.n}</div>
         <div class="apx-iconcol">${r.icons.map(icoBox).join("")}</div>
-        <div class="perk-line-body"><div class="perk-line-head"><b>${esc(r.name)}</b>${r.tag ? `<span class="anoint-spec-tag">${EO_TAG[r.tag]}</span>` : ""}${resChip(r.res)}</div>
+        <div class="perk-line-body"><div class="perk-line-head"><b>${esc(r.name)}</b>${r.tag ? `<span class="anoint-spec-tag">${EO_TAG[r.tag]}</span>` : ""}${resChip(r.res)}</div>${parNote(r.par)}
           ${r.desc ? `<div class="perk-desc">${richText(r.desc)}</div>` : ""}
           ${r.chips.length ? `<div class="perk-line-meta">${r.chips.map(c => `<span class="anoint-spec-tag">${esc(c)}</span>`).join("")}</div>` : ""}${r.spells || ""}</div></div>`;
     const list = (rows) => `<div class="perk-list">${rows.map(row).join("")}</div>`;
@@ -3789,7 +3796,7 @@
     return `<button class="apx-sec-head apx-cat${open ? "" : " collapsed"}" data-action="gloss-cat-toggle" data-c="${key}"><span class="apx-sec-caret">${open ? "▾" : "▸"}</span>Resurrection Order</button>${body}`;
   }
 
-  // L_IN_WEATHER's name is the runtime "{1}" (the weather is picked when you buy it) — show it as "Weather"
+  // a name still a runtime "{1}" template falls back (the weather item is named in data since extract S50: It's Raining Men)
   const shopItemName = (it) => /^\{\d\}$/.test(it.name || "") ? (it.key === "L_IN_WEATHER" ? "Weather" : "?") : (it.name || "?");
 
   // ── Nether Realm helpers (code-grounded: _su_extract code/NETHER.md) ──
