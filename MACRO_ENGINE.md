@@ -70,9 +70,14 @@ Every proposed macro must satisfy these. The current engine breaks the three mar
   the whole side. The `basic-attack` rule's "doesn't have Shell → doesn't have Barrier → lowest Defense" chain does
   not skip enemies with Shell or Barrier, despite its note. AND on one creature needs a per-slot chain (`enemy (n)` on
   every line, 6 copies).
-- ✗ **Always act.** End with a tail that survives the blockers: attack the lowest-Health enemy (also covers
-  Silence and blocked casts), then `If this creature has > 0% Health, defend` (Scorned + Silenced, every enemy
-  Invisible). The current `fallback` emits one line, which Scorn (attack) or realm property 53 (defend) can block.
+- ✗ **Always act.** End with `If any enemy has lowest Health, attack that creature` (only when attacking is worth
+  it; it also covers Silence and every blocked cast), then `If this creature has > 0% Health, defend`, then
+  `If this creature has > 0% Health, skip turn` (nothing blocks it). The current `fallback` emits one line, which
+  Scorn (attack) or realm property 53 (defend) can block.
+- ✗ **Attack lines need the full loadout.** A caster attacks only when its attacks use Intelligence: Whisper
+  (Tenebris) R70, Ribcracker (Ariamaki) R90 after 10 casts, traits Myosotis / Confusion and Empathy. Otherwise
+  the tail is Defend / Skip only. `macroContext` decides `physical` / `canAttack` from Attack ≥ Intelligence
+  and spell gems; it ignores the relic, traits and spec.
 - Gated best-of: `If any enemy has < X% Health → test next line` / `If any enemy has lowest Health → <act>`. This
   acts on the most nearly dead enemy, but only when one is in range.
 - 30 lines per macro. Prefer covering all six slots of a smaller tier over a partial band.

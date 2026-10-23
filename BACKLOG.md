@@ -272,9 +272,13 @@ Known limits + planned work, roughly in priority order (all now cheap to impleme
    final "lowest Defense" target (chains don't narrow). Either drop them, or emit per-slot chains
    (`enemy (n)` on every line) and accept the line cost.
 9. **Always-act tail** (user rule: a macro must never hand the turn back): replace the single `fallback` line with
-   `If this creature has Silence → test next line` / `If any enemy has lowest Health → attack that creature` /
-   `If this creature has > 0% Health → defend`. Patterns + a full worked 30-line macro: MACRO_ENGINE.md
-   "Authoring rules", `_su_extract/code/MACRO_MODEL.md` "Authoring patterns".
+   `If any enemy has lowest Health → attack that creature` (only if attacks are worth it, item 10) /
+   `If this creature has > 0% Health → defend` / `If this creature has > 0% Health → skip turn`. Patterns + a
+   full worked 30-line macro: MACRO_ENGINE.md "Authoring rules", `_su_extract/code/MACRO_MODEL.md` "Authoring patterns".
+10. **Relic / trait / spec context in `macroContext`** (user 2026-10-23): whether a caster should attack depends
+   on Int-based attacks: Whisper R70, Ribcracker R90 (after 10 casts), Myosotis, Confusion and Empathy. Relics
+   add no macro lines but change which lines belong. Today `physical` / `canAttack` look only at stats and
+   spell gems. (Overlaps item 4.)
 
 
 ## Rules the app doesn't enforce / model yet
