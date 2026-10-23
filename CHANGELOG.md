@@ -4,6 +4,18 @@ Every dated change entry, newest first (moved verbatim from Progress.md on 2026-
 to their own section and sorted by their date). Current state and open work: `Progress.md`, `BACKLOG.md`.
 New entries go at the TOP.
 
+## 2026-10-23 — Macro Proposal engine v2 (still behind FEATURES.macros)
+- In-game rules: 30-line cap, Health % in steps of 10, no "chains narrow targets" lines, whole-side spells cast with no
+  target, and an always-act tail (attack if worth it → defend → skip turn) that is never trimmed.
+- Reads the loadout: no cast lines for a creature that can't cast manually (The Great Beyond, Channeling …); attacks
+  only when Attack is its stat or its attacks use Intelligence (Whisper R70, Ribcracker R90, Myosotis, Confusion and
+  Empathy); Defend first for creatures with Defend payoffs (Extension, Starwrath); Expanded Power counts party-wide.
+- New spell patterns: once-per-battle ally spells turn-gated per ally (Sapphire Power → the allies whose Spell Slot fits
+  their action), ally attack spells on the highest-Attack ally (Rabid Dementia), Silence cleanse, Timeline control,
+  heal-by-damage when an ally is hurt (Drain Life), per-buff / per-debuff damage gated on its break-even count
+  (Implosion, Kick, Jinx vs Spell Blast's charge bonus), and per-spell focus (missing Health, Defense pierce).
+- Fixed: Disintegrating Arrow was read as a resurrection spell.
+
 ## 2026-10-22 — UI batch (13 items)
 - Spell cards: the generic "temp gem of spell" chip is gone. Ultimate spells carry an Avatar chip (the god of the Relic
   that grants the Ultimate, e.g. Holy Strike → Surathli). Final Summoning's demon spells are full spell cards behind the

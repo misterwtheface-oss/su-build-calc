@@ -266,16 +266,16 @@ Known limits + planned work, roughly in priority order (all now cheap to impleme
    (`scr_MacroArrayToString`) if we ever add in-game import/export. Confirm the 32-line cap is per-macro.
 6. **Multi-line-per-role & priority UX**: let the user reorder/toggle proposed lines, and handle creatures
    with many spells without bloating the list.
-7. **Health thresholds in 10s** (2026-10-23, user in game: the picker steps in 10s). `MACRO_TUNING` 25s
+7. ✅ (v2 2026-10-23) **Health thresholds in 10s** (2026-10-23, user in game: the picker steps in 10s). `MACRO_TUNING` 25s
    (`healEmergency`, `finishHp`, `selfPreserveHp`) can't be entered → use 20 or 30.
-8. **`basic-attack` chain is wrong**: its "doesn't have Shell / Barrier → test next line" lines don't filter the
+8. ✅ (v2 2026-10-23) **`basic-attack` chain is wrong**: its "doesn't have Shell / Barrier → test next line" lines don't filter the
    final "lowest Defense" target (chains don't narrow). Either drop them, or emit per-slot chains
    (`enemy (n)` on every line) and accept the line cost.
-9. **Always-act tail** (user rule: a macro must never hand the turn back): replace the single `fallback` line with
+9. ✅ (v2 2026-10-23) **Always-act tail** (user rule: a macro must never hand the turn back): replace the single `fallback` line with
    `If any enemy has lowest Health → attack that creature` (only if attacks are worth it, item 10) /
    `If this creature has > 0% Health → defend` / `If this creature has > 0% Health → skip turn`. Patterns + a
    full worked 30-line macro: MACRO_ENGINE.md "Authoring rules", `_su_extract/code/MACRO_MODEL.md` "Authoring patterns".
-10. **Relic / trait / spec context in `macroContext`** (user 2026-10-23): whether a caster should attack depends
+10. ✅ relics + traits (v2 2026-10-23); spec still open (item 4). **Relic / trait / spec context in `macroContext`** (user 2026-10-23): whether a caster should attack depends
    on Int-based attacks: Whisper R70, Ribcracker R90 (after 10 casts), Myosotis, Confusion and Empathy. Relics
    add no macro lines but change which lines belong. Today `physical` / `canAttack` look only at stats and
    spell gems. (Overlaps item 4.)

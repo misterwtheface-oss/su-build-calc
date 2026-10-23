@@ -13,71 +13,89 @@ vocabulary ships as `D.macroVocab` (from `_su_extract/data/model/macro_vocab.jso
    Mega Magic, a relic Ultimate). Artifact Spell-slot and Nether-Stone spells auto-proc and can't be cast
    manually, so they're excluded here; so are spells flagged `noManual` (code `inv_SpellCanBeCastManually`:
    Booze and a static list such as Saving Grace / Lucky Gem) and chance-cast grants.
-2. **`classifySpell(sp)`** → `{ sp, name, purpose, side, multi }`. `purpose` ∈ `rez · heal · damage ·
-   debuff · buff · provoke · defend · summon · other`, derived from the spell's taxonomy, then overridden by
-   `SPELL_OVERRIDES`.
-3. **`macroContext(slot)`** → `x`, the object every rule reads: grouped spells (`by(purpose)`, `heals`,
-   `dmg`, `singleDmg`, `aoe`), stat flags (`dom`, `tanky`, `squishy`, `physical`, `canAttack`),
-   `hasTauntTrait`, and the tuning object as `x.T`.
-4. **`MACRO_RULES`** → an ordered array of rules; `proposeMacro` runs each whose `when(x)` is true and
-   concatenates its `lines(x)`, then trims to `MACRO_TUNING.maxLines`.
+2. **`classifySpell(sp)`** → `{ sp, name, purpose, side, multi, scale, focus, drains }`. `purpose` ∈ `once ·
+   ally-attack · unsilence · rez · heal · damage · control · debuff · buff · provoke · defend · summon · other`.
+   In-game text patterns decide the first three and `control` (Sapphire Power "for the rest of the battle", Rabid
+   Dementia "Target attacks", Living Necklace "Silence debuffs are removed", Stun Beam "sent to the bottom of the
+   Timeline"); the taxonomy decides the rest; `SPELL_OVERRIDES` wins over both. `multi` comes from the spell's aim.
+   `spellScaling(sp)` reads what the damage scales with from the spell text: per buff / per debuff (with the %),
+   per own charge (Spell Blast), missing Health (→ lowest Health), Health % (→ highest Health), Defense pierce
+   (→ highest Defense). `drains` = a damage spell that heals your side (Drain Life).
+3. **`macroContext(slot)`** → `x`, the object every rule reads: grouped spells (`by(purpose)`, `heals`, `dmg`,
+   `singleDmg`, `aoe`) and action flags:
+   - `noManual` (a no-manual-cast trait such as The Great Beyond → no cast lines at all);
+   - `attackFirst` (Attack ≥ Intelligence and Attack is its best stat → attack before any spell);
+   - `attackWorth` (physical, or its attacks use Intelligence: Whisper R70, Ribcracker R90, Myosotis, Confusion and
+     Empathy) → the tail's attack line;
+   - `defendValue` (a trait or relic rank that pays off on Defend: "after this creature / the bearer Defends",
+     "while the bearer is Defending") → Defend is its main action after support lines;
+   - `expanded` (any party creature has Expanded Power → small / moderate / large damage spells count as massive);
+   - `tanky`, `hasProvokeTrait`, `dom`, and the tuning object as `x.T`.
+4. **`MACRO_RULES`** → an ordered array of rules; `proposeMacro` runs each whose `when(x)` is true. Rules whose key
+   starts `tail-` form the always-act tail, which is never trimmed: the body is cut to fit `maxLines` instead.
 5. **`renderMacroProposal` / `renderMacros` / `macroProposalText`** → presentation + copy. No logic.
 
 ## The three surfaces you modify
 
 ### 1. `MACRO_TUNING` — thresholds
-Every magic number in one object. Percentages are % Health; counts are creature/status counts.
+Every magic number in one object. Percentages are % Health and must be multiples of 10 (the in-game picker).
 
 | Key | Meaning |
 |---|---|
-| `maxLines` | in-game macro line cap (32, `scr_MacroIsLegal` `0x20` guard) |
-| `healEmergency` / `healSustain` | % Health for the emergency vs top-up heal lines |
-| `finishHp` | % Health for "finish the kill" (spell + basic attack) |
-| `selfPreserveHp` | % Health a squishy caster with no heal defends below |
+| `maxLines` | in-game macro line cap: 30 (`scr_MacroProcess` forces 30) |
+| `healEmergency` / `healSustain` | % Health for the emergency (30) vs top-up (60) heal lines |
+| `drainHeal` | % Health below which a damage-that-heals spell (Drain Life) goes first (50) |
 | `buffFloor` / `debuffFloor` | cast a buff/debuff on a target with fewer than this many buffs/debuffs |
 | `minionCap` | summon while the creature has fewer than this many minions |
-| `aoeMaxThreshold` | AoE enemy-count gate escalates per extra AoE gem, capped here |
-| `focusRotation` | ordered `{ cond, why }` target priorities; each single-damage gem cycles through them |
+| `aoeMinEnemies` | whole-side damage while at least this many enemies are alive (`has > N living enemies`) |
+| `onceTargets` | how many allies get a once-per-battle spell (Sapphire Power), one per turn |
+| `scalerMaxGate` | drop a per-buff / per-debuff line whose break-even count is above this |
+| `focus` | default target for single-target damage and attacks (`has lowest Health`) |
 
 ### 2. `SPELL_OVERRIDES` — per-spell logic
-Keyed by spell **name**; forces `{ purpose?, side?, multi? }` for spells the taxonomy mislabels or that need
-bespoke handling. Empty by default. Example: `{ "Antidote": { purpose: "cleanse" } }`. This is the hook for
-"encode specific logic for some spells" — extend `classifySpell` and add rules for any new `purpose` you
-introduce here.
+Keyed by spell **name**; forces `{ purpose?, side?, multi?, focus? }` for spells the text patterns or taxonomy get
+wrong. Empty by default. If an override needs a new `purpose`, add a rule for it.
 
 ### 3. `MACRO_RULES` — the line logic
-An ordered array; **array order = macro priority** (first matching line acts in-game). Each rule:
+An ordered array; **array order = macro priority** (first line that acts wins in-game). Each rule:
 
 ```js
 { key: "heal-emergency",
   when: x => x.heals.length,                                   // gate
   lines: x => x.heals.map(s => mLine(                          // returns [{en, why, chain}]
-    `If any ally has < ${x.T.healEmergency}% Health, cast ${s.name} on ${allyT(s)}`,
-    `${s.name} — emergency top-up before an ally dies`)) }
+    `If any ally has < ${x.T.healEmergency}% Health, ${castOn(s)}`,
+    `${s.name} — emergency heal before an ally dies`)) }
 ```
 
 Helpers: `mLine(en, why, chain)` builds a line (`chain: true` = "test next line", rendered indented);
-`allyT(s)` / `enemyT(s)` pick `"that creature"` vs `"ally (all)"` / `"enemy (all)"` by `s.multi`.
+`castOn(s)` = `cast X` for a whole-side spell (the game needs no target) or `cast X on that creature`.
 
-Current rules, in order: `rez · heal-emergency · self-preserve · provoke-spell · provoke-tank ·
-heal-sustain · debuff · buff · summon · aoe · damage-single · basic-attack · fallback`.
+Current rules, in order: `rez · heal-emergency · unsilence · once · ally-attack · provoke-spell · provoke-tank ·
+heal-sustain · drain · debuff · buff · summon · defend-value · attack-first · aoe · damage-single · control ·
+tail-attack · tail-defend · tail-skip`.
+
+- **once:** for each of the top `onceTargets` allies whose Artifact Spell Slot fires on what that ally does most
+  (Sword + attacker, Staff + caster, Shield + defender, Boots always), a turn-gated pair:
+  `If this creature is on turn k, test next line` / `If ally (n) has > 0% Health, cast X on that creature`
+  (`battleturns` counts from 1 and ticks at the start of the creature's turn, EFFECT_ORDER_FINDINGS.md).
+- **damage-single:** per-buff / per-debuff spells first, each as a gated best-of pair
+  (`If any enemy has > N−1 debuffs, test next line` / `If any enemy has most debuffs, cast X on that creature`).
+  N = the count where the spell beats your best other spell: tier multiplier (Expanded Power → Massive) × the
+  other spell's own charge bonus (Spell Blast at full − 1). Then every single-target spell strongest first on its
+  focus; a spell out of charges falls through to the next line.
 
 ## Authoring rules (in-game, 2026-10-23; see `_su_extract/code/MACRO_MODEL.md` "Authoring patterns")
-Every proposed macro must satisfy these. The current engine breaks the three marked ✗ (BACKLOG Macro roadmap 7–9).
-- ✗ **Health % values are multiples of 10.** The in-game picker steps in 10s. `MACRO_TUNING` has 25 for
-  `healEmergency`, `finishHp` and `selfPreserveHp`, which the player can't enter.
-- ✗ **Chains don't narrow targets.** "test next line" is a yes/no gate; the last line picks its own target from
-  the whole side. The `basic-attack` rule's "doesn't have Shell → doesn't have Barrier → lowest Defense" chain does
-  not skip enemies with Shell or Barrier, despite its note. AND on one creature needs a per-slot chain (`enemy (n)` on
-  every line, 6 copies).
-- ✗ **Always act.** End with `If any enemy has lowest Health, attack that creature` (only when attacking is worth
+Every proposed macro must satisfy these (v2, 2026-10-23, implements all of them).
+- **Health % values are multiples of 10.** The in-game picker steps in 10s.
+- **Chains don't narrow targets.** "test next line" is a yes/no gate; the last line picks its own target from
+  the whole side (v1's "doesn't have Shell / Barrier → test next line" lines were removed for this). AND on one
+  creature needs a per-slot chain (`enemy (n)` on every line, 6 copies).
+- **Always act.** End with `If any enemy has lowest Health, attack that creature` (only when attacking is worth
   it; it also covers Silence and every blocked cast), then `If this creature has > 0% Health, defend`, then
-  `If this creature has > 0% Health, skip turn` (nothing blocks it). The current `fallback` emits one line, which
-  Scorn (attack) or realm property 53 (defend) can block.
-- ✗ **Attack lines need the full loadout.** A caster attacks only when its attacks use Intelligence: Whisper
+  `If this creature has > 0% Health, skip turn` (nothing blocks it).
+- **Attack lines need the full loadout.** A caster attacks only when its attacks use Intelligence: Whisper
   (Tenebris) R70, Ribcracker (Ariamaki) R90 after 10 casts, traits Myosotis / Confusion and Empathy. Otherwise
-  the tail is Defend / Skip only. `macroContext` decides `physical` / `canAttack` from Attack ≥ Intelligence
-  and spell gems; it ignores the relic, traits and spec.
+  the tail is Defend / Skip only (`x.attackWorth`).
 - Gated best-of: `If any enemy has < X% Health → test next line` / `If any enemy has lowest Health → <act>`. This
   acts on the most nearly dead enemy, but only when one is in range.
 - 30 lines per macro. Prefer covering all six slots of a smaller tier over a partial band.
@@ -98,7 +116,18 @@ The engine emits English strings that map 1:1 to real in-game macro lines (verif
 templates). Refactors are validated by diffing `proposeMacro` output across a fixture of loadouts covering
 every rule branch — keep that diff empty for behavior-preserving changes.
 
-## Known limitations (see Progress.md roadmap)
+## Worked example (user's team, 2026-10-23)
+Animator party: Animatus (The Great Beyond, Vitreous) · Mutated Crypt Bat (Temptation) · Magnificus Sanctus
+(Extension, Starwrath) · Zonte (Expanded Power, Ribcracker) · Imp Bishop (Whisper) · Knight Effigy (5740-NG).
+v2 proposes: Animatus attack → defend → skip (no casts); Bat attack first, arrows as the Scorn fallback; Sanctus heal →
+unsilence → buff → defend; Zonte Implosion / Kick gated on buffs / debuffs; Bishop Drain Life when hurt → Living Staff /
+Momentum while 2+ enemies → Spell Blast; Effigy Sapphire Power on Animatus (turn 1) and Bat (turn 2) → Rabid Dementia on
+the highest-Attack ally → Stun Beam. The user's hand-built Zonte macro (health bands, `_su_extract/code/MACRO_MODEL.md`
+"Authoring patterns") is finer than the engine's gated best-of lines.
+
+## Known limitations (see BACKLOG Macro roadmap)
 - Buff/debuff lines gate on `has < N buffs/debuffs`, not the specific status name (no spell→status map yet).
-- Classification is taxonomy-driven; use `SPELL_OVERRIDES` for mislabels.
-- Role/rule logic uses the creature's own spells + stats + traits only — no spec/anointment context yet.
+- Spec and anointment context isn't read yet (roadmap 4). Relics and traits are, for attacks / Defend.
+- A `defendValue` creature's Defend line comes before damage spells, so its damage spells only run when Defend is
+  blocked.
+- Spells with no rule (Glory, Astral Dimension: there is no "is Sealed" condition) are left out.
