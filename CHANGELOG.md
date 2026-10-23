@@ -15,6 +15,9 @@ New entries go at the TOP.
   heal-by-damage when an ally is hurt (Drain Life), per-buff / per-debuff damage gated on its break-even count
   (Implosion, Kick, Jinx vs Spell Blast's charge bonus), and per-spell focus (missing Health, Defense pierce).
 - Fixed: Disintegrating Arrow was read as a resurrection spell.
+- v3 (same day): Citrine gems are left out of the cast lines and set the creature's main action (Attack / Defend /
+  Provoke). The main single-target action gets a per-slot Shelled / Barrier / Health target block sized to fill the
+  30 lines. Targeted attacks are followed by "attack a random enemy" (an Invisible pick makes a line do nothing).
 
 ## 2026-10-22 — UI batch (13 items)
 - Spell cards: the generic "temp gem of spell" chip is gone. Ultimate spells carry an Avatar chip (the god of the Relic

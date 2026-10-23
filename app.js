@@ -5055,6 +5055,8 @@
     minionCap: 3,          // summon while the creature has fewer than this many minions
     aoeMinEnemies: 2,      // whole-side damage while at least this many enemies are alive
     onceTargets: 2,        // once-per-battle ally spells (Sapphire Power): how many allies get one, one per turn
+    holeHp: 50,            // % Health — the main target band: a hurt enemy with no Shelled / Barrier
+    finishHp: 30,          // % Health — finish a nearly dead enemy even through Shelled / Barrier
     scalerMaxGate: 6,      // drop a "more damage per buff / debuff" line whose break-even count is above this
     focus: "has lowest Health",   // default target for single-target damage and attacks
   };
@@ -5118,10 +5120,16 @@
   // artifact (Spell slot) or a Nether Stone auto-proc and CANNOT be cast manually / by a macro — excluded.
   // Spells the game marks "cannot be cast manually" (Booze, Saving Grace, …) are left out; gems a perk / trait grants
   // (Runes, Mega Magic, Colorwave, Idolatry's Ultimate) are castable and count.
-  function gatherSlotSpells(slot) {
+  // A gem with Citrine (Cast On Attack / Defend / Provoke / Heal) is one the player set up to fire from that action, so it
+  // is not cast manually; `citrine` counts those gems per action.
+  const CITRINE_ACTION = { CITRINE_ATTACK: "attack", CITRINE_DEFEND: "defend", CITRINE_PROVOKE: "provoke", CITRINE_HEAL: "heal" };
+  function gatherSlotSpells(slot, citrine = {}) {
     const out = [], seen = new Set();
     const add = (sp) => { if (sp && !sp.noManual && !seen.has(sp.id)) { seen.add(sp.id); out.push(sp); } };
-    for (const gid of slot.spellGemIds || []) { const g = spellGems.find(x => x.id === gid); add(g ? gemSpell(g) : null); }
+    for (const gid of slot.spellGemIds || []) { const g = spellGems.find(x => x.id === gid); if (!g) continue;
+      const acts = [...new Set((g.propIds || []).map(pid => CITRINE_ACTION[(SPELLPROP.get(pid) || {}).key]).filter(Boolean))];
+      if (acts.length) { acts.forEach(a => citrine[a] = (citrine[a] || 0) + 1); continue; }
+      add(gemSpell(g)); }
     for (const g of grantedSpellList(slot)) if (g.mode === "gem") add(g.sp);
     return out;
   }
@@ -5136,8 +5144,8 @@
     const c = CREA.get(slot.cid); if (!c) return null;
     const fs = finalStats(slot), st = fs.final;
     const tids = slotTraitIds(slot), has = (set) => tids.some(t => set.has(t));
-    const noManual = has(traitIdsNamed(NO_MANUAL_CAST));
-    const spells = noManual ? [] : gatherSlotSpells(slot).map(classifySpell);
+    const noManual = has(traitIdsNamed(NO_MANUAL_CAST)), citrine = {};
+    const castable = gatherSlotSpells(slot, citrine), spells = noManual ? [] : castable.map(classifySpell);
     const by = (p) => spells.filter(s => s.purpose === p);
     const traitThemes = new Set();
     tids.forEach(tid => ((TRAIT[tid] || {}).theme2 || []).forEach(t => traitThemes.add(t)));
@@ -5149,14 +5157,17 @@
     // an effect that pays off when this creature Defends (Extension, Starwrath, …): Defend is a real action for it
     const ownText = tids.map(t => (TRAIT[t] || {}).desc || "").join(" ") + " " + relicText(slot);
     const defendValue = /after (?:this creature|the bearer) defends|while the bearer is defending/i.test(ownText);
-    const attackFirst = physical && dom === "atk";   // Attack is its best stat: attacking is its job
+    // its main action: the one its Citrine gems fire on (most gems wins), else attack for an Attack-led creature
+    const citAct = ["attack", "defend", "provoke"].filter(a => citrine[a]).sort((a, b) => citrine[b] - citrine[a])[0] || null;
+    const attackFirst = citAct ? citAct === "attack" : physical && dom === "atk";
     // party-wide: Expanded Power turns small / moderate / large damage spells massive
     const expanded = party && build.slots.some(s => s.cid != null && slotTraitIds(s).some(t => traitIdsNamed(["Expanded Power"]).has(t)));
     return {
-      c, slot, st, spells, by, T: MACRO_TUNING, noManual, expanded,
+      c, slot, st, spells, by, T: MACRO_TUNING, noManual, expanded, citrine, citAct,
       heals: by("heal"), dmg, singleDmg: dmg.filter(s => !s.multi), aoe: dmg.filter(s => s.multi),
       hasProvokeTrait: traitThemes.has("Provoke"),
-      dom, tanky: dom === "def" || dom === "hp", physical, intAttacks, defendValue, attackFirst,
+      dom, tanky: dom === "def" || dom === "hp", physical, intAttacks, attackFirst,
+      defendValue: defendValue || citAct === "defend", provokeMain: citAct === "provoke",
       attackWorth: physical || intAttacks,
     };
   }
@@ -5178,6 +5189,7 @@
       out.push(mLine(`If any enemy has > ${n - 1} ${s.scale.unit}, test next line`, `${s.name} beats your other spells from ${n} ${s.scale.unit} on`, true));
       out.push(mLine(`If any enemy has most ${s.scale.unit}, cast ${s.name} on that creature`, `+${Math.round(s.scale.f * 100)}% per ${s.scale.unit.slice(0, -1)} on the target`));
     }
+    if (!x.attackFirst && !plain[0].focus) out.push({ block: `cast ${plain[0].name} on`, name: plain[0].name });
     plain.forEach((s, i) => out.push(mLine(`If any enemy ${s.focus || x.T.focus}, cast ${s.name} on that creature`,
       i ? `${s.name} — next strongest, used once the ones above are out of charges` : s.focus ? `${s.name} — best against that target` : `${s.name} — your strongest single-target spell`)));
     return out;
@@ -5189,7 +5201,7 @@
       const a = s.cid != null ? resolveArtifact(s) : null; if (!a || !(a.spells || []).length) return;
       const trig = SLOT_TRIGGER[a.primary], ax = s === x.slot ? x : macroContext(s, false); if (!ax) return;
       const fits = trig === "turn" || (trig === "attack" && ax.attackFirst) || (trig === "cast" && ax.spells.length && !ax.attackFirst)
-        || (trig === "defend" && ax.defendValue);
+        || (trig === "defend" && ax.defendValue) || (trig === "provoke" && ax.provokeMain);
       out.push({ i, self: s === x.slot, name: ax.c.name, score: fits ? 2 : 1 });
     });
     return out.sort((p, q) => q.score - p.score || p.i - q.i).slice(0, x.T.onceTargets);
@@ -5212,7 +5224,9 @@
       lines: x => x.by("ally-attack").map(s => mLine(`If any ally has highest Attack, cast ${s.name} on that creature`, `${s.name} — your hardest hitter attacks again`)) },
     { key: "provoke-spell", when: x => x.by("provoke").length,
       lines: x => x.by("provoke").map(s => mLine(`If this creature has > 0 living enemies, ${castOn(s)}`, `${s.name} draws enemy fire to this tank`)) },
-    { key: "provoke-tank", when: x => !x.by("provoke").length && x.tanky && x.hasProvokeTrait,
+    { key: "provoke-main", when: x => x.provokeMain,
+      lines: x => [mLine(`If this creature has > 0% Health, provoke`, `Its Citrine gems cast when it Provokes (${x.citrine.provoke} gems)`)] },
+    { key: "provoke-tank", when: x => !x.provokeMain && !x.by("provoke").length && x.tanky && x.hasProvokeTrait,
       lines: x => [mLine(`If this creature has > 0% Health, provoke`, `Tanky with a provoke trait — draw fire to protect the party`)] },
     { key: "heal-sustain", when: x => x.heals.length,
       lines: x => x.heals.map(s => mLine(`If any ally has < ${x.T.healSustain}% Health, ${castOn(s)}`, `${s.name} — keep allies healthy`)) },
@@ -5227,9 +5241,10 @@
     { key: "summon", when: x => x.by("summon").length,
       lines: x => x.by("summon").map(s => mLine(`If this creature has < ${x.T.minionCap} minions, ${castOn(s)}`, `${s.name} summons while you have room`)) },
     { key: "defend-value", when: x => x.defendValue,
-      lines: x => [mLine(`If this creature has > 0% Health, defend`, `Its traits / relic pay off when it Defends`)] },
+      lines: x => [mLine(`If this creature has > 0% Health, defend`, x.citAct === "defend" ? `Its Citrine gems cast when it Defends (${x.citrine.defend} gems)` : `Its traits / relic pay off when it Defends`)] },
     { key: "attack-first", when: x => x.attackFirst,
-      lines: x => [mLine(`If any enemy ${x.T.focus}, attack that creature`, `An attacker: attack first; spells below are the fallback (e.g. while Scorned)`)] },
+      lines: x => [{ block: "attack", name: "Attack" },
+        mLine(`If any enemy ${x.T.focus}, attack that creature`, x.citAct === "attack" ? `Its Citrine gems cast when it Attacks (${x.citrine.attack} gems)` : `An attacker: attack first; spells below are the fallback (e.g. while Scorned)`)] },
     { key: "aoe", when: x => x.aoe.length,
       lines: x => x.aoe.map(s => mLine(`If this creature has > ${x.T.aoeMinEnemies - 1} living enemies, ${castOn(s)}`, `${s.name} hits every enemy — worth it while ${x.T.aoeMinEnemies}+ remain`)) },
     { key: "damage-single", when: x => x.singleDmg.length, lines: damageLines },
@@ -5239,6 +5254,9 @@
     // so the turn is never handed back to you
     { key: "tail-attack", when: x => x.attackWorth && !x.attackFirst,
       lines: x => [mLine(`If any enemy ${x.T.focus}, attack that creature`, x.intAttacks ? `Its attacks use Intelligence — also covers Silence and spells out of charges` : `Covers Silence and spells out of charges`)] },
+    // a line whose target is Invisible does nothing; "a random enemy" re-rolls past Invisible and dead enemies (attacks)
+    { key: "tail-random", when: x => x.attackWorth,
+      lines: () => [mLine(`If this creature has > 0 living enemies, attack a random enemy`, `The lines above can pick an Invisible enemy and fail; a random attack re-rolls past it`)] },
     { key: "tail-defend", when: x => !x.defendValue,
       lines: () => [mLine(`If this creature has > 0% Health, defend`, `Nothing else can act (Scorned, every enemy Invisible, …)`)] },
     { key: "tail-skip", when: () => true,
@@ -5251,23 +5269,50 @@
     if (x.by("buff").length || x.by("summon").length || x.by("once").length || x.by("ally-attack").length || x.by("unsilence").length) roles.push("Support");
     if (x.by("debuff").length || x.by("control").length) roles.push("Debuffer");
     if (x.dmg.length && !x.attackFirst) roles.push("Caster");
-    if (x.by("provoke").length || (x.tanky && x.hasProvokeTrait) || x.defendValue) roles.push("Tank");
+    if (x.by("provoke").length || (x.tanky && x.hasProvokeTrait) || x.defendValue || x.provokeMain) roles.push("Tank");
     if (x.attackFirst) roles.push("Attacker");
-    if (!roles.length) roles.push(x.dmg.length ? "Caster" : "Attacker");
+    if (!roles.length) roles.push(x.dmg.length ? "Caster" : x.attackWorth ? "Attacker" : "Tank");
     return [...new Set(roles)];
   }
-  // assemble the proposal: run each rule in order, collect its lines, trim to the in-game cap (the always-act tail is
-  // kept: trimming drops lines from the body)
+  // The main single-target action's target block (expanded into the free lines): Shelled negates the next hit and Barrier
+  // absorbs it, and chains don't narrow, so each test needs its own enemy (n) chain.
+  //   A: per slot, "< holeHp% Health" + "doesn't have Shelled" + "doesn't have Barrier" → act      (18 lines)
+  //   F: "any enemy < finishHp% Health" → "lowest Health" → act, through Shelled / Barrier       (2)
+  //   C: per slot, "doesn't have Shelled" + "doesn't have Barrier" → act (no Health band)          (12)
+  //   B: per slot, "doesn't have Barrier" → act                                                   (6)
+  // The biggest of A+F+B / A+B / A+F / A / F+C / C / F+B / B / F that fits is used.
+  function targetBlock(x, act, name, room) {
+    const at = act === "attack" ? "attack that creature" : `${act} that creature`, slots = [1, 2, 3, 4, 5, 6];
+    const A = slots.flatMap(n => [
+      mLine(`If enemy (${n}) has < ${x.T.holeHp}% Health, test next line`, `Enemy (${n}) is hurt…`, true),
+      mLine(`If enemy (${n}) doesn't have Shelled, test next line`, `…has no Shelled (it negates the next hit)…`, true),
+      mLine(`If enemy (${n}) doesn't have Barrier, ${at}`, `…and no Barrier: ${name} lands in full`)]);
+    const F = [mLine(`If any enemy has < ${x.T.finishHp}% Health, test next line`, `Someone is nearly dead…`, true),
+      mLine(`If any enemy has lowest Health, ${at}`, `…finish it even through Shelled / Barrier`)];
+    const B = slots.map(n => mLine(`If enemy (${n}) doesn't have Barrier, ${at}`, `No Barrier to soak ${name}`));
+    const C = slots.flatMap(n => [mLine(`If enemy (${n}) doesn't have Shelled, test next line`, `Enemy (${n}) has no Shelled…`, true),
+      mLine(`If enemy (${n}) doesn't have Barrier, ${at}`, `…and no Barrier: ${name} lands in full`)]);
+    for (const opt of [[A, F, B], [A, B], [A, F], [A], [F, C], [C], [F, B], [B], [F]]) { const l = opt.flat(); if (l.length <= room) return l; }
+    return [];
+  }
+  // assemble the proposal: run each rule in order, collect its lines, expand the target block into the free lines, trim
+  // to the in-game cap (the always-act tail is kept: trimming drops lines from the body)
   function proposeMacro(slot) {
     const x = macroContext(slot); if (!x) return null;
-    const body = [], tail = [];
+    let body = [], tail = [];
     for (const rule of MACRO_RULES) if (rule.when(x)) for (const l of rule.lines(x)) (rule.key.startsWith("tail-") ? tail : body).push(l);
+    const bi = body.findIndex(l => l.block);
+    if (bi >= 0) { const b = body[bi]; body = body.filter(l => !l.block);
+      body.splice(bi, 0, ...targetBlock(x, b.block, b.name, x.T.maxLines - body.length - tail.length)); }
     let keep = body.slice(0, Math.max(0, x.T.maxLines - tail.length));
     while (keep.length && keep[keep.length - 1].chain) keep.pop();   // never end the body on a dangling "test next line"
     const lines = keep.concat(tail);
+    const cit = Object.entries(x.citrine).map(([a, n]) => `${n} on ${a}`).join(", ");
     const note = x.noManual ? "Can't cast spells manually — attacks and defends only."
+      : cit && !x.spells.length ? `Every gem has Citrine (${cit}) — they cast from its actions, not manually.`
       : !x.spells.length ? "No castable spell gems — attacks and defends only."
-      : body.length > keep.length ? `Trimmed to the ${x.T.maxLines}-line in-game cap (${body.length + tail.length} proposed).` : null;
+      : body.length > keep.length ? `Trimmed to the ${x.T.maxLines}-line in-game cap (${body.length + tail.length} proposed).`
+      : cit ? `Citrine gems (${cit}) cast from its actions and are left out of the cast lines.` : null;
     return { roles: macroRoles(x), lines, spells: x.spells, note };
   }
   function macroProposalText(slotIdx) {
