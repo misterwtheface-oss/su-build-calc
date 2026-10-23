@@ -3846,7 +3846,8 @@ const taxonomy2 = (() => {
   if (relicNoRank.length) console.log(`  taxonomy v2: ${relicNoRank.length} relic tags have no rank (site in no relic_signatures clause; HANDOFF_taxonomy_v2 F5): ${relicNoRank.slice(0, 8).join(' · ')}${relicNoRank.length > 8 ? ' …' : ''}`);
   const { unknown, ...st } = V.stats;
   for (const [t, n] of Object.entries(unknown)) warn(`taxonomy v2: value ${t} (${n}×) is not in the crosswalk / new_values`);
-  console.log(`  taxonomy v2: ${st.objects} objects (${st.withCode} with code) · ${st.entries} code-backed tags (code ${st.code} · field / boss ${st.other}) · Involves ${st.involves} · event scopes ${st.eventScope} resolved / ${st.eventScopeOff} off · code-dropped values ${st.codeDropped} · wrong themes dropped ${st.wrongDropped}`);
+  console.log(`  taxonomy v2: ${st.objects} objects (${st.withCode} with code) · ${st.entries} code-backed tags (code ${st.code} · field / boss ${st.other}) · Involves ${st.involves} · event scopes ${st.eventScope} resolved / ${st.eventScopeOff} off · code-dropped values ${st.codeDropped} · wrong themes dropped ${st.wrongDropped} · user adds ${st.adds || 0}`);
+  for (const d of st.addsDropped || []) warn(`taxonomy v2: user add dropped by its provision (crosswalk object_adds): ${d}`);
   console.log(`  taxonomy v2 removed (not code-backed, user 2026-10-19): ${st.removed} tags on ${Object.keys(removed).length} objects · ${Object.entries(st.removedBy).map(([k, n]) => `${k} ${n}`).join(' · ')}`);
   // the extract works through the removed list (HANDOFF_taxonomy_v2.md): written into its data_dump when present
   const dumpDir = path.join(SRC, 'code', 'data_dump', 'taxo_v2');

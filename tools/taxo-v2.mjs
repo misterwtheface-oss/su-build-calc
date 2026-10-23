@@ -141,6 +141,12 @@ export function makeTaxoV2(X, CL) {
     const v1keep = v1.filter(e => !codeVals.has(e.t) && !(drops.has(e.t) && ++stats.codeDropped)).map(e => codeTrig && e.t.startsWith('Trigger::') && e.v !== 'unverified'
       ? (stats.trigUnverified++, { ...e, v: 'unverified', why: 'trigger the code layer does not have' }) : e);
     const all = [...codeE, ...v1keep];
+    // user-ruled adds (crosswalk object_adds); each drops itself once the code layer tags its `unless_code_named` buff / debuff
+    for (const a of (X.object_adds || {})[`${kind}:${id}`] || []) {
+      const n = a.unless_code_named, codeHas = n && ((code && code.tags) || []).some(t => t.named === n || t.tag === `Named Buff::${n}` || t.tag === `Named Debuff::${n}`);
+      if (codeHas) { (stats.addsDropped ||= []).push(`${kind}:${id} ${a.t} (code now has ${n})`); continue; }
+      all.push({ t: a.t, s: null, r: null, v: 'code' }); stats.adds = (stats.adds || 0) + 1;
+    }
     // dedupe on the full attribute key (an unverified duplicate of a firm entry goes)
     const seen = new Map();
     for (const e of all) {

@@ -4,6 +4,11 @@ Every dated change entry, newest first (moved verbatim from Progress.md on 2026-
 to their own section and sorted by their date). Current state and open work: `Progress.md`, `BACKLOG.md`.
 New entries go at the TOP.
 
+## 2026-10-23 — Egg-log: Named Buff::Proficient added beside Defensive (user ruling)
+- Egg-log's text says Defensive; the code adds Proficient. User: keep both, and if Defensive is ever seen added in the code,
+  drop Proficient. New crosswalk section `object_adds` (user-ruled tag adds); each add carries `unless_code_named` and drops
+  itself once the extract's code layer tags that buff on the object (build-data warns; tested). Log: "user adds 1".
+
 ## 2026-10-23 — Buff / debuff source clarify notes (693, user-approved)
 - User approved the extract's S50 review as proposed. 693 notes now say who the game counts as having applied a buff or
   debuff: a creature (the holder, the attacker, the dodger, the first holder in party order), no creature, or "put on

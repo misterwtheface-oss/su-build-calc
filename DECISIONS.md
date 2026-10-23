@@ -11,6 +11,9 @@ Taxonomy category definitions themselves live in `TAXONOMY.md`.
 - **Enemy-side-only traits are boss traits (user: "most of those are known to me as boss only"):** Night Terrors,
   Protective Wing, Cornered, Curse of the Barrens, Body of Althea, Curse of the Deep only work for an enemy holder in code.
   Consistent with the code; no app change.
+- **Egg-log carries both Named Buff::Defensive and Named Buff::Proficient (user):** text says Defensive, code adds
+  Proficient (condition 7). Provision: if Defensive is ever seen added in the code, drop Proficient. Implemented as
+  crosswalk `object_adds` with `unless_code_named: "Defensive"` (tools/taxo-v2.mjs drops the add and build-data warns).
 
 ## Creature detail Triggers (2026-10-18)
 - **Perks and party members' traits are listed too (user):** spec perks and anointments sit in the same event groups as the
