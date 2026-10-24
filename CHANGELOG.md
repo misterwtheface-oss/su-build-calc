@@ -4,6 +4,16 @@ Every dated change entry, newest first (moved verbatim from Progress.md on 2026-
 to their own section and sorted by their date). Current state and open work: `Progress.md`, `BACKLOG.md`.
 New entries go at the TOP.
 
+## 2026-10-24 — Taxonomy round 7G: DoTs are not Inflict; Spell Formula from code
+- **Damage::Inflict off damage-over-time ticks** (user ruling): Poisoned, Burning, Bleeding, Bomb and Mania no longer carry
+  it, nor do effects that change or re-run the tick (Poison Inoculation, In Flames, Deathwalker's Strangulation /
+  Destruction, Diagnosis, Living Flame perk, Fleshripper). Spread damage to other creatures (Tainted Blood, Chain Reaction,
+  Cornered, Sharing Is Caring ...) keeps it. Recorded in DECISIONS.md.
+- **Calculation::Spell Formula from the code** (extract round 7G): 44 → 94 spells. New: Pumpkin King's Wrath and the other
+  spells whose damage uses Speed / Defense / Attack without the text saying so, the Runes, Chaos Bolt, Whirlwind, Ghostly
+  Scimitar, Comet, and spells that compute their own damage (Raze, Virus, Shadow Crash, Meat Grinder ...). None lost it.
+- Data rebuild only (data commit 15234ee; no app code change). Taxonomy check: 0 gaps; tests 27/0 and 49/0.
+
 ## 2026-10-24 — Taxonomy round 7F: damage redirects (Intercept markers)
 - **Actions::Intercept** now covers every effect where another creature takes all or part of a hit (16 objects; Forged by Pain,
   Stand As One and Training Day join). Two new toggles narrow it: **Resolves as** (Indirect: a new indirect hit nobody is

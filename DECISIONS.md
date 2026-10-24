@@ -163,6 +163,14 @@ a flat modifier to base: raised **×4/3 (+33%)**, lowered **×2/3 (−33%)**, ot
   (Indirect / Same hit) and Share (Whole / Split / Copy). Stand As One and Training Day are Intercept too ("they belong
   together thematically"). **Damage::Inflict = dealing damage, not redistributing it**: no intercept, copy or delay carries
   it. CAWW! is Actions::Redirect (Attack), like Hoodwink.
+- **DoTs are never Damage::Inflict (user 2026-10-24, recorded ruling: "DoTs shouldn't count as Inflict at all").** A
+  damage-over-time tick (Poisoned, Burning, Bleeding, Bomb, Mania: the conditions whose damage the code computes per tick with
+  their own calculator) is not Inflict, on the condition or on an effect that changes or re-runs the tick (Poison Inoculation,
+  In Flames, Deathwalker's, Diagnosis, Living Flame perk, Fleshripper). New damage dealt to other creatures sized from a tick
+  (Tainted Blood, Chain Reaction, Cornered ...) or from a DoT (Raze, Virus, Smolder, Snuff) is still Inflict.
+- **Code-backed means the code decides, not the text (user 2026-10-24).** Calculation::Spell Formula comes from the spell's
+  code (its calculator case reads a stat other than the caster's Intelligence, a calculator block is gated on it, or its cast
+  computes its own damage), so spells whose text doesn't say it (Pumpkin King's Wrath: Speed) carry it.
 - **A theme needs a narrow tag (user 2026-10-21):** a theme carried only by a general Involves tag, with no narrow tag of
   that theme, is dropped. E.g. "spells cost no Charges" effects keep Spell Gems (Spell Gems::Charges) and lose Cast.
   Per-object drops live in `taxonomy_crosswalk.json` `object_drops`.

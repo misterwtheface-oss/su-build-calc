@@ -238,6 +238,13 @@ per hit (Extra repeats and area hits multiply them).
   Celestial Nexus and the attack / cast-step interceptors (Whole); Stand As One, Training Day (Copy). **Damage::Inflict =
   dealing damage, never redistributing it** (removed from every intercept, copy and Defer Pain's delay; False Prophecy keeps
   it). CAWW! = Actions::Redirect (Attack); Redirect entries read Resolves as Same hit.
+- 2026-10-24: Round 7G (user): "DoTs shouldn't count as Inflict at all and should be a recorded ruling". **A DoT tick is never
+  Damage::Inflict**: the DoT conditions (Poisoned, Burning, Bleeding, Bomb, Mania, found in code as conditions with their own
+  per-tick damage calculator) and the effects that change or re-run the tick lose it; damage dealt to other creatures sized
+  from a tick or a DoT keeps it. Same day, on Calculation::Spell Formula: "the code should show it which is the entire point of
+  code backing tags": the value now comes from code sites (non-Intelligence stat in the spell's calculator case, a calculator
+  block gated on the spell, a cast block computing its own damage): 44 → 94 spells (Pumpkin King's Wrath and the other
+  code-not-text spells included).
 
 ---
 
