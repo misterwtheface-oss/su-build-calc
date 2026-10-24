@@ -3568,7 +3568,7 @@
       return `<button class="sob-step${sopen ? " open" : ""}" data-action="sob-step" data-k="${sk}"><span class="apx-sec-caret">${sopen ? "▾" : "▸"}</span>${k.replace(/^1(?=[abc])/, "1")}. ${esc(title)}</button>
         ${sopen ? `<div class="perk-list">${list.map(row).join("")}</div>` : ""}`;
     }).join("");
-    const body = open ? `<div class="slot-sub sob-intro">Each step resolves fully before the next. Within a step, one effect at a time in this order — your side before the enemy's, and per-creature effects in timeline order (fastest first; before step 6 that's last battle's order, see step 0a).</div>${steps}` : "";
+    const body = open ? `<div class="slot-sub sob-intro">Each step resolves fully before the next. Within a step, one effect at a time in this order — your side before the enemy's, and per-creature effects in timeline order (fastest first; before step 6 that's last battle's order, see step 0a).</div><div class="slot-sub sob-intro">Stat effects (curses, “+X% stat” traits, artifacts, stat buffs and debuffs) are worked out whenever a stat is read, so they count at every step below as soon as their trait, buff or item is there; perks, relics, cards and artifacts from 0b on. Exception: during battle setup (0a), stats read the values recorded at the end of the previous battle. Amounts sized from a stat at start of battle (e.g. Extra Padding, Eyesore) are fixed when granted.</div>${steps}` : "";
     return `<button class="apx-sec-head apx-cat${open ? "" : " collapsed"}" data-action="gloss-cat-toggle" data-c="${key}"><span class="apx-sec-caret">${open ? "▾" : "▸"}</span>Start of Battle Order</button>${body}`;
   }
 
@@ -3628,10 +3628,19 @@
       if (rp) r = { name: rp.name, desc: rp.effect, icons: [spriteImg(rp.icon, "px")], chips: ["Realm Property"] }; }
     else if (k === "spec") { const sp = D.specs.find(x => String(x.id) === id);
       if (sp) r = { name: sp.label, desc: "", icons: [specIco(sp)], chips: ["Specialization"] }; }
+    else if (k === "rune") { const ru = (D.runes || []).find(x => x.key === id);
+      if (ru) r = { name: ru.name, desc: "", icons: [ru.icon ? `<img src="${esc(ru.icon)}" alt="">` : ""], chips: ["False God Rune"] }; }
     if (!r) { console.error("EFFECT ORDER: unresolved", key); r = { name: key, desc: "", icons: [], chips: [] }; }
     r.icons = r.icons.filter(Boolean); r.chips = r.chips.filter(Boolean);
     EO_CACHE.set(ck, r); return r;
   }
+  // section intro + "How to read" lines (Stat Calculation: extract EFFECT_ORDER_FINDINGS.md § 15 "How to read a live stat")
+  const EO_INTRO = { StatCalc: {
+    intro: "Worked out every time a stat is read: the stored stat, then the “less” effects (they multiply), then the “more” effects (they add up, each a share of the reduced stat), then caps, the minimum stat and rounding down.",
+    howTo: ["These effects are always on and are checked each time the stat is read, using whatever is true at that moment.",
+      "Each one scales from the stored stat after the “less” effects, not from the final stat or from other bonuses: +50% and +30% make +80%, and two 20% cuts leave 64%.",
+      "Stat gains and losses from battle events are fixed amounts added at the end; later curses or bonuses don't resize them.",
+      "Anything that already used a stat (damage dealt, a stat gain, a start-of-battle grant) keeps the number it got."] } };
   function effectOrderSection(st, q, sec) {
     const hit = (r) => r.name.toLowerCase().includes(q) || (r.desc || "").toLowerCase().includes(q);
     const fns = sec.fns.map(f => { let n = 0;
@@ -3658,11 +3667,13 @@
       return `<button class="sob-step${sopen ? " open" : ""}" data-action="sob-step" data-k="${esc(sk)}"><span class="apx-sec-caret">${sopen ? "▾" : "▸"}</span>${esc(title)}</button>${sopen ? inner() : ""}`; };
     let body = "";
     if (open) {
+      const ix = EO_INTRO[sec.key];
+      if (ix) body += `<div class="slot-sub sob-intro">${esc(ix.intro)}</div>` + (ix.howTo ? group("howto", "How to read", () => `<div class="nd-wrap">${ix.howTo.map(r => `<div class="slot-sub eo-rule">${esc(r)}</div>`).join("")}</div>`) : "");
       // one function: its steps are the groups (numbered like Start of Battle); several: one group per function
       if (sec.fns.length === 1) { const f = fns[0];
-        body = f.steps.length === 1 && !f.steps[0].t ? list(f.steps[0].rows)
+        body += f.steps.length === 1 && !f.steps[0].t ? list(f.steps[0].rows)
           : f.steps.map(s => group(s.i, `${s.i + 1}. ${s.t || ""}`, () => list(s.rows))).join(""); }
-      else body = fns.map(f => group(f.id, f.title, () => f.steps.map(s => (s.t ? `<div class="res-sub">${esc(s.t)}</div>` : "") + list(s.rows)).join(""))).join("");
+      else body += fns.map(f => group(f.id, f.title, () => f.steps.map(s => (s.t ? `<div class="res-sub">${esc(s.t)}</div>` : "") + list(s.rows)).join(""))).join("");
     }
     return `<button class="apx-sec-head apx-cat${open ? "" : " collapsed"}" data-action="gloss-cat-toggle" data-c="${key}"><span class="apx-sec-caret">${open ? "▾" : "▸"}</span>${esc(sec.title)}</button>${body}`;
   }

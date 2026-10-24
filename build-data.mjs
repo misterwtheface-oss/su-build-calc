@@ -3239,6 +3239,10 @@ const effectOrder = (() => {
       if (!k) return undefined; const s = /^stat(gain|loss)_(\w+)$/.exec(k);
       return s ? `${STAT[s[2]]} ${s[1] === 'gain' ? 'gain' : 'loss'}` : QUEUE[k]; },
   };
+  // stat calculation (extract item 15, the four stat getters): `when` = "section N: …" (0 entry, 1 start value, 2 less, 3 more, 4 final)
+  const SC = ['First', 'Start value', "“Less” effects (they multiply)", "“More” effects (they add up)", 'Final'];
+  for (const id of ['crit_attack', 'crit_defense', 'crit_intelligence', 'crit_speed'])
+    stepOf[id] = (b) => { const m = /^section (\d):/.exec(b.when || ''); return m ? SC[+m[1]] : undefined; };
   for (const id of ['bc_EventBuff', 'bc_EventDebuff', ...['Gain', 'Lose'].flatMap(g => ['MaxHP', 'Attack', 'Intelligence', 'Defense', 'Speed'].map(s => `bc_Event${g}${s}`))])
     stepOf[id] = (b) => EVT[b.when];
   // sections in battle order; stat events in the app's stat order (Health, Attack, Intelligence, Defense, Speed)
@@ -3260,6 +3264,7 @@ const effectOrder = (() => {
       ['bc_OnMinion', 'After a minion is summoned']]],
     ['BuffDebuff', 'Buff and Debuff Order', [['bc_EventBuff', 'Gaining a buff'], ['bc_EventDebuff', 'Gaining a debuff'], ['bc_OnBuffDebuff', 'After a buff or debuff']]],
     ['Stats', 'Stat Change Order', [...stats('Gain', 'gain'), ...stats('Lose', 'loss')]],
+    ['StatCalc', 'Stat Calculation Order', [['crit_attack', 'Attack'], ['crit_intelligence', 'Intelligence'], ['crit_defense', 'Defense'], ['crit_speed', 'Speed']]],
     ['Death', 'Death Order', [['bc_OnDeath', 'On death'], ['bc_HandleDeath', 'Death clean-up'], ['bc_OnResurrect', 'After a resurrection']]],
     ['EndOfTurn', 'End of Turn Order', [['bc_CreatureEndOfTurn', null]]],
     ['Events', 'Event Queue and End of Battle', [['bc_ExecuteEvents', 'Event queue'], ['battle_end_victory', 'End of battle (victory)']]],
@@ -3270,7 +3275,7 @@ const effectOrder = (() => {
   // app object check (the extract's keys are the app's refs; condition → its glossary Cat:key)
   const perkKeys = new Set(specs.flatMap(sc => sc.perks.map(p => `${sc.id}:${p.key}`)));
   const condKeys = new Set(conditions.map(c => `${c.cat}:${c.key}`));
-  let unresolved = [], dropped = 0, blk = 0, eoNested = 0, eoSelf = 0, eoFlat = 0;
+  let unresolved = [], dropped = 0, blk = 0, eoNested = 0, eoSelf = 0, eoFlat = 0, eoAlso = 0, eoRune = 0, eoRuneCut = 0;
   const appKey = (key) => {
     const o = src.objects[key] || {}, [k, ...rest] = key.split(':'), id = rest.join(':');
     if (o.blacklisted) { blk++; return null; }
@@ -3283,6 +3288,7 @@ const effectOrder = (() => {
     else if (k === 'condition') { out = 'cond:' + (o.app_ref || ''); ok = condKeys.has(o.app_ref); }
     else if (k === 'realm') ok = realmProps.some(r => r.key === id);
     else if (k === 'spec') ok = specs.some(s => String(s.id) === id);
+    else if (k === 'rune') ok = runes.some(r => r.key === id);
     if (!ok) { unresolved.push(key); return null; }
     return out;
   };
@@ -3296,7 +3302,15 @@ const effectOrder = (() => {
     // 11 parents come after their children, so one pass can't do it).
     const byOrder = new Map(f.blocks.map(b => [b.order, b]));
     const keysOf = new Map();
-    for (const b of f.blocks) { const ks = (b.gate && b.gate.keys) || []; if (ks.length) keysOf.set(b.order, ks.map(appKey)); }
+    for (const b of f.blocks) { const ks = (b.gate && b.gate.keys) || []; if (ks.length) { keysOf.set(b.order, ks.map(appKey)); continue; }
+      if (!/^crit_/.test(fid)) continue;
+      // stat getters: a term whose block gate is an artifact / relic stat or a flag test is the effect of the object tested
+      // inside it (`also_keys`: Lead By Example, Ingenuity, Bygone Enhancement…); a False God rune term is that rune (cut runes,
+      // not in runes.json, are dropped). Realm boosts and the mechanics (minion redirect, pool, minimum stat, rounding) stay out.
+      const ak = (b.also_keys || []).map(a => a.key);
+      if (ak.length) { keysOf.set(b.order, ak.map(appKey)); eoAlso++; continue; }
+      if (b.gate.kind === 'rune') { const r = runesRaw.runes.find(x => x.rune_id === b.gate.id);
+        if (r) { keysOf.set(b.order, [appKey('rune:' + r.key)]); eoRune++; } else eoRuneCut++; } }
     const extraOf = (b) => { const x = b.gate.rank ?? b.gate.power ?? null; return Array.isArray(x) ? x : [x]; };
     const rowRef = (o) => { const b = byOrder.get(o), k = b && (keysOf.get(o) || []).find(Boolean); return k ? [k, extraOf(b)[0]] : null; };
     const parentOf = (b) => { const seen = new Set(); let p = b.parent;
@@ -3336,7 +3350,7 @@ const effectOrder = (() => {
     return n ? { id: fid, title: ftitle, steps: merged } : null;
   }).filter(Boolean) })).filter(s => s.fns.length);
   const rows = out.reduce((a, s) => a + s.fns.reduce((b, f) => b + f.steps.reduce((c, x) => c + x.rows.length, 0), 0), 0);
-  console.log(`  effect order: ${out.length} sections · ${out.reduce((a, s) => a + s.fns.length, 0)} functions · ${rows} rows (${eoNested} nested, +${eoSelf} self re-checks folded, ${eoFlat} flat-bonus blocks) · blacklisted dropped ${blk} · unresolved ${unresolved.length}${unresolved.length ? ': ' + [...new Set(unresolved)].slice(0, 12).join(' ') : ''}`);
+  console.log(`  effect order: ${out.length} sections · ${out.reduce((a, s) => a + s.fns.length, 0)} functions · ${rows} rows (${eoNested} nested, +${eoSelf} self re-checks folded, ${eoFlat} flat-bonus blocks; stat calculation: ${eoAlso} from the object tested inside, ${eoRune} False God runes, ${eoRuneCut} cut runes dropped) · blacklisted dropped ${blk} · unresolved ${unresolved.length}${unresolved.length ? ': ' + [...new Set(unresolved)].slice(0, 12).join(' ') : ''}`);
   if (unresolved.length) err(`effect order: ${unresolved.length} object keys not in the app`);
   return out;
 })();

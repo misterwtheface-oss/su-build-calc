@@ -4,6 +4,21 @@ Every dated change entry, newest first (moved verbatim from Progress.md on 2026-
 to their own section and sorted by their date). Current state and open work: `Progress.md`, `BACKLOG.md`.
 New entries go at the TOP.
 
+## 2026-10-23 — Stat Calculation Order (extract item 15) + Shallan wording (Q15b)
+- Effect Order → new section **Stat Calculation Order** (after Stat Change Order) with Attack / Intelligence / Defense / Speed:
+  the game's four stat functions, which rebuild a stat on every read. Steps: Start value · "Less" effects (they multiply) ·
+  "More" effects (they add up) · Final. 368 rows; Defiler's four curses now have a row. An intro line and a collapsible
+  "How to read" (4 lines, from the extract's "How to read a live stat") sit at the top.
+- Keyless code terms: a term whose gate is an artifact / relic stat or a flag test is shown as the object tested inside it
+  (`also_keys`: Lead By Example, Ingenuity, Fool's Axiom, Bygone Enhancement…, 21); False God rune terms show the rune
+  ("False God has 200% more Attack", 4). The 4 cut runes, realm boosts and the mechanics (minion redirect, pool, minimum stat,
+  rounding) stay out.
+- Start of Battle Order: a second intro line on when stat effects count (live from 0b; 0a reads last battle's values; amounts
+  sized from a stat are fixed when granted).
+- Shallan: after "gets through." the why now says a flat bonus must beat the negative hit plus 20% of their Defense (so What Is
+  Left still shows 0), and the attack's own added damage (Ravage, Grim Aura, Dissection, Hostile Vitality) is part of the
+  negative hit.
+
 ## 2026-10-23 — Shallan note reworded
 - The note said "the code takes no damage instead", which clashed with flat bonus damage getting through. Now: in code the hit
   goes negative and is set back to 0 at the end, so it's never healed; not capped at 80%; flat bonus damage still hurts them.
