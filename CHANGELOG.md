@@ -4,6 +4,12 @@ Every dated change entry, newest first (moved verbatim from Progress.md on 2026-
 to their own section and sorted by their date). Current state and open work: `Progress.md`, `BACKLOG.md`.
 New entries go at the TOP.
 
+## 2026-10-24 — Hide button cycles: Hide equipped → Hide used in builds → off
+- Artifacts, Nether Stones and Spell Gems libraries (user): the one footer button now has three states. 1st click "Hide equipped"
+  (on the current party, as before), 2nd "Hide used in builds" (the current party plus every saved build), 3rd off. One shared
+  button (`hideBtn`) and slot list (`hideSlots`) for all three libraries; the item equipped on the creature being edited still
+  shows.
+
 ## 2026-10-24 — Saved builds keep their bookmarks; Inscriptions "also cast by"
 - **Bookmarks per saved build** (user): Save and Update store the current bookmarks (traits, spells, perks) with the build; Load
   restores them (a build saved before this has none, so Load clears them, as before). Saving a shared build no longer wipes

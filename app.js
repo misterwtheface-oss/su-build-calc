@@ -790,9 +790,14 @@
     SPELL, spellGrants: D.spellGrants || [], relicUltimates: D.relicUltimates || {}, ultimateRoutes: D.ultimateRoutes || [],
   });
   // "equipped in the current build" tests, for the saved-list Hide-equipped filter
-  const artifactEquippedInBuild = (id) => build.slots.some(s => s.artifactId === id);
-  const netherEquippedInBuild = (id) => build.slots.some(s => { const a = resolveArtifact(s); return a && (a.netherIds || []).includes(id); });
-  const spellGemEquippedInBuild = (id) => build.slots.some(s => (s.spellGemIds || []).includes(id));   // gems only slot into creatures now
+  // `slots` defaults to the current party; hideSlots(st) widens it to every saved build for "Hide used in builds"
+  const artifactEquippedInBuild = (id, slots = build.slots) => slots.some(s => s && s.artifactId === id);
+  const netherEquippedInBuild = (id, slots = build.slots) => slots.some(s => { const a = s && resolveArtifact(s); return a && (a.netherIds || []).includes(id); });
+  const spellGemEquippedInBuild = (id, slots = build.slots) => slots.some(s => s && (s.spellGemIds || []).includes(id));   // gems only slot into creatures now
+  // library "Hide" button, one per library (Artifacts, Nether Stones, Spell Gems): cycles off → Hide equipped (current party) →
+  // Hide used in builds (current party + every saved build) → off (user 2026-10-24)
+  const hideSlots = (st) => st.hideEquipped === 2 ? [...build.slots, ...builds.flatMap(b => (b.build && b.build.slots) || [])] : build.slots;
+  const hideBtn = (st, action) => `<button class="facet ${st.hideEquipped ? "on" : ""}" data-action="${action}">${st.hideEquipped === 2 ? "Hide used in builds" : "Hide equipped"}</button>`;
   function baseStats(slot) {
     const c = CREA.get(slot.cid); if (!c) return null;
     // Endowment (FX.fuseCopy): the Animatus fuses with a copy of creature #2 at battle start. Code: fuse2 = creature #2's
@@ -4436,7 +4441,7 @@
   // ── artifact library (equip) ───────────────────────────────────────────────
   function openArtifactLibrary(slotIdx) {
     // no auto-selection — tiles show equip state (purple = this creature, gold = another); user picks to act
-    ovState = { kind: "artlib", slotIdx, hideEquipped: false, sel: null, search: "", libType: null, libSort: "type", render: renderArtifactLibrary };
+    ovState = { kind: "artlib", slotIdx, hideEquipped: 0, sel: null, search: "", libType: null, libSort: "type", render: renderArtifactLibrary };
     openOverlay(ovState.render());
   }
   const libRow = (ico, name, sub, tail = "") => `<div class="prop-row static"><span class="prop-ico">${ico ? spriteImg(ico, "px") : ""}</span><span class="prop-name">${esc(name)}${tail}</span>${sub ? `<span class="prop-stat">${esc(sub)}</span>` : ""}</div>`;
@@ -4627,7 +4632,7 @@
     const equippedId = slot ? slot.artifactId : null;
     const q = (st.search || "").trim().toLowerCase(), sortK = st.libSort || "recent", d = sortSign(st.libSortRev);
     let list = artifacts.filter(a => (!st.libType || a.primary === st.libType) && (!q || artSearchText(a).includes(q)));
-    if (st.hideEquipped) list = list.filter(a => !artifactEquippedInBuild(a.id) || a.id === equippedId);
+    if (st.hideEquipped) { const hs = hideSlots(st); list = list.filter(a => !artifactEquippedInBuild(a.id, hs) || a.id === equippedId); }
     list = list.slice().sort(sortK === "name" ? (x, y) => d * x.name.localeCompare(y.name)
       : sortK === "rank" ? (x, y) => d * ((y.rank || 50) - (x.rank || 50)) || x.name.localeCompare(y.name)
       : sortK === "type" ? (x, y) => d * String(x.primary || "").localeCompare(String(y.primary || "")) || x.name.localeCompare(y.name)
@@ -4692,7 +4697,7 @@
         <div class="ovl-center" data-action="lib-deselect">${libBar}<div class="ovl-center-scroll"><div class="pick-grid equip-grid">${tiles}</div></div></div>
         ${sel ? `<div class="ovl-right lib-info">${info}</div>` : ""}
       </div>
-      <div class="overlay-footer"><button class="facet ${st.hideEquipped ? "on" : ""}" data-action="artlib-hide-equipped">Hide equipped</button>
+      <div class="overlay-footer">${hideBtn(st, "artlib-hide-equipped")}
         <div>
           <button class="btn-ghost" data-action="art-edit" data-id="${sel ? sel.id : ""}" ${sel ? "" : "disabled"}>Edit</button>
           <button class="btn-ghost danger" data-action="art-del" data-id="${sel ? sel.id : ""}" ${sel ? "" : "disabled"}>Delete</button>
@@ -5767,7 +5772,7 @@
     return [...new Set(out)];
   }
   function openNether() {   // library
-    ovState = { kind: "nether", sel: null, hideEquipped: false, search: "", libSort: "recent", render: renderNether };
+    ovState = { kind: "nether", sel: null, hideEquipped: 0, search: "", libSort: "recent", render: renderNether };
     openOverlay(ovState.render());
   }
   // nether "Bonuses" view helpers — mirror the artifact panel (stat table + trait & spell-gem containers)
@@ -5795,7 +5800,7 @@
     let list = nether.filter(n => (!q || netherSearchText(n).includes(q))
       && (!st.nsTrait || (n.props || []).some(p => p.cat === "trait"))
       && nsSpellMatch(n, st.nsSpell));
-    if (st.hideEquipped) list = list.filter(n => !netherEquippedInBuild(n.id));
+    if (st.hideEquipped) { const hs = hideSlots(st); list = list.filter(n => !netherEquippedInBuild(n.id, hs)); }
     list = list.slice().sort(sortK === "name" ? (x, y) => d * x.name.localeCompare(y.name)
       : STAT_KEYS.includes(sortK) ? (x, y) => d * (core(y)[sortK] - core(x)[sortK]) || x.name.localeCompare(y.name)
       : (x, y) => d * (y.id - x.id));
@@ -5837,7 +5842,7 @@
         <div class="ovl-center" data-action="lib-deselect">${libBar}<div class="ovl-center-scroll"><div class="pick-grid equip-grid">${tiles}</div></div></div>
         ${sel ? `<div class="ovl-right lib-info">${info}</div>` : ""}
       </div>
-      <div class="overlay-footer"><button class="facet ${st.hideEquipped ? "on" : ""}" data-action="nether-hide-equipped">Hide equipped</button>
+      <div class="overlay-footer">${hideBtn(st, "nether-hide-equipped")}
         <div>
           <button class="btn-ghost" data-action="nether-edit" data-id="${sel ? sel.id : ""}" ${sel ? "" : "disabled"}>Edit</button>
           <button class="btn-ghost danger" data-action="nether-del" data-id="${sel ? sel.id : ""}" ${sel ? "" : "disabled"}>Delete</button>
@@ -5932,7 +5937,7 @@
 
   // ── spell gems: library + stepped wizard (1 spell + up to 3 property items) ──
   function openSpellGems() {   // library (manage mode when equipCtx is null)
-    ovState = { kind: "spellgemlib", equipCtx: null, hideEquipped: false, sel: null, search: "", libCls: null, libSort: "cls", render: renderSpellGemLib };
+    ovState = { kind: "spellgemlib", equipCtx: null, hideEquipped: 0, sel: null, search: "", libCls: null, libSort: "cls", render: renderSpellGemLib };
     openOverlay(ovState.render());
   }
   function renderSpellGemLib() {
@@ -5942,7 +5947,7 @@
     const gemText = (g) => { const sp = gemSpell(g); return [gemName(g), sp ? sp.name : "", sp ? sp.desc || "" : "",
       ...(g.propIds || []).map(pid => (SPELLPROP.get(pid) || {}).name || "")].join(" ").toLowerCase(); };
     let list = spellGems.filter(g => (!st.libCls || gemClass(g) === st.libCls) && (!q || gemText(g).includes(q)) && TagFilter.match(st, "spell", gemSpell(g)));
-    if (st.hideEquipped) list = list.filter(g => !spellGemEquippedInBuild(g.id) || (equipped && equipped.has(g.id)));
+    if (st.hideEquipped) { const hs = hideSlots(st); list = list.filter(g => !spellGemEquippedInBuild(g.id, hs) || (equipped && equipped.has(g.id))); }
     const potOf = (g) => { const sp = gemSpell(g); return sp ? potencyRank(sp) : POTENCY_ORDER.length; };
     // game class order: the gem's current class (Opal swap counts), or with libSortBase the spell's own class
     const clsRank = (g) => { const i = SPELL_CLASSES.indexOf(st.libSortBase ? (gemSpell(g) || {}).cls : gemClass(g)); return i < 0 ? SPELL_CLASSES.length : i; };
@@ -6021,7 +6026,7 @@
         <div class="ovl-center" data-action="lib-deselect">${libBar}<div class="ovl-center-scroll"><div class="pick-grid equip-grid">${tiles}</div></div></div>
         ${infoPanel}
       </div>
-      <div class="overlay-footer"><button class="facet ${st.hideEquipped ? "on" : ""}" data-action="sg-hide-equipped">Hide equipped</button>
+      <div class="overlay-footer">${hideBtn(st, "sg-hide-equipped")}
         <div>
           <button class="btn-ghost" data-action="sg-edit" data-id="${sel ? sel.id : ""}" ${sel ? "" : "disabled"}>Edit</button>
           <button class="btn-ghost danger" data-action="sg-del" data-id="${sel ? sel.id : ""}" ${sel ? "" : "disabled"}>Delete</button>
@@ -6181,7 +6186,7 @@
 
   // creature spell slots (up to 3 equipped spell gems) — equip from the library
   function openCreatureSpells(slotIdx) {
-    ovState = { kind: "spellgemlib", hideEquipped: false, sel: null, search: "", libCls: null, libSort: "cls", equipCtx: {
+    ovState = { kind: "spellgemlib", hideEquipped: 0, sel: null, search: "", libCls: null, libSort: "cls", equipCtx: {
       kind: "creature", slotIdx,
       equipped: () => build.slots[slotIdx].spellGemIds,
       max: creatureSlotMax(build.slots[slotIdx]),
@@ -6499,7 +6504,7 @@
       // artifact library + builder
       case "artlib-sel": { const id = +t.dataset.id; ovState.sel = ovState.sel === id ? null : id; refreshOverlay(); break; }
       case "art-view": ovState.artView = t.dataset.v; refreshOverlay(); break;
-      case "artlib-hide-equipped": e.stopPropagation(); ovState.hideEquipped = !ovState.hideEquipped; refreshOverlay(); break;
+      case "artlib-hide-equipped": e.stopPropagation(); ovState.hideEquipped = ((+ovState.hideEquipped || 0) + 1) % 3; refreshOverlay(); break;
       case "art-equip": { const id = +t.dataset.id; if (artifactEquippedInBuild(id)) break;   // exclusive: already on another creature
         if (artNetherClash(artifacts.find(a => a.id === id), ovState.slotIdx)) break;          // exclusive: its stone is in use elsewhere
         build.slots[ovState.slotIdx].artifactId = id; persistBuild(); closeOverlay(); render(); break; }
@@ -6579,7 +6584,7 @@
       case "nether-new": openNetherBuilder(null); break;
       case "nether-sel": { const id = +t.dataset.id; ovState.sel = ovState.sel === id ? null : id; refreshOverlay(); break; }
       case "ns-view": ovState.nsView = t.dataset.v; refreshOverlay(); break;
-      case "nether-hide-equipped": e.stopPropagation(); ovState.hideEquipped = !ovState.hideEquipped; refreshOverlay(); break;
+      case "nether-hide-equipped": e.stopPropagation(); ovState.hideEquipped = ((+ovState.hideEquipped || 0) + 1) % 3; refreshOverlay(); break;
       case "nether-edit": openNetherBuilder(+t.dataset.id); break;
       case "nether-del": armOrDo(t, () => { const id = +t.dataset.id; nether = nether.filter(n => n.id !== id); artifacts.forEach(a => a.netherIds = (a.netherIds || []).filter(x => x !== id)); if (ovState.sel === id) ovState.sel = null; persistNether(); persistArtifacts(); refreshOverlay(); }); break;
       case "nether-cancel": openNether(); break;
@@ -6616,7 +6621,7 @@
         [ids[i], ids[j]] = [ids[j], ids[i]]; persistBuild(); refreshDetail(); refreshOverlay(); render(); break; }
       case "spellpage-sel": { const id = +t.dataset.id; closeDetail(); if (ovState) { ovState.sel = id; refreshOverlay(); } break; }
       case "sg-sel": { const id = +t.dataset.id; ovState.sel = ovState.sel === id ? null : id; refreshOverlay(); break; }
-      case "sg-hide-equipped": e.stopPropagation(); ovState.hideEquipped = !ovState.hideEquipped; refreshOverlay(); break;
+      case "sg-hide-equipped": e.stopPropagation(); ovState.hideEquipped = ((+ovState.hideEquipped || 0) + 1) % 3; refreshOverlay(); break;
       case "sg-new": openSpellGemBuilder(null, gemListRetSlot()); break;
       case "sg-edit": openSpellGemBuilder(+t.dataset.id, gemListRetSlot()); break;
       case "sg-del": armOrDo(t, () => { const id = +t.dataset.id; spellGems = spellGems.filter(g => g.id !== id);
