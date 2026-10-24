@@ -4412,6 +4412,7 @@
           <div class="perk-line-head"><b>${esc(a.name)}</b>
             <span class="perk-line-meta">${specTagHtml(a.spec)}${inCur ? `<span class="anoint-badge">Current spec</span>` : ""}${a.ascension ? `<span class="anoint-badge asc">Ascension</span>` : ""}</span>${bkBtn("perks", a.key)}</div>
           ${a.desc ? `<div class="perk-desc">${perkText(a.desc, a.ranks)}</div>` : ""}
+          ${perkSpellRow(a.specId, a)}
         </div>
         ${on ? `<span class="anoint-check">✓</span>` : ""}
         </div>`; };

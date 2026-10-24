@@ -3536,15 +3536,17 @@ const { spellGrants, relicUltimates, ultimateRoutes } = (() => {
   const REG = readJSON(path.join(MODEL, 'condition_registry.json')).conditions, regById = new Map(REG.map(c => [c.id, c]));
   const appCond = (cat, name, regKey) => conditions.find(c => c.cat === cat && (c.name === condDisplay(name) || c.name === name
     || (regKey && c.key === regKey.toLowerCase()) || c.key === String(name).toLowerCase()));
-  let nObj = 0, nInferred = 0; const unmapped = new Set(), by = {};
+  let nObj = 0, nInferred = 0; const unmapped = new Set(), by = {}, minionGroup = new Set(); // group markers (Four Horsemen…) name no single minion
   const used = (key, obj) => {
     const o = CL[key]; if (!o) return;
     const out = [], seen = new Set();
     for (const t of o.tags) {
-      const m = /^(Buffs|Debuffs)::(Apply|Always Has)$/.exec(t.tag); if (!m) continue;
-      const cat = m[1] === 'Buffs' ? 'Buff' : 'Debuff', k = m[2] === 'Apply' ? 'apply' : 'always';
+      const m = /^(?:(Buffs|Debuffs)::(Apply|Always Has)|Minions::(Summon))$/.exec(t.tag); if (!m) continue;
+      const cat = m[3] ? 'Minion' : m[1] === 'Buffs' ? 'Buff' : 'Debuff', k = m[3] ? (t.always ? 'always' : 'apply') : m[2] === 'Apply' ? 'apply' : 'always';
       if (!/^code/.test(t.conf || '')) { if (t.named || t.condition_ids) nInferred++; continue; }
-      const names = t.named ? [[t.named, null]] : (t.condition_ids || []).map(id => regById.get(id)).filter(Boolean).map(r => [r.name, r.key]);
+      if (m[3] && /random/i.test(t.conf)) continue; // a random minion pick names no single minion
+      const names = t.named ? [[t.named, null]] : t.condition_ids ? t.condition_ids.map(id => regById.get(id)).filter(Boolean).map(r => [r.name, r.key])
+        : m[3] ? (t.status_marker || []).filter(n => appCond(cat, n) || (minionGroup.add(`${key} ${n}`), false)).map(n => [n, null]) : [];
       for (const [n, rk0] of names) {
         if (/random|existing/i.test(n)) continue;
         const c = appCond(cat, n, rk0); if (!c) { unmapped.add(`${cat} ${n}`); continue; }
@@ -3560,7 +3562,7 @@ const { spellGrants, relicUltimates, ultimateRoutes } = (() => {
   for (const r of relics) used(`relic:${r.id}`, r);
   for (const x of spells) used(`spell:${x.key}`, x);
   for (const u of unmapped) err(`buffs/debuffs used: ${u} has no app status effect`);
-  console.log(`  buffs/debuffs used (code named / condition_ids): ${nObj} objects · ${Object.entries(by).map(([k, n]) => `${k} ${n}`).join(' · ')} · ${nInferred} inferred names left out`);
+  console.log(`  buffs/debuffs used (code named / condition_ids): ${nObj} objects · ${Object.entries(by).map(([k, n]) => `${k} ${n}`).join(' · ')} · ${nInferred} inferred names left out · ${minionGroup.size} minion-group rows without a named minion`);
 }
 
 // ── Rodian Creature Masters per realm — code (_su_extract master_realms.json, S28–S28c; code/MASTER_SPAWN_FINDINGS.md,

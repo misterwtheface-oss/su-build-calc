@@ -4,6 +4,13 @@ Every dated change entry, newest first (moved verbatim from Progress.md on 2026-
 to their own section and sorted by their date). Current state and open work: `Progress.md`, `BACKLOG.md`.
 New entries go at the TOP.
 
+## 2026-10-24 — Fix: minions missing from the status-effect containers (Vision Quest → Doppelganger)
+- User: Doppelganger was missing from Vision Quest. The containers were built only from Buffs / Debuffs tags, so no summoned
+  minion ever showed. They now also read code Minions::Summon tags (named minion, condition ids, or a single-minion status
+  marker): 104 minion cards on perks, traits, relics and spells. Random picks and group-only markers (Four Horsemen / Lesser
+  Demons without the exact minion, 17 rows) are left out rather than guessed.
+- The anointment picker rows get the same collapsed container as the perk rows (opening it doesn't tick the anointment).
+
 ## 2026-10-24 — Stat / Status / Class markers bound per code site (extract S52i)
 - The extract now binds each marker to the code block that performs its tag (gate pairs followed, per-stat cases joined, stat
   writes read with their direction). Marked tag entries: Stat 1,712 -> 1,914, Status 1,114 -> 1,436, Class 63 -> 93. Baffle and
