@@ -2988,24 +2988,32 @@
   // and its attributes: scope, source, phase (After is the default and stays unsaid), delivery (only No Event is said), markers.
   // Unverified = a split the code couldn't settle (every candidate kept; dashed).
   // Relic tags carry the rank whose code clause holds them (rk): the same tag on several ranks is one chip, "×N" when N ≥ 2.
+  // Grouped like the Taxonomy page (user 2026-10-24): mechanic group first (Damage, Attack Effects…), in the page's order; a tag
+  // in several groups shows under each, as on the page. Chips read "Category: Value"; tags in no group go last under "Other".
+  let _taxoGroupOf = null;
+  const taxoGroupsOf = (t) => {
+    if (!_taxoGroupOf) { _taxoGroupOf = new Map(); for (const g of D.taxonomy2.groups) for (const k of g.keys) { if (!_taxoGroupOf.has(k)) _taxoGroupOf.set(k, []); _taxoGroupOf.get(k).push(g.name); } }
+    return _taxoGroupOf.get(t) || ["Other"];
+  };
   function entityTaxHtmlV2(e) {
     const groups = new Map(), seen = new Map();
     for (const x of e.taxo2 || []) {
       const id = [x.t, x.s, x.so, x.r, x.p, x.d, x.cf, x.co, x.cn, x.ig, (x.x || []).join(","), x.v].join("|");
       if (seen.has(id)) { if (x.rk != null) seen.get(id).n++; continue; }
       const y = { ...x, n: x.rk != null ? 1 : 0 }; seen.set(id, y);
-      const cat = taxoCatName(x.t); if (!groups.has(cat)) groups.set(cat, []);
-      groups.get(cat).push(y);
+      for (const g of taxoGroupsOf(x.t)) { if (!groups.has(g)) groups.set(g, []); groups.get(g).push(y); }
     }
     if (!groups.size) return `<div class="slot-sub" style="padding:10px">No taxonomy tags on this entry.</div>`;
-    const cats = [...groups.keys()].sort((a, b) => (TAXO_CAT_ORDER.get(a) ?? 99) - (TAXO_CAT_ORDER.get(b) ?? 99));
-    return cats.map(cat => `<div class="etax-group">
-      <div class="etax-cat">${esc(cat)}</div>
-      <div class="etax-vals">${groups.get(cat).map(x => {
+    const gOrder = new Map(D.taxonomy2.groups.map((g, i) => [g.name, i]));
+    const names = [...groups.keys()].sort((a, b) => (gOrder.get(a) ?? 999) - (gOrder.get(b) ?? 999));
+    const chipSort = (a, b) => catRank(a.t) - catRank(b.t) || taxoValName(roleKey(a) || a.t).localeCompare(taxoValName(roleKey(b) || b.t));
+    return names.map(gn => `<div class="etax-group">
+      <div class="etax-cat">${esc(gn)}</div>
+      <div class="etax-vals">${groups.get(gn).sort(chipSort).map(x => {
         const k = roleKey(x) || x.t, attrs = [x.s, x.so, x.p && x.p !== "After" ? x.p : null, x.d === "No Event" ? "No Event" : null,
           x.cf, x.co, x.cn, x.ig ? `Ignores ${x.ig}` : null, ...(x.x || [])].filter(Boolean);
         const unv = x.v === "unverified";
-        return `<button class="etax-tag${unv ? " etax-unv" : ""}" data-action="etax-filter" data-k="${esc(k)}" title="${unv ? "Unverified: the game code hasn't settled this tag. " : ""}Filter the Taxonomy to “${esc(taxoValName(k))}”">${esc(taxoValName(k))}${x.n >= 2 ? `<span class="etax-mult">×${x.n}</span>` : ""}${attrs.length ? `<span class="etax-attr">${esc(attrs.join(" · "))}</span>` : ""}${FEATURES.taxoSource && x.v ? `<span class="apx-src s-${esc(x.v)}">${esc(x.v)}</span>` : ""}</button>`;
+        return `<button class="etax-tag${unv ? " etax-unv" : ""}" data-action="etax-filter" data-k="${esc(k)}" title="${unv ? "Unverified: the game code hasn't settled this tag. " : ""}Filter the Taxonomy to “${esc(taxoValName(k))}”">${esc(taxoCatName(k) + ": " + taxoValName(k))}${x.n >= 2 ? `<span class="etax-mult">×${x.n}</span>` : ""}${attrs.length ? `<span class="etax-attr">${esc(attrs.join(" · "))}</span>` : ""}${FEATURES.taxoSource && x.v ? `<span class="apx-src s-${esc(x.v)}">${esc(x.v)}</span>` : ""}</button>`;
       }).join("")}</div>
     </div>`).join("");
   }
