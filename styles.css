@@ -1665,6 +1665,9 @@ select.app-select { background: var(--surface); border: 1px solid var(--border-d
 /* glossary: resurrection order */
 .res-line .res-n { align-self: center; }
 .res-n { flex: 0 0 28px; text-align: center; font-weight: 800; font-variant-numeric: tabular-nums; color: var(--accent); font-size: 15px; }
+.cur-label { margin-top: 6px; font-size: 11px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--text-mute); }
+.cur-list { margin: 2px 0 0; padding-left: 16px; font-size: 13px; line-height: 1.4; }
+.cur-list li { margin: 1px 0; }
 .res-sub { margin: 10px 0 4px; font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--text-mute); }
 .res-rule .res-n { font-size: 14px; }
 /* enemy-only resurrection sources (boss traits with no player source, realm properties): whole row tinted red */

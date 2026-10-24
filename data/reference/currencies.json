@@ -1,0 +1,126 @@
+{
+  "_note": "Appendix 'Currencies' (user 2026-10-24). App-authored lines, each code-grounded in _su_extract (src = doc / data). Names come from the game's items.csv (name_key); desc_key = the game's own item description; frame = the icons-sheet frame from inv_ItemIconIndex (item_icons.json / DATABASES.md 'Item icons'). shop = {tab, group?}: build-data adds the shop and its price range from D.shops. Energy is left out: its only use is the Arcane Vault (Talismans), which the project list never offers (DATABASES.md:261, legacy). Patch 3.0 teaser changes are left out (not code).",
+  "currencies": [
+    { "id": "brimstone", "name_key": "L_IN_CURRENCY_BRIMSTONE", "frame": 1960, "shop": { "tab": "guild", "group": "chaos" },
+      "earned": [
+        { "t": "Battle rewards (more with Fortune)", "src": "LOOT.md Roll types §1 (bc_GetRewardResources)" },
+        { "t": "Treasure: every bundle gives 100–150 of one random resource; Brimstone bundle items hold 400", "src": "LOOT.md §4; L_ID_CURRENCY_BRIMSTONE" },
+        { "t": "Nether Realm: Faucet room chest 5,000; Mimic Mike's treasury 2,500", "src": "NETHER.md Faucet / treasury (nether_helpers.json)" }
+      ],
+      "spent": [
+        { "t": "Artifact upgrades at the Blacksmith: 250 / 500 / 750 / 1,000 / 5,000 per tier (below 10 / 20 / 30 / 40 / 50), 25,000 to awaken at tier 50", "src": "ARTIFACTS.md Upgrade (obj_bsupgrade)" },
+        { "t": "Nethermancer Ned's Nether Shop: Nether Boss trait materials 50,000 each, Thylacine Mana 100,000, True Thylacine skin 500,000", "src": "NETHER_BOSS_BEHAVIOR_FINDINGS.md Nethermancer Ned (nether_shop.json)" }
+      ] },
+    { "id": "crystal", "name_key": "L_IN_CURRENCY_CRYSTAL", "frame": 1961, "shop": { "tab": "guild", "group": "nature" },
+      "earned": [
+        { "t": "Battle rewards (more with Fortune)", "src": "LOOT.md Roll types §1" },
+        { "t": "Treasure: every bundle gives 100–150 of one random resource; Crystal bundle items hold 400", "src": "LOOT.md §4; L_ID_CURRENCY_CRYSTAL" },
+        { "t": "Nether Realm: Faucet room chest 5,000; Mimic Mike's treasury 2,500", "src": "NETHER.md Faucet / treasury" }
+      ],
+      "spent": [
+        { "t": "Spell Gem upgrades at the Enchanter: 500 per tier below 5, 1,000 for 5–9, 2,000 for 10–14; adding a property 1,000", "src": "SPELL_GEMS.md S18 costs (obj_gemmod)" }
+      ] },
+    { "id": "essence", "name_key": "L_IN_CURRENCY_ESSENCE", "frame": 1962, "shop": { "tab": "guild", "group": "sorcery" },
+      "earned": [
+        { "t": "Battle rewards (more with Fortune)", "src": "LOOT.md Roll types §1" },
+        { "t": "Treasure: every bundle gives 100–150 of one random resource; Essence bundle items hold 400", "src": "LOOT.md §4; L_ID_CURRENCY_ESSENCE" },
+        { "t": "Nether Realm: Faucet room chest 5,000; Mimic Mike's treasury 2,500", "src": "NETHER.md Faucet / treasury" }
+      ],
+      "spent": [] },
+    { "id": "granite", "name_key": "L_IN_CURRENCY_GRANITE", "frame": 1963, "shop": { "tab": "guild", "group": "death" },
+      "earned": [
+        { "t": "Battle rewards (more with Fortune)", "src": "LOOT.md Roll types §1" },
+        { "t": "Treasure: every bundle gives 100–150 of one random resource; Granite bundle items hold 400", "src": "LOOT.md §4; L_ID_CURRENCY_GRANITE" },
+        { "t": "Nether Realm: Faucet room chest 5,000; Mimic Mike's treasury 2,500", "src": "NETHER.md Faucet / treasury" }
+      ],
+      "spent": [] },
+    { "id": "power", "name_key": "L_IN_CURRENCY_POWER", "frame": 1964, "shop": { "tab": "guild", "group": "life" },
+      "earned": [
+        { "t": "Battle rewards (more with Fortune)", "src": "LOOT.md Roll types §1" },
+        { "t": "Treasure: every bundle gives 100–150 of one random resource; Power bundle items hold 400", "src": "LOOT.md §4; L_ID_CURRENCY_POWER" },
+        { "t": "Nether Realm: Faucet room chest 5,000; Mimic Mike's treasury 2,500", "src": "NETHER.md Faucet / treasury" }
+      ],
+      "spent": [] },
+    { "id": "emblem", "name": "Emblem of each god", "name_key": "L_IN_EMBLEM_SURATHLI", "name_pattern": "Emblem of", "frame": 1831, "shop": { "tab": "god" },
+      "earned": [
+        { "t": "Gate of the Gods: each win gives that god's Emblem × the difficulty (up to 10)", "src": "GATE_OF_THE_GODS_FINDINGS.md:109" },
+        { "t": "The realm quest at your deepest depth (or on Ironman): 1 of the realm god's Emblem", "src": "LOOT.md:125 / :257" },
+        { "t": "Realm objects and treasure (a small chance; 0.1% per bundle)", "src": "REALM_YIELDS.md; LOOT.md §4" },
+        { "t": "Nether Realm: Faucet room chest 10; Mimic Mike's treasury 3 (the current realm's god)", "src": "NETHER.md Faucet / treasury" }
+      ],
+      "spent": [
+        { "t": "Each god's own God Shop takes only that god's Emblem; items unlock by Favor rank. A Gate of the Gods Key costs 20 from Favor rank 50", "src": "shop_currencies.json god (MODE 1); shops.json favor_rank" }
+      ] },
+    { "id": "glory", "name_key": "L_IN_GLORY", "desc_key": "L_ID_CURRENCY_ARENA", "frame": 2002, "shop": { "tab": "arena" },
+      "earned": [
+        { "t": "Nether Realm: Faucet room chest 1,000", "src": "NETHER.md Faucet" }
+      ],
+      "spent": [] },
+    { "id": "notoriety", "name_key": "L_IN_NOTORIETY", "desc_key": "L_ID_CURRENCY_TAVERN", "frame": 2003, "shop": { "tab": "tavern" },
+      "earned": [
+        { "t": "The Gambling Dwarves' games (board game, keno, scratch cards, slots)", "src": "CARD_SIGNATURES.md:107 (Alemental: obj_boardgame / obj_keno / obj_scratchcard / obj_slotparent)" },
+        { "t": "Nether Realm: Faucet room chest 1,000", "src": "NETHER.md Faucet" }
+      ],
+      "spent": [] },
+    { "id": "piety", "name_key": "L_IN_PIETY", "desc_key": "L_ID_CURRENCY_RELIQUARY", "frame": 2004,
+      "earned": [
+        { "t": "Crushing a Nether Stone: 10 per rarity step plus a share of its Attunement Points", "src": "NETHER.md:206 (10·R + round(10·R·AP/1000))" },
+        { "t": "The realm quest at your deepest depth (or on Ironman), in place of the 10 Perk Points once a progress counter reaches 1,550 (what the counter tracks isn't decoded)", "src": "LOOT.md:122 / :257 (global.royalty_additional >= 1550)" },
+        { "t": "Nether Realm: Faucet room chest 1,000", "src": "NETHER.md Faucet" }
+      ],
+      "spent": [] },
+    { "id": "stardust", "name_key": "L_IN_STARDUST", "desc_key": "L_ID_CURRENCY_STARDUST", "frame": 2141,
+      "earned": [],
+      "spent": [
+        { "t": "Nethermancer Ned's Exotic Shop: Mana for each Exotic creature, 10,000 each", "src": "NETHER_BOSS_BEHAVIOR_FINDINGS.md Nethermancer Ned (MODE 2 / CURRENCY 10)" }
+      ] },
+    { "id": "glamour", "name_key": "L_IN_GLAMOUR", "desc_key": "L_ID_GLAMOUR", "frame": 2176,
+      "earned": [
+        { "t": "Treasure: 3% per bundle, 1,000–1,500", "src": "LOOT.md:66" }
+      ],
+      "spent": [] },
+    { "id": "arcanedust", "name_key": "L_IN_ARCANE_DUST", "desc_key": "L_ID_PROJECT_DISTRIBUTION", "frame": 1999,
+      "earned": [
+        { "t": "The realm quest at your deepest depth: 90–110 while a Project is open (doubled by the Pandemonium statue)", "src": "LOOT.md realm quest" }
+      ],
+      "spent": [
+        { "t": "Castle Projects: 100 × the project's cost size (doubled on Ruthless)", "src": "DATABASES.md Projects (cost_mult × 100)" }
+      ] },
+    { "id": "creatureparts", "name_key": "L_IN_CREATURE_PARTS", "desc_key": "L_ID_PROJECT_DISTRIBUTION", "frame": 2000,
+      "earned": [],
+      "spent": [
+        { "t": "Castle Projects: 500 × the project's cost size (doubled on Ruthless)", "src": "DATABASES.md Projects (cost_mult × 500)" }
+      ] },
+    { "id": "perkpoint", "name_key": "L_IN_PERK_POINT", "desc_key": "L_ID_PERK_POINT", "frame": 2084,
+      "earned": [
+        { "t": "The realm quest at your deepest depth (or on Ironman): 10, until a progress counter reaches 1,550; Piety after that", "src": "LOOT.md:122 / :257 (global.royalty_additional < 1550)" },
+        { "t": "Gate of the Gods Ascension (every god but Caliban at difficulty 10+ with one specialization): 1", "src": "GATE_OF_THE_GODS_FINDINGS.md:113 (scr_SpecIsAscended)" }
+      ],
+      "spent": [
+        { "t": "Your specialization's perks; each perk has its own cost per rank", "src": "SIGILS_RUNES_ANOINTMENTS.md:166 (perk record field 6)" }
+      ] },
+    { "id": "dust", "name": "Dusts", "dust": true, "frame": 2144,
+      "earned": [
+        { "t": "God Shops", "src": "shops.json kind = dust" }
+      ],
+      "spent": [
+        { "t": "The Enchanter: one Dust per property added to a Spell Gem; each Dust adds its own property", "src": "SPELL_GEMS.md:404; L_ID_DUST_<gem>" }
+      ] },
+    { "id": "gatekeyfragment", "name_key": "L_IN_GATE_OF_GODS_KEY_FRAGMENT", "frame": 2165,
+      "earned": [
+        { "t": "Nether Boss wins: 4–7, more with higher Realm Instability and after Inner Darkness clears (not the first-ever win)", "src": "NETHER_BOSS_BEHAVIOR_FINDINGS.md:118-121" }
+      ],
+      "spent": [
+        { "t": "10 Key Fragments turn into a Gate of the Gods Key by themselves (game codex)", "src": "codex.csv L_CODD_GATEOFTHEGODS_GATE_OF_THE_GODS_KEYS (text, not decoded)" }
+      ] },
+    { "id": "gatekey", "name_key": "L_IN_GATE_OF_GODS_KEY", "frame": 2143,
+      "earned": [
+        { "t": "10 Gate of the Gods Key Fragments (game codex)", "src": "codex.csv L_CODD_GATEOFTHEGODS_GATE_OF_THE_GODS_KEYS" },
+        { "t": "God Shops: 20 of that god's Emblem, from Favor rank 50", "src": "shops.json god misc 131 (price 20, favor_rank 50)" },
+        { "t": "Keyforge Missions (game codex)", "src": "codex.csv L_CODD_GATEOFTHEGODS_GATE_OF_THE_GODS_KEYS" }
+      ],
+      "spent": [
+        { "t": "One per Gate of the Gods fight", "src": "GATE_OF_THE_GODS_FINDINGS.md:8 (obj_gatemenu)" }
+      ] }
+  ]
+}

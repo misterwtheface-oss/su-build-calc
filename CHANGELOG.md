@@ -28,6 +28,17 @@ New entries go at the TOP.
 - Extract: taxo_v2_tags.json round 7 (code/taxo_v2_r7.py). Crosswalk: Events / Artifact slot values, event marker themes,
   retired census values and theme lines removed. Rulings: DECISIONS.md, TAXONOMY_INTENT.md Log.
 
+## 2026-10-24 — Appendix: Currencies
+- New Appendix section **Currencies** (user; collapsed by default, searchable, after Status Effects): 17 currencies with the game's
+  name, icon (inv_ItemIconIndex frame) and, where the game has one, its own description; then **Spent on** and **Earned from**.
+  Brimstone, Crystal, Essence, Granite, Power, Emblems, Glory, Notoriety, Piety, Stardust, Glamour, Arcane Dust, Creature Parts,
+  Perk Point, Dusts (21 names), Gate of the Gods Key Fragment and Key.
+- Lines are app-authored in `data/reference/currencies.json`, each with its extract source; shop lines (guild / God / Arena /
+  Tavern) and their price ranges come from the code shop data, and build-data errors if a shop takes a different currency.
+  Codex-only facts (10 Key Fragments make a Key, Keyforge Missions) say "game codex".
+- Left out: Energy (its only use, the Arcane Vault, is never offered: legacy) and the patch 3.0 teaser changes. Gaps asked in
+  `_su_extract/code/HANDOFF_currencies.md` (Piety / Glamour costs, Glory / Stardust / Creature Parts sources, the Piety switch).
+
 ## 2026-10-24 — Hide button cycles: Hide equipped → Hide used in builds → off
 - Artifacts, Nether Stones and Spell Gems libraries (user): the one footer button now has three states. 1st click "Hide equipped"
   (on the current party, as before), 2nd "Hide used in builds" (the current party plus every saved build), 3rd off. One shared

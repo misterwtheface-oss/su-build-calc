@@ -3390,7 +3390,7 @@
   // reference. The Effect Order page (user 2026-10-22: its own page, same layout) is the same overlay with page "order": the
   // effect-order rules, resurrection order, start of battle and every effect-order section.
   function openErrata(page = "appendix") {
-    ovState = { kind: "errata", page, search: "", collapsed: new Set(["StatusEffects", "EffectOrderRules", "Resurrection", "StartOfBattle", ...(D.effectOrder || []).map(s => "EO:" + s.key), "ClassAdv", "FlatBonus", "RandomTargets", "NetherDrops", "PandShrine", "RealmBonusMax", "Masters"]), ndDiff: "normal", render: renderErrata };
+    ovState = { kind: "errata", page, search: "", collapsed: new Set(["StatusEffects", "EffectOrderRules", "Resurrection", "StartOfBattle", ...(D.effectOrder || []).map(s => "EO:" + s.key), "Currency", "ClassAdv", "FlatBonus", "RandomTargets", "NetherDrops", "PandShrine", "RealmBonusMax", "Masters"]), ndDiff: "normal", render: renderErrata };
     openOverlay(ovState.render()); maybeFocusSearch(OV);
   }
   function renderErrata() {
@@ -3398,7 +3398,7 @@
     const order = st.page === "order";
     const body = (order
       ? eoRulesSection(st, q) + resOrderSection(st, q) + sobSection(st, q) + (D.effectOrder || []).map(s => effectOrderSection(st, q, s)).join("")
-      : statusSection(st, q) + classAdvSection(st, q) + flatBonusSection(st, q) + randomTargetSection(st, q) + netherDropSection(st, q) + pandShrineSection(st, q) + realmBonusSection(st, q) + mastersSection(st, q))
+      : statusSection(st, q) + currencySection(st, q) + classAdvSection(st, q) + flatBonusSection(st, q) + randomTargetSection(st, q) + netherDropSection(st, q) + pandShrineSection(st, q) + realmBonusSection(st, q) + mastersSection(st, q))
       || `<div class="slot-sub" style="padding:10px">Nothing matches “${esc(st.search)}”.</div>`;
     return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel">
       <div class="overlay-header"><h2>${order ? "Effect Order" : "Appendix"}</h2>
@@ -3737,6 +3737,25 @@
     const key = "FlatBonus", open = q ? true : !st.collapsed.has(key);
     const body = open ? `<div class="slot-sub sob-intro">${esc(FLAT_INTRO)}</div>${flatBonusList(kw ? "" : q)}` : "";
     return `<button class="apx-sec-head apx-cat${open ? "" : " collapsed"}" data-action="gloss-cat-toggle" data-c="${key}"><span class="apx-sec-caret">${open ? "▾" : "▸"}</span>Flat Bonus Damage</button>${body}`;
+  }
+
+  // ── Currencies (D.currencies, user 2026-10-24): each currency's game name, icon and description, then what it's spent on and
+  // earned from (build-data: data/reference/currencies.json lines + the shop and its code price range from D.shops).
+  function currencySection(st, q) {
+    const txt = (c) => [c.name, c.desc || "", ...c.earned, ...c.spent, ...(c.members || [])].join(" ").toLowerCase();
+    const kw = q && "currency currencies resources".includes(q);
+    const list = (D.currencies || []).filter(c => !q || kw || txt(c).includes(q));
+    if (!list.length) return "";
+    const key = "Currency", open = q ? true : !st.collapsed.has(key);
+    const lines = (label, xs) => xs.length ? `<div class="cur-label">${label}</div><ul class="cur-list">${xs.map(t => `<li>${esc(t)}</li>`).join("")}</ul>` : "";
+    const row = (c) => `<div class="perk-line res-line">
+        <div class="apx-iconcol">${c.icon ? icoBox(`<img src="${esc(c.icon)}" alt="">`) : ""}</div>
+        <div class="perk-line-body"><div class="perk-line-head"><b>${esc(c.name)}</b></div>
+          ${c.desc ? `<div class="perk-desc">${richText(c.desc)}</div>` : ""}
+          ${lines("Spent on", c.spent)}${lines("Earned from", c.earned)}
+          ${c.members ? `<div class="perk-line-meta">${c.members.map(m => `<span class="anoint-spec-tag">${esc(m)}</span>`).join("")}</div>` : ""}</div></div>`;
+    const body = open ? `<div class="perk-list">${list.map(row).join("")}</div>` : "";
+    return `<button class="apx-sec-head apx-cat${open ? "" : " collapsed"}" data-action="gloss-cat-toggle" data-c="${key}"><span class="apx-sec-caret">${open ? "▾" : "▸"}</span>Currencies</button>${body}`;
   }
 
   // ── Nether Stone drop breakpoints (code: inv_Loot, _su_extract code/LOOT.md +

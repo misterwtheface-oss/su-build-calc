@@ -1777,6 +1777,38 @@ for (const g of shops[0].groups) for (const it of g.items) {
 }
 for (const sh of shops) for (const g of (sh.groups || [sh])) { if (!g.currency) err(`shop ${sh.key}/${g.key || ''} has no currency`); if (!g.currencyIcon) err(`shop ${sh.key}/${g.key || ''} has no currency icon`); }
 console.log(`  shops (code): God ${shops[0].groups.length} gods · ${GUILD_ORDER.length} guilds (${guildBannerHits} banners) · Arena · Tavern · ${allShopItems().length} items`);
+// ── Currencies (Appendix, user 2026-10-24): what each currency is earned from and spent on. Lines are app-authored from the
+// extract (data/reference/currencies.json, each with its src); names / descriptions are the game's items.csv strings, icons the
+// inv_ItemIconIndex frames. A currency with a shop gets that shop and its price range from D.shops (code prices).
+const currencies = (() => {
+  const src = readJSON(path.join(ROOT, 'data', 'reference', 'currencies.json')).currencies;
+  const fmt = (n) => Number(n).toLocaleString('en-US');
+  const range = (items) => { const p = items.map(i => i.price).filter(x => x != null); if (!p.length) return '';
+    const lo = Math.min(...p), hi = Math.max(...p); return lo === hi ? fmt(lo) : `${fmt(lo)}–${fmt(hi)}`; };
+  const dustNames = Object.keys(readJSON(path.join(MODEL, 'item_icons.json')).dust_by_key)
+    .map(k => itemsLoc.get('L_IN_DUST_' + k) || (err(`currencies: no L_IN_DUST_${k}`), k)).sort();
+  return src.map(c => {
+    let name = c.name || null;
+    if (c.name_key) { const n = itemsLoc.get(c.name_key);
+      if (!n) err(`currencies: ${c.id} name ${c.name_key} not in items.csv`);
+      else if (c.name_pattern ? !n.startsWith(c.name_pattern) : false) err(`currencies: ${c.id} ${n} doesn't match ${c.name_pattern}`);
+      if (!c.name) name = n; }
+    let desc = null;
+    if (c.desc_key) { desc = itemsLoc.get(c.desc_key); if (!desc) err(`currencies: ${c.id} desc ${c.desc_key} not in items.csv`);
+      else desc = desc.split(/\\n\\n|\n\n/)[0].trim(); }   // the game's text minus its "automatically added / consumed" line
+    const icon = curIcon(c.frame); if (!icon) err(`currencies: ${c.id} icon frame ${c.frame} missing`);
+    const spent = c.spent.map(x => x.t);
+    if (c.shop) { const tab = shops.find(s => s.key === c.shop.tab); if (!tab) { err(`currencies: ${c.id} shop tab ${c.shop.tab}`); }
+      else if (c.shop.group) { const g = tab.groups.find(x => x.key === c.shop.group);
+        if (!g) err(`currencies: ${c.id} shop group ${c.shop.group}`);
+        else { if (norm(g.currency) !== norm(name)) err(`currencies: ${c.id} shop ${g.name} takes ${g.currency}`); spent.unshift(`${g.name} shop: ${range(g.items)} each`); } }
+      else if (tab.groups) spent.unshift(`God Shops: ${range(tab.groups.flatMap(g => g.items))} each`);
+      else { if (norm(tab.currency) !== norm(name)) err(`currencies: ${c.id} shop ${tab.label} takes ${tab.currency}`); spent.unshift(`${tab.label} shop: ${range(tab.items)} each`); } }
+    if (!c.earned.length && !spent.length) err(`currencies: ${c.id} has no lines`);
+    return { id: c.id, name, icon, ...(desc ? { desc } : {}), earned: c.earned.map(x => x.t), spent, ...(c.dust ? { members: dustNames } : {}) };
+  });
+})();
+console.log(`  currencies: ${currencies.length} (${currencies.filter(c => c.desc).length} with the game's description)`);
 
 // ── boss battle sprites (Appendix boss-trait rows) ────────────────────────────
 // DEITY bosses use bspr_god_* (incl. Caliban). NETHER/SPECIAL bosses use spr_crits_battle_<frame> — the
@@ -3931,6 +3963,7 @@ const SU_DATA = {
   falseGods,
   // the game's own menu glyphs for empty home tiles (menu_character / codex_anointments; G = greyed variant)
   startOfBattle,            // start-of-battle effect order (Glossary), code-grounded
+  currencies,               // Appendix Currencies: earned from / spent on (data/reference/currencies.json + D.shops)
   effectOrder,              // every other fixed-order combat function (Appendix), code-grounded (effect_order_all.json)
   netherHelpers,            // Nether Realm helper tables (Faucet / Mimic Mike), code-grounded
   uiIcons: { specEmpty: 'assets/ui/menu_characterG_0.png', anointEmpty: 'assets/ui/codex_anointmentsG_0.png' },
