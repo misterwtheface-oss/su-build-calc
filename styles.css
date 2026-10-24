@@ -899,7 +899,10 @@ button.apx-owner { background: none; border: 0; cursor: pointer; font: inherit; 
 .perk-line-head > b { min-width: 0; margin-right: auto; }
 .perk-line-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; margin-top: auto; padding-top: 4px; }
 /* Appendix bookmark star — toggles a trait/spell into the selector filter set. Hollow=off, gold=on. */
-.apx-bk { flex: 0 0 auto; align-self: center; background: none; border: none; cursor: pointer; padding: 0 2px; line-height: 1; font-size: 15px; color: var(--text-mute); }
+.apx-bk { flex: 0 0 auto; align-self: center; background: none; border: none; cursor: pointer; padding: 0 2px; line-height: 1; font-size: 15px; color: var(--text-mute); position: relative; }
+/* the glyph is ~15px; a finger needs ~40px. An invisible ::after (part of the button, so taps on it hit the star) widens the
+   target without moving the layout, so a near-miss on a phone no longer falls through to the row and opens its details */
+.apx-bk::after { content: ""; position: absolute; inset: -12px -12px; }
 @media (hover: hover) { .apx-bk:hover { color: var(--accent); } }
 .apx-bk.on { color: var(--accent); }
 

@@ -38,6 +38,11 @@ New entries go at the TOP.
 - Extract: taxo_v2_tags.json round 7 (code/taxo_v2_r7.py). Crosswalk: Events / Artifact slot values, event marker themes,
   retired census values and theme lines removed. Rulings: DECISIONS.md, TAXONOMY_INTENT.md Log.
 
+## 2026-10-24 — Fix: bookmark star tap opened the details on phones
+- User: tapping ☆ on a container opened its details page. The star glyph was a ~17×15 px target, so a slightly-off tap landed on
+  the row (`apx-open`). An invisible `::after` on `.apx-bk` now widens the tap target to ~40 px without moving the layout
+  (Taxonomy, Spec, Anointments rows). Checked at 390 px: taps up to ~12 px off the glyph bookmark and don't open details.
+
 ## 2026-10-24 — Taxonomy page: collapsible spell gem / status-effect rows
 - The Taxonomy page's result containers now carry the same collapsible ▸ row of spell gems and status effects as the creature,
   spec and relic pages (one shared `spellRowWrap`): traits (creature, item-only and boss), perks, spells, and each relic rank.
