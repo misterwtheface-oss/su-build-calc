@@ -231,6 +231,13 @@ per hit (Extra repeats and area hits multiply them).
   buff / debuff / minion) / **cl** (class) on the tag entry, tag-bound code values only; Stat::, Named Buff / Debuff / Minion
   and Spell Class stay object tags and the markers narrow them. F (redirect / split damage, Damage::Inflict removals) not
   approved: the extract researches what damage each effect reacts to and what it resolves as.
+- 2026-10-24: Round 7F (user, on the extract's item F data): "A. Agreed B. Drop it C. No bring them in they belong together
+  thematically and are not Inflict intent which covers dealing damage not redistributing it D. Yes". **Actions::Intercept** =
+  another creature takes all or part of a hit, any damage kind; markers Source (reacts to), **ra** Resolves as (Indirect /
+  Same hit), **sh** Share (Whole / Split / Copy). Members: Savior, Forged by Pain (Split); Undying, Patriarchy, Blue Tether,
+  Celestial Nexus and the attack / cast-step interceptors (Whole); Stand As One, Training Day (Copy). **Damage::Inflict =
+  dealing damage, never redistributing it** (removed from every intercept, copy and Defer Pain's delay; False Prophecy keeps
+  it). CAWW! = Actions::Redirect (Attack); Redirect entries read Resolves as Same hit.
 
 ---
 

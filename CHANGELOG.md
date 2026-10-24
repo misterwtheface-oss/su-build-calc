@@ -4,6 +4,16 @@ Every dated change entry, newest first (moved verbatim from Progress.md on 2026-
 to their own section and sorted by their date). Current state and open work: `Progress.md`, `BACKLOG.md`.
 New entries go at the TOP.
 
+## 2026-10-24 — Taxonomy round 7F: damage redirects (Intercept markers)
+- **Actions::Intercept** now covers every effect where another creature takes all or part of a hit (16 objects; Forged by Pain,
+  Stand As One and Training Day join). Two new toggles narrow it: **Resolves as** (Indirect: a new indirect hit nobody is
+  credited with / Same hit: the attack, spell or hit itself moves) and **Share** (Whole / Split / Copy). The Source toggle says
+  what it reacts to (Forged by Pain, Undying, Stand As One and Training Day react to indirect damage too).
+- **Damage::Inflict** removed from every redistributor (Savior, Forged by Pain, Undying, Patriarchy, Stand As One, Training
+  Day, Defer Pain): user rule "Inflict covers dealing damage, not redistributing it". False Prophecy keeps it.
+- Defer Pain's delayed Take Less carries its sources; **CAWW!** gets Actions::Redirect (Attack); every Redirect reads
+  "Resolves as Same hit"; Patriarchy's Damage::Take More (no code) removed. Extract: `_su_extract` 8102db7.
+
 ## 2026-10-24 — Taxonomy round 7: Events category, artifact slots, stat / status / class markers
 - New category **Events**: Events::More Activations (37 objects; effects that re-run a whole on-event hook, with an Event
   marker naming it) replaces Traits / Perks / Relics / Conditions / Cards::More Activations on those effects; 8 named-trait

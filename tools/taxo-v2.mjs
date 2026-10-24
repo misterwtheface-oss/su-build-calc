@@ -126,6 +126,9 @@ export function makeTaxoV2(X, CL) {
         // status / class the code names on this very tag entry (tag-bound values only)
         ev: (c.event || []).length ? c.event : null, st: (c.stat_marker || []).length ? c.stat_marker : null,
         sk: (c.status_marker || []).length ? c.status_marker : null, cl: (c.class_marker || []).length ? c.class_marker : null,
+        // round 7F (user 2026-10-24): an intercept / redirect resolves as Indirect (new event, no source) or the Same hit; its
+        // share: Whole (original takes 0) / Split (original keeps part) / Copy (original keeps all, others take extra)
+        ra: c.resolves_as || null, sh: c.share || null,
         // Targeting::All inferred only from "no picker call" is a guess while random-by-index picks are undecoded
         // (Abnegation hits a random enemy): unverified until the extract decodes it
         d: c.delivery || null, v: alts.length > 1 || / no picker call/.test(c.picker || '') ? 'unverified' : 'code',
@@ -158,7 +161,7 @@ export function makeTaxoV2(X, CL) {
     // dedupe on the full attribute key (an unverified duplicate of a firm entry goes)
     const seen = new Map();
     for (const e of all) {
-      const k = [e.t, e.s, e.so, e.r, e.p, e.d, e.rk, e.cf, e.co, e.cn, e.ig, ...['x', 'ev', 'st', 'sk', 'cl'].map(a => (e[a] || []).join(','))].join('|');
+      const k = [e.t, e.s, e.so, e.r, e.p, e.d, e.rk, e.cf, e.co, e.cn, e.ig, e.ra, e.sh, ...['x', 'ev', 'st', 'sk', 'cl'].map(a => (e[a] || []).join(','))].join('|');
       const prev = seen.get(k);
       if (!prev || (prev.v === 'unverified' && e.v !== 'unverified')) seen.set(k, e);
     }
@@ -194,10 +197,10 @@ export function makeTaxoV2(X, CL) {
     for (const e of out) {
       stats.entries++; stats[e.v === 'code' ? 'code' : 'other']++;
       if (!known(e.t)) stats.unknown[e.t] = (stats.unknown[e.t] || 0) + 1;
-      for (const k of ['s', 'so', 'r', 'p', 'd', 'rk', 'cf', 'co', 'cn', 'ig', 'x', 'ev', 'st', 'sk', 'cl']) if (e[k] == null) delete e[k];
+      for (const k of ['s', 'so', 'r', 'p', 'd', 'rk', 'cf', 'co', 'cn', 'ig', 'x', 'ev', 'st', 'sk', 'cl', 'ra', 'sh']) if (e[k] == null) delete e[k];
       delete e.old; delete e.why; delete e.mth;
     }
-    for (const e of removed) { stats.removed++; stats.removedBy[e.v] = (stats.removedBy[e.v] || 0) + 1; for (const k of ['s', 'so', 'r', 'p', 'd', 'rk', 'cf', 'co', 'cn', 'ig', 'x', 'ev', 'st', 'sk', 'cl']) if (e[k] == null) delete e[k]; delete e.mth; }
+    for (const e of removed) { stats.removed++; stats.removedBy[e.v] = (stats.removedBy[e.v] || 0) + 1; for (const k of ['s', 'so', 'r', 'p', 'd', 'rk', 'cf', 'co', 'cn', 'ig', 'x', 'ev', 'st', 'sk', 'cl', 'ra', 'sh']) if (e[k] == null) delete e[k]; delete e.mth; }
     return { taxo2: out, theme2: [...theme].sort(), removed, themeOnly: [...theme].filter(th => !narrow.has(th)).sort() };
   }
 

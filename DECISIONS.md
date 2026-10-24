@@ -157,7 +157,12 @@ a flat modifier to base: raised **×4/3 (+33%)**, lowered **×2/3 (−33%)**, ot
   slots are values Artifacts::Spell / Stat / Trick / Trait Slot. Hook re-runs = Events::More Activations + event marker;
   whole-event suppressors = Events::Suppress. Markers st / sk / cl narrow a tag to the stat / status / class the code names
   on that tag (tag-bound only); the object tags (Stat::, Named Buff / Debuff / Minion, Spell Class) stay. Defer Pain's Take
-  Less is marked delayed. Redirect / split damage (item F) waits on extract research. Details: TAXONOMY_INTENT.md Log.
+  Less is marked delayed. Details: TAXONOMY_INTENT.md Log.
+- **Round 7F (user 2026-10-24): damage redirects.** Actions::Intercept = another creature takes all or part of a hit,
+  whatever kind of hit it reacts to (Forged by Pain belongs with Savior), narrowed by Source (what it reacts to), Resolves as
+  (Indirect / Same hit) and Share (Whole / Split / Copy). Stand As One and Training Day are Intercept too ("they belong
+  together thematically"). **Damage::Inflict = dealing damage, not redistributing it**: no intercept, copy or delay carries
+  it. CAWW! is Actions::Redirect (Attack), like Hoodwink.
 - **A theme needs a narrow tag (user 2026-10-21):** a theme carried only by a general Involves tag, with no narrow tag of
   that theme, is dropped. E.g. "spells cost no Charges" effects keep Spell Gems (Spell Gems::Charges) and lose Cast.
   Per-object drops live in `taxonomy_crosswalk.json` `object_drops`.
