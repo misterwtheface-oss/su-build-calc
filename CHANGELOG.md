@@ -4,6 +4,14 @@ Every dated change entry, newest first (moved verbatim from Progress.md on 2026-
 to their own section and sorted by their date). Current state and open work: `Progress.md`, `BACKLOG.md`.
 New entries go at the TOP.
 
+## 2026-10-24 — Saved builds keep their bookmarks; Inscriptions "also cast by"
+- **Bookmarks per saved build** (user): Save and Update store the current bookmarks (traits, spells, perks) with the build; Load
+  restores them (a build saved before this has none, so Load clears them, as before). Saving a shared build no longer wipes
+  the visitor's own bookmarks.
+- **Bosses → Rewards → Inscription:** the extract's `also_cast_by` now shows under the spell: "The Doomsday perk (Shadowbringer)
+  can also cast it, without the recipe" (Ill Fate, Saint Althea) and Immobility (Mime) on Aggravate (The Ancestor). build-data
+  errors on an unreadable entry or a perk not in the app. (The Inscriptions list itself shipped 2026-10-11, 092cbdc.)
+
 ## 2026-10-23 — Stat Calculation Order (extract item 15) + Shallan wording (Q15b)
 - Effect Order → new section **Stat Calculation Order** (after Stat Change Order) with Attack / Intelligence / Defense / Speed:
   the game's four stat functions, which rebuild a stat on every read. Steps: Start value · "Less" effects (they multiply) ·

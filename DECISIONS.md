@@ -262,3 +262,9 @@ a flat modifier to base: raised **×4/3 (+33%)**, lowered **×2/3 (−33%)**, ot
 - **2026-10-18 — Artifact trick slots: one copy per trick property** (the blacksmith's rule). Stat slots allow repeats.
 - **2026-10-18 — Per-rank relic tags join the relic only when code-backed.** The 21 per-rank tags missing from the whole-relic
   list are all `llm`, so none were added. Untagged traits are an error to fix with code-grounded tags (taxonomy review).
+
+## Bookmarks belong to a saved build (2026-10-24)
+User: "save bookmarks to the saved build". Each saved build stores its own bookmarks (`bk` on the saved entry), written on Save
+and Update and restored on Load. The live bookmark list stays one global list for the current party. Bookmarks are not part of the
+export / share code.
+

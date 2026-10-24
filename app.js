@@ -464,6 +464,11 @@
   const isBk = (kind, id) => bookmarks[kind].includes(id);
   const toggleBk = (kind, id) => { const a = bookmarks[kind], i = a.indexOf(id); if (i >= 0) a.splice(i, 1); else a.push(id); persistBookmarks(); };
   const clearBookmarks = () => { bookmarks.traits = []; bookmarks.spells = []; bookmarks.perks = []; persistBookmarks(); };
+  // a saved build keeps its own bookmarks (`bk`, user 2026-10-24): copied on Save / Update, restored on Load (none saved → cleared)
+  const bkCopy = () => ({ traits: bookmarks.traits.slice(), spells: bookmarks.spells.slice(), perks: bookmarks.perks.slice() });
+  const restoreBookmarks = (bk) => { bk = bk || {};
+    bookmarks.traits = (bk.traits || []).filter(id => TRAIT[id]); bookmarks.spells = (bk.spells || []).filter(id => SPELL.has(id));
+    bookmarks.perks = Array.isArray(bk.perks) ? bk.perks.slice() : []; persistBookmarks(); };
   const bkBtn = (kind, id) => `<button class="apx-bk ${isBk(kind, id) ? "on" : ""}" data-action="apx-bookmark" data-kind="${kind}" data-id="${id}" title="Bookmark — filter the selectors to this">${isBk(kind, id) ? "★" : "☆"}</button>`;
   // player's tracked favor rank per realm (for the personalized "best realm right now" comparison)
   let favorPrefs = jload(LS.favorRanks, null);
@@ -6249,7 +6254,7 @@
       case "builds-sort": sortPick(ovState, "sort", "sortRev", t.dataset.sort); refreshOverlay(); break;
       case "builds-save": {
         const d = ovState.draft;
-        const nb = { id: nextBuildId++, name: (d.name || "").trim() || `Build ${builds.length + 1}`, icon: d.icon, ts: Date.now(), build: JSON.parse(JSON.stringify(build)) };
+        const nb = { id: nextBuildId++, name: (d.name || "").trim() || `Build ${builds.length + 1}`, icon: d.icon, ts: Date.now(), build: JSON.parse(JSON.stringify(build)), bk: bkCopy() };
         builds.push(nb); persistBuilds(); ovState.draft = null; ovState.sel = nb.id; flashBuild(nb.id); break;
       }
       case "open-bio": openBuildIO("import"); break;
@@ -6269,19 +6274,19 @@
         applyImportedBuild(st.payload, st.warnings); st.done = "load"; refreshOverlay(); break; }
       case "share-save": { const st = ovState; if (!st || st.kind !== "share") break;
         // import into a temporary party, snapshot it into Builds, then put the visitor's party back
-        const prev = JSON.parse(JSON.stringify(build));
+        const prev = JSON.parse(JSON.stringify(build)), prevBk = bkCopy();
         applyImportedBuild(st.payload, st.warnings);
         const nb = { id: nextBuildId++, name: (st.name || "").trim() || `Build ${builds.length + 1}`, icon: buildDefaultIcon(), ts: Date.now(), build: JSON.parse(JSON.stringify(build)) };
         builds.push(nb); persistBuilds();
-        build = normalizeBuild(prev); persistBuild(); render();
+        build = normalizeBuild(prev); restoreBookmarks(prevBk); persistBuild(); render();
         st.name = nb.name; st.done = "save"; refreshOverlay(); break; }
       case "builds-load": {
         const b = builds.find(x => x.id === +t.dataset.id);
-        if (b) { build = normalizeBuild(JSON.parse(JSON.stringify(b.build))); clearBookmarks(); persistBuild(); closeOverlay(); render(); }
+        if (b) { build = normalizeBuild(JSON.parse(JSON.stringify(b.build))); restoreBookmarks(b.bk); persistBuild(); closeOverlay(); render(); }
         break;
       }
       case "builds-overwrite": { const b = builds.find(x => x.id === +t.dataset.id); if (!b || !build.slots.some(s => s && s.cid != null)) break;
-        const doUpdate = () => { b.build = JSON.parse(JSON.stringify(build)); b.ts = Date.now(); persistBuilds(); ovState.sel = b.id; flashBuild(b.id); };
+        const doUpdate = () => { b.build = JSON.parse(JSON.stringify(build)); b.bk = bkCopy(); b.ts = Date.now(); persistBuilds(); ovState.sel = b.id; flashBuild(b.id); };
         // guard: updating a saved build whose specialization differs from the current one needs a second press
         if ((b.build && b.build.specId != null ? b.build.specId : null) !== (build.specId != null ? build.specId : null)) {
           if (!t.classList.contains("armed")) { const label = t.textContent; t.textContent = "Confirm Update";

@@ -3662,7 +3662,14 @@ const bosses = (() => {
     // a spec that starts with one of the recipes is an exception, never the source
     const inscriptions = ((e.inscriptions || {}).spells || []).map(x => {
       const id = spell(x, `${where} inscription`);
-      return id == null ? null : { spell: id, ...((x.exceptions || []).length ? { exceptions: x.exceptions.map(c => c.detail) } : {}) };
+      // also_cast_by: a perk that casts the spell by chance without the recipe ("perk Doomsday (Shadowbringer): …")
+      const also = (x.also_cast_by || []).map(t => { const m = /^perk (.+?) \((.+?)\):/.exec(t);
+        if (!m) { err(`bosses: ${where} inscription ${x.name}: unreadable also_cast_by "${t}"`); return null; }
+        const sp = specs.find(q => norm(q.label) === norm(m[2])), pk = sp && sp.perks.find(q => norm(q.name) === norm(m[1]));
+        if (!pk) { err(`bosses: ${where} inscription ${x.name}: perk ${m[1]} (${m[2]}) not in the app`); return null; }
+        return `The ${pk.name} perk (${sp.label}) can also cast it, without the recipe.`; }).filter(Boolean);
+      const notes = [...(x.exceptions || []).map(c => c.detail), ...also];
+      return id == null ? null : { spell: id, ...(notes.length ? { exceptions: notes } : {}) };
     }).filter(Boolean);
     if (e.type === 'false_god' && !inscriptions.length) err(`bosses: ${where} has no Inscriptions`);
     if (e.type === 'false_god') {
