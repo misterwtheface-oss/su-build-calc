@@ -2466,7 +2466,7 @@
         <div class="overlay-body">
           <div class="ovl-center"><div class="ovl-center-scroll build-create">
             <button class="build-sprite-box" data-action="builds-pick-icon" title="Choose a sprite">
-              ${d.icon ? spriteImg(d.icon, "px") : `<span class="slot-empty-icon">＋</span>`}</button>
+              ${d.icon ? spriteImg(d.icon, "px") : `<span class="build-sprite-pick">Pick Skin</span>`}</button>
             <input class="ovl-search build-name" placeholder="Name this build" value="${esc(d.name)}" data-action="builds-name">
           </div></div>
         </div>
@@ -6293,7 +6293,7 @@
       case "open-artifacts": openArtifactLibrary(null); break;
       case "toggle-menu": e.stopPropagation(); syncLayoutMenu(); el("main-menu").classList.toggle("hidden"); break;
       case "open-builds": openBuilds(); break;
-      case "builds-save-new": ovState.draft = { name: `Build ${builds.length + 1}`, icon: buildDefaultIcon() }; refreshOverlay(); break;
+      case "builds-save-new": ovState.draft = { name: `Build ${builds.length + 1}`, icon: null }; refreshOverlay(); break;
       case "builds-cancel": ovState.draft = null; refreshOverlay(); break;
       case "builds-pick-icon": openIconPicker((w) => { ovState.draft.icon = w.img; }); break;
       case "builds-sel": ovState.sel = ovState.sel === +t.dataset.id ? null : +t.dataset.id; refreshOverlay(); break;

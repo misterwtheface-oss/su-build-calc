@@ -4,6 +4,10 @@ Every dated change entry, newest first (moved verbatim from Progress.md on 2026-
 to their own section and sorted by their date). Current state and open work: `Progress.md`, `BACKLOG.md`.
 New entries go at the TOP.
 
+## 2026-10-24 — New Build: no default sprite, "Pick Skin" until one is chosen
+- User ask. The New Build form no longer pre-fills the spec costume; the dotted box reads "Pick Skin" until a sprite is picked.
+  Saving without one keeps the library's empty tile.
+
 ## 2026-10-24 — Status markers on status triggers
 - User: status triggers had no Status marker. The code layer already names the watched status on the trigger tag itself
   (condition_ids on Trigger: Buff / Debuff / Debuff Removed; dot on Trigger: DoT Tick); they now become its Status marker

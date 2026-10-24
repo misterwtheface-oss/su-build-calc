@@ -1377,6 +1377,7 @@ select.app-select { background: var(--surface); border: 1px solid var(--border-d
 @media (hover: hover) { .build-sprite-box:hover { border-color: var(--accent2); background: var(--surface2); } }
 .build-sprite-box > img { width: 128px; height: 128px; object-fit: contain; image-rendering: pixelated; }
 .build-sprite-box .slot-empty-icon { font-size: 60px; color: var(--accent2); }
+.build-sprite-pick { font-size: 18px; font-weight: 700; color: var(--accent2); }
 .build-name { flex: 0 0 auto; max-width: 340px; width: 100%; text-align: center; font-weight: 700; font-size: 15px; }
 .build-preview { display: flex; align-items: center; justify-content: center; }
 .build-hero { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; text-align: center; }
