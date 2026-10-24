@@ -27,7 +27,8 @@ const SCOPE_OF_NAME = (old) => / Enemy /.test(' ' + old.slice(old.indexOf('::') 
 // MK (optional): the extract's marker rows (taxo_markers_proposal.json `rows`). Round 7 ruling = tag-bound values only, so only
 // level `entry` rows are used: they fill st / sk / cl on a shipped entry of that (object, value) the code layer gave no marker,
 // e.g. an entry that came from the v1 crosswalk (Ancient Wisdom's Scales With::Amount of X Stat → Intelligence).
-export function makeTaxoV2(X, CL, MK) {
+// condName(id) → a condition registry id's display name (status triggers' condition_ids → their Status marker)
+export function makeTaxoV2(X, CL, MK, condName = () => null) {
   const MARK = new Map();
   for (const r of MK || []) if (r.level === 'entry' && ['st', 'sk', 'cl'].includes(r.marker) && (r.values || []).length)
     MARK.set(`${r.key}|${r.value}|${r.marker}`, r.values);
@@ -119,6 +120,13 @@ export function makeTaxoV2(X, CL, MK) {
     });
     // code entries: replace the v1-mapped entries of every value the code tags
     // An open polarity / direction ("Buffs|Debuffs::Apply", "Stats::Has More|Less") is both candidates, unverified.
+    // status triggers (user 2026-10-24): the code names the status the trigger watches on the tag itself: condition_ids
+    // (Buff / Debuff / Debuff Removed: the event's condition compared with these ids) or dot (DoT Tick: the ticking DoT)
+    const trigStatus = (c) => {
+      if (!/^Trigger::/.test(c.tag)) return null;
+      const v = [...new Set([...(c.condition_ids || []).map(condName).filter(Boolean), ...(c.dot ? [c.dot] : [])])];
+      return v.length ? v : null;
+    };
     const codeE = ((code && code.tags) || []).flatMap(c => {
       const alts = expand(c.tag);
       // relic rank: the code layer's own `rank` (F5), else the rank clause that holds the site
@@ -131,7 +139,7 @@ export function makeTaxoV2(X, CL, MK) {
         // round 7 markers (user 2026-10-24): ev = the event an Events:: value re-runs / suppresses; st / sk / cl = the stat /
         // status / class the code names on this very tag entry (tag-bound values only)
         ev: (c.event || []).length ? c.event : null, st: (c.stat_marker || []).length ? c.stat_marker : null,
-        sk: (c.status_marker || []).length ? c.status_marker : null, cl: (c.class_marker || []).length ? c.class_marker : null,
+        sk: (c.status_marker || []).length ? c.status_marker : trigStatus(c), cl: (c.class_marker || []).length ? c.class_marker : null,
         // round 7F (user 2026-10-24): an intercept / redirect resolves as Indirect (new event, no source) or the Same hit; its
         // share: Whole (original takes 0) / Split (original keeps part) / Copy (original keeps all, others take extra)
         ra: c.resolves_as || null, sh: c.share || null,

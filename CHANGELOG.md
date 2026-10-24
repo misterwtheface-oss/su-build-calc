@@ -4,6 +4,13 @@ Every dated change entry, newest first (moved verbatim from Progress.md on 2026-
 to their own section and sorted by their date). Current state and open work: `Progress.md`, `BACKLOG.md`.
 New entries go at the TOP.
 
+## 2026-10-24 — Status markers on status triggers
+- User: status triggers had no Status marker. The code layer already names the watched status on the trigger tag itself
+  (condition_ids on Trigger: Buff / Debuff / Debuff Removed; dot on Trigger: DoT Tick); they now become its Status marker
+  (registry name -> the game's display name). 83 trigger entries: DoT Tick 63 / 63, Debuff 14, Buff 5, Debuff Removed 1.
+  Triggers on any buff / debuff stay unmarked (the code compares no status). Minion Gained / Lost and Buff Removed have no
+  status in the code layer.
+
 ## 2026-10-24 — Marker toggles: type markers first
 - User: side isn't on every tag, so the chips after it moved around. The refine toggles beside an active tag now start with the
   type markers (Status, Stat, Class, Event), then side / source / timing / delivery and the rest. Display order only; saved

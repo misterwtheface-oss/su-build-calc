@@ -3111,6 +3111,7 @@ const COND_DISPLAY = (() => {
   return m;
 })();
 const condDisplay = (n) => COND_DISPLAY.get(n) || n;
+const condRegById = new Map(readJSON(path.join(MODEL, 'condition_registry.json')).conditions.map(c => [c.id, c]));
 const sobEntries = readJSON(path.join(MODEL, 'start_of_battle_order.json')).entries;
 // one code site can test several card powers (Satyr: for i = 1..3 around inv_CardSetPowerUnlocked, extract S49) → one row per power
 const sobRaw = sobEntries.flatMap(e => {
@@ -3894,7 +3895,8 @@ const taxonomy2 = (() => {
   if (!fs.existsSync(CLP)) { warn('taxonomy v2: taxo_v2_tags.json missing, v2 not built'); return null; }
   const X = readJSON(path.join(ROOT, 'data', 'reference', 'taxonomy_crosswalk.json'));
   const MKP = path.join(MODEL, 'taxo_markers_proposal.json');
-  const V = makeTaxoV2(X, readJSON(CLP), fs.existsSync(MKP) ? readJSON(MKP).rows : (warn('taxonomy v2: taxo_markers_proposal.json missing, no entry markers filled'), []));
+  const V = makeTaxoV2(X, readJSON(CLP), fs.existsSync(MKP) ? readJSON(MKP).rows : (warn('taxonomy v2: taxo_markers_proposal.json missing, no entry markers filled'), []),
+    (cid) => { const r = condRegById.get(cid); return r ? condDisplay(r.name) : null; });
   const counts = {}, removed = {}, involves = {};
   // Involves (user 2026-10-20) = the umbrella view: every object carries Involves::<theme> for EACH of its themes (theme2),
   // so one tag lists everything touching a mechanic (the old Action/Mechanic role). A theme that came only from a v1
