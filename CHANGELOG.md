@@ -4,6 +4,11 @@ Every dated change entry, newest first (moved verbatim from Progress.md on 2026-
 to their own section and sorted by their date). Current state and open work: `Progress.md`, `BACKLOG.md`.
 New entries go at the TOP.
 
+## 2026-10-24 — Marker toggles: type markers first
+- User: side isn't on every tag, so the chips after it moved around. The refine toggles beside an active tag now start with the
+  type markers (Status, Stat, Class, Event), then side / source / timing / delivery and the rest. Display order only; saved
+  filter keys are unchanged.
+
 ## 2026-10-24 — Fix: minions missing from the status-effect containers (Vision Quest → Doppelganger)
 - User: Doppelganger was missing from Vision Quest. The containers were built only from Buffs / Debuffs tags, so no summoned
   minion ever showed. They now also read code Minions::Summon tags (named minion, condition ids, or a single-minion status

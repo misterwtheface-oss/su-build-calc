@@ -656,7 +656,10 @@
     return [...out].sort((x, y) => order.indexOf(x) - order.indexOf(y) || String(x).localeCompare(String(y)));
   };
   // the toggles beside an active tag chip, one per attribute that has a value on the listed objects: Any → each value → Any
-  const refineBtns = (k, src, L, objs) => REFINE.map(R => {
+  // shown type markers first (status / stat / class / event…), then side / source / timing / delivery: those come and go per
+  // tag and would shift the type chips' position (user 2026-10-24). Display order only; keyBuild keeps REFINE's order.
+  const REFINE_SHOWN = [...["sk", "st", "cl", "ev"].map(a => REFINE.find(R => R.a === a)), ...REFINE.filter(R => !["sk", "st", "cl", "ev"].includes(R.a))];
+  const refineBtns = (k, src, L, objs) => REFINE_SHOWN.map(R => {
     const cur = keyParse(k).ref[R.a], vals = refineVals(objs, k, R);
     if (!cur && !vals.length) return "";
     return `<button class="facet${cur ? " on" : ""}" data-action="taxo-refine" data-a="${R.a}" data-src="${src}" data-l="${L}" data-k="${esc(k)}" title="${esc(R.title)}">${esc(cur ? R.label(cur) : R.any)}</button>`;
