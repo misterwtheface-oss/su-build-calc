@@ -4,6 +4,12 @@ Every dated change entry, newest first (moved verbatim from Progress.md on 2026-
 to their own section and sorted by their date). Current state and open work: `Progress.md`, `BACKLOG.md`.
 New entries go at the TOP.
 
+## 2026-10-24 — Stat / Status / Class markers bound per code site (extract S52i)
+- The extract now binds each marker to the code block that performs its tag (gate pairs followed, per-stat cases joined, stat
+  writes read with their direction). Marked tag entries: Stat 1,712 -> 1,914, Status 1,114 -> 1,436, Class 63 -> 93. Baffle and
+  Ancient Wisdom now show under Stat: Intelligence on Scales With: Amount of X Stat. Values that had leaked in from neighbouring
+  code are gone (Disarmed on Pyre / Rime / Stasis / Scourge / Black Hole Halo, the five classes on Class Advantage effects).
+
 ## 2026-10-24 — Fix: round 7 stat / status / class markers missing on v1-layer tags
 - User: Intelligence didn't list Ancient Wisdom or Baffle. The markers were copied only from code-layer tag entries
   (`stat_marker` / `status_marker` / `class_marker`); a tag that came from the v1 crosswalk (Ancient Wisdom's Scales
