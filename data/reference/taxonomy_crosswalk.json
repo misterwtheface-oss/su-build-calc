@@ -1291,14 +1291,13 @@
   "Artifact": [
    "Involves::Artifact",
    "Trait Kind::Artifact Trait",
-   "Artifacts::More Activations"
+   "Artifacts::*"
   ],
   "Adjacency": [
    "Involves::Adjacency"
   ],
   "Relic": [
-   "Involves::Relic",
-   "Relics::More Activations"
+   "Involves::Relic"
   ],
   "Personality": [
    "Involves::Personality"
@@ -1307,10 +1306,7 @@
    "Traits::*!Gain Perk",
    "Trait Kind::*!Artifact Trait",
    "Trigger::Trait Activation",
-   "Scales With::Traits Gained Count",
-   "Perks::More Activations",
-   "Cards::More Activations",
-   "Conditions::More Activations"
+   "Scales With::Traits Gained Count"
   ],
   "Death": [
    "Trigger::Death",
@@ -1570,10 +1566,6 @@
   "Life::Resurrect Health Down": "F5 (extract HANDOFF_taxonomy_v2), user-ratified 2026-10-20/21",
   "Chance::Re-roll": "F5 (extract HANDOFF_taxonomy_v2), user-ratified 2026-10-20/21",
   "Life::Set Health": "F5 (extract HANDOFF_taxonomy_v2), user-ratified 2026-10-20/21",
-  "Perks::More Activations": "F5 (extract HANDOFF_taxonomy_v2), user-ratified 2026-10-20/21",
-  "Relics::More Activations": "F5 (extract HANDOFF_taxonomy_v2), user-ratified 2026-10-20/21",
-  "Conditions::More Activations": "F5 (extract HANDOFF_taxonomy_v2), user-ratified 2026-10-20/21",
-  "Cards::More Activations": "F5 (extract HANDOFF_taxonomy_v2), user-ratified 2026-10-20/21",
   "Timeline::Skip to Next Turn": "F5 (extract HANDOFF_taxonomy_v2), user-ratified 2026-10-20/21",
   "Life::Redirect Heal": "F5 (extract HANDOFF_taxonomy_v2), user-ratified 2026-10-20/21",
   "Scales With::Dodge Chance": "F5 (extract HANDOFF_taxonomy_v2), user-ratified 2026-10-20/21",
@@ -1585,7 +1577,13 @@
   "Buffs::Bypass": "F5 (extract HANDOFF_taxonomy_v2), user-ratified 2026-10-20/21",
   "Condition::Timeline Position": "F5 (extract HANDOFF_taxonomy_v2), user-ratified 2026-10-20/21",
   "Named Minion::Microbots": "F5 (extract HANDOFF_taxonomy_v2), user-ratified 2026-10-20/21",
-  "Named Minion::Chaos Satyrs": "F5 (extract HANDOFF_taxonomy_v2), user-ratified 2026-10-20/21"
+  "Named Minion::Chaos Satyrs": "F5 (extract HANDOFF_taxonomy_v2), user-ratified 2026-10-20/21",
+  "Events::More Activations": "Round 7 (user 2026-10-24, extract HANDOFF_taxonomy_v2 \"User ask 2026-10-24\"): a hook re-run fires every reaction to that event; marker event names it (replaces the per-kind census values)",
+  "Events::Suppress": "Round 7 (user 2026-10-24, extract HANDOFF_taxonomy_v2 \"User ask 2026-10-24\"): the event's reaction hook exits early, every later reaction to it is skipped",
+  "Artifacts::Spell Slot": "Round 7 (user 2026-10-24, extract HANDOFF_taxonomy_v2 \"User ask 2026-10-24\"): reads, casts or changes the artifact's spell gem / its activation roll",
+  "Artifacts::Stat Slot": "Round 7 (user 2026-10-24, extract HANDOFF_taxonomy_v2 \"User ask 2026-10-24\"): reads or changes artifact stat-slot values",
+  "Artifacts::Trick Slot": "Round 7 (user 2026-10-24, extract HANDOFF_taxonomy_v2 \"User ask 2026-10-24\"): reads or changes artifact trick-slot values (Class Strength, On Damage, ...)",
+  "Artifacts::Trait Slot": "Round 7 (user 2026-10-24, extract HANDOFF_taxonomy_v2 \"User ask 2026-10-24\"): reads or changes the artifact trait slot"
  },
  "rulings": [
   "2026-10-19 Xyrxzy's Control: Actions::Extra Attack (code re-issues bc_CreatureAttack(attacker, attacked)); clarify note for the text.",
@@ -1597,10 +1595,15 @@
   "2026-10-19 Chance to avoid debuffs (Anti-Magic Field, Quahn Harbinger, Uninterrupted) = Debuffs::Immune.",
   "2026-10-19 Glitch In The System = Buffs::Can't Gain + Debuffs::Apply.",
   "2026-10-19 Master of Carbuncles / Storms = Traits::More Potency only.",
-  "2026-10-19 Leave-chance modifiers (Permanence, Midnight Bargain) = Minions::Extend."
+  "2026-10-19 Leave-chance modifiers (Permanence, Midnight Bargain) = Minions::Extend.",
+  "2026-10-24 Round 7 A-D: Involves on its own is an anti-pattern; artifact slots are narrow values Artifacts::Spell Slot / Stat Slot / Trick Slot / Trait Slot; Artifacts::More Activations on the six Spell Slot activation raisers; The Truth not a slot effect.",
+  "2026-10-24 Round 7 E: new category Events: Events::More Activations (marker event = the re-run event) replaces Traits / Perks / Relics / Conditions / Cards::More Activations on hook re-runs (named-trait re-runs keep Traits::More Activations); Events::Suppress for whole-event suppressors (Debilitate / Blank Slate keep Traits::Suppress).",
+  "2026-10-24 Round 7 G / H: marker delayed on Damage::Take Less (Defer Pain); Inner Hatred / Ejector Seat lose Suppress (self-limits).",
+  "2026-10-24 Round 7 I-K: markers st (stat) / sk (status) / cl (class) on the tag entry, tag-bound code values only; Stat::, Named Buff / Debuff / Minion and Spell Class stay object tags (markers narrow them).",
+  "2026-10-24 F (redirect / split damage, Damage::Inflict removals) NOT approved: the extract researches what damage each reacts to and resolves as."
  ],
  "marker_themes": {
-  "_note": "Themes a code-layer tag marker adds (extract HANDOFF_taxonomy_v2 F5, user-ratified 2026-10-21). count: the theme of the counted thing (Count Threshold / Has Done Action / More Potency); a \"(count_of ...)\" suffix is ignored. Times Killed / Dead Creature Count: no theme.",
+  "_note": "Themes a code-layer tag marker adds (extract HANDOFF_taxonomy_v2 F5, user-ratified 2026-10-21). count: the theme of the counted thing (Count Threshold / Has Done Action / More Potency); a \"(count_of ...)\" suffix is ignored. Times Killed / Dead Creature Count: no theme. event (round 7, user 2026-10-24): the theme of the event an Events:: tag re-runs / suppresses (On-Event; Turn Start / End -> Turn Timing, as the Trigger theme lines).",
   "crit": {
    "true": "Critical"
   },
@@ -1639,6 +1642,22 @@
   },
   "count_of": {
    "This Gem": "Spell Gems"
+  },
+  "event": {
+   "Attack": "On-Event",
+   "Critical Hit": "On-Event",
+   "Dodge": "On-Event",
+   "Defend": "On-Event",
+   "Provoke": "On-Event",
+   "Cast": "On-Event",
+   "Heal": "On-Event",
+   "Death": "On-Event",
+   "Resurrection": "On-Event",
+   "Buff": "On-Event",
+   "Debuff": "On-Event",
+   "Minion Gained": "On-Event",
+   "Turn Start": "Turn Timing",
+   "Turn End": "Turn Timing"
   }
  },
  "object_drops": {
@@ -1704,9 +1723,6 @@
   "Traits <- Trait Kind::*!Artifact Trait": "provisional (user 2026-10-21, audit after the v2 pass)",
   "Traits <- Trigger::Trait Activation": "provisional (user 2026-10-21, audit after the v2 pass)",
   "Traits <- Scales With::Traits Gained Count": "provisional (user 2026-10-21, audit after the v2 pass)",
-  "Traits <- Perks::More Activations": "provisional (user 2026-10-21, audit after the v2 pass)",
-  "Traits <- Cards::More Activations": "provisional (user 2026-10-21, audit after the v2 pass)",
-  "Traits <- Conditions::More Activations": "provisional (user 2026-10-21, audit after the v2 pass)",
   "Death <- Trigger::Death": "provisional (user 2026-10-21, audit after the v2 pass)",
   "Death <- Life::Execute": "provisional (user 2026-10-21, audit after the v2 pass)",
   "Death <- Life::Survive Lethal": "provisional (user 2026-10-21, audit after the v2 pass)",
@@ -1739,7 +1755,8 @@
   "Creature Race <- Condition::Party All Same Type": "provisional (user 2026-10-21, audit after the v2 pass)",
   "Turn Counter <- Scales With::Turn Count": "provisional (user 2026-10-21, audit after the v2 pass)",
   "Debuff <- Trigger::DoT Tick": "provisional (user 2026-10-21, audit after the v2 pass)",
-  "marker_themes.count Dead Creature Count / Times Killed -> Death": "provisional (user 2026-10-21, audit after the v2 pass)"
+  "marker_themes.count Dead Creature Count / Times Killed -> Death": "provisional (user 2026-10-21, audit after the v2 pass)",
+  "Artifact <- Artifacts::*": "ratified (user 2026-10-24, round 7 A: narrow slot values under the Artifact theme)"
  },
  "object_adds": {
   "_note": "App-side tag adds the user ruled (code value missing from the v1-mapped tags). Each add carries `unless_code_named`: if the extract's code layer ever tags that buff / debuff on the object (a code tag with that `named` value or Named Buff/Debuff::<it>), the add drops and build-data warns. Read by tools/taxo-v2.mjs.",

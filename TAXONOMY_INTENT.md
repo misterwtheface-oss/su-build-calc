@@ -219,6 +219,18 @@ per hit (Extra repeats and area hits multiply them).
   locks = Can't Manually X (scope Enemy); new Actions::Limit Repeats; chance to avoid debuffs = Debuffs::Immune; Glitch
   In The System = Buffs::Can't Gain + Debuffs::Apply; Master of Carbuncles / Storms = Traits::More Potency only. Lord of
   Undeath clarify note waits for an in-game check.
+- 2026-10-24: Round 7 (user, on the extract's three proposals). A-D: Involves on its own is an anti-pattern (every Involves
+  needs a narrower child), so the artifact slots are narrow values **Artifacts::Spell Slot / Stat Slot / Trick Slot / Trait
+  Slot** (Artifact theme); Artifacts::More Activations added on the six Spell Slot activation raisers; The Truth is not a slot
+  effect. E: new category **Events**: **Events::More Activations** (marker `event` = the re-run event) replaces the
+  Traits / Perks / Relics / Conditions / Cards::More Activations of hook re-runs (a re-run fires every reaction to the event,
+  whoever owns it); named-trait re-runs keep Traits::More Activations. **Events::Suppress** for whole-event suppressors
+  (the "... And Other ..." traits, True Ending); Debilitate / Blank Slate keep Traits::Suppress. The Events values take their
+  theme from the event (On-Event; Turn Start / End -> Turn Timing). G: marker "Delayed to next turn" on Damage::Take Less
+  (Defer Pain). H: Inner Hatred / Ejector Seat lose Suppress (self-limits). I-K: markers **st** (stat) / **sk** (status:
+  buff / debuff / minion) / **cl** (class) on the tag entry, tag-bound code values only; Stat::, Named Buff / Debuff / Minion
+  and Spell Class stay object tags and the markers narrow them. F (redirect / split damage, Damage::Inflict removals) not
+  approved: the extract researches what damage each effect reacts to and what it resolves as.
 
 ---
 

@@ -69,8 +69,7 @@
   {
    "name": "Buffs",
    "include": [
-    "theme:Buff",
-    "Conditions::More Activations"
+    "theme:Buff"
    ]
   },
   {
@@ -79,8 +78,7 @@
     "theme:Debuff",
     "Trigger::DoT Tick",
     "Calculation::DoT Formula",
-    "Scales With::Blighted Damage Count",
-    "Conditions::More Activations"
+    "Scales With::Blighted Damage Count"
    ]
   },
   {
@@ -116,6 +114,7 @@
   {
    "name": "Events",
    "include": [
+    "Events::*",
     "theme:On-Event"
    ]
   },
@@ -126,9 +125,6 @@
     "Trait Kind::*",
     "Trigger::Trait Activation",
     "Scales With::Traits Gained Count",
-    "Perks::More Activations",
-    "Cards::More Activations",
-    "Conditions::More Activations",
     "Chance::Re-roll",
     "theme:Traits"
    ]

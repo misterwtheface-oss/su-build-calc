@@ -153,6 +153,11 @@ a flat modifier to base: raised **×4/3 (+33%)**, lowered **×2/3 (−33%)**, ot
   trust); in-game observation beats stale CSVs (`Trait_REF` was stale for Marionette).
 
 ## Taxonomy rulings
+- **Round 7 (user 2026-10-24).** Every Involves needs a narrower child ("Involves on its own is an anti-pattern"): artifact
+  slots are values Artifacts::Spell / Stat / Trick / Trait Slot. Hook re-runs = Events::More Activations + event marker;
+  whole-event suppressors = Events::Suppress. Markers st / sk / cl narrow a tag to the stat / status / class the code names
+  on that tag (tag-bound only); the object tags (Stat::, Named Buff / Debuff / Minion, Spell Class) stay. Defer Pain's Take
+  Less is marked delayed. Redirect / split damage (item F) waits on extract research. Details: TAXONOMY_INTENT.md Log.
 - **A theme needs a narrow tag (user 2026-10-21):** a theme carried only by a general Involves tag, with no narrow tag of
   that theme, is dropped. E.g. "spells cost no Charges" effects keep Spell Gems (Spell Gems::Charges) and lose Cast.
   Per-object drops live in `taxonomy_crosswalk.json` `object_drops`.

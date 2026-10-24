@@ -4,6 +4,20 @@ Every dated change entry, newest first (moved verbatim from Progress.md on 2026-
 to their own section and sorted by their date). Current state and open work: `Progress.md`, `BACKLOG.md`.
 New entries go at the TOP.
 
+## 2026-10-24 — Taxonomy round 7: Events category, artifact slots, stat / status / class markers
+- New category **Events**: Events::More Activations (37 objects; effects that re-run a whole on-event hook, with an Event
+  marker naming it) replaces Traits / Perks / Relics / Conditions / Cards::More Activations on those effects; 8 named-trait
+  re-runs keep Traits::More Activations. Events::Suppress (8: the "... And Other ..." traits, True Ending); Traits::Suppress
+  keeps Debilitate / Blank Slate. Inner Hatred / Ejector Seat lose Suppress (Inner Hatred: "Except Attack" on its Has More).
+- Artifacts::Spell Slot (13) / Stat Slot (23) / Trick Slot (16) / Trait Slot (4); Artifacts::More Activations on 6 more
+  (the Spell Slot activation raisers). Battle Born, Ferro, Better, Faster, Stronger now carry Involves::Artifact.
+- Defer Pain: Damage::Take Less with "Delayed to next turn".
+- New refine toggles on an active tag: Event, Stat, Status (buff / debuff / minion), Class — values only where the game code
+  names them on that very tag (e.g. Scales With: Amount of X Stat → Stat: Defense = scales FROM Defense). The detail page
+  shows them on the chip.
+- Extract: taxo_v2_tags.json round 7 (code/taxo_v2_r7.py). Crosswalk: Events / Artifact slot values, event marker themes,
+  retired census values and theme lines removed. Rulings: DECISIONS.md, TAXONOMY_INTENT.md Log.
+
 ## 2026-10-24 — Hide button cycles: Hide equipped → Hide used in builds → off
 - Artifacts, Nether Stones and Spell Gems libraries (user): the one footer button now has three states. 1st click "Hide equipped"
   (on the current party, as before), 2nd "Hide used in builds" (the current party plus every saved build), 3rd off. One shared

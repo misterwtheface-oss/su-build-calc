@@ -92,6 +92,9 @@ a decompile → write `_su_extract/code/HANDOFF_<topic>.md` and don't guess.
   exactly 2**. Re-run the same comparison on the real per-rank tags when they land, then the user picks.
 
 ### G7. Taxonomy + search
+- [ ] Round 7 item F (user 2026-10-24, not approved as proposed): redirect / split / defer damage effects (Savior, Forged by
+  Pain, Patriarchy, Undying, Defer Pain, False Prophecy, ...) need data on what damage they react to and what damage they
+  resolve as; extract research pending, Damage::Inflict / Intercept / Redirect unchanged until then.
 - [ ] **In-game check: Lord of Undeath** (extract S38b). Code runs it at each of your creatures' turn start for every minion they
   have, whether or not a stack left (text: "after a minion goes away"). Confirm in game before adding a clarify note.
 - [ ] **In-game check: Covenant without the perk** (extract S39 F3). The rune bonus (once all five Rune spells have been cast,

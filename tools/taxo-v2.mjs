@@ -8,6 +8,7 @@
 //
 // Shipped entry: { t: 'Category::Value', s?: scope, so?: source, r?: role, p?: phase, d?: delivery, rk?: relic rank,
 //   cf?: cast_from, co?: count_of, cn?: count, ig?: ignores, x?: [other markers: crit / tick_kind / property / except / suppresses],
+//   ev?: [event], st?: [stat], sk?: [buff / debuff / minion], cl?: [class]   (round 7 markers, user 2026-10-24),
 //   v: provenance }
 // Themes (F5, user-ratified 2026-10-21): the crosswalk theme lines, a Source's own theme (Damage too only for adds_damage tags),
 // marker themes (crosswalk marker_themes), what the object is; minus the object's code-layer involves_wrong themes.
@@ -52,10 +53,13 @@ export function makeTaxoV2(X, CL) {
     ...(c.suppresses || []).map(t => `Suppresses ${t.slice(t.indexOf('::') + 2)}`),
     // F5 rounds 5b-6b (no theme): counts = the hook raises a counter the effect reads, not a firing event; match = Class / Race Match
     // against one named type (Fixed) or another creature's (Same as); first_only = the creature's first death this battle
-    c.counts === 'Activation Count' ? 'Counter' : null, c.match ? `Match: ${c.match}` : null, c.first_only ? 'First death only' : null].filter(Boolean);
+    c.counts === 'Activation Count' ? 'Counter' : null, c.match ? `Match: ${c.match}` : null, c.first_only ? 'First death only' : null,
+    // round 7 (user 2026-10-24): Defer Pain's delayed share; the artifact slot an Artifacts::More Activations raises
+    c.delayed ? 'Delayed to next turn' : null, c.slot || null].filter(Boolean);
   const markerThemes = (c) => [c.crit ? (MT.crit || {}).true : null, (MT.count || {})[String(c.count || '').replace(/\s*\(.*\)$/, '')],
     (MT.tick_kind || {})[c.tick_kind], (MT.property || {})[c.property], (MT.except || {})[c.except], (MT.cast_from || {})[c.cast_from],
-    (MT.count_of || {})[c.count_of], ...(c.suppresses || []).map(t => (MT.suppresses || {})[t])].filter(Boolean);
+    (MT.count_of || {})[c.count_of], ...(c.suppresses || []).map(t => (MT.suppresses || {})[t]),
+    ...(c.event || []).map(e => (MT.event || {})[e])].filter(Boolean);
   // "Buffs|Debuffs::Apply" / "Stats::Has More|Less" = an open polarity or direction: both candidates
   const expand = (tag) => {
     const cat = tag.slice(0, tag.indexOf('::')), val = tag.slice(tag.indexOf('::') + 2);
@@ -118,6 +122,10 @@ export function makeTaxoV2(X, CL) {
         // "Cast Count (count_of Side Casts)" = count Cast Count + count_of Side Casts
         cf: c.cast_from || null, co: c.count_of || (/\(count_of ([^)]+)\)/.exec(c.count || '') || [])[1] || null,
         cn: c.count ? String(c.count).replace(/\s*\(count_of [^)]+\)$/, '') : null, ig: c.ignores || null, x: mx.length ? mx : null, mth: markerThemes(c),
+        // round 7 markers (user 2026-10-24): ev = the event an Events:: value re-runs / suppresses; st / sk / cl = the stat /
+        // status / class the code names on this very tag entry (tag-bound values only)
+        ev: (c.event || []).length ? c.event : null, st: (c.stat_marker || []).length ? c.stat_marker : null,
+        sk: (c.status_marker || []).length ? c.status_marker : null, cl: (c.class_marker || []).length ? c.class_marker : null,
         // Targeting::All inferred only from "no picker call" is a guess while random-by-index picks are undecoded
         // (Abnegation hits a random enemy): unverified until the extract decodes it
         d: c.delivery || null, v: alts.length > 1 || / no picker call/.test(c.picker || '') ? 'unverified' : 'code',
@@ -150,7 +158,7 @@ export function makeTaxoV2(X, CL) {
     // dedupe on the full attribute key (an unverified duplicate of a firm entry goes)
     const seen = new Map();
     for (const e of all) {
-      const k = [e.t, e.s, e.so, e.r, e.p, e.d, e.rk, e.cf, e.co, e.cn, e.ig, (e.x || []).join(',')].join('|');
+      const k = [e.t, e.s, e.so, e.r, e.p, e.d, e.rk, e.cf, e.co, e.cn, e.ig, ...['x', 'ev', 'st', 'sk', 'cl'].map(a => (e[a] || []).join(','))].join('|');
       const prev = seen.get(k);
       if (!prev || (prev.v === 'unverified' && e.v !== 'unverified')) seen.set(k, e);
     }
@@ -186,10 +194,10 @@ export function makeTaxoV2(X, CL) {
     for (const e of out) {
       stats.entries++; stats[e.v === 'code' ? 'code' : 'other']++;
       if (!known(e.t)) stats.unknown[e.t] = (stats.unknown[e.t] || 0) + 1;
-      for (const k of ['s', 'so', 'r', 'p', 'd', 'rk', 'cf', 'co', 'cn', 'ig', 'x']) if (e[k] == null) delete e[k];
+      for (const k of ['s', 'so', 'r', 'p', 'd', 'rk', 'cf', 'co', 'cn', 'ig', 'x', 'ev', 'st', 'sk', 'cl']) if (e[k] == null) delete e[k];
       delete e.old; delete e.why; delete e.mth;
     }
-    for (const e of removed) { stats.removed++; stats.removedBy[e.v] = (stats.removedBy[e.v] || 0) + 1; for (const k of ['s', 'so', 'r', 'p', 'd', 'rk', 'cf', 'co', 'cn', 'ig', 'x']) if (e[k] == null) delete e[k]; delete e.mth; }
+    for (const e of removed) { stats.removed++; stats.removedBy[e.v] = (stats.removedBy[e.v] || 0) + 1; for (const k of ['s', 'so', 'r', 'p', 'd', 'rk', 'cf', 'co', 'cn', 'ig', 'x', 'ev', 'st', 'sk', 'cl']) if (e[k] == null) delete e[k]; delete e.mth; }
     return { taxo2: out, theme2: [...theme].sort(), removed, themeOnly: [...theme].filter(th => !narrow.has(th)).sort() };
   }
 
