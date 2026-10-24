@@ -3891,7 +3891,8 @@ const taxonomy2 = (() => {
   const CLP = path.join(MODEL, 'taxo_v2_tags.json');
   if (!fs.existsSync(CLP)) { warn('taxonomy v2: taxo_v2_tags.json missing, v2 not built'); return null; }
   const X = readJSON(path.join(ROOT, 'data', 'reference', 'taxonomy_crosswalk.json'));
-  const V = makeTaxoV2(X, readJSON(CLP));
+  const MKP = path.join(MODEL, 'taxo_markers_proposal.json');
+  const V = makeTaxoV2(X, readJSON(CLP), fs.existsSync(MKP) ? readJSON(MKP).rows : (warn('taxonomy v2: taxo_markers_proposal.json missing, no entry markers filled'), []));
   const counts = {}, removed = {}, involves = {};
   // Involves (user 2026-10-20) = the umbrella view: every object carries Involves::<theme> for EACH of its themes (theme2),
   // so one tag lists everything touching a mechanic (the old Action/Mechanic role). A theme that came only from a v1
@@ -3923,6 +3924,7 @@ const taxonomy2 = (() => {
   const { unknown, ...st } = V.stats;
   for (const [t, n] of Object.entries(unknown)) warn(`taxonomy v2: value ${t} (${n}×) is not in the crosswalk / new_values`);
   console.log(`  taxonomy v2: ${st.objects} objects (${st.withCode} with code) · ${st.entries} code-backed tags (code ${st.code} · field / boss ${st.other}) · Involves ${st.involves} · event scopes ${st.eventScope} resolved / ${st.eventScopeOff} off · code-dropped values ${st.codeDropped} · wrong themes dropped ${st.wrongDropped} · user adds ${st.adds || 0}`);
+  if (st.markerFill) console.log(`  taxonomy v2 markers filled from entry-level rows (on entries the code layer left unmarked): stat ${st.markerFill.st} · status ${st.markerFill.sk} · class ${st.markerFill.cl}`);
   for (const d of st.addsDropped || []) warn(`taxonomy v2: user add dropped by its provision (crosswalk object_adds): ${d}`);
   console.log(`  taxonomy v2 removed (not code-backed, user 2026-10-19): ${st.removed} tags on ${Object.keys(removed).length} objects · ${Object.entries(st.removedBy).map(([k, n]) => `${k} ${n}`).join(' · ')}`);
   // the extract works through the removed list (HANDOFF_taxonomy_v2.md): written into its data_dump when present

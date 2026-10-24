@@ -24,7 +24,13 @@ const CODE_BACKED = new Set(['code', 'code_boss', 'field']);
 const SCOPE_OF_NAME = (old) => / Enemy /.test(' ' + old.slice(old.indexOf('::') + 2) + ' ') ? 'Enemy'
   : / Ally /.test(' ' + old.slice(old.indexOf('::') + 2) + ' ') ? 'Self or Ally' : null;
 
-export function makeTaxoV2(X, CL) {
+// MK (optional): the extract's marker rows (taxo_markers_proposal.json `rows`). Round 7 ruling = tag-bound values only, so only
+// level `entry` rows are used: they fill st / sk / cl on a shipped entry of that (object, value) the code layer gave no marker,
+// e.g. an entry that came from the v1 crosswalk (Ancient Wisdom's Scales With::Amount of X Stat → Intelligence).
+export function makeTaxoV2(X, CL, MK) {
+  const MARK = new Map();
+  for (const r of MK || []) if (r.level === 'entry' && ['st', 'sk', 'cl'].includes(r.marker) && (r.values || []).length)
+    MARK.set(`${r.key}|${r.value}|${r.marker}`, r.values);
   const CLASS_TYPES = new Set(X.themes['Creature Class'].filter(p => p.startsWith('Creature Type::')).map(p => p.slice(15)));
   const SPELL_CLASS = new Set(['Chaos Spells', 'Death Spells', 'Life Spells', 'Nature Spells', 'Sorcery Spells']);
   const lookup = (old) => X.map[old] || X.map[old.slice(0, old.indexOf('::')) + '::*'] || null;
@@ -193,6 +199,11 @@ export function makeTaxoV2(X, CL) {
     for (const [th, prov] of oldThemes) if (!theme.has(th) && !wrong.has(th)) {
       if (CODE_BACKED.has(prov)) { out.push({ t: 'Involves::' + th, v: prov }); theme.add(th); stats.involves++; }
       else removed.push({ t: 'Involves::' + th, v: prov });
+    }
+    for (const e of out) for (const m of ['st', 'sk', 'cl']) {
+      if ((e[m] || []).length) continue;
+      const vals = MARK.get(`${kind}:${id}|${e.t}|${m}`);
+      if (vals) { e[m] = vals.slice(); (stats.markerFill ||= { st: 0, sk: 0, cl: 0 })[m]++; }
     }
     for (const e of out) {
       stats.entries++; stats[e.v === 'code' ? 'code' : 'other']++;

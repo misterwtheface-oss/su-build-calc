@@ -4,6 +4,16 @@ Every dated change entry, newest first (moved verbatim from Progress.md on 2026-
 to their own section and sorted by their date). Current state and open work: `Progress.md`, `BACKLOG.md`.
 New entries go at the TOP.
 
+## 2026-10-24 — Fix: round 7 stat / status / class markers missing on v1-layer tags
+- User: Intelligence didn't list Ancient Wisdom or Baffle. The markers were copied only from code-layer tag entries
+  (`stat_marker` / `status_marker` / `class_marker`); a tag that came from the v1 crosswalk (Ancient Wisdom's Scales
+  With::Amount of X Stat) never got one, although the extract binds its value at entry level. `tools/taxo-v2.mjs` now also
+  reads `taxo_markers_proposal.json` and fills st / sk / cl on shipped entries the code left unmarked, from `entry`-level rows
+  only (the round 7 tag-bound ruling): +148 stat, +29 status, +8 class. Amount of X Stat now has a stat on 153 of 256 objects
+  (was 17); "Stat: Intelligence" on it lists 25 (Ancient Wisdom included).
+- Baffle is still unmarked: its Intelligence is bound at `object` level only (the code reads the stat in another clause), which
+  the ruling leaves out.
+
 ## 2026-10-24 — Taxonomy round 7H: what Spell / Attack Formula means
 - **Definition** (user): a Formula tag means the result comes out differently from a normal spell or attack of the same kind
   (another stat or base, an extra calculator step, a change to the potency stat). Plain multipliers stay Damage::Deal More.
