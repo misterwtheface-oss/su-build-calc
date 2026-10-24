@@ -2880,12 +2880,13 @@
       const apxStack = (...boxes) => { const b = boxes.filter(Boolean); return b.length ? `<div class="apx-iconcol">${b.join("")}</div>` : ""; };
       // meta chips (material / creature / class name labels) render at the BOTTOM-LEFT of the row,
       // not beside the title — long names (e.g. a creature name) used to push the title into a wrap.
-      const line = (iconCol, name, meta, desc, bk, open, avail) => `<div class="perk-line${open ? " apx-clickable" : ""}"${open ? ` data-action="apx-open" data-ek="${open.ek}" data-eid="${esc(String(open.eid))}"` : ""}>
+      // spells = the collapsible spell-gem / status-effect row (spellRowWrap), the same one creature, spec and relic pages use
+      const line = (iconCol, name, meta, desc, bk, open, avail, spells) => `<div class="perk-line${open ? " apx-clickable" : ""}"${open ? ` data-action="apx-open" data-ek="${open.ek}" data-eid="${esc(String(open.eid))}"` : ""}>
         ${iconCol}
         <div class="perk-line-body">
           <div class="perk-line-head"><b>${esc(name)}</b>${avail || ""}${bk || ""}</div>
           ${desc ? `<div class="perk-desc">${desc}</div>` : ""}
-          ${meta ? `<div class="perk-line-meta">${meta}</div>` : ""}
+          ${meta ? `<div class="perk-line-meta">${meta}</div>` : ""}${spells || ""}
         </div></div>`;
       // one row per trait, folding in the creature that has it + the items that grant it.
       // _search covers trait / creature / boss-owner / item names so name search hits any of them.
@@ -2915,7 +2916,7 @@
       const traitRow = (g) => {
         const creaBox = g.creature ? apxBox(critFace(g.creature), "apx-clickable", ` data-action="apx-crea-open" data-cid="${g.creature.id}" title="${esc(g.creature.name)} — view creature"`) : "";
         return line(apxStack(creaBox, matBox(g)), g.name, itemNameMeta(g) + creatureNameMeta(g),
-          (g.desc ? richText(g.desc) : ""), bkBtn("traits", g.id), { ek: "trait", eid: g.id }, availTagsHtml(g));
+          (g.desc ? richText(g.desc) : ""), bkBtn("traits", g.id), { ek: "trait", eid: g.id }, availTagsHtml(g), traitSpellRow(g.id));
       };
       // boss-owned trait: material icon stacked over the boss sprite (Deity/False God) or an owner-name chip
       const bossTraitRow = (g) => {
@@ -2926,7 +2927,7 @@
                 : apxBox(spriteImg(spr), "apx-boss", ` title="${esc(g.owner || g.ownerGroup || "")}"`))
           : `<div class="apx-boss-name" title="${esc(g.ownerCategory || "Boss")}">${esc(g.owner || g.ownerGroup || "—")}</div>`;
         const meta = `<span class="anoint-spec-tag apx-boss-cat">${esc(g.ownerCategory || "Boss")}</span>${itemNameMeta(g)}`;
-        return line(apxStack(bossBox, matBox(g)), g.name, meta, (g.desc ? richText(g.desc) : ""), bkBtn("traits", g.id), { ek: "trait", eid: g.id }, availTagsHtml(g));
+        return line(apxStack(bossBox, matBox(g)), g.name, meta, (g.desc ? richText(g.desc) : ""), bkBtn("traits", g.id), { ek: "trait", eid: g.id }, availTagsHtml(g), traitSpellRow(g.id));
       };
       // a name query also lists the matching taxonomy sub-categories (e.g. "Persist" → every Persist tag, whatever its
       // category), limited to tags that still have results under the active filters; tapping one adds it as a filter
@@ -2941,11 +2942,11 @@
         section("Item-only Traits", itemOnlyTraitRows, traitRow),
         section("Boss Traits", bossTraitRows, bossTraitRow),
         section("Perks", res.perks, p => line(apxStack(apxIcon(SPEC_EMBLEM.get(p.spec), "apx-spec", ` title="${esc(p.spec)}"`), apxIcon(p.icon)), p.name,
-          `<span class="anoint-spec-tag">${esc(p.spec)}</span>`, perkText(p.desc, p.ranks), bkBtn("perks", p.key), { ek: "perk", eid: p.key })),
+          `<span class="anoint-spec-tag">${esc(p.spec)}</span>`, perkText(p.desc, p.ranks), bkBtn("perks", p.key), { ek: "perk", eid: p.key }, "", perkSpellRow((D.specs.find(x => x.label === p.spec) || {}).id, p))),
         section("Spells", res.spells, s => line(apxStack(apxIcon(spellIcon(s))), s.name,
-          `${s.cls ? `<span class="anoint-spec-tag">${esc(s.cls)}</span>` : ""}${spellMeta(s) ? `<span class="anoint-spec-tag">${esc(spellMeta(s))}</span>` : ""}`, perkText(s.desc, null), bkBtn("spells", s.id), { ek: "spell", eid: s.id }, availTagsHtml(s))),
+          `${s.cls ? `<span class="anoint-spec-tag">${esc(s.cls)}</span>` : ""}${spellMeta(s) ? `<span class="anoint-spec-tag">${esc(spellMeta(s))}</span>` : ""}`, perkText(s.desc, null), bkBtn("spells", s.id), { ek: "spell", eid: s.id }, availTagsHtml(s), spellRowWrap(usedSpellCards(s) + usedCondCards(s)))),
         section("Relics", res.relics, r => line(apxStack(apxIcon(relicArt(r))), r.name,
-          r.statBonus ? `<span class="anoint-spec-tag">${esc(r.statBonus)}</span>` : "", relicRanksHtml(r.ranks), null, { ek: "relic", eid: r.id })),
+          r.statBonus ? `<span class="anoint-spec-tag">${esc(r.statBonus)}</span>` : "", relicRanksHtml(r.ranks, false, r), null, { ek: "relic", eid: r.id })),
         section("Realm Cards", res.cards.map(c => ({ ...c, name: c.family })), c => line(apxStack(apxIcon(c.sprite)), c.family,
           c.cls ? `<span class="anoint-spec-tag">${esc(c.cls)}</span>` : "", cardTiersHtml(c.effects, c.tiers), null, { ek: "card", eid: c.id })),
       ].join("");
@@ -2982,8 +2983,9 @@
   // trait icon = its trait-item's icon (traits carry no icon of their own)
   const traitItemIcon = (tid) => { const items = traitSources().itemsByTrait.get(+tid) || []; return (items.find(i => i.icon) || {}).icon || null; };
   // relic ranks → one line per rank ("Rank 10 · …"), not an illegible " · "-joined block
-  const relicRanksHtml = (ranks, detail) => (ranks || []).length
-    ? `<div class="apx-ranklist">${ranks.map(r => `<div class="apx-rank"><span class="apx-rank-n">Rank ${r.rank}</span><span class="apx-rank-d">${richText(r.desc || "")}${detail ? fxClarify(r) : ""}</span></div>`).join("")}</div>`
+  // rl (optional): each rank gets the collapsible spell / status-effect row, as on the relic page
+  const relicRanksHtml = (ranks, detail, rl) => (ranks || []).length
+    ? `<div class="apx-ranklist">${ranks.map(r => `<div class="apx-rank"><span class="apx-rank-n">Rank ${r.rank}</span><span class="apx-rank-d">${richText(r.desc || "")}${detail ? fxClarify(r) : ""}${rl ? spellRowWrap(usedSpellCards(rl, null, r.rank) + usedCondCards(rl, r.rank), true) : ""}</span></div>`).join("")}</div>`
     : "";
   // card effects → one line per tier, labelled by the card count that unlocks it (effects legitimately
   // repeat per tier — they stack, they're not duplicates); tiers[i] = cards needed for effects[i]

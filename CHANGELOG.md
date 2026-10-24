@@ -38,6 +38,11 @@ New entries go at the TOP.
 - Extract: taxo_v2_tags.json round 7 (code/taxo_v2_r7.py). Crosswalk: Events / Artifact slot values, event marker themes,
   retired census values and theme lines removed. Rulings: DECISIONS.md, TAXONOMY_INTENT.md Log.
 
+## 2026-10-24 — Taxonomy page: collapsible spell gem / status-effect rows
+- The Taxonomy page's result containers now carry the same collapsible ▸ row of spell gems and status effects as the creature,
+  spec and relic pages (one shared `spellRowWrap`): traits (creature, item-only and boss), perks, spells, and each relic rank.
+  Rows with nothing to show get no toggle. Opening the row doesn't open the taxonomy detail.
+
 ## 2026-10-24 — Anointments: ✓ Equipped filter
 - New filter chip **✓ Equipped** in the Anointments picker (user): shows only your equipped anointments. Anything you tick or
   untick while the panel is open stays in the filtered list, so an un-ticked one can be ticked again. The chip appears once
