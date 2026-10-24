@@ -4378,11 +4378,17 @@
   const anointSpecs = () => ANOINT_SPECS || (ANOINT_SPECS = [...new Set(anointList().map(a => a.spec))].sort());
   function renderAnoint() {
     const st = ovState, q = st.search.trim().toLowerCase();
+    // "Equipped" filter: the equipped anointments plus everything ticked while this panel is open, so un-ticking one keeps it
+    // on screen to re-tick
+    st.touched = new Set([...(st.touched || []), ...st.draft.map(x => x.specId + "|" + x.key)]);
+    const eqSet = new Set([...build.anoints.map(x => x.specId + "|" + x.key), ...st.touched]);
+    if (st.eqOnly && !eqSet.size) st.eqOnly = false;
     const list = anointList().filter(a =>
       (!q || a.name.toLowerCase().includes(q) || (a.desc || "").toLowerCase().includes(q)) &&
       (!st.godFilter || a.falseGod === st.godFilter) &&
       (!st.specFilter || a.spec === st.specFilter) &&
       (!st.bkOnly || bookmarks.perks.includes(a.key)) &&
+      (!st.eqOnly || eqSet.has(a.specId + "|" + a.key)) &&
       TagFilter.match(st, "anoint", a));
     const godChip = st.godFilter
       ? `<button class="facet on" data-action="anoint-fgod">False God: ${(godByKey.get(st.godFilter) || {}).icon ? `<span class="tag-ico">${spriteImg(godByKey.get(st.godFilter).icon, "px")}</span>` : ""}<b>${esc(godName(st.godFilter))}</b> <span class="facet-x" data-action="anoint-fgod-clear">✕</span></button>`
@@ -4391,7 +4397,8 @@
       ? `<button class="facet on" data-action="anoint-spec">Spec: ${specEmblemIco(st.specFilter)}<b>${esc(st.specFilter)}</b> <span class="facet-x" data-action="anoint-spec-clear">✕</span></button>`
       : `<button class="facet" data-action="anoint-spec">Spec ▾</button>`;
     const bkChip = bookmarks.perks.length ? `<button class="facet ${st.bkOnly ? "on" : ""}" data-action="anoint-bkonly" title="Show only bookmarked perks">★ Bookmarked</button>` : "";
-    const filterbar = `<div class="ovl-filterbar">${godChip}${specChip}${TagFilter.bar(st, "anoint")}${bkChip}</div>`;
+    const eqChip = eqSet.size ? `<button class="facet ${st.eqOnly ? "on" : ""}" data-action="anoint-eqonly" title="Show only equipped anointments">✓ Equipped</button>` : "";
+    const filterbar = `<div class="ovl-filterbar">${godChip}${specChip}${TagFilter.bar(st, "anoint")}${eqChip}${bkChip}</div>`;
     const draft = st.draft, full = draft.length >= anointMax();
     const picked = (a) => draft.some(x => x.specId === a.specId && x.key === a.key);
     const anointRow = (a) => { const on = picked(a), inCur = a.specId === build.specId;
@@ -6485,6 +6492,7 @@
         if (dovState) refreshDetail(); if (ovState) refreshOverlay(); break;
       }
       case "anoint-bkonly": ovState.bkOnly = !ovState.bkOnly; refreshOverlay(); break;
+      case "anoint-eqonly": ovState.eqOnly = !ovState.eqOnly; refreshOverlay(); break;
       case "anoint-spec": openFacetPicker("anoint-spec"); break;
       case "anoint-spec-clear": e.stopPropagation(); ovState.specFilter = null; refreshOverlay(); break;
       case "anoint-fgod": openFacetPicker("anoint-fgod"); break;

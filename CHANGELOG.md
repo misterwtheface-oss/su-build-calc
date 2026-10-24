@@ -38,6 +38,11 @@ New entries go at the TOP.
 - Extract: taxo_v2_tags.json round 7 (code/taxo_v2_r7.py). Crosswalk: Events / Artifact slot values, event marker themes,
   retired census values and theme lines removed. Rulings: DECISIONS.md, TAXONOMY_INTENT.md Log.
 
+## 2026-10-24 — Anointments: ✓ Equipped filter
+- New filter chip **✓ Equipped** in the Anointments picker (user): shows only your equipped anointments. Anything you tick or
+  untick while the panel is open stays in the filtered list, so an un-ticked one can be ticked again. The chip appears once
+  something is equipped or ticked and combines with the other filters.
+
 ## 2026-10-24 — Appendix: Currencies
 - New Appendix section **Currencies** (user; collapsed by default, searchable, after Status Effects): 17 currencies with the game's
   name, icon (inv_ItemIconIndex frame) and, where the game has one, its own description; then **Spent on** and **Earned from**.
