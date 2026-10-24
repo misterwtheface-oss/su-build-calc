@@ -4,6 +4,19 @@ Every dated change entry, newest first (moved verbatim from Progress.md on 2026-
 to their own section and sorted by their date). Current state and open work: `Progress.md`, `BACKLOG.md`.
 New entries go at the TOP.
 
+## 2026-10-24 — Taxonomy round 7H: what Spell / Attack Formula means
+- **Definition** (user): a Formula tag means the result comes out differently from a normal spell or attack of the same kind
+  (another stat or base, an extra calculator step, a change to the potency stat). Plain multipliers stay Damage::Deal More.
+  Recorded in DECISIONS.md and the TAXONOMY_INTENT.md log.
+- **Calculation::Spell Formula 129 → 157 objects.** +26 healing / stat spells that work out their own amount (Enlightenment,
+  Unholy Rage, Evolution, Frost / Molten Armor, Self Analysis, Clayman, Divinity, Utopia, Vaccination ...); + Chaotic Mind,
+  Chasing Infinity, Parity and Ribcracker rank 50 (found in the spell calculators); off Promethean Blaze (its damage is the
+  normal formula × 1.3). Every carrier now has a code site.
+- **Calculation::Attack Formula 21 → 18.** Off Vital Shot, Aimed Shot, One-Hit Wonder (plain multipliers) and Phasers (forces 0);
+  on Brambleskin rank 80 (attack based on current Health).
+- **Theme:** Spell Formula no longer gives the Damage theme (it now includes healing and stat spells); the Living shields,
+  cloak, gauntlet and Clayman lose Involves::Damage.
+
 ## 2026-10-24 — Taxonomy round 7G: DoTs are not Inflict; Spell Formula from code
 - **Damage::Inflict off damage-over-time ticks** (user ruling): Poisoned, Burning, Bleeding, Bomb and Mania no longer carry
   it, nor do effects that change or re-run the tick (Poison Inoculation, In Flames, Deathwalker's Strangulation /

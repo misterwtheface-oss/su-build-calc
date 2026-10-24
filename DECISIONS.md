@@ -171,6 +171,13 @@ a flat modifier to base: raised **×4/3 (+33%)**, lowered **×2/3 (−33%)**, ot
 - **Code-backed means the code decides, not the text (user 2026-10-24).** Calculation::Spell Formula comes from the spell's
   code (its calculator case reads a stat other than the caster's Intelligence, a calculator block is gated on it, or its cast
   computes its own damage), so spells whose text doesn't say it (Pumpkin King's Wrath: Speed) carry it.
+- **What Spell / Attack Formula means (user 2026-10-24):** "Spell Formula is primarily about changing the results of the
+  calculation compared to another normal spell like increasing the damage is changing the stat used in calculation." So a
+  Formula tag = the result comes out differently from a normal spell (or attack) of the same kind: another stat, another base
+  (% of Health, another creature's stat, a condition's potency), an extra calculator step, or a change to the potency stat
+  itself. Not: the normal formula held in a local or shared out; plain multipliers (Damage::Deal More); an amount sized from the
+  damage the spell dealt; defense terms (Ignore Defense / Damage-Taken Formula). Healing and stat spells with their own amount
+  count (Enlightenment, Unholy Rage, Frost Armor ...). Spell Formula no longer derives the Damage theme.
 - **A theme needs a narrow tag (user 2026-10-21):** a theme carried only by a general Involves tag, with no narrow tag of
   that theme, is dropped. E.g. "spells cost no Charges" effects keep Spell Gems (Spell Gems::Charges) and lose Cast.
   Per-object drops live in `taxonomy_crosswalk.json` `object_drops`.

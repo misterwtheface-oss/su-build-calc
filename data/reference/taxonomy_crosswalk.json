@@ -1173,7 +1173,7 @@
   "Damage": [
    "Damage::*",
    "Trigger::Damage",
-   "Calculation::*!DoT Formula",
+   "Calculation::*!DoT Formula|Spell Formula",
    "Scales With::Amount of Damage Dealt",
    "Scales With::Amount of Damage Taken",
    "Scales With::Damage Taken Count",
