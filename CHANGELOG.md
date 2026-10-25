@@ -4,6 +4,17 @@ Every dated change entry, newest first (moved verbatim from Progress.md on 2026-
 to their own section and sorted by their date). Current state and open work: `Progress.md`, `BACKLOG.md`.
 New entries go at the TOP.
 
+## 2026-10-25 — Stat gain / loss modifiers move to Calculation; Seed of Potentiality, Atrophy and steals fixed (extract S69)
+- Data rebuild only. The extract gave the remaining stat-size modifiers their `stat-event modifier` mode, so they now show as
+  Calculation::Stat Gain / Loss More / Less instead of Stats::Gain / Lose: Radiance, Further Beyond, Momentum (gain and loss),
+  Languish (loss more), Tragedy (gain less), and the stat-spell amount: Potency, Spell Corruption, Infusion, Triumvir rank 90,
+  Gemling and Spellmane cards (17 entries).
+- Seed of Potentiality is a real gain of another stat (2x the amount, no stat event), shown as Stats::Gain with the stats it
+  can raise, plus Trigger::Stat Gain on its own creature. Atrophy changes no stat: its five gain entries are gone; it keeps
+  Trigger::Stat Gain (Enemy) and Timeline::Move Down (Enemy).
+- Pact of the Deep and Pumpkin Spice gain Stats::Gain (the holder's Maximum Health; the swapped stat that goes up), Pumpkin
+  Spice's loss covers your creatures; Pandemonium Alacrity gains Stats::Set (Attack and Intelligence set to its Speed).
+
 ## 2026-10-25 — Perk / trait / relic trigger sides read from each clause's own gate (extract S67)
 - The extract now takes a perk's side from the side check that every path to the perk's read passes. 135 perk clauses
   changed: e.g. Hidden Hand ×5, Diagnosis, Guerilla Tactics and Forsaken Wonder are Your side (they showed Enemy), Massacre /
