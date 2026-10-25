@@ -5,9 +5,11 @@ the assistant's working notes on 2026-10-08 (they existed nowhere in the repo). 
 Taxonomy category definitions themselves live in `TAXONOMY.md`.
 
 ## Stats: Gain / Lose scope (2026-10-25)
-- Stats: Gain holds only effects that increase a stat, and all of them; the same goes for Lose. An effect that only changes
-  how much other gains / losses give ("gain 50% less stats") is Trigger: Stat Gain / Stat Loss (user ruling). This replaces
-  the extract's earlier convention, which tagged them Gain.
+- Stats: Gain holds every effect that increases a stat and nothing else; the same goes for Lose.
+- Always-on increases (the old Has More / Has Less) are Gain / Lose with Delivery "Always On".
+- An effect that only changes how a gain / loss resolves ("gain 50% less stats", Paragon Attunements) is no triggered event.
+  It goes to Calculation: Stat Gain More / Less or Stat Loss More / Less. Trigger: Stat Gain / Loss is only for effects that
+  fire after the event. This replaces the extract's earlier convention, which tagged them Gain.
 
 ## Taxonomy Side marker (2026-10-25)
 - Side is relative to whom the **effect** affects, not to what an action it causes targets.

@@ -609,7 +609,7 @@
       vals: (e) => SIDES_OF_SCOPE[e.s] || [] },
     { a: "so", any: "Any source", label: (v) => `Source: ${v}`, title: "Narrow this tag to one damage source", vals: (e) => e.so ? [e.so] : [] },
     { a: "p", any: "Any timing", label: (v) => `Timing: ${v}`, title: "Narrow this trigger to one timing (Would / During / After / Repeat)", vals: (e) => e.p ? [e.p] : [] },
-    { a: "d", any: "Any delivery", label: (v) => `Delivery: ${v}`, title: "Event: fires reactions and counts toward limits. No Event: a silent write", vals: (e) => e.d ? [e.d] : [] },
+    { a: "d", any: "Any delivery", label: (v) => `Delivery: ${v}`, title: "Event: fires reactions and counts toward limits. No Event: a silent write. Always On: a passive stat change", vals: (e) => e.d ? [e.d] : [] },
     // code-layer markers (extract F5, user-ratified 2026-10-21)
     { a: "cf", any: "Any spell", label: (v) => `Cast from: ${v}`, title: "Narrow to where the cast spell comes from", vals: (e) => e.cf ? [e.cf] : [] },
     { a: "co", any: "Any casts", label: (v) => `Counts: ${v}`, title: "Narrow to which casts are counted", vals: (e) => e.co ? [e.co] : [] },
@@ -3022,7 +3022,7 @@
   // grouped taxonomy: Category → its values, each a chip that (a) shows the provenance source and
   // (b) jumps to the Appendix filtered by that tag
   // v2: one chip per tag entry, by category in layer order. The chip names the tag (trigger role as its readable label)
-  // and its attributes: scope, source, phase (After is the default and stays unsaid), delivery (only No Event is said), markers.
+  // and its attributes: scope, source, phase (After is the default and stays unsaid), delivery (Event stays unsaid), markers.
   // Unverified = a split the code couldn't settle (every candidate kept; dashed).
   // Relic tags carry the rank whose code clause holds them (rk): the same tag on several ranks is one chip, "×N" when N ≥ 2.
   // Grouped like the Taxonomy page (user 2026-10-24): mechanic group first (Damage, Attack Effects…), in the page's order; a tag
@@ -3047,7 +3047,7 @@
     return names.map(gn => `<div class="etax-group">
       <div class="etax-cat">${esc(gn)}</div>
       <div class="etax-vals">${groups.get(gn).sort(chipSort).map(x => {
-        const k = roleKey(x) || x.t, attrs = [x.s, x.so, x.p && x.p !== "After" ? x.p : null, x.d === "No Event" ? "No Event" : null,
+        const k = roleKey(x) || x.t, attrs = [x.s, x.so, x.p && x.p !== "After" ? x.p : null, x.d && x.d !== "Event" ? x.d : null,
           x.cf, x.co, x.cn, x.ig ? `Ignores ${x.ig}` : null, ...(x.x || []), ...(x.ev || []), ...(x.st || []), ...(x.sk || []), ...(x.cl || []), x.ra ? `Resolves as ${x.ra}` : null, x.sh ? `Share: ${x.sh}` : null].filter(Boolean);
         const unv = x.v === "unverified";
         return `<button class="etax-tag${unv ? " etax-unv" : ""}" data-action="etax-filter" data-k="${esc(k)}" title="${unv ? "Unverified: the game code hasn't settled this tag. " : ""}Filter the Taxonomy to “${esc(taxoValName(k))}”">${esc(taxoCatName(k) + ": " + taxoValName(k))}${x.n >= 2 ? `<span class="etax-mult">×${x.n}</span>` : ""}${attrs.length ? `<span class="etax-attr">${esc(attrs.join(" · "))}</span>` : ""}${FEATURES.taxoSource && x.v ? `<span class="apx-src s-${esc(x.v)}">${esc(x.v)}</span>` : ""}</button>`;

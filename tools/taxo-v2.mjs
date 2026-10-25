@@ -160,13 +160,15 @@ export function makeTaxoV2(X, CL, MK, condName = () => null) {
       e.s = m.length === 1 ? m[0] : null; stats[m.length === 1 ? 'eventScope' : 'eventScopeOff']++;
     }
     // Stats::Gain / Lose = the effect changes a stat (user 2026-10-25). A code tag whose `mode` is a stat-event modifier only
-    // resizes other gains / losses (Bismuth Attunement "gain 50% less stats") and folds into Trigger::Stat Gain / Stat Loss
-    // (user ruling); the replaced value still counts as code-tagged so its v1 entry does not come back
+    // changes how other gains / losses resolve (Bismuth Attunement "gain 50% less stats"): it is no triggered event and moves
+    // to Calculation::Stat Gain / Loss More / Less (user ruling; the code's "scale" = More: Godforged, Abandoned Altar). The
+    // replaced value still counts as code-tagged so its v1 entry does not come back.
     const codeVals = new Set(codeE.map(e => e.t));
     for (const e of codeE) {
-      const c = /^Stats::(Gain|Lose)$/.exec(e.t);
-      if (!c || !/^stat-event modifier/.test(e.mode || '')) continue;
-      e.t = c[1] === 'Gain' ? 'Trigger::Stat Gain' : 'Trigger::Stat Loss'; e.d = null; stats.statModFolded = (stats.statModFolded || 0) + 1;
+      const c = /^Stats::(Gain|Lose)$/.exec(e.t), m = /^stat-event modifier \((?:gain|lose) amount (more|less|scale)\)/.exec(e.mode || '');
+      if (!c || !m) continue;
+      e.t = `Calculation::Stat ${c[1] === 'Gain' ? 'Gain' : 'Loss'} ${m[1] === 'less' ? 'Less' : 'More'}`; e.d = null;
+      stats.statModMoved = (stats.statModMoved || 0) + 1;
     }
     for (const e of codeE) codeVals.add(e.t);
     // Triggers: a v1-only trigger on an object whose trigger(s) the code decoded is an anomaly (unverified): an old guess
@@ -176,6 +178,11 @@ export function makeTaxoV2(X, CL, MK, condName = () => null) {
     const v1keep = v1.filter(e => !codeVals.has(e.t) && !(drops.has(e.t) && ++stats.codeDropped)).map(e => codeTrig && e.t.startsWith('Trigger::') && e.v !== 'unverified'
       ? (stats.trigUnverified++, { ...e, v: 'unverified', why: 'trigger the code layer does not have' }) : e);
     const all = [...codeE, ...v1keep];
+    // always-on stat changes (user 2026-10-25): Has More / Has Less are Stats::Gain / Lose with Delivery "Always On"
+    for (const e of all) {
+      const h = /^Stats::Has (More|Less)$/.exec(e.t);
+      if (h) { e.t = h[1] === 'More' ? 'Stats::Gain' : 'Stats::Lose'; e.d = 'Always On'; stats.alwaysOn = (stats.alwaysOn || 0) + 1; }
+    }
     // user-ruled adds (crosswalk object_adds); each drops itself once the code layer tags its `unless_code_named` buff / debuff
     for (const a of (X.object_adds || {})[`${kind}:${id}`] || []) {
       const n = a.unless_code_named, codeHas = n && ((code && code.tags) || []).some(t => t.named === n || t.tag === `Named Buff::${n}` || t.tag === `Named Debuff::${n}`);

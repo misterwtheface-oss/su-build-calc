@@ -9,13 +9,19 @@ New entries go at the TOP.
   Trigger: Defend is Your side too. In the code, the perk raises the cast chance only for your creatures. The extract's actor reader
   had picked up an unrelated test; that is fixed, and no other entry changed. Data rebuild only.
 
-## 2026-10-25 — Stats: Gain / Lose hold only effects that change a stat
-- Effects that only resize other stat gains or losses (Bismuth Attunement, Embiggening, Vext's Antiquity and 216 more tags)
-  move from Stats: Gain / Lose to Trigger: Stat Gain / Stat Loss. They keep their stat markers. The build uses the code
-  layer's `mode` ("stat-event modifier").
-- Eleven modifiers have no `mode` yet and still show as Gain / Lose: Radiance, Tragedy, Languish, Further Beyond, Momentum,
-  Potency, Spell Corruption, Triumvir rank 90, Infusion and cards 52 / 118. Three steals still lack Gain: Pact of the Deep,
-  Pumpkin Spice and Pandemonium Alacrity. Both are asked of the extract (HANDOFF_taxonomy_v2).
+## 2026-10-25 — Stats: Gain / Lose hold only stat changes; modifiers move to Calculation
+- Effects that only change how other stat gains / losses resolve (Paragon Attunements such as Bismuth Attunement,
+  Embiggening, Vext's Antiquity: 219 tags) move from Stats: Gain / Lose to the Calculation category: Stat Gain More, Stat
+  Gain Less, Stat Loss More, Stat Loss Less, with their stat markers. The build uses the code layer's `mode` ("stat-event
+  modifier"). Hymn of Strength, Vext's Antiquity, Vext's Invocation and Lord of the Castle also lose their old Trigger: Stat
+  Gain / Loss (they fire no event).
+- Always-on Has More / Has Less are now Stats: Gain / Lose with the new Delivery value "Always On" (596 entries), so one Gain
+  filter finds every stat increase. The Delivery toggle narrows it to Event / No Event / Always On.
+- Still waiting on the extract (HANDOFF_taxonomy_v2):
+  - Eleven modifiers have no `mode` yet and still show as Gain / Lose: Radiance, Tragedy, Languish, Further Beyond, Momentum,
+    Potency, Spell Corruption, Triumvir rank 90, Infusion and cards 52 / 118.
+  - Seed of Potentiality is a real triggered gain and Atrophy changes no gain; both are misread as modifiers.
+  - Three steals lack Gain: Pact of the Deep, Pumpkin Spice and Pandemonium Alacrity.
 
 ## 2026-10-25 — Minion clarify notes; no clarify-join warnings left (extract S62)
 - Spiderlings and Brim Fiends show their clarify notes on the minion detail page (Spiderlings: 50% of the master's Maximum

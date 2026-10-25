@@ -1173,7 +1173,7 @@
   "Damage": [
    "Damage::*",
    "Trigger::Damage",
-   "Calculation::*!DoT Formula|Spell Formula",
+   "Calculation::*!DoT Formula|Spell Formula|Stat Gain More|Stat Gain Less|Stat Loss More|Stat Loss Less",
    "Scales With::Amount of Damage Dealt",
    "Scales With::Amount of Damage Taken",
    "Scales With::Damage Taken Count",
@@ -1243,7 +1243,11 @@
    "Trigger::Stat Loss",
    "Condition::Stats Unmodified",
    "Scales With::Amount of X Stat",
-   "Scales With::Amount of Stat Change"
+   "Scales With::Amount of Stat Change",
+   "Calculation::Stat Gain More",
+   "Calculation::Stat Gain Less",
+   "Calculation::Stat Loss More",
+   "Calculation::Stat Loss Less"
   ],
   "Spell Gems": [
    "Spell Gems::*",
@@ -1480,7 +1484,8 @@
    ],
    "values": [
     "Event",
-    "No Event"
+    "No Event",
+    "Always On"
    ],
    "_note": "Event = goes through the game event: reactions fire, diminishing returns and the per-turn action limit apply. Direct = written straight onto the creature: no reactions, no limit (immunity still checked). Ruled 2026-10-19 from extract Q1/Q2.",
    "code": {
@@ -1496,7 +1501,8 @@
      "scr_CritAddCondition (bare)"
     ]
    },
-   "_f5_note": "F5 round 4 ruling C (user 2026-10-21): Direct renamed No Event; applies_to + Minions::Summon, Life::Heal, Life::Execute, Actions::Auto Defend."
+   "_f5_note": "F5 round 4 ruling C (user 2026-10-21): Direct renamed No Event; applies_to + Minions::Summon, Life::Heal, Life::Execute, Actions::Auto Defend.",
+   "_always_on_note": "Always On (user 2026-10-25): a passive stat getter (the old Stats::Has More / Has Less) is Stats::Gain / Lose with Delivery Always On."
   }
  },
  "new_values": {
@@ -1583,7 +1589,11 @@
   "Artifacts::Spell Slot": "Round 7 (user 2026-10-24, extract HANDOFF_taxonomy_v2 \"User ask 2026-10-24\"): reads, casts or changes the artifact's spell gem / its activation roll",
   "Artifacts::Stat Slot": "Round 7 (user 2026-10-24, extract HANDOFF_taxonomy_v2 \"User ask 2026-10-24\"): reads or changes artifact stat-slot values",
   "Artifacts::Trick Slot": "Round 7 (user 2026-10-24, extract HANDOFF_taxonomy_v2 \"User ask 2026-10-24\"): reads or changes artifact trick-slot values (Class Strength, On Damage, ...)",
-  "Artifacts::Trait Slot": "Round 7 (user 2026-10-24, extract HANDOFF_taxonomy_v2 \"User ask 2026-10-24\"): reads or changes the artifact trait slot"
+  "Artifacts::Trait Slot": "Round 7 (user 2026-10-24, extract HANDOFF_taxonomy_v2 \"User ask 2026-10-24\"): reads or changes the artifact trait slot",
+  "Calculation::Stat Gain More": "stat-event modifier in bc_EventGain* / bc_EventLose*: changes how another gain / loss resolves (code layer mode, user 2026-10-25)",
+  "Calculation::Stat Gain Less": "stat-event modifier in bc_EventGain* / bc_EventLose*: changes how another gain / loss resolves (code layer mode, user 2026-10-25)",
+  "Calculation::Stat Loss More": "stat-event modifier in bc_EventGain* / bc_EventLose*: changes how another gain / loss resolves (code layer mode, user 2026-10-25)",
+  "Calculation::Stat Loss Less": "stat-event modifier in bc_EventGain* / bc_EventLose*: changes how another gain / loss resolves (code layer mode, user 2026-10-25)"
  },
  "rulings": [
   "2026-10-19 Xyrxzy's Control: Actions::Extra Attack (code re-issues bc_CreatureAttack(attacker, attacked)); clarify note for the text.",
@@ -1661,7 +1671,7 @@
   }
  },
  "object_drops": {
-  "_note": "v1-mapped values the extract says have no code behind them on that object (HANDOFF_taxonomy_v2 F5 \"App needs\"). Values the code layer itself dropped (f5.corrections drop / retag) are removed automatically. Involves::X here = theme X wrong on that object. User 2026-10-21: a theme carried only by a general Involves tag (no narrow tag of that theme) is dropped: the \"spells cost no Charges\" effects keep Spell Gems (Charges) and lose Cast; and themes the user already ruled against go (DoT potency is Indirect Damage not Damage; Krakens / Commanding Presence are More Potency; Prosperity is a heal).",
+  "_note": "v1-mapped values the extract says have no code behind them on that object (HANDOFF_taxonomy_v2 F5 \"App needs\"). Values the code layer itself dropped (f5.corrections drop / retag) are removed automatically. Involves::X here = theme X wrong on that object. User 2026-10-21: a theme carried only by a general Involves tag (no narrow tag of that theme) is dropped: the \"spells cost no Charges\" effects keep Spell Gems (Charges) and lose Cast; and themes the user already ruled against go (DoT potency is Indirect Damage not Damage; Krakens / Commanding Presence are More Potency; Prosperity is a heal). User 2026-10-25: an effect that only changes how a stat gain / loss resolves (Calculation::Stat …) is no triggered event: the v1 Trigger::Stat Gain / Loss of Hymn of Strength, Vext's Antiquity, Vext's Invocation and Lord of the Castle goes.",
   "perk:UNNATURALCAUSES": [
    "Condition::Has Done Action"
   ],
@@ -1715,6 +1725,18 @@
   ],
   "trait:2024": [
    "Involves::Damage"
+  ],
+  "trait:642": [
+   "Trigger::Stat Loss"
+  ],
+  "trait:967": [
+   "Trigger::Stat Loss"
+  ],
+  "trait:968": [
+   "Trigger::Stat Gain"
+  ],
+  "trait:2007": [
+   "Trigger::Stat Gain"
   ]
  },
  "theme_status": {
