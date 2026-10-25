@@ -82,6 +82,7 @@ export function makeTaxoV2(X, CL, MK, condName = () => null) {
   for (const c of ((CL.f5 && CL.f5.corrections) || [])) if ((c.action === 'drop' || c.action === 'retag')
     && !(((CL.objects[c.key] || {}).tags) || []).some(t => t.tag === c.t)) addDrop(c.key, c.t);
   for (const [key, ts] of Object.entries(X.object_drops || {})) if (key !== '_note') for (const t of ts) addDrop(key, t);
+  const VU = Object.fromEntries(Object.entries(X.value_use_sites || {}).filter(([k]) => k !== '_note'));
   const stats = { removed: 0, codeDropped: 0, removedBy: {}, other: 0, trigUnverified: 0, eventScope: 0, eventScopeOff: 0, objects: 0, withCode: 0, entries: 0, code: 0, v1: 0, unverified: 0, involves: 0, wrongDropped: 0, unknown: {} };
 
   // vocabulary: every value the crosswalk can produce + the code-only new values (+ open families)
@@ -128,7 +129,10 @@ export function makeTaxoV2(X, CL, MK, condName = () => null) {
       const v = [...new Set([...(c.condition_ids || []).map(condName).filter(Boolean), ...(c.dot ? [c.dot] : [])])];
       return v.length ? v : null;
     };
+    // a trait check called again only to read its holder (crosswalk value_use_sites) is no trigger of its own
+    const vuSites = new Set(VU[`${kind}:${id}`] || []);
     const codeE = ((code && code.tags) || []).flatMap(c => {
+      if (vuSites.has(c.site) && /^Trigger::/.test(c.tag)) { stats.valueUseDropped = (stats.valueUseDropped || 0) + 1; return []; }
       const alts = expand(c.tag);
       // relic rank: the code layer's own `rank` (F5), else the rank clause that holds the site
       const rk = c.rank != null ? +c.rank : opts.rankOf ? opts.rankOf(c.site) : null;

@@ -4,6 +4,13 @@ Every dated change entry, newest first (moved verbatim from Progress.md on 2026-
 to their own section and sorted by their date). Current state and open work: `Progress.md`, `BACKLOG.md`.
 New entries go at the TOP.
 
+## 2026-10-25 — Extra "Any" triggers from value-read trait checks dropped (Throat Ripper)
+- Throat Ripper showed Enemy side on Trigger::Attack. Its real gate (`0x141322242`) is Self or Ally. The code calls the
+  trait check a second time inside the block (`0x14132269c`) only to read the holder; the extract emitted that call as a
+  second Attack trigger with side "any".
+- Rule (code-structural): a gate call whose governing jump sits before the call and that owns no jump is a value read, not
+  a gate. 154 such sites; the 82 that only duplicate a trigger the object already has from a real gate are listed in
+  crosswalk `value_use_sites` and dropped (83 tags, 49 objects). Interim until the extract fixes its signatures.
 ## 2026-10-25 — Relics can't be debuffed: Triumvir 100 note withdrawn (extract S66)
 - The extract traced how the game handles a debuff aimed at a Relic: it drops it, along with buffs, healing, damage and stat
   changes aimed at the Relic. So Lightning Storm never Silences Triumvir's Relic, and ranks 40 / 70 / 100 work every time
