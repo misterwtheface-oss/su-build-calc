@@ -102,9 +102,9 @@ a decompile → write `_su_extract/code/HANDOFF_<topic>.md` and don't guess.
   exactly 2**. Re-run the same comparison on the real per-rank tags when they land, then the user picks.
 
 ### G7. Taxonomy + search
-- [ ] **User review: 4 status tags the code does not back** (extract S56, CODE_TAXO.md § Status markers per site): Empowered
+- [x] **User review: 4 status tags the code does not back** (extract S56, CODE_TAXO.md § Status markers per site): Empowered
   Savage Spores Buffs::Apply (no buff applied), Hymn of Guile and All Hope Is Lost Debuffs::Apply (they only prevent a buff),
-  Moonfire & Sunfury R90 Debuffs::Remove (removes a buff). Kept as shipped, unmarked; relabel only on the user's ruling.
+  Moonfire & Sunfury R90 Debuffs::Remove (removes a buff). **Removed 2026-10-24 (user: "Go ahead"; extract S57 round 7S).**
 - [x] Round 7 item F: researched and ruled 2026-10-24, shipped (round 7F, see CHANGELOG). Not reviewed: CAWW!'s Damage::Deal
   More (Attack).
 - [ ] **In-game check: Lord of Undeath** (extract S38b). Code runs it at each of your creatures' turn start for every minion they

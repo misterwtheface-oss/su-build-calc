@@ -178,6 +178,9 @@ a flat modifier to base: raised **×4/3 (+33%)**, lowered **×2/3 (−33%)**, ot
   itself. Not: the normal formula held in a local or shared out; plain multipliers (Damage::Deal More); an amount sized from the
   damage the spell dealt; defense terms (Ignore Defense / Damage-Taken Formula). Healing and stat spells with their own amount
   count (Enlightenment, Unholy Rage, Frost Armor ...). Spell Formula no longer derives the Damage theme.
+- **Status tags the code does not back are removed (user 2026-10-24, "Go ahead"):** Empowered Savage Spores Buffs::Apply,
+  Hymn of Guile and All Hope Is Lost Debuffs::Apply, Moonfire & Sunfury R90 Debuffs::Remove (extract round 7S,
+  `_su_extract/code/CODE_TAXO.md` § Round 7S). A theme stays only where another tag still gives it.
 - **A theme needs a narrow tag (user 2026-10-21):** a theme carried only by a general Involves tag, with no narrow tag of
   that theme, is dropped. E.g. "spells cost no Charges" effects keep Spell Gems (Spell Gems::Charges) and lose Cast.
   Per-object drops live in `taxonomy_crosswalk.json` `object_drops`.

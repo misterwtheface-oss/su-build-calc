@@ -4,6 +4,12 @@ Every dated change entry, newest first (moved verbatim from Progress.md on 2026-
 to their own section and sorted by their date). Current state and open work: `Progress.md`, `BACKLOG.md`.
 New entries go at the TOP.
 
+## 2026-10-24 — Four status tags the code does not back, removed (extract S57)
+- User ruling ("Go ahead"): removed Empowered Savage Spores Buffs: Apply, Hymn of Guile and All Hope Is Lost Debuffs: Apply,
+  Moonfire & Sunfury R90 Debuffs: Remove (extract round 7S). Their themes follow: Empowered Savage Spores loses Involves: Buff,
+  Hymn of Guile Involves: Debuff; every other theme stays (another tag still gives it). Rebuilt data only. Taxonomy check: 0
+  gaps; tests 27/0 and 49/0.
+
 ## 2026-10-24 — Status markers on Has Buff / Has Debuff and the other status tags (extract S56)
 - User: "Has Debuff, Status: Feared" missed Horror Show. The extract decoded the status each unmarked status-tag entry checks or
   changes from its own code site (119 of the 123 listed: 110 named, 9 Any). Rebuilt data only: shipped entries with a Status
