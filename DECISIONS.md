@@ -4,6 +4,11 @@ Standing decisions the user made about how the app models the game. Don't "fix" 
 the assistant's working notes on 2026-10-08 (they existed nowhere in the repo). Add new rulings here when they're made.
 Taxonomy category definitions themselves live in `TAXONOMY.md`.
 
+## Stats: Gain / Lose scope (2026-10-25)
+- Stats: Gain holds only effects that increase a stat, and all of them; the same goes for Lose. An effect that only changes
+  how much other gains / losses give ("gain 50% less stats") is Trigger: Stat Gain / Stat Loss (user ruling). This replaces
+  the extract's earlier convention, which tagged them Gain.
+
 ## Taxonomy Side marker (2026-10-25)
 - Side is relative to whom the **effect** affects, not to what an action it causes targets.
 - On Auto Attack / Auto Cast / Auto Defend / Auto Provoke the affected creature is the one that acts: Your side = your

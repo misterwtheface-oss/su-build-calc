@@ -143,7 +143,7 @@ export function makeTaxoV2(X, CL, MK, condName = () => null) {
         // round 7F (user 2026-10-24): an intercept / redirect resolves as Indirect (new event, no source) or the Same hit; its
         // share: Whole (original takes 0) / Split (original keeps part) / Copy (original keeps all, others take extra)
         ra: c.resolves_as || null, sh: c.share || null,
-        act: c.actor || null,
+        act: c.actor || null, mode: c.mode || null,
         // Targeting::All inferred only from "no picker call" is a guess while random-by-index picks are undecoded
         // (Abnegation hits a random enemy): unverified until the extract decodes it
         d: c.delivery || null, v: alts.length > 1 || / no picker call/.test(c.picker || '') ? 'unverified' : 'code',
@@ -159,7 +159,16 @@ export function makeTaxoV2(X, CL, MK, condName = () => null) {
       const m = [...new Set(trig.filter(x => (x.r || 'Performer') === side).map(x => x.s))];
       e.s = m.length === 1 ? m[0] : null; stats[m.length === 1 ? 'eventScope' : 'eventScopeOff']++;
     }
+    // Stats::Gain / Lose = the effect changes a stat (user 2026-10-25). A code tag whose `mode` is a stat-event modifier only
+    // resizes other gains / losses (Bismuth Attunement "gain 50% less stats") and folds into Trigger::Stat Gain / Stat Loss
+    // (user ruling); the replaced value still counts as code-tagged so its v1 entry does not come back
     const codeVals = new Set(codeE.map(e => e.t));
+    for (const e of codeE) {
+      const c = /^Stats::(Gain|Lose)$/.exec(e.t);
+      if (!c || !/^stat-event modifier/.test(e.mode || '')) continue;
+      e.t = c[1] === 'Gain' ? 'Trigger::Stat Gain' : 'Trigger::Stat Loss'; e.d = null; stats.statModFolded = (stats.statModFolded || 0) + 1;
+    }
+    for (const e of codeE) codeVals.add(e.t);
     // Triggers: a v1-only trigger on an object whose trigger(s) the code decoded is an anomaly (unverified): an old guess
     // (Abnegation's "Takes Damage") or a trigger the code layer missed (Furor's Turn Start).
     const codeTrig = codeE.some(e => e.t.startsWith('Trigger::'));
@@ -224,9 +233,9 @@ export function makeTaxoV2(X, CL, MK, condName = () => null) {
       stats.entries++; stats[e.v === 'code' ? 'code' : 'other']++;
       if (!known(e.t)) stats.unknown[e.t] = (stats.unknown[e.t] || 0) + 1;
       for (const k of ['s', 'so', 'r', 'p', 'd', 'rk', 'cf', 'co', 'cn', 'ig', 'x', 'ev', 'st', 'sk', 'cl', 'ra', 'sh']) if (e[k] == null) delete e[k];
-      delete e.old; delete e.why; delete e.mth; delete e.act;
+      delete e.old; delete e.why; delete e.mth; delete e.act; delete e.mode;
     }
-    for (const e of removed) { stats.removed++; stats.removedBy[e.v] = (stats.removedBy[e.v] || 0) + 1; for (const k of ['s', 'so', 'r', 'p', 'd', 'rk', 'cf', 'co', 'cn', 'ig', 'x', 'ev', 'st', 'sk', 'cl', 'ra', 'sh']) if (e[k] == null) delete e[k]; delete e.mth; delete e.act; }
+    for (const e of removed) { stats.removed++; stats.removedBy[e.v] = (stats.removedBy[e.v] || 0) + 1; for (const k of ['s', 'so', 'r', 'p', 'd', 'rk', 'cf', 'co', 'cn', 'ig', 'x', 'ev', 'st', 'sk', 'cl', 'ra', 'sh']) if (e[k] == null) delete e[k]; delete e.mth; delete e.act; delete e.mode; }
     return { taxo2: out, theme2: [...theme].sort(), removed, themeOnly: [...theme].filter(th => !narrow.has(th)).sort() };
   }
 

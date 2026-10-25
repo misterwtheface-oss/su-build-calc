@@ -3968,6 +3968,7 @@ const taxonomy2 = (() => {
   for (const [t, n] of Object.entries(unknown)) warn(`taxonomy v2: value ${t} (${n}×) is not in the crosswalk / new_values`);
   console.log(`  taxonomy v2: ${st.objects} objects (${st.withCode} with code) · ${st.entries} code-backed tags (code ${st.code} · field / boss ${st.other}) · Involves ${st.involves} · event scopes ${st.eventScope} resolved / ${st.eventScopeOff} off · code-dropped values ${st.codeDropped} · wrong themes dropped ${st.wrongDropped} · user adds ${st.adds || 0}`);
   console.log(`  taxonomy v2 automatic actions: side from the code's actor only; ${st.autoSideDropped || 0} target-side values dropped (no actor yet)`);
+  console.log(`  taxonomy v2 stat-event modifiers: ${st.statModFolded || 0} Stats::Gain / Lose tags folded into Trigger::Stat Gain / Stat Loss`);
   if (st.markerFill) console.log(`  taxonomy v2 markers filled from entry-level rows (on entries the code layer left unmarked): stat ${st.markerFill.st} · status ${st.markerFill.sk} · class ${st.markerFill.cl}`);
   for (const d of st.addsDropped || []) warn(`taxonomy v2: user add dropped by its provision (crosswalk object_adds): ${d}`);
   console.log(`  taxonomy v2 removed (not code-backed, user 2026-10-19): ${st.removed} tags on ${Object.keys(removed).length} objects · ${Object.entries(st.removedBy).map(([k, n]) => `${k} ${n}`).join(' · ')}`);

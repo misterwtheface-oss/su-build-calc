@@ -4,6 +4,14 @@ Every dated change entry, newest first (moved verbatim from Progress.md on 2026-
 to their own section and sorted by their date). Current state and open work: `Progress.md`, `BACKLOG.md`.
 New entries go at the TOP.
 
+## 2026-10-25 — Stats: Gain / Lose hold only effects that change a stat
+- Effects that only resize other stat gains or losses (Bismuth Attunement, Embiggening, Vext's Antiquity and 216 more tags)
+  move from Stats: Gain / Lose to Trigger: Stat Gain / Stat Loss. They keep their stat markers. The build uses the code
+  layer's `mode` ("stat-event modifier").
+- Eleven modifiers have no `mode` yet and still show as Gain / Lose: Radiance, Tragedy, Languish, Further Beyond, Momentum,
+  Potency, Spell Corruption, Triumvir rank 90, Infusion and cards 52 / 118. Three steals still lack Gain: Pact of the Deep,
+  Pumpkin Spice and Pandemonium Alacrity. Both are asked of the extract (HANDOFF_taxonomy_v2).
+
 ## 2026-10-25 — Minion clarify notes; no clarify-join warnings left (extract S62)
 - Spiderlings and Brim Fiends show their clarify notes on the minion detail page (Spiderlings: 50% of the master's Maximum
   Health per stack; Brim Fiends: used up on any damage the master deals). The build's clarify join skipped minions; condition
