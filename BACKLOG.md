@@ -318,7 +318,7 @@ Known limits + planned work, roughly in priority order (all now cheap to impleme
   (Cruel Creation / Corpse Eater / Animated Dead as secondaries), realm property 25 on your creatures (data already says so),
   Ultimate Trickery's text. DONE 2026-10-25: all three were in the shipped data (245 / 247 / 249 fold into their parent rows);
   Ultimate Trickery's note lost its code wording (extract S59).
-- [ ] **Effect-order clarify-note candidates (optional, extract S49 / S49d / S49f):** Fragmenting Arrow overflow and Butcher
+- [x] **Effect-order clarify-note candidates (optional, extract S49 / S49d / S49f):** CLOSED 2026-10-25. Fragmenting Arrow overflow and Butcher
   execute are matched by the hit's display label, not the spell id (`bc_EventDamage` #831 / #945 `gate.note`); same for
   Disintegrating Arrow on kill (`bc_ExecuteEvents` #41) and the boss-battle instant-kill branch (#84, battle types 37 / 39).
   Needs player-facing wording (what actually differs in play) before shipping; Celerity's row note is data provenance, not a note.
@@ -327,7 +327,7 @@ Known limits + planned work, roughly in priority order (all now cheap to impleme
   on a hit over 35% of max Health (extract open: whether Butcher's own hits carry the label); boss-battle instant-kill rule.
   - [x] Fragmenting Arrow note and the boss-battle instant-kill rule (boss pages, Damage section) SHIPPED 2026-10-25 (user
     "Add the clarification"; extract S61).
-  - [ ] Butcher: waits for the user (extract S60: its execute never fires; draft rewritten).
+  - [x] Butcher: NO NOTE (user 2026-10-25: nothing in Butcher's text suggests a kill; extract S60: the unused execute never fires, so play matches the text).
 - [ ] In-game checks the Bosses page shows as unverified: Jotun's 24-turn count, Mindwurm saddle "nothing" pick, Nebodar
   "Burned can't be avoided".
 - [x] **Start of Battle secondary calls** DONE 2026-10-21 (extract S42 `secondary_of`; 13 indented, self re-checks folded).
