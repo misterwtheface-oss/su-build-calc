@@ -4,6 +4,15 @@ Every dated change entry, newest first (moved verbatim from Progress.md on 2026-
 to their own section and sorted by their date). Current state and open work: `Progress.md`, `BACKLOG.md`.
 New entries go at the TOP.
 
+## 2026-10-24 — Nether Bosses: trait materials come from Nethermancer Ned's Nether Shop (code)
+- The materials were listed from the wiki table. In code they are bought: Ned's Nether Shop sells a boss's n-th material for
+  50,000 Brimstone once that boss is beaten n times (extract `nether_shop.json`). Each material row shows "N wins · 50,000
+  Brimstone"; Blacksmith Ianne's 1- and 2-win materials are swapped vs the wiki (clarify note on each).
+- New row "Nether Shop: skins after 4 wins" with the boss's own skin(s). The code price (1 Brimstone) awaits an in-game check
+  and isn't shown.
+- The materials' trait depth tags come from the code too (Ianne's Eccentricity 250 -> 75, Quirk 75 -> 250). Lord Zantai's 10
+  traits (not sold by Ned) keep the wiki depth. The wiki table now only cross-checks the build.
+
 ## 2026-10-24 — Four status tags the code does not back, removed (extract S57)
 - User ruling ("Go ahead"): removed Empowered Savage Spores Buffs: Apply, Hymn of Guile and All Hope Is Lost Debuffs: Apply,
   Moonfire & Sunfury R90 Debuffs: Remove (extract round 7S). Their themes follow: Empowered Savage Spores loses Involves: Buff,

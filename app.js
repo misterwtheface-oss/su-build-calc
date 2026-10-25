@@ -1934,10 +1934,14 @@
       </div>`;
     }).join("");
     const mats = (e.materials || []).map(m => { const ti = TRAITITEM.get(m.item), tr = TRAIT[m.traitId];
-      return ti ? `<div class="boss-mat"><div class="boss-mat-head">${ti.icon ? `<span class="prop-ico">${spriteImg(ti.icon, "px")}</span>` : ""}<b>${esc(ti.name)}</b></div>${tr ? `<div class="primary-traits">${traitBanner(m.traitId)}<div class="trait-desc">${richText(tr.desc || "")}</div>${traitSpellRow(m.traitId, true)}</div>` : ""}</div>` : ""; }).join("");
+      return ti ? `<div class="boss-mat"><div class="boss-mat-head">${ti.icon ? `<span class="prop-ico">${spriteImg(ti.icon, "px")}</span>` : ""}<b>${esc(ti.name)}</b><span class="boss-chip">${m.wins} win${m.wins > 1 ? "s" : ""} · ${Number(m.price).toLocaleString("en-US")} Brimstone</span></div>${m.clarify ? `<div class="fx-clarify">${esc(m.clarify)}</div>` : ""}${tr ? `<div class="primary-traits">${traitBanner(m.traitId)}<div class="trait-desc">${richText(tr.desc || "")}</div>${traitSpellRow(m.traitId, true)}</div>` : ""}</div>` : ""; }).join("");
+    // the boss's own skin(s): Ned sells them after 4 wins (price not shown: the code's 1 Brimstone awaits an in-game check)
+    const shopSkins = (e.shopSkins || []).map(r => { const k = SKIN_BY_ID.get(r.id); return k ? `<span class="boss-chip">${k.img ? `<span class="prop-ico sm">${spriteImg(k.img, "px")}</span>` : ""}${esc(k.name)}</span>` : ""; }).join("");
+    const skinWins = (e.shopSkins || [])[0] ? e.shopSkins[0].wins : 4;
     const isID = e.key === "NB_SHADOWS";
     const rewards = `<div class="section-label">Rewards</div>
-      ${mats ? `<div class="boss-sub">Trait materials</div>${mats}` : ""}
+      ${mats ? `<div class="boss-sub">Nether Shop: trait materials</div>${mats}` : ""}
+      ${shopSkins ? `<div class="boss-sub">Nether Shop: skins after ${skinWins} wins</div><div class="boss-chips boss-rewards-art">${shopSkins}</div>` : ""}
       <div class="boss-sub">Every win</div>
       <ul class="boss-steps"><li>Right after the fight: 20 treasure bundles and Gate of the Gods Key Fragments: 4–7, plus (1 + realm Instability) × (1 + Inner Darkness clears, up to 3).</li>
         <li>Your first Nether Boss win ever gives the Nether Shop decoration instead.</li>

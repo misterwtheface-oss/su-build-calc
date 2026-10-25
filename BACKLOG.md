@@ -308,9 +308,9 @@ Known limits + planned work, roughly in priority order (all now cheap to impleme
   average uses creature #2's primary creature's plain base. Deprived keeps the trait.
 - [x] **Nether Bosses** shipped 2026-10-11 (35 pages, tier toggle, threats, stat bars, trait materials).
 - [x] **Gate of the Gods** shipped 2026-10-11 (31 god pages: threats, stat bars, difficulty table, rewards).
-- [ ] **Nether Boss trait materials: code source** — the boss ↔ material link and unlock depth come from the wiki table
-  (`nether_boss_trait_depths.json`, asserted against the item reconciliation's boss source); the drop isn't in the loot
-  code docs (the treasure-only pool doesn't hold them). Asked in `_su_extract/code/HANDOFF_nether_material_source.md`.
+- [ ] **Nether Shop boss skins: price** (in-game check): the code charges 1 Brimstone for each boss skin Ned sells after 4 wins
+  (`nether_shop.json` `boss_skin_price_note`); the Nether Boss pages leave the price out until confirmed. Also open: where Lord
+  Zantai's 10 traits come from (their depth is still the wiki's 591).
 - [ ] **Effect-order clarify-note candidates (optional, extract S49 / S49d / S49f):** Fragmenting Arrow overflow and Butcher
   execute are matched by the hit's display label, not the spell id (`bc_EventDamage` #831 / #945 `gate.note`); same for
   Disintegrating Arrow on kill (`bc_ExecuteEvents` #41) and the boss-battle instant-kill branch (#84, battle types 37 / 39).

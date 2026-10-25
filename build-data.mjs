@@ -667,7 +667,7 @@ for (const [tid, cs] of traitOwners) if (cs.length > 1)
 // ── Realm Depth propagation → traits (+ later trait-materials) ───────────────────────────────────
 // A trait's availability depth comes from ONE of two sources, disjoint in practice:
 //   • creature-innate trait → the owning creature's depth (creatures_ref acquisition)
-//   • player-farmable Nether Boss trait material → the wiki depth table (data/reference/nether_boss_trait_depths.json)
+//   • Nether Boss trait material → the depth of the win that unlocks it in Ned's Nether Shop (code: nether_shop.json)
 // Boss-only (encounter) traits get NO depth (per design — only player-available content is tagged).
 const traitDepth = new Map();   // traitId → Realm Depth (consumed here for traits and below for trait-items)
 const traitGate = new Map();    // traitId → secondary gate {type,name,rank} (parallel to traitDepth)
@@ -689,10 +689,14 @@ for (const c of creatures) {
   const normTN = (s) => String(s || '').toLowerCase().replace(/[’']/g, '').replace(/\bs\b/g, '').replace(/[^a-z0-9]+/g, '');
   const traitIdByNormName = new Map();
   for (const id in traits) { const k = normTN(traits[id].name); if (k && !traitIdByNormName.has(k)) traitIdByNormName.set(k, +id); }
-  const nb = readJSON(path.join(REF, 'nether_boss_trait_depths.json')).traits;
+  // code: Nethermancer Ned sells material n once its boss is beaten n times; unlock_depth = the depth of that win (nether_shop.json)
+  const nb = readJSON(path.join(MODEL, 'nether_shop.json')).menus.nether_shop.trait_materials;
   let nbHit = 0; const nbMiss = [];
-  for (const r of nb) { const id = traitIdByNormName.get(normTN(r.trait)); if (id != null) { traitDepth.set(id, r.depth); nbHit++; } else nbMiss.push(r.trait); }
-  if (nbMiss.length) warn(`nether boss depth: ${nbMiss.length}/${nb.length} wiki traits did not match a shipped trait (fix spelling in nether_boss_trait_depths.json): ${nbMiss.join(', ')}`);
+  for (const r of nb) { const id = traitIdByNormName.get(normTN(r.trait)); if (id != null) { traitDepth.set(id, r.unlock_depth); nbHit++; } else nbMiss.push(r.trait); }
+  if (nbMiss.length) err(`nether boss depth: ${nbMiss.length}/${nb.length} Nether Shop traits did not match a shipped trait: ${nbMiss.join(', ')}`);
+  // traits the shop doesn't sell (Lord Zantai's 10) keep the wiki depth table's value: no code source for them yet
+  const shopT = new Set(nb.map(r => normTN(r.trait))), nbWiki = readJSON(path.join(REF, 'nether_boss_trait_depths.json')).traits.filter(r => !shopT.has(normTN(r.trait)));
+  for (const r of nbWiki) { const id = traitIdByNormName.get(normTN(r.trait)); if (id != null) traitDepth.set(id, r.depth); else warn(`nether boss depth: wiki trait ${r.trait} matches no shipped trait`); }
   let traitTagged = 0, traitGated = 0;
   for (const id in traits) {
     const d = traitDepth.get(+id); if (d != null) { traits[id].depth = d; traitTagged++; }
@@ -700,7 +704,7 @@ for (const c of creatures) {
   }
   const favN = creatures.filter(c => c.gate && c.gate.type === 'favor').length;
   const guildN = creatures.filter(c => c.gate && c.gate.type === 'guild').length;
-  console.log(`  realm depth: ${creatures.filter(c => typeof c.depth === 'number').length}/${creatures.length} creatures · ${traitTagged} traits tagged (${nbHit}/${nb.length} nether-boss materials)`);
+  console.log(`  realm depth: ${creatures.filter(c => typeof c.depth === 'number').length}/${creatures.length} creatures · ${traitTagged} traits tagged (${nbHit}/${nb.length} Nether Shop materials, code · ${nbWiki.length} wiki-only: ${[...new Set(nbWiki.map(r => r.boss))].join(', ')})`);
   console.log(`  secondary gate: ${favN} favor + ${guildN} guild creatures · ${traitGated} traits gated`);
 }
 
@@ -3726,15 +3730,13 @@ const bosses = (() => {
   }
   // Nether Bosses (bosses.json type nether_boss; code/NETHER_BOSS_BEHAVIOR_FINDINGS.md): an ordinary creature record in a
   // boss skin, its boss trait in 3 tiers (times beaten), generic enemy AI. Creature joined by name and asserted by its own
-  // trait's runtime id; tier traits by runtime id; skins by code skin id. Trait materials: tier + depth from the wiki
-  // Trait Materials table (nether_boss_trait_depths.json), asserted against the item reconciliation's boss source.
+  // trait's runtime id; tier traits by runtime id; skins by code skin id. Trait materials: Nethermancer Ned's Nether Shop
+  // (nether_shop.json), cross-checked against the wiki Trait Materials table (nether_boss_trait_depths.json).
   const crByName = new Map(creatures.map(c => [norm(c.name), c]));
   const skinIds = new Set(skins.map(x => x.id));
   const nbDepths = readJSON(path.join(REF, 'nether_boss_trait_depths.json')).traits;
-  const recon = readJSON(path.join(MODEL, 'item_reconciliation.json'));
-  const reconSrc = new Map((Array.isArray(recon) ? recon : recon.records || recon.items || []).map(r => [r.index, r.source || '']));
+  const NB_SHOP = readJSON(path.join(MODEL, 'nether_shop.json')).menus.nether_shop;
   const normTN = (x) => String(x || '').toLowerCase().replace(/[’']/g, '').replace(/[^a-z0-9]+/g, '');
-  const tiByTrait = new Map(traitItems.map(t => [normTN(t.traitName), t]));
   const rtTrait = (t, w) => { const id = traitByRt.get(t.runtime_id);
     if (id == null) err(`bosses: ${w} trait ${t.name} (runtime ${t.runtime_id}) not in the app`);
     else if (norm(traits[id].name) !== norm(t.name)) err(`bosses: ${w} trait ${id} is "${traits[id].name}", expected "${t.name}"`);
@@ -3778,18 +3780,31 @@ const bosses = (() => {
       return { slot: u.slot, name: u.nickname || u.creature, creature: c ? c.id : null, skins: skin,
         stats: u.base_stats, ownTraitId: own, ...(tiers.length ? { tiers } : {}) };
     });
-    const materials = nbDepths.filter(r => norm(r.boss.replace(/&/g, 'and')) === norm(e.name)).sort((a, b) => a.tier - b.tier).map(r => {
-      const ti = tiByTrait.get(normTN(r.trait));
-      if (!ti) { err(`bosses: ${where} trait material for "${r.trait}" not in the app`); return null; }
-      if (!new RegExp(`Nether Boss \(${e.name.replace(/[()]/g, '.')}\)`).test(reconSrc.get(ti.id) || '')) warn(`bosses: ${where} material ${ti.name}: item source is "${reconSrc.get(ti.id) || 'none'}"`);
-      return { tier: r.tier, item: ti.id, traitId: ti.traitId, depth: r.depth };
+    // trait materials: bought from Nethermancer Ned's Nether Shop (code: nether_shop.json, extract 2026-10-12), material n once
+    // this boss is beaten n times; joined by the trait's runtime id. The wiki table only cross-checks: a tier that differs from
+    // the code's win count gets a clarify note (Blacksmith Ianne's 1- and 2-win materials are swapped on the wiki).
+    const wikiMats = nbDepths.filter(r => norm(r.boss.replace(/&/g, 'and')) === norm(e.name));
+    const materials = NB_SHOP.trait_materials.filter(r => r.boss_id === e.type_id).sort((a, b) => a.min_wins - b.min_wins).map(r => {
+      const tid = traitByRt.get(r.trait_runtime_id), ti = tid != null ? traitItems.find(t => t.traitId === tid) : null;
+      if (!ti) { err(`bosses: ${where} Nether Shop material ${r.material} (trait runtime ${r.trait_runtime_id}) not in the app`); return null; }
+      if (normTN(ti.name) !== normTN(r.material)) err(`bosses: ${where} Nether Shop material ${r.material} joined to ${ti.name}`);
+      if (NB_SHOP.currency !== 'Brimstone') err(`bosses: Nether Shop currency is ${NB_SHOP.currency}`);
+      const wk = wikiMats.find(w => normTN(w.trait) === normTN(r.trait));
+      if (!wk) err(`bosses: ${where} material ${r.material} is not in the wiki table`);
+      return { wins: r.min_wins, item: ti.id, traitId: ti.traitId, price: r.price, depth: r.unlock_depth,
+        ...(wk && wk.tier !== r.min_wins ? { clarify: `The game sells this after ${r.min_wins} win${r.min_wins > 1 ? 's' : ''}; the wiki lists it after ${wk.tier}.` } : {}) };
     }).filter(Boolean);
     if (materials.length !== 3) err(`bosses: ${where} has ${materials.length} trait materials`);
+    // the boss's own skin(s), sold by Ned after 4 wins (code price 1 Brimstone, flagged for an in-game check: not shown)
+    const shopSkins = NB_SHOP.boss_skins.filter(r => r.boss_id === e.type_id).map(r => {
+      if (!skinIds.has(r.skin_code_id)) { err(`bosses: ${where} Nether Shop skin ${r.skin} (${r.skin_code_id}) not in the app`); return null; }
+      return { id: r.skin_code_id, wins: r.min_wins };
+    }).filter(Boolean);
     const fill = +((/^(\d+) other slot/.exec(e.battle.random_fill) || [])[1] || 0);
     out.push({
       id: e.id, type: e.type, key: `NB_${e.key}`, name: e.name, nbId: e.type_id,
       dialog: (e.dialog || []).map(d => unesc(d.text)).join('\n\n') || null,
-      fill, units, materials, advice: advice(e.key, where),
+      fill, units, materials, ...(shopSkins.length ? { shopSkins } : {}), advice: advice(e.key, where),
       // tier 3 party change (Flubris / Kraynaks: six copies, named); Inner Darkness's "all six carry the trait" is in its advice
       ...(/^six /i.test(e.tier3_party || '') && /\(([^)]+)\)/.test(e.tier3_party) ? { party3: /\(([^)]+)\)/.exec(e.tier3_party)[1].split(/,\s*/) } : {}),
     });
