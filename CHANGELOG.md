@@ -4,6 +4,18 @@ Every dated change entry, newest first (moved verbatim from Progress.md on 2026-
 to their own section and sorted by their date). Current state and open work: `Progress.md`, `BACKLOG.md`.
 New entries go at the TOP.
 
+## 2026-10-25 — Relic ranks that work against their own relic: 39 clarify notes (extract S65)
+- The extract read every rank of all 31 relics for ranks that undercut their own relic (relic ranks can't be lowered, so all
+  run at once). 39 code-grounded notes now show on the relic ranks:
+  - Code differs from the text: Triumvir 100 (Lightning Storm Silences the relic for the rest of the battle, so ranks 40 / 70 /
+    100 work once) and 80 (only gives back Arcane that a spell used up), Thousand Needles 30, Brambleskin 20 and 100 (never
+    resurrects), Fable 80 (on-death effects don't repeat), Blazefury 100, 5740-NG 10, Arbiter 60 (healing received, not given),
+    Lamora 70 (never adds healing), Moonfire & Sunfury 40 (the random spell can heal or buff the enemy), Amalgam 50 / 60 / 100,
+    ASSKICKER 80, Temptation 20, Wintermaul 60, Salus 100, Void Essence 30.
+  - 20 on-attack ranks that don't check sides (they also hit your own creatures when the bearer or an ally is Confused): one
+    short sentence each.
+- Data rebuild only; no join warnings.
+
 ## 2026-10-25 — Side corrections on 11 perks and Malware (extract S64)
 - The extract read the side of some perk effects from an unrelated test further up in the game code. Each one was re-read from
   its own check. Data rebuild only; no tag added or removed.
