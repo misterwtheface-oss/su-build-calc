@@ -17,6 +17,7 @@ Taxonomy category definitions themselves live in `TAXONOMY.md`.
 - An effect that only changes how a gain / loss resolves ("gain 50% less stats", Paragon Attunements) is no triggered event.
   It goes to Calculation: Stat Gain More / Less or Stat Loss More / Less. Trigger: Stat Gain / Loss is only for effects that
   fire after the event. This replaces the extract's earlier convention, which tagged them Gain.
+- Side on Gain / Lose is the side whose stat changes (the gainer), not the creature that set it off; Enemy side is rare.
 
 ## Taxonomy Side marker (2026-10-25)
 - Side is relative to whom the **effect** affects, not to what an action it causes targets.

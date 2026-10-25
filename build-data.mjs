@@ -3970,7 +3970,7 @@ const taxonomy2 = (() => {
   console.log(`  taxonomy v2 automatic actions: side from the code's actor only; ${st.autoSideDropped || 0} target-side values dropped (no actor yet)`);
   console.log(`  taxonomy v2 receiver triggers: side = the performer (code actor only); ${st.trigSideMoved || 0} hit-creature sides moved to Target · ${st.trigSideGuessDropped || 0} inferred attacker sides on Is Attacked dropped`);
   console.log(`  taxonomy v2 value-read trait checks: ${st.valueUseDropped || 0} extra trigger tags dropped (the holder read, not a gate)`);
-  console.log(`  taxonomy v2 stats: ${st.statModMoved || 0} stat-event modifier tags moved from Stats::Gain / Lose to Calculation::Stat Gain / Loss More / Less · ${st.alwaysOn || 0} Has More / Less entries now Gain / Lose (Always On)`);
+  console.log(`  taxonomy v2 stats: ${st.statModMoved || 0} stat-event modifier tags moved from Stats::Gain / Lose to Calculation::Stat Gain / Loss More / Less · ${st.alwaysOn || 0} Has More / Less entries now Gain / Lose (Always On) · ${st.gainerSide || 0} sides set from the code's gainer`);
   if (st.markerFill) console.log(`  taxonomy v2 markers filled from entry-level rows (on entries the code layer left unmarked): stat ${st.markerFill.st} · status ${st.markerFill.sk} · class ${st.markerFill.cl}`);
   for (const d of st.addsDropped || []) warn(`taxonomy v2: user add dropped by its provision (crosswalk object_adds): ${d}`);
   console.log(`  taxonomy v2 removed (not code-backed, user 2026-10-19): ${st.removed} tags on ${Object.keys(removed).length} objects · ${Object.entries(st.removedBy).map(([k, n]) => `${k} ${n}`).join(' · ')}`);

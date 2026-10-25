@@ -4,6 +4,12 @@ Every dated change entry, newest first (moved verbatim from Progress.md on 2026-
 to their own section and sorted by their date). Current state and open work: `Progress.md`, `BACKLOG.md`.
 New entries go at the TOP.
 
+## 2026-10-25 — Stats Gain / Lose Side = the side whose stat changes (user ruling); data rebuilt on extract S68 / S69
+- The build reads the code layer's `gainer` as Side on Stats::Gain / Lose when present (none yet; extract ask
+  HANDOFF_taxonomy_v2.md). Today's side is often the hook subject (Taste of Fear: the Feared enemy).
+- Rebuilt on S68 (receiver-trigger `actor` / `target`: only 56 still wait for the performer side) and S69 (Stats::Gain only
+  where a stat changes). Hybridization's Intelligence Enemy side came from stale data and is gone.
+
 ## 2026-10-25 — Stat gain / loss modifiers move to Calculation; Seed of Potentiality, Atrophy and steals fixed (extract S69)
 - Data rebuild only. The extract gave the remaining stat-size modifiers their `stat-event modifier` mode, so they now show as
   Calculation::Stat Gain / Loss More / Less instead of Stats::Gain / Lose: Radiance, Further Beyond, Momentum (gain and loss),

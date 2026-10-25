@@ -148,7 +148,7 @@ export function makeTaxoV2(X, CL, MK, condName = () => null) {
         // round 7F (user 2026-10-24): an intercept / redirect resolves as Indirect (new event, no source) or the Same hit; its
         // share: Whole (original takes 0) / Split (original keeps part) / Copy (original keeps all, others take extra)
         ra: c.resolves_as || null, sh: c.share || null,
-        act: c.actor || null, mode: c.mode || null, tgt: c.target || null,
+        act: c.actor || null, mode: c.mode || null, tgt: c.target || null, gn: c.gainer || null,
         // Targeting::All inferred only from "no picker call" is a guess while random-by-index picks are undecoded
         // (Abnegation hits a random enemy): unverified until the extract decodes it
         d: c.delivery || null, v: alts.length > 1 || / no picker call/.test(c.picker || '') ? 'unverified' : 'code',
@@ -188,6 +188,10 @@ export function makeTaxoV2(X, CL, MK, condName = () => null) {
       const h = /^Stats::Has (More|Less)$/.exec(e.t);
       if (h) { e.t = h[1] === 'More' ? 'Stats::Gain' : 'Stats::Lose'; e.d = 'Always On'; stats.alwaysOn = (stats.alwaysOn || 0) + 1; }
     }
+    // Side on Stats::Gain / Lose = the side whose stat changes (user 2026-10-25). The code layer's `scope` there is often the
+    // hook subject (the creature whose stat event fired the hook: Taste of Fear's Feared enemy), so the code's `gainer`
+    // (the creature the stat write lands on; extract ask HANDOFF_taxonomy_v2.md 2026-10-25) wins when it exists.
+    for (const e of all) if (e.gn && /^Stats::(Gain|Lose)$/.test(e.t)) { if (e.s !== e.gn) stats.gainerSide = (stats.gainerSide || 0) + 1; e.s = e.gn; }
     // user-ruled adds (crosswalk object_adds); each drops itself once the code layer tags its `unless_code_named` buff / debuff
     for (const a of (X.object_adds || {})[`${kind}:${id}`] || []) {
       const n = a.unless_code_named, codeHas = n && ((code && code.tags) || []).some(t => t.named === n || t.tag === `Named Buff::${n}` || t.tag === `Named Debuff::${n}`);
@@ -258,9 +262,9 @@ export function makeTaxoV2(X, CL, MK, condName = () => null) {
       stats.entries++; stats[e.v === 'code' ? 'code' : 'other']++;
       if (!known(e.t)) stats.unknown[e.t] = (stats.unknown[e.t] || 0) + 1;
       for (const k of ['s', 'tg', 'so', 'r', 'p', 'd', 'rk', 'cf', 'co', 'cn', 'ig', 'x', 'ev', 'st', 'sk', 'cl', 'ra', 'sh']) if (e[k] == null) delete e[k];
-      delete e.old; delete e.why; delete e.mth; delete e.act; delete e.mode; delete e.tgt;
+      delete e.old; delete e.why; delete e.mth; delete e.act; delete e.mode; delete e.tgt; delete e.gn;
     }
-    for (const e of removed) { stats.removed++; stats.removedBy[e.v] = (stats.removedBy[e.v] || 0) + 1; for (const k of ['s', 'tg', 'so', 'r', 'p', 'd', 'rk', 'cf', 'co', 'cn', 'ig', 'x', 'ev', 'st', 'sk', 'cl', 'ra', 'sh']) if (e[k] == null) delete e[k]; delete e.mth; delete e.act; delete e.mode; delete e.tgt; }
+    for (const e of removed) { stats.removed++; stats.removedBy[e.v] = (stats.removedBy[e.v] || 0) + 1; for (const k of ['s', 'tg', 'so', 'r', 'p', 'd', 'rk', 'cf', 'co', 'cn', 'ig', 'x', 'ev', 'st', 'sk', 'cl', 'ra', 'sh']) if (e[k] == null) delete e[k]; delete e.mth; delete e.act; delete e.mode; delete e.tgt; delete e.gn; }
     return { taxo2: out, theme2: [...theme].sort(), removed, themeOnly: [...theme].filter(th => !narrow.has(th)).sort() };
   }
 
