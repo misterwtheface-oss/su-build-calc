@@ -52,12 +52,14 @@
       }
       return out;
     }
-    // relic: 0.1% of its stat per rank (→ 10% at rank 100). Deprived ignores relic effects.
+    // relic: 0.1% of its stat per rank (→ 10% at rank 100). Deprived ignores relic effects. relicRanks rules (Forgotten
+    // Blessing: +100) raise the rank for the stat bonus only (scr_RelicStatBonus), never the rank-gated Relic perks.
     function relicContribs(slot) {
       const rel = slot.relic; if (!rel || ignores("relics")) return [];
       const r = env.RELIC.get(rel.id); if (!r || !r.statBonus) return [];
-      return [{ prop: r.name, stat: r.statBonus, unit: "%", value: 0.1 * (rel.rank || 0) }];
+      return [{ prop: r.name, stat: r.statBonus, unit: "%", value: 0.1 * ((rel.rank || 0) + relicRankBonus()) }];
     }
+    function relicRankBonus() { return perkRules("relicRanks").reduce((n, x) => n + (x.rule.value || 0), 0); }
     // % per core stat (non-core entries dropped)
     function foldCore(list) {
       const out = zero();

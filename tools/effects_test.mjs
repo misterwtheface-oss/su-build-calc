@@ -122,6 +122,10 @@ console.log('stat contributions');
   eq('relic rank 57 → +5.7% of its stat; ignored under Deprived', [
     engine(B(null, party())).slotBonusPct(slot(ANIMATUS, { relic: { id: 3, rank: 57 } })).hp,
     engine(B(38, party())).slotBonusPct(slot(ANIMATUS, { relic: { id: 3, rank: 57 } })).hp], [5.7, 0]);
+  const FB = { anoints: [{ specId: 43, key: 'FORGOTTENBLESSING' }] };
+  eq('Forgotten Blessing: relic rank 57 → +15.7% (Antiquarian or anointed)', [
+    engine(B(43, party())).slotBonusPct(slot(ANIMATUS, { relic: { id: 3, rank: 57 } })).hp,
+    engine(B(null, party(), FB)).slotBonusPct(slot(ANIMATUS, { relic: { id: 3, rank: 57 } })).hp], [15.7, 15.7]);
 }
 
 console.log('code tier (effects-code.json)');
@@ -156,6 +160,8 @@ console.log('granted spells (spell_owners: perk / trait / relic → spell, no ge
   const fable = D.relics.find(r => /^Fable/.test(r.name)).id;
   eq('Fable rank 99 → nothing; rank 100 → 10% Mega Magic', [got(B(null, party(slot(ofCls('Life'), { relic: { id: fable, rank: 99 } })))),
     got(B(null, party(slot(ofCls('Life'), { relic: { id: fable, rank: 100 } }))))], [[], ['Mega Magic:cast10']]);
+  eq('Forgotten Blessing unlocks no Relic perks: Fable rank 99 + anointed → nothing', got(B(null, party(slot(ofCls('Life'), { relic: { id: fable, rank: 99 } })),
+    { anoints: [{ specId: 43, key: 'FORGOTTENBLESSING' }] })), []);
   eq('Doomsday → 15% Ill Fate on every creature', got(B(spec('Shadowbringer').id, party(slot(ofCls('Life')), slot(ofCls('Death')))), 1), ['Ill Fate:cast15']);
   const ANT = spec('Antiquarian').id, rel = D.relics[0];
   eq('Idolatry + relic → the relic\'s Ultimate; no relic → nothing', [got(B(ANT, party(slot(ofCls('Life'), { relic: { id: rel.id, rank: 1 } })))), got(B(ANT, party(slot(ofCls('Life')))))],

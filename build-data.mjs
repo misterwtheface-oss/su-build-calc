@@ -3003,7 +3003,7 @@ const effects = (() => {
     const { _why, ...rule } = r; add(rule, 'manual');
   }
   // validation: every rule must name a live source and a known op (a typo would silently do nothing)
-  const OPS = new Set(['cap', 'ignore', 'gemSlots', 'equip.anyClass', 'equip.addClass', 'stat.share', 'fuse.copy']);
+  const OPS = new Set(['cap', 'ignore', 'gemSlots', 'equip.anyClass', 'equip.addClass', 'stat.share', 'fuse.copy', 'relicRanks']);
   const ids = new Set();
   for (const r of rules) {
     if (ids.has(r.id)) throw new Error(`effect rule id duplicated: ${r.id}`); ids.add(r.id);
