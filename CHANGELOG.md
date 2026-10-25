@@ -4,6 +4,16 @@ Every dated change entry, newest first (moved verbatim from Progress.md on 2026-
 to their own section and sorted by their date). Current state and open work: `Progress.md`, `BACKLOG.md`.
 New entries go at the TOP.
 
+## 2026-10-25 — Side corrections on 11 perks and Malware (extract S64)
+- The extract read the side of some perk effects from an unrelated test further up in the game code. Each one was re-read from
+  its own check. Data rebuild only; no tag added or removed.
+- Now Any (the code checks only who causes the effect, or nothing): Abandoned Altar and Godforged stat gains / losses,
+  Radiance's stat gains, Abandoned Altar's Healing Down, Lucid Dreams' Healing Down, Rising Tide Raises All Boats' Healing Up,
+  Late Confessions' and Empowering Flames' Trigger: Heal, Reawakening's Trigger: Defend. Empowering Flames' stat gains go to the
+  healed creature.
+- Now Your side: Inspirited Gems' Trigger: Attack and Trigger: Provoke (the perk only adds to your creatures' cast chance).
+- Malware (trait): Trigger: Turn Start and its damage are Enemy (the code fires on enemy turns, as the text says).
+
 ## 2026-10-25 — Inspirited Gems: Auto Cast on Defend / Provoke is Your side (extract S63)
 - Inspirited Gems' Defend and Provoke Auto Cast showed Enemy and Any. They now show Your side, matching Attack and Heal, and
   Trigger: Defend is Your side too. In the code, the perk raises the cast chance only for your creatures. The extract's actor reader
