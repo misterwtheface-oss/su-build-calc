@@ -4,6 +4,12 @@ Standing decisions the user made about how the app models the game. Don't "fix" 
 the assistant's working notes on 2026-10-08 (they existed nowhere in the repo). Add new rulings here when they're made.
 Taxonomy category definitions themselves live in `TAXONOMY.md`.
 
+## Taxonomy Side marker (2026-10-25)
+- Side is relative to whom the **effect** affects, not to what an action it causes targets.
+- On Auto Attack / Auto Cast / Auto Defend / Auto Provoke the affected creature is the one that acts: Your side = your
+  creatures attack / cast, Enemy side = enemy creatures do. It comes from the code's `actor`, never from the action's target.
+- **This creature** narrows Your side: the effect's own creature is the one affected (on automatic actions: it acts itself).
+
 ## Buff / debuff source notes (2026-10-23)
 - **Approved as proposed (user):** the extract's S50-reviewed "who counts as the source" notes ship as clarify notes (693:
   the 31 approved medium entries, the reworded high ones, the fixed refuted ones, 7 new entries; Anagnorisis and Unbound
