@@ -6,7 +6,7 @@
 // candidate marked unverified (v: 'unverified') for the review queue. Theme (old Action/Mechanic) is derived; an old
 // Action/Mechanic tag nothing re-derives is kept as Involves::<theme>.
 //
-// Shipped entry: { t: 'Category::Value', s?: scope, so?: source, r?: role, p?: phase, d?: delivery, rk?: relic rank,
+// Shipped entry: { t: 'Category::Value', s?: scope (triggers: the activating side), tg?: target side (receiver triggers), so?: source, r?: role, p?: phase, d?: delivery, rk?: relic rank,
 //   cf?: cast_from, co?: count_of, cn?: count, ig?: ignores, x?: [other markers: crit / tick_kind / property / except / suppresses],
 //   ev?: [event], st?: [stat], sk?: [buff / debuff / minion], cl?: [class]   (round 7 markers, user 2026-10-24),
 //   v: provenance }
@@ -21,6 +21,7 @@ const EVENT_SIDE = { damager: 'Performer', attacker: 'Performer', healer: 'Perfo
   dying: 'Receiver', buffed: 'Receiver', debuffed: 'Receiver', recipient: 'Receiver', 'event target': 'Receiver' };
 const FIXED_SCOPE = { 'gem owner': 'Self', 'event:each creature': 'Any' };
 const CODE_BACKED = new Set(['code', 'code_boss', 'field']);
+const TRIG_PERFORMED = new Set(['Attack', 'Damage', 'Heal', 'Buff', 'Debuff', 'Critical Hit'].map(v => 'Trigger::' + v));
 const SCOPE_OF_NAME = (old) => / Enemy /.test(' ' + old.slice(old.indexOf('::') + 2) + ' ') ? 'Enemy'
   : / Ally /.test(' ' + old.slice(old.indexOf('::') + 2) + ' ') ? 'Self or Ally' : null;
 
@@ -143,7 +144,7 @@ export function makeTaxoV2(X, CL, MK, condName = () => null) {
         // round 7F (user 2026-10-24): an intercept / redirect resolves as Indirect (new event, no source) or the Same hit; its
         // share: Whole (original takes 0) / Split (original keeps part) / Copy (original keeps all, others take extra)
         ra: c.resolves_as || null, sh: c.share || null,
-        act: c.actor || null, mode: c.mode || null,
+        act: c.actor || null, mode: c.mode || null, tgt: c.target || null,
         // Targeting::All inferred only from "no picker call" is a guess while random-by-index picks are undecoded
         // (Abnegation hits a random enemy): unverified until the extract decodes it
         d: c.delivery || null, v: alts.length > 1 || / no picker call/.test(c.picker || '') ? 'unverified' : 'code',
@@ -231,6 +232,19 @@ export function makeTaxoV2(X, CL, MK, condName = () => null) {
     // so these entries take their side only from the code layer's `actor` (Self / Ally / Self or Ally / Enemy / Any; extract
     // ask HANDOFF_taxonomy_v2.md 2026-10-25) and carry none until it exists.
     for (const e of out) if (/^Actions::Auto /.test(e.t)) { if (e.s && !e.act) (stats.autoSideDropped = (stats.autoSideDropped || 0) + 1); e.s = e.act || null; }
+    // Side on a trigger = the side whose action activates it (user 2026-10-25: Enemy side Trigger::Attack = attacks coming
+    // from the enemy side). Performer / Applier scopes already are that side. On a Receiver trigger of an event someone else
+    // performs (Is Attacked, Takes Damage, Is Healed, Is Buffed / Debuffed, Is Critically Hit) the code's scope is the one hit:
+    // it moves to Target (tg) and Side waits for the code layer's `actor` (the performer's side). Dies, DoT Tick,
+    // Resurrection, Minion / Stat / Timeline events keep their side: the receiver is the creature the event happens to.
+    // Target = the code layer's `target` when it has one. Without it the scope is the target on Damage / Heal / Buff / Debuff /
+    // Critical Hit (signature `by` = `holder_rel`), but on Trigger::Attack it is the signatures' inferred attacker side
+    // (`by: enemy`, by_conf inferred) and the creature attacked is not on the tag: no Target until the extract adds it.
+    for (const e of out) if (e.r === 'Receiver' && TRIG_PERFORMED.has(e.t)) {
+      e.tg = e.tgt || (e.t === 'Trigger::Attack' ? null : e.s || null);
+      if (e.s && !e.act) stats[e.t === 'Trigger::Attack' && !e.tgt ? 'trigSideGuessDropped' : 'trigSideMoved'] = (stats[e.t === 'Trigger::Attack' && !e.tgt ? 'trigSideGuessDropped' : 'trigSideMoved'] || 0) + 1;
+      e.s = e.act || null;
+    }
     for (const e of out) for (const m of ['st', 'sk', 'cl']) {
       if ((e[m] || []).length) continue;
       const vals = MARK.get(`${kind}:${id}|${e.t}|${m}`);
@@ -239,10 +253,10 @@ export function makeTaxoV2(X, CL, MK, condName = () => null) {
     for (const e of out) {
       stats.entries++; stats[e.v === 'code' ? 'code' : 'other']++;
       if (!known(e.t)) stats.unknown[e.t] = (stats.unknown[e.t] || 0) + 1;
-      for (const k of ['s', 'so', 'r', 'p', 'd', 'rk', 'cf', 'co', 'cn', 'ig', 'x', 'ev', 'st', 'sk', 'cl', 'ra', 'sh']) if (e[k] == null) delete e[k];
-      delete e.old; delete e.why; delete e.mth; delete e.act; delete e.mode;
+      for (const k of ['s', 'tg', 'so', 'r', 'p', 'd', 'rk', 'cf', 'co', 'cn', 'ig', 'x', 'ev', 'st', 'sk', 'cl', 'ra', 'sh']) if (e[k] == null) delete e[k];
+      delete e.old; delete e.why; delete e.mth; delete e.act; delete e.mode; delete e.tgt;
     }
-    for (const e of removed) { stats.removed++; stats.removedBy[e.v] = (stats.removedBy[e.v] || 0) + 1; for (const k of ['s', 'so', 'r', 'p', 'd', 'rk', 'cf', 'co', 'cn', 'ig', 'x', 'ev', 'st', 'sk', 'cl', 'ra', 'sh']) if (e[k] == null) delete e[k]; delete e.mth; delete e.act; delete e.mode; }
+    for (const e of removed) { stats.removed++; stats.removedBy[e.v] = (stats.removedBy[e.v] || 0) + 1; for (const k of ['s', 'tg', 'so', 'r', 'p', 'd', 'rk', 'cf', 'co', 'cn', 'ig', 'x', 'ev', 'st', 'sk', 'cl', 'ra', 'sh']) if (e[k] == null) delete e[k]; delete e.mth; delete e.act; delete e.mode; delete e.tgt; }
     return { taxo2: out, theme2: [...theme].sort(), removed, themeOnly: [...theme].filter(th => !narrow.has(th)).sort() };
   }
 

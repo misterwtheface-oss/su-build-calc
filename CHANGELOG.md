@@ -4,6 +4,16 @@ Every dated change entry, newest first (moved verbatim from Progress.md on 2026-
 to their own section and sorted by their date). Current state and open work: `Progress.md`, `BACKLOG.md`.
 New entries go at the TOP.
 
+## 2026-10-25 — Trigger Side = the side that activates it; new Target toggle
+- Side on a trigger now means the side whose action activates it, matching Side on actions: Enemy side Trigger: Attack =
+  attacks coming from the enemy side (user ruling). Attacks, Deals Damage, Heals, Kills, Buffs / Debuffs Someone already
+  carried that side.
+- Is Attacked, Takes Damage, Is Healed, Is Buffed / Debuffed and Is Critically Hit get a new **Target** toggle (This creature
+  / Your side / Enemy side) for the creature hit. 273 entries moved their old side there. Their Side waits for the extract's
+  attacker side. Slot trigger labels read the target ("This creature: Takes Damage").
+- Is Attacked's old side (Enemy on "after this creature is Attacked") was the extract's inferred attacker, not code. The
+  app dropped those 64 sides; Side and Target come back when the extract adds them (HANDOFF_taxonomy_v2).
+- Dies, DoT Tick, Resurrection, Minion, Stat and Timeline triggers keep their side (the creature the event happens to).
 ## 2026-10-25 — Relic ranks that work against their own relic: 39 clarify notes (extract S65)
 - The extract read every rank of all 31 relics for ranks that undercut their own relic (relic ranks can't be lowered, so all
   run at once). 39 code-grounded notes now show on the relic ranks:

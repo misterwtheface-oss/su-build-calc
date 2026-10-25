@@ -607,6 +607,10 @@
   const REFINE = [
     { a: "s", any: "Either side", label: (v) => ({ ally: "Your side", self: "This creature", enemy: "Enemy side" })[v], title: "Narrow this tag to one side (This creature: the effect's own creature)",
       vals: (e) => SIDES_OF_SCOPE[e.s] || [] },
+    // Target (user 2026-10-25): on a receiver trigger (Is Attacked, Takes Damage…) Side is the attacker's side and Target the
+    // side of the creature hit
+    { a: "tg", any: "Any target", label: (v) => ({ ally: "Target: Your side", self: "Target: This creature", enemy: "Target: Enemy side" })[v], title: "Narrow this trigger to the creature it happens to (This creature: the effect's own creature)",
+      vals: (e) => SIDES_OF_SCOPE[e.tg] || [] },
     { a: "so", any: "Any source", label: (v) => `Source: ${v}`, title: "Narrow this tag to one damage source", vals: (e) => e.so ? [e.so] : [] },
     { a: "p", any: "Any timing", label: (v) => `Timing: ${v}`, title: "Narrow this trigger to one timing (Would / During / After / Repeat)", vals: (e) => e.p ? [e.p] : [] },
     { a: "d", any: "Any delivery", label: (v) => `Delivery: ${v}`, title: "Event: fires reactions and counts toward limits. No Event: a silent write. Always On: a passive stat change", vals: (e) => e.d ? [e.d] : [] },
@@ -628,7 +632,7 @@
   ];
   const REFINE_ORDER = (D.taxonomy2 && D.taxonomy2.attributes) || {};
   const REFINE_ATTR = { s: null, so: "source", p: "phase", d: "delivery" };   // value order from taxonomy2.attributes
-  const keyParse = (k) => { const ref = {}; const base = k.replace(/@(s|so|p|d|cf|co|cn|ig|x|ev|st|sk|cl|ra|sh)=([^@]+)/g, (_, a, v) => { ref[a] = v; return ""; }); return { base, ref }; };
+  const keyParse = (k) => { const ref = {}; const base = k.replace(/@(s|tg|so|p|d|cf|co|cn|ig|x|ev|st|sk|cl|ra|sh)=([^@]+)/g, (_, a, v) => { ref[a] = v; return ""; }); return { base, ref }; };
   const keyBuild = (base, ref) => base + REFINE.map(R => ref[R.a] ? `@${R.a}=${ref[R.a]}` : "").join("");
   const keyBase = (k) => keyParse(k).base;
   const entryKeys = (e) => { const rk = roleKey(e); return rk ? [e.t, rk] : [e.t]; };
@@ -653,7 +657,7 @@
     const { base, ref } = keyParse(k), rest = { ...ref }; delete rest[R.a];
     const out = new Set();
     for (const o of objs) for (const e of (o && o.taxo2) || []) if (entryKeys(e).includes(base) && refineOk(e, rest)) R.vals(e).forEach(v => out.add(v));
-    const order = R.a === "s" ? ["ally", "self", "enemy"] : REFINE_ATTR[R.a] ? REFINE_ORDER[REFINE_ATTR[R.a]] || [] : [];
+    const order = R.a === "s" || R.a === "tg" ? ["ally", "self", "enemy"] : REFINE_ATTR[R.a] ? REFINE_ORDER[REFINE_ATTR[R.a]] || [] : [];
     return [...out].sort((x, y) => order.indexOf(x) - order.indexOf(y) || String(x).localeCompare(String(y)));
   };
   // the toggles beside an active tag chip, one per attribute that has a value on the listed objects: Any → each value → Any
@@ -3035,7 +3039,7 @@
   function entityTaxHtmlV2(e) {
     const groups = new Map(), seen = new Map();
     for (const x of e.taxo2 || []) {
-      const id = [x.t, x.s, x.so, x.r, x.p, x.d, x.cf, x.co, x.cn, x.ig, x.ra, x.sh, ...["x", "ev", "st", "sk", "cl"].map(a => (x[a] || []).join(",")), x.v].join("|");
+      const id = [x.t, x.s, x.tg, x.so, x.r, x.p, x.d, x.cf, x.co, x.cn, x.ig, x.ra, x.sh, ...["x", "ev", "st", "sk", "cl"].map(a => (x[a] || []).join(",")), x.v].join("|");
       if (seen.has(id)) { if (x.rk != null) seen.get(id).n++; continue; }
       const y = { ...x, n: x.rk != null ? 1 : 0 }; seen.set(id, y);
       for (const g of taxoGroupsOf(x.t)) { if (!groups.has(g)) groups.set(g, []); groups.get(g).push(y); }
@@ -3047,7 +3051,7 @@
     return names.map(gn => `<div class="etax-group">
       <div class="etax-cat">${esc(gn)}</div>
       <div class="etax-vals">${groups.get(gn).sort(chipSort).map(x => {
-        const k = roleKey(x) || x.t, attrs = [x.s, x.so, x.p && x.p !== "After" ? x.p : null, x.d && x.d !== "Event" ? x.d : null,
+        const k = roleKey(x) || x.t, attrs = [x.s, x.tg ? `Target: ${x.tg}` : null, x.so, x.p && x.p !== "After" ? x.p : null, x.d && x.d !== "Event" ? x.d : null,
           x.cf, x.co, x.cn, x.ig ? `Ignores ${x.ig}` : null, ...(x.x || []), ...(x.ev || []), ...(x.st || []), ...(x.sk || []), ...(x.cl || []), x.ra ? `Resolves as ${x.ra}` : null, x.sh ? `Share: ${x.sh}` : null].filter(Boolean);
         const unv = x.v === "unverified";
         return `<button class="etax-tag${unv ? " etax-unv" : ""}" data-action="etax-filter" data-k="${esc(k)}" title="${unv ? "Unverified: the game code hasn't settled this tag. " : ""}Filter the Taxonomy to “${esc(taxoValName(k))}”">${esc(taxoCatName(k) + ": " + taxoValName(k))}${x.n >= 2 ? `<span class="etax-mult">×${x.n}</span>` : ""}${attrs.length ? `<span class="etax-attr">${esc(attrs.join(" · "))}</span>` : ""}${FEATURES.taxoSource && x.v ? `<span class="apx-src s-${esc(x.v)}">${esc(x.v)}</span>` : ""}</button>`;
@@ -3096,7 +3100,7 @@
     if (!e) return `<div class="ovl-backdrop" data-action="entity-backdrop"><div class="overlay-panel detail">
       <div class="overlay-header"><h2>Not found</h2><button class="ovl-close" data-action="close-entity">✕</button></div>
       <div class="overlay-body"><div class="ovl-center"><div class="slot-sub" style="padding:16px">This entry could not be resolved.</div></div></div></div></div>`;
-    const n = new Set((e.taxo2 || []).map(x => [x.t, x.s, x.so, x.r, x.p, x.d, x.v].join("|"))).size;   // one per chip
+    const n = new Set((e.taxo2 || []).map(x => [x.t, x.s, x.tg, x.so, x.r, x.p, x.d, x.v].join("|"))).size;   // one per chip
     return `<div class="ovl-backdrop" data-action="entity-backdrop"><div class="overlay-panel detail">
       <div class="overlay-header">${r.icon ? `<span class="hdr-ico">${spriteImg(r.icon, "px")}</span>` : ""}
         <h2>${esc(r.name || "—")}</h2><span class="anoint-spec-tag">${esc(r.kindLabel)}</span>
@@ -5589,7 +5593,7 @@
   ];
   const TRIG_VAL_GROUP = new Map(TRIG_GROUPS.flatMap(g => g.trig.map(v => [v, g.key])));
   const TRIG_SIDE_WORD = { Self: "This creature", Ally: "Ally", "Self or Ally": "Ally", Adjacent: "Adjacent", Enemy: "Enemy", Any: "Any creature" };
-  const trigEvLabel = (e) => { const val = e.t.slice(9), verb = ((TRIG_ROLE_LABEL[val] || {})[e.r]) || val, side = TRIG_SIDE_WORD[e.s];
+  const trigEvLabel = (e) => { const val = e.t.slice(9), verb = ((TRIG_ROLE_LABEL[val] || {})[e.r]) || val, side = TRIG_SIDE_WORD[e.tg !== undefined ? e.tg : e.s];   // receiver triggers name the creature hit
     return side ? `${side}: ${verb}` : verb; };
   const TRIG_GEM_PROP = { CITRINE_ATTACK: "attack", CITRINE_DEFEND: "defend", CITRINE_PROVOKE: "provoke", CITRINE_HEAL: "heal",
     BLOODSTONE: "cast", CARNELIAN: "cast", EMERALD: "cast", GARNET: "cast", JADE: "battle" };

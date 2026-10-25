@@ -4,6 +4,13 @@ Standing decisions the user made about how the app models the game. Don't "fix" 
 the assistant's working notes on 2026-10-08 (they existed nowhere in the repo). Add new rulings here when they're made.
 Taxonomy category definitions themselves live in `TAXONOMY.md`.
 
+## Trigger Side and Target (2026-10-25)
+- Side on a trigger = the side whose action activates it, the same intent as Side on actions (Enemy side Trigger: Attack =
+  attacks from the enemy side).
+- Receiver triggers (Is Attacked, Takes Damage, Is Healed, Is Buffed / Debuffed, Is Critically Hit) carry the hit
+  creature's side as a separate Target (This creature / Your side / Enemy side).
+- Dies uses the dying creature's side.
+
 ## Stats: Gain / Lose scope (2026-10-25)
 - Stats: Gain holds every effect that increases a stat and nothing else; the same goes for Lose.
 - Always-on increases (the old Has More / Has Less) are Gain / Lose with Delivery "Always On".
