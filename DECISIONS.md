@@ -293,3 +293,8 @@ User: "save bookmarks to the saved build". Each saved build stores its own bookm
 and Update and restored on Load. The live bookmark list stays one global list for the current party. Bookmarks are not part of the
 export / share code.
 
+## Macro tank actions and attacks (2026-10-24)
+User: Defend and Provoke lines are status-checked: Defend only without Defensive, Provoke only without Taunting (code: both
+buffs perform that action at the end of the turn). A tank whose buffs cover the tank actions it prefers falls back to its
+spells (Knight Effigy). A creature with nothing naming it a viable attacker never defaults to attacking: an attack can
+trigger enemy effects, so it is a liability.

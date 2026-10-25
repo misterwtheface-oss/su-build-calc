@@ -5171,6 +5171,7 @@
     drainHeal: 50,         // % Health — a damage spell that also heals your side is used when an ally is below this
     buffFloor: 1,          // cast a buff on an ally with fewer than this many buffs
     debuffFloor: 1,        // cast a debuff on an enemy with fewer than this many debuffs
+    dispelMin: 1,          // strip / cleanse once a creature has at least this many buffs (enemy) / debuffs (ally)
     minionCap: 3,          // summon while the creature has fewer than this many minions
     aoeMinEnemies: 2,      // whole-side damage while at least this many enemies are alive
     onceTargets: 2,        // once-per-battle ally spells (Sapphire Power): how many allies get one, one per turn
@@ -5212,7 +5213,10 @@
   function classifySpell(sp) {
     const tx = tagKeys(sp), th = new Set(sp.theme2 || []), am = (v) => th.has(v), rs = (v) => tx.includes("Spell Kind::" + v);
     const d = sp.desc || "", dmgText = /takes? (?:a|an) [a-z]+ amount of damage|take (?:a|an) [a-z]+ amount of damage/i.test(d);
-    const multi = sp.aim ? sp.aim === "enemies" || sp.aim === "allies" : rs("Multi-Target Spells");
+    const multi = sp.aim ? sp.aim === "enemies" || sp.aim === "allies" || sp.aim === "all" : rs("Multi-Target Spells");
+    // a spell whose effect IS removing statuses: strip enemy buffs / cleanse ally debuffs (Greater Dispel does both)
+    const strips = /enemies' buffs are removed|random buff is removed from random enemies/i.test(d);
+    const cleanses = /^(?:Your creatures'|Target's) debuffs(?: and enemies' buffs)? are removed|^A random debuff is removed from random allies/i.test(d);
     const statUp = tx.includes("Stats::Gain") || tx.includes("Stats::Has More");
     const statDown = tx.includes("Stats::Lose") || tx.includes("Stats::Has Less");
     let purpose, side;
@@ -5222,6 +5226,7 @@
     else if (am("Resurrection") && !dmgText) { purpose = "rez"; side = "ally"; }   // not "if this kills, it can't be resurrected"
     else if ((am("Healing") || rs("Healing Spells")) && !rs("Damaging Spells") && !dmgText) { purpose = "heal"; side = "ally"; }
     else if (rs("Damaging Spells") || dmgText || am("Attack") || am("Indirect Damage")) { purpose = "damage"; side = "enemy"; }
+    else if (strips || cleanses) { purpose = "dispel"; side = strips ? "enemy" : "ally"; }
     else if (/sent to the bottom of the \{TIMELINE\}/.test(d)) { purpose = "control"; side = "enemy"; }
     else if (am("Debuff") || (am("Stats") && statDown && !statUp)) { purpose = "debuff"; side = "enemy"; }
     else if (am("Buff") || (am("Stats") && statUp)) { purpose = "buff"; side = "ally"; }
@@ -5233,7 +5238,7 @@
     const sc = spellScaling(sp);
     return { sp, name: sp.name, purpose: o.purpose || purpose, side: o.side || side, multi: "multi" in o ? o.multi : multi,
       scale: sc, focus: o.focus || sc.focus || null,
-      drains: purpose === "damage" && /your creatures recover \{STAT_health\}/i.test(d) };
+      drains: purpose === "damage" && /your creatures recover \{STAT_health\}/i.test(d), strips, cleanses };
   }
   // spells the creature can actually cast in a macro = its equipped spell GEMS only. Spells socketed into an
   // artifact (Spell slot) or a Nether Stone auto-proc and CANNOT be cast manually / by a macro — excluded.
@@ -5242,12 +5247,14 @@
   // A gem with Citrine (Cast On Attack / Defend / Provoke / Heal) is one the player set up to fire from that action, so it
   // is not cast manually; `citrine` counts those gems per action.
   const CITRINE_ACTION = { CITRINE_ATTACK: "attack", CITRINE_DEFEND: "defend", CITRINE_PROVOKE: "provoke", CITRINE_HEAL: "heal" };
-  function gatherSlotSpells(slot, citrine = {}) {
+  // `citSpells` collects the castable Citrine gems as { sp, acts } (the tank fallback casts them once a buff covers the action).
+  function gatherSlotSpells(slot, citrine = {}, citSpells = []) {
     const out = [], seen = new Set();
     const add = (sp) => { if (sp && !sp.noManual && !seen.has(sp.id)) { seen.add(sp.id); out.push(sp); } };
     for (const gid of slot.spellGemIds || []) { const g = spellGems.find(x => x.id === gid); if (!g) continue;
       const acts = [...new Set((g.propIds || []).map(pid => CITRINE_ACTION[(SPELLPROP.get(pid) || {}).key]).filter(Boolean))];
-      if (acts.length) { acts.forEach(a => citrine[a] = (citrine[a] || 0) + 1); continue; }
+      if (acts.length) { acts.forEach(a => citrine[a] = (citrine[a] || 0) + 1);
+        const sp = gemSpell(g); if (sp && !sp.noManual) citSpells.push({ sp, acts }); continue; }
       add(gemSpell(g)); }
     for (const g of grantedSpellList(slot)) if (g.mode === "gem") add(g.sp);
     return out;
@@ -5263,8 +5270,8 @@
     const c = CREA.get(slot.cid); if (!c) return null;
     const fs = finalStats(slot), st = fs.final;
     const tids = slotTraitIds(slot), has = (set) => tids.some(t => set.has(t));
-    const noManual = has(traitIdsNamed(NO_MANUAL_CAST)), citrine = {};
-    const castable = gatherSlotSpells(slot, citrine), spells = noManual ? [] : castable.map(classifySpell);
+    const noManual = has(traitIdsNamed(NO_MANUAL_CAST)), citrine = {}, citGems = [];
+    const castable = gatherSlotSpells(slot, citrine, citGems), spells = noManual ? [] : castable.map(classifySpell);
     const by = (p) => spells.filter(s => s.purpose === p);
     const traitThemes = new Set();
     tids.forEach(tid => ((TRAIT[tid] || {}).theme2 || []).forEach(t => traitThemes.add(t)));
@@ -5276,9 +5283,18 @@
     // an effect that pays off when this creature Defends (Extension, Starwrath, …): Defend is a real action for it
     const ownText = tids.map(t => (TRAIT[t] || {}).desc || "").join(" ") + " " + relicText(slot);
     const defendValue = /after (?:this creature|the bearer) defends|while the bearer is defending/i.test(ownText);
+    // an effect that pays off when this creature Attacks: attacking is a real action for it
+    const attackValue = /after (?:this creature|the bearer) attacks|when (?:this creature|the bearer) attacks/i.test(ownText);
     // its main action: the one its Citrine gems fire on (most gems wins), else attack for an Attack-led creature
     const citAct = ["attack", "defend", "provoke"].filter(a => citrine[a]).sort((a, b) => citrine[b] - citrine[a])[0] || null;
     const attackFirst = citAct ? citAct === "attack" : physical && dom === "atk";
+    // tank actions, in order: Provoke (Citrine on Provoke), then Defend (Defend payoff, or Citrine on Defend beside it).
+    // Each is gated on its buff: Taunting Provokes and Defensive Defends at the end of the turn anyway (end_of_turn rows 120-121).
+    const provokeMain = citAct === "provoke";
+    const tankActs = provokeMain ? ["provoke", ...(citrine.defend || defendValue ? ["defend"] : [])]
+      : defendValue || citAct === "defend" ? ["defend"] : [];
+    // once every tank action is covered by its buff, it casts the gems that would have fired from those actions
+    const tankSpells = noManual ? [] : citGems.filter(g => g.acts.some(a => tankActs.includes(a))).map(g => classifySpell(g.sp));
     // party-wide: Expanded Power turns small / moderate / large damage spells massive
     const expanded = party && build.slots.some(s => s.cid != null && slotTraitIds(s).some(t => traitIdsNamed(["Expanded Power"]).has(t)));
     return {
@@ -5286,9 +5302,28 @@
       heals: by("heal"), dmg, singleDmg: dmg.filter(s => !s.multi), aoe: dmg.filter(s => s.multi),
       hasProvokeTrait: traitThemes.has("Provoke"),
       dom, tanky: dom === "def" || dom === "hp", physical, intAttacks, attackFirst,
-      defendValue: defendValue || citAct === "defend", provokeMain: citAct === "provoke",
-      attackWorth: physical || intAttacks,
+      defendValue: defendValue || citAct === "defend", provokeMain, tankActs, tankSpells,
+      // attack only with a reason (an attacker by Citrine or stats, Intelligence attacks, an on-attack payoff): an attack
+      // can trigger enemy on-hit effects, so a creature with no reason to attack never does
+      attackWorth: attackFirst || intAttacks || attackValue,
     };
+  }
+  // a context over a different spell list (the tank fallback's Citrine gems), for running the spell rules on it
+  const withSpells = (x, spells) => { const by = (p) => spells.filter(s => s.purpose === p), dmg = by("damage");
+    return { ...x, spells, by, heals: by("heal"), dmg, singleDmg: dmg.filter(s => !s.multi), aoe: dmg.filter(s => s.multi) }; };
+  const TANK_LINE = {
+    provoke: x => mLine(`If this creature doesn't have Taunting, provoke`, x.citrine.provoke ? `Its Citrine gems cast when it Provokes (${x.citrine.provoke} gems); Taunting already Provokes at the end of its turn` : `Draw fire to protect the party; Taunting already Provokes at the end of its turn`),
+    defend: x => mLine(`If this creature doesn't have Defensive, defend`, x.citrine.defend ? `Its Citrine gems cast when it Defends (${x.citrine.defend} gems); Defensive already Defends at the end of its turn` : `Its traits / relic pay off when it Defends; Defensive already Defends at the end of its turn`),
+  };
+  // spell rules the tank fallback runs over its Citrine gems (no tank / attack / tail rules)
+  const FALLBACK_RULES = ["rez", "heal-emergency", "unsilence", "ally-attack", "heal-sustain", "drain", "dispel", "debuff", "buff", "summon", "aoe", "damage-single", "control"];
+  function tankLines(x) {
+    const out = x.tankActs.map(a => TANK_LINE[a](x));
+    if (!x.tankSpells.length) return out;
+    const fx = withSpells(x, x.tankSpells);
+    for (const rule of MACRO_RULES) if (FALLBACK_RULES.includes(rule.key) && rule.when(fx))
+      for (const l of rule.lines(fx)) if (!l.block) out.push({ ...l, why: `${l.why} (its buffs already cover ${x.tankActs.join(" and ")})` });
+    return out;
   }
   // a damage spell's multiplier before target-dependent bonuses: tier (Expanded Power → Massive) × its own charge bonus
   const tierMult = (x, s) => { const t = s.sp.potency; return TIER_MULT[x.expanded && ["Small", "Moderate", "Large"].includes(t) ? "Massive" : t] || 1; };
@@ -5343,24 +5378,26 @@
       lines: x => x.by("ally-attack").map(s => mLine(`If any ally has highest Attack, cast ${s.name} on that creature`, `${s.name} — your hardest hitter attacks again`)) },
     { key: "provoke-spell", when: x => x.by("provoke").length,
       lines: x => x.by("provoke").map(s => mLine(`If this creature has > 0 living enemies, ${castOn(s)}`, `${s.name} draws enemy fire to this tank`)) },
-    { key: "provoke-main", when: x => x.provokeMain,
-      lines: x => [mLine(`If this creature has > 0% Health, provoke`, `Its Citrine gems cast when it Provokes (${x.citrine.provoke} gems)`)] },
+    { key: "provoke-main", when: x => x.provokeMain, lines: tankLines },
     { key: "provoke-tank", when: x => !x.provokeMain && !x.by("provoke").length && x.tanky && x.hasProvokeTrait,
-      lines: x => [mLine(`If this creature has > 0% Health, provoke`, `Tanky with a provoke trait — draw fire to protect the party`)] },
+      lines: x => [mLine(`If this creature doesn't have Taunting, provoke`, `Tanky with a provoke trait — draw fire to protect the party`)] },
     { key: "heal-sustain", when: x => x.heals.length,
       lines: x => x.heals.map(s => mLine(`If any ally has < ${x.T.healSustain}% Health, ${castOn(s)}`, `${s.name} — keep allies healthy`)) },
     { key: "drain", when: x => x.singleDmg.some(s => s.drains),
       lines: x => x.singleDmg.filter(s => s.drains).flatMap(s => [
         mLine(`If any ally has < ${x.T.drainHeal}% Health, test next line`, `Someone is hurt`, true),
         mLine(`If any enemy ${x.T.focus}, cast ${s.name} on that creature`, `${s.name} heals your side by the damage dealt`)]) },
+    { key: "dispel", when: x => x.by("dispel").length,
+      lines: x => x.by("dispel").flatMap(s => [
+        ...(s.strips ? [mLine(`If any enemy has > ${x.T.dispelMin - 1} buffs, ${castOn(s)}`, `${s.name} strips the enemy's buffs`)] : []),
+        ...(s.cleanses ? [mLine(`If any ally has > ${x.T.dispelMin - 1} debuffs, ${castOn(s)}`, `${s.name} clears your side's debuffs`)] : [])]) },
     { key: "debuff", when: x => x.by("debuff").length,
       lines: x => x.by("debuff").map(s => mLine(`If any enemy has < ${x.T.debuffFloor} debuffs, ${castOn(s)}`, `${s.name} — debuff an un-debuffed enemy`)) },
     { key: "buff", when: x => x.by("buff").length,
       lines: x => x.by("buff").map(s => mLine(`If any ally has < ${x.T.buffFloor} buffs, ${castOn(s)}`, `${s.name} — buff an un-buffed ally`)) },
     { key: "summon", when: x => x.by("summon").length,
       lines: x => x.by("summon").map(s => mLine(`If this creature has < ${x.T.minionCap} minions, ${castOn(s)}`, `${s.name} summons while you have room`)) },
-    { key: "defend-value", when: x => x.defendValue,
-      lines: x => [mLine(`If this creature has > 0% Health, defend`, x.citAct === "defend" ? `Its Citrine gems cast when it Defends (${x.citrine.defend} gems)` : `Its traits / relic pay off when it Defends`)] },
+    { key: "defend-value", when: x => !x.provokeMain && x.tankActs.length, lines: tankLines },
     { key: "attack-first", when: x => x.attackFirst,
       lines: x => [{ block: "attack", name: "Attack" },
         mLine(`If any enemy ${x.T.focus}, attack that creature`, x.citAct === "attack" ? `Its Citrine gems cast when it Attacks (${x.citrine.attack} gems)` : `An attacker: attack first; spells below are the fallback (e.g. while Scorned)`)] },
@@ -5376,8 +5413,8 @@
     // a line whose target is Invisible does nothing; "a random enemy" re-rolls past Invisible and dead enemies (attacks)
     { key: "tail-random", when: x => x.attackWorth,
       lines: () => [mLine(`If this creature has > 0 living enemies, attack a random enemy`, `The lines above can pick an Invisible enemy and fail; a random attack re-rolls past it`)] },
-    { key: "tail-defend", when: x => !x.defendValue,
-      lines: () => [mLine(`If this creature has > 0% Health, defend`, `Nothing else can act (Scorned, every enemy Invisible, …)`)] },
+    { key: "tail-defend", when: x => !x.tankActs.includes("defend"),
+      lines: () => [mLine(`If this creature doesn't have Defensive, defend`, `Nothing else can act (Scorned, every enemy Invisible, …)`)] },
     { key: "tail-skip", when: () => true,
       lines: () => [mLine(`If this creature has > 0% Health, skip turn`, `Last resort — nothing blocks skipping, so the macro never hands the turn back`)] },
   ];
@@ -5385,7 +5422,7 @@
   function macroRoles(x) {
     const roles = [];
     if (x.by("rez").length || x.heals.length) roles.push("Healer");
-    if (x.by("buff").length || x.by("summon").length || x.by("once").length || x.by("ally-attack").length || x.by("unsilence").length) roles.push("Support");
+    if (x.by("buff").length || x.by("summon").length || x.by("once").length || x.by("ally-attack").length || x.by("unsilence").length || x.by("dispel").length) roles.push("Support");
     if (x.by("debuff").length || x.by("control").length) roles.push("Debuffer");
     if (x.dmg.length && !x.attackFirst) roles.push("Caster");
     if (x.by("provoke").length || (x.tanky && x.hasProvokeTrait) || x.defendValue || x.provokeMain) roles.push("Tank");
@@ -5427,8 +5464,10 @@
     while (keep.length && keep[keep.length - 1].chain) keep.pop();   // never end the body on a dangling "test next line"
     const lines = keep.concat(tail);
     const cit = Object.entries(x.citrine).map(([a, n]) => `${n} on ${a}`).join(", ");
+    const covered = x.tankSpells.length ? ` Once ${x.tankActs.map(a => a === "provoke" ? "Taunting" : "Defensive").join(" and ")} cover${x.tankActs.length > 1 ? "" : "s"} its ${x.tankActs.join(" and ")}, it casts them manually.` : "";
     const note = x.noManual ? "Can't cast spells manually — attacks and defends only."
-      : cit && !x.spells.length ? `Every gem has Citrine (${cit}) — they cast from its actions, not manually.`
+      : cit && !x.spells.length ? `Every gem has Citrine (${cit}) — they cast from its actions.${covered}`
+      : cit && covered ? `Citrine gems (${cit}) cast from its actions.${covered}`
       : !x.spells.length ? "No castable spell gems — attacks and defends only."
       : body.length > keep.length ? `Trimmed to the ${x.T.maxLines}-line in-game cap (${body.length + tail.length} proposed).`
       : cit ? `Citrine gems (${cit}) cast from its actions and are left out of the cast lines.` : null;

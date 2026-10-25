@@ -4,6 +4,17 @@ Every dated change entry, newest first (moved verbatim from Progress.md on 2026-
 to their own section and sorted by their date). Current state and open work: `Progress.md`, `BACKLOG.md`.
 New entries go at the TOP.
 
+## 2026-10-24 — Macros: tank actions check Taunting / Defensive, no attack without a reason, dispel spells
+- User (Knight Effigy): Provoke and Defend lines now check the buff first (`If this creature doesn't have Taunting, provoke`,
+  `… doesn't have Defensive, defend`). The code makes a Taunting creature Provoke and a Defensive one Defend at the end of
+  its turn (extract end_of_turn rows 120-121), so the manual action would be wasted. The tail Defend is gated the same way.
+- A tank whose buffs cover all its tank actions casts its spells instead, Citrine gems included (Effigy: Rabid Dementia,
+  Greater Dispel, Stun Beam). A provoker with Citrine on Defend also gets the Defend line.
+- User: a creature with nothing naming it an attacker no longer attacks (attacks can trigger enemy effects). Attack lines
+  need Citrine on Attack, Attack-led stats, Intelligence attacks or an on-attack payoff; Attack ≥ Intelligence alone is gone.
+- New `dispel` purpose: spells that strip enemy buffs / cleanse ally debuffs (Greater Dispel was read as a single-target debuff).
+  Aim `all` spells take no target.
+
 ## 2026-10-24 — New Build: no default sprite, "Pick Skin" until one is chosen
 - User ask. The New Build form no longer pre-fills the spec costume; the dotted box reads "Pick Skin" until a sprite is picked.
   Saving without one keeps the library's empty tile.

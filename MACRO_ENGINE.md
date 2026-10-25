@@ -14,10 +14,11 @@ vocabulary ships as `D.macroVocab` (from `_su_extract/data/model/macro_vocab.jso
    manually, so they're excluded here; so are spells flagged `noManual` (code `inv_SpellCanBeCastManually`:
    Booze and a static list such as Saving Grace / Lucky Gem) and chance-cast grants.
 2. **`classifySpell(sp)`** → `{ sp, name, purpose, side, multi, scale, focus, drains }`. `purpose` ∈ `once ·
-   ally-attack · unsilence · rez · heal · damage · control · debuff · buff · provoke · defend · summon · other`.
+   ally-attack · unsilence · rez · heal · damage · dispel · control · debuff · buff · provoke · defend · summon · other`.
    In-game text patterns decide the first three and `control` (Sapphire Power "for the rest of the battle", Rabid
    Dementia "Target attacks", Living Necklace "Silence debuffs are removed", Stun Beam "sent to the bottom of the
-   Timeline"); the taxonomy decides the rest; `SPELL_OVERRIDES` wins over both. `multi` comes from the spell's aim.
+   Timeline", `dispel` = "enemies' buffs are removed" (strip) / "your creatures' / target's debuffs are removed" (cleanse));
+   the taxonomy decides the rest; aim `all` counts as whole-side (no target); `SPELL_OVERRIDES` wins over both. `multi` comes from the spell's aim.
    Gems with **Citrine** (Cast On Attack / Defend / Provoke / Heal) are left out of the cast lines: the player set them
    to fire from that action (user rule). `gatherSlotSpells(slot, citrine)` counts them per action.
    `spellScaling(sp)` reads what the damage scales with from the spell text: per buff / per debuff (with the %),
@@ -30,10 +31,17 @@ vocabulary ships as `D.macroVocab` (from `_su_extract/data/model/macro_vocab.jso
      `attackFirst`, `defendValue` or `provokeMain`;
    - `attackFirst` (Citrine on Attack, or else Attack ≥ Intelligence and Attack is its best stat → attack before any
      spell);
-   - `attackWorth` (physical, or its attacks use Intelligence: Whisper R70, Ribcracker R90, Myosotis, Confusion and
-     Empathy) → the tail's attack line;
+   - `attackWorth` (needs a reason to attack: `attackFirst`, Intelligence attacks — Whisper R70, Ribcracker R90, Myosotis,
+     Confusion and Empathy — or an on-attack payoff in its traits / relic, "after / when this creature attacks") → the
+     tail's attack lines. Attack ≥ Intelligence alone is no reason: an attack can trigger enemy on-hit effects (user rule);
    - `defendValue` (a trait or relic rank that pays off on Defend: "after this creature / the bearer Defends",
      "while the bearer is Defending") → Defend is its main action after support lines;
+   - `tankActs` = its tank actions in order: Provoke (Citrine on Provoke), then Defend (Defend payoff or Citrine on Defend
+     beside it). Each line is gated on its buff: `If this creature doesn't have Taunting, provoke` /
+     `If this creature doesn't have Defensive, defend`. Taunting Provokes and Defensive Defends at the end of the turn anyway
+     (`bc_CreatureProvoke` / `bc_CreatureDefend`, `_su_extract` end_of_turn rows 120-121), so the manual action would be wasted;
+   - `tankSpells` = its Citrine gems on those tank actions. Once both buffs cover the tank actions, it casts them manually:
+     `tankLines` runs the spell rules (`FALLBACK_RULES`) over them right after the tank lines (user rule, Knight Effigy);
    - `expanded` (any party creature has Expanded Power → small / moderate / large damage spells count as massive);
    - `tanky`, `hasProvokeTrait`, `dom`, and the tuning object as `x.T`.
 4. **`MACRO_RULES`** → an ordered array of rules; `proposeMacro` runs each whose `when(x)` is true. Rules whose key
@@ -50,6 +58,7 @@ Every magic number in one object. Percentages are % Health and must be multiples
 | `maxLines` | in-game macro line cap: 30 (`scr_MacroProcess` forces 30) |
 | `healEmergency` / `healSustain` | % Health for the emergency (30) vs top-up (60) heal lines |
 | `drainHeal` | % Health below which a damage-that-heals spell (Drain Life) goes first (50) |
+| `dispelMin` | strip enemy buffs / cleanse ally debuffs once a creature has at least this many |
 | `buffFloor` / `debuffFloor` | cast a buff/debuff on a target with fewer than this many buffs/debuffs |
 | `minionCap` | summon while the creature has fewer than this many minions |
 | `aoeMinEnemies` | whole-side damage while at least this many enemies are alive (`has > N living enemies`) |
@@ -76,7 +85,7 @@ Helpers: `mLine(en, why, chain)` builds a line (`chain: true` = "test next line"
 `castOn(s)` = `cast X` for a whole-side spell (the game needs no target) or `cast X on that creature`.
 
 Current rules, in order: `rez · heal-emergency · unsilence · once · ally-attack · provoke-main · provoke-spell ·
-provoke-tank · heal-sustain · drain · debuff · buff · summon · defend-value · attack-first · aoe · damage-single ·
+provoke-tank · heal-sustain · drain · dispel · debuff · buff · summon · defend-value · attack-first · aoe · damage-single ·
 control · tail-attack · tail-random · tail-defend · tail-skip`.
 
 - **Target block** (`targetBlock`): the main single-target action (the attack for an attacker, else the strongest
@@ -107,13 +116,18 @@ Every proposed macro must satisfy these (v2, 2026-10-23, implements all of them)
   the whole side (v1's "doesn't have Shell / Barrier → test next line" lines were removed for this). AND on one
   creature needs a per-slot chain (`enemy (n)` on every line, 6 copies).
 - **Always act.** End with `If any enemy has lowest Health, attack that creature` (only when attacking is worth
-  it; it also covers Silence and every blocked cast), then `If this creature has > 0% Health, defend`, then
+  it; it also covers Silence and every blocked cast), then `If this creature doesn't have Defensive, defend`, then
   `If this creature has > 0% Health, skip turn` (nothing blocks it).
 - **Use the whole allowance.** Fill all 30 lines with useful cases unless there is truly nothing else to cover.
 - **Citrine = intent.** Citrine gems aren't cast manually; the Citrine action is the creature's main action.
 - **Invisible:** a best-of pick can be Invisible; that line then does nothing. Always follow targeted attacks with a
   random-enemy attack.
 - **Provoke (code reading):** while an enemy Provokes, about half of targeted attacks are redirected to it.
+- **Tank actions check their buff (2026-10-24).** Provoke only without Taunting, Defend only without Defensive (both
+  already fire at the end of the turn). A tank whose buffs cover every tank action falls back to its spells, Citrine gems
+  included.
+- **No reason, no attack (2026-10-24).** A creature attacks only when something names it an attacker (Citrine on Attack,
+  Attack-led stats, Intelligence attacks, an on-attack payoff). Attacks can trigger enemy effects.
 - **Attack lines need the full loadout.** A caster attacks only when its attacks use Intelligence: Whisper
   (Tenebris) R70, Ribcracker (Ariamaki) R90 after 10 casts, traits Myosotis / Confusion and Empathy. Otherwise
   the tail is Defend / Skip only (`x.attackWorth`).
@@ -141,8 +155,9 @@ every rule branch — keep that diff empty for behavior-preserving changes.
 Animator party: Animatus (The Great Beyond, Vitreous) · Mutated Crypt Bat (Temptation) · Magnificus Sanctus
 (Extension, Starwrath) · Zonte (Expanded Power, Ribcracker) · Imp Bishop (Whisper) · Knight Effigy (5740-NG).
 v3 proposes (Citrine-aware): Animatus and Bat (Citrine on Attack) 30 lines: target block A+F+B for the attack →
-lowest Health → random enemy → defend → skip; Sanctus (Citrine on Defend) defend → skip; Effigy (Citrine on Provoke)
-provoke → attack → random → defend → skip; Zonte Implosion / Kick gated on buffs / debuffs, then block A+F for Kick
+lowest Health → random enemy → defend → skip; Sanctus (Citrine on Defend) defend unless Defensive → its Citrine heals / buffs → skip;
+Effigy (Citrine on Provoke) provoke unless Taunting → defend unless Defensive → Rabid Dementia / Greater Dispel / Stun Beam →
+skip (no attack: nothing names it an attacker); Zonte Implosion / Kick gated on buffs / debuffs, then block A+F for Kick
 (30 lines); Bishop Drain Life when hurt → Living Staff / Momentum while 2+ enemies → Jinx at 7+ debuffs → block F+C
 for Spell Blast (27 lines). The user's hand-built Zonte macro (health bands, `_su_extract/code/MACRO_MODEL.md`
 "Authoring patterns") is finer than the engine's gated best-of lines.
