@@ -4,6 +4,12 @@ Every dated change entry, newest first (moved verbatim from Progress.md on 2026-
 to their own section and sorted by their date). Current state and open work: `Progress.md`, `BACKLOG.md`.
 New entries go at the TOP.
 
+## 2026-10-25 — Minion clarify notes; no clarify-join warnings left (extract S62)
+- Spiderlings and Brim Fiends show their clarify notes on the minion detail page (Spiderlings: 50% of the master's Maximum
+  Health per stack; Brim Fiends: used up on any damage the master deals). The build's clarify join skipped minions; condition
+  notes now join by the game's condition id (class + key), minions included.
+- Godlessness and Thunder God's Wrath notes target blacklisted traits; the build lists them as withheld instead of warning.
+
 ## 2026-10-25 — Auto Attack only on a real attack; Fragmenting Arrow note; boss instant-kill rule (extract S61)
 - User ruling: Auto Attack stays only where the effect makes a creature attack. Off Antithesis, Simulation, Evil Eye and Tacos
   Inflation (the four with no Side); Attack theme off Simulation and Evil Eye. Auto Attack entries 212 -> 208, all with a Side.

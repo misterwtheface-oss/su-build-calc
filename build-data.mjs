@@ -2925,18 +2925,27 @@ const TRAIT_REJECT = fs.existsSync(APPROVED_PATH) ? (readJSON(APPROVED_PATH).tra
   const clarF = path.join(MODEL, 'effect_clarifications.json');
   if (fs.existsSync(clarF)) {
     const traitByRuntime = new Map(); for (const t of Object.values(traits)) for (const r of t.runtimeIds || []) traitByRuntime.set(r, t);
-    let hit = 0; const miss = [];
+    // runtime id -> legacy trait id, so a note on a blacklisted trait is reported as withheld (never shipped), not as a join miss
+    const rtToTraitId = new Map(); for (const [tid, rts] of Object.entries(RT_GROUPS)) for (const r of rts || []) rtToTraitId.set(r, +tid);
+    // condition notes join by the registry id (condition_id -> class + key -> app cat + key); minions (class "minion") have a
+    // detail page too, so they join like buffs / debuffs. The name must still match the app's (localized) name.
+    const clarReg = new Map(readJSON(path.join(MODEL, 'condition_registry.json')).conditions.map(c => [c.id, c]));
+    const condById = (e) => { const r = clarReg.get(e.condition_id); if (!r || !r.key || !r.class) return null;
+      const c = conditions.find(c => c.cat.toLowerCase() === r.class && c.key === norm(r.key));
+      return c && norm(c.name) === norm(e.name) ? c : null; };
+    let hit = 0; const miss = [], withheld = [];
     for (const e of readJSON(clarF).entries || []) {
       const tgt = e.kind === 'trait' ? traitByRuntime.get(e.trait_runtime_id)
         : e.kind === 'perk' ? perkByKey.get(e.perk_key)
         : e.kind === 'relic' ? relicRank(e.relic_name || e.name, e.rank)
         : e.kind === 'spell' ? spells.find(sp => (e.spell_key ? sp.key === e.spell_key : sp.id === e.spell_id) && (!e.name || norm(sp.name) === norm(e.name)))
-        : e.kind === 'condition' ? conditions.find(c => c.cat !== 'Minion' && norm(c.name) === norm(e.name))
+        : e.kind === 'condition' ? condById(e)
         : e.kind === 'card' ? cards.find(c => c.id === e.app_card_id && norm(c.family) === norm(e.card_family || e.name)) : null;
       if (tgt && (!e.name || e.kind !== 'trait' || norm(tgt.name) === norm(e.name))) { ((tgt.clarify ||= []).includes(e.text)) || tgt.clarify.push(e.text); hit++; }
+      else if (e.kind === 'trait' && !tgt && excludedTraitIds.has(rtToTraitId.get(e.trait_runtime_id))) withheld.push(`${e.name} (${e.trait_runtime_id})`);
       else miss.push(`${e.kind}:${e.name}`);
     }
-    console.log(`  effect clarifications: ${hit} attached${miss.length ? ` · ⚠ ${miss.length} not joined: ${[...new Set(miss)].slice(0, 15).join(", ")}` : ""}`);
+    console.log(`  effect clarifications: ${hit} attached${withheld.length ? ` · ${withheld.length} withheld (blacklisted trait, not shipped): ${withheld.join(", ")}` : ""}${miss.length ? ` · ⚠ ${miss.length} not joined: ${[...new Set(miss)].slice(0, 15).join(", ")}` : ""}`);
     if (miss.length) warn(`effect clarifications not joined to app data: ${miss.join(', ')}`);
   }
   // has_roll.json — `hasRoll` boolean per object: does any scr_Roll call site (a chance roll) belong to it
