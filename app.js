@@ -5410,9 +5410,8 @@
     // so the turn is never handed back to you
     { key: "tail-attack", when: x => x.attackWorth && !x.attackFirst,
       lines: x => [mLine(`If any enemy ${x.T.focus}, attack that creature`, x.intAttacks ? `Its attacks use Intelligence — also covers Silence and spells out of charges` : `Covers Silence and spells out of charges`)] },
-    // a line whose target is Invisible does nothing; "a random enemy" re-rolls past Invisible and dead enemies (attacks)
-    { key: "tail-random", when: x => x.attackWorth,
-      lines: () => [mLine(`If this creature has > 0 living enemies, attack a random enemy`, `The lines above can pick an Invisible enemy and fail; a random attack re-rolls past it`)] },
+    // no random-enemy attack: "lowest Health" picks only from the enemies that can be targeted (user, in game, 2026-10-24),
+    // so the line above is the fallback attack
     { key: "tail-defend", when: x => !x.tankActs.includes("defend"),
       lines: () => [mLine(`If this creature doesn't have Defensive, defend`, `Nothing else can act (Scorned, every enemy Invisible, …)`)] },
     { key: "tail-skip", when: () => true,
