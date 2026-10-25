@@ -4,6 +4,11 @@ Every dated change entry, newest first (moved verbatim from Progress.md on 2026-
 to their own section and sorted by their date). Current state and open work: `Progress.md`, `BACKLOG.md`.
 New entries go at the TOP.
 
+## 2026-10-25 — Inspirited Gems: Auto Cast on Defend / Provoke is Your side (extract S63)
+- Inspirited Gems' Defend and Provoke Auto Cast showed Enemy and Any. They now show Your side, matching Attack and Heal, and
+  Trigger: Defend is Your side too. In the code, the perk raises the cast chance only for your creatures. The extract's actor reader
+  had picked up an unrelated test; that is fixed, and no other entry changed. Data rebuild only.
+
 ## 2026-10-25 — Stats: Gain / Lose hold only effects that change a stat
 - Effects that only resize other stat gains or losses (Bismuth Attunement, Embiggening, Vext's Antiquity and 216 more tags)
   move from Stats: Gain / Lose to Trigger: Stat Gain / Stat Loss. They keep their stat markers. The build uses the code
