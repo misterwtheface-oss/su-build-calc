@@ -176,7 +176,8 @@ export function makeTaxoV2(X, CL, MK, condName = () => null) {
     // dedupe on the full attribute key (an unverified duplicate of a firm entry goes)
     const seen = new Map();
     for (const e of all) {
-      const k = [e.t, e.s, e.so, e.r, e.p, e.d, e.rk, e.cf, e.co, e.cn, e.ig, e.ra, e.sh, ...['x', 'ev', 'st', 'sk', 'cl'].map(a => (e[a] || []).join(','))].join('|');
+      // act: a code site whose calls are made by different actors is one tag per actor (Confrontation: holder, then an enemy)
+      const k = [e.t, e.s, e.so, e.r, e.p, e.d, e.rk, e.cf, e.co, e.cn, e.ig, e.ra, e.sh, e.act, ...['x', 'ev', 'st', 'sk', 'cl'].map(a => (e[a] || []).join(','))].join('|');
       const prev = seen.get(k);
       if (!prev || (prev.v === 'unverified' && e.v !== 'unverified')) seen.set(k, e);
     }

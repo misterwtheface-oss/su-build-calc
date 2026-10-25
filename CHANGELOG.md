@@ -4,6 +4,15 @@ Every dated change entry, newest first (moved verbatim from Progress.md on 2026-
 to their own section and sorted by their date). Current state and open work: `Progress.md`, `BACKLOG.md`.
 New entries go at the TOP.
 
+## 2026-10-25 — Automatic actions get their Side from the code's actor (extract S58)
+- Rebuilt from the extract's new `actor` field (who performs the Auto Attack / Cast / Defend / Provoke, read from the action
+  call). 603 entries, 599 with a Side: Self (This creature) 343, Self or Ally 171, Enemy 65, Ally 11, Any 9. Examples: Fight
+  or Flight / Rattle / Wild Stabs = This creature, Eye of the Thylacine = Your side (its Godspawn allies), Insight = Your side.
+- Shield Mastery's Auto Defend is now code-backed (Side: This creature). A site with two actors ships one entry per actor
+  (Confrontation: This creature + Enemy side): `tools/taxo-v2.mjs` dedupe key gained the actor.
+- No Side (no action call in the code; possible tag errors, waiting on the user): Antithesis, Simulation, Evil Eye, Tacos
+  Inflation (Auto Attack).
+
 ## 2026-10-25 — Side: "This creature", and automatic actions take the actor's side
 - User ruling: Side is relative to whom the effect affects. On Auto Attack / Auto Cast / Auto Defend / Auto Provoke that is the
   creature that acts: "Your side" = your creatures attack / cast, "Enemy side" = enemies do. The code layer's scope there is the
