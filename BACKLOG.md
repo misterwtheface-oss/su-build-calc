@@ -5,6 +5,14 @@ Progress.md; original text kept, with a status note where later work changed thi
 recorded in `CHANGELOG.md`. Full pre-consolidation text: `archive/Progress_until_2026-10-08.md`.
 Extract-side research questions live in `_su_extract/RESUME.md`.
 
+## Currencies: in-game checks (2026-10-24, extract S54)
+- [ ] Code exists but reachability isn't confirmed (hard-coded English, no creator found), so it's left out of the Currencies
+  section: breeding / summoning menus (Brimstone + Crystal), the gambling-dwarf minigames (Hot Hands, Think Fast, Treasure
+  Hunt, arm wrestling), Reid's 2,000-Granite arena, merchants, Torun's trade, rune grinding, Alteration, sacrifice, prophecy
+  reset. If any appears in game, add it from `_su_extract/code/LOOT.md` § Resources.
+- [ ] Clarify-note candidates (code differs from the text): Fusion Lab level match is a flat 3,000 Power; Reliquary Spell
+  Damage / Healing Bonus do nothing; Arena Glory difficulty multiplier only on a lost run.
+
 ## BATCH 2026-10-17 — user list of 30 (mostly done; open items are the unticked ones)
 Grouped by the app area each item touches, in suggested build order. Within a group, earlier items unblock later ones.
 `(#n)` = the user's original number. Clarifications the user gave on 2026-10-17 are marked **User:**. Research items that need

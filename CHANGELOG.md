@@ -4,6 +4,18 @@ Every dated change entry, newest first (moved verbatim from Progress.md on 2026-
 to their own section and sorted by their date). Current state and open work: `Progress.md`, `BACKLOG.md`.
 New entries go at the TOP.
 
+## 2026-10-24 — Currencies: every resource gets full earned / spent lines (extract S54)
+- User: the five resources (Brimstone, Crystal, Essence, Granite, Power) were what the currency research was for. Each now lists
+  every code-grounded source and sink: battle rewards with that resource's card sets, bundles, Resource Nodes (by realm),
+  breakables, Treasure Golem hits, realm objects, Arcane Orbs, the Pandemonium shrine, the board game, Refinery Salvage /
+  Grind / Convert, the start amount; sinks per resource (Blacksmith, Enchanter and Arena, Projects, Goblet / Fusion Lab /
+  Summoning Brazier, Teleportation Shrine / Divination Candle) plus the shared ones (god altars by realm, offerings,
+  Fellowdy's Nether chests, Nortah's Menagerie shop). The "bundle items hold 400" line is gone (no code hands those out).
+- The S53 answers are in: Piety (Reliquary costs and Enhancement names, Prophecy Piety), Glamour (Everett's prices),
+  Glory (Arena per run, Nether Arena Master), Stardust (Otherworld Portal, Nether Synthesis), Creature Parts, Perk Points
+  ("1,550 collected"), Gate of the Gods Key (fragment combine, 1 per Keyforge mission; no more "game codex").
+- Realm yield data rebuilt (extract fix: Resource Nodes are scaled by difficulty twice).
+
 ## 2026-10-24 — Macros: tank actions check Taunting / Defensive, no attack without a reason, dispel spells
 - User (Knight Effigy): Provoke and Defend lines now check the buff first (`If this creature doesn't have Taunting, provoke`,
   `… doesn't have Defensive, defend`). The code makes a Taunting creature Provoke and a Defensive one Defend at the end of

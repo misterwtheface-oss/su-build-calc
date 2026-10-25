@@ -1,126 +1,237 @@
 {
-  "_note": "Appendix 'Currencies' (user 2026-10-24). App-authored lines, each code-grounded in _su_extract (src = doc / data). Names come from the game's items.csv (name_key); desc_key = the game's own item description; frame = the icons-sheet frame from inv_ItemIconIndex (item_icons.json / DATABASES.md 'Item icons'). shop = {tab, group?}: build-data adds the shop and its price range from D.shops. Energy is left out: its only use is the Arcane Vault (Talismans), which the project list never offers (DATABASES.md:261, legacy). Patch 3.0 teaser changes are left out (not code).",
+  "_note": "Appendix 'Currencies' (user 2026-10-24). App-authored lines, each code-grounded in _su_extract (src = doc / data): LOOT.md § Currencies (S53 + S54 open items) and § Resources (S54: every source and sink of the five resources, data/model/currencies_extract.json 'resources'). Names come from the game's items.csv (name_key); desc_key = the game's own item description; frame = the icons-sheet frame from inv_ItemIconIndex (item_icons.json / DATABASES.md 'Item icons'). shop = {tab, group?}: build-data adds the shop and its price range from D.shops. Left out on purpose: Energy (no code creates it; its only shop, the Arcane Vault, is never offered), Sandbox amounts, and code whose reachability isn't confirmed (hard-coded English NPCs such as the breeding / summoning menus, Hot Hands / Think Fast / arm wrestling dwarves, Reid's 2,000-Granite arena, merchants, Torun's trade). Patch 3.0 teaser changes are left out (not code).",
   "currencies": [
-    { "id": "brimstone", "name_key": "L_IN_CURRENCY_BRIMSTONE", "frame": 1960, "shop": { "tab": "guild", "group": "chaos" },
+    { "id": "brimstone", "name_key": "L_IN_CURRENCY_BRIMSTONE", "frame": 1960, "shop": {"tab": "guild", "group": "chaos"},
       "earned": [
-        { "t": "Battle rewards (more with Fortune)", "src": "LOOT.md Roll types §1 (bc_GetRewardResources)" },
-        { "t": "Treasure: every bundle gives 100–150 of one random resource; Brimstone bundle items hold 400", "src": "LOOT.md §4; L_ID_CURRENCY_BRIMSTONE" },
-        { "t": "Nether Realm: Faucet room chest 5,000; Mimic Mike's treasury 2,500", "src": "NETHER.md Faucet / treasury (nether_helpers.json)" }
+        {"t": "Battle rewards: about 65–100 per battle before bonuses (×2 Relaxed, ×0.35 Ruthless); more from the Minotaur and Kraken cards, Griffon cards, creatures you know at Bestiary level 4+, the '+5% Resources From Battles' blessings and Fortune (up to ×2)", "src": "LOOT.md § Resources (S54); bc_GetRewardResources"},
+        {"t": "Treasure: every bundle gives 100–150 of one random resource (×3 Relaxed, ×0.25 Ruthless)", "src": "LOOT.md inv_Loot §2"},
+        {"t": "Resource Nodes in Great Pandemonium, Cutthroat Jungle, Caustic Reactor, Torture Chamber, Gambler's Hive and Land of Breath & Balance: 75–100 each (×4 Relaxed, ×0.175 Ruthless), +10% per node blessing, +5% per Phase Warrior card", "src": "LOOT.md § Resources (S54); obj_resource_KeyPress_69"},
+        {"t": "Breakable objects: 50–100 of a random resource (×4 Relaxed, ×0.175 Ruthless); Soulflayer cards can double it", "src": "LOOT.md § Resources (S54); obj_breakable_KeyPress_69"},
+        {"t": "Each hit on a Treasure Golem: 25–40 of a random resource", "src": "LOOT.md Treasure Golem (bc_OnAttack)"},
+        {"t": "Refinery Salvage: an Artifact's tier × 150–200 (×3 Relaxed, ×0.25 Ruthless)", "src": "LOOT.md § Resources; inv_ArtifactSalvage"},
+        {"t": "Pineapples (Faraway Enclave, rank 30): 200–300; Vomiting Fruit and Tarot Card Collection: 300–500 for the Brimstone combination; Music Crystals and Alchemy Experiments: 700–1,000 for the Brimstone pair (all more with their blessings)", "src": "LOOT.md § Resources; REALM_YIELDS.md"},
+        {"t": "Nether Realm: Faucet room chest 5,000; Mimic Mike's treasury 2,500", "src": "NETHER.md Faucet / treasury"},
+        {"t": "Rocks, Shipwrecks, Jellyfish, Pristine Statues, Blue Runestones, Large Slot Machines, Clocks and Stars: 200–300 of a random resource each, more with their realm's blessings", "src": "REALM_YIELDS.md (realm walks)"},
+        {"t": "Arcane Orbs (Eternity's End): 250 of every resource (500 with its rank-80 blessing)", "src": "LOOT.md § Resources (S54); obj_arcaneorb_KeyPress_69"},
+        {"t": "Pandemonium shrine: 1,000–5,000 of every resource (one of its 13 outcomes)", "src": "REALM_YIELDS.md (obj_demonstatue)"},
+        {"t": "The Gambling Dwarves' board game: 500–999 per ticket used on a square of this resource", "src": "LOOT.md § Resources (S54); obj_boardgame_Draw_64"},
+        {"t": "Refinery Convert: 1 for every 2 of another resource", "src": "LOOT.md § Resources (S54); obj_conversion_KeyPress_69"},
+        {"t": "A new game starts with 5,000 (15,000 on Relaxed)", "src": "LOOT.md § Resources (S54); obj_specchoose_KeyPress_69"}
       ],
       "spent": [
-        { "t": "Artifact upgrades at the Blacksmith: 250 / 500 / 750 / 1,000 / 5,000 per tier (below 10 / 20 / 30 / 40 / 50), 25,000 to awaken at tier 50", "src": "ARTIFACTS.md Upgrade (obj_bsupgrade)" },
-        { "t": "Nethermancer Ned's Nether Shop: Nether Boss trait materials 50,000 each, Thylacine Mana 100,000, True Thylacine skin 500,000", "src": "NETHER_BOSS_BEHAVIOR_FINDINGS.md Nethermancer Ned (nether_shop.json)" }
+        {"t": "Blacksmith Forge: 1,000 per Artifact", "src": "LOOT.md § Resources; obj_bsforge_KeyPress_69"},
+        {"t": "Blacksmith Socket: 100 (slots 1–2), 2,500 (3–4), 5,000 (5–6), 10,000 (slot 7), 25,000 (slot 8); the Nether Stone slot 250 × the stone's rarity", "src": "LOOT.md § Resources; obj_bsupgrade_Draw_64 / KeyPress_69"},
+        {"t": "Blacksmith Unsocket: 1,000", "src": "LOOT.md § Resources; obj_bsupgrade_KeyPress_69"},
+        {"t": "Blacksmith Upgrade: 250 / 500 / 750 / 1,000 / 5,000 per tier (below 10 / 20 / 30 / 40 / 50), 25,000 to awaken at tier 50", "src": "ARTIFACTS.md Upgrade (obj_bsupgrade)"},
+        {"t": "Nethermancer Ned's Nether Shop: Nether Boss trait materials 50,000 each, Thylacine Mana 100,000, True Thylacine skin 500,000", "src": "NETHER_BOSS_BEHAVIOR_FINDINGS.md Nethermancer Ned (nether_shop.json)"},
+        {"t": "God Altars in Great Pandemonium, Torture Chamber, Kingdom of Heretics, Caustic Reactor, Forgotten Lab and Overgrown Temple: 1,000 per donation for 150 Favor, once per altar", "src": "REALM_YIELDS.md (obj_godaltar_KeyPress_69)"},
+        {"t": "Faraway Enclave altar offering and the Glowing Pit (Forbidden Depths): 250 of every resource", "src": "LOOT.md § Resources (S54); obj_juju / obj_depths_glowingpit"},
+        {"t": "Fellowdy's Nether chests: Pristine Chest 5,000, Gore Chest 10,000, Forgotten Chest 1,000 of every resource", "src": "LOOT.md § Resources (S54); obj_nether_chest1/2/3_KeyPress_69"},
+        {"t": "Nortah's Menagerie shop (priced in every resource): personality Tomes 10,000, Scroll of Renewal 5,000", "src": "LOOT.md § Resources (S54); scr_DecorationInteract (CURRENCY 5)"},
+        {"t": "Refinery Convert: 2 for 1 of another resource", "src": "LOOT.md § Resources (S54); obj_conversion_KeyPress_69"}
       ] },
-    { "id": "crystal", "name_key": "L_IN_CURRENCY_CRYSTAL", "frame": 1961, "shop": { "tab": "guild", "group": "nature" },
+    { "id": "crystal", "name_key": "L_IN_CURRENCY_CRYSTAL", "frame": 1961, "shop": {"tab": "guild", "group": "nature"},
       "earned": [
-        { "t": "Battle rewards (more with Fortune)", "src": "LOOT.md Roll types §1" },
-        { "t": "Treasure: every bundle gives 100–150 of one random resource; Crystal bundle items hold 400", "src": "LOOT.md §4; L_ID_CURRENCY_CRYSTAL" },
-        { "t": "Nether Realm: Faucet room chest 5,000; Mimic Mike's treasury 2,500", "src": "NETHER.md Faucet / treasury" }
+        {"t": "Battle rewards: about 65–100 per battle before bonuses (×2 Relaxed, ×0.35 Ruthless); more from the Elf and Fae cards, Griffon cards, creatures you know at Bestiary level 4+, the '+5% Resources From Battles' blessings and Fortune (up to ×2)", "src": "LOOT.md § Resources (S54); bc_GetRewardResources"},
+        {"t": "Treasure: every bundle gives 100–150 of one random resource (×3 Relaxed, ×0.25 Ruthless)", "src": "LOOT.md inv_Loot §2"},
+        {"t": "Resource Nodes in Frostbite Caverns, Faraway Enclave, Blood Grove, The Barrens, Forbidden Depths and Fae Lands: 75–100 each (×4 Relaxed, ×0.175 Ruthless), +10% per node blessing, +5% per Phase Warrior card", "src": "LOOT.md § Resources (S54); obj_resource_KeyPress_69"},
+        {"t": "Breakable objects: 50–100 of a random resource (×4 Relaxed, ×0.175 Ruthless); Soulflayer cards can double it", "src": "LOOT.md § Resources (S54); obj_breakable_KeyPress_69"},
+        {"t": "Each hit on a Treasure Golem: 25–40 of a random resource", "src": "LOOT.md Treasure Golem (bc_OnAttack)"},
+        {"t": "Refinery Grind: (a Spell Gem's property slots + 1) × 450–550, so 450–550 below tier 5 up to 1,800–2,200 at tier 15 (×3 Relaxed, ×0.25 Ruthless)", "src": "LOOT.md § Resources; inv_SpellGemTransmute"},
+        {"t": "Relics (The Barrens, rank 30): 200–300; Vomiting Fruit, Vomiting Squash and Tarot Card Collection: 300–500 for the Crystal combination; Music Crystals and Alchemy Experiments: 700–1,000 for the Crystal pair (all more with their blessings)", "src": "LOOT.md § Resources; REALM_YIELDS.md"},
+        {"t": "Nether Realm: Faucet room chest 5,000; Mimic Mike's treasury 2,500", "src": "NETHER.md Faucet / treasury"},
+        {"t": "Rocks, Shipwrecks, Jellyfish, Pristine Statues, Blue Runestones, Large Slot Machines, Clocks and Stars: 200–300 of a random resource each, more with their realm's blessings", "src": "REALM_YIELDS.md (realm walks)"},
+        {"t": "Arcane Orbs (Eternity's End): 250 of every resource (500 with its rank-80 blessing)", "src": "LOOT.md § Resources (S54); obj_arcaneorb_KeyPress_69"},
+        {"t": "Pandemonium shrine: 1,000–5,000 of every resource (one of its 13 outcomes)", "src": "REALM_YIELDS.md (obj_demonstatue)"},
+        {"t": "The Gambling Dwarves' board game: 500–999 per ticket used on a square of this resource", "src": "LOOT.md § Resources (S54); obj_boardgame_Draw_64"},
+        {"t": "Refinery Convert: 1 for every 2 of another resource", "src": "LOOT.md § Resources (S54); obj_conversion_KeyPress_69"},
+        {"t": "A new game starts with 5,000 (15,000 on Relaxed)", "src": "LOOT.md § Resources (S54); obj_specchoose_KeyPress_69"}
       ],
       "spent": [
-        { "t": "Spell Gem upgrades at the Enchanter: 500 per tier below 5, 1,000 for 5–9, 2,000 for 10–14; adding a property 1,000", "src": "SPELL_GEMS.md S18 costs (obj_gemmod)" }
+        {"t": "Enchanter Craft: 2,000 per Spell Gem", "src": "LOOT.md § Resources; obj_gemcraft_KeyPress_69"},
+        {"t": "Enchanter Enchant: 1,000 and 1 Dust per property", "src": "SPELL_GEMS.md S18 costs (obj_gemmod)"},
+        {"t": "Enchanter Upgrade: 500 per tier below 5, 1,000 for 5–9, 2,000 for 10–14", "src": "SPELL_GEMS.md S18 costs (obj_gemmod)"},
+        {"t": "The Arena: 5,000 per run in any mode (Infinite needs Fame Rank 10, Wild 20, Masters 30)", "src": "LOOT.md § Resources; scr_DecorationInteract (Arena)"},
+        {"t": "God Altars in The Swamplands, Arachnid Nest, Cutthroat Jungle, Forbidden Depths, Land of Breath & Balance and Blood Grove: 1,000 per donation for 150 Favor, once per altar", "src": "REALM_YIELDS.md (obj_godaltar_KeyPress_69)"},
+        {"t": "Faraway Enclave altar offering and the Glowing Pit (Forbidden Depths): 250 of every resource", "src": "LOOT.md § Resources (S54); obj_juju / obj_depths_glowingpit"},
+        {"t": "Fellowdy's Nether chests: Pristine Chest 5,000, Gore Chest 10,000, Forgotten Chest 1,000 of every resource", "src": "LOOT.md § Resources (S54); obj_nether_chest1/2/3_KeyPress_69"},
+        {"t": "Nortah's Menagerie shop (priced in every resource): personality Tomes 10,000, Scroll of Renewal 5,000", "src": "LOOT.md § Resources (S54); scr_DecorationInteract (CURRENCY 5)"},
+        {"t": "Refinery Convert: 2 for 1 of another resource", "src": "LOOT.md § Resources (S54); obj_conversion_KeyPress_69"}
       ] },
-    { "id": "essence", "name_key": "L_IN_CURRENCY_ESSENCE", "frame": 1962, "shop": { "tab": "guild", "group": "sorcery" },
+    { "id": "essence", "name_key": "L_IN_CURRENCY_ESSENCE", "frame": 1962, "shop": {"tab": "guild", "group": "sorcery"},
       "earned": [
-        { "t": "Battle rewards (more with Fortune)", "src": "LOOT.md Roll types §1" },
-        { "t": "Treasure: every bundle gives 100–150 of one random resource; Essence bundle items hold 400", "src": "LOOT.md §4; L_ID_CURRENCY_ESSENCE" },
-        { "t": "Nether Realm: Faucet room chest 5,000; Mimic Mike's treasury 2,500", "src": "NETHER.md Faucet / treasury" }
-      ],
-      "spent": [] },
-    { "id": "granite", "name_key": "L_IN_CURRENCY_GRANITE", "frame": 1963, "shop": { "tab": "guild", "group": "death" },
-      "earned": [
-        { "t": "Battle rewards (more with Fortune)", "src": "LOOT.md Roll types §1" },
-        { "t": "Treasure: every bundle gives 100–150 of one random resource; Granite bundle items hold 400", "src": "LOOT.md §4; L_ID_CURRENCY_GRANITE" },
-        { "t": "Nether Realm: Faucet room chest 5,000; Mimic Mike's treasury 2,500", "src": "NETHER.md Faucet / treasury" }
-      ],
-      "spent": [] },
-    { "id": "power", "name_key": "L_IN_CURRENCY_POWER", "frame": 1964, "shop": { "tab": "guild", "group": "life" },
-      "earned": [
-        { "t": "Battle rewards (more with Fortune)", "src": "LOOT.md Roll types §1" },
-        { "t": "Treasure: every bundle gives 100–150 of one random resource; Power bundle items hold 400", "src": "LOOT.md §4; L_ID_CURRENCY_POWER" },
-        { "t": "Nether Realm: Faucet room chest 5,000; Mimic Mike's treasury 2,500", "src": "NETHER.md Faucet / treasury" }
-      ],
-      "spent": [] },
-    { "id": "emblem", "name": "Emblem of each god", "name_key": "L_IN_EMBLEM_SURATHLI", "name_pattern": "Emblem of", "frame": 1831, "shop": { "tab": "god" },
-      "earned": [
-        { "t": "Gate of the Gods: each win gives that god's Emblem × the difficulty (up to 10)", "src": "GATE_OF_THE_GODS_FINDINGS.md:109" },
-        { "t": "The realm quest at your deepest depth (or on Ironman): 1 of the realm god's Emblem", "src": "LOOT.md:125 / :257" },
-        { "t": "Realm objects and treasure (a small chance; 0.1% per bundle)", "src": "REALM_YIELDS.md; LOOT.md §4" },
-        { "t": "Nether Realm: Faucet room chest 10; Mimic Mike's treasury 3 (the current realm's god)", "src": "NETHER.md Faucet / treasury" }
+        {"t": "Battle rewards: about 65–100 per battle before bonuses (×2 Relaxed, ×0.35 Ruthless); more from the Golem and Electropod cards, Griffon cards, creatures you know at Bestiary level 4+, the '+5% Resources From Battles' blessings and Fortune (up to ×2)", "src": "LOOT.md § Resources (S54); bc_GetRewardResources"},
+        {"t": "Treasure: every bundle gives 100–150 of one random resource (×3 Relaxed, ×0.25 Ruthless)", "src": "LOOT.md inv_Loot §2"},
+        {"t": "Resource Nodes in Azure Dream, Arachnid Nest, Bastion of the Void, Refuge of the Magi, Temple of Lies and Amalgam Gardens: 75–100 each (×4 Relaxed, ×0.175 Ruthless), +10% per node blessing, +5% per Phase Warrior card", "src": "LOOT.md § Resources (S54); obj_resource_KeyPress_69"},
+        {"t": "Breakable objects: 50–100 of a random resource (×4 Relaxed, ×0.175 Ruthless); Soulflayer cards can double it", "src": "LOOT.md § Resources (S54); obj_breakable_KeyPress_69"},
+        {"t": "Each hit on a Treasure Golem: 25–40 of a random resource", "src": "LOOT.md Treasure Golem (bc_OnAttack)"},
+        {"t": "Traps (Blood Grove, rank 40): 200–300; Vomiting Fruit and Tarot Card Collection: 300–500 for the Essence combination; Music Crystals and Alchemy Experiments: 700–1,000 for the Essence pair (all more with their blessings)", "src": "LOOT.md § Resources; REALM_YIELDS.md"},
+        {"t": "Nether Realm: Faucet room chest 5,000; Mimic Mike's treasury 2,500", "src": "NETHER.md Faucet / treasury"},
+        {"t": "Story: the quest 'Almost There...' (Everett) gives 10,000 once", "src": "LOOT.md § Resources; scr_DecorationInteract (quest 374)"},
+        {"t": "Rocks, Shipwrecks, Jellyfish, Pristine Statues, Blue Runestones, Large Slot Machines, Clocks and Stars: 200–300 of a random resource each, more with their realm's blessings", "src": "REALM_YIELDS.md (realm walks)"},
+        {"t": "Arcane Orbs (Eternity's End): 250 of every resource (500 with its rank-80 blessing)", "src": "LOOT.md § Resources (S54); obj_arcaneorb_KeyPress_69"},
+        {"t": "Pandemonium shrine: 1,000–5,000 of every resource (one of its 13 outcomes)", "src": "REALM_YIELDS.md (obj_demonstatue)"},
+        {"t": "The Gambling Dwarves' board game: 500–999 per ticket used on a square of this resource", "src": "LOOT.md § Resources (S54); obj_boardgame_Draw_64"},
+        {"t": "Refinery Convert: 1 for every 2 of another resource", "src": "LOOT.md § Resources (S54); obj_conversion_KeyPress_69"},
+        {"t": "A new game starts with 5,000 (15,000 on Relaxed)", "src": "LOOT.md § Resources (S54); obj_specchoose_KeyPress_69"}
       ],
       "spent": [
-        { "t": "Each god's own God Shop takes only that god's Emblem; items unlock by Favor rank. A Gate of the Gods Key costs 20 from Favor rank 50", "src": "shop_currencies.json god (MODE 1); shops.json favor_rank" }
+        {"t": "Goblet of Trials: 5,000 to randomize the required specialization(s)", "src": "LOOT.md § Resources; scr_DecorationInteract (L_CHOICE_GOBLET_OPTION1)"},
+        {"t": "Fusion Lab: 5,000 per fusion", "src": "LOOT.md § Resources; obj_breeding_choose_KeyPress_69"},
+        {"t": "Summoning Brazier: 1,000 per creature summoned (plus its Mana)", "src": "LOOT.md § Resources; obj_library_beastiary_KeyPress_69"},
+        {"t": "God Altars in Refuge of the Magi, Frostbite Caverns, Unsullied Meadows, Bastion of the Void, Temple of Lies and Amalgam Gardens: 1,000 per donation for 150 Favor, once per altar", "src": "REALM_YIELDS.md (obj_godaltar_KeyPress_69)"},
+        {"t": "Faraway Enclave altar offering and the Glowing Pit (Forbidden Depths): 250 of every resource", "src": "LOOT.md § Resources (S54); obj_juju / obj_depths_glowingpit"},
+        {"t": "Fellowdy's Nether chests: Pristine Chest 5,000, Gore Chest 10,000, Forgotten Chest 1,000 of every resource", "src": "LOOT.md § Resources (S54); obj_nether_chest1/2/3_KeyPress_69"},
+        {"t": "Nortah's Menagerie shop (priced in every resource): personality Tomes 10,000, Scroll of Renewal 5,000", "src": "LOOT.md § Resources (S54); scr_DecorationInteract (CURRENCY 5)"},
+        {"t": "Refinery Convert: 2 for 1 of another resource", "src": "LOOT.md § Resources (S54); obj_conversion_KeyPress_69"}
       ] },
-    { "id": "glory", "name_key": "L_IN_GLORY", "desc_key": "L_ID_CURRENCY_ARENA", "frame": 2002, "shop": { "tab": "arena" },
+    { "id": "granite", "name_key": "L_IN_CURRENCY_GRANITE", "frame": 1963, "shop": {"tab": "guild", "group": "death"},
       "earned": [
-        { "t": "Nether Realm: Faucet room chest 1,000", "src": "NETHER.md Faucet" }
+        {"t": "Battle rewards: about 65–100 per battle before bonuses (×2 Relaxed, ×0.35 Ruthless); more from the Wight and Clockwork cards, Griffon cards, creatures you know at Bestiary level 4+, the '+5% Resources From Battles' blessings and Fortune (up to ×2)", "src": "LOOT.md § Resources (S54); bc_GetRewardResources"},
+        {"t": "Treasure: every bundle gives 100–150 of one random resource (×3 Relaxed, ×0.25 Ruthless)", "src": "LOOT.md inv_Loot §2"},
+        {"t": "Resource Nodes in Path of the Damned, Kingdom of Heretics, Titan's Wound, Where the Dead Ships Dwell, Overgrown Temple and Forgotten Lab: 75–100 each (×4 Relaxed, ×0.175 Ruthless), +10% per node blessing, +5% per Phase Warrior card", "src": "LOOT.md § Resources (S54); obj_resource_KeyPress_69"},
+        {"t": "Breakable objects: 50–100 of a random resource (×4 Relaxed, ×0.175 Ruthless); Soulflayer cards can double it", "src": "LOOT.md § Resources (S54); obj_breakable_KeyPress_69"},
+        {"t": "Each hit on a Treasure Golem: 25–40 of a random resource", "src": "LOOT.md Treasure Golem (bc_OnAttack)"},
+        {"t": "Tithes (Sanctum Umbra, rank 40): 200–300; Vomiting Fruit, Vomiting Squash and Tarot Card Collection: 300–500 for the Granite combination; Music Crystals and Alchemy Experiments: 700–1,000 for the Granite pair (all more with their blessings)", "src": "LOOT.md § Resources; REALM_YIELDS.md"},
+        {"t": "Nether Realm: Faucet room chest 5,000; Mimic Mike's treasury 2,500", "src": "NETHER.md Faucet / treasury"},
+        {"t": "Everett's 'All About Projects' quest raises you to 5,000 if you have less", "src": "LOOT.md § Resources; scr_DecorationInteract (quest 367)"},
+        {"t": "Rocks, Shipwrecks, Jellyfish, Pristine Statues, Blue Runestones, Large Slot Machines, Clocks and Stars: 200–300 of a random resource each, more with their realm's blessings", "src": "REALM_YIELDS.md (realm walks)"},
+        {"t": "Arcane Orbs (Eternity's End): 250 of every resource (500 with its rank-80 blessing)", "src": "LOOT.md § Resources (S54); obj_arcaneorb_KeyPress_69"},
+        {"t": "Pandemonium shrine: 1,000–5,000 of every resource (one of its 13 outcomes)", "src": "REALM_YIELDS.md (obj_demonstatue)"},
+        {"t": "The Gambling Dwarves' board game: 500–999 per ticket used on a square of this resource", "src": "LOOT.md § Resources (S54); obj_boardgame_Draw_64"},
+        {"t": "Refinery Convert: 1 for every 2 of another resource", "src": "LOOT.md § Resources (S54); obj_conversion_KeyPress_69"},
+        {"t": "A new game starts with 5,000 (15,000 on Relaxed)", "src": "LOOT.md § Resources (S54); obj_specchoose_KeyPress_69"}
+      ],
+      "spent": [
+        {"t": "Castle Projects: 1,000 × the project's cost size (doubled on Ruthless); Training and Assassination missions 40,000, Keyforge missions 25,000", "src": "LOOT.md § Currencies item 6 / § Resources (obj_projectlist_KeyPress_69)"},
+        {"t": "God Altars in Path of the Damned, Eternity's End, Where the Dead Ships Dwell, Titan's Wound, Gambler's Hive and Damarel: 1,000 per donation for 150 Favor, once per altar", "src": "REALM_YIELDS.md (obj_godaltar_KeyPress_69)"},
+        {"t": "Faraway Enclave altar offering and the Glowing Pit (Forbidden Depths): 250 of every resource", "src": "LOOT.md § Resources (S54); obj_juju / obj_depths_glowingpit"},
+        {"t": "Fellowdy's Nether chests: Pristine Chest 5,000, Gore Chest 10,000, Forgotten Chest 1,000 of every resource", "src": "LOOT.md § Resources (S54); obj_nether_chest1/2/3_KeyPress_69"},
+        {"t": "Nortah's Menagerie shop (priced in every resource): personality Tomes 10,000, Scroll of Renewal 5,000", "src": "LOOT.md § Resources (S54); scr_DecorationInteract (CURRENCY 5)"},
+        {"t": "Refinery Convert: 2 for 1 of another resource", "src": "LOOT.md § Resources (S54); obj_conversion_KeyPress_69"}
+      ] },
+    { "id": "power", "name_key": "L_IN_CURRENCY_POWER", "frame": 1964, "shop": {"tab": "guild", "group": "life"},
+      "earned": [
+        {"t": "Battle rewards: about 65–100 per battle before bonuses (×2 Relaxed, ×0.35 Ruthless); more from the Stag and Modron cards, Griffon cards, creatures you know at Bestiary level 4+, the '+5% Resources From Battles' blessings and Fortune (up to ×2)", "src": "LOOT.md § Resources (S54); bc_GetRewardResources"},
+        {"t": "Treasure: every bundle gives 100–150 of one random resource (×3 Relaxed, ×0.25 Ruthless)", "src": "LOOT.md inv_Loot §2"},
+        {"t": "Resource Nodes in Eternity's End, The Swamplands, Sanctum Umbra, Unsullied Meadows, Astral Gallery and Damarel: 75–100 each (×4 Relaxed, ×0.175 Ruthless), +10% per node blessing, +5% per Phase Warrior card", "src": "LOOT.md § Resources (S54); obj_resource_KeyPress_69"},
+        {"t": "Breakable objects: 50–100 of a random resource (×4 Relaxed, ×0.175 Ruthless); Soulflayer cards can double it", "src": "LOOT.md § Resources (S54); obj_breakable_KeyPress_69"},
+        {"t": "Each hit on a Treasure Golem: 25–40 of a random resource", "src": "LOOT.md Treasure Golem (bc_OnAttack)"},
+        {"t": "Fruit of Life (Azure Dream, rank 40): 100–150; Vomiting Fruit, Vomiting Squash and Tarot Card Collection: 300–500 for the Power combination; Music Crystals and Alchemy Experiments: 700–1,000 for the Power pair (all more with their blessings)", "src": "LOOT.md § Resources; REALM_YIELDS.md"},
+        {"t": "Nether Realm: Faucet room chest 5,000; Mimic Mike's treasury 2,500", "src": "NETHER.md Faucet / treasury"},
+        {"t": "Rocks, Shipwrecks, Jellyfish, Pristine Statues, Blue Runestones, Large Slot Machines, Clocks and Stars: 200–300 of a random resource each, more with their realm's blessings", "src": "REALM_YIELDS.md (realm walks)"},
+        {"t": "Arcane Orbs (Eternity's End): 250 of every resource (500 with its rank-80 blessing)", "src": "LOOT.md § Resources (S54); obj_arcaneorb_KeyPress_69"},
+        {"t": "Pandemonium shrine: 1,000–5,000 of every resource (one of its 13 outcomes)", "src": "REALM_YIELDS.md (obj_demonstatue)"},
+        {"t": "The Gambling Dwarves' board game: 500–999 per ticket used on a square of this resource", "src": "LOOT.md § Resources (S54); obj_boardgame_Draw_64"},
+        {"t": "Refinery Convert: 1 for every 2 of another resource", "src": "LOOT.md § Resources (S54); obj_conversion_KeyPress_69"},
+        {"t": "A new game starts with 5,000 (15,000 on Relaxed)", "src": "LOOT.md § Resources (S54); obj_specchoose_KeyPress_69"}
+      ],
+      "spent": [
+        {"t": "Teleportation Shrine: 1,000 to travel to a chosen Realm type (a Random Realm is free); 1,000 per Randomize Properties", "src": "LOOT.md § Resources; obj_realmselector_KeyPress_69 / _70"},
+        {"t": "Fusion Lab: 3,000 to level a creature to match (a flat price in code, whatever the level)", "src": "LOOT.md § Resources; obj_levelmatch"},
+        {"t": "Divination Candle: 1,000, then 1,000 more after each use of that candle", "src": "LOOT.md § Resources; obj_charmcandle_KeyPress_69"},
+        {"t": "God Altars in Azure Dream, The Barrens, Faraway Enclave, Sanctum Umbra, Fae Lands and Astral Gallery: 1,000 per donation for 150 Favor, once per altar", "src": "REALM_YIELDS.md (obj_godaltar_KeyPress_69)"},
+        {"t": "Faraway Enclave altar offering and the Glowing Pit (Forbidden Depths): 250 of every resource", "src": "LOOT.md § Resources (S54); obj_juju / obj_depths_glowingpit"},
+        {"t": "Fellowdy's Nether chests: Pristine Chest 5,000, Gore Chest 10,000, Forgotten Chest 1,000 of every resource", "src": "LOOT.md § Resources (S54); obj_nether_chest1/2/3_KeyPress_69"},
+        {"t": "Nortah's Menagerie shop (priced in every resource): personality Tomes 10,000, Scroll of Renewal 5,000", "src": "LOOT.md § Resources (S54); scr_DecorationInteract (CURRENCY 5)"},
+        {"t": "Refinery Convert: 2 for 1 of another resource", "src": "LOOT.md § Resources (S54); obj_conversion_KeyPress_69"}
+      ] },
+    { "id": "emblem", "name": "Emblem of each god", "name_key": "L_IN_EMBLEM_SURATHLI", "name_pattern": "Emblem of", "frame": 1831, "shop": {"tab": "god"},
+      "earned": [
+        {"t": "Gate of the Gods: each win gives that god's Emblem × the difficulty (up to 10)", "src": "GATE_OF_THE_GODS_FINDINGS.md:109"},
+        {"t": "The realm quest at your deepest depth (or on Ironman): 1 of the realm god's Emblem", "src": "LOOT.md:125 / :257"},
+        {"t": "Realm objects and treasure (a small chance; 0.1% per bundle)", "src": "REALM_YIELDS.md; LOOT.md §4"},
+        {"t": "Nether Realm: Faucet room chest 10; Mimic Mike's treasury 3 (the current realm's god)", "src": "NETHER.md Faucet / treasury"}
+      ],
+      "spent": [
+        {"t": "Each god's own God Shop takes only that god's Emblem; items unlock by Favor rank. A Gate of the Gods Key costs 20 from Favor rank 50", "src": "shop_currencies.json god (MODE 1); shops.json favor_rank"}
+      ] },
+    { "id": "glory", "name_key": "L_IN_GLORY", "desc_key": "L_ID_CURRENCY_ARENA", "frame": 2002, "shop": {"tab": "arena"},
+      "earned": [
+        {"t": "The Arena: 100 / 250 / 500 / 850 / 1,300 for 1–5 wins (Standard, Wild, Masters; Masters ×1.5); Infinite pays 50 × wins² + 150 × wins. A lost run is doubled on Relaxed and halved on Ruthless", "src": "LOOT.md § Currencies S54 (obj_arena_Step_0, paid by obj_famescreen)"},
+        {"t": "Nether Realm: the Arena Master fights 500 / 1,000 / 2,000", "src": "LOOT.md § Currencies item 3 (bc_HandleBattleAftermath)"},
+        {"t": "Nether Realm: Faucet room chest 1,000", "src": "NETHER.md Faucet"}
       ],
       "spent": [] },
-    { "id": "notoriety", "name_key": "L_IN_NOTORIETY", "desc_key": "L_ID_CURRENCY_TAVERN", "frame": 2003, "shop": { "tab": "tavern" },
+    { "id": "notoriety", "name_key": "L_IN_NOTORIETY", "desc_key": "L_ID_CURRENCY_TAVERN", "frame": 2003, "shop": {"tab": "tavern"},
       "earned": [
-        { "t": "The Gambling Dwarves' games (board game, keno, scratch cards, slots)", "src": "CARD_SIGNATURES.md:107 (Alemental: obj_boardgame / obj_keno / obj_scratchcard / obj_slotparent)" },
-        { "t": "Nether Realm: Faucet room chest 1,000", "src": "NETHER.md Faucet" }
+        {"t": "The Gambling Dwarves' games (board game, keno, scratch cards, slots)", "src": "CARD_SIGNATURES.md:107 (Alemental: obj_boardgame / obj_keno / obj_scratchcard / obj_slotparent)"},
+        {"t": "Nether Realm: Faucet room chest 1,000", "src": "NETHER.md Faucet"}
       ],
       "spent": [] },
     { "id": "piety", "name_key": "L_IN_PIETY", "desc_key": "L_ID_CURRENCY_RELIQUARY", "frame": 2004,
       "earned": [
-        { "t": "Crushing a Nether Stone: 10 per rarity step plus a share of its Attunement Points", "src": "NETHER.md:206 (10·R + round(10·R·AP/1000))" },
-        { "t": "The realm quest at your deepest depth (or on Ironman), in place of the 10 Perk Points once a progress counter reaches 1,550 (what the counter tracks isn't decoded)", "src": "LOOT.md:122 / :257 (global.royalty_additional >= 1550)" },
-        { "t": "Nether Realm: Faucet room chest 1,000", "src": "NETHER.md Faucet" }
+        {"t": "Prophecies: each finished task pays its own amount (e.g. Break Stuff 75–100, Defeat a God 300, Encounter a Treasure Golem 500), +0.1% per achievement; turning in adds 10%–325% for 2–12 completed lines; ×2 Relaxed, ×0.5 Ruthless", "src": "LOOT.md § Currencies S54 (scr_ProphecyTaskPiety / scr_ProphecyTotalPiety)"},
+        {"t": "Crushing a Nether Stone at the Refinery: 10 per rarity step plus a share of its Attunement Points", "src": "NETHER.md:206 (10·R + round(10·R·AP/1000))"},
+        {"t": "The realm quest at your deepest depth (or on Ironman), in place of the 10 Perk Points once you've collected 1,550 Perk Points", "src": "LOOT.md § Currencies item 5 (global.royalty_additional >= 1550)"},
+        {"t": "Finishing the Reliquary project: 1,000", "src": "LOOT.md § Resources (scr_ProjectFinish @0x146548ba5)"},
+        {"t": "Nether Realm: Faucet room chest 1,000", "src": "NETHER.md Faucet"}
       ],
-      "spent": [] },
-    { "id": "stardust", "name_key": "L_IN_STARDUST", "desc_key": "L_ID_CURRENCY_STARDUST", "frame": 2141,
-      "earned": [],
       "spent": [
-        { "t": "Nethermancer Ned's Exotic Shop: Mana for each Exotic creature, 10,000 each", "src": "NETHER_BOSS_BEHAVIOR_FINDINGS.md Nethermancer Ned (MODE 2 / CURRENCY 10)" }
+        {"t": "Reliquary: unlocking a Relic 1,000 / 2,500 / 5,000 / 10,000 / 15,000 / 20,000 for your 1st–6th, then 25,000 each", "src": "LOOT.md § Currencies item 1 (obj_reliquary_Draw_64)"},
+        {"t": "Reliquary: raising a Relic's rank, (current rank + 1) × 100", "src": "LOOT.md § Currencies item 1"},
+        {"t": "Reliquary Enhancements (Attack Damage, Healing Bonus, Spell Damage, Stat Decrease Bonus, Stat Increase Bonus, Stat Bonus, Synergy): (current rank + 1) × 100 each, no cap. In code, Healing Bonus and Spell Damage have no effect", "src": "LOOT.md § Currencies S54 (obj_relicmeta)"}
+      ] },
+    { "id": "stardust", "name_key": "L_IN_STARDUST", "desc_key": "L_ID_CURRENCY_STARDUST", "frame": 2141,
+      "earned": [
+        {"t": "Otherworld Portals: beating the Exotic creature, 800–1,200", "src": "LOOT.md § Currencies item 3 (battle type 93)"}
+      ],
+      "spent": [
+        {"t": "Nethermancer Ned's Exotic Shop: Mana for each Exotic creature, 10,000 each", "src": "NETHER_BOSS_BEHAVIOR_FINDINGS.md Nethermancer Ned (MODE 2 / CURRENCY 10)"},
+        {"t": "Nether Synthesis missions: 30,000", "src": "LOOT.md § Currencies item 6 (project 125)"}
       ] },
     { "id": "glamour", "name_key": "L_IN_GLAMOUR", "desc_key": "L_ID_GLAMOUR", "frame": 2176,
       "earned": [
-        { "t": "Treasure: 3% per bundle, 1,000–1,500", "src": "LOOT.md:66" }
+        {"t": "Treasure: 3% per bundle, 1,000–1,500", "src": "LOOT.md:66"}
       ],
-      "spent": [] },
+      "spent": [
+        {"t": "Everett: Decorations 2,000; Accessories 5,000; Costumes, Weather, Backgrounds, Floors and Music 10,000 each", "src": "LOOT.md § Currencies item 2 / S54 (obj_decshoplist)"},
+        {"t": "Everett: Small / Medium / Large Treasure Chest 10,000 / 50,000 / 100,000 (10 / 50 / 100 bundles)", "src": "LOOT.md § Currencies item 2; obj_shop_KeyPress_69"}
+      ] },
     { "id": "arcanedust", "name_key": "L_IN_ARCANE_DUST", "desc_key": "L_ID_PROJECT_DISTRIBUTION", "frame": 1999,
       "earned": [
-        { "t": "The realm quest at your deepest depth: 90–110 while a Project is open (doubled by the Pandemonium statue)", "src": "LOOT.md realm quest" }
+        {"t": "The realm quest at your deepest depth: 90–110 while a Project is open (doubled by the Pandemonium statue)", "src": "LOOT.md realm quest"}
       ],
       "spent": [
-        { "t": "Castle Projects: 100 × the project's cost size (doubled on Ruthless)", "src": "DATABASES.md Projects (cost_mult × 100)" }
+        {"t": "Castle Projects: 100 × the project's cost size (doubled on Ruthless)", "src": "DATABASES.md Projects (cost_mult × 100)"}
       ] },
     { "id": "creatureparts", "name_key": "L_IN_CREATURE_PARTS", "desc_key": "L_ID_PROJECT_DISTRIBUTION", "frame": 2000,
-      "earned": [],
+      "earned": [
+        {"t": "Every battle you win while a Project is open: 48–60, straight into the Project (doubled while the Giant Pandemonium Statue's outcome 2 is active)", "src": "LOOT.md § Currencies item 4 (bc_HandleBattleAftermath)"}
+      ],
       "spent": [
-        { "t": "Castle Projects: 500 × the project's cost size (doubled on Ruthless)", "src": "DATABASES.md Projects (cost_mult × 500)" }
+        {"t": "Castle Projects: 500 × the project's cost size (doubled on Ruthless)", "src": "DATABASES.md Projects (cost_mult × 500)"}
       ] },
     { "id": "perkpoint", "name_key": "L_IN_PERK_POINT", "desc_key": "L_ID_PERK_POINT", "frame": 2084,
       "earned": [
-        { "t": "The realm quest at your deepest depth (or on Ironman): 10, until a progress counter reaches 1,550; Piety after that", "src": "LOOT.md:122 / :257 (global.royalty_additional < 1550)" },
-        { "t": "Gate of the Gods Ascension (every god but Caliban at difficulty 10+ with one specialization): 1", "src": "GATE_OF_THE_GODS_FINDINGS.md:113 (scr_SpecIsAscended)" }
+        {"t": "The realm quest at your deepest depth (or on Ironman): 10, until you've collected 1,550 Perk Points in total; Piety after that", "src": "LOOT.md § Currencies item 5 (global.royalty_additional < 1550)"},
+        {"t": "Gate of the Gods Ascension (every god but Caliban at difficulty 10+ with one specialization): 1", "src": "GATE_OF_THE_GODS_FINDINGS.md:113 (scr_SpecIsAscended)"}
       ],
       "spent": [
-        { "t": "Your specialization's perks; each perk has its own cost per rank", "src": "SIGILS_RUNES_ANOINTMENTS.md:166 (perk record field 6)" }
+        {"t": "Your specialization's perks; each perk has its own cost per rank", "src": "SIGILS_RUNES_ANOINTMENTS.md:166 (perk record field 6)"}
       ] },
     { "id": "dust", "name": "Dusts", "dust": true, "frame": 2144,
       "earned": [
-        { "t": "God Shops", "src": "shops.json kind = dust" }
+        {"t": "God Shops", "src": "shops.json kind = dust"}
       ],
       "spent": [
-        { "t": "The Enchanter: one Dust per property added to a Spell Gem; each Dust adds its own property", "src": "SPELL_GEMS.md:404; L_ID_DUST_<gem>" }
+        {"t": "The Enchanter: one Dust per property added to a Spell Gem; each Dust adds its own property", "src": "SPELL_GEMS.md:404; L_ID_DUST_<gem>"}
       ] },
     { "id": "gatekeyfragment", "name_key": "L_IN_GATE_OF_GODS_KEY_FRAGMENT", "frame": 2165,
       "earned": [
-        { "t": "Nether Boss wins: 4–7, more with higher Realm Instability and after Inner Darkness clears (not the first-ever win)", "src": "NETHER_BOSS_BEHAVIOR_FINDINGS.md:118-121" }
+        {"t": "Nether Boss wins: 4–7, more with higher Realm Instability and after Inner Darkness clears (not the first-ever win)", "src": "NETHER_BOSS_BEHAVIOR_FINDINGS.md:118-121"}
       ],
       "spent": [
-        { "t": "10 Key Fragments turn into a Gate of the Gods Key by themselves (game codex)", "src": "codex.csv L_CODD_GATEOFTHEGODS_GATE_OF_THE_GODS_KEYS (text, not decoded)" }
+        {"t": "Every 10 Key Fragments turn into a Gate of the Gods Key by themselves; the rest stay", "src": "LOOT.md § Currencies item 8 / S54 (obj_player_Step_0)"}
       ] },
     { "id": "gatekey", "name_key": "L_IN_GATE_OF_GODS_KEY", "frame": 2143,
       "earned": [
-        { "t": "10 Gate of the Gods Key Fragments (game codex)", "src": "codex.csv L_CODD_GATEOFTHEGODS_GATE_OF_THE_GODS_KEYS" },
-        { "t": "God Shops: 20 of that god's Emblem, from Favor rank 50", "src": "shops.json god misc 131 (price 20, favor_rank 50)" },
-        { "t": "Keyforge Missions (game codex)", "src": "codex.csv L_CODD_GATEOFTHEGODS_GATE_OF_THE_GODS_KEYS" }
+        {"t": "10 Gate of the Gods Key Fragments (automatic)", "src": "LOOT.md § Currencies item 8 (obj_player_Step_0)"},
+        {"t": "God Shops: 20 of that god's Emblem, from Favor rank 50", "src": "shops.json god misc 131 (price 20, favor_rank 50)"},
+        {"t": "Keyforge Missions: 1 each", "src": "LOOT.md § Currencies S54 (scr_ProjectFinish)"}
       ],
       "spent": [
-        { "t": "One per Gate of the Gods fight", "src": "GATE_OF_THE_GODS_FINDINGS.md:8 (obj_gatemenu)" }
+        {"t": "One per Gate of the Gods fight", "src": "GATE_OF_THE_GODS_FINDINGS.md:8 (obj_gatemenu)"}
       ] }
   ]
 }
