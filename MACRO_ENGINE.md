@@ -129,7 +129,8 @@ Every proposed macro must satisfy these (v2, 2026-10-23, implements all of them)
 - **Fallback attack = lowest Health (user, 2026-10-24).** Best-of tests pick only from the enemies the line can target,
   so the plain `If any enemy has lowest Health, attack that creature` line covers it; `attack a random enemy` follows it
   as a lower-priority safety net.
-- **Provoke (code reading):** while an enemy Provokes, about half of targeted attacks are redirected to it.
+- **Provoke (code, 2026-10-25):** while an enemy Provokes, every targeted attack on one of its allies is redirected to it
+  (a random Provoker if several); the earlier "about half" was Hoodwink's 50% for Blind attackers (`_su_extract` COMBAT_RULES § Forced attacks).
 - **Tank actions check their buff (2026-10-24).** Provoke only without Taunting, Defend only without Defensive (both
   already fire at the end of the turn). A tank whose buffs cover every tank action falls back to its spells, Citrine gems
   included.
