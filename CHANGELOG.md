@@ -4,6 +4,14 @@ Every dated change entry, newest first (moved verbatim from Progress.md on 2026-
 to their own section and sorted by their date). Current state and open work: `Progress.md`, `BACKLOG.md`.
 New entries go at the TOP.
 
+## 2026-10-25 — Receiver triggers: Side = who acts, Target = who is hit (extract S67 + S68)
+- Data rebuild only. The extract now gives every receiver Attack / Damage / Heal / Buff / Debuff / Critical Hit tag an
+  `actor` (Side) and a `target` (Target), read from the code's own side tests. Most clauses test only the creature hit, so
+  Side is Any (Memento Mori, Solence, Forbidden Lullaby: Side Any, Target This creature); Fight or Flight, Animated
+  Treasure, Mirror Blades, Mass Hysteria, Pendulum's Return are Enemy side.
+- Is Attacked: the inferred attacker side is gone; Target is the attacked creature.
+- Mercurial: its Trigger::Attack is now the code tag (receiver, Target Your side, Side Any), replacing the old Performer Enemy.
+- Also takes S67's perk / trait / relic side fixes (Diagnosis and the other DoT Tick perks now Your side where the code says so).
 ## 2026-10-25 — Extra "Any" triggers from value-read trait checks dropped (Throat Ripper)
 - Throat Ripper showed Enemy side on Trigger::Attack. Its real gate (`0x141322242`) is Self or Ally. The code calls the
   trait check a second time inside the block (`0x14132269c`) only to read the holder; the extract emitted that call as a
