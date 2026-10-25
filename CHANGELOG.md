@@ -4,6 +4,14 @@ Every dated change entry, newest first (moved verbatim from Progress.md on 2026-
 to their own section and sorted by their date). Current state and open work: `Progress.md`, `BACKLOG.md`.
 New entries go at the TOP.
 
+## 2026-10-25 — Relics can't be debuffed: Triumvir 100 note withdrawn (extract S66)
+- The extract traced how the game handles a debuff aimed at a Relic: it drops it, along with buffs, healing, damage and stat
+  changes aimed at the Relic. So Lightning Storm never Silences Triumvir's Relic, and ranks 40 / 70 / 100 work every time
+  (the S65 note said once per battle). That note is gone. The Relic also never checks the bearer's debuffs: a Silenced or
+  Stunned bearer doesn't stop its Relic.
+- Thousand Needles 30 reworded: caster-side parts of a copied spell go to the Relic and are lost; no Silence part.
+- Data rebuild only.
+
 ## 2026-10-25 — Clarify notes: Blind Eye, Hoodwink (Witch Doctor research)
 - Blind Eye: adds nothing to attacks (every same-side attack is already undodgeable). Hoodwink: its Blind part adds nothing
   (Provoke already pulls at 100%); the permanent enemy Taunting is what matters (-35% Defense, provoke triggers, but your

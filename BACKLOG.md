@@ -99,10 +99,9 @@ a decompile → write `_su_extract/code/HANDOFF_<topic>.md` and don't guess.
   level only, Relic mechanic excluded, 30 of 31 relics — Arbiter has no signatures): **37 features at 3+ ranks, 34 more surface at
   exactly 2**. Re-run the same comparison on the real per-rank tags when they land, then the user picks.
 - [ ] **In-game checks: relic self-conflicts** (extract S65, `RELIC_SIGNATURES.md` § Relic self-conflicts; notes already shipped,
-  code-certain). Confirm when convenient: (1) Triumvir rank 100: after the relic's first Lightning Storm, does a later Arcane gain
-  still cast Snowstorm / Firestorm / Lightning Storm? (code: no, the relic stays Silenced). (2) Brambleskin rank 100: does the
-  bearer ever resurrect on death? (code: never). (3) Fable rank 80: do the bearer's on-death effects activate twice? (code: once).
-  If one disagrees, retract its note and tell the extract.
+  code-certain). Confirm when convenient: (1) Brambleskin rank 100: does the bearer ever resurrect on death? (code: never).
+  (2) Fable rank 80: do the bearer's on-death effects activate twice? (code: once). If one disagrees, retract its note and tell
+  the extract. (The Triumvir rank 100 check was dropped 2026-10-25: extract S66 found the Relic can't be debuffed, note withdrawn.)
 
 ### G7. Taxonomy + search
 - [x] **User review: 4 status tags the code does not back** (extract S56, CODE_TAXO.md § Status markers per site): Empowered
