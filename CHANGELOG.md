@@ -37,6 +37,10 @@ New entries go at the TOP.
 - New Side value **This creature** (after Your side in the toggle): the effect's own creature is the one affected (scope Self).
 - Backlog: Q16-Q21 clarify notes and the start-of-battle handoff leftovers added.
 
+## 2026-10-25 — Clarify note: Starwrath rank 100 lowers Confused enemies to 10%
+- Extract Q22: in the code rank 100 sets every enemy attack's Confused chance to 10, including enemies that really are
+  Confused (usually 50). Shipped as a clarify note on the relic rank.
+
 ## 2026-10-24 — Forgotten Blessing raises Relic stat bonuses in the calculator (extract S55)
 - New effect rule `relicRanks` (Antiquarian's Forgotten Blessing, spec or anointment): +100 Relic ranks for the Relic's stat
   bonus only (`scr_RelicStatBonus`), so a rank-57 Relic gives +15.7% instead of +5.7%. Rank-gated Relic perks are unchanged.
