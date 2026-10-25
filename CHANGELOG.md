@@ -4,6 +4,14 @@ Every dated change entry, newest first (moved verbatim from Progress.md on 2026-
 to their own section and sorted by their date). Current state and open work: `Progress.md`, `BACKLOG.md`.
 New entries go at the TOP.
 
+## 2026-10-25 — Ad-hoc clarify notes, Lord Zantai trait depth from code (extract S59)
+- Six new clarify notes: Shadow Bulwark and Bulwark are not limited by the 80% damage reduction cap; The Great Beyond's
+  converted casts trigger Shared Consciousness (20% overall), whose copies count as automatic; Thrive On Death has no death check
+  (Anger Management feeds it); Anger Management needs no other on-heal effect.
+- Lord Zantai's 10 traits take their depth from the code (590: his portal needs Inner Darkness beaten 3 times; each win drops
+  one random Jewel of Zantai). The wiki depth table now only cross-checks: a wiki row with no code source fails the build.
+- Start of Battle: Ultimate Trickery's note no longer shows code wording. The other start-of-battle leftovers were already in.
+
 ## 2026-10-25 — Automatic actions get their Side from the code's actor (extract S58)
 - Rebuilt from the extract's new `actor` field (who performs the Auto Attack / Cast / Defend / Provoke, read from the action
   call). 603 entries, 599 with a Side: Self (This creature) 343, Self or Ally 171, Enemy 65, Ally 11, Any 9. Examples: Fight

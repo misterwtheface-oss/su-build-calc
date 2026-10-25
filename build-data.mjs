@@ -694,9 +694,16 @@ for (const c of creatures) {
   let nbHit = 0; const nbMiss = [];
   for (const r of nb) { const id = traitIdByNormName.get(normTN(r.trait)); if (id != null) { traitDepth.set(id, r.unlock_depth); nbHit++; } else nbMiss.push(r.trait); }
   if (nbMiss.length) err(`nether boss depth: ${nbMiss.length}/${nb.length} Nether Shop traits did not match a shipped trait: ${nbMiss.join(', ')}`);
-  // traits the shop doesn't sell (Lord Zantai's 10) keep the wiki depth table's value: no code source for them yet
-  const shopT = new Set(nb.map(r => normTN(r.trait))), nbWiki = readJSON(path.join(REF, 'nether_boss_trait_depths.json')).traits.filter(r => !shopT.has(normTN(r.trait)));
-  for (const r of nbWiki) { const id = traitIdByNormName.get(normTN(r.trait)); if (id != null) traitDepth.set(id, r.depth); else warn(`nether boss depth: wiki trait ${r.trait} matches no shipped trait`); }
+  // Lord Zantai's 10 (not sold by Ned): each Zantai win drops one Jewel; his portal appears only after the last Nether Boss's
+  // 3rd win, so unlock_depth = that fight's depth (code: nether_shop.json lord_zantai, extract S59). Joined by trait runtime id.
+  const zj = readJSON(path.join(MODEL, 'nether_shop.json')).lord_zantai.jewels, traitByRtD = new Map();
+  for (const id in traits) for (const r of traits[id].runtimeIds || []) traitByRtD.set(r, +id);
+  for (const r of zj) { const id = traitByRtD.get(r.trait_runtime_id);
+    if (id == null || normTN(traits[id].name) !== normTN(r.trait)) err(`nether boss depth: Lord Zantai trait ${r.trait} (runtime ${r.trait_runtime_id}) not shipped`);
+    else traitDepth.set(id, r.unlock_depth); }
+  // the wiki depth table only cross-checks now: every row must be a Nether Shop or Lord Zantai trait
+  const codeT = new Set([...nb, ...zj].map(r => normTN(r.trait))), nbWiki = readJSON(path.join(REF, 'nether_boss_trait_depths.json')).traits.filter(r => !codeT.has(normTN(r.trait)));
+  if (nbWiki.length) err(`nether boss depth: ${nbWiki.length} wiki traits have no code source: ${nbWiki.map(r => r.trait).join(', ')}`);
   let traitTagged = 0, traitGated = 0;
   for (const id in traits) {
     const d = traitDepth.get(+id); if (d != null) { traits[id].depth = d; traitTagged++; }
@@ -704,7 +711,7 @@ for (const c of creatures) {
   }
   const favN = creatures.filter(c => c.gate && c.gate.type === 'favor').length;
   const guildN = creatures.filter(c => c.gate && c.gate.type === 'guild').length;
-  console.log(`  realm depth: ${creatures.filter(c => typeof c.depth === 'number').length}/${creatures.length} creatures · ${traitTagged} traits tagged (${nbHit}/${nb.length} Nether Shop materials, code · ${nbWiki.length} wiki-only: ${[...new Set(nbWiki.map(r => r.boss))].join(', ')})`);
+  console.log(`  realm depth: ${creatures.filter(c => typeof c.depth === 'number').length}/${creatures.length} creatures · ${traitTagged} traits tagged (${nbHit}/${nb.length} Nether Shop materials + ${zj.length} Lord Zantai Jewels, code)`);
   console.log(`  secondary gate: ${favN} favor + ${guildN} guild creatures · ${traitGated} traits gated`);
 }
 

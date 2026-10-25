@@ -307,19 +307,24 @@ Known limits + planned work, roughly in priority order (all now cheap to impleme
 - [x] **Nether Bosses** shipped 2026-10-11 (35 pages, tier toggle, threats, stat bars, trait materials).
 - [x] **Gate of the Gods** shipped 2026-10-11 (31 god pages: threats, stat bars, difficulty table, rewards).
 - [ ] **Nether Shop boss skins: price** (in-game check): the code charges 1 Brimstone for each boss skin Ned sells after 4 wins
-  (`nether_shop.json` `boss_skin_price_note`); the Nether Boss pages leave the price out until confirmed. Also open: where Lord
-  Zantai's 10 traits come from (their depth is still the wiki's 591).
-- [ ] **Ad-hoc Q16-Q21 clarify notes (extract 2026-10-24, waiting on the extract):** no `effect_clarifications.json` entry yet
+  (`nether_shop.json` `boss_skin_price_note`); the Nether Boss pages leave the price out until confirmed. Lord Zantai's 10
+  traits: DONE 2026-10-25 (extract S59): each Zantai win drops one random Jewel; his portal needs Inner Darkness beaten 3 times,
+  so their depth is 590 from the code (`nether_shop.json` `lord_zantai`; the wiki table only cross-checks now).
+- [x] **Ad-hoc Q16-Q21 clarify notes** DONE 2026-10-25 (extract S59, 6 notes shipped). Was: no `effect_clarifications.json` entry yet
   for The Great Beyond -> Shared Consciousness (its conversions trigger it, 20% per execution), Thrive On Death (no dead check,
   so Anger Management feeds it) / Anger Management, and Shadow Bulwark / Bulwark being outside the 80% reduction cap
   (`code/ADHOC_RESEARCH_FINDINGS.md` rows 16-21). In Formation, Shadow Bulwark and Poison Inoculation already have notes.
-- [ ] **Start-of-battle handoff leftovers** (`_su_extract/code/HANDOFF_start_of_battle_regen.md` § App to-do): rows 245 / 247 / 249
+- [x] **Start-of-battle handoff leftovers** (`_su_extract/code/HANDOFF_start_of_battle_regen.md` § App to-do): rows 245 / 247 / 249
   (Cruel Creation / Corpse Eater / Animated Dead as secondaries), realm property 25 on your creatures (data already says so),
-  Ultimate Trickery's text. Probably all done by the rebuilds: verify and tick.
+  Ultimate Trickery's text. DONE 2026-10-25: all three were in the shipped data (245 / 247 / 249 fold into their parent rows);
+  Ultimate Trickery's note lost its code wording (extract S59).
 - [ ] **Effect-order clarify-note candidates (optional, extract S49 / S49d / S49f):** Fragmenting Arrow overflow and Butcher
   execute are matched by the hit's display label, not the spell id (`bc_EventDamage` #831 / #945 `gate.note`); same for
   Disintegrating Arrow on kill (`bc_ExecuteEvents` #41) and the boss-battle instant-kill branch (#84, battle types 37 / 39).
   Needs player-facing wording (what actually differs in play) before shipping; Celerity's row note is data provenance, not a note.
+  2026-10-25: draft wording in `_su_extract/code/EFFECT_ORDER_FINDINGS.md` § "Label-matched gates" (not shipped; for the user):
+  the label match changes nothing in play for Fragmenting / Disintegrating Arrow; new code ≠ text: Butcher's gate instantly kills
+  on a hit over 35% of max Health (extract open: whether Butcher's own hits carry the label); boss-battle instant-kill rule.
 - [ ] In-game checks the Bosses page shows as unverified: Jotun's 24-turn count, Mindwurm saddle "nothing" pick, Nebodar
   "Burned can't be avoided".
 - [x] **Start of Battle secondary calls** DONE 2026-10-21 (extract S42 `secondary_of`; 13 indented, self re-checks folded).
