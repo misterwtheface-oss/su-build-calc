@@ -4,6 +4,15 @@ Every dated change entry, newest first (moved verbatim from Progress.md on 2026-
 to their own section and sorted by their date). Current state and open work: `Progress.md`, `BACKLOG.md`.
 New entries go at the TOP.
 
+## 2026-10-24 — Currencies: clarify notes (extract S55)
+- A Currencies line can carry `clarify: [..]` (`data/reference/currencies.json`; build-data ships it as `{t, clarify}`,
+  shown as the usual `fx-clarify` notes under the line). Notes: Fusion Lab level match is a flat 3,000 Power; Reliquary
+  Healing Bonus / Spell Damage do nothing, Stat Bonus raises the Relics' own stats; Arena Glory's Relaxed / Ruthless
+  multiplier only on a lost run; Prophecy turn-in +15% with the Thylacine card (no game text).
+- New Piety line (S55 decode): fulfilling the Goblet of Trials pays 125–150 × specializations unlocked (+ 10 + 3 × that many
+  bundles). Forgotten Blessing gets a clarify note from `effect_clarifications.json` (its 100 ranks only raise Relic stat
+  bonuses, locked Relics included).
+
 ## 2026-10-24 — Macros: Replicate-type spells first
 - User (new Imp Bishop build): Replicate is the priority, it is worth more per cast. New `recast` purpose for spells that
   cast the caster's other spells (Replicate 2 per cast; Glory 30% × its other gems, up to 3). Worth more than 1 → a line

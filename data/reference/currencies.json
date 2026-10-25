@@ -1,5 +1,5 @@
 {
-  "_note": "Appendix 'Currencies' (user 2026-10-24). App-authored lines, each code-grounded in _su_extract (src = doc / data): LOOT.md § Currencies (S53 + S54 open items) and § Resources (S54: every source and sink of the five resources, data/model/currencies_extract.json 'resources'). Names come from the game's items.csv (name_key); desc_key = the game's own item description; frame = the icons-sheet frame from inv_ItemIconIndex (item_icons.json / DATABASES.md 'Item icons'). shop = {tab, group?}: build-data adds the shop and its price range from D.shops. Left out on purpose: Energy (no code creates it; its only shop, the Arcane Vault, is never offered), Sandbox amounts, and code whose reachability isn't confirmed (hard-coded English NPCs such as the breeding / summoning menus, Hot Hands / Think Fast / arm wrestling dwarves, Reid's 2,000-Granite arena, merchants, Torun's trade). Patch 3.0 teaser changes are left out (not code).",
+  "_note": "Appendix 'Currencies' (user 2026-10-24). App-authored lines, each code-grounded in _su_extract (src = doc / data): LOOT.md § Currencies (S53 + S54 open items) and § Resources (S54: every source and sink of the five resources, data/model/currencies_extract.json 'resources'). Names come from the game's items.csv (name_key); desc_key = the game's own item description; frame = the icons-sheet frame from inv_ItemIconIndex (item_icons.json / DATABASES.md 'Item icons'). shop = {tab, group?}: build-data adds the shop and its price range from D.shops. Left out on purpose: Energy (no code creates it; its only shop, the Arcane Vault, is never offered), Sandbox amounts, and code whose reachability isn't confirmed (hard-coded English NPCs such as the breeding / summoning menus, Hot Hands / Think Fast / arm wrestling dwarves, Reid's 2,000-Granite arena, merchants, Torun's trade). Patch 3.0 teaser changes are left out (not code). A line may carry clarify: [..] where the code differs from the game's text (the code value stays in t; the note explains; shown like the other fx-clarify notes).",
   "currencies": [
     { "id": "brimstone", "name_key": "L_IN_CURRENCY_BRIMSTONE", "frame": 1960, "shop": {"tab": "guild", "group": "chaos"},
       "earned": [
@@ -128,7 +128,8 @@
       ],
       "spent": [
         {"t": "Teleportation Shrine: 1,000 to travel to a chosen Realm type (a Random Realm is free); 1,000 per Randomize Properties", "src": "LOOT.md § Resources; obj_realmselector_KeyPress_69 / _70"},
-        {"t": "Fusion Lab: 3,000 to level a creature to match (a flat price in code, whatever the level)", "src": "LOOT.md § Resources; obj_levelmatch"},
+        {"t": "Fusion Lab: 3,000 to level a creature to match", "src": "LOOT.md § Resources; obj_levelmatch",
+         "clarify": ["The game's text says higher levels cost more; the code charges a flat 3,000 whatever the level."]},
         {"t": "Divination Candle: 1,000, then 1,000 more after each use of that candle", "src": "LOOT.md § Resources; obj_charmcandle_KeyPress_69"},
         {"t": "God Altars in Azure Dream, The Barrens, Faraway Enclave, Sanctum Umbra, Fae Lands and Astral Gallery: 1,000 per donation for 150 Favor, once per altar", "src": "REALM_YIELDS.md (obj_godaltar_KeyPress_69)"},
         {"t": "Faraway Enclave altar offering and the Glowing Pit (Forbidden Depths): 250 of every resource", "src": "LOOT.md § Resources (S54); obj_juju / obj_depths_glowingpit"},
@@ -148,7 +149,8 @@
       ] },
     { "id": "glory", "name_key": "L_IN_GLORY", "desc_key": "L_ID_CURRENCY_ARENA", "frame": 2002, "shop": {"tab": "arena"},
       "earned": [
-        {"t": "The Arena: 100 / 250 / 500 / 850 / 1,300 for 1–5 wins (Standard, Wild, Masters; Masters ×1.5); Infinite pays 50 × wins² + 150 × wins. A lost run is doubled on Relaxed and halved on Ruthless", "src": "LOOT.md § Currencies S54 (obj_arena_Step_0, paid by obj_famescreen)"},
+        {"t": "The Arena: 100 / 250 / 500 / 850 / 1,300 for 1–5 wins (Standard, Wild, Masters; Masters ×1.5); Infinite pays 50 × wins² + 150 × wins; ×2 Relaxed, ×0.5 Ruthless", "src": "LOOT.md § Currencies S54 (obj_arena_Step_0, paid by obj_famescreen)",
+         "clarify": ["In code, the Relaxed / Ruthless multiplier only applies when the run is lost; winning all five battles pays the table as is."]},
         {"t": "Nether Realm: the Arena Master fights 500 / 1,000 / 2,000", "src": "LOOT.md § Currencies item 3 (bc_HandleBattleAftermath)"},
         {"t": "Nether Realm: Faucet room chest 1,000", "src": "NETHER.md Faucet"}
       ],
@@ -161,16 +163,20 @@
       "spent": [] },
     { "id": "piety", "name_key": "L_IN_PIETY", "desc_key": "L_ID_CURRENCY_RELIQUARY", "frame": 2004,
       "earned": [
-        {"t": "Prophecies: each finished task pays its own amount (e.g. Break Stuff 75–100, Defeat a God 300, Encounter a Treasure Golem 500), +0.1% per achievement; turning in adds 10%–325% for 2–12 completed lines; ×2 Relaxed, ×0.5 Ruthless", "src": "LOOT.md § Currencies S54 (scr_ProphecyTaskPiety / scr_ProphecyTotalPiety)"},
+        {"t": "Prophecies: each finished task pays its own amount (e.g. Break Stuff 75–100, Defeat a God 300, Encounter a Treasure Golem 500), +0.1% per achievement; turning in adds 10%–325% for 2–12 completed lines; ×2 Relaxed, ×0.5 Ruthless", "src": "LOOT.md § Currencies S54 (scr_ProphecyTaskPiety / scr_ProphecyTotalPiety)",
+         "clarify": ["Owning the Thylacine card adds 15% to the turn-in before the line bonus; no game text mentions it."]},
         {"t": "Crushing a Nether Stone at the Refinery: 10 per rarity step plus a share of its Attunement Points", "src": "NETHER.md:206 (10·R + round(10·R·AP/1000))"},
         {"t": "The realm quest at your deepest depth (or on Ironman), in place of the 10 Perk Points once you've collected 1,550 Perk Points", "src": "LOOT.md § Currencies item 5 (global.royalty_additional >= 1550)"},
+        {"t": "Fulfilling the Goblet of Trials: 125–150 × the number of specializations you've unlocked (and 10 + 3 × that many treasure bundles)", "src": "LOOT.md § Currencies S55 (scr_DecorationInteract @0x146055910; specs[0] = specializations unlocked, scr_SpecUnlock)"},
         {"t": "Finishing the Reliquary project: 1,000", "src": "LOOT.md § Resources (scr_ProjectFinish @0x146548ba5)"},
         {"t": "Nether Realm: Faucet room chest 1,000", "src": "NETHER.md Faucet"}
       ],
       "spent": [
         {"t": "Reliquary: unlocking a Relic 1,000 / 2,500 / 5,000 / 10,000 / 15,000 / 20,000 for your 1st–6th, then 25,000 each", "src": "LOOT.md § Currencies item 1 (obj_reliquary_Draw_64)"},
         {"t": "Reliquary: raising a Relic's rank, (current rank + 1) × 100", "src": "LOOT.md § Currencies item 1"},
-        {"t": "Reliquary Enhancements (Attack Damage, Healing Bonus, Spell Damage, Stat Decrease Bonus, Stat Increase Bonus, Stat Bonus, Synergy): (current rank + 1) × 100 each, no cap. In code, Healing Bonus and Spell Damage have no effect", "src": "LOOT.md § Currencies S54 (obj_relicmeta)"}
+        {"t": "Reliquary Enhancements (Attack Damage, Healing Bonus, Spell Damage, Stat Decrease Bonus, Stat Increase Bonus, Stat Bonus, Synergy): (current rank + 1) × 100 each, no cap", "src": "LOOT.md § Currencies S54 (obj_relicmeta)",
+         "clarify": ["Healing Bonus and Spell Damage have no effect in code: each works out its 1% per rank but never adds it.",
+                     "Stat Bonus raises the stats of the Relics themselves (so the Relics' own damage and healing), not the stat bonus your creatures get from their Relics."]}
       ] },
     { "id": "stardust", "name_key": "L_IN_STARDUST", "desc_key": "L_ID_CURRENCY_STARDUST", "frame": 2141,
       "earned": [

@@ -10,8 +10,10 @@ Extract-side research questions live in `_su_extract/RESUME.md`.
   section: breeding / summoning menus (Brimstone + Crystal), the gambling-dwarf minigames (Hot Hands, Think Fast, Treasure
   Hunt, arm wrestling), Reid's 2,000-Granite arena, merchants, Torun's trade, rune grinding, Alteration, sacrifice, prophecy
   reset. If any appears in game, add it from `_su_extract/code/LOOT.md` § Resources.
-- [ ] Clarify-note candidates (code differs from the text): Fusion Lab level match is a flat 3,000 Power; Reliquary Spell
-  Damage / Healing Bonus do nothing; Arena Glory difficulty multiplier only on a lost run.
+- [x] Clarify-note candidates (code differs from the text): Fusion Lab level match is a flat 3,000 Power; Reliquary Spell
+  Damage / Healing Bonus do nothing; Arena Glory difficulty multiplier only on a lost run. DONE 2026-10-24 (clarify notes).
+- [ ] Forgotten Blessing (extract S55, `scr_RelicStatBonus`): +100 Relic ranks for the stat bonus = +10% on the attuned
+  Relic's stat. The stat engine (`effects.js` relicContribs, 0.1 × rank) doesn't add it yet; only a clarify note ships.
 
 ## BATCH 2026-10-17 — user list of 30 (mostly done; open items are the unticked ones)
 Grouped by the app area each item touches, in suggested build order. Within a group, earlier items unblock later ones.

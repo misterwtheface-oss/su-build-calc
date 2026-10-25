@@ -1797,7 +1797,11 @@ const currencies = (() => {
     if (c.desc_key) { desc = itemsLoc.get(c.desc_key); if (!desc) err(`currencies: ${c.id} desc ${c.desc_key} not in items.csv`);
       else desc = desc.split(/\\n\\n|\n\n/)[0].trim(); }   // the game's text minus its "automatically added / consumed" line
     const icon = curIcon(c.frame); if (!icon) err(`currencies: ${c.id} icon frame ${c.frame} missing`);
-    const spent = c.spent.map(x => x.t);
+    // a line whose code differs from the game's text carries `clarify: [..]` (code value in t, the note explains) -> {t, clarify}
+    const line = (x) => { if (!x.clarify) return x.t;
+      if (!Array.isArray(x.clarify) || !x.clarify.length || x.clarify.some(n => typeof n !== 'string' || !n.trim())) err(`currencies: ${c.id} bad clarify on "${x.t}"`);
+      return { t: x.t, clarify: x.clarify }; };
+    const spent = c.spent.map(line);
     if (c.shop) { const tab = shops.find(s => s.key === c.shop.tab); if (!tab) { err(`currencies: ${c.id} shop tab ${c.shop.tab}`); }
       else if (c.shop.group) { const g = tab.groups.find(x => x.key === c.shop.group);
         if (!g) err(`currencies: ${c.id} shop group ${c.shop.group}`);
@@ -1805,10 +1809,10 @@ const currencies = (() => {
       else if (tab.groups) spent.unshift(`God Shops: ${range(tab.groups.flatMap(g => g.items))} each`);
       else { if (norm(tab.currency) !== norm(name)) err(`currencies: ${c.id} shop ${tab.label} takes ${tab.currency}`); spent.unshift(`${tab.label} shop: ${range(tab.items)} each`); } }
     if (!c.earned.length && !spent.length) err(`currencies: ${c.id} has no lines`);
-    return { id: c.id, name, icon, ...(desc ? { desc } : {}), earned: c.earned.map(x => x.t), spent, ...(c.dust ? { members: dustNames } : {}) };
+    return { id: c.id, name, icon, ...(desc ? { desc } : {}), earned: c.earned.map(line), spent, ...(c.dust ? { members: dustNames } : {}) };
   });
 })();
-console.log(`  currencies: ${currencies.length} (${currencies.filter(c => c.desc).length} with the game's description)`);
+console.log(`  currencies: ${currencies.length} (${currencies.filter(c => c.desc).length} with the game's description, ${currencies.flatMap(c => [...c.earned, ...c.spent]).filter(x => x.clarify).length} clarified lines)`);
 
 // ── boss battle sprites (Appendix boss-trait rows) ────────────────────────────
 // DEITY bosses use bspr_god_* (incl. Caliban). NETHER/SPECIAL bosses use spr_crits_battle_<frame> — the

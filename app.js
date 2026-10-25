@@ -3747,12 +3747,14 @@
   // ── Currencies (D.currencies, user 2026-10-24): each currency's game name, icon and description, then what it's spent on and
   // earned from (build-data: data/reference/currencies.json lines + the shop and its code price range from D.shops).
   function currencySection(st, q) {
-    const txt = (c) => [c.name, c.desc || "", ...c.earned, ...c.spent, ...(c.members || [])].join(" ").toLowerCase();
+    // a line is a string, or {t, clarify: [..]} where the code differs from the game's text (shown as fx-clarify notes)
+    const lt = (x) => typeof x === "string" ? x : x.t;
+    const txt = (c) => [c.name, c.desc || "", ...c.earned.map(lt), ...c.spent.map(lt), ...(c.members || [])].join(" ").toLowerCase();
     const kw = q && "currency currencies resources".includes(q);
     const list = (D.currencies || []).filter(c => !q || kw || txt(c).includes(q));
     if (!list.length) return "";
     const key = "Currency", open = q ? true : !st.collapsed.has(key);
-    const lines = (label, xs) => xs.length ? `<div class="cur-label">${label}</div><ul class="cur-list">${xs.map(t => `<li>${esc(t)}</li>`).join("")}</ul>` : "";
+    const lines = (label, xs) => xs.length ? `<div class="cur-label">${label}</div><ul class="cur-list">${xs.map(x => `<li>${esc(lt(x))}${fxClarify(x)}</li>`).join("")}</ul>` : "";
     const row = (c) => `<div class="perk-line res-line">
         <div class="apx-iconcol">${c.icon ? icoBox(`<img src="${esc(c.icon)}" alt="">`) : ""}</div>
         <div class="perk-line-body"><div class="perk-line-head"><b>${esc(c.name)}</b></div>
