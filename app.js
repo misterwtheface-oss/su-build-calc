@@ -5410,8 +5410,10 @@
     // so the turn is never handed back to you
     { key: "tail-attack", when: x => x.attackWorth && !x.attackFirst,
       lines: x => [mLine(`If any enemy ${x.T.focus}, attack that creature`, x.intAttacks ? `Its attacks use Intelligence — also covers Silence and spells out of charges` : `Covers Silence and spells out of charges`)] },
-    // no random-enemy attack: "lowest Health" picks only from the enemies that can be targeted (user, in game, 2026-10-24),
-    // so the line above is the fallback attack
+    // "lowest Health" picks only from the enemies that can be targeted (user, in game, 2026-10-24), so the line above is the
+    // fallback attack; a random-enemy attack stays below it as a safety net (a macro never picks an invalid action, so it costs nothing)
+    { key: "tail-random", when: x => x.attackWorth,
+      lines: () => [mLine(`If this creature has > 0 living enemies, attack a random enemy`, `Safety net if the lowest-Health attack can't act`)] },
     { key: "tail-defend", when: x => !x.tankActs.includes("defend"),
       lines: () => [mLine(`If this creature doesn't have Defensive, defend`, `Nothing else can act (Scorned, every enemy Invisible, …)`)] },
     { key: "tail-skip", when: () => true,

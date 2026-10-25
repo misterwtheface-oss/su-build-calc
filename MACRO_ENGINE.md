@@ -86,7 +86,7 @@ Helpers: `mLine(en, why, chain)` builds a line (`chain: true` = "test next line"
 
 Current rules, in order: `rez · heal-emergency · unsilence · once · ally-attack · provoke-main · provoke-spell ·
 provoke-tank · heal-sustain · drain · dispel · debuff · buff · summon · defend-value · attack-first · aoe · damage-single ·
-control · tail-attack · tail-defend · tail-skip`.
+control · tail-attack · tail-random · tail-defend · tail-skip`.
 
 - **Target block** (`targetBlock`): the main single-target action (the attack for an attacker, else the strongest
   plain spell) gets a block sized to the free lines, so the macro uses the whole 30-line allowance. Shelled negates the
@@ -96,9 +96,10 @@ control · tail-attack · tail-defend · tail-skip`.
   - C (12): per slot, `doesn't have Shelled` → `doesn't have Barrier` → act;
   - B (6): per slot, `doesn't have Barrier` → act.
   The biggest of A+F+B / A+B / A+F / A / F+C / C / F+B / B / F that fits is used.
-- **No random-enemy attack (2026-10-24):** "lowest Health" picks only from targetable enemies (user, in game), so
+- **Fallback attack (2026-10-24):** "lowest Health" picks only from targetable enemies (user, in game), so
   `If any enemy has lowest Health, attack that creature` is the fallback attack (the attacker's own line after its block,
-  or `tail-attack`).
+  or `tail-attack`). **tail-random** `If this creature has > 0 living enemies, attack a random enemy` stays below it as a
+  safety net: a macro never picks an invalid action, so the extra line costs nothing.
 
 - **once:** for each of the top `onceTargets` allies whose Artifact Spell Slot fires on what that ally does most
   (Sword + attacker, Staff + caster, Shield + defender, Boots always), a turn-gated pair:
@@ -122,7 +123,8 @@ Every proposed macro must satisfy these (v2, 2026-10-23, implements all of them)
 - **Use the whole allowance.** Fill all 30 lines with useful cases unless there is truly nothing else to cover.
 - **Citrine = intent.** Citrine gems aren't cast manually; the Citrine action is the creature's main action.
 - **Fallback attack = lowest Health (user, 2026-10-24).** Best-of tests pick only from the enemies the line can target,
-  so the plain `If any enemy has lowest Health, attack that creature` line covers it; no `attack a random enemy`.
+  so the plain `If any enemy has lowest Health, attack that creature` line covers it; `attack a random enemy` follows it
+  as a lower-priority safety net.
 - **Provoke (code reading):** while an enemy Provokes, about half of targeted attacks are redirected to it.
 - **Tank actions check their buff (2026-10-24).** Provoke only without Taunting, Defend only without Defensive (both
   already fire at the end of the turn). A tank whose buffs cover every tank action falls back to its spells, Citrine gems
@@ -156,7 +158,7 @@ every rule branch — keep that diff empty for behavior-preserving changes.
 Animator party: Animatus (The Great Beyond, Vitreous) · Mutated Crypt Bat (Temptation) · Magnificus Sanctus
 (Extension, Starwrath) · Zonte (Expanded Power, Ribcracker) · Imp Bishop (Whisper) · Knight Effigy (5740-NG).
 v3 proposes (Citrine-aware): Animatus and Bat (Citrine on Attack) 30 lines: target block A+F+B for the attack →
-lowest Health → defend → skip; Sanctus (Citrine on Defend) defend unless Defensive → its Citrine heals / buffs → skip;
+lowest Health → random enemy → defend → skip; Sanctus (Citrine on Defend) defend unless Defensive → its Citrine heals / buffs → skip;
 Effigy (Citrine on Provoke) provoke unless Taunting → defend unless Defensive → Rabid Dementia / Greater Dispel / Stun Beam →
 skip (no attack: nothing names it an attacker); Zonte Implosion / Kick gated on buffs / debuffs, then block A+F for Kick
 (30 lines); Bishop Drain Life when hurt → Living Staff / Momentum while 2+ enemies → Jinx at 7+ debuffs → block F+C

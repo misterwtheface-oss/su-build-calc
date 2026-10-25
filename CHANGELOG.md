@@ -4,10 +4,10 @@ Every dated change entry, newest first (moved verbatim from Progress.md on 2026-
 to their own section and sorted by their date). Current state and open work: `Progress.md`, `BACKLOG.md`.
 New entries go at the TOP.
 
-## 2026-10-24 — Macros: fallback attack targets lowest Health, not a random enemy
+## 2026-10-24 — Macros: fallback attack targets lowest Health, random enemy below it
 - User (in game): "lowest Health" evaluates only the targetable enemies, so the fallback attack is the plain
-  `If any enemy has lowest Health, attack that creature`. The `attack a random enemy` tail line is gone; the freed line goes
-  to the target block.
+  `If any enemy has lowest Health, attack that creature`. User follow-up: `attack a random enemy` stays as a safety net below
+  it (a macro never picks an invalid action), so the tail order is unchanged: lowest Health → random enemy → defend → skip.
 
 ## 2026-10-24 — Currencies: every resource gets full earned / spent lines (extract S54)
 - User: the five resources (Brimstone, Crystal, Essence, Granite, Power) were what the currency research was for. Each now lists
