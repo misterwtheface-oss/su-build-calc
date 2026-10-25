@@ -4,6 +4,12 @@ Every dated change entry, newest first (moved verbatim from Progress.md on 2026-
 to their own section and sorted by their date). Current state and open work: `Progress.md`, `BACKLOG.md`.
 New entries go at the TOP.
 
+## 2026-10-24 — Macros: Replicate-type spells first
+- User (new Imp Bishop build): Replicate is the priority, it is worth more per cast. New `recast` purpose for spells that
+  cast the caster's other spells (Replicate 2 per cast; Glory 30% × its other gems, up to 3). Worth more than 1 → a line
+  right after resurrect / emergency heal / unsilence: `If this creature has > 0 living enemies, cast Replicate on this
+  creature`. Self-aim spells now read `cast X on this creature`. Glory also lands in Sanctus's fallback.
+
 ## 2026-10-24 — Macros: fallback attack targets lowest Health, random enemy below it
 - User (in game): "lowest Health" evaluates only the targetable enemies, so the fallback attack is the plain
   `If any enemy has lowest Health, attack that creature`. User follow-up: `attack a random enemy` stays as a safety net below

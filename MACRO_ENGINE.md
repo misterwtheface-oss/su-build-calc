@@ -14,7 +14,7 @@ vocabulary ships as `D.macroVocab` (from `_su_extract/data/model/macro_vocab.jso
    manually, so they're excluded here; so are spells flagged `noManual` (code `inv_SpellCanBeCastManually`:
    Booze and a static list such as Saving Grace / Lucky Gem) and chance-cast grants.
 2. **`classifySpell(sp)`** → `{ sp, name, purpose, side, multi, scale, focus, drains }`. `purpose` ∈ `once ·
-   ally-attack · unsilence · rez · heal · damage · dispel · control · debuff · buff · provoke · defend · summon · other`.
+   ally-attack · unsilence · recast · rez · heal · damage · dispel · control · debuff · buff · provoke · defend · summon · other`.
    In-game text patterns decide the first three and `control` (Sapphire Power "for the rest of the battle", Rabid
    Dementia "Target attacks", Living Necklace "Silence debuffs are removed", Stun Beam "sent to the bottom of the
    Timeline", `dispel` = "enemies' buffs are removed" (strip) / "your creatures' / target's debuffs are removed" (cleanse));
@@ -84,7 +84,7 @@ An ordered array; **array order = macro priority** (first line that acts wins in
 Helpers: `mLine(en, why, chain)` builds a line (`chain: true` = "test next line", rendered indented);
 `castOn(s)` = `cast X` for a whole-side spell (the game needs no target) or `cast X on that creature`.
 
-Current rules, in order: `rez · heal-emergency · unsilence · once · ally-attack · provoke-main · provoke-spell ·
+Current rules, in order: `rez · heal-emergency · unsilence · recast · once · ally-attack · provoke-main · provoke-spell ·
 provoke-tank · heal-sustain · drain · dispel · debuff · buff · summon · defend-value · attack-first · aoe · damage-single ·
 control · tail-attack · tail-random · tail-defend · tail-skip`.
 
@@ -101,6 +101,10 @@ control · tail-attack · tail-random · tail-defend · tail-skip`.
   or `tail-attack`). **tail-random** `If this creature has > 0 living enemies, attack a random enemy` stays below it as a
   safety net: a macro never picks an invalid action, so the extra line costs nothing.
 
+- **recast:** a spell that casts the caster's own other spells, valued in spells per cast: Replicate 2, Glory
+  chance × its other gems (capped at its maximum). Worth more than 1 → `If this creature has > 0 living enemies, cast X on
+  this creature`, right after the life-saving lines (user, 2026-10-24: Replicate first, it is worth more per cast). Feeling
+  Lucky (1 spell, random targets) has no rule. Self-aim spells are written `cast X on this creature`.
 - **once:** for each of the top `onceTargets` allies whose Artifact Spell Slot fires on what that ally does most
   (Sword + attacker, Staff + caster, Shield + defender, Boots always), a turn-gated pair:
   `If this creature is on turn k, test next line` / `If ally (n) has > 0% Health, cast X on that creature`
@@ -161,8 +165,8 @@ v3 proposes (Citrine-aware): Animatus and Bat (Citrine on Attack) 30 lines: targ
 lowest Health → random enemy → defend → skip; Sanctus (Citrine on Defend) defend unless Defensive → its Citrine heals / buffs → skip;
 Effigy (Citrine on Provoke) provoke unless Taunting → defend unless Defensive → Rabid Dementia / Greater Dispel / Stun Beam →
 skip (no attack: nothing names it an attacker); Zonte Implosion / Kick gated on buffs / debuffs, then block A+F for Kick
-(30 lines); Bishop Drain Life when hurt → Living Staff / Momentum while 2+ enemies → Jinx at 7+ debuffs → block F+C
-for Spell Blast (27 lines). The user's hand-built Zonte macro (health bands, `_su_extract/code/MACRO_MODEL.md`
+(30 lines); Bishop (2026-10-24 build, Replicate gem replaces Jinx) Replicate first → Drain Life when hurt → Living Staff /
+Momentum while 2+ enemies → block A for Spell Blast (29 lines). The user's hand-built Zonte macro (health bands, `_su_extract/code/MACRO_MODEL.md`
 "Authoring patterns") is finer than the engine's gated best-of lines.
 
 ## Known limitations (see BACKLOG Macro roadmap)

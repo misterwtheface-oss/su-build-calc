@@ -5219,8 +5219,12 @@
     const cleanses = /^(?:Your creatures'|Target's) debuffs(?: and enemies' buffs)? are removed|^A random debuff is removed from random allies/i.test(d);
     const statUp = tx.includes("Stats::Gain") || tx.includes("Stats::Has More");
     const statDown = tx.includes("Stats::Lose") || tx.includes("Stats::Has Less");
+    // a spell that casts the caster's own other spells (Replicate: 2; Glory: each other gem at N%, up to M)
+    const rc = /^Caster \{ACTION_casts\} (\d+) of its other spells\.?$/i.exec(d), gl = /other, permanent Spell Gems have a (\d+)% chance to be \{ACTION_cast\}\. Maximum of (\d+)/i.exec(d);
+    const recast = rc ? { n: +rc[1] } : gl ? { pct: +gl[1] / 100, max: +gl[2] } : null;
     let purpose, side;
-    if (sp.aim === "ally1" && /for the rest of the battle/i.test(d)) { purpose = "once"; side = "ally"; }
+    if (recast) { purpose = "recast"; side = "self"; }
+    else if (sp.aim === "ally1" && /for the rest of the battle/i.test(d)) { purpose = "once"; side = "ally"; }
     else if (sp.aim === "ally1" && /^Target \{ACTION_attacks\}/.test(d)) { purpose = "ally-attack"; side = "ally"; }
     else if (/\{CONDNAME_DEBUFF_SILENCE\} debuffs are removed/.test(d)) { purpose = "unsilence"; side = "ally"; }
     else if (am("Resurrection") && !dmgText) { purpose = "rez"; side = "ally"; }   // not "if this kills, it can't be resurrected"
@@ -5238,7 +5242,7 @@
     const sc = spellScaling(sp);
     return { sp, name: sp.name, purpose: o.purpose || purpose, side: o.side || side, multi: "multi" in o ? o.multi : multi,
       scale: sc, focus: o.focus || sc.focus || null,
-      drains: purpose === "damage" && /your creatures recover \{STAT_health\}/i.test(d), strips, cleanses };
+      drains: purpose === "damage" && /your creatures recover \{STAT_health\}/i.test(d), strips, cleanses, recast };
   }
   // spells the creature can actually cast in a macro = its equipped spell GEMS only. Spells socketed into an
   // artifact (Spell slot) or a Nether Stone auto-proc and CANNOT be cast manually / by a macro — excluded.
@@ -5262,7 +5266,9 @@
   // line + target helpers shared by the rules. Whole-side spells take no target ("cast X"); single-target ones act on
   // the line's Candidate ("cast X on that creature").
   const mLine = (en, why, chain) => ({ en, why, chain: !!chain });
-  const castOn = (s) => s.multi ? `cast ${s.name}` : `cast ${s.name} on that creature`;
+  const castOn = (s) => s.multi ? `cast ${s.name}` : s.sp.aim === "self" ? `cast ${s.name} on this creature` : `cast ${s.name} on that creature`;
+  // spells cast per cast of a recast spell: Replicate's count, or Glory's chance × its other gems (capped)
+  const recastValue = (x, s) => s.recast.n || Math.min(s.recast.max, s.recast.pct * Math.max(0, (x.slot.spellGemIds || []).length - 1));
   const relicText = (slot) => { const r = slot.relic ? RELIC.get(slot.relic.id) : null;
     return r ? r.ranks.filter(k => k.rank <= slot.relic.rank).map(k => k.desc).join(" ") : ""; };
   // per-creature context every rule reads from — classify once, expose grouped spells + action flags
@@ -5316,7 +5322,7 @@
     defend: x => mLine(`If this creature doesn't have Defensive, defend`, x.citrine.defend ? `Its Citrine gems cast when it Defends (${x.citrine.defend} gems); Defensive already Defends at the end of its turn` : `Its traits / relic pay off when it Defends; Defensive already Defends at the end of its turn`),
   };
   // spell rules the tank fallback runs over its Citrine gems (no tank / attack / tail rules)
-  const FALLBACK_RULES = ["rez", "heal-emergency", "unsilence", "ally-attack", "heal-sustain", "drain", "dispel", "debuff", "buff", "summon", "aoe", "damage-single", "control"];
+  const FALLBACK_RULES = ["rez", "heal-emergency", "unsilence", "recast", "ally-attack", "heal-sustain", "drain", "dispel", "debuff", "buff", "summon", "aoe", "damage-single", "control"];
   function tankLines(x) {
     const out = x.tankActs.map(a => TANK_LINE[a](x));
     if (!x.tankSpells.length) return out;
@@ -5369,6 +5375,10 @@
       lines: x => x.heals.map(s => mLine(`If any ally has < ${x.T.healEmergency}% Health, ${castOn(s)}`, `${s.name} — emergency heal before an ally dies`)) },
     { key: "unsilence", when: x => x.by("unsilence").length,
       lines: x => x.by("unsilence").map(s => mLine(`If any ally has Silenced, ${castOn(s)}`, `${s.name} lifts Silence so your casters can act`)) },
+    // more than one spell per cast beats any single spell, so it comes first after the life-saving lines (user, Replicate)
+    { key: "recast", when: x => x.by("recast").some(s => recastValue(x, s) > 1),
+      lines: x => x.by("recast").filter(s => recastValue(x, s) > 1).sort((a, b) => recastValue(x, b) - recastValue(x, a)).map(s =>
+        mLine(`If this creature has > 0 living enemies, ${castOn(s)}`, `${s.name} casts ${s.recast.n ? s.recast.n : `about ${Math.round(recastValue(x, s) * 10) / 10}`} of its other spells per cast`)) },
     { key: "once", when: x => x.by("once").length,
       lines: x => x.by("once").flatMap(s => onceTargets(x).flatMap((t, k) => t.self
         ? [mLine(`If this creature is on turn ${k + 1}, cast ${s.name} on this creature`, `${s.name} lasts the whole battle — once, on turn ${k + 1}`)]

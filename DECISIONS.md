@@ -298,3 +298,7 @@ User: Defend and Provoke lines are status-checked: Defend only without Defensive
 buffs perform that action at the end of the turn). A tank whose buffs cover the tank actions it prefers falls back to its
 spells (Knight Effigy). A creature with nothing naming it a viable attacker never defaults to attacking: an attack can
 trigger enemy effects, so it is a liability.
+
+## Macro: spells worth more than one cast go first (2026-10-24)
+User: "Replicate is the priority because it has greater value per cast." A spell that casts several of the caster's other
+spells comes before every other spell line, after the life-saving ones.
