@@ -175,6 +175,13 @@ a decompile → write `_su_extract/code/HANDOFF_<topic>.md` and don't guess.
 - [x] **(#30) Research: Final Summoning.** DONE 2026-10-18: "Spell cast by each Greater Demon" table on the perk (spec page + detail; Satanachia = one of 30 at random). Which spell does each Greater Demon minion cast when it goes away? (Each minion
   has a different one.) Handoff, then show the result on the trait. **2026-10-17:** it's the Demonologist perk FINALSUMMONING; asked in the same handoff §3.
 
+- [ ] **Witch Doctor research: open questions (2026-10-25, ad-hoc Q22-Q24).** Answered parts are in `_su_extract` `COMBAT_RULES.md` § Forced attacks, `PERK_SIGNATURES.md` § Witch Doctor perks, `RELIC_SIGNATURES.md` § Starwrath. Still open:
+  - Bad Medicine: where the Booze end-of-turn roll casts the temporary Secret Stuff gem (taken from `SPELL_GEMS.md`, site not read).
+  - Hex / Mumbo Jumbo: rank cap (5% per rank; does it reach 100%?).
+  - Mass Hysteria: how long the Blind and Confused it applies last.
+  - In-game checks of the code readings (Starwrath rank 100 cap of 28% / 48%, Confused attacks staying on the enemy side).
+  - Relic ranks that work against their own relic: dedicated session, `_su_extract/code/HANDOFF_relic_self_conflicts.md`.
+
 ### G9. Nether Realm helpers + Nether Bosses
 - [x] **(#11) Faucet valve order is mirrored.** DONE 2026-10-17 (screen valve i = code digit 3−i; NETHER.md updated). The 40% fade item is still only offered. **User:** read the code right→left. The app currently assumes left→right
   (`app.js` FAUCET section, ~line 3394). The CHANGELOG 2026-10 check was "only the LEFT valve on → gem chest". Mirror the
@@ -186,6 +193,7 @@ a decompile → write `_su_extract/code/HANDOFF_<topic>.md` and don't guess.
   on the Bosses page. Whether the post-fight loot roll IS the quest-450 payout is asked in `_su_extract/code/HANDOFF_nether_boss_reward.md`.
 
 ### G10. Macro
+- [ ] **Zonte macro: duplicate block-F line.** `targetBlock` emits the same F-block line twice in the Zonte proposal (seen in the 2026-10-25 test run); de-duplicate it.
 - [x] **(#12) Order of duplicate-name traits in the macro selector.** ANSWERED 2026-10-18: the game stores the runtime trait id and sorts A→Z with an unstable qsort, so same-name order depends on the save. Rule for when the macro engine emits trait conditions (it doesn't today, and macros are FEATURES-off): key by runtime id, label copies by owner (`_su_extract data/model/macro_trait_order.json`). E.g. Head of Hydranox appears 5 times, each owned by a
   different head. **User:** find the order the game itself uses, so our macros target the right owning creature for traits
   with the same name. Needs `scr_MacroProcess` / macro selector code research (see Macro roadmap item 5) → handoff, then

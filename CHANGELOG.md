@@ -4,6 +4,11 @@ Every dated change entry, newest first (moved verbatim from Progress.md on 2026-
 to their own section and sorted by their date). Current state and open work: `Progress.md`, `BACKLOG.md`.
 New entries go at the TOP.
 
+## 2026-10-25 — Clarify notes: Blind Eye, Hoodwink (Witch Doctor research)
+- Blind Eye: adds nothing to attacks (every same-side attack is already undodgeable). Hoodwink: its Blind part adds nothing
+  (Provoke already pulls at 100%); the permanent enemy Taunting is what matters (-35% Defense, provoke triggers, but your
+  single-target hits scatter). Source: `_su_extract` ad-hoc Q22 / Q23. Open questions moved to `BACKLOG.md` G8.
+
 ## 2026-10-25 — Trigger Side = the side that activates it; new Target toggle
 - Side on a trigger now means the side whose action activates it, matching Side on actions: Enemy side Trigger: Attack =
   attacks coming from the enemy side (user ruling). Attacks, Deals Damage, Heals, Kills, Buffs / Debuffs Someone already
