@@ -4,6 +4,13 @@ Every dated change entry, newest first (moved verbatim from Progress.md on 2026-
 to their own section and sorted by their date). Current state and open work: `Progress.md`, `BACKLOG.md`.
 New entries go at the TOP.
 
+## 2026-10-24 — Status markers on Has Buff / Has Debuff and the other status tags (extract S56)
+- User: "Has Debuff, Status: Feared" missed Horror Show. The extract decoded the status each unmarked status-tag entry checks or
+  changes from its own code site (119 of the 123 listed: 110 named, 9 Any). Rebuilt data only: shipped entries with a Status
+  marker 1,520 -> 1,640. Horror Show = Feared; Dream Stomp = Sleeping; Spectral Rain strengthens only Barrier / Poisoned /
+  Burning / Bomb; Searing Flames removes Any. 4 tags stay unmarked because the code does not back them (Empowered Savage
+  Spores Buffs: Apply, Hymn of Guile and All Hope Is Lost Debuffs: Apply, Moonfire & Sunfury Debuffs: Remove), held for the user.
+
 ## 2026-10-24 — Currencies: clarify notes (extract S55)
 - A Currencies line can carry `clarify: [..]` (`data/reference/currencies.json`; build-data ships it as `{t, clarify}`,
   shown as the usual `fx-clarify` notes under the line). Notes: Fusion Lab level match is a flat 3,000 Power; Reliquary
