@@ -4,6 +4,15 @@ Every dated change entry, newest first (moved verbatim from Progress.md on 2026-
 to their own section and sorted by their date). Current state and open work: `Progress.md`, `BACKLOG.md`.
 New entries go at the TOP.
 
+## 2026-10-25 — Perk / trait / relic trigger sides read from each clause's own gate (extract S67)
+- The extract now takes a perk's side from the side check that every path to the perk's read passes. 135 perk clauses
+  changed: e.g. Hidden Hand ×5, Diagnosis, Guerilla Tactics and Forsaken Wonder are Your side (they showed Enemy), Massacre /
+  Pyromania / Prism Your side and Judgment / Contrition Enemy (they showed Any). Traits / relics: Enchanted Arrows, Necromancy,
+  Mutatias 30, Amalgam and Temptation 20 Any, Monster Crown Self. 198 taxonomy scopes; no tag added or removed. (The scopes
+  shipped with the S67 + S68 rebuild below.)
+- This rebuild: the code effect rules (`effects-code.json`) follow the new sides, and 13 relic rank rules the extract gained
+  since 2026-10-19 are now included. Data rebuild only.
+
 ## 2026-10-25 — Receiver triggers: Side = who acts, Target = who is hit (extract S67 + S68)
 - Data rebuild only. The extract now gives every receiver Attack / Damage / Heal / Buff / Debuff / Critical Hit tag an
   `actor` (Side) and a `target` (Target), read from the code's own side tests. Most clauses test only the creature hit, so
