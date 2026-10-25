@@ -42,6 +42,10 @@ Taxonomy category definitions themselves live in `TAXONOMY.md`.
 - **Skins carry their localized `L_SKIN_*` names** everywhere, including the frame index.
 
 ## Bosses (2026-10-11)
+- **Instant-kill rule shown again (user 2026-10-25, "Add the clarification"):** the boss-battle instant-kill rule (20% of
+  missing Health instead; Loif En't Fair, Boils Popped, Death By Boredom, Incandescence still kill) is a line in each boss
+  page's Damage section after Creatures (not a chip: no chips before Threats still holds); not on Jotun or Lister, whose side
+  takes no damage.
 - **False God names = the game's own text** (`L_WBOSS_*`): Imp Impington Reborn, Caliban the Unredeemed, Jotun, Lost Construct.
 - **Misery is not a False God.** Its three traits are provisionally Perdition's (Gate of the Gods); the user will confirm in-game.
 - **One boss feature for all three boss types** (False Gods, Nether Bosses, Gate of the Gods) on one data source
@@ -187,6 +191,11 @@ a flat modifier to base: raised **×4/3 (+33%)**, lowered **×2/3 (−33%)**, ot
 - **Status tags the code does not back are removed (user 2026-10-24, "Go ahead"):** Empowered Savage Spores Buffs::Apply,
   Hymn of Guile and All Hope Is Lost Debuffs::Apply, Moonfire & Sunfury R90 Debuffs::Remove (extract round 7S,
   `_su_extract/code/CODE_TAXO.md` § Round 7S). A theme stays only where another tag still gives it.
+- **Auto Attack only where the code forces an attack (user 2026-10-25: "They should drop Auto Attack if they do not force
+  an attack event to occur"):** Actions::Auto Attack needs an attack the effect makes a creature perform (bc_CreatureAttack).
+  Dropped on Antithesis (only applies Inverted), Simulation (only casts), Evil Eye (a direct hit) and Tacos Inflation (changes
+  the attack already happening); Attack theme off Simulation and Evil Eye (nothing else gives it), kept on Antithesis and
+  Tacos Inflation (Trigger::Attack). No replacement tags (extract round 8A, `_su_extract/code/CODE_TAXO.md` § Round 8A).
 - **A theme needs a narrow tag (user 2026-10-21):** a theme carried only by a general Involves tag, with no narrow tag of
   that theme, is dropped. E.g. "spells cost no Charges" effects keep Spell Gems (Spell Gems::Charges) and lose Cast.
   Per-object drops live in `taxonomy_crosswalk.json` `object_drops`.

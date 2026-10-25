@@ -325,6 +325,9 @@ Known limits + planned work, roughly in priority order (all now cheap to impleme
   2026-10-25: draft wording in `_su_extract/code/EFFECT_ORDER_FINDINGS.md` § "Label-matched gates" (not shipped; for the user):
   the label match changes nothing in play for Fragmenting / Disintegrating Arrow; new code ≠ text: Butcher's gate instantly kills
   on a hit over 35% of max Health (extract open: whether Butcher's own hits carry the label); boss-battle instant-kill rule.
+  - [x] Fragmenting Arrow note and the boss-battle instant-kill rule (boss pages, Damage section) SHIPPED 2026-10-25 (user
+    "Add the clarification"; extract S61).
+  - [ ] Butcher: waits for the user (extract S60: its execute never fires; draft rewritten).
 - [ ] In-game checks the Bosses page shows as unverified: Jotun's 24-turn count, Mindwurm saddle "nothing" pick, Nebodar
   "Burned can't be avoided".
 - [x] **Start of Battle secondary calls** DONE 2026-10-21 (extract S42 `secondary_of`; 13 indented, self re-checks folded).

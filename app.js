@@ -1513,7 +1513,13 @@
   // base stats as magnitude bars (value / the playable roster's max for that stat), same bar as the creature wizard
   const bossStatTable = (st) => `<div class="stat-grid single mag boss-stat-grid">${STAT_KEYS.map(k => { const v = st[k], pc = Math.max(0, Math.min(100, (v || 0) / (STAT_MAX[k] || 1) * 100));
     return `<div class="stat-row"><span class="stat-name">${STAT_LABEL[k]}</span><span class="stat-mag" title="${Math.round(pc)}% of the highest base ${STAT_LABEL[k]} of any creature"><i style="width:${pc}%"></i></span><span class="stat-val total">${v}</span></div>`; }).join("")}</div>`;
-  // boss battle rule (bosses.json rules.boss_instant_kill): Nether Boss and False God fights turn instant kills into damage
+  // boss battle rules, after Creatures (user 2026-10-25 "Add the clarification"; not a chip: no chips before Threats): the
+  // instant-kill rule (D.bosses.instantKill, bosses.json rules.boss_instant_kill) on every boss whose side can be damaged
+  // (not Jotun, all parts immune; not Lister, Loif En't Fair), plus a page's own damage lines (Gate: the god-side cut).
+  const bossDamageRules = (e, own) => {
+    const immune = e.key === "GG_LISTER" || (e.units.length && e.units.every(u => (u.passives || []).some(x => x.kind === "immune_damage" && !x.when)));
+    const lis = [...own, ...(D.bosses && D.bosses.instantKill && !immune ? [D.bosses.instantKill] : [])];
+    return lis.length ? `<div class="section-label">Damage</div><ul class="boss-steps">${lis.map(t => `<li>${esc(t)}</li>`).join("")}</ul>` : ""; };
   // the six parts drawn edge to edge in battle order (grid 1–3 top row, 4–6 bottom) so they form the whole creature; each
   // trimmed frame sits at its code offset inside its cell. jump → each part links to its card below.
   const bossFormation = (e, jump) => { const byGrid = new Map(e.units.map(u => [u.grid, u]));
@@ -1902,6 +1908,7 @@
         ${sameStats && e.units.length ? `<div class="section-label">Base stats</div>${statLine(e.units[0].stats)}` : ""}
         <div class="section-label">${e.type === "false_god" ? "Body parts" : "Creatures"}</div>
         ${units}
+        ${bossDamageRules(e, [])}
         ${runes}
         ${rewards}
         ${e.lore || e.dialog ? sec("lore", "Lore", `${e.lore ? `<div class="trait-desc boss-lore">${richText(e.lore)}</div>` : ""}${e.dialog ? `<div class="trait-desc boss-lore boss-dialog">${richText(e.dialog)}</div>` : ""}`) : ""}
@@ -1962,6 +1969,7 @@
         ${sameStats ? `<div class="section-label">Base stats</div>${bossStatTable(units[0].stats)}` : ""}
         <div class="section-label">Creatures</div>
         ${cards}
+        ${bossDamageRules(e, [])}
         ${rewards}
         ${e.dialog ? sec("lore", "Lore", `<div class="trait-desc boss-lore boss-dialog">${richText(e.dialog)}</div>`) : ""}
       </div></div></div>
@@ -2005,7 +2013,7 @@
         <div class="section-label">Base stats</div>${bossStatTable(u.stats)}
         <div class="section-label">Creatures</div>
         ${card}
-        ${D.bosses && D.bosses.gateRules ? `<div class="section-label">Damage</div><ul class="boss-steps"><li>${esc(D.bosses.gateRules.godSide)}</li>${/^torun$/i.test(e.name) ? `<li>${esc(D.bosses.gateRules.godSideTorun)}</li>` : ""}</ul>` : ""}
+        ${bossDamageRules(e, D.bosses && D.bosses.gateRules ? [D.bosses.gateRules.godSide, ...(/^torun$/i.test(e.name) ? [D.bosses.gateRules.godSideTorun] : [])] : [])}
         ${diff}
         ${rewards}
         ${e.dialog ? sec("lore", "Lore", `<div class="trait-desc boss-lore boss-dialog">${richText(e.dialog)}</div>`) : ""}

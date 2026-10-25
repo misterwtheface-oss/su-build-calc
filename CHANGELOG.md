@@ -4,6 +4,13 @@ Every dated change entry, newest first (moved verbatim from Progress.md on 2026-
 to their own section and sorted by their date). Current state and open work: `Progress.md`, `BACKLOG.md`.
 New entries go at the TOP.
 
+## 2026-10-25 — Auto Attack only on a real attack; Fragmenting Arrow note; boss instant-kill rule (extract S61)
+- User ruling: Auto Attack stays only where the effect makes a creature attack. Off Antithesis, Simulation, Evil Eye and Tacos
+  Inflation (the four with no Side); Attack theme off Simulation and Evil Eye. Auto Attack entries 212 -> 208, all with a Side.
+- Fragmenting Arrow clarify note: the extra hits are plain spell damage and can't spread again.
+- Boss pages (Nether Boss, False God, Gate of the Gods): a Damage section after Creatures with the instant-kill rule (20% of
+  missing Health instead; four effects still kill); not on Jotun or Lister. Gate pages add it to their existing Damage section.
+
 ## 2026-10-25 — Ad-hoc clarify notes, Lord Zantai trait depth from code (extract S59)
 - Six new clarify notes: Shadow Bulwark and Bulwark are not limited by the 80% damage reduction cap; The Great Beyond's
   converted casts trigger Shared Consciousness (20% overall), whose copies count as automatic; Thrive On Death has no death check

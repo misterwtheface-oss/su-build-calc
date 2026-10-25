@@ -3882,7 +3882,11 @@ const bosses = (() => {
   if (!(bj.gate_rules || {}).god_side_damage) err('bosses: gate_rules.god_side_damage missing (extract Q15)');
   const gateRules = { godSide: "Every hit on the god side has its base cut to 35% after the damage bonuses are added, so bonuses aren't cut. Flat bonus damage (\"additional damage equal to X% of a stat\") also skips every damage reduction.",
     godSideTorun: "On Torun the base is 12.25%: his own 65% cut stacks with it." };
-  return { types, encounters: out, gateRules };
+  // every boss fight (user 2026-10-25, "Add the clarification"): the instant-kill rule (bosses.json rules.boss_instant_kill,
+  // bc_ExecuteEvents OHKO case, battle types 36-39 / 88; extract EFFECT_ORDER_FINDINGS.md § Label-matched gates, #84)
+  if (!(bj.rules || {}).boss_instant_kill) err('bosses: rules.boss_instant_kill missing (extract)');
+  const instantKill = "In boss battles (realm-quest bosses, Lord Zantai, Nether Bosses, False Gods and Gate of the Gods) an instant kill on an enemy doesn't kill: it deals 20% of the enemy's missing Health instead (nothing at full Health), after everything already queued. Loif En't Fair, Boils Popped, Death By Boredom and Incandescence still kill.";
+  return { types, encounters: out, gateRules, instantKill };
 })();
 
 // ── trigger scope (creature detail Triggers): who in the party a triggered perk / trait is about, read off its game text
