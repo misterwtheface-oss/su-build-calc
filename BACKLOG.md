@@ -309,6 +309,13 @@ Known limits + planned work, roughly in priority order (all now cheap to impleme
 - [ ] **Nether Shop boss skins: price** (in-game check): the code charges 1 Brimstone for each boss skin Ned sells after 4 wins
   (`nether_shop.json` `boss_skin_price_note`); the Nether Boss pages leave the price out until confirmed. Also open: where Lord
   Zantai's 10 traits come from (their depth is still the wiki's 591).
+- [ ] **Ad-hoc Q16-Q21 clarify notes (extract 2026-10-24, waiting on the extract):** no `effect_clarifications.json` entry yet
+  for The Great Beyond -> Shared Consciousness (its conversions trigger it, 20% per execution), Thrive On Death (no dead check,
+  so Anger Management feeds it) / Anger Management, and Shadow Bulwark / Bulwark being outside the 80% reduction cap
+  (`code/ADHOC_RESEARCH_FINDINGS.md` rows 16-21). In Formation, Shadow Bulwark and Poison Inoculation already have notes.
+- [ ] **Start-of-battle handoff leftovers** (`_su_extract/code/HANDOFF_start_of_battle_regen.md` § App to-do): rows 245 / 247 / 249
+  (Cruel Creation / Corpse Eater / Animated Dead as secondaries), realm property 25 on your creatures (data already says so),
+  Ultimate Trickery's text. Probably all done by the rebuilds: verify and tick.
 - [ ] **Effect-order clarify-note candidates (optional, extract S49 / S49d / S49f):** Fragmenting Arrow overflow and Butcher
   execute are matched by the hit's display label, not the spell id (`bc_EventDamage` #831 / #945 `gate.note`); same for
   Disintegrating Arrow on kill (`bc_ExecuteEvents` #41) and the boss-battle instant-kill branch (#84, battle types 37 / 39).

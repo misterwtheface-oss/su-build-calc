@@ -602,9 +602,10 @@
   // attributes on the tag itself. Key = base key + "@s=…@so=…@p=…@d=…" (fixed order). Side: "ally" = Self, Ally, Self or
   // Ally, Adjacent; "enemy" = Enemy; a scope of Any matches both, a tag with no scope neither. The others match the
   // attribute value exactly. An object matches when ONE of its tag entries has the base key and every refinement.
-  const SIDES_OF_SCOPE = { Self: ["ally"], Ally: ["ally"], "Self or Ally": ["ally"], Adjacent: ["ally"], Enemy: ["enemy"], Any: ["ally", "enemy"] };
+  // "self" (user 2026-10-25) narrows Your side to the effect's owner: only scope Self (on automatic actions: the owner acts)
+  const SIDES_OF_SCOPE = { Self: ["ally", "self"], Ally: ["ally"], "Self or Ally": ["ally"], Adjacent: ["ally"], Enemy: ["enemy"], Any: ["ally", "enemy"] };
   const REFINE = [
-    { a: "s", any: "Either side", label: (v) => ({ ally: "Your side", enemy: "Enemy side" })[v], title: "Narrow this tag to one side",
+    { a: "s", any: "Either side", label: (v) => ({ ally: "Your side", self: "This creature", enemy: "Enemy side" })[v], title: "Narrow this tag to one side (This creature: the effect's own creature)",
       vals: (e) => SIDES_OF_SCOPE[e.s] || [] },
     { a: "so", any: "Any source", label: (v) => `Source: ${v}`, title: "Narrow this tag to one damage source", vals: (e) => e.so ? [e.so] : [] },
     { a: "p", any: "Any timing", label: (v) => `Timing: ${v}`, title: "Narrow this trigger to one timing (Would / During / After / Repeat)", vals: (e) => e.p ? [e.p] : [] },
@@ -652,7 +653,7 @@
     const { base, ref } = keyParse(k), rest = { ...ref }; delete rest[R.a];
     const out = new Set();
     for (const o of objs) for (const e of (o && o.taxo2) || []) if (entryKeys(e).includes(base) && refineOk(e, rest)) R.vals(e).forEach(v => out.add(v));
-    const order = R.a === "s" ? ["ally", "enemy"] : REFINE_ATTR[R.a] ? REFINE_ORDER[REFINE_ATTR[R.a]] || [] : [];
+    const order = R.a === "s" ? ["ally", "self", "enemy"] : REFINE_ATTR[R.a] ? REFINE_ORDER[REFINE_ATTR[R.a]] || [] : [];
     return [...out].sort((x, y) => order.indexOf(x) - order.indexOf(y) || String(x).localeCompare(String(y)));
   };
   // the toggles beside an active tag chip, one per attribute that has a value on the listed objects: Any → each value → Any

@@ -143,6 +143,7 @@ export function makeTaxoV2(X, CL, MK, condName = () => null) {
         // round 7F (user 2026-10-24): an intercept / redirect resolves as Indirect (new event, no source) or the Same hit; its
         // share: Whole (original takes 0) / Split (original keeps part) / Copy (original keeps all, others take extra)
         ra: c.resolves_as || null, sh: c.share || null,
+        act: c.actor || null,
         // Targeting::All inferred only from "no picker call" is a guess while random-by-index picks are undecoded
         // (Abnegation hits a random enemy): unverified until the extract decodes it
         d: c.delivery || null, v: alts.length > 1 || / no picker call/.test(c.picker || '') ? 'unverified' : 'code',
@@ -208,6 +209,11 @@ export function makeTaxoV2(X, CL, MK, condName = () => null) {
       if (CODE_BACKED.has(prov)) { out.push({ t: 'Involves::' + th, v: prov }); theme.add(th); stats.involves++; }
       else removed.push({ t: 'Involves::' + th, v: prov });
     }
+    // Side on an automatic action = the side of the creature that ACTS (user 2026-10-25: "Your side" = your creatures attack /
+    // cast), not the action's target. The code layer's `scope` there is the target ("this creature Attacks the enemy" = Enemy),
+    // so these entries take their side only from the code layer's `actor` (Self / Ally / Self or Ally / Enemy / Any; extract
+    // ask HANDOFF_taxonomy_v2.md 2026-10-25) and carry none until it exists.
+    for (const e of out) if (/^Actions::Auto /.test(e.t)) { if (e.s && !e.act) (stats.autoSideDropped = (stats.autoSideDropped || 0) + 1); e.s = e.act || null; }
     for (const e of out) for (const m of ['st', 'sk', 'cl']) {
       if ((e[m] || []).length) continue;
       const vals = MARK.get(`${kind}:${id}|${e.t}|${m}`);
@@ -217,9 +223,9 @@ export function makeTaxoV2(X, CL, MK, condName = () => null) {
       stats.entries++; stats[e.v === 'code' ? 'code' : 'other']++;
       if (!known(e.t)) stats.unknown[e.t] = (stats.unknown[e.t] || 0) + 1;
       for (const k of ['s', 'so', 'r', 'p', 'd', 'rk', 'cf', 'co', 'cn', 'ig', 'x', 'ev', 'st', 'sk', 'cl', 'ra', 'sh']) if (e[k] == null) delete e[k];
-      delete e.old; delete e.why; delete e.mth;
+      delete e.old; delete e.why; delete e.mth; delete e.act;
     }
-    for (const e of removed) { stats.removed++; stats.removedBy[e.v] = (stats.removedBy[e.v] || 0) + 1; for (const k of ['s', 'so', 'r', 'p', 'd', 'rk', 'cf', 'co', 'cn', 'ig', 'x', 'ev', 'st', 'sk', 'cl', 'ra', 'sh']) if (e[k] == null) delete e[k]; delete e.mth; }
+    for (const e of removed) { stats.removed++; stats.removedBy[e.v] = (stats.removedBy[e.v] || 0) + 1; for (const k of ['s', 'so', 'r', 'p', 'd', 'rk', 'cf', 'co', 'cn', 'ig', 'x', 'ev', 'st', 'sk', 'cl', 'ra', 'sh']) if (e[k] == null) delete e[k]; delete e.mth; delete e.act; }
     return { taxo2: out, theme2: [...theme].sort(), removed, themeOnly: [...theme].filter(th => !narrow.has(th)).sort() };
   }
 

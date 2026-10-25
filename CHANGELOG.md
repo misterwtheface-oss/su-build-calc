@@ -4,6 +4,15 @@ Every dated change entry, newest first (moved verbatim from Progress.md on 2026-
 to their own section and sorted by their date). Current state and open work: `Progress.md`, `BACKLOG.md`.
 New entries go at the TOP.
 
+## 2026-10-25 — Side: "This creature", and automatic actions take the actor's side
+- User ruling: Side is relative to whom the effect affects. On Auto Attack / Auto Cast / Auto Defend / Auto Provoke that is the
+  creature that acts: "Your side" = your creatures attack / cast, "Enemy side" = enemies do. The code layer's scope there is the
+  action's target (Fight or Flight, Death's Bite, Misanthropy… showed as Enemy side), so these 591 entries now take their side
+  only from a code `actor` field and show none until the extract adds it (194 target-side values dropped; ask in
+  `_su_extract/code/HANDOFF_taxonomy_v2.md` § App ask 2026-10-25).
+- New Side value **This creature** (after Your side in the toggle): the effect's own creature is the one affected (scope Self).
+- Backlog: Q16-Q21 clarify notes and the start-of-battle handoff leftovers added.
+
 ## 2026-10-24 — Forgotten Blessing raises Relic stat bonuses in the calculator (extract S55)
 - New effect rule `relicRanks` (Antiquarian's Forgotten Blessing, spec or anointment): +100 Relic ranks for the Relic's stat
   bonus only (`scr_RelicStatBonus`), so a rank-57 Relic gives +15.7% instead of +5.7%. Rank-gated Relic perks are unchanged.
