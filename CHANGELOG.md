@@ -4,6 +4,15 @@ Every dated change entry, newest first (moved verbatim from Progress.md on 2026-
 to their own section and sorted by their date). Current state and open work: `Progress.md`, `BACKLOG.md`.
 New entries go at the TOP.
 
+## 2026-10-25 — Tags on dead perk halves (extract S73, user ruling)
+- Data rebuild only. Every tag that rested only on a perk clause that can never run is gone; where the dead clause shares its
+  body with a live one, the tag now sits on the live clause with the live side. Visible: Primordial Curse debuffs Enemy side,
+  Forsaken Wonder buffs your side (Ally), Beyond The Veil's Can't Gain is Enemy side, Scapegoat debuffs a random enemy
+  (Targeting::Random, Debuffs::Apply Enemy side); duplicate dead-half entries left Anagnorisis, Fractionation and Welcome Gift.
+  Bewitch, Chain Reaction, Impact Resistance, Massacre and Primal Vengeance show Targeting::All (code loop over the side).
+- Built with the extract's committed clarify notes: Diagnosis and Blink of an Eye get back two committed notes that the last
+  builds had dropped (another session's uncommitted extract edit had been read into the build).
+
 ## 2026-10-25 — User rulings on the extract's S67 / S69 open items (extract S72)
 - Data rebuild only. Perk triggers that sat only on clauses that can never run are gone (Traumatism, Pusillanimity, Alveary,
   Epigraphy, Forsaken Wonder, Kill 'Em With Kindness and others keep only their real trigger side). Prognosis and Sudden

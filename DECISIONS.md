@@ -4,6 +4,10 @@ Standing decisions the user made about how the app models the game. Don't "fix" 
 the assistant's working notes on 2026-10-08 (they existed nowhere in the repo). Add new rulings here when they're made.
 Taxonomy category definitions themselves live in `TAXONOMY.md`.
 
+## Dead perk halves (2026-10-25)
+- A tag whose only code support is a perk clause that can never run (scr_PerkLevel side 0) is removed, every tag family. If a
+  live clause of the same perk supports the same tag, the tag stays (on the live clause).
+
 ## Trigger Side and Target (2026-10-25)
 - Side on a trigger = the side whose action activates it, the same intent as Side on actions (Enemy side Trigger: Attack =
   attacks from the enemy side).
