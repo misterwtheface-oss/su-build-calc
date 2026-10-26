@@ -4,6 +4,13 @@ Every dated change entry, newest first (moved verbatim from Progress.md on 2026-
 to their own section and sorted by their date). Current state and open work: `Progress.md`, `BACKLOG.md`.
 New entries go at the TOP.
 
+## 2026-10-25 — S73 open items ruled (extract S75)
+- Data rebuild only. Dark Clarity (all three ranks): Can't Lose now per stat with Side Self, from its code (the loss is skipped
+  while an ally lives). Treasonous Mind's stat gains are Side Self (the gem's owner gains), not Enemy. Judgment and Conquest's
+  Triumph lose their code-layer Targeting::All (no loop in code; the app already hid it).
+- Two clarify notes: Bonecraft (the attacked ally is still alive when the list is built, so it gains the stats too) and Adoring
+  Fans (only the healer is checked: an enemy healing its own ally gives that enemy the stat).
+
 ## 2026-10-25 — Persist split re-tagged from code (extract S74)
 - The extract now tags every Persist Through Death / Extend + Permanent / Resist Removal entry from its code site, so the
   interim crosswalk `object_retags` (31 objects) and the Siren `object_adds` entry are gone (`value_renames` stays as an alias).
