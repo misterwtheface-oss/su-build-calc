@@ -4,6 +4,14 @@ Every dated change entry, newest first (moved verbatim from Progress.md on 2026-
 to their own section and sorted by their date). Current state and open work: `Progress.md`, `BACKLOG.md`.
 New entries go at the TOP.
 
+## 2026-10-25 — Stats Gain / Lose Side on the last undecoded entries (extract S73)
+- Data rebuild only. 207 stat entries get their code side (the creature whose stat changes), so they now show a Side.
+  Awakened Nether Orbs' stat gains are your side (the Nature orb's own target list), not the enemies. Dark Clarity,
+  Unspeakable Sins (its Gain), Feast and Famine and card 102 lose stat entries the code does not back.
+- Three new clarify notes: Lion's Roar (no enemy check on the damage source), Bonecraft (the holder gains too) and
+  Crescendo (every enemy stat loss is bigger, whoever causes it). Diagnosis and Blink of an Eye keep their committed notes
+  (the previous build had again read another session's uncommitted extract edit).
+
 ## 2026-10-25 — Persist split: Persist Through Death / Extend + Permanent / Resist Removal (user ruling)
 - Buffs / Debuffs / Stats::Persist renamed Persist Through Death (crosswalk `value_renames`, also on code-layer tags).
 - 41 entries retagged per object (crosswalk `object_retags`): "lasts forever" → Extend with the Permanent marker (detail
