@@ -9,6 +9,8 @@ Taxonomy category definitions themselves live in `TAXONOMY.md`.
 - "Lasts forever" is Permanence, a different mechanic: Extend with the detail marker Permanent (not a new value).
 - A status whose normal removal is prevented, sometimes by chance (Escamotage, Spook, Memoriae, Not Quite A Dud, Crusader,
   Grimoire, Shade, Siren's keep-sleeping, Toxdweller's Bomb), is the new value Resist Removal (Buffs / Debuffs).
+- Applied from code by the extract (S74): the interim crosswalk retags are retired; the code layer's tags and the
+  `permanent` flag are the source.
 
 ## Dead perk halves (2026-10-25)
 - A tag whose only code support is a perk clause that can never run (scr_PerkLevel side 0) is removed, every tag family. If a

@@ -63,7 +63,9 @@ export function makeTaxoV2(X, CL, MK, condName = () => null) {
     // against one named type (Fixed) or another creature's (Same as); first_only = the creature's first death this battle
     c.counts === 'Activation Count' ? 'Counter' : null, c.match ? `Match: ${c.match}` : null, c.first_only ? 'First death only' : null,
     // round 7 (user 2026-10-24): Defer Pain's delayed share; the artifact slot an Artifacts::More Activations raises
-    c.delayed ? 'Delayed to next turn' : null, c.slot || null].filter(Boolean);
+    c.delayed ? 'Delayed to next turn' : null, c.slot || null,
+    // Persist split (user 2026-10-25; extract S74): Extend with `permanent` = the code sets the duration to -2 (lasts forever)
+    c.permanent ? 'Permanent' : null].filter(Boolean);
   const markerThemes = (c) => [c.crit ? (MT.crit || {}).true : null, (MT.count || {})[String(c.count || '').replace(/\s*\(.*\)$/, '')],
     (MT.tick_kind || {})[c.tick_kind], (MT.property || {})[c.property], (MT.except || {})[c.except], (MT.cast_from || {})[c.cast_from],
     (MT.count_of || {})[c.count_of], ...(c.suppresses || []).map(t => (MT.suppresses || {})[t]),
@@ -82,9 +84,9 @@ export function makeTaxoV2(X, CL, MK, condName = () => null) {
   for (const c of ((CL.f5 && CL.f5.corrections) || [])) if ((c.action === 'drop' || c.action === 'retag')
     && !(((CL.objects[c.key] || {}).tags) || []).some(t => t.tag === c.t)) addDrop(c.key, c.t);
   for (const [key, ts] of Object.entries(X.object_drops || {})) if (key !== '_note') for (const t of ts) addDrop(key, t);
-  // value renames (crosswalk value_renames; user 2026-10-25: Persist = Persist Through Death) and per-object retags (object_retags)
+  // value renames (crosswalk value_renames; user 2026-10-25: Persist = Persist Through Death; an alias since the extract's S74
+  // code layer emits the new names and re-tags Extend + Permanent / Resist Removal from code)
   const VR = Object.fromEntries(Object.entries(X.value_renames || {}).filter(([k]) => k !== '_note'));
-  const RT = Object.fromEntries(Object.entries(X.object_retags || {}).filter(([k]) => k !== '_note'));
   const stats = { removed: 0, codeDropped: 0, removedBy: {}, other: 0, trigUnverified: 0, eventScope: 0, eventScopeOff: 0, objects: 0, withCode: 0, entries: 0, code: 0, v1: 0, unverified: 0, involves: 0, wrongDropped: 0, unknown: {} };
 
   // vocabulary: every value the crosswalk can produce + the code-only new values (+ open families)
@@ -187,12 +189,6 @@ export function makeTaxoV2(X, CL, MK, condName = () => null) {
       const h = /^Stats::Has (More|Less)$/.exec(e.t);
       if (h) { e.t = h[1] === 'More' ? 'Stats::Gain' : 'Stats::Lose'; e.d = 'Always On'; stats.alwaysOn = (stats.alwaysOn || 0) + 1; }
     }
-    // user-ruled retags (crosswalk object_retags): Persist split into Extend + Permanent / Resist Removal (user 2026-10-25)
-    for (const r of RT[`${kind}:${id}`] || []) for (const e of all) if (e.t === r.from && !e.gone) {
-      if (!r.to) { e.gone = true; stats.retagDropped = (stats.retagDropped || 0) + 1; continue; }
-      e.t = r.to; if (r.x && !(e.x || []).includes(r.x)) e.x = [...(e.x || []), r.x]; stats.retagged = (stats.retagged || 0) + 1;
-    }
-    for (let i = all.length - 1; i >= 0; i--) if (all[i].gone) all.splice(i, 1);
     // Side on Stats::Gain / Lose = the side whose stat changes (user 2026-10-25). The code layer's `scope` there is often the
     // hook subject (the creature whose stat event fired the hook: Taste of Fear's Feared enemy), so the code's `gainer`
     // (the creature the stat write lands on; extract ask HANDOFF_taxonomy_v2.md 2026-10-25) wins when it exists.

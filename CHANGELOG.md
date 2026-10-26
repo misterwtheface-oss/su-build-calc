@@ -4,6 +4,18 @@ Every dated change entry, newest first (moved verbatim from Progress.md on 2026-
 to their own section and sorted by their date). Current state and open work: `Progress.md`, `BACKLOG.md`.
 New entries go at the TOP.
 
+## 2026-10-25 — Persist split re-tagged from code (extract S74)
+- The extract now tags every Persist Through Death / Extend + Permanent / Resist Removal entry from its code site, so the
+  interim crosswalk `object_retags` (31 objects) and the Siren `object_adds` entry are gone (`value_renames` stays as an alias).
+  The Permanent marker comes from the code layer's `permanent` flag.
+- Same result as the interim retags, now with a Side and the status on each entry (e.g. Asura: Savage, your side; Siren:
+  Sleeping, enemies). Malady and Infinite Inferno get a second "your side" entry (with Poison Inoculation / In Flames).
+- Sweep finds: Unending Boon (Extend + Permanent, and a 50% Resist Removal on any buff), Chastity (keeps Invisible after
+  acting while above 90% Health), Dream Touch (attacks never wake Sleeping enemies), Disposability also keeps minions.
+- Four clarify notes: Disposability (minions persist too), Toxdweller power 3 (also cancels Bomb removal events),
+  Primordial Curse (checks the debuffed creature: only your Relic / synced Avatar keeps debuffs forever), Forsaken Wonder
+  (side check reversed: never your creatures).
+
 ## 2026-10-25 — Code effect rules: trigger sides after the extract's formula rebuild (extract S73)
 - Data rebuild only (effects-code.json). 145 code effect rules change their trigger side: effects read from a trait / perk
   check that is only a value read now take the real check's side (Throat Ripper's attack rule is your side, not any; Spell
