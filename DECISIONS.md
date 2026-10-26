@@ -4,6 +4,11 @@ Standing decisions the user made about how the app models the game. Don't "fix" 
 the assistant's working notes on 2026-10-08 (they existed nowhere in the repo). Add new rulings here when they're made.
 Taxonomy category definitions themselves live in `TAXONOMY.md`.
 
+## S73 open items (2026-10-25)
+- Targeting::All only where the code loops over the side: Judgment and Conquest's Triumph have none (one call on the caster).
+- Dark Clarity carries Stats::Can't Lose (its code blocks the loss). Treasonous Mind's gain Side is measured from the gem's
+  owner, who gains (Self), not from the casting enemy.
+
 ## Persist, Permanent, Resist Removal (2026-10-25)
 - Persist means persist through death only; the value is named Persist Through Death on Buffs, Debuffs, Stats and Minions.
 - "Lasts forever" is Permanence, a different mechanic: Extend with the detail marker Permanent (not a new value).
