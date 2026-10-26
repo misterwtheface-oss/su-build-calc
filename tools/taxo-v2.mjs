@@ -82,6 +82,9 @@ export function makeTaxoV2(X, CL, MK, condName = () => null) {
   for (const c of ((CL.f5 && CL.f5.corrections) || [])) if ((c.action === 'drop' || c.action === 'retag')
     && !(((CL.objects[c.key] || {}).tags) || []).some(t => t.tag === c.t)) addDrop(c.key, c.t);
   for (const [key, ts] of Object.entries(X.object_drops || {})) if (key !== '_note') for (const t of ts) addDrop(key, t);
+  // value renames (crosswalk value_renames; user 2026-10-25: Persist = Persist Through Death) and per-object retags (object_retags)
+  const VR = Object.fromEntries(Object.entries(X.value_renames || {}).filter(([k]) => k !== '_note'));
+  const RT = Object.fromEntries(Object.entries(X.object_retags || {}).filter(([k]) => k !== '_note'));
   const stats = { removed: 0, codeDropped: 0, removedBy: {}, other: 0, trigUnverified: 0, eventScope: 0, eventScopeOff: 0, objects: 0, withCode: 0, entries: 0, code: 0, v1: 0, unverified: 0, involves: 0, wrongDropped: 0, unknown: {} };
 
   // vocabulary: every value the crosswalk can produce + the code-only new values (+ open families)
@@ -129,7 +132,7 @@ export function makeTaxoV2(X, CL, MK, condName = () => null) {
       return v.length ? v : null;
     };
     const codeE = ((code && code.tags) || []).flatMap(c => {
-      const alts = expand(c.tag);
+      const alts = expand(VR[c.tag] || c.tag);
       // relic rank: the code layer's own `rank` (F5), else the rank clause that holds the site
       const rk = c.rank != null ? +c.rank : opts.rankOf ? opts.rankOf(c.site) : null;
       const mx = markerX(c);
@@ -184,6 +187,12 @@ export function makeTaxoV2(X, CL, MK, condName = () => null) {
       const h = /^Stats::Has (More|Less)$/.exec(e.t);
       if (h) { e.t = h[1] === 'More' ? 'Stats::Gain' : 'Stats::Lose'; e.d = 'Always On'; stats.alwaysOn = (stats.alwaysOn || 0) + 1; }
     }
+    // user-ruled retags (crosswalk object_retags): Persist split into Extend + Permanent / Resist Removal (user 2026-10-25)
+    for (const r of RT[`${kind}:${id}`] || []) for (const e of all) if (e.t === r.from && !e.gone) {
+      if (!r.to) { e.gone = true; stats.retagDropped = (stats.retagDropped || 0) + 1; continue; }
+      e.t = r.to; if (r.x && !(e.x || []).includes(r.x)) e.x = [...(e.x || []), r.x]; stats.retagged = (stats.retagged || 0) + 1;
+    }
+    for (let i = all.length - 1; i >= 0; i--) if (all[i].gone) all.splice(i, 1);
     // Side on Stats::Gain / Lose = the side whose stat changes (user 2026-10-25). The code layer's `scope` there is often the
     // hook subject (the creature whose stat event fired the hook: Taste of Fear's Feared enemy), so the code's `gainer`
     // (the creature the stat write lands on; extract ask HANDOFF_taxonomy_v2.md 2026-10-25) wins when it exists.
@@ -192,7 +201,7 @@ export function makeTaxoV2(X, CL, MK, condName = () => null) {
     for (const a of (X.object_adds || {})[`${kind}:${id}`] || []) {
       const n = a.unless_code_named, codeHas = n && ((code && code.tags) || []).some(t => t.named === n || t.tag === `Named Buff::${n}` || t.tag === `Named Debuff::${n}`);
       if (codeHas) { (stats.addsDropped ||= []).push(`${kind}:${id} ${a.t} (code now has ${n})`); continue; }
-      all.push({ t: a.t, s: null, r: null, v: 'code' }); stats.adds = (stats.adds || 0) + 1;
+      all.push({ t: a.t, s: null, r: null, v: 'code', ...(a.x ? { x: [a.x] } : {}) }); stats.adds = (stats.adds || 0) + 1;
     }
     // dedupe on the full attribute key (an unverified duplicate of a firm entry goes)
     const seen = new Map();

@@ -4,6 +4,13 @@ Every dated change entry, newest first (moved verbatim from Progress.md on 2026-
 to their own section and sorted by their date). Current state and open work: `Progress.md`, `BACKLOG.md`.
 New entries go at the TOP.
 
+## 2026-10-25 — Persist split: Persist Through Death / Extend + Permanent / Resist Removal (user ruling)
+- Buffs / Debuffs / Stats::Persist renamed Persist Through Death (crosswalk `value_renames`, also on code-layer tags).
+- 41 entries retagged per object (crosswalk `object_retags`): "lasts forever" → Extend with the Permanent marker (detail
+  refine); removal prevented → new Buffs / Debuffs::Resist Removal. Master of Eggxotics' Persist dropped (it shares buffs;
+  Buffs::Copy stays). Siren gains Debuffs::Extend + Permanent (`object_adds` now carries an optional marker).
+- Left in Persist Through Death: Grimkeeper, Destiny Bond, Eternal Guardian, Visitors From Before, Disposability, Stick Soul.
+
 ## 2026-10-25 — Tags on dead perk halves (extract S73, user ruling)
 - Data rebuild only. Every tag that rested only on a perk clause that can never run is gone; where the dead clause shares its
   body with a live one, the tag now sits on the live clause with the live side. Visible: Primordial Curse debuffs Enemy side,

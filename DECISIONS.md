@@ -4,6 +4,12 @@ Standing decisions the user made about how the app models the game. Don't "fix" 
 the assistant's working notes on 2026-10-08 (they existed nowhere in the repo). Add new rulings here when they're made.
 Taxonomy category definitions themselves live in `TAXONOMY.md`.
 
+## Persist, Permanent, Resist Removal (2026-10-25)
+- Persist means persist through death only; the value is named Persist Through Death on Buffs, Debuffs, Stats and Minions.
+- "Lasts forever" is Permanence, a different mechanic: Extend with the detail marker Permanent (not a new value).
+- A status whose normal removal is prevented, sometimes by chance (Escamotage, Spook, Memoriae, Not Quite A Dud, Crusader,
+  Grimoire, Shade, Siren's keep-sleeping, Toxdweller's Bomb), is the new value Resist Removal (Buffs / Debuffs).
+
 ## Dead perk halves (2026-10-25)
 - A tag whose only code support is a perk clause that can never run (scr_PerkLevel side 0) is removed, every tag family. If a
   live clause of the same perk supports the same tag, the tag stays (on the live clause).
