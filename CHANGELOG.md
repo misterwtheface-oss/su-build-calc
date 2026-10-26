@@ -4,6 +4,16 @@ Every dated change entry, newest first (moved verbatim from Progress.md on 2026-
 to their own section and sorted by their date). Current state and open work: `Progress.md`, `BACKLOG.md`.
 New entries go at the TOP.
 
+## 2026-10-25 — Value-read trait checks are no triggers (extract S70); interim crosswalk list dropped
+- The extract now leaves out the Trigger of a trait / perk check that only reads a value (the holder, a perk level used as a
+  multiplier, a "does not work on creatures that also have this trait" guard), so the crosswalk's interim `value_use_sites`
+  list and its build step are removed. Throat Ripper, Projection, Red Tether, Impending Victory, Hive Mind: only their real
+  trigger side remains.
+- From the same extract work: Spell Stealer, Bounce and Deep Inhalation Cast triggers are Enemy (they showed Any), Sucked Dry
+  turn triggers Enemy, Better, Faster, Stronger Defend / Provoke Your side, Master of Spirits Resurrection Enemy, Arcane
+  Brilliance Cast Your side; Potion Time! and Reform react to your OTHER creatures (Ally); Dark Dance's death trigger is Any.
+  Effects inside a value read take the reaction's side (Night Terrors, Something From Nothing, Lab Assistant, Savior: Your side).
+
 ## 2026-10-25 — Stats Gain / Lose Side = the side whose stat changes (user ruling); data rebuilt on extract S68 / S69
 - The build reads the code layer's `gainer` as Side on Stats::Gain / Lose when present (none yet; extract ask
   HANDOFF_taxonomy_v2.md). Today's side is often the hook subject (Taste of Fear: the Feared enemy).
