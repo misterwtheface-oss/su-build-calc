@@ -4,6 +4,13 @@ Every dated change entry, newest first (moved verbatim from Progress.md on 2026-
 to their own section and sorted by their date). Current state and open work: `Progress.md`, `BACKLOG.md`.
 New entries go at the TOP.
 
+## 2026-10-25 — User rulings on the extract's S67 / S69 open items (extract S72)
+- Data rebuild only. Perk triggers that sat only on clauses that can never run are gone (Traumatism, Pusillanimity, Alveary,
+  Epigraphy, Forsaken Wonder, Kill 'Em With Kindness and others keep only their real trigger side). Prognosis and Sudden
+  Exposure get Targeting::Random (the other released Targeting::All entries carry "no picker call" and stay unverified here).
+- Pumpkin Spice and Pandemonium Alacrity lose Stats::Steal. Spellmane gains Calculation::Stat Loss More beside Stat Gain More,
+  with a clarify note: its bonus also strengthens its stat-lowering spells.
+
 ## 2026-10-25 — Stats Gain / Lose Side now from the code's `gainer` (extract S71)
 - Data rebuild only (the build already read `gainer`): 502 stat entries take the side of the creature whose stat changes. Taste
   of Fear gains for this creature (it showed Enemy); Showdown and Lifeblood raise only their own creature; Abomination's gain
