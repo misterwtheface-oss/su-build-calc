@@ -4,6 +4,12 @@ Every dated change entry, newest first (moved verbatim from Progress.md on 2026-
 to their own section and sorted by their date). Current state and open work: `Progress.md`, `BACKLOG.md`.
 New entries go at the TOP.
 
+## 2026-10-25 — Code effect rules: trigger sides after the extract's formula rebuild (extract S73)
+- Data rebuild only (effects-code.json). 145 code effect rules change their trigger side: effects read from a trait / perk
+  check that is only a value read now take the real check's side (Throat Ripper's attack rule is your side, not any; Spell
+  Stealer, Bounce and Deep Inhalation enemy casts), and the S70 side fixes reach the rules (Master of Spirits, Better,
+  Faster, Stronger).
+
 ## 2026-10-25 — Stats Gain / Lose Side on the last undecoded entries (extract S73)
 - Data rebuild only. 207 stat entries get their code side (the creature whose stat changes), so they now show a Side.
   Awakened Nether Orbs' stat gains are your side (the Nature orb's own target list), not the enemies. Dark Clarity,
