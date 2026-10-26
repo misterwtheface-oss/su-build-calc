@@ -4,6 +4,14 @@ Every dated change entry, newest first (moved verbatim from Progress.md on 2026-
 to their own section and sorted by their date). Current state and open work: `Progress.md`, `BACKLOG.md`.
 New entries go at the TOP.
 
+## 2026-10-25 — Stats Gain / Lose Side now from the code's `gainer` (extract S71)
+- Data rebuild only (the build already read `gainer`): 502 stat entries take the side of the creature whose stat changes. Taste
+  of Fear gains for this creature (it showed Enemy); Showdown and Lifeblood raise only their own creature; Abomination's gain
+  goes to your other creatures; Horde, Fiery Stew, Empowered Savage Spores and Endless Onslaught's attack half are Your side.
+- Removed where nothing changes a stat: Love Thyself (it only casts Vitality Explosion), Overrun (it heals), Opal Attunement (it
+  blocks losses), and the enemy branches of Abandoned Altar / Impenetrable Shell and So Happy I Could Die's that can never run.
+- New clarify note on Endless Onslaught: its "are attacked" part checks the wrong side in the code.
+
 ## 2026-10-25 — Value-read trait checks are no triggers (extract S70); interim crosswalk list dropped
 - The extract now leaves out the Trigger of a trait / perk check that only reads a value (the holder, a perk level used as a
   multiplier, a "does not work on creatures that also have this trait" guard), so the crosswalk's interim `value_use_sites`
