@@ -1859,10 +1859,18 @@ span.boss-chip { cursor: default; }
   .topbar-actions .tb-btn { padding: 3px 9px; font-size: 12px; }
   .planning-main, .planning-main:has(> .party-roster.all-empty) {
     display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 10px; align-items: start; padding: 8px 10px; }
-  /* locked column: stays put while the party scrolls */
-  .home-top { position: sticky; top: 0; display: flex; flex-direction: column; gap: 8px; margin: 0; }
-  .spec-tile { min-height: 96px; padding: 8px 6px; }
-  .anoint-tile.filled { padding-top: 22px; }
+  /* locked column: stays put while the party scrolls and fills the visible height (#app = size container),
+     the two boxes splitting it evenly */
+  .planning-main { container-type: size; }
+  .home-top { position: sticky; top: 0; height: 100cqh; display: flex; flex-direction: column; gap: 8px; margin: 0; }
+  .spec-tile { flex: 1 1 0; min-height: 0; padding: 8px 6px; }
+  /* anointment icons run top-to-bottom, 5 per column (Royal's 20 = 4 columns of 5; portrait = 4 rows of 5),
+     sized to the box's free height */
+  .anoint-tile.filled { padding-top: 8px; }
+  .anoint-tile .spec-tile-icon { flex: 1 1 0; min-height: 0; width: 100%; }
+  .anoint-tile-icons { display: grid; grid-auto-flow: column; grid-template-rows: repeat(5, minmax(0, 1fr));
+    justify-content: center; height: 100%; width: auto; gap: 2px; }
+  .anoint-mini { height: 100%; width: auto; max-width: 32px; }
   .spec-tile-label { font-size: 12px; }
   .spec-tile-sub { font-size: 10px; }
   /* grid view: 3 × 2 tiles */

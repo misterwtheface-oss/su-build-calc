@@ -10,6 +10,9 @@ New entries go at the TOP.
   Anointments, sticky) beside the party. List view: one full-width row per creature, traits in columns. Grid view: 3 × 2.
 - Landscape phone, overlays: edge to edge (no 92vw × 86vh frame) with slim header / filter bar / footer and 300px side
   panes, so content gets about 265px of a 390px screen instead of about 145px. First pass; to iterate with the user.
+- Pass 1b: the locked Specialization / Anointments column fills the visible height (the two boxes split it evenly;
+  `#app` is a size container, so scroll position is untouched). Anointment icons run top-to-bottom, 5 per column
+  (Royal's 20 = 4 columns of 5; portrait stays 4 rows of 5), sized to the box.
 
 ## 2026-10-28 — Planner: creature name line shows only the name + the game's Fused icon
 - Planner roster row drops the "Class · Race" sub-line (the class/race badges beside the sprite already show both).
