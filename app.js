@@ -985,11 +985,13 @@
     const relB = rel && rel.icon ? `<span class="tile-badge gear" data-action="build-relic" data-slot="${i}" title="${esc(relicShortName(rel))} · Rank ${slot.relic.rank}">${spriteImg(rel.icon, "px")}</span>` : "";
     return artB + relB;
   }
-  // swap a creature with its neighbour (whole slot: fusion, artifact, relic, gems, scrolls…). ▲▼ on roster rows, ‹ › on tiles.
-  const slotMoveBtns = (i, vertical) => {
-    const last = build.slots.length - 1, [up, dn] = vertical ? ["▲", "▼"] : ["‹", "›"];
-    return `<span class="slot-move"><button class="spt-mv" data-action="slot-move" data-slot="${i}" data-d="-1" ${i ? "" : "disabled"} title="Move earlier">${up}</button><button class="spt-mv" data-action="slot-move" data-slot="${i}" data-d="1" ${i < last ? "" : "disabled"} title="Move later">${dn}</button></span>`;
+  // earlier/later move pair shared by every reorderable list: ▲▼ for stacked lists, ‹ › for side-by-side tiles
+  const moveBtns = (wrapCls, action, attrs, i, last, vertical) => {
+    const [up, dn] = vertical ? ["▲", "▼"] : ["‹", "›"];
+    return `<span class="${wrapCls}"><button class="spt-mv" data-action="${action}" ${attrs} data-d="-1" ${i ? "" : "disabled"} title="Move earlier">${up}</button><button class="spt-mv" data-action="${action}" ${attrs} data-d="1" ${i < last ? "" : "disabled"} title="Move later">${dn}</button></span>`;
   };
+  // swap a creature with its neighbour (whole slot: fusion, artifact, relic, gems, scrolls…). ▲▼ on roster rows, ‹ › on tiles.
+  const slotMoveBtns = (i, vertical) => moveBtns("slot-move", "slot-move", `data-slot="${i}"`, i, build.slots.length - 1, vertical);
   function renderRosterRow(slot, i) {
     const c = CREA.get(slot.cid);
     const locked = i >= creatureCap();   // Pariah caps the party at 3 creatures
@@ -6277,8 +6279,8 @@
       const props = (g.propIds || []).map(pid => { const p = SPELLPROP.get(pid); return p ? `<div class="prop-row static"${p.textNote ? ` title="${esc(p.textNote)}"` : ""}>
         <span class="prop-ico">${p.icon ? spriteImg(p.icon, "px") : ""}</span><span class="prop-name">${esc(p.name)}${noFxChip(propNoEffect(sp, p, tier))}</span><span class="prop-stat">${esc(propShort(p, tier))}</span></div>` : ""; }).join("");
       const swapped = gemSwapClass(g);
-      // ‹ › reorder the equipped gems (the header's class-colour dots follow the same order)
-      const mv = gems.length > 1 ? `<span class="spt-move"><button class="spt-mv" data-action="spellpage-move" data-i="${gi}" data-d="-1" ${gi ? "" : "disabled"} title="Move earlier">‹</button><button class="spt-mv" data-action="spellpage-move" data-i="${gi}" data-d="1" ${gi < gems.length - 1 ? "" : "disabled"} title="Move later">›</button></span>` : "";
+      // ▲▼ reorder the equipped gems (the header's class-colour dots follow the same order)
+      const mv = gems.length > 1 ? moveBtns("spt-move", "spellpage-move", `data-i="${gi}"`, gi, gems.length - 1, true) : "";
       return `<div class="art-spellcard spell-page-tile apx-clickable" data-action="spellpage-sel" data-id="${g.id}" title="Show in the Spell Gems list">
         <div class="art-spellcard-head">${mv}<span class="prop-ico">${spriteImg(gemIcon(g), "px")}</span>
           <b>${esc(gemName(g))}</b>${sp && gemName(g) !== sp.name ? `<span class="slot-sub">${esc(sp.name)}</span>` : ""}

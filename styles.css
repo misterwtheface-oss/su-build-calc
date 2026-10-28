@@ -1844,53 +1844,61 @@ span.boss-chip { cursor: default; }
 .taxo-bar .facet { flex: 0 1 auto; min-width: 0; }   /* stacked taxonomy filter chips wrap onto new rows */
 /* Planner: swap a creature with its neighbour — top-left corner, mirroring the ✕ */
 .slot-move { position: absolute; top: 4px; left: 5px; z-index: 3; display: inline-flex; gap: 2px; }
-.slot-move .spt-mv { width: 22px; height: 22px; font-size: 10px; }
+.slot-move .spt-mv, .spt-move .spt-mv { width: 22px; height: 22px; font-size: 10px; }   /* one arrow style for every reorder pair */
 .roster-identity .slot-move { top: -4px; left: -2px; }
 @media (max-width: 560px) { .roster-identity .slot-move { top: 6px; left: 6px; } }
 .slot .slot-move { left: 50%; transform: translateX(-50%); }   /* tiles: class/race badges own the top-left */
 .no-anoint { color: var(--text-mute); font-size: 13px; line-height: 1; cursor: help; }   /* spec overlay: perk that can't be anointed */
 
-/* ══ Landscape phone (short viewport — e.g. a phone clipped into a controller) — Planner first (#1) ══
-   One screen = the whole party: slim top bar, Spec + Anointments as a compact strip, all 6 creature tiles in one
-   row (grid view) or roster rows two-up with a smaller identity block. Other screens follow in a later pass. */
+/* ══ Landscape phone (short viewport — e.g. a phone clipped into a controller) ══
+   Planner: a locked left column (Specialization over Anointments) beside the party; each creature row spans the
+   rest of the width, its traits in columns. Overlays: full-bleed with slim chrome so the content keeps the height. */
 @media (orientation: landscape) and (max-height: 500px) {
   .topbar { padding: 2px 10px; }
   .topbar-title h1 { font-size: 14px; }
-  .planning-main { padding: 8px 10px; }
-  /* Spec + Anointments: one-line strip tiles (icon left of label + sub), same column width as the creature tiles */
-  .home-top { grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px; margin-bottom: 8px; }
-  .spec-tile { display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: 8px; align-items: center;
-    justify-items: start; text-align: left; padding: 4px 8px; min-height: 44px; }
-  .spec-tile-icon { grid-row: span 2; width: 30px; height: 30px; }
-  .spec-tile-label, .spec-tile-sub { min-width: 0; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .topbar-actions .tb-btn { padding: 3px 9px; font-size: 12px; }
+  .planning-main, .planning-main:has(> .party-roster.all-empty) {
+    display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 10px; align-items: start; padding: 8px 10px; }
+  /* locked column: stays put while the party scrolls */
+  .home-top { position: sticky; top: 0; display: flex; flex-direction: column; gap: 8px; margin: 0; }
+  .spec-tile { min-height: 96px; padding: 8px 6px; }
+  .anoint-tile.filled { padding-top: 22px; }
+  .spec-tile-label { font-size: 12px; }
   .spec-tile-sub { font-size: 10px; }
-  .spec-tile-icon img.tile-empty-ico { width: 24px; height: 24px; }
-  .spec-tile-icon img.tile-empty-ico.anoint-ph { width: 30px; height: 30px; }
-  .spec-tile { grid-column: span 2; }   /* room for the label + sub (spec) and 5 perk icons (anointments) */
-  .spec-tile:not(:has(.spec-tile-sub)) .spec-tile-label { grid-row: span 2; }   /* label alone → vertically centred */
-  .anoint-tile .spec-tile-icon { width: auto; min-height: 0; }
-  .anoint-tile .anoint-tile-icons { flex-wrap: nowrap; }
-  /* grid view: the full party in one row */
-  .party-grid { grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px; }
+  /* grid view: 3 × 2 tiles */
+  .party-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
   .slot { min-height: 0; padding: 5px; gap: 4px; }
-  .slot .tile-badges { top: 22px; }
-  .tile-badge { width: 16px; height: 16px; }
-  .slot-name { font-size: 11px; }
-  .slot-actions { gap: 3px; }
   .slot-mini { font-size: 10px; padding: 3px 2px; }
-  /* roster view: two rows side by side, compact identity column */
-  .party-roster { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .roster-row { grid-template-columns: 116px minmax(0, 1fr); gap: 8px; padding: 8px; }
-  .roster-row + .roster-row { border-top: 0; }
-  .roster-row:nth-child(n + 3) { border-top: 1px solid var(--border-dim); }
-  .roster-row:nth-child(even) { border-left: 1px solid var(--border-dim); }
+  .slot-sprite-wrap { aspect-ratio: auto; height: 110px; }   /* both tile rows fit one screen */
+  .slot-sprite-wrap img { width: auto; max-width: 100%; }
+  /* list view: one full-width row per creature */
+  .roster-row { grid-template-columns: 124px minmax(0, 1fr); gap: 10px; padding: 8px; }
   .roster-sprite { width: 60px; height: 60px; }
   .roster-name { font-size: 12px; }
   .roster-stats { gap: 1px 6px; }
   .roster-stats .rstat { font-size: 10px; }
   .roster-actions .slot-mini { min-width: 0; }
-  .roster-traits { gap: 5px; }
+  .roster-traits { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 6px; align-content: start; }
   .roster-traits .trait-desc { font-size: 11.5px; line-height: 1.3; }
+  .party-roster.all-empty .roster-row { min-height: 56px; }
+
+  /* overlays: edge to edge, slim header / filter bar / footer */
+  .ovl-backdrop { padding: 0; }
+  .overlay-panel, .overlay-panel.detail { width: 100vw; max-width: none; height: 100dvh; max-height: 100dvh;
+    border-radius: 0; border-width: 0; }
+  .overlay-header { padding: 3px 10px; gap: 8px; }
+  .overlay-header h2 { font-size: 14px; }
+  .overlay-header .ovl-close { width: 26px; height: 26px; font-size: 14px; }
+  .ovl-search { padding: 3px 8px; font-size: 12px; }
+  .ovl-filterbar { padding: 3px 8px; gap: 4px; }
+  .lib-bar { row-gap: 4px; }
+  .facet { font-size: 12px; padding: 2px 8px; }
+  .seg-btn { padding: 3px 9px; font-size: 11px; }
+  select.app-select { padding: 2px 6px; font-size: 12px; }
+  .overlay-footer { padding: 3px 10px; }
+  .btn-confirm, .btn-ghost { padding: 4px 12px; font-size: 12px; border-radius: 7px; }
+  .ovl-left, .ovl-right { width: 300px; padding: 8px; }
+  .ovl-center-scroll { padding: 8px; }
 }
 /* Appendix: Class Advantage + Random Targets tables */
 .ca-cls { display: inline-flex; align-items: center; gap: 5px; }

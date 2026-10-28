@@ -4,6 +4,13 @@ Every dated change entry, newest first (moved verbatim from Progress.md on 2026-
 to their own section and sorted by their date). Current state and open work: `Progress.md`, `BACKLOG.md`.
 New entries go at the TOP.
 
+## 2026-10-28 — Landscape phone redesign, pass 1; spell-gem reorder uses ▲▼
+- Spell Gems page: the reorder pair is ▲▼ in the Planner's move-button style (one shared `moveBtns` helper for both).
+- Landscape phone (`orientation: landscape` and height ≤ 500px), Planner: a locked left column (Specialization over
+  Anointments, sticky) beside the party. List view: one full-width row per creature, traits in columns. Grid view: 3 × 2.
+- Landscape phone, overlays: edge to edge (no 92vw × 86vh frame) with slim header / filter bar / footer and 300px side
+  panes, so content gets about 265px of a 390px screen instead of about 145px. First pass; to iterate with the user.
+
 ## 2026-10-28 — Planner: creature name line shows only the name + the game's Fused icon
 - Planner roster row drops the "Class · Race" sub-line (the class/race badges beside the sprite already show both).
 - The ⚭ text glyph is replaced everywhere (roster row, compact slot, fusion picker title, creature detail header) by the
