@@ -4,6 +4,12 @@ Every dated change entry, newest first (moved verbatim from Progress.md on 2026-
 to their own section and sorted by their date). Current state and open work: `Progress.md`, `BACKLOG.md`.
 New entries go at the TOP.
 
+## 2026-10-28 — Planner: creature name line shows only the name + the game's Fused icon
+- Planner roster row drops the "Class · Race" sub-line (the class/race badges beside the sprite already show both).
+- The ⚭ text glyph is replaced everywhere (roster row, compact slot, fusion picker title, creature detail header) by the
+  game's own Fused marker sprite `menu_fused_0` (shared `FUSE_MARK`, `assets/ui/menu_fused_0.png`, `uiIcons.fused`),
+  drawn at its native 16px.
+
 ## 2026-10-25 — S73 open items ruled (extract S75)
 - Data rebuild only. Dark Clarity (all three ranks): Can't Lose now per stat with Side Self, from its code (the loss is skipped
   while an ally lives). Treasonous Mind's stat gains are Side Self (the gem's owner gains), not Enemy. Judgment and Conquest's

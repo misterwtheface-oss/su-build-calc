@@ -213,6 +213,8 @@ h1, h2, h3 { margin: 0; }
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .slot-sub { font-size: 11px; color: var(--text-dim); text-align: center; }
+.fuse-mark { display: inline-block; vertical-align: -3px; }
+.fuse-mark img { width: 16px; height: 16px; display: block; }   /* native size keeps the pixel art crisp */
 .slot-sub .cls-chip { font-weight: 700; }
 
 .slot-actions { display: flex; gap: 4px; margin-top: auto; }
@@ -312,15 +314,14 @@ h1, h2, h3 { margin: 0; }
 .roster-empty { color: var(--text-mute); font-size: 13px; }
 
 /* phones: stack the identity block above its traits, all centered in the row, with the
-   name · class · race header lifted ABOVE the sprite / icons / stats (via flex order). */
+   name header lifted ABOVE the sprite / icons / stats (via flex order). */
 @media (max-width: 560px) {
   .roster-row { grid-template-columns: 1fr; gap: 10px; }
   .roster-identity { align-items: center; }              /* column by default; center horizontally */
   .roster-identity .slot-remove { position: absolute; top: 6px; right: 6px; }
-  /* header — name · class · race all on one centered line (there's room) */
+  /* header — name (+ Fused mark) on one centered line */
   .roster-head { order: 1; flex-direction: row; flex-wrap: nowrap; align-items: baseline; justify-content: center; gap: 0; }
   .roster-head .roster-name { max-width: none; }
-  .roster-head .roster-clsrace::before { content: "·"; margin: 0 7px; color: var(--text-mute); }
   .roster-identity > .slot-sub { order: 2; }             /* standalone note (e.g. "Ignored (Pariah)") */
   .roster-sprite-row { order: 3; }
   .roster-sprite { width: 72px; height: 72px; }

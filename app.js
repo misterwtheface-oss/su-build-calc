@@ -935,6 +935,8 @@
 
   // empty Specialization / Anointments tiles show the game's own menu glyphs (G = greyed variant)
   const EMPTY_ICON = { spec: (D.uiIcons || {}).specEmpty, anoint: (D.uiIcons || {}).anointEmpty };
+  // the game's Fused marker (menu_fused) beside a fused creature's name
+  const FUSE_MARK = `<span class="fuse-mark" title="Fused">${spriteImg((D.uiIcons || {}).fused)}</span>`;
   function renderHome() {
     const spec = build.specId != null ? SPEC.get(build.specId) : null;
     const specTile = `
@@ -1025,8 +1027,7 @@
           <div class="tile-badges roster-badges">${gearBadges(slot, i)}</div>
         </div>
         <div class="roster-head">
-          <div class="roster-name">${esc(c.name)}${f ? ` <span style="color:var(--accent2)">⚭</span>` : ""}</div>
-          <div class="slot-sub roster-clsrace"><span style="color:${clsColor(cls)};font-weight:700">${esc(cls || "—")}</span>${race ? " · " + esc(race) : ""}</div>
+          <div class="roster-name">${esc(c.name)}${f ? ` ${FUSE_MARK}` : ""}</div>
         </div>
         ${locked ? `<div class="slot-sub" style="color:var(--bad);font-weight:700">Ignored (Pariah)</div>` : ""}
         <div class="roster-stats">${statLine}</div>
@@ -1068,7 +1069,7 @@
       <button class="slot-remove" data-action="remove-creature" data-slot="${i}" title="Remove">✕</button>
       ${slotMoveBtns(i, false)}
       <div class="slot-sprite-wrap" data-action="creature-detail" data-slot="${i}">${slotFace(slot, c)}</div>
-      <div class="slot-name">${esc(c.name)}${f ? ` <span style="color:var(--accent2)">⚭</span>` : ""}</div>
+      <div class="slot-name">${esc(c.name)}${f ? ` ${FUSE_MARK}` : ""}</div>
       <div class="slot-actions">
         <button class="slot-mini ${a ? "on" : ""}" data-action="equip-artifact" data-slot="${i}" title="Artifact">Artifact</button>
         <button class="slot-mini ${slot.relic ? "on" : ""}" data-action="build-relic" data-slot="${i}" title="Relic">Relic</button>
@@ -2061,7 +2062,7 @@
     const traitIds = [primary.traitId, secondary ? secondary.traitId : null].filter(x => x != null);
     return `<button class="cd-info-btn" data-action="crea-info" data-cid="${primary.id}" title="Open full details for ${esc(primary.name)}" aria-label="Open full creature details">i</button>
       <div class="cd-sprite">${fusedFace(primary, st.skinId, secondary, st.step === "color" || st.fuseColor != null ? st.fuseColor : null)}</div>
-      <h3 style="text-align:center;margin:6px 0">${esc(primary.name)}${secondary ? ` <span style="color:var(--accent2)">⚭</span> ${esc(secondary.name)}` : ""}</h3>
+      <h3 style="text-align:center;margin:6px 0">${esc(primary.name)}${secondary ? ` ${FUSE_MARK} ${esc(secondary.name)}` : ""}</h3>
       <div class="slot-sub" style="margin-bottom:10px"><span style="color:${clsColor(b.cls)};font-weight:700">${esc(b.cls || "—")}</span></div>
       ${traitIds.length ? `<div class="section-label">Traits</div><div style="margin-bottom:10px">${traitIds.map(tid => `<div class="primary-traits" style="margin-bottom:6px">${traitBanner(tid)}<div class="trait-desc">${richText((TRAIT[tid] || {}).desc || "")}</div>${traitSpellRow(tid, true)}</div>`).join("")}</div>` : ""}
       <div class="section-label">Stats</div>
@@ -5744,7 +5745,7 @@
     const pos = filled.indexOf(slotIdx), total = filled.length, hasNav = total > 1;
     const chev = (dir, cls) => `<button class="cd-chev ${cls}" data-action="crea-nav" data-dir="${dir}" title="${dir < 0 ? "Previous" : "Next"} creature">${dir < 0 ? "‹" : "›"}</button>`;
     return `<div class="ovl-backdrop" data-action="detail-backdrop"><div class="overlay-panel detail">
-      <div class="overlay-header"><h2>${esc(c.name)}${f ? " ⚭ " + esc(f.name) : en ? ` ⚭ <span title="Endowment">${esc(en.name)}</span>` : ""}</h2><button class="ovl-close" data-action="close-detail">✕</button></div>
+      <div class="overlay-header"><h2>${esc(c.name)}${f ? ` ${FUSE_MARK} ${esc(f.name)}` : en ? ` ${FUSE_MARK} <span title="Endowment">${esc(en.name)}</span>` : ""}</h2><button class="ovl-close" data-action="close-detail">✕</button></div>
       <div class="overlay-body">
         <div class="ovl-left cd-left">
           <div class="cd-sprite-row">${hasNav ? chev(-1, "flank prev") : ""}

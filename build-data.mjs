@@ -4014,7 +4014,7 @@ const SU_DATA = {
   currencies,               // Appendix Currencies: earned from / spent on (data/reference/currencies.json + D.shops)
   effectOrder,              // every other fixed-order combat function (Appendix), code-grounded (effect_order_all.json)
   netherHelpers,            // Nether Realm helper tables (Faucet / Mimic Mike), code-grounded
-  uiIcons: { specEmpty: 'assets/ui/menu_characterG_0.png', anointEmpty: 'assets/ui/codex_anointmentsG_0.png' },
+  uiIcons: { specEmpty: 'assets/ui/menu_characterG_0.png', anointEmpty: 'assets/ui/codex_anointmentsG_0.png', fused: 'assets/ui/menu_fused_0.png' },
   bossSprites,              // normalized Deity owner name → bspr_ battle sprite (Appendix boss rows)
   effects,                  // effect rules for effects.js (EFFECT_ENGINE.md)
   traits,
