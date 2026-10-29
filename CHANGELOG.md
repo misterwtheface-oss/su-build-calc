@@ -4,6 +4,14 @@ Every dated change entry, newest first (moved verbatim from Progress.md on 2026-
 to their own section and sorted by their date). Current state and open work: `Progress.md`, `BACKLOG.md`.
 New entries go at the TOP.
 
+## 2026-10-29 — FIX: a collapsed spell row hung over the next container (anointment list and every perk / trait row)
+- The collapsible spell row under a perk or trait (`.perk-spell-row`, the ▸ arrow) kept its full container height while
+  closed: its `flex: 1 0 100%` basis resolved against the stretched column body, so the empty box extended about 70-80px
+  below its own row, over the top of the next one. A tap on the upper part of the next anointment hit that invisible box
+  and toggled the anointment above instead (worst on phones, same on desktop). Now `flex: 0 0 auto; width: 100%`: closed
+  rows measure 0px on all 117 anointment rows with an arrow, and the row-wrap case (relic rank rows) still wraps the spell
+  row onto its own full-width line. Verified with a headless-Chrome hit-test probe at 390px.
+
 ## 2026-10-28 — Landscape phone redesign, pass 1; spell-gem reorder uses ▲▼
 - Spell Gems page: the reorder pair is ▲▼ in the Planner's move-button style (one shared `moveBtns` helper for both).
 - Landscape phone (`orientation: landscape` and height ≤ 500px), Planner: a locked left column (Specialization over

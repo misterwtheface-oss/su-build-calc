@@ -953,7 +953,7 @@ button.apx-owner { background: none; border: 0; cursor: pointer; font: inherit; 
 .art-spellcards { display: flex; flex-direction: column; gap: 8px; }
 /* spell-gem container(s) shown beneath a relic rank row that casts a named spell */
 /* spell / status cards inside their owner's container: the arrow sits at the right end of the text's last line (no row of its own) */
-.perk-spell-row { position: relative; display: flex; flex-direction: column; margin: 0; flex: 1 0 100%; }
+.perk-spell-row { position: relative; display: flex; flex-direction: column; margin: 0; flex: 0 0 auto; width: 100%; }   /* width 100% wraps it onto its own line in a row container; a % flex-basis in a column body resolved to the body height and hung the closed row over the next container */
 :has(+ .perk-spell-row) { padding-right: 20px; }
 .sub-toggle { position: absolute; right: -4px; bottom: 100%; background: none; border: 0; padding: 0 4px; cursor: pointer;
   line-height: 1.3; color: var(--text-mute); font-size: 15px; }
