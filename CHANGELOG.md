@@ -4,6 +4,12 @@ Every dated change entry, newest first (moved verbatim from Progress.md on 2026-
 to their own section and sorted by their date). Current state and open work: `Progress.md`, `BACKLOG.md`.
 New entries go at the TOP.
 
+## 2026-10-29 — FIX: deleting an equipped spell gem / artifact left the home tile's count stale
+- The library Delete handlers (`sg-del`, `art-del`) pruned the build and refreshed the open overlay, but never re-rendered
+  the home page behind it (the Equip handler does), so a creature tile kept showing e.g. "Spells 2/3" until some other
+  action re-rendered. Both now call `render()` like Equip. Headless check: delete an equipped gem from the creature's
+  spell list → the tile reads "Spells 1/3" at once (was 2/3 until a later re-render).
+
 ## 2026-10-29 — FIX: a collapsed spell row hung over the next container (anointment list and every perk / trait row)
 - The collapsible spell row under a perk or trait (`.perk-spell-row`, the ▸ arrow) kept its full container height while
   closed: its `flex: 1 0 100%` basis resolved against the stretched column body, so the empty box extended about 70-80px

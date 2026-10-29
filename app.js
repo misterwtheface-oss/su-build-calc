@@ -6627,7 +6627,7 @@
         persistBuild(); render(); refreshOverlay(); break; }
       case "art-new": openArtifactBuilder(null, ovState.slotIdx); break;
       case "art-edit": openArtifactBuilder(+t.dataset.id, ovState.slotIdx); break;
-      case "art-del": armOrDo(t, () => { const id = +t.dataset.id; artifacts = artifacts.filter(a => a.id !== id); pruneAllBuildRefs(); if (ovState.sel === id) ovState.sel = null; persistArtifacts(); refreshOverlay(); }); break;
+      case "art-del": armOrDo(t, () => { const id = +t.dataset.id; artifacts = artifacts.filter(a => a.id !== id); pruneAllBuildRefs(); if (ovState.sel === id) ovState.sel = null; persistArtifacts(); render(); refreshOverlay(); }); break;   // render(): the home tile drops the artifact
       case "artb-next": ovState.step = ovState.step === "type" ? "slots" : "name"; ovState.pickType = null; ovState.preview = null; ovState.search = ""; refreshOverlay(true); break;
       case "artb-back": ovState.step = ovState.step === "name" ? "slots" : "type"; ovState.pickType = null; ovState.preview = null; ovState.search = ""; refreshOverlay(true); break;
       case "artb-closecat": ovState.pickType = null; ovState.preview = null; ovState.search = ""; ovState.bkOnly = false; refreshOverlay(true); break;
@@ -6742,7 +6742,7 @@
         artifacts.forEach(a => a.spells = (a.spells || []).filter(x => x !== id));
         pruneAllBuildRefs();
         if (ovState.sel === id) ovState.sel = null;
-        persistSpellGems(); persistArtifacts(); refreshOverlay(); }); break;
+        persistSpellGems(); persistArtifacts(); render(); refreshOverlay(); }); break;   // render(): home "Spells n/m" chip loses the gem
       case "sg-cancel": backToGemList(ovState.retSlot, ovState.editId); break;
       case "sg-spell": { const d = ovState.draft; d.spellId = d.spellId === +t.dataset.id ? null : +t.dataset.id;
         const sp = gemSpell(d); if (sp) d.propIds = d.propIds.filter(pid => { const p = SPELLPROP.get(pid); return p && gemPropOk(sp, p); });   // drop what the new spell can't take
