@@ -364,3 +364,6 @@ User: introduce a marker on the Spell Gem related tags (Scales With: Gem Count a
 effects that only interact with or count Permanent or Ethereal gems. Applied as `gem_kind` (Ethereal / Permanent), bound per code
 site by the extract (S76): a gem.temp test, or a direct read of the gained-in-battle list (Ethereal) or the equipped list
 (Permanent); effects that read both lists stay unmarked. Shown as "Gems: <kind>"; filtered with the "Any gems" narrow.
+Same day (extract session, user: "proceed"): Spell Kind: Ethereal Spells stays as a value (the 2026-10-19 ruling folds
+"non-Ethereal" into it; Materium r90 keeps it and reads Gems: Permanent), and the marker also narrows those objects' own
+effect tags. Code-vs-text differences found by the decode go to clarify notes (Gem Bomb), never to a relabel.

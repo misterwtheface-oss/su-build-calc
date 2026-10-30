@@ -5,12 +5,6 @@ Progress.md; original text kept, with a status note where later work changed thi
 recorded in `CHANGELOG.md`. Full pre-consolidation text: `archive/Progress_until_2026-10-08.md`.
 Extract-side research questions live in `_su_extract/RESUME.md`.
 
-## Spell-gem kind marker: rulings pending (2026-10-30, extract S76)
-- [ ] Materium r90 carries Spell Kind: Ethereal Spells while the code keeps only non-Ethereal gems (shown with Gems: Permanent for
-  now): drop the tag or keep it with the marker? (user ruling; extract HANDOFF_taxonomy_v2.md § "gem_kind marker")
-- [ ] Gem Bomb: text says one of the caster's Ethereal gems is Sealed, code picks a random gem of any kind: clarify note?
-- [ ] Should Spell Kind: Ethereal Spells retire in favour of the marker on the objects' own tags?
-
 ## Currencies: in-game checks (2026-10-24, extract S54)
 - [ ] Code exists but reachability isn't confirmed (hard-coded English, no creator found), so it's left out of the Currencies
   section: breeding / summoning menus (Brimstone + Crystal), the gambling-dwarf minigames (Hot Hands, Think Fast, Treasure
