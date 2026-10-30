@@ -627,6 +627,7 @@ h1, h2, h3 { margin: 0; }
   background: var(--surface); border: 1px solid var(--border-dim); border-radius: 8px;
 }
 .prop-row.chosen { border-color: var(--accent2); }
+.prop-row.off { opacity: .35; cursor: not-allowed; }   /* spell already on this creature (gem builder opened from its list) */
 .prop-row:has(> .perk-spell-row) { flex-wrap: wrap; row-gap: 0; }
 .prop-row .prop-name { flex: 1; font-size: 14px; }
 .prop-row .prop-stat { font-size: 12px; color: var(--text-dim); }

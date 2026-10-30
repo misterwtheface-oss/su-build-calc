@@ -4,6 +4,17 @@ Every dated change entry, newest first (moved verbatim from Progress.md on 2026-
 to their own section and sorted by their date). Current state and open work: `Progress.md`, `BACKLOG.md`.
 New entries go at the TOP.
 
+## 2026-10-29 — One gem per spell per creature (game rule); builder fades spells the creature already has
+- Code rule (`inv_CritCanEquipSpellGem` step 1, `_su_extract/code/SPELL_GEMS.md`): a creature never equips a second gem with the
+  same spell. Enforced in the app: the creature's equip list greys out such gems ("Spell already equipped on this creature",
+  Can't equip + note in the info pane), the Equip handler refuses them, and the build-pruning pass (startup / load / delete)
+  drops a later same-spell gem from a creature, so imported or older builds obey it too.
+- Spell Gem builder opened from a creature ("+ Build new" or Edit in its list): the spell step fades out, and makes
+  unclickable, every spell already on that creature's other gems (`spellRow` `off` option, `.prop-row.off`). Editing a gem
+  doesn't fade its own spell. The plain library (Menu → Spell Gems) is unchanged.
+- Verified headless: duplicate tile disabled / Equip refused, other spell equips (1/3 → 2/3), builder 1 of 300 rows faded,
+  prune [1,2] same spell → [1].
+
 ## 2026-10-29 — FIX: deleting an equipped spell gem / artifact left the home tile's count stale
 - The library Delete handlers (`sg-del`, `art-del`) pruned the build and refreshed the open overlay, but never re-rendered
   the home page behind it (the Equip handler does), so a creature tile kept showing e.g. "Spells 2/3" until some other

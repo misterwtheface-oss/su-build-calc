@@ -291,8 +291,8 @@
   // THE spell-gem container row — Spell Wizard, Artifact Wizard spell socket, Nether Stone spell picker and the
   // spell-gem library preview all render from this, so changing it changes every screen.
   // opts: chosen · attrs (the owning screen's data-action + data-*) · clamp (2-line description, default on) · meta
-  const spellRow = (sp, { chosen = false, attrs = "", clamp = true, meta = true } = {}) =>
-    `<div class="prop-row rich${chosen ? " chosen" : ""}"${attrs ? " " + attrs : ""}>${spellIco(sp)}
+  const spellRow = (sp, { chosen = false, attrs = "", clamp = true, meta = true, off = false } = {}) =>   // off: faded, not clickable
+    `<div class="prop-row rich${chosen ? " chosen" : ""}${off ? " off" : ""}"${attrs && !off ? " " + attrs : ""}>${spellIco(sp)}
       <div class="prop-body"><div class="prop-name">${esc(sp.name)}${meta && spellMeta(sp) ? `<span class="prop-metatag">${esc(spellMeta(sp))}</span>` : ""}</div>
         ${sp.desc ? `<div class="prop-sub${clamp ? " clamp" : ""}">${perkText(sp.desc)}</div>` : ""}</div></div>`;
   // fixed artifact slot template (all artifacts, max level): 1 primary + these; nether = 1 slot
@@ -488,7 +488,9 @@
     let changed = false;
     for (const s of (b && b.slots) || []) {
       if (!s) continue;
-      const ids = s.spellGemIds || [], kept = ids.filter(id => spellGems.some(g => g.id === id));
+      const ids = s.spellGemIds || [], seenSpell = new Set();
+      const kept = ids.filter(id => { const g = spellGems.find(x => x.id === id); if (!g) return false;   // deleted gem
+        const sp = gemSpell(g); if (sp && seenSpell.has(sp.id)) return false; if (sp) seenSpell.add(sp.id); return true; });   // second gem of the same spell (game rule)
       if (kept.length !== ids.length) { s.spellGemIds = kept; changed = true; }
       if (s.artifactId != null && !artifacts.some(a => a.id === s.artifactId)) { s.artifactId = null; changed = true; }
     }
@@ -901,6 +903,10 @@
     return FX.equipClasses(slot, base && base.cls ? base.cls : null);
   }
   const canEquipGemOn = (slot, g) => { const allowed = spellEquipClasses(slot); if (allowed === null) return true; const cls = gemClass(g); return !cls || allowed.has(cls); };
+  // spells already on the creature's equipped gems (inv_CritCanEquipSpellGem rule 1: never a second gem with the same spell);
+  // exceptGemId = the gem being edited, whose own spell doesn't count against it
+  const creatureSpellIds = (slot, exceptGemId = null) => new Set(((slot && slot.spellGemIds) || [])
+    .filter(id => id !== exceptGemId).map(id => { const g = spellGems.find(x => x.id === id); const sp = g && gemSpell(g); return sp ? sp.id : null; }).filter(x => x != null));
 
   // low-key availability labels from an entity's Realm Depth + secondary favor/guild gate:
   // "RD 25", "Favor 14", "Rep 40". Works for creatures / traits / trait-materials / spells.
@@ -6084,6 +6090,8 @@
     const creatureCls = creatureSlot ? (baseStats(creatureSlot) || {}).cls : null;
     const allowedCls = creatureSlot ? spellEquipClasses(creatureSlot) : null;   // null = any class permitted
     const gemAllowed = (g) => !creatureSlot || allowedCls === null || allowedCls.has(gemClass(g));
+    const haveSpells = creatureSlot ? creatureSpellIds(creatureSlot) : new Set();   // spells on this creature's equipped gems
+    const dupSpell = (g) => !!creatureSlot && !equipped.has(g.id) && !!gemSpell(g) && haveSpells.has(gemSpell(g).id);
     // tile equip-state highlight: purple = equipped on THIS creature, gold = equipped on another
     // (in manage/Menu mode every equipped gem is "another")
     const tiles = list.map(g => {
@@ -6091,11 +6099,13 @@
       const eqOther = !eqHere && spellGemEquippedInBuild(g.id);
       const wrongClass = creatureSlot && !eqHere && !gemAllowed(g);
       const blockOther = !!ctx && eqOther;        // equip wizard: on another creature → not equippable
-      const blocked = wrongClass || blockOther;
+      const dupHere = dupSpell(g);                // same spell already on this creature
+      const blocked = wrongClass || blockOther || dupHere;
       const eqOtherMarker = !ctx && eqOther;      // manage library marker only
       const gcls = gemClass(g);
       const title = wrongClass ? `${gcls || "This"} spell — can't equip on a ${creatureCls || "different"}-class creature`
         : blockOther ? "Equipped on another creature — not available"
+        : dupHere ? "Spell already equipped on this creature"
         : eqHere ? "Equipped on this creature" : eqOtherMarker ? "Equipped on another creature" : "";
       return `
       <div class="pick-tile ${st.sel === g.id ? "selected" : ""}${eqHere ? " eq-here" : ""}${blocked ? " disabled" : ""}${eqOtherMarker ? " eq-other" : ""}" data-action="sg-sel" data-id="${g.id}"${title ? ` title="${esc(title)}"` : ""}>
@@ -6117,7 +6127,8 @@
       const clsNote = creatureSlot && !equipped.has(sel.id) && !gemAllowed(sel)
         ? `<div class="slot-sub sg-clsnote" style="padding:8px 0">${esc(gcls || "This")}-class spell — a ${esc(creatureCls || "different")}-class creature can't equip it (an Opal or the right trait is needed).</div>`
         : (ctx && !equipped.has(sel.id) && spellGemEquippedInBuild(sel.id)
-          ? `<div class="slot-sub sg-clsnote" style="padding:8px 0">Equipped on another creature — unequip it there first to use it here.</div>` : "");
+          ? `<div class="slot-sub sg-clsnote" style="padding:8px 0">Equipped on another creature — unequip it there first to use it here.</div>`
+          : dupSpell(sel) ? `<div class="slot-sub sg-clsnote" style="padding:8px 0">This spell is already equipped on this creature — a creature can't hold two gems of the same spell.</div>` : "");
       info = `<div class="ns-info-head"><span class="ns-info-icon">${spriteImg(gemIcon(sel), "px")}</span><h3>${esc(gemName(sel))}</h3><span class="rank-badge">Lv ${gemTier(sel)}</span></div>
         ${clsNote}${spellBlock}
         ${propRows ? `<div class="section-label">Enchants</div><div class="prop-list">${propRows}</div>` : ""}`;
@@ -6127,7 +6138,8 @@
     const on = ctx && sel ? equipped.has(sel.id) : false;
     const selWrongClass = creatureSlot && sel && !on && !gemAllowed(sel);       // wrong-class, no permission
     const selOnOther = !!ctx && sel && !on && spellGemEquippedInBuild(sel.id);  // already on another creature
-    const selBlocked = selWrongClass || selOnOther;
+    const selDup = !!sel && dupSpell(sel);                                       // same spell already on this creature
+    const selBlocked = selWrongClass || selOnOther || selDup;
     const canEquip = !!ctx && !!sel && !selBlocked;
     // only render the info panel when there's something selected (no empty placeholder panel)
     const infoPanel = sel ? `<div class="ovl-right lib-info">${info}</div>` : "";
@@ -6144,7 +6156,7 @@
           <button class="btn-ghost" data-action="sg-edit" data-id="${sel ? sel.id : ""}" ${sel ? "" : "disabled"}>Edit</button>
           <button class="btn-ghost danger" data-action="sg-del" data-id="${sel ? sel.id : ""}" ${sel ? "" : "disabled"}>Delete</button>
           ${ctx && selBlocked
-            ? `<button class="btn-confirm" style="min-width:96px" disabled title="${selOnOther ? "Equipped on another creature" : "Wrong class for this creature"}">Can't equip</button>`
+            ? `<button class="btn-confirm" style="min-width:96px" disabled title="${selOnOther ? "Equipped on another creature" : selDup ? "Spell already equipped on this creature" : "Wrong class for this creature"}">Can't equip</button>`
             : `<button class="btn-confirm" style="min-width:96px" data-action="${canEquip ? "sg-equip" : "sg-new"}" ${canEquip ? `data-id="${sel.id}"` : ""}>${canEquip ? (on ? "Unequip" : "Equip") : "＋ Build new"}</button>`}
         </div></div>
     </div></div>`;
@@ -6167,7 +6179,9 @@
     const st = ovState, g = st.draft, q = st.search.trim().toLowerCase();
     let body = "", footer = "";
     if (st.step === "spell") {
-      const rows = spellPickRows(st, spellPickList(st), s => spellRow(s, { chosen: g.spellId === s.id, attrs: `data-action="sg-spell" data-id="${s.id}"` }));
+      // built from a creature's list: spells already on that creature's other gems are faded out (the game refuses a second gem with the same spell)
+      const dup = st.retSlot != null ? creatureSpellIds(build.slots[st.retSlot], st.editId) : new Set();
+      const rows = spellPickRows(st, spellPickList(st), s => spellRow(s, { chosen: g.spellId === s.id, off: dup.has(s.id), attrs: `data-action="sg-spell" data-id="${s.id}"` }));
       // right info panel — preview the highlighted spell's full effect + stats before committing to it
       // (only shown once a spell is chosen; no empty placeholder panel)
       const chosen = g.spellId != null ? SPELL.get(g.spellId) : null;
@@ -6744,7 +6758,9 @@
         if (ovState.sel === id) ovState.sel = null;
         persistSpellGems(); persistArtifacts(); render(); refreshOverlay(); }); break;   // render(): home "Spells n/m" chip loses the gem
       case "sg-cancel": backToGemList(ovState.retSlot, ovState.editId); break;
-      case "sg-spell": { const d = ovState.draft; d.spellId = d.spellId === +t.dataset.id ? null : +t.dataset.id;
+      case "sg-spell": { const d = ovState.draft;
+        if (ovState.retSlot != null && creatureSpellIds(build.slots[ovState.retSlot], ovState.editId).has(+t.dataset.id)) break;   // already on this creature
+        d.spellId = d.spellId === +t.dataset.id ? null : +t.dataset.id;
         const sp = gemSpell(d); if (sp) d.propIds = d.propIds.filter(pid => { const p = SPELLPROP.get(pid); return p && gemPropOk(sp, p); });   // drop what the new spell can't take
         refreshOverlay(); break; }
       case "sgb-next": ovState.step = "props"; ovState.picking = false; ovState.search = ""; refreshOverlay(true); break;
@@ -6779,6 +6795,7 @@
         else {                                                 // equip — enforce the creature's class rule
           const g = spellGems.find(x => x.id === id);
           if (ctx.kind === "creature" && g && !canEquipGemOn(build.slots[ctx.slotIdx], g)) break;
+          if (ctx.kind === "creature" && g && gemSpell(g) && creatureSpellIds(build.slots[ctx.slotIdx]).has(gemSpell(g).id)) break;   // no second gem with the same spell
           if (spellGemEquippedInBuild(id)) break;   // exclusive: already on another creature
           if (arr.length < ctx.max) arr.push(id);
           else if (ctx.max === 1) arr[0] = id;
