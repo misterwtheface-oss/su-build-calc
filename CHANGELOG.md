@@ -4,6 +4,12 @@ Every dated change entry, newest first (moved verbatim from Progress.md on 2026-
 to their own section and sorted by their date). Current state and open work: `Progress.md`, `BACKLOG.md`.
 New entries go at the TOP.
 
+## 2026-10-30 — Gem filters distinguish All from exclusive kinds; six spell gaps corrected
+- Gems: All is an explicit code-backed classification for effects that accept both Permanent and Ethereal gems without exclusivity. Any gems remains unrestricted; missing markers do not imply All. Initial All coverage: 36 audited spells.
+- Glory / Potent Porter / Insight Auto Cast are Permanent-only; Improvised Recitation Auto Cast is Ethereal-only. Spell Leak and Divination now have Ethereal-only Seal markers. Existing count/copy markers remain intact.
+- Classification is stored at the extract pipeline source and survives regeneration. Fresh gem creation is not classified as universal input coverage. Other marker families are unchanged.
+- Validation: isolated asset/data rebuild, 41 production-filter/data checks, extract-pass idempotence, and browser filter checks.
+
 ## 2026-10-30 — Taxonomy: `gem_kind` marker (Gems: Ethereal / Permanent) on the spell-gem tags
 - User ask: narrow the spell-gem tags (Scales With: Gem Count, Spell Gems: Charges / Behavior / Gain Gem / Can't Lose, Spell Kind:
   Ethereal Spells) to the gem kind the effect reads, as a marker rather than new values. The extract (S76, `taxo_v2_s76.py`) binds it

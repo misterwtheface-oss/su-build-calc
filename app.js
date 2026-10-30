@@ -632,7 +632,7 @@
     { a: "ra", any: "Any result", label: (v) => `Resolves as: ${v}`, title: "Indirect: a new indirect hit nobody is credited with. Same hit: the same attack, spell or hit moves", vals: (e) => e.ra ? [e.ra] : [] },
     { a: "sh", any: "Any share", label: (v) => `Share: ${v}`, title: "Whole: the original creature takes nothing. Split: it keeps part. Copy: it keeps the whole hit and others take extra", vals: (e) => e.sh ? [e.sh] : [] },
     // S76 (user 2026-10-30): the Spell Gem kind the code reads on this tag. Ethereal: gained in battle. Permanent: equipped
-    { a: "gk", any: "Any gems", label: (v) => `Gems: ${v}`, title: "Narrow to the Spell Gem kind the game code reads here (Ethereal: gained in battle; Permanent: equipped)", vals: (e) => e.gk ? [e.gk] : [] },
+    { a: "gk", any: "Any gems", label: (v) => `Gems: ${v}`, title: "Narrow by gem-kind coverage: Permanent only, Ethereal only, or All (both kinds without exclusivity). Any gems applies no restriction.", vals: (e) => e.gk ? [e.gk] : [] },
   ];
   const REFINE_ORDER = (D.taxonomy2 && D.taxonomy2.attributes) || {};
   const REFINE_ATTR = { s: null, so: "source", p: "phase", d: "delivery" };   // value order from taxonomy2.attributes

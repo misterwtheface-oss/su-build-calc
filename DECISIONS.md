@@ -367,3 +367,10 @@ site by the extract (S76): a gem.temp test, or a direct read of the gained-in-ba
 Same day (extract session, user: "proceed"): Spell Kind: Ethereal Spells stays as a value (the 2026-10-19 ruling folds
 "non-Ethereal" into it; Materium r90 keeps it and reads Gems: Permanent), and the marker also narrows those objects' own
 effect tags. Code-vs-text differences found by the decode go to clarify notes (Gem Bomb), never to a relabel.
+
+## Gem-kind coverage — user ruling 2026-10-30 (Codex independent audit)
+
+- The six approved spell gaps are corrected: Glory / Potent Porter / Insight Auto Cast = Permanent; Improvised Recitation Auto Cast = Ethereal; Spell Leak / Divination Seal = Ethereal.
+- Gems: All explicitly means this effect works with Permanent and Ethereal gems without exclusivity. Any gems removes the kind constraint and includes exclusive effects. Missing markers are unknown or inapplicable, never inferred All.
+- Classification stays bound to the effect entry and its decoded code site. Two separate exclusive entries never combine into All. Fresh gem creation has Ethereal output but does not establish universal input coverage; Gain Gem keeps its existing source/input meaning.
+- Initial All coverage is the independently audited spell population; other objects and marker families are not backfilled. New universal classifications require code evidence.

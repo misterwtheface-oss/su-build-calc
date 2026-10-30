@@ -297,3 +297,10 @@ damage-taken routines in `_su_extract`)._
   Gem Count, Spell Gems: Charges / Behavior / Gain Gem / Can't Lose, Spell Kind: Ethereal Spells), bound per code site (a gem.temp
   test, or a direct read of the gained-in-battle list = Ethereal / the equipped list = Permanent). Gain Gem: the kind copied FROM
   (every gem gained in battle is Ethereal). No code kind test = no marker (both kinds).
+
+## Gem-kind coverage — user ruling 2026-10-30 (Codex independent audit)
+
+- The six approved spell gaps are corrected: Glory / Potent Porter / Insight Auto Cast = Permanent; Improvised Recitation Auto Cast = Ethereal; Spell Leak / Divination Seal = Ethereal.
+- Gems: All explicitly means this effect works with Permanent and Ethereal gems without exclusivity. Any gems removes the kind constraint and includes exclusive effects. Missing markers are unknown or inapplicable, never inferred All.
+- Classification stays bound to the effect entry and its decoded code site. Two separate exclusive entries never combine into All. Fresh gem creation has Ethereal output but does not establish universal input coverage; Gain Gem keeps its existing source/input meaning.
+- Initial All coverage is the independently audited spell population; other objects and marker families are not backfilled. New universal classifications require code evidence.
