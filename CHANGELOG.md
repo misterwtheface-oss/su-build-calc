@@ -11,6 +11,8 @@ New entries go at the TOP.
   got a 0 basis and split the free space with the pips, truncating "Spells — <creature>" while the pips floated in empty space.
   The rule is now `.overlay-header h2.spells-hdr-title` (natural width, shrinks only when the pips need room) and the
   ‹ Spell Gems back button no longer wraps onto two lines.
+- Builder header: the 30px gem-icon box is only rendered when the gem has an icon (a new gem has none until a spell is
+  chosen), so "Spell Gem" no longer sits behind an empty gap on the left (user, 2026-10-30).
 
 ## 2026-10-29 — One gem per spell per creature (game rule); builder fades spells the creature already has
 - Code rule (`inv_CritCanEquipSpellGem` step 1, `_su_extract/code/SPELL_GEMS.md`): a creature never equips a second gem with the
