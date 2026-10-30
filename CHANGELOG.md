@@ -4,6 +4,14 @@ Every dated change entry, newest first (moved verbatim from Progress.md on 2026-
 to their own section and sorted by their date). Current state and open work: `Progress.md`, `BACKLOG.md`.
 New entries go at the TOP.
 
+## 2026-10-30 — Spell Gem builder from a creature keeps the creature's slot pips in its header
+- The builder (new or edit) opened from a creature's spell list now shows that creature's class-coloured slot pips
+  (`spellSlotDots`, the same header as the list and the Spells page) after its title; the plain library builder is unchanged.
+- Header fix on the same component: `.spells-hdr-title` lost to `.overlay-header h2 { flex: 1 }` (specificity), so the title
+  got a 0 basis and split the free space with the pips, truncating "Spells — <creature>" while the pips floated in empty space.
+  The rule is now `.overlay-header h2.spells-hdr-title` (natural width, shrinks only when the pips need room) and the
+  ‹ Spell Gems back button no longer wraps onto two lines.
+
 ## 2026-10-29 — One gem per spell per creature (game rule); builder fades spells the creature already has
 - Code rule (`inv_CritCanEquipSpellGem` step 1, `_su_extract/code/SPELL_GEMS.md`): a creature never equips a second gem with the
   same spell. Enforced in the app: the creature's equip list greys out such gems ("Spell already equipped on this creature",

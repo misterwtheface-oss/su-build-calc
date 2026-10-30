@@ -6236,9 +6236,11 @@
       footer = `<button class="btn-ghost" data-action="sgb-back">‹ Back</button>
         <button class="btn-confirm" data-action="sg-save" ${overCount ? `disabled title="More properties than this level allows"` : ""}>Save Spell Gem</button>`;
     }
+    // opened from a creature's spell list: keep that creature's slot pips (spellSlotDots) in the header
+    const pipSlot = st.retSlot != null && build.slots[st.retSlot] && build.slots[st.retSlot].cid != null ? build.slots[st.retSlot] : null;
     return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel detail">
-      <div class="overlay-header"><span class="hdr-ico">${spriteImg(gemIcon(g), "px")}</span>
-        <h2>${esc(gemName(g) || "New Spell Gem")}</h2>
+      <div class="overlay-header${pipSlot ? " spells-hdr" : ""}"><span class="hdr-ico">${spriteImg(gemIcon(g), "px")}</span>
+        <h2${pipSlot ? ` class="spells-hdr-title"` : ""}>${esc(gemName(g) || "New Spell Gem")}</h2>${pipSlot ? spellSlotDots(pipSlot) : ""}
         <button class="ovl-close" data-action="close-ovl">✕</button></div>
       <div class="overlay-body">${body}</div>
       <div class="overlay-footer"><span class="foot-info"></span><div>${footer}</div></div>

@@ -1559,7 +1559,8 @@ select.app-select { background: var(--surface); border: 1px solid var(--border-d
 /* creature spell-slot header (Spells page + equip list from a creature): class-coloured circle per equipped
    spell, outlined circle per empty slot */
 .overlay-header.spells-hdr { gap: 10px; }
-.spells-hdr-title { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.overlay-header.spells-hdr .btn-ghost { flex: 0 0 auto; white-space: nowrap; }   /* ‹ Spell Gems stays one line; the title ellipsizes instead */
+.overlay-header h2.spells-hdr-title { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }   /* beats `.overlay-header h2 { flex: 1 }`: natural width, shrinks only when the pips need room */
 .spell-dots { display: inline-flex; align-items: center; gap: 6px; flex: 1 1 auto; }
 .sdot { width: 13px; height: 13px; border-radius: 50%; background: var(--dc); border: 1px solid rgba(255,255,255,.45);
   box-shadow: 0 0 0 1px rgba(0,0,0,.35); flex: 0 0 auto; }
