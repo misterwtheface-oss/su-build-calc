@@ -4,6 +4,18 @@ Every dated change entry, newest first (moved verbatim from Progress.md on 2026-
 to their own section and sorted by their date). Current state and open work: `Progress.md`, `BACKLOG.md`.
 New entries go at the TOP.
 
+## 2026-10-30 — Taxonomy: `gem_kind` marker (Gems: Ethereal / Permanent) on the spell-gem tags
+- User ask: narrow the spell-gem tags (Scales With: Gem Count, Spell Gems: Charges / Behavior / Gain Gem / Can't Lose, Spell Kind:
+  Ethereal Spells) to the gem kind the effect reads, as a marker rather than new values. The extract (S76, `taxo_v2_s76.py`) binds it
+  per code site: a `gem.temp` test, a direct `extragems` read (gained in battle = Ethereal) or a direct `spellgems` read (equipped =
+  Permanent). Sites that read both lists carry no marker. 59 entries: 28 Ethereal, 31 Permanent.
+- `tools/taxo-v2.mjs` emits `gk`; the tag chips show "Gems: Ethereal / Permanent" and the Taxonomy filter gets an "Any gems" narrow
+  (`gk` in the refine list, key grammar and the entry dedupe keys).
+- Gain Gem: the marker is the kind of the gems COPIED FROM (Lust, Trove, Spell Tap ... copy permanent gems; Reprimand / Luck's Gambit
+  replace Ethereal ones). A gem gained in battle is always Ethereal, so plain grants carry no marker.
+- Held for the user (extract HANDOFF): Materium r90's Spell Kind: Ethereal Spells tag (code: non-Ethereal), a Gem Bomb clarify note
+  (code picks any gem), whether Spell Kind: Ethereal Spells should retire in favour of the marker.
+
 ## 2026-10-30 — Spell Gem builder from a creature keeps the creature's slot pips in its header
 - The builder (new or edit) opened from a creature's spell list now shows that creature's class-coloured slot pips
   (`spellSlotDots`, the same header as the list and the Spells page) after its title; the plain library builder is unchanged.

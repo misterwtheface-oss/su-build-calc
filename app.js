@@ -631,10 +631,12 @@
     // round 7F (user 2026-10-24): what an intercept / redirect turns the hit into, and how much the original creature keeps
     { a: "ra", any: "Any result", label: (v) => `Resolves as: ${v}`, title: "Indirect: a new indirect hit nobody is credited with. Same hit: the same attack, spell or hit moves", vals: (e) => e.ra ? [e.ra] : [] },
     { a: "sh", any: "Any share", label: (v) => `Share: ${v}`, title: "Whole: the original creature takes nothing. Split: it keeps part. Copy: it keeps the whole hit and others take extra", vals: (e) => e.sh ? [e.sh] : [] },
+    // S76 (user 2026-10-30): the Spell Gem kind the code reads on this tag. Ethereal: gained in battle. Permanent: equipped
+    { a: "gk", any: "Any gems", label: (v) => `Gems: ${v}`, title: "Narrow to the Spell Gem kind the game code reads here (Ethereal: gained in battle; Permanent: equipped)", vals: (e) => e.gk ? [e.gk] : [] },
   ];
   const REFINE_ORDER = (D.taxonomy2 && D.taxonomy2.attributes) || {};
   const REFINE_ATTR = { s: null, so: "source", p: "phase", d: "delivery" };   // value order from taxonomy2.attributes
-  const keyParse = (k) => { const ref = {}; const base = k.replace(/@(s|tg|so|p|d|cf|co|cn|ig|x|ev|st|sk|cl|ra|sh)=([^@]+)/g, (_, a, v) => { ref[a] = v; return ""; }); return { base, ref }; };
+  const keyParse = (k) => { const ref = {}; const base = k.replace(/@(s|tg|so|p|d|cf|co|cn|ig|x|ev|st|sk|cl|ra|sh|gk)=([^@]+)/g, (_, a, v) => { ref[a] = v; return ""; }); return { base, ref }; };
   const keyBuild = (base, ref) => base + REFINE.map(R => ref[R.a] ? `@${R.a}=${ref[R.a]}` : "").join("");
   const keyBase = (k) => keyParse(k).base;
   const entryKeys = (e) => { const rk = roleKey(e); return rk ? [e.t, rk] : [e.t]; };
@@ -3048,7 +3050,7 @@
   function entityTaxHtmlV2(e) {
     const groups = new Map(), seen = new Map();
     for (const x of e.taxo2 || []) {
-      const id = [x.t, x.s, x.tg, x.so, x.r, x.p, x.d, x.cf, x.co, x.cn, x.ig, x.ra, x.sh, ...["x", "ev", "st", "sk", "cl"].map(a => (x[a] || []).join(",")), x.v].join("|");
+      const id = [x.t, x.s, x.tg, x.so, x.r, x.p, x.d, x.cf, x.co, x.cn, x.ig, x.ra, x.sh, x.gk, ...["x", "ev", "st", "sk", "cl"].map(a => (x[a] || []).join(",")), x.v].join("|");
       if (seen.has(id)) { if (x.rk != null) seen.get(id).n++; continue; }
       const y = { ...x, n: x.rk != null ? 1 : 0 }; seen.set(id, y);
       for (const g of taxoGroupsOf(x.t)) { if (!groups.has(g)) groups.set(g, []); groups.get(g).push(y); }
@@ -3061,7 +3063,7 @@
       <div class="etax-cat">${esc(gn)}</div>
       <div class="etax-vals">${groups.get(gn).sort(chipSort).map(x => {
         const k = roleKey(x) || x.t, attrs = [x.s, x.tg ? `Target: ${x.tg}` : null, x.so, x.p && x.p !== "After" ? x.p : null, x.d && x.d !== "Event" ? x.d : null,
-          x.cf, x.co, x.cn, x.ig ? `Ignores ${x.ig}` : null, ...(x.x || []), ...(x.ev || []), ...(x.st || []), ...(x.sk || []), ...(x.cl || []), x.ra ? `Resolves as ${x.ra}` : null, x.sh ? `Share: ${x.sh}` : null].filter(Boolean);
+          x.cf, x.co, x.cn, x.ig ? `Ignores ${x.ig}` : null, ...(x.x || []), ...(x.ev || []), ...(x.st || []), ...(x.sk || []), ...(x.cl || []), x.ra ? `Resolves as ${x.ra}` : null, x.sh ? `Share: ${x.sh}` : null, x.gk ? `Gems: ${x.gk}` : null].filter(Boolean);
         const unv = x.v === "unverified";
         return `<button class="etax-tag${unv ? " etax-unv" : ""}" data-action="etax-filter" data-k="${esc(k)}" title="${unv ? "Unverified: the game code hasn't settled this tag. " : ""}Filter the Taxonomy to “${esc(taxoValName(k))}”">${esc(taxoCatName(k) + ": " + taxoValName(k))}${x.n >= 2 ? `<span class="etax-mult">×${x.n}</span>` : ""}${attrs.length ? `<span class="etax-attr">${esc(attrs.join(" · "))}</span>` : ""}${FEATURES.taxoSource && x.v ? `<span class="apx-src s-${esc(x.v)}">${esc(x.v)}</span>` : ""}</button>`;
       }).join("")}</div>

@@ -358,3 +358,9 @@ trigger enemy effects, so it is a liability.
 ## Macro: spells worth more than one cast go first (2026-10-24)
 User: "Replicate is the priority because it has greater value per cast." A spell that casts several of the caster's other
 spells comes before every other spell line, after the life-saving ones.
+
+## Spell-gem tags: `gem_kind` marker, not new values (2026-10-30)
+User: introduce a marker on the Spell Gem related tags (Scales With: Gem Count and the Spell Gems / Spell Kind tags) that splits the
+effects that only interact with or count Permanent or Ethereal gems. Applied as `gem_kind` (Ethereal / Permanent), bound per code
+site by the extract (S76): a gem.temp test, or a direct read of the gained-in-battle list (Ethereal) or the equipped list
+(Permanent); effects that read both lists stay unmarked. Shown as "Gems: <kind>"; filtered with the "Any gems" narrow.

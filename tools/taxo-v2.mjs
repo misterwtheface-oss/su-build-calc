@@ -146,6 +146,8 @@ export function makeTaxoV2(X, CL, MK, condName = () => null) {
         // status / class the code names on this very tag entry (tag-bound values only)
         ev: (c.event || []).length ? c.event : null, st: (c.stat_marker || []).length ? c.stat_marker : null,
         sk: (c.status_marker || []).length ? c.status_marker : trigStatus(c), cl: (c.class_marker || []).length ? c.class_marker : null,
+        // S76 (user 2026-10-30): gk = the Spell Gem kind the code reads on this tag (Ethereal = gained in battle, Permanent = equipped)
+        gk: c.gem_kind || null,
         // round 7F (user 2026-10-24): an intercept / redirect resolves as Indirect (new event, no source) or the Same hit; its
         // share: Whole (original takes 0) / Split (original keeps part) / Copy (original keeps all, others take extra)
         ra: c.resolves_as || null, sh: c.share || null,
@@ -203,7 +205,7 @@ export function makeTaxoV2(X, CL, MK, condName = () => null) {
     const seen = new Map();
     for (const e of all) {
       // act: a code site whose calls are made by different actors is one tag per actor (Confrontation: holder, then an enemy)
-      const k = [e.t, e.s, e.so, e.r, e.p, e.d, e.rk, e.cf, e.co, e.cn, e.ig, e.ra, e.sh, e.act, ...['x', 'ev', 'st', 'sk', 'cl'].map(a => (e[a] || []).join(','))].join('|');
+      const k = [e.t, e.s, e.so, e.r, e.p, e.d, e.rk, e.cf, e.co, e.cn, e.ig, e.ra, e.sh, e.gk, e.act, ...['x', 'ev', 'st', 'sk', 'cl'].map(a => (e[a] || []).join(','))].join('|');
       const prev = seen.get(k);
       if (!prev || (prev.v === 'unverified' && e.v !== 'unverified')) seen.set(k, e);
     }

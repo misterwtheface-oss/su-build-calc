@@ -292,3 +292,8 @@ damage-taken routines in `_su_extract`)._
 
 **Log**
 - 2026-10-18 — Intent and the three in-scope criteria set by the user.
+
+- **Spell-gem kind (user 2026-10-30, extract S76):** marker **gk** Gems: Ethereal / Permanent on the spell-gem tags (Scales With:
+  Gem Count, Spell Gems: Charges / Behavior / Gain Gem / Can't Lose, Spell Kind: Ethereal Spells), bound per code site (a gem.temp
+  test, or a direct read of the gained-in-battle list = Ethereal / the equipped list = Permanent). Gain Gem: the kind copied FROM
+  (every gem gained in battle is Ethereal). No code kind test = no marker (both kinds).
