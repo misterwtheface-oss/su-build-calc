@@ -13,6 +13,8 @@ New entries go at the TOP.
 - New Spell Gems: Seal entries with a code site on Relish the Kill, Solidarity, Mind Eraser, Shorted Out (All) and Eggnapper
   (Permanent): their Seal tag had only come through the crosswalk, so it could not carry a marker.
 - Totals shipped: 185 entries carry a gem kind (All 115, Ethereal 38, Permanent 32; 199 extract tags before dedupe). Lesson recorded in the extract (CODE_TAXO § S76c).
+- Same day, user ruling: a gem rule that never evaluates the gem kind is All. The last unmarked gem rules (Chasing Infinity, Curse
+  of the Silent, Like Sand, Tumble, Master of Occultists / Crunchers, Forsaken Horizon, Arcane, nine card powers) now read Gems: All.
 
 ## 2026-10-30 — Gem filters distinguish All from exclusive kinds; six spell gaps corrected
 - Gems: All is an explicit code-backed classification for effects that accept both Permanent and Ethereal gems without exclusivity. Any gems remains unrestricted; missing markers do not imply All. Initial All coverage: 36 audited spells.

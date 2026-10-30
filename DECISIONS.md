@@ -379,3 +379,7 @@ effect tags. Code-vs-text differences found by the decode go to clarify notes (G
 After the Codex audit the user approved All; the extract applied it to its own audited trait / perk / card sites (positive
 combined-pool evidence only) and added code-site Seal tags where the shipped tag was crosswalk-only. Sites without positive
 evidence stay unmarked (unknown), never All.
+
+## Gem kind: no kind evaluation = All (2026-10-30)
+User: a gem rule whose code never evaluates the gem kind "would then fall into All because they lack kind evaluation on gem
+type". Applied to the last unmarked gem rules (extract S76d); only rows where the gem dimension does not apply stay unmarked.
