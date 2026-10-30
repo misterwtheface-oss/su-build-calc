@@ -374,3 +374,8 @@ effect tags. Code-vs-text differences found by the decode go to clarify notes (G
 - Gems: All explicitly means this effect works with Permanent and Ethereal gems without exclusivity. Any gems removes the kind constraint and includes exclusive effects. Missing markers are unknown or inapplicable, never inferred All.
 - Classification stays bound to the effect entry and its decoded code site. Two separate exclusive entries never combine into All. Fresh gem creation has Ethereal output but does not establish universal input coverage; Gain Gem keeps its existing source/input meaning.
 - Initial All coverage is the independently audited spell population; other objects and marker families are not backfilled. New universal classifications require code evidence.
+
+## Gem-kind coverage: non-spell backfill (2026-10-30, extract session)
+After the Codex audit the user approved All; the extract applied it to its own audited trait / perk / card sites (positive
+combined-pool evidence only) and added code-site Seal tags where the shipped tag was crosswalk-only. Sites without positive
+evidence stay unmarked (unknown), never All.

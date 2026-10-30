@@ -4,6 +4,16 @@ Every dated change entry, newest first (moved verbatim from Progress.md on 2026-
 to their own section and sorted by their date). Current state and open work: `Progress.md`, `BACKLOG.md`.
 New entries go at the TOP.
 
+## 2026-10-30 — Gems: All backfilled on the audited trait / perk / card effects; Seal tags on the sealing traits
+- The extract (S76c) applied the approved All to the non-spell sites its own census had read: the Sealed-gem counters, Hoarding,
+  Conduit Strike, the charge rules that walk every gem (Rest Up, Charging Rod, Phasers, Consuming Knowledge, Soul Steal, Group
+  Meditation, Forbearance Forgone, Conjuration), the no-charge rules (Heretic Blood, Ascendancy, Necromastery, Efficiency, On the
+  House ...), the gem-update charge rules (Supercharged, Eve, Endlessly, Ultima, Godforged, Diabolic Brilliance), the Gain Gem
+  copies from any gem (Pilfer, Ransack, Mind Eraser, Cogmind ...) and the Can't Be Sealed perks. 72 entries.
+- New Spell Gems: Seal entries with a code site on Relish the Kill, Solidarity, Mind Eraser, Shorted Out (All) and Eggnapper
+  (Permanent): their Seal tag had only come through the crosswalk, so it could not carry a marker.
+- Totals shipped: 185 entries carry a gem kind (All 115, Ethereal 38, Permanent 32; 199 extract tags before dedupe). Lesson recorded in the extract (CODE_TAXO § S76c).
+
 ## 2026-10-30 — Gem filters distinguish All from exclusive kinds; six spell gaps corrected
 - Gems: All is an explicit code-backed classification for effects that accept both Permanent and Ethereal gems without exclusivity. Any gems remains unrestricted; missing markers do not imply All. Initial All coverage: 36 audited spells.
 - Glory / Potent Porter / Insight Auto Cast are Permanent-only; Improvised Recitation Auto Cast is Ethereal-only. Spell Leak and Divination now have Ethereal-only Seal markers. Existing count/copy markers remain intact.
