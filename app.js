@@ -3893,14 +3893,14 @@
     ];
     if (k === "dodge") return [
       "Each hit of an attack rolls <b>one main dodge chance</b> for its target: <b>5%</b>, or <b>5% × the dodger's Speed ÷ the attacker's Speed</b> when the dodger is faster, up to <b>30%</b> (reached at six times the attacker's Speed).",
-      "Then <b>“less chance to dodge” effects multiply</b> that chance (the Gargantuan card set, Vulnerable, Disarmed, Stone while resistant, the Less Dodge Chance realm property), and <b>“greater chance to dodge” effects each add a share</b> of what is left (<b>Agility Aura</b> +40%, the Clutcher card +5%, Agile with the Aspect card +5%, <b>Godforge upgrade 18</b> +50% (+75% on an Avatar with Godforged), the <b>Nature Guild</b> reputation bonus, growing with your reputation level), so those add up with each other rather than multiply. An artifact's <b>Dodge Chance trick slot adds flat points</b> to the same roll.",
+      "Then <b>“less chance to dodge” effects multiply</b> that chance (the Gargantuan card set, Vulnerable, Disarmed, Stone while resistant, the Less Dodge Chance realm property), and <b>“greater chance to dodge” effects each add a share</b> of what is left (<b>Agility Aura</b> +40%, the Clutcher card +5%, Agile with the Aspect card +5%, <b>Godforge upgrade 18</b> +50% on Avatars only (+75% with the Godforged perk), the <b>Nature Guild</b> reputation bonus, growing with your reputation level), so those add up with each other rather than multiply. An artifact's <b>Dodge Chance trick slot adds flat points</b> to the same roll.",
       "<b>Caps: 90%.</b> A dodger <b>below level 25 can't exceed its level</b> (a level-12 creature dodges at most 12%). Enemies in normal battles are capped at 60% below realm depth 40 and at 30% below depth 20. The <b>floor is 5%</b>. The caps apply to the main roll only.",
       "<b>“Always dodges” effects and independent chances</b> (Protective Winds, Fluster, Disengagement, the Call of the Aspect family 50%, Bob and Weave, Master of Efts 40%, Stand Alone Complex, Zoom …) are <b>rolled separately after the main roll</b>, each its own roll, every hit. They are <b>separate from the 90% cap</b>: the cap is applied inside the main chance before any of them is rolled, so the combined chance to dodge <b>can go above 90%</b>. <b>Intent to Kill</b> re-rolls only the main roll. <b>“Cannot be dodged” effects</b> (Dreadnaught, Wretchedness, a Stoned target …) override every dodge <b>except Periphery</b>.",
     ];
     return [
-      "<b>Chance: 5%</b>, or <b>5% × the attacker's Speed ÷ the target's Speed</b> when the attacker is faster, with <b>no cap of its own</b>: at twenty times the target's Speed every hit crits. <b>“Less” effects multiply</b> it (the Valkyrie card power 1, Weak with the Leper card, Disarmed with the Concoction card, Stone while resistant, the Less Critical Chance realm property); <b>“greater chance” effects add shares</b> of what is left (Godforge upgrade 17 +50%, the Reaper card +10%, Wretchedness +50% against Vulnerable, Backbite +100%, Berserk with the Fiend card +15%, Savage with the Asura card +10%, Thousand Needles per consecutive crit, the Chaos Guild reputation bonus). <b>Reaper power 3</b> floors your creatures at 10%; <b>Valkyrie power 3</b> caps hits against enemies at 75%. The <b>floor is 5%</b>.",
+      "<b>Chance: 5%</b>, or <b>5% × the attacker's Speed ÷ the target's Speed</b> when the attacker is faster, with <b>no cap of its own</b>: at twenty times the target's Speed every hit crits. <b>“Less” effects multiply</b> it (the Valkyrie card power 1, Weak with the Leper card, Disarmed with the Concoction card, Stone while resistant, the Less Critical Chance realm property); <b>“greater chance” effects add shares</b> of what is left (Godforge upgrade 17 +50% on Avatars only, the Reaper card +10%, Wretchedness +50% against Vulnerable, Backbite +100%, Berserk with the Fiend card +15%, Savage with the Asura card +10%, Thousand Needles per consecutive crit, the Chaos Guild reputation bonus). <b>Reaper power 3</b> floors your creatures at 10%; <b>Valkyrie power 3</b> caps hits against enemies at 75%. The <b>floor is 5%</b>.",
       "The roll is made <b>inside the damage event, after every damage reduction</b>, for attack and spell damage that has a source; <b>indirect damage never crits</b>. “Always critical” effects (Periphery, the Always Critical Damage realm property …) and extra chances are checked after the main roll and can only add crits.",
-      "<b>Damage:</b> a crit adds <b>25% of the hit plus (100% + the natural log of the attacker's Speed ÷ the target's Speed)</b>, never less than +25%. That is <b>×2.25 at equal Speed</b>, ×1.25 when the attacker is far slower, and it keeps growing with the Speed gap. The bonus is a share of the hit after reductions and goes into <b>the same pool as “more damage” bonuses</b>, so it adds with them instead of multiplying. Further crit-damage terms: Godforge upgrade 13 +60% (+90% with Godforged), the Reaper card +25%, the Asura card +30%, <b>Pummel</b> +200%, <b>Urdox Harbinger</b> +50% per turn taken, Death Sentence +2% per rank, the Valkyrie card −30% for enemies.",
+      "<b>Damage:</b> a crit adds <b>25% of the hit plus (100% + the natural log of the attacker's Speed ÷ the target's Speed)</b>, never less than +25%. That is <b>×2.25 at equal Speed</b>, ×1.25 when the attacker is far slower, and it keeps growing with the Speed gap. The bonus is a share of the hit after reductions and goes into <b>the same pool as “more damage” bonuses</b>, so it adds with them instead of multiplying. Further crit-damage terms: Godforge upgrade 13 +60% on Avatars only (+90% with the Godforged perk), the Reaper card +25%, the Asura card +30%, <b>Pummel</b> +200%, <b>Urdox Harbinger</b> +50% per turn taken, Death Sentence +2% per rank, the Valkyrie card −30% for enemies.",
       "<b>Clarify:</b> community guides list a crit as ×1.5 and treat spells as unable to crit; the code adds the Speed-based bonus above and runs the same roll for spell damage. The app's threat advice keeps the “only attacks crit” rule until an in-game check settles it.",
     ];
   }
@@ -3918,11 +3918,11 @@
     ].join("");
     if (k === "dodge") {
       const t50 = SPD_TRICK_DODGE(50), tot = t50 * 1.25, smith = t50 * 1.35;
-      const SHARES = 0.5 + 0.4 + 0.05 + 0.05;                                // Godforge 18 + Agility Aura + Clutcher p1 + Agile/Aspect p1 (Nature Guild not sized)
+      const SHARES = 0.4 + 0.05 + 0.05;                                      // Agility Aura + Clutcher p1 + Agile/Aspect p1 (Nature Guild not sized; Godforge 18 is Avatars only)
       const capped = (v) => v > 90 ? `90% cap (${pct(v)}%)` : `${pct(v)}%`;
       const spd = 30, spdAll = spd * (1 + SHARES);
       const agg = [["Speed alone, six times faster", "30%", "30%"],
-        ["+ every share of the Speed part (+100%)", `+${pct(spdAll - spd)}%`, capped(spdAll)],
+        ["+ every share of the Speed part (+50%)", `+${pct(spdAll - spd)}%`, capped(spdAll)],
         ["+ Slippery Stone, no artifact boosts", `+${pct(t50)}%`, capped(spdAll + t50)],
         ["Slippery Stone with all artifact boosts instead", `+${pct(smith)}%`, capped(spdAll + smith)]];
       return [
@@ -3935,7 +3935,6 @@
         <div class="slot-sub spd-sub"><b>More of the Speed part</b> — shares of the Speed-derived chance, so they scale its 30% at most</div>
         <div class="nd-wrap"><div class="nd-table">
           <div class="nd-row spd-row2 nd-hd"><span>Source</span><span>Share</span></div>
-          <div class="nd-row spd-row2"><span>Godforge upgrade 18</span><span>+50%</span></div>
           <div class="nd-row spd-row2"><span>Agility Aura</span><span>+40%</span></div>
           <div class="nd-row spd-row2"><span>Clutcher card set, power 1</span><span>+5%</span></div>
           <div class="nd-row spd-row2"><span>Agile, with the Aspect card set</span><span>+5%</span></div>

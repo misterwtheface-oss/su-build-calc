@@ -6,10 +6,10 @@ New entries go at the TOP.
 
 ## 2026-10-31 — Appendix › Speed › Dodge: four tables (user layout)
 - The Dodge group is now: (1) the Speed ratio table; (2) **More of the Speed part** — the shares that scale the Speed-derived
-  chance and so its 30% at most (Godforge 18 +50%; Agility Aura +40%; Clutcher p1 +5%; Agile
+  chance and so its 30% at most (Agility Aura +40%; Clutcher p1 +5%; Agile
   with the Aspect card +5%; Nature Guild by level); (3) **Flat dodge in the main roll** (Slippery Stone tier 50 29.5% → + Tools
-  of the Trade max 36.9% → + Smith p2 39.8%); (4) **Main roll, everything maxed**: Speed alone 30% → + every share (+100%) 60%
-  → + Slippery Stone 89.5% → with all artifact boosts instead 90% cap (99.8%). Max values only, no per-rank increments. Godforged (Avatars only) is mentioned in the prose, not in the tables (user).
+  of the Trade max 36.9% → + Smith p2 39.8%); (4) **Main roll, everything maxed**: Speed alone 30% → + every share (+50%) 45%
+  → + Slippery Stone 74.5% → with all artifact boosts instead 84.8%. Max values only, no per-rank increments. Godforge upgrades (18 dodge, 17 crit chance, 13 crit damage) are Avatar-only features, so they are out of the tables and marked “Avatars only” in the prose (user); the Godforged perk only raises them.
   Code: the shares are computed on the Speed-derived chance before the artifact points join the pool (bc_GetDodgeChance rows
   152–158), which is why tables 2 and 3 are separate. The closing line on independent dodges stays until BACKLOG #31 (taxonomy
   marker + quick link) replaces it.
