@@ -3849,65 +3849,65 @@
       </div><div class="slot-sub nd-note">Attacks use the attacker's class. Spells use the Spell Gem's class, not the caster's: a Class Swap (Opal) property changes it, and Convoke the Spirits always counts as the class the target is weak against. The defender's current class is used. Widdershins reverses the wheel; True Strike, Bloodline and the Aurum relic always hit as strong.</div></div>` : "";
     return `<button class="apx-sec-head apx-cat${open ? "" : " collapsed"}" data-action="gloss-cat-toggle" data-c="${key}"><span class="apx-sec-caret">${open ? "▾" : "▸"}</span>Class Advantage</button>${body}`;
   }
-  // ── Speed (user 2026-10-31): what Speed does — the start-of-battle Timeline, the dodge chance, the critical chance and the
-  // critical damage. One Appendix section, three nested groups (`sob-step` style, keys `SPD:<group>`). Code: _su_extract
-  // code/TIMELINE_FINDINGS.md (+ START_OF_BATTLE_FINDINGS phase 6), data_dump/effect_order/attack_pipeline_crit_dodge.md
-  // (bc_GetDodgeChance / bc_GetCriticalChance), EFFECT_FORMULAS.md § caps_s12 (crit damage), event_damage_b_mid § E (who rolls).
-  const SPD_DODGE = (r) => r > 1 ? Math.min(5 * r, 30) : 5;                 // main dodge chance from the Speed ratio (dodger ÷ attacker)
-  const SPD_CRIT = (r) => r > 1 ? 5 * r : 5;                                // crit chance from the Speed ratio (attacker ÷ target), no cap
-  const SPD_CRITDMG = (r) => 1.25 + Math.max(0, 1 + Math.log(r));           // crit multiplier: hit × (1 + 0.25 + max(0, 1 + ln r))
-  const SPD_GROUPS = [
-    ["timeline", "Timeline", "timeline turn order start of battle covert prepared top bottom tie speed"],
-    ["dodge", "Dodge", "dodge chance evade miss speed cap level"],
-    ["crit", "Critical hits", "crit critical chance damage multiplier speed cap"],
-  ];
-  function speedGroupBody(k) {
-    const eoLink = (sec, label) => `<button class="facet spd-link" data-action="open-effect-order" data-sec="${sec}">${label} ›</button>`;
-    const p = (t) => `<div class="slot-sub eo-rule">${t}</div>`;
-    const ratio = (r) => r === 0.5 ? "½×" : r === 1 ? "same" : `${r}×`;
-    const pct = (v) => (Math.round(v * 10) / 10).toString();
-    if (k === "timeline") return [
-      p("At the start of battle every creature on both sides is sorted into one Timeline by Speed, highest first. The order is set at step 6 of Start of Battle, after the start-of-battle stat gains and losses, so Speed gained or lost at the start of battle counts. Then Slipstream and First Served move your creatures up, and the realm boost that starts your creatures at the top applies."),
-      p("Equal Speed is a coin flip. Covert places your creatures by Attack instead, Prepared by Intelligence (Prepared wins when a side has both)."),
-      p("Some effects replace the Speed placement outright. Top: Surprise!, Sacrilege, Swarm, Glucose, Master of Mimics, Master of Luckmantrias, Guerilla Tactics, Ascendant Revenant. Bottom: Contradiction, Boneyard, Ultimate Trickery, Imposter Syndrome, the Snaptrap card set. Hymn of Panic shuffles everyone. A creature with a top and a bottom placement goes to the bottom."),
-      p("After that, Speed no longer matters for the order: gaining or losing Speed during the battle never reorders the Timeline. When a creature's turn ends it goes to the bottom and everyone else moves up one place (an extra turn keeps it at the top). Only effects that move a creature to the top or bottom change the order, at most once per creature per creature-turn. Defeated creatures stay on the Timeline; minions and other temporary creatures leave when they die, and creatures that flee leave."),
-      p("Before step 6 (steps 0a–5), effects that read the Timeline see the previous battle's order, kept from the Speed recorded at its end."),
-      eoLink("Timeline", "Battle-Start Timeline"),
-    ].join("");
-    if (k === "dodge") return [
-      p("Each hit of an attack rolls one main dodge chance for its target: 5%, or 5% × the dodger's Speed ÷ the attacker's Speed when the dodger is faster, up to 30% (reached at six times the attacker's Speed)."),
-      p("Then “less chance to dodge” effects multiply that chance (the Gargantuan card set, Vulnerable, Disarmed, Stone while resistant, the Less Dodge Chance realm property), and “greater chance to dodge” effects each add a share of what is left (Agility Aura +40%, the Clutcher card +5%, Agile with the Aspect card +5%, Godforge upgrade 18 +50%), so those add up with each other rather than multiply. An artifact's Dodge stat adds flat points."),
-      p("Caps: 90%. A dodger below level 25 can't exceed its level (a level-12 creature dodges at most 12%). Enemies in normal battles are capped at 60% below realm depth 40 and at 30% below depth 20. The floor is 5%."),
-      p("“Always dodges” effects and independent chances (the Call of the Aspect family 50%, Bob and Weave, Master of Efts 40%, Stand Alone Complex …) are rolled separately after the main roll, so they stack as separate rolls. Intent to Kill re-rolls only the main roll. “Cannot be dodged” effects (Dreadnaught, Wretchedness, a Stoned target …) override every dodge except Periphery."),
-      `<div class="nd-wrap"><div class="nd-table">
-        <div class="nd-row spd-row2 nd-hd"><span>Dodger's Speed vs attacker's</span><span>Main dodge chance</span></div>
-        ${[0.5, 1, 1.5, 2, 3, 4, 6, 10].map(r => `<div class="nd-row spd-row2"><span>${ratio(r)}</span><span>${pct(SPD_DODGE(r))}%${r >= 6 ? " (cap)" : ""}</span></div>`).join("")}
-      </div></div>`,
-      eoLink("Attack", "Attack Order"),
-    ].join("");
-    return [
-      p("Chance: 5%, or 5% × the attacker's Speed ÷ the target's Speed when the attacker is faster, with no cap of its own: at twenty times the target's Speed every hit crits. “Less” effects multiply it (the Valkyrie card power 1, Weak with the Leper card, Disarmed with the Concoction card, Stone while resistant, the Less Critical Chance realm property); “greater chance” effects add shares of what is left (Godforge upgrade 17 +50%, the Reaper card +10%, Wretchedness +50% against Vulnerable, Backbite +100%, Berserk with the Fiend card +15%, Savage with the Asura card +10%, Thousand Needles per consecutive crit). Reaper power 3 floors your creatures at 10%; Valkyrie power 3 caps hits against enemies at 75%. The floor is 5%."),
-      p("The roll is made inside the damage event, after every damage reduction, for attack and spell damage that has a source; indirect damage never crits. “Always critical” effects (Periphery, the Always Critical Damage realm property …) and extra chances are checked after the main roll and can only add crits."),
-      p("Damage: a crit adds 25% of the hit plus (100% + the natural log of the attacker's Speed ÷ the target's Speed), never less than +25%. That is ×2.25 at equal Speed, ×1.25 when the attacker is far slower, and it keeps growing with the Speed gap. The bonus is a share of the hit after reductions and goes into the same pool as “more damage” bonuses, so it adds with them instead of multiplying. Further crit-damage terms: Godforge upgrade 13 +60% (+90% with Godforged), the Reaper card +25%, the Asura card +30%, Pummel +200%, Urdox Harbinger +50% per turn taken, Death Sentence +2% per rank, the Valkyrie card −30% for enemies."),
-      `<div class="nd-wrap"><div class="nd-table">
-        <div class="nd-row spd-row3 nd-hd"><span>Attacker's Speed vs target's</span><span>Crit chance</span><span>Crit damage</span></div>
-        ${[0.5, 1, 1.5, 2, 3, 4, 6, 10, 20].map(r => `<div class="nd-row spd-row3"><span>${ratio(r)}</span><span>${pct(SPD_CRIT(r))}%</span><span>×${SPD_CRITDMG(r).toFixed(2)}</span></div>`).join("")}
-      </div></div>`,
-      p("Clarify: community guides list a crit as ×1.5 and treat spells as unable to crit; the code adds the Speed-based bonus above and runs the same roll for spell damage. The app's threat advice keeps the “only attacks crit” rule until an in-game check settles it."),
-      eoLink("Damage", "Damage Order"),
-    ].join("");
-  }
-  function speedSection(st, q) {
-    const hit = (g) => !q || g[1].toLowerCase().includes(q) || g[2].includes(q) || speedGroupBody(g[0]).toLowerCase().includes(q);
-    const groups = q ? SPD_GROUPS.filter(hit) : SPD_GROUPS;
-    if (!groups.length) return "";
-    const key = "Speed", open = q ? true : !st.collapsed.has(key);
-    const body = open ? `<div class="slot-sub sob-intro">Speed sets the starting turn order, then feeds the dodge chance and the critical chance and damage of every hit. Each chance compares the two creatures' Speed at the moment of the hit.</div>${groups.map(([k, title]) => {
-      const sk = "SPD:" + k, sopen = q ? true : st.sobOpen && st.sobOpen.has(sk);
-      return `<button class="sob-step${sopen ? " open" : ""}" data-action="sob-step" data-k="${sk}"><span class="apx-sec-caret">${sopen ? "▾" : "▸"}</span>${esc(title)}</button>${sopen ? `<div class="nd-wrap spd-body">${speedGroupBody(k)}</div>` : ""}`;
-    }).join("")}` : "";
-    return `<button class="apx-sec-head apx-cat${open ? "" : " collapsed"}" data-action="gloss-cat-toggle" data-c="${key}"><span class="apx-sec-caret">${open ? "▾" : "▸"}</span>Speed</button>${body}`;
-  }
+  // ── Speed (user 2026-10-31): what Speed does — the start-of-battle Timeline, the dodge chance, the critical chance and the
+  // critical damage. One Appendix section, three nested groups (`sob-step` style, keys `SPD:<group>`). Code: _su_extract
+  // code/TIMELINE_FINDINGS.md (+ START_OF_BATTLE_FINDINGS phase 6), data_dump/effect_order/attack_pipeline_crit_dodge.md
+  // (bc_GetDodgeChance / bc_GetCriticalChance), EFFECT_FORMULAS.md § caps_s12 (crit damage), event_damage_b_mid § E (who rolls).
+  const SPD_DODGE = (r) => r > 1 ? Math.min(5 * r, 30) : 5;                 // main dodge chance from the Speed ratio (dodger ÷ attacker)
+  const SPD_CRIT = (r) => r > 1 ? 5 * r : 5;                                // crit chance from the Speed ratio (attacker ÷ target), no cap
+  const SPD_CRITDMG = (r) => 1.25 + Math.max(0, 1 + Math.log(r));           // crit multiplier: hit × (1 + 0.25 + max(0, 1 + ln r))
+  const SPD_GROUPS = [
+    ["timeline", "Timeline", "timeline turn order start of battle covert prepared top bottom tie speed"],
+    ["dodge", "Dodge", "dodge chance evade miss speed cap level"],
+    ["crit", "Critical hits", "crit critical chance damage multiplier speed cap"],
+  ];
+  function speedGroupBody(k) {
+    const eoLink = (sec, label) => `<button class="facet spd-link" data-action="open-effect-order" data-sec="${sec}">${label} ›</button>`;
+    const p = (t) => `<div class="slot-sub eo-rule">${t}</div>`;
+    const ratio = (r) => r === 0.5 ? "½×" : r === 1 ? "same" : `${r}×`;
+    const pct = (v) => (Math.round(v * 10) / 10).toString();
+    if (k === "timeline") return [
+      p("At the start of battle every creature on both sides is sorted into one Timeline by Speed, highest first. The order is set at step 6 of Start of Battle, after the start-of-battle stat gains and losses, so Speed gained or lost at the start of battle counts. Then Slipstream and First Served move your creatures up, and the realm boost that starts your creatures at the top applies."),
+      p("Equal Speed is a coin flip. Covert places your creatures by Attack instead, Prepared by Intelligence (Prepared wins when a side has both)."),
+      p("Some effects replace the Speed placement outright. Top: Surprise!, Sacrilege, Swarm, Glucose, Master of Mimics, Master of Luckmantrias, Guerilla Tactics, Ascendant Revenant. Bottom: Contradiction, Boneyard, Ultimate Trickery, Imposter Syndrome, the Snaptrap card set. Hymn of Panic shuffles everyone. A creature with a top and a bottom placement goes to the bottom."),
+      p("After that, Speed no longer matters for the order: gaining or losing Speed during the battle never reorders the Timeline. When a creature's turn ends it goes to the bottom and everyone else moves up one place (an extra turn keeps it at the top). Only effects that move a creature to the top or bottom change the order, at most once per creature per creature-turn. Defeated creatures stay on the Timeline; minions and other temporary creatures leave when they die, and creatures that flee leave."),
+      p("Before step 6 (steps 0a–5), effects that read the Timeline see the previous battle's order, kept from the Speed recorded at its end."),
+      eoLink("Timeline", "Battle-Start Timeline"),
+    ].join("");
+    if (k === "dodge") return [
+      p("Each hit of an attack rolls one main dodge chance for its target: 5%, or 5% × the dodger's Speed ÷ the attacker's Speed when the dodger is faster, up to 30% (reached at six times the attacker's Speed)."),
+      p("Then “less chance to dodge” effects multiply that chance (the Gargantuan card set, Vulnerable, Disarmed, Stone while resistant, the Less Dodge Chance realm property), and “greater chance to dodge” effects each add a share of what is left (Agility Aura +40%, the Clutcher card +5%, Agile with the Aspect card +5%, Godforge upgrade 18 +50%), so those add up with each other rather than multiply. An artifact's Dodge stat adds flat points."),
+      p("Caps: 90%. A dodger below level 25 can't exceed its level (a level-12 creature dodges at most 12%). Enemies in normal battles are capped at 60% below realm depth 40 and at 30% below depth 20. The floor is 5%."),
+      p("“Always dodges” effects and independent chances (the Call of the Aspect family 50%, Bob and Weave, Master of Efts 40%, Stand Alone Complex …) are rolled separately after the main roll, so they stack as separate rolls. Intent to Kill re-rolls only the main roll. “Cannot be dodged” effects (Dreadnaught, Wretchedness, a Stoned target …) override every dodge except Periphery."),
+      `<div class="nd-wrap"><div class="nd-table">
+        <div class="nd-row spd-row2 nd-hd"><span>Dodger's Speed vs attacker's</span><span>Main dodge chance</span></div>
+        ${[0.5, 1, 1.5, 2, 3, 4, 6, 10].map(r => `<div class="nd-row spd-row2"><span>${ratio(r)}</span><span>${pct(SPD_DODGE(r))}%${r >= 6 ? " (cap)" : ""}</span></div>`).join("")}
+      </div></div>`,
+      eoLink("Attack", "Attack Order"),
+    ].join("");
+    return [
+      p("Chance: 5%, or 5% × the attacker's Speed ÷ the target's Speed when the attacker is faster, with no cap of its own: at twenty times the target's Speed every hit crits. “Less” effects multiply it (the Valkyrie card power 1, Weak with the Leper card, Disarmed with the Concoction card, Stone while resistant, the Less Critical Chance realm property); “greater chance” effects add shares of what is left (Godforge upgrade 17 +50%, the Reaper card +10%, Wretchedness +50% against Vulnerable, Backbite +100%, Berserk with the Fiend card +15%, Savage with the Asura card +10%, Thousand Needles per consecutive crit). Reaper power 3 floors your creatures at 10%; Valkyrie power 3 caps hits against enemies at 75%. The floor is 5%."),
+      p("The roll is made inside the damage event, after every damage reduction, for attack and spell damage that has a source; indirect damage never crits. “Always critical” effects (Periphery, the Always Critical Damage realm property …) and extra chances are checked after the main roll and can only add crits."),
+      p("Damage: a crit adds 25% of the hit plus (100% + the natural log of the attacker's Speed ÷ the target's Speed), never less than +25%. That is ×2.25 at equal Speed, ×1.25 when the attacker is far slower, and it keeps growing with the Speed gap. The bonus is a share of the hit after reductions and goes into the same pool as “more damage” bonuses, so it adds with them instead of multiplying. Further crit-damage terms: Godforge upgrade 13 +60% (+90% with Godforged), the Reaper card +25%, the Asura card +30%, Pummel +200%, Urdox Harbinger +50% per turn taken, Death Sentence +2% per rank, the Valkyrie card −30% for enemies."),
+      `<div class="nd-wrap"><div class="nd-table">
+        <div class="nd-row spd-row3 nd-hd"><span>Attacker's Speed vs target's</span><span>Crit chance</span><span>Crit damage</span></div>
+        ${[0.5, 1, 1.5, 2, 3, 4, 6, 10, 20].map(r => `<div class="nd-row spd-row3"><span>${ratio(r)}</span><span>${pct(SPD_CRIT(r))}%</span><span>×${SPD_CRITDMG(r).toFixed(2)}</span></div>`).join("")}
+      </div></div>`,
+      p("Clarify: community guides list a crit as ×1.5 and treat spells as unable to crit; the code adds the Speed-based bonus above and runs the same roll for spell damage. The app's threat advice keeps the “only attacks crit” rule until an in-game check settles it."),
+      eoLink("Damage", "Damage Order"),
+    ].join("");
+  }
+  function speedSection(st, q) {
+    const hit = (g) => !q || g[1].toLowerCase().includes(q) || g[2].includes(q) || speedGroupBody(g[0]).toLowerCase().includes(q);
+    const groups = q ? SPD_GROUPS.filter(hit) : SPD_GROUPS;
+    if (!groups.length) return "";
+    const key = "Speed", open = q ? true : !st.collapsed.has(key);
+    const body = open ? `<div class="slot-sub sob-intro">Speed sets the starting turn order, then feeds the dodge chance and the critical chance and damage of every hit. Each chance compares the two creatures' Speed at the moment of the hit.</div>${groups.map(([k, title]) => {
+      const sk = "SPD:" + k, sopen = q ? true : st.sobOpen && st.sobOpen.has(sk);
+      return `<button class="sob-step${sopen ? " open" : ""}" data-action="sob-step" data-k="${sk}"><span class="apx-sec-caret">${sopen ? "▾" : "▸"}</span>${esc(title)}</button>${sopen ? `<div class="nd-wrap spd-body">${speedGroupBody(k)}</div>` : ""}`;
+    }).join("")}` : "";
+    return `<button class="apx-sec-head apx-cat${open ? "" : " collapsed"}" data-action="gloss-cat-toggle" data-c="${key}"><span class="apx-sec-caret">${open ? "▾" : "▸"}</span>Speed</button>${body}`;
+  }
   // Random targets of automatic casts (bc_CreatureCastSpellGem — _su_extract code/ARTIFACTS.md "Target selection"): per
   // spell.aim (record fields 5 + 18). A spell-name search lists the matching spells with their target rule (#9).
   const AIM_RULES = [
