@@ -3919,8 +3919,6 @@
     if (k === "dodge") {
       const t50 = SPD_TRICK_DODGE(50), tot = t50 * 1.25, smith = t50 * 1.35;
       const main = (flat) => Math.min(90, 5 + flat);                         // main roll at equal Speed with flat trick points, 90 cap
-      const both = 1 - (1 - main(tot) / 100) * (1 - 0.75);                   // main roll + an independent 75% roll
-      const fast = 1 - (1 - Math.min(90, 30 + tot) / 100) * (1 - 0.75);     // … and six times faster too (base 30 instead of 5): the total passes the 90 cap
       return [
         `<div class="slot-sub spd-lead"><b>5% base</b>, up to <b>30%</b> from being faster, then modifiers; <b>caps 90% / level below 25</b>.</div>`,
         how,
@@ -3928,26 +3926,23 @@
           <div class="nd-row spd-row2 nd-hd"><span>Dodger's Speed vs attacker's</span><span>Main dodge chance</span></div>
           ${[0.5, 1, 1.5, 2, 3, 4, 6, 10].map(r => `<div class="nd-row spd-row2"><span>${ratio(r)}</span><span>${pct(SPD_DODGE(r))}%${r >= 6 ? " (cap)" : ""}</span></div>`).join("")}
         </div></div>`,
-        `<div class="slot-sub spd-sub"><b>Dodge without Speed</b> — the sources that don't care who is faster</div>
+        `<div class="slot-sub spd-sub"><b>Dodge without Speed</b> — what rolls into the main chance, under its 90% cap</div>
         <div class="nd-wrap"><div class="nd-table">
-          <div class="nd-row spd-row3 spd-src nd-hd"><span>Source</span><span>Dodge</span><span>How it counts</span></div>
-          <div class="nd-row spd-row3 spd-src"><span><b>Slippery Stone</b> (Dodge Chance trick slot), artifact tier 50</span><span>${pct(t50)}%</span><span>flat points on the main roll, under its caps</span></div>
-          <div class="nd-row spd-row3 spd-src"><span>+ <b>Tools of the Trade</b> rank 25 (Trickster, +1% trick-slot value per rank)</span><span>${pct(tot)}%</span><span>same</span></div>
-          <div class="nd-row spd-row3 spd-src"><span>+ Smith card set power 2 (+10% trick-slot value)</span><span>${pct(smith)}%</span><span>same</span></div>
-          <div class="nd-row spd-row3 spd-src"><span><b>Protective Winds</b> rank 25 (Monk, 3% per rank)</span><span>75%</span><span>independent roll: outside the 90% cap, never re-rolled</span></div>
-          <div class="nd-row spd-row3 spd-src"><span>Fluster (Tribalist) · Disengagement (Druid) · Chance to Dodge realm property</span><span>5% per same-race ally · 10% per missing creature · N%</span><span>independent rolls</span></div>
-          <div class="nd-row spd-row3 spd-src"><span>Zoom (Windrunner) · Stand Alone Complex · Periphery</span><span>always</span><span>set after the rolls; Periphery beats “cannot be dodged”</span></div>
-          <div class="nd-row spd-row3 spd-src"><span>Agility Aura · Godforge upgrade 18 · Nature Guild reputation</span><span>+40% · +50% · by level</span><span>shares of the main roll, so they scale with it</span></div>
+          <div class="nd-row spd-row2 nd-hd"><span>Source</span><span>Dodge</span></div>
+          <div class="nd-row spd-row2"><span><b>Slippery Stone</b> trick slot, artifact tier 50</span><span>${pct(t50)}% flat</span></div>
+          <div class="nd-row spd-row2"><span>+ <b>Tools of the Trade</b> (Trickster), max</span><span>${pct(tot)}% flat</span></div>
+          <div class="nd-row spd-row2"><span>+ Smith card set, power 2</span><span>${pct(smith)}% flat</span></div>
+          <div class="nd-row spd-row2"><span>Agility Aura · Godforge upgrade 18</span><span>+40% · +50% of the chance</span></div>
+          <div class="nd-row spd-row2"><span>Clutcher card · Agile with the Aspect card</span><span>+5% · +5% of the chance</span></div>
+          <div class="nd-row spd-row2"><span>Nature Guild reputation</span><span>share by level</span></div>
         </div></div>
         <div class="nd-wrap"><div class="nd-table">
           <div class="nd-row spd-row2 nd-hd"><span>Main roll at equal Speed</span><span>Dodge</span></div>
           <div class="nd-row spd-row2"><span>Speed alone, six times faster</span><span>30%</span></div>
           <div class="nd-row spd-row2"><span>Slippery Stone tier 50</span><span>${pct(main(t50))}%</span></div>
-          <div class="nd-row spd-row2"><span>+ Tools of the Trade rank 25</span><span>${pct(main(tot))}%</span></div>
-          <div class="nd-row spd-row2"><span>+ Protective Winds rank 25 on top</span><span>${pct(both * 100)}%</span></div>
-          <div class="nd-row spd-row2"><span>+ six times faster as well</span><span>${pct(fast * 100)}% (above the 90% cap)</span></div>
+          <div class="nd-row spd-row2"><span>+ Tools of the Trade, max</span><span>${pct(main(tot))}%</span></div>
         </div></div>
-        <div class="slot-sub nd-note">The trick slot and the Trickster perk alone beat the best Speed can give, at any Speed. Protective Winds stacks on as a second roll outside the 90% cap, so the combined chance can pass it; being faster then adds to the main roll up to its caps.</div>`,
+        <div class="slot-sub nd-note">Independent dodges (Protective Winds, Fluster, the Call of the Aspect family …) are separate rolls outside this cap.</div>`,
         eoLink("Attack", "Attack Order"),
       ].join("");
     }

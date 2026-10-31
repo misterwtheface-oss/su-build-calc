@@ -8,6 +8,7 @@ New entries go at the TOP.
 - **Each Speed group now opens on a one-line lead + its tables; the prose sits behind its own “How it works” toggle**
   (`SPD:<group>:how` in `ovState.sobOpen`, collapsed by default; a search that matches the prose opens it). Key terms,
   numbers and rule names are bold.
+- Later the same day (user): the block was trimmed to the sources that roll into the main chance under the 90% cap (Slippery Stone 29.5% / + Tools of the Trade max 36.9% / + Smith p2 39.8% flat; Agility Aura, Godforge 18, Clutcher, Agile + Aspect, Nature Guild as shares) and the comparison to Speed alone 30% / Slippery Stone 34.5% / + Tools of the Trade 41.9%; perk per-rank increments dropped (max only); independent dodges are one closing line. First version follows.
 - **Dodge › “Dodge without Speed”** (user): the Speed-independent sources below the ratio table — Slippery Stone
   (Dodge Chance trick slot, 5 + 0.5·(tier−1) → 29.5% at tier 50; flat points on the main roll, under its caps), + Tools of the
   Trade rank 25 (Trickster, +1% trick-slot value per rank → 36.9%), + Smith card power 2 (+10% → 39.8%), Protective Winds rank 25
