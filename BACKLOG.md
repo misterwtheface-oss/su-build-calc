@@ -155,7 +155,7 @@ a decompile → write `_su_extract/code/HANDOFF_<topic>.md` and don't guess.
   stacks, no cap change). Anatidaephobia stays empty (flavour, code-confirmed).
 
 ### G8. Appendix sections + combat research (research first → handoffs → Appendix pages)
-- [ ] **(#16) Taxonomy marker “Independent” on Hit Resolution::Dodge Chance** (user, 2026-10-31). Mark every effect that grants a
+- [ ] **(#31) Taxonomy marker “Independent” on Hit Resolution::Dodge Chance** (user, 2026-10-31). Mark every effect that grants a
   separate dodge roll outside the main chance and its 90% cap: the 35 write sites after the main roll in `bc_CreatureAttack`
   (attack_pipeline_crit_dodge.md rows 164–203: Protective Winds, Fluster, Disengagement, Bob and Weave, Master of Efts, the Call
   of the X family, Clutcher p2, Destiny, Recklessness, Dexterity Aura, realm property 37 …) and the “always dodges” sites (Zoom,

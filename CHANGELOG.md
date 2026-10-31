@@ -11,7 +11,7 @@ New entries go at the TOP.
   of the Trade max 36.9% → + Smith p2 39.8%); (4) **Main roll, everything maxed**: Speed alone 30% → + every share (+100%) 60%
   → + Slippery Stone 89.5% → with all artifact boosts instead 90% cap (99.8%). Max values only, no per-rank increments.
   Code: the shares are computed on the Speed-derived chance before the artifact points join the pool (bc_GetDodgeChance rows
-  152–158), which is why tables 2 and 3 are separate. The closing line on independent dodges stays until BACKLOG #16 (taxonomy
+  152–158), which is why tables 2 and 3 are separate. The closing line on independent dodges stays until BACKLOG #31 (taxonomy
   marker + quick link) replaces it.
 
 ## 2026-10-31 — Appendix › Speed: prose collapsible on its own, Dodge without Speed, Back from a deep link
