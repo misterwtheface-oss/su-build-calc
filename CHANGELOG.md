@@ -4,6 +4,29 @@ Every dated change entry, newest first (moved verbatim from Progress.md on 2026-
 to their own section and sorted by their date). Current state and open work: `Progress.md`, `BACKLOG.md`.
 New entries go at the TOP.
 
+## 2026-10-31 — Appendix › Speed: prose collapsible on its own, Dodge without Speed, Back from a deep link
+- **Each Speed group now opens on a one-line lead + its tables; the prose sits behind its own “How it works” toggle**
+  (`SPD:<group>:how` in `ovState.sobOpen`, collapsed by default; a search that matches the prose opens it). Key terms,
+  numbers and rule names are bold.
+- **Dodge › “Dodge without Speed”** (user): the Speed-independent sources below the ratio table — Slippery Stone
+  (Dodge Chance trick slot, 5 + 0.5·(tier−1) → 29.5% at tier 50; flat points on the main roll, under its caps), + Tools of the
+  Trade rank 25 (Trickster, +1% trick-slot value per rank → 36.9%), + Smith card power 2 (+10% → 39.8%), Protective Winds rank 25
+  (Monk, 3% per rank → 75%, independent), Fluster / Disengagement / Chance to Dodge realm property (independent), Zoom / Stand
+  Alone Complex / Periphery (always), Agility Aura / Godforge 18 / Nature Guild (shares of the main roll). Then a comparison at
+  equal Speed: Speed alone 30% (six times faster) · Slippery Stone 34.5% · + Tools of the Trade 41.9% · + Protective Winds 85.5%
+  · + six times faster as well 91.7%, above the 90% cap. The prose names the Nature Guild reputation bonus.
+- **Independent dodge rolls are outside the 90% cap** (user clarification; code: the cap is applied inside `bc_GetDodgeChance`,
+  every independent roll comes after it in `bc_CreatureAttack`, attack_pipeline_crit_dodge.md rows 164–203): said explicitly
+  in the prose, the source table and the comparison.
+- **Back from a deep link** (user): `open-effect-order` snapshots the page it leaves (`ovSnapshot()`: state + scroll of every
+  scroller) into `ovState.back`; the Effect Order page then shows “‹ Appendix” in the header and “‹ Back” in the footer
+  (`ovl-back` → `ovBack()`), and the browser / Android Back goes back to that page first instead of closing the overlay
+  (popstate: `ovBack()` before `closeOverlayReal()`). The Appendix comes back exactly as left (open groups, prose, scroll).
+  A deep link also lands on the linked Effect Order section (`scrollIntoView`).
+- Sources: ARTIFACTS.md per-group bonus blocks (trick group 5/6 formula, Tools of the Trade ×0.01·rank, Smith p2 ×0.1),
+  attack_pipeline_crit_dodge.md. Smoke run (390 px): prose hidden by default, bold present, tables + comparison rows, no
+  overflow, deep link + both Back paths verified, no JS errors.
+
 ## 2026-10-31 — Appendix: Speed section (Timeline, Dodge, Critical hits)
 - New **Speed** section on the Appendix page (after Class Advantage): three nested expandable groups (`sob-step` style, keys
   `SPD:timeline` / `SPD:dodge` / `SPD:crit`), collapsed by default; the Appendix search opens the matching group(s) only.

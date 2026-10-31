@@ -1931,5 +1931,12 @@ span.boss-chip { cursor: default; }
 .nd-row.spd-row3 { grid-template-columns: 1.4fr 1fr 1fr; }
 .spd-body { margin: 0 0 10px; padding: 0 4px; }
 .spd-link { margin: 2px 0 6px; }
+.spd-lead { margin: 4px 0 6px; text-align: left; line-height: 1.4; }
+.spd-sub { margin: 10px 0 2px; text-align: left; }
+.spd-how { margin: 2px 0 6px; }
+.spd-prose { margin: 4px 0 8px; padding: 6px 10px; border-left: 2px solid rgba(154,123,214,.45); }
+.spd-prose .eo-rule:last-child { margin-bottom: 0; }
+.ovl-nav-back { flex: 0 0 auto; white-space: nowrap; }
+.nd-row.spd-src > span:last-child { text-align: left; }   /* prose column */
 /* effect order: when the change lands (At once / Runs now / Queued …) */
 .eo-res { margin-left: 6px; white-space: nowrap; color: var(--accent2); }

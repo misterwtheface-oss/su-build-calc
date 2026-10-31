@@ -1179,7 +1179,7 @@
     }
     if (synthDepth > 0) synthDepth--;      // a real Back consumed one entry
     if (anyOverlayOpen()) {                 // close the TOP layer (detail before selector)
-      if (!DOV.classList.contains("hidden")) closeDetailReal(); else closeOverlayReal();
+      if (!DOV.classList.contains("hidden")) closeDetailReal(); else if (!ovBack()) closeOverlayReal();   // a deep-linked page goes back first
       reconcileHistory();
       return;
     }
@@ -1220,6 +1220,22 @@
     SCROLLERS.forEach((sel, k) => { const e = p2 && p2.querySelector(sel); if (!e) return; if (!resetTop) e.scrollTop = saved[k][0]; e.scrollLeft = saved[k][1]; });   // resetTop resets vertical only
     maybeFocusSearch(OV);
     syncSpecAnim(); syncWardrobeAnims();
+  }
+  // ── In-overlay page stack: a deep link from one overlay page to another (Appendix › Speed → Effect Order) keeps the page it
+  // came from as `ovState.back` (state + scroll). "‹ Back" and the browser / Android Back return there instead of closing to the planner.
+  function ovSnapshot() {
+    if (!ovState) return null;
+    const panel = OV.querySelector(".overlay-panel");
+    return { st: ovState, scroll: SCROLLERS.map(sel => { const e = panel && panel.querySelector(sel); return e ? [e.scrollTop, e.scrollLeft] : [0, 0]; }) };
+  }
+  function ovBack() {
+    const b = ovState && ovState.back; if (!b) return false;
+    ovState = b.st;
+    const panel = OV.querySelector(".overlay-panel"); if (panel) panel.outerHTML = ovState.render(); else OV.innerHTML = ovState.render();
+    const p2 = OV.querySelector(".overlay-panel");
+    SCROLLERS.forEach((sel, k) => { const e = p2 && p2.querySelector(sel); if (e) { e.scrollTop = b.scroll[k][0]; e.scrollLeft = b.scroll[k][1]; } });
+    syncSpecAnim(); syncWardrobeAnims();
+    return true;
   }
   // Re-render a panel while a range slider is being dragged WITHOUT replacing that slider's DOM node: replacing it
   // (outerHTML) aborts the pointer/touch drag after one step — the "doesn't slide smoothly on touch" bug. Every other
@@ -3422,10 +3438,12 @@
   // ── Appendix page (internal ids say "errata", its old name) — code-grounded mechanics the game doesn't show, plus the Status Effects
   // reference. The Effect Order page (user 2026-10-22: its own page, same layout) is the same overlay with page "order": the
   // effect-order rules, resurrection order, start of battle and every effect-order section.
-  function openErrata(page = "appendix", expand) {
+  function openErrata(page = "appendix", expand, back) {
     ovState = { kind: "errata", page, search: "", collapsed: new Set(["StatusEffects", "EffectOrderRules", "Resurrection", "StartOfBattle", ...(D.effectOrder || []).map(s => "EO:" + s.key), "Currency", "ClassAdv", "Speed", "FlatBonus", "RandomTargets", "NetherDrops", "PandShrine", "RealmBonusMax", "Masters"]), ndDiff: "normal", render: renderErrata };
     if (expand) ovState.collapsed.delete("EO:" + expand);   // deep link from another Appendix section: open that Effect Order section
+    if (back) ovState.back = back;                             // … and remember where it came from (ovBack)
     openOverlay(ovState.render()); maybeFocusSearch(OV);
+    if (expand) { const h = OV.querySelector(`.apx-sec-head[data-c="EO:${expand}"]`); if (h) h.scrollIntoView({ block: "start" }); }   // land on the linked section
   }
   function renderErrata() {
     const st = ovState, q = st.search.trim().toLowerCase();
@@ -3435,11 +3453,11 @@
       : statusSection(st, q) + currencySection(st, q) + classAdvSection(st, q) + speedSection(st, q) + flatBonusSection(st, q) + randomTargetSection(st, q) + netherDropSection(st, q) + pandShrineSection(st, q) + realmBonusSection(st, q) + mastersSection(st, q))
       || `<div class="slot-sub" style="padding:10px">Nothing matches “${esc(st.search)}”.</div>`;
     return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel">
-      <div class="overlay-header"><h2>${order ? "Effect Order" : "Appendix"}</h2>
+      <div class="overlay-header">${st.back ? `<button class="btn-ghost ovl-nav-back" data-action="ovl-back">‹ ${st.back.st.page === "order" ? "Effect Order" : "Appendix"}</button>` : ""}<h2>${order ? "Effect Order" : "Appendix"}</h2>
         <input class="ovl-search" placeholder="${order ? "Search effects / steps…" : "Search status effects / spells / realms…"}" value="${esc(st.search)}" data-action="errata-search">
         <button class="ovl-close" data-action="close-ovl">✕</button></div>
       <div class="overlay-body"><div class="ovl-center"><div class="ovl-center-scroll">${body}</div></div></div>
-      <div class="overlay-footer"><span class="foot-info"></span><button class="btn-confirm" data-action="close-ovl">Done</button></div>
+      <div class="overlay-footer"><span class="foot-info"></span>${st.back ? `<button class="btn-ghost" data-action="ovl-back">‹ Back</button>` : ""}<button class="btn-confirm" data-action="close-ovl">Done</button></div>
     </div></div>`;
   }
   const GLOSSARY_CATS = ["Buff", "Debuff", "Minion"];
@@ -3850,61 +3868,107 @@
     return `<button class="apx-sec-head apx-cat${open ? "" : " collapsed"}" data-action="gloss-cat-toggle" data-c="${key}"><span class="apx-sec-caret">${open ? "▾" : "▸"}</span>Class Advantage</button>${body}`;
   }
   // ── Speed (user 2026-10-31): what Speed does — the start-of-battle Timeline, the dodge chance, the critical chance and the
-  // critical damage. One Appendix section, three nested groups (`sob-step` style, keys `SPD:<group>`). Code: _su_extract
+  // critical damage. One Appendix section, three nested groups (`sob-step` style, keys `SPD:<group>`); inside each group the
+  // prose is its own collapsible ("How it works", key `SPD:<group>:how`), the tables stay visible. Code: _su_extract
   // code/TIMELINE_FINDINGS.md (+ START_OF_BATTLE_FINDINGS phase 6), data_dump/effect_order/attack_pipeline_crit_dodge.md
-  // (bc_GetDodgeChance / bc_GetCriticalChance), EFFECT_FORMULAS.md § caps_s12 (crit damage), event_damage_b_mid § E (who rolls).
+  // (bc_GetDodgeChance / bc_GetCriticalChance), EFFECT_FORMULAS.md § caps_s12 (crit damage), event_damage_b_mid § E (who rolls),
+  // ARTIFACTS.md per-group bonus blocks (Dodge Chance trick slot: 5 + 0.5(t−1), Tools of the Trade ×0.01·rank, Smith p2 ×0.1).
   const SPD_DODGE = (r) => r > 1 ? Math.min(5 * r, 30) : 5;                 // main dodge chance from the Speed ratio (dodger ÷ attacker)
   const SPD_CRIT = (r) => r > 1 ? 5 * r : 5;                                // crit chance from the Speed ratio (attacker ÷ target), no cap
   const SPD_CRITDMG = (r) => 1.25 + Math.max(0, 1 + Math.log(r));           // crit multiplier: hit × (1 + 0.25 + max(0, 1 + ln r))
+  const SPD_TRICK_DODGE = (tier) => 5 + 0.5 * (tier - 1);                   // Dodge Chance trick slot (Slippery Stone) value by artifact tier
   const SPD_GROUPS = [
     ["timeline", "Timeline", "timeline turn order start of battle covert prepared top bottom tie speed"],
-    ["dodge", "Dodge", "dodge chance evade miss speed cap level"],
+    ["dodge", "Dodge", "dodge chance evade miss speed cap level slippery stone trick tools of the trade protective winds nature guild"],
     ["crit", "Critical hits", "crit critical chance damage multiplier speed cap"],
   ];
-  function speedGroupBody(k) {
+  // the prose of each group, as paragraphs (raw HTML: bold for the terms that carry the rule)
+  function speedGroupProse(k) {
+    if (k === "timeline") return [
+      "At the start of battle every creature on both sides is sorted into <b>one Timeline by Speed, highest first</b>. The order is set at <b>step 6 of Start of Battle</b>, after the start-of-battle stat gains and losses, so Speed gained or lost at the start of battle counts. Then <b>Slipstream</b> and <b>First Served</b> move your creatures up, and the realm boost that starts your creatures at the top applies.",
+      "<b>Equal Speed is a coin flip.</b> <b>Covert</b> places your creatures by Attack instead, <b>Prepared</b> by Intelligence (Prepared wins when a side has both).",
+      "Some effects replace the Speed placement outright. <b>Top:</b> Surprise!, Sacrilege, Swarm, Glucose, Master of Mimics, Master of Luckmantrias, Guerilla Tactics, Ascendant Revenant. <b>Bottom:</b> Contradiction, Boneyard, Ultimate Trickery, Imposter Syndrome, the Snaptrap card set. <b>Hymn of Panic</b> shuffles everyone. A creature with a top and a bottom placement <b>goes to the bottom</b>.",
+      "After that, Speed no longer matters for the order: <b>gaining or losing Speed during the battle never reorders the Timeline</b>. When a creature's turn ends it <b>goes to the bottom</b> and everyone else moves up one place (an extra turn keeps it at the top). Only effects that move a creature to the top or bottom change the order, at most <b>once per creature per creature-turn</b>. Defeated creatures stay on the Timeline; minions and other temporary creatures leave when they die, and creatures that flee leave.",
+      "Before step 6 (steps 0a–5), effects that read the Timeline see <b>the previous battle's order</b>, kept from the Speed recorded at its end.",
+    ];
+    if (k === "dodge") return [
+      "Each hit of an attack rolls <b>one main dodge chance</b> for its target: <b>5%</b>, or <b>5% × the dodger's Speed ÷ the attacker's Speed</b> when the dodger is faster, up to <b>30%</b> (reached at six times the attacker's Speed).",
+      "Then <b>“less chance to dodge” effects multiply</b> that chance (the Gargantuan card set, Vulnerable, Disarmed, Stone while resistant, the Less Dodge Chance realm property), and <b>“greater chance to dodge” effects each add a share</b> of what is left (<b>Agility Aura</b> +40%, the Clutcher card +5%, Agile with the Aspect card +5%, <b>Godforge upgrade 18</b> +50%, the <b>Nature Guild</b> reputation bonus, growing with your reputation level), so those add up with each other rather than multiply. An artifact's <b>Dodge Chance trick slot adds flat points</b> to the same roll.",
+      "<b>Caps: 90%.</b> A dodger <b>below level 25 can't exceed its level</b> (a level-12 creature dodges at most 12%). Enemies in normal battles are capped at 60% below realm depth 40 and at 30% below depth 20. The <b>floor is 5%</b>. The caps apply to the main roll only.",
+      "<b>“Always dodges” effects and independent chances</b> (Protective Winds, Fluster, Disengagement, the Call of the Aspect family 50%, Bob and Weave, Master of Efts 40%, Stand Alone Complex, Zoom …) are <b>rolled separately after the main roll</b>, each its own roll, every hit. They are <b>separate from the 90% cap</b>: the cap is applied inside the main chance before any of them is rolled, so the combined chance to dodge <b>can go above 90%</b>. <b>Intent to Kill</b> re-rolls only the main roll. <b>“Cannot be dodged” effects</b> (Dreadnaught, Wretchedness, a Stoned target …) override every dodge <b>except Periphery</b>.",
+    ];
+    return [
+      "<b>Chance: 5%</b>, or <b>5% × the attacker's Speed ÷ the target's Speed</b> when the attacker is faster, with <b>no cap of its own</b>: at twenty times the target's Speed every hit crits. <b>“Less” effects multiply</b> it (the Valkyrie card power 1, Weak with the Leper card, Disarmed with the Concoction card, Stone while resistant, the Less Critical Chance realm property); <b>“greater chance” effects add shares</b> of what is left (Godforge upgrade 17 +50%, the Reaper card +10%, Wretchedness +50% against Vulnerable, Backbite +100%, Berserk with the Fiend card +15%, Savage with the Asura card +10%, Thousand Needles per consecutive crit, the Chaos Guild reputation bonus). <b>Reaper power 3</b> floors your creatures at 10%; <b>Valkyrie power 3</b> caps hits against enemies at 75%. The <b>floor is 5%</b>.",
+      "The roll is made <b>inside the damage event, after every damage reduction</b>, for attack and spell damage that has a source; <b>indirect damage never crits</b>. “Always critical” effects (Periphery, the Always Critical Damage realm property …) and extra chances are checked after the main roll and can only add crits.",
+      "<b>Damage:</b> a crit adds <b>25% of the hit plus (100% + the natural log of the attacker's Speed ÷ the target's Speed)</b>, never less than +25%. That is <b>×2.25 at equal Speed</b>, ×1.25 when the attacker is far slower, and it keeps growing with the Speed gap. The bonus is a share of the hit after reductions and goes into <b>the same pool as “more damage” bonuses</b>, so it adds with them instead of multiplying. Further crit-damage terms: Godforge upgrade 13 +60% (+90% with Godforged), the Reaper card +25%, the Asura card +30%, <b>Pummel</b> +200%, <b>Urdox Harbinger</b> +50% per turn taken, Death Sentence +2% per rank, the Valkyrie card −30% for enemies.",
+      "<b>Clarify:</b> community guides list a crit as ×1.5 and treat spells as unable to crit; the code adds the Speed-based bonus above and runs the same roll for spell damage. The app's threat advice keeps the “only attacks crit” rule until an in-game check settles it.",
+    ];
+  }
+  function speedGroupBody(k, st, q) {
     const eoLink = (sec, label) => `<button class="facet spd-link" data-action="open-effect-order" data-sec="${sec}">${label} ›</button>`;
-    const p = (t) => `<div class="slot-sub eo-rule">${t}</div>`;
     const ratio = (r) => r === 0.5 ? "½×" : r === 1 ? "same" : `${r}×`;
     const pct = (v) => (Math.round(v * 10) / 10).toString();
+    const prose = speedGroupProse(k), howKey = "SPD:" + k + ":how";
+    const howOpen = q ? prose.some(t => t.toLowerCase().includes(q)) : !!(st.sobOpen && st.sobOpen.has(howKey));
+    const how = `<button class="facet sob-mem-toggle spd-how${howOpen ? " on" : ""}" data-action="sob-step" data-k="${howKey}">${howOpen ? "▾" : "▸"} How it works</button>
+      ${howOpen ? `<div class="spd-prose">${prose.map(t => `<div class="slot-sub eo-rule">${t}</div>`).join("")}</div>` : ""}`;
     if (k === "timeline") return [
-      p("At the start of battle every creature on both sides is sorted into one Timeline by Speed, highest first. The order is set at step 6 of Start of Battle, after the start-of-battle stat gains and losses, so Speed gained or lost at the start of battle counts. Then Slipstream and First Served move your creatures up, and the realm boost that starts your creatures at the top applies."),
-      p("Equal Speed is a coin flip. Covert places your creatures by Attack instead, Prepared by Intelligence (Prepared wins when a side has both)."),
-      p("Some effects replace the Speed placement outright. Top: Surprise!, Sacrilege, Swarm, Glucose, Master of Mimics, Master of Luckmantrias, Guerilla Tactics, Ascendant Revenant. Bottom: Contradiction, Boneyard, Ultimate Trickery, Imposter Syndrome, the Snaptrap card set. Hymn of Panic shuffles everyone. A creature with a top and a bottom placement goes to the bottom."),
-      p("After that, Speed no longer matters for the order: gaining or losing Speed during the battle never reorders the Timeline. When a creature's turn ends it goes to the bottom and everyone else moves up one place (an extra turn keeps it at the top). Only effects that move a creature to the top or bottom change the order, at most once per creature per creature-turn. Defeated creatures stay on the Timeline; minions and other temporary creatures leave when they die, and creatures that flee leave."),
-      p("Before step 6 (steps 0a–5), effects that read the Timeline see the previous battle's order, kept from the Speed recorded at its end."),
-      eoLink("Timeline", "Battle-Start Timeline"),
+      `<div class="slot-sub spd-lead"><b>Highest Speed acts first</b>, set once at the start of battle. Speed changes during the battle don't reorder it.</div>`,
+      how, eoLink("Timeline", "Battle-Start Timeline"),
     ].join("");
-    if (k === "dodge") return [
-      p("Each hit of an attack rolls one main dodge chance for its target: 5%, or 5% × the dodger's Speed ÷ the attacker's Speed when the dodger is faster, up to 30% (reached at six times the attacker's Speed)."),
-      p("Then “less chance to dodge” effects multiply that chance (the Gargantuan card set, Vulnerable, Disarmed, Stone while resistant, the Less Dodge Chance realm property), and “greater chance to dodge” effects each add a share of what is left (Agility Aura +40%, the Clutcher card +5%, Agile with the Aspect card +5%, Godforge upgrade 18 +50%), so those add up with each other rather than multiply. An artifact's Dodge stat adds flat points."),
-      p("Caps: 90%. A dodger below level 25 can't exceed its level (a level-12 creature dodges at most 12%). Enemies in normal battles are capped at 60% below realm depth 40 and at 30% below depth 20. The floor is 5%."),
-      p("“Always dodges” effects and independent chances (the Call of the Aspect family 50%, Bob and Weave, Master of Efts 40%, Stand Alone Complex …) are rolled separately after the main roll, so they stack as separate rolls. Intent to Kill re-rolls only the main roll. “Cannot be dodged” effects (Dreadnaught, Wretchedness, a Stoned target …) override every dodge except Periphery."),
-      `<div class="nd-wrap"><div class="nd-table">
-        <div class="nd-row spd-row2 nd-hd"><span>Dodger's Speed vs attacker's</span><span>Main dodge chance</span></div>
-        ${[0.5, 1, 1.5, 2, 3, 4, 6, 10].map(r => `<div class="nd-row spd-row2"><span>${ratio(r)}</span><span>${pct(SPD_DODGE(r))}%${r >= 6 ? " (cap)" : ""}</span></div>`).join("")}
-      </div></div>`,
-      eoLink("Attack", "Attack Order"),
-    ].join("");
+    if (k === "dodge") {
+      const t50 = SPD_TRICK_DODGE(50), tot = t50 * 1.25, smith = t50 * 1.35;
+      const main = (flat) => Math.min(90, 5 + flat);                         // main roll at equal Speed with flat trick points, 90 cap
+      const both = 1 - (1 - main(tot) / 100) * (1 - 0.75);                   // main roll + an independent 75% roll
+      const fast = 1 - (1 - Math.min(90, 30 + tot) / 100) * (1 - 0.75);     // … and six times faster too (base 30 instead of 5): the total passes the 90 cap
+      return [
+        `<div class="slot-sub spd-lead"><b>5% base</b>, up to <b>30%</b> from being faster, then modifiers; <b>caps 90% / level below 25</b>.</div>`,
+        how,
+        `<div class="nd-wrap"><div class="nd-table">
+          <div class="nd-row spd-row2 nd-hd"><span>Dodger's Speed vs attacker's</span><span>Main dodge chance</span></div>
+          ${[0.5, 1, 1.5, 2, 3, 4, 6, 10].map(r => `<div class="nd-row spd-row2"><span>${ratio(r)}</span><span>${pct(SPD_DODGE(r))}%${r >= 6 ? " (cap)" : ""}</span></div>`).join("")}
+        </div></div>`,
+        `<div class="slot-sub spd-sub"><b>Dodge without Speed</b> — the sources that don't care who is faster</div>
+        <div class="nd-wrap"><div class="nd-table">
+          <div class="nd-row spd-row3 spd-src nd-hd"><span>Source</span><span>Dodge</span><span>How it counts</span></div>
+          <div class="nd-row spd-row3 spd-src"><span><b>Slippery Stone</b> (Dodge Chance trick slot), artifact tier 50</span><span>${pct(t50)}%</span><span>flat points on the main roll, under its caps</span></div>
+          <div class="nd-row spd-row3 spd-src"><span>+ <b>Tools of the Trade</b> rank 25 (Trickster, +1% trick-slot value per rank)</span><span>${pct(tot)}%</span><span>same</span></div>
+          <div class="nd-row spd-row3 spd-src"><span>+ Smith card set power 2 (+10% trick-slot value)</span><span>${pct(smith)}%</span><span>same</span></div>
+          <div class="nd-row spd-row3 spd-src"><span><b>Protective Winds</b> rank 25 (Monk, 3% per rank)</span><span>75%</span><span>independent roll: outside the 90% cap, never re-rolled</span></div>
+          <div class="nd-row spd-row3 spd-src"><span>Fluster (Tribalist) · Disengagement (Druid) · Chance to Dodge realm property</span><span>5% per same-race ally · 10% per missing creature · N%</span><span>independent rolls</span></div>
+          <div class="nd-row spd-row3 spd-src"><span>Zoom (Windrunner) · Stand Alone Complex · Periphery</span><span>always</span><span>set after the rolls; Periphery beats “cannot be dodged”</span></div>
+          <div class="nd-row spd-row3 spd-src"><span>Agility Aura · Godforge upgrade 18 · Nature Guild reputation</span><span>+40% · +50% · by level</span><span>shares of the main roll, so they scale with it</span></div>
+        </div></div>
+        <div class="nd-wrap"><div class="nd-table">
+          <div class="nd-row spd-row2 nd-hd"><span>Main roll at equal Speed</span><span>Dodge</span></div>
+          <div class="nd-row spd-row2"><span>Speed alone, six times faster</span><span>30%</span></div>
+          <div class="nd-row spd-row2"><span>Slippery Stone tier 50</span><span>${pct(main(t50))}%</span></div>
+          <div class="nd-row spd-row2"><span>+ Tools of the Trade rank 25</span><span>${pct(main(tot))}%</span></div>
+          <div class="nd-row spd-row2"><span>+ Protective Winds rank 25 on top</span><span>${pct(both * 100)}%</span></div>
+          <div class="nd-row spd-row2"><span>+ six times faster as well</span><span>${pct(fast * 100)}% (above the 90% cap)</span></div>
+        </div></div>
+        <div class="slot-sub nd-note">The trick slot and the Trickster perk alone beat the best Speed can give, at any Speed. Protective Winds stacks on as a second roll outside the 90% cap, so the combined chance can pass it; being faster then adds to the main roll up to its caps.</div>`,
+        eoLink("Attack", "Attack Order"),
+      ].join("");
+    }
     return [
-      p("Chance: 5%, or 5% × the attacker's Speed ÷ the target's Speed when the attacker is faster, with no cap of its own: at twenty times the target's Speed every hit crits. “Less” effects multiply it (the Valkyrie card power 1, Weak with the Leper card, Disarmed with the Concoction card, Stone while resistant, the Less Critical Chance realm property); “greater chance” effects add shares of what is left (Godforge upgrade 17 +50%, the Reaper card +10%, Wretchedness +50% against Vulnerable, Backbite +100%, Berserk with the Fiend card +15%, Savage with the Asura card +10%, Thousand Needles per consecutive crit). Reaper power 3 floors your creatures at 10%; Valkyrie power 3 caps hits against enemies at 75%. The floor is 5%."),
-      p("The roll is made inside the damage event, after every damage reduction, for attack and spell damage that has a source; indirect damage never crits. “Always critical” effects (Periphery, the Always Critical Damage realm property …) and extra chances are checked after the main roll and can only add crits."),
-      p("Damage: a crit adds 25% of the hit plus (100% + the natural log of the attacker's Speed ÷ the target's Speed), never less than +25%. That is ×2.25 at equal Speed, ×1.25 when the attacker is far slower, and it keeps growing with the Speed gap. The bonus is a share of the hit after reductions and goes into the same pool as “more damage” bonuses, so it adds with them instead of multiplying. Further crit-damage terms: Godforge upgrade 13 +60% (+90% with Godforged), the Reaper card +25%, the Asura card +30%, Pummel +200%, Urdox Harbinger +50% per turn taken, Death Sentence +2% per rank, the Valkyrie card −30% for enemies."),
+      `<div class="slot-sub spd-lead"><b>5% chance</b>, uncapped from being faster; a crit is <b>×2.25 at equal Speed</b> and grows with the Speed gap.</div>`,
+      how,
       `<div class="nd-wrap"><div class="nd-table">
         <div class="nd-row spd-row3 nd-hd"><span>Attacker's Speed vs target's</span><span>Crit chance</span><span>Crit damage</span></div>
         ${[0.5, 1, 1.5, 2, 3, 4, 6, 10, 20].map(r => `<div class="nd-row spd-row3"><span>${ratio(r)}</span><span>${pct(SPD_CRIT(r))}%</span><span>×${SPD_CRITDMG(r).toFixed(2)}</span></div>`).join("")}
       </div></div>`,
-      p("Clarify: community guides list a crit as ×1.5 and treat spells as unable to crit; the code adds the Speed-based bonus above and runs the same roll for spell damage. The app's threat advice keeps the “only attacks crit” rule until an in-game check settles it."),
       eoLink("Damage", "Damage Order"),
     ].join("");
   }
   function speedSection(st, q) {
-    const hit = (g) => !q || g[1].toLowerCase().includes(q) || g[2].includes(q) || speedGroupBody(g[0]).toLowerCase().includes(q);
+    const hit = (g) => !q || g[1].toLowerCase().includes(q) || g[2].includes(q) || speedGroupBody(g[0], st, q).toLowerCase().includes(q);
     const groups = q ? SPD_GROUPS.filter(hit) : SPD_GROUPS;
     if (!groups.length) return "";
     const key = "Speed", open = q ? true : !st.collapsed.has(key);
     const body = open ? `<div class="slot-sub sob-intro">Speed sets the starting turn order, then feeds the dodge chance and the critical chance and damage of every hit. Each chance compares the two creatures' Speed at the moment of the hit.</div>${groups.map(([k, title]) => {
       const sk = "SPD:" + k, sopen = q ? true : st.sobOpen && st.sobOpen.has(sk);
-      return `<button class="sob-step${sopen ? " open" : ""}" data-action="sob-step" data-k="${sk}"><span class="apx-sec-caret">${sopen ? "▾" : "▸"}</span>${esc(title)}</button>${sopen ? `<div class="nd-wrap spd-body">${speedGroupBody(k)}</div>` : ""}`;
+      return `<button class="sob-step${sopen ? " open" : ""}" data-action="sob-step" data-k="${sk}"><span class="apx-sec-caret">${sopen ? "▾" : "▸"}</span>${esc(title)}</button>${sopen ? `<div class="nd-wrap spd-body">${speedGroupBody(k, st, q)}</div>` : ""}`;
     }).join("")}` : "";
     return `<button class="apx-sec-head apx-cat${open ? "" : " collapsed"}" data-action="gloss-cat-toggle" data-c="${key}"><span class="apx-sec-caret">${open ? "▾" : "▸"}</span>Speed</button>${body}`;
   }
@@ -6503,7 +6567,8 @@
       case "open-riddle": openRiddle(); break;
       case "riddle-search": break;   // handled in onInput
       case "open-errata": openErrata(); break;
-      case "open-effect-order": openErrata("order", t.dataset.sec); break;
+      case "open-effect-order": openErrata("order", t.dataset.sec, ovSnapshot()); break;
+      case "ovl-back": ovBack(); reconcileHistory(); break;
       case "errata-search": break;   // handled in onInput
       case "open-bosses": openBosses(); break;
       case "bosses-search": break;   // handled in onInput
