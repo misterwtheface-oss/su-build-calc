@@ -4,6 +4,16 @@ Every dated change entry, newest first (moved verbatim from Progress.md on 2026-
 to their own section and sorted by their date). Current state and open work: `Progress.md`, `BACKLOG.md`.
 New entries go at the TOP.
 
+## 2026-10-31 — Appendix › Speed › Dodge: four tables (user layout)
+- The Dodge group is now: (1) the Speed ratio table; (2) **More of the Speed part** — the shares that scale the Speed-derived
+  chance and so its 30% at most (Godforge 18 +50%, +75% on an Avatar with Godforged; Agility Aura +40%; Clutcher p1 +5%; Agile
+  with the Aspect card +5%; Nature Guild by level); (3) **Flat dodge in the main roll** (Slippery Stone tier 50 29.5% → + Tools
+  of the Trade max 36.9% → + Smith p2 39.8%); (4) **Main roll, everything maxed**: Speed alone 30% → + every share (+100%) 60%
+  → + Slippery Stone 89.5% → with all artifact boosts instead 90% cap (99.8%). Max values only, no per-rank increments.
+  Code: the shares are computed on the Speed-derived chance before the artifact points join the pool (bc_GetDodgeChance rows
+  152–158), which is why tables 2 and 3 are separate. The closing line on independent dodges stays until BACKLOG #16 (taxonomy
+  marker + quick link) replaces it.
+
 ## 2026-10-31 — Appendix › Speed: prose collapsible on its own, Dodge without Speed, Back from a deep link
 - **Each Speed group now opens on a one-line lead + its tables; the prose sits behind its own “How it works” toggle**
   (`SPD:<group>:how` in `ovState.sobOpen`, collapsed by default; a search that matches the prose opens it). Key terms,

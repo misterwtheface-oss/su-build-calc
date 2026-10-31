@@ -3918,29 +3918,40 @@
     ].join("");
     if (k === "dodge") {
       const t50 = SPD_TRICK_DODGE(50), tot = t50 * 1.25, smith = t50 * 1.35;
-      const main = (flat) => Math.min(90, 5 + flat);                         // main roll at equal Speed with flat trick points, 90 cap
+      const SHARES = 0.5 + 0.4 + 0.05 + 0.05;                                // Godforge 18 + Agility Aura + Clutcher p1 + Agile/Aspect p1 (Nature Guild not sized)
+      const capped = (v) => v > 90 ? `90% cap (${pct(v)}%)` : `${pct(v)}%`;
+      const spd = 30, spdAll = spd * (1 + SHARES);
+      const agg = [["Speed alone, six times faster", "30%", "30%"],
+        ["+ every share of the Speed part (+100%)", `+${pct(spdAll - spd)}%`, capped(spdAll)],
+        ["+ Slippery Stone, no artifact boosts", `+${pct(t50)}%`, capped(spdAll + t50)],
+        ["Slippery Stone with all artifact boosts instead", `+${pct(smith)}%`, capped(spdAll + smith)]];
       return [
         `<div class="slot-sub spd-lead"><b>5% base</b>, up to <b>30%</b> from being faster, then modifiers; <b>caps 90% / level below 25</b>.</div>`,
         how,
         `<div class="nd-wrap"><div class="nd-table">
           <div class="nd-row spd-row2 nd-hd"><span>Dodger's Speed vs attacker's</span><span>Main dodge chance</span></div>
           ${[0.5, 1, 1.5, 2, 3, 4, 6, 10].map(r => `<div class="nd-row spd-row2"><span>${ratio(r)}</span><span>${pct(SPD_DODGE(r))}%${r >= 6 ? " (cap)" : ""}</span></div>`).join("")}
-        </div></div>`,
-        `<div class="slot-sub spd-sub"><b>Dodge without Speed</b> — what rolls into the main chance, under its 90% cap</div>
+        </div></div>
+        <div class="slot-sub spd-sub"><b>More of the Speed part</b> — shares of the Speed-derived chance, so they scale its 30% at most</div>
+        <div class="nd-wrap"><div class="nd-table">
+          <div class="nd-row spd-row2 nd-hd"><span>Source</span><span>Share</span></div>
+          <div class="nd-row spd-row2"><span>Godforge upgrade 18</span><span>+50% (+75% on an Avatar with Godforged)</span></div>
+          <div class="nd-row spd-row2"><span>Agility Aura</span><span>+40%</span></div>
+          <div class="nd-row spd-row2"><span>Clutcher card set, power 1</span><span>+5%</span></div>
+          <div class="nd-row spd-row2"><span>Agile, with the Aspect card set</span><span>+5%</span></div>
+          <div class="nd-row spd-row2"><span>Nature Guild reputation</span><span>by level</span></div>
+        </div></div>
+        <div class="slot-sub spd-sub"><b>Flat dodge in the main roll</b> — points added whatever the Speed</div>
         <div class="nd-wrap"><div class="nd-table">
           <div class="nd-row spd-row2 nd-hd"><span>Source</span><span>Dodge</span></div>
-          <div class="nd-row spd-row2"><span><b>Slippery Stone</b> trick slot, artifact tier 50</span><span>${pct(t50)}% flat</span></div>
-          <div class="nd-row spd-row2"><span>+ <b>Tools of the Trade</b> (Trickster), max</span><span>${pct(tot)}% flat</span></div>
-          <div class="nd-row spd-row2"><span>+ Smith card set, power 2</span><span>${pct(smith)}% flat</span></div>
-          <div class="nd-row spd-row2"><span>Agility Aura · Godforge upgrade 18</span><span>+40% · +50% of the chance</span></div>
-          <div class="nd-row spd-row2"><span>Clutcher card · Agile with the Aspect card</span><span>+5% · +5% of the chance</span></div>
-          <div class="nd-row spd-row2"><span>Nature Guild reputation</span><span>share by level</span></div>
+          <div class="nd-row spd-row2"><span><b>Slippery Stone</b> trick slot, artifact tier 50</span><span>${pct(t50)}%</span></div>
+          <div class="nd-row spd-row2"><span>+ Tools of the Trade (Trickster), max</span><span>${pct(tot)}%</span></div>
+          <div class="nd-row spd-row2"><span>+ Smith card set, power 2</span><span>${pct(smith)}%</span></div>
         </div></div>
+        <div class="slot-sub spd-sub"><b>Main roll, everything maxed</b> — under the 90% cap</div>
         <div class="nd-wrap"><div class="nd-table">
-          <div class="nd-row spd-row2 nd-hd"><span>Main roll at equal Speed</span><span>Dodge</span></div>
-          <div class="nd-row spd-row2"><span>Speed alone, six times faster</span><span>30%</span></div>
-          <div class="nd-row spd-row2"><span>Slippery Stone tier 50</span><span>${pct(main(t50))}%</span></div>
-          <div class="nd-row spd-row2"><span>+ Tools of the Trade, max</span><span>${pct(main(tot))}%</span></div>
+          <div class="nd-row spd-row3 nd-hd"><span>Step</span><span>Adds</span><span>Total</span></div>
+          ${agg.map(([lab, add, tot]) => `<div class="nd-row spd-row3"><span>${lab}</span><span>${add}</span><span>${tot}</span></div>`).join("")}
         </div></div>
         <div class="slot-sub nd-note">Independent dodges (Protective Winds, Fluster, the Call of the Aspect family …) are separate rolls outside this cap.</div>`,
         eoLink("Attack", "Attack Order"),

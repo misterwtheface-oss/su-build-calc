@@ -155,6 +155,13 @@ a decompile → write `_su_extract/code/HANDOFF_<topic>.md` and don't guess.
   stacks, no cap change). Anatidaephobia stays empty (flavour, code-confirmed).
 
 ### G8. Appendix sections + combat research (research first → handoffs → Appendix pages)
+- [ ] **(#16) Taxonomy marker “Independent” on Hit Resolution::Dodge Chance** (user, 2026-10-31). Mark every effect that grants a
+  separate dodge roll outside the main chance and its 90% cap: the 35 write sites after the main roll in `bc_CreatureAttack`
+  (attack_pipeline_crit_dodge.md rows 164–203: Protective Winds, Fluster, Disengagement, Bob and Weave, Master of Efts, the Call
+  of the X family, Clutcher p2, Destiny, Recklessness, Dexterity Aura, realm property 37 …) and the “always dodges” sites (Zoom,
+  Stand Alone Complex, Periphery). Marker population from code reads only (feedback: marker over value). Then **Appendix › Speed ›
+  Dodge**: replace the closing “Independent dodges …” line with a quick link that opens the Taxonomy page filtered to that
+  tag + marker (reuse the tag deep link, `appendix-tag`).
 - [x] **(#6) Appendix: Class Advantage.** DONE 2026-10-17 (wheel table + attacks/spells/Opal/Convoke note, COMBAT_RULES.md). Show the class wheel order, and explain how it applies to attacks vs spells
   (spells use the gem's class, Class Swap first) and to class changes (e.g. Opal). Source: `_su_extract/code/COMBAT_RULES.md`.
   This can share work with the open "Confirm class advantage in-game" item and the DPS-sim toggle.
