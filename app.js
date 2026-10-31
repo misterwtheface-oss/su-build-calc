@@ -3893,7 +3893,7 @@
     ];
     if (k === "dodge") return [
       "Each hit of an attack rolls <b>one main dodge chance</b> for its target: <b>5%</b>, or <b>5% × the dodger's Speed ÷ the attacker's Speed</b> when the dodger is faster, up to <b>30%</b> (reached at six times the attacker's Speed).",
-      "Then <b>“less chance to dodge” effects multiply</b> that chance (the Gargantuan card set, Vulnerable, Disarmed, Stone while resistant, the Less Dodge Chance realm property), and <b>“greater chance to dodge” effects each add a share</b> of what is left (<b>Agility Aura</b> +40%, the Clutcher card +5%, Agile with the Aspect card +5%, <b>Godforge upgrade 18</b> +50%, the <b>Nature Guild</b> reputation bonus, growing with your reputation level), so those add up with each other rather than multiply. An artifact's <b>Dodge Chance trick slot adds flat points</b> to the same roll.",
+      "Then <b>“less chance to dodge” effects multiply</b> that chance (the Gargantuan card set, Vulnerable, Disarmed, Stone while resistant, the Less Dodge Chance realm property), and <b>“greater chance to dodge” effects each add a share</b> of what is left (<b>Agility Aura</b> +40%, the Clutcher card +5%, Agile with the Aspect card +5%, <b>Godforge upgrade 18</b> +50% (+75% on an Avatar with Godforged), the <b>Nature Guild</b> reputation bonus, growing with your reputation level), so those add up with each other rather than multiply. An artifact's <b>Dodge Chance trick slot adds flat points</b> to the same roll.",
       "<b>Caps: 90%.</b> A dodger <b>below level 25 can't exceed its level</b> (a level-12 creature dodges at most 12%). Enemies in normal battles are capped at 60% below realm depth 40 and at 30% below depth 20. The <b>floor is 5%</b>. The caps apply to the main roll only.",
       "<b>“Always dodges” effects and independent chances</b> (Protective Winds, Fluster, Disengagement, the Call of the Aspect family 50%, Bob and Weave, Master of Efts 40%, Stand Alone Complex, Zoom …) are <b>rolled separately after the main roll</b>, each its own roll, every hit. They are <b>separate from the 90% cap</b>: the cap is applied inside the main chance before any of them is rolled, so the combined chance to dodge <b>can go above 90%</b>. <b>Intent to Kill</b> re-rolls only the main roll. <b>“Cannot be dodged” effects</b> (Dreadnaught, Wretchedness, a Stoned target …) override every dodge <b>except Periphery</b>.",
     ];
@@ -3935,7 +3935,7 @@
         <div class="slot-sub spd-sub"><b>More of the Speed part</b> — shares of the Speed-derived chance, so they scale its 30% at most</div>
         <div class="nd-wrap"><div class="nd-table">
           <div class="nd-row spd-row2 nd-hd"><span>Source</span><span>Share</span></div>
-          <div class="nd-row spd-row2"><span>Godforge upgrade 18</span><span>+50% (+75% on an Avatar with Godforged)</span></div>
+          <div class="nd-row spd-row2"><span>Godforge upgrade 18</span><span>+50%</span></div>
           <div class="nd-row spd-row2"><span>Agility Aura</span><span>+40%</span></div>
           <div class="nd-row spd-row2"><span>Clutcher card set, power 1</span><span>+5%</span></div>
           <div class="nd-row spd-row2"><span>Agile, with the Aspect card set</span><span>+5%</span></div>
