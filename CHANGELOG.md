@@ -4,6 +4,26 @@ Every dated change entry, newest first (moved verbatim from Progress.md on 2026-
 to their own section and sorted by their date). Current state and open work: `Progress.md`, `BACKLOG.md`.
 New entries go at the TOP.
 
+## 2026-10-31 — Appendix: Speed section (Timeline, Dodge, Critical hits)
+- New **Speed** section on the Appendix page (after Class Advantage): three nested expandable groups (`sob-step` style, keys
+  `SPD:timeline` / `SPD:dodge` / `SPD:crit`), collapsed by default; the Appendix search opens the matching group(s) only.
+  - **Timeline**: one list sorted by Speed at Start of Battle step 6 (after the stat phases), coin-flip ties, Covert / Prepared
+    keys, the top / bottom overrides (bottom wins), the rotation (turn creature to the bottom, extra turns stay), mid-battle Speed
+    changes never reorder, one move per creature per creature-turn, who stays / leaves, steps 0a–5 see last battle's order.
+  - **Dodge**: main roll 5% or 5 × dodger ÷ attacker Speed capped at 30, less × / more + shares, artifact flat points; caps 90 /
+    level below 25 / enemy 60 and 30 on early depths; floor 5; independent chances are separate rolls; cannot-be-dodged beats
+    all but Periphery. Ratio table (½× … 10×).
+  - **Critical hits**: chance 5% or 5 × attacker ÷ target Speed with no cap (100% at 20×), modifiers, Valkyrie p3 75 cap /
+    Reaper p3 10 floor; the roll runs inside the damage event for attack and spell damage with a source, never indirect; crit
+    damage = hit × (1.25 + max(0, 1 + ln(Spd att ÷ Spd tgt))) in the shared bonus pool, plus the other crit-damage terms. Ratio
+    table with chance + multiplier. Clarify line: community ×1.5 / spells-don't-crit vs the code; the threat advice keeps the
+    2026-10-11 “only attacks crit” rule until an in-game check.
+  - Each group ends with a deep link into the Effect Order page: `open-effect-order` now takes `data-sec` and
+    `openErrata(page, expand)` opens that one section (Battle-Start Timeline / Attack Order / Damage Order).
+- Sources: _su_extract TIMELINE_FINDINGS.md, START_OF_BATTLE_FINDINGS.md phase 6, effect_order/attack_pipeline_crit_dodge.md,
+  EFFECT_FORMULAS.md § caps_s12, event_damage_b_mid.md § E. Checked with the headless-Chrome smoke run (390 px: no overflow,
+  no JS errors, deep link + search verified).
+
 ## 2026-10-30 — Gems: All backfilled on the audited trait / perk / card effects; Seal tags on the sealing traits
 - The extract (S76c) applied the approved All to the non-spell sites its own census had read: the Sealed-gem counters, Hoarding,
   Conduit Strike, the charge rules that walk every gem (Rest Up, Charging Rod, Phasers, Consuming Knowledge, Soul Steal, Group

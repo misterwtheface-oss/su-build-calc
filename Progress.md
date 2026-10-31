@@ -116,6 +116,7 @@ source of truth), called by both `build-data.mjs` and the **`.githooks/pre-commi
   Bonus, Rodian Masters (`D.masterRealms`). Same collapsible layout; section functions are shared (`*Section(st, q)`).
   2026-10-17: + **Class Advantage** and **Random Targets** (per-spell `aim` lookup via the Appendix search) after Start of Battle.
   2026-10-18: Resurrection Order is a code-order list (`RES_ORDER` rows: head / resurrection / block / qblock / note) with blocker rows.
+  2026-10-31: + **Speed** (after Class Advantage): Timeline / Dodge / Critical hits as nested groups (`SPD:*`), ratio tables, deep links into Effect Order (`openErrata(page, expand)`).
 - **Creature detail Triggers (2026-10-18):** `slotTriggers(slot)` groups traits / relic ranks (`ranks[].trig`) / artifact + nether
   spells / gem trigger properties / "X On Damage" properties by event (`TRIG_GROUPS`); rendered by `triggersSectionHtml`.
   + spec perks / anointments / party members' traits whose `trigScope` covers the slot (`scopeCovers`, tools/trigger-scope.mjs).

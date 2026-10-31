@@ -1926,5 +1926,10 @@ span.boss-chip { cursor: default; }
 
 /* Appendix: How Effect Order Works */
 .eo-rule { margin: 0 0 8px; line-height: 1.45; text-align: left; }
+/* Appendix > Speed: ratio tables + deep links into Effect Order */
+.nd-row.spd-row2 { grid-template-columns: 1.6fr 1fr; }
+.nd-row.spd-row3 { grid-template-columns: 1.4fr 1fr 1fr; }
+.spd-body { margin: 0 0 10px; padding: 0 4px; }
+.spd-link { margin: 2px 0 6px; }
 /* effect order: when the change lands (At once / Runs now / Queued …) */
 .eo-res { margin-left: 6px; white-space: nowrap; color: var(--accent2); }
