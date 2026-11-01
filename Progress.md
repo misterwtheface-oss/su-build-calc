@@ -6,8 +6,9 @@ Restructured 2026-10-08; the previous 219 KB version is kept verbatim in `archiv
 ## LIVE
 Deployed at **https://misterwtheface-oss.github.io/su-build-calc/** (repo `misterwtheface-oss/su-build-calc`,
 Pages on `master`/root, Cloudflare analytics active with the shared github.io token). Auto-deploys on push.
-No verify-before-push ceremony (no real users yet) — but every change is checked with the jsdom smoke suite
-(scratchpad `smoke.mjs`, ~84 assertions across all flows) before commit.
+No verify-before-push ceremony (no real users yet) — but every change is checked before commit with `node tools/effects_test.mjs`,
+`node tools/buildio_test.mjs` and the headless-Chrome runner `node tools/smoke.mjs off HYDRANOX <check module>` (example
+check: `tools/smoke_relic_rows.mjs`). The old jsdom suite lived only in a session scratchpad and is gone (2026-11-01).
 
 ### ⚠ Cache-bust is ENFORCED by a git pre-commit hook (do not bypass)
 The service worker serves `app.js`/`styles.css`/`data.js` **cache-first**, keyed by their `?v=` token

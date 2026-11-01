@@ -3504,8 +3504,9 @@ const { spellGrants, relicUltimates, ultimateRoutes } = (() => {
   // its pick case ("by the enemy's class: Chaos 166, ..." → Chaos); "choose(...)" = one of them at random. Relic entries carry the
   // rank of their code clause. Shipped as `spellsUsed: [{s, k: 'cast'|'gem', l?, rk?}]` on perks / traits / relics / spells.
   // Final Summoning keeps its per-demon list (demonSpells) instead.
-  let nUsed = 0; const usedBy = {};
+  let nUsed = 0, nGem = 0; const usedBy = {};
   { const CL = readJSON(path.join(MODEL, 'taxo_v2_tags.json')).objects;
+    const GEM_SPELLS = readJSON(path.join(MODEL, 'relic_gem_spells.json')).records;
     const labelsOf = (how) => {                                       // "<label> <id>[ / <id>…]" items after the LAST colon
       const m = new Map(), tail = String(how || '').slice(String(how || '').lastIndexOf(':') + 1);   // the code prose before it holds colons too
       for (const it of tail.split(/,\s*/)) { const x = /^\s*(.+?) (\d+(?: \/ \d+)*)\s*$/.exec(it); if (x) for (const id of x[2].split(' / ')) m.set(+id, x[1]); }
@@ -3528,6 +3529,13 @@ const { spellGrants, relicUltimates, ultimateRoutes } = (() => {
           out.push(e);
         }
       }
+      // relic ranks whose clause builds a temp gem and casts it (inv_CreateSpellGem) with a static spell-id literal read from the
+      // exe (relic_gem_spells.json, code/build_relic_gem_spells.py; user 2026-11-01: Lacerate / Black Ice / ... were missing)
+      if (key.startsWith('relic:')) for (const g of GEM_SPELLS.filter(x => `relic:${x.app_relic_id}` === key)) {
+        const x = spByKey.get(g.spell_key); if (!x) { err(`spells used: ${label}: exe spell ${g.spell_key} not in the app`); continue; }
+        const dk = `${x.id}|${g.rank}`; if (seen.has(dk)) continue; seen.add(dk);
+        out.push({ s: x.id, k: 'cast', rk: g.rank }); nGem++;
+      }
       if (out.length) { obj.spellsUsed = out; nUsed++; usedBy[key.split(':')[0]] = (usedBy[key.split(':')[0]] || 0) + 1; }
     };
     for (const sp of specs) for (const pk of sp.perks) if (!pk.demonSpells) used(`perk:${pk.key}`, pk, `${sp.label} / ${pk.name}`);
@@ -3535,7 +3543,7 @@ const { spellGrants, relicUltimates, ultimateRoutes } = (() => {
     for (const r of relics) used(`relic:${r.id}`, r, `relic ${r.name}`);
     for (const x of spells) used(`spell:${x.key}`, x, `spell ${x.name}`);
   }
-  console.log(`  spells used (code cast_spell_ids / gem_spell_ids): ${nUsed} objects · ${Object.entries(usedBy).map(([k, n]) => `${k} ${n}`).join(' · ')}`);
+  console.log(`  spells used (code cast_spell_ids / gem_spell_ids + exe relic gem literals ${nGem}): ${nUsed} objects · ${Object.entries(usedBy).map(([k, n]) => `${k} ${n}`).join(' · ')}`);
   const ult = {};
   for (const u of so.ultimate_by_relic) {
     const r = relicByName.get(norm(u.owner.relic_name)), id = appSpell(u.spell_key);
@@ -3555,30 +3563,87 @@ const { spellGrants, relicUltimates, ultimateRoutes } = (() => {
 // (taxo_v2_tags.json) Buffs:: / Debuffs:: Apply and Always Has tags: `named` (registry name) or `condition_ids` (registry ids).
 // Only code-grounded names (conf code / code-flow; the 64 `inferred` names are left out); random / "existing" picks name no
 // single status effect. Registry name → the game's display name (token_names) → the app condition of that category.
-// Shipped as `condsUsed: [{c: "<cat>:<key>", k: 'apply'|'always', rk?}]` on perks / traits / relics / spells.
+// Shipped as `condsUsed: [{c: "<cat>:<key>", k: 'apply'|'always'|'ref', rk?}]` on perks / traits / relics / spells.
+// User 2026-11-01 (relic rank rows missing lots of buffs): three more code sources, still no text matching —
+//  · an `inferred` Apply tag counts when the debuff / buff call-site trace (code/adhoc_debuff_source/source_sites.json, the
+//    symbolic trace of every bc_EventDebuff / bc_EventBuff argument, COMBAT_RULES.md) has a call gated by that same tag site,
+//    on the same object, with the same condition id;
+//  · Apply tags that carry only `status_marker` (F5 per-rank decode, e.g. Wintermaul R10 Frozen);
+//  · k 'ref' = a status effect the code checks or changes without applying it: Debuffs::Immune, Trigger::Buff / Debuff,
+//    Debuffs::Strengthen / Bypass Protection, Scales With:: tags, and for relics the per-rank clause trace
+//    (relic_signatures.json: scr_CritHasCondition ids `raw.conds`, `has_condition` guards, CONDNAME string tokens).
 {
   const CL = readJSON(path.join(MODEL, 'taxo_v2_tags.json')).objects;
   const REG = readJSON(path.join(MODEL, 'condition_registry.json')).conditions, regById = new Map(REG.map(c => [c.id, c]));
+  const regByName = new Map(REG.map(c => [c.name, c])), regByKey = new Map(REG.map(c => [c.key, c]));
   const appCond = (cat, name, regKey) => conditions.find(c => c.cat === cat && (c.name === condDisplay(name) || c.name === name
     || (regKey && c.key === regKey.toLowerCase()) || c.key === String(name).toLowerCase()));
-  let nObj = 0, nInferred = 0; const unmapped = new Set(), by = {}, minionGroup = new Set(); // group markers (Four Horsemen…) name no single minion
+  const regCat = (r) => ({ buff: 'Buff', debuff: 'Debuff', minion: 'Minion' })[r.class] || null;
+  // call-site trace: "<object key>|<gate site>" → condition ids the gated buff / debuff calls apply
+  const SITES = new Map();
+  for (const s of readJSON(path.join(SRC, 'code', 'adhoc_debuff_source', 'source_sites.json'))) {
+    if (!s.key || !s.gate || s.condition_id == null) continue;
+    const k = `${s.key}|${s.gate}`; if (!SITES.has(k)) SITES.set(k, new Set()); SITES.get(k).add(s.condition_id);
+  }
+  // relic per-rank clause trace: "<app relic id>|<rank>" → registry conditions the rank's clauses read
+  const RELIC_REFS = new Map(); let nTokMiss = 0;
+  for (const r of readJSON(path.join(MODEL, 'relic_signatures.json')).records) {
+    const regs = [];
+    for (const cl of r.clauses || []) {
+      for (const id of (cl.raw && cl.raw.conds) || []) { const g = regById.get(id); if (g) regs.push(g); }
+      for (const g of cl.guards || []) if (g.if === 'has_condition' && g.condition) { const x = regByName.get(g.condition); if (x) regs.push(x); }
+      for (const s of (cl.raw && cl.raw.tb_strings) || []) for (const m of s.matchAll(/CONDNAME_(?:BUFF|DEBUFF)_(\w+)/g)) {
+        const x = regByKey.get(m[1]) || REG.find(c => c.key && c.name && c.name.toUpperCase().replace(/\W/g, '') === m[1]); if (x) regs.push(x); else nTokMiss++;
+      }
+    }
+    if (regs.length) RELIC_REFS.set(`${r.app_relic_id}|${r.rank}`, regs);
+  }
+  const REF_TAG = /^(?:Debuffs::(?:Immune|Strengthen|Bypass Protection)|Buffs::Strengthen|Trigger::(Buff|Debuff)|Scales With::(Buff|Debuff) (?:Count|Potency))$/;
+  let nObj = 0, nInferred = 0, nCorrob = 0, nRef = 0; const unmapped = new Set(), by = {}, minionGroup = new Set(); // group markers (Four Horsemen…) name no single minion
   const used = (key, obj) => {
-    const o = CL[key]; if (!o) return;
+    const o = CL[key];
     const out = [], seen = new Set();
-    for (const t of o.tags) {
+    const push = (c, k, rank) => {
+      const rk = rank != null ? +rank : null, id = `${c.cat}:${c.key}`, dk = `${id}|${rk}`;
+      if (seen.has(dk)) { const e = out.find(x => x.c === id && (x.rk ?? null) === rk); if (e && e.k === 'ref' && k !== 'ref') e.k = k; return; }
+      seen.add(dk); out.push({ c: id, k, ...(rk != null ? { rk } : {}) }); if (k === 'ref') nRef++;
+    };
+    for (const t of (o && o.tags) || []) {
+      const nm = /^Named (Buff|Debuff|Minion)::(.+)$/.exec(t.tag);    // F5 per-rank: the clause names this status effect
+      if (nm) {
+        if (!/^code/.test(t.conf || '') || /^(random|any|existing)\b/i.test(nm[2])) continue;
+        const c = appCond(nm[1], nm[2]); if (c) push(c, 'ref', t.rank); else if (nm[1] !== 'Minion') unmapped.add(`${nm[1]} ${nm[2]}`); else minionGroup.add(`${key} ${nm[2]}`);
+        continue;
+      }
+      const rm = REF_TAG.exec(t.tag);
+      if (rm) {                                                       // a status effect the code checks or changes, not applies
+        if (!/^code/.test(t.conf || '')) continue;
+        const fixed = rm[1] || rm[2] || (/^Buffs/.test(t.tag) ? 'Buff' : 'Debuff');
+        const regs = t.condition_ids ? t.condition_ids.map(id => regById.get(id)).filter(Boolean) : [];
+        const pairs = regs.length ? regs.map(r => [regCat(r) || fixed, r.name, r.key])
+          : (t.status_marker || []).filter(n => !/^(random|any|existing)$/i.test(n)).map(n => [fixed, n, null]);
+        for (const [cat, n, rk0] of pairs) { const c = appCond(cat, n, rk0); if (c) push(c, 'ref', t.rank); else unmapped.add(`${cat} ${n}`); }
+        continue;
+      }
       const m = /^(?:(Buffs|Debuffs)::(Apply|Always Has)|Minions::(Summon))$/.exec(t.tag); if (!m) continue;
       const cat = m[3] ? 'Minion' : m[1] === 'Buffs' ? 'Buff' : 'Debuff', k = m[3] ? (t.always ? 'always' : 'apply') : m[2] === 'Apply' ? 'apply' : 'always';
-      if (!/^code/.test(t.conf || '')) { if (t.named || t.condition_ids) nInferred++; continue; }
+      if (!/^code/.test(t.conf || '')) {
+        const reg = !m[3] && t.named && regByName.get(t.named), ids = reg && t.site && SITES.get(`${key}|${t.site}`);
+        if (!(ids && ids.has(reg.id))) { if (t.named || t.condition_ids) nInferred++; continue; }
+        nCorrob++;                                                    // inferred name, confirmed by the call-site trace
+      }
       if (m[3] && /random/i.test(t.conf)) continue; // a random minion pick names no single minion
       const names = t.named ? [[t.named, null]] : t.condition_ids ? t.condition_ids.map(id => regById.get(id)).filter(Boolean).map(r => [r.name, r.key])
-        : m[3] ? (t.status_marker || []).filter(n => appCond(cat, n) || (minionGroup.add(`${key} ${n}`), false)).map(n => [n, null]) : [];
+        : m[3] ? (t.status_marker || []).filter(n => appCond(cat, n) || (minionGroup.add(`${key} ${n}`), false)).map(n => [n, null])
+        : (t.status_marker || []).map(n => [n, null]);
       for (const [n, rk0] of names) {
-        if (/random|existing/i.test(n)) continue;
+        if (/random|existing|^any$/i.test(n)) continue;
         const c = appCond(cat, n, rk0); if (!c) { unmapped.add(`${cat} ${n}`); continue; }
-        const rk = t.rank != null ? +t.rank : null, id = `${c.cat}:${c.key}`, dk = `${id}|${rk}`;
-        if (seen.has(dk)) continue; seen.add(dk);
-        out.push({ c: id, k, ...(rk != null ? { rk } : {}) });
+        push(c, k, t.rank);
       }
+    }
+    if (key.startsWith('relic:')) for (const r of obj.ranks || []) for (const g of RELIC_REFS.get(`${obj.id}|${r.rank}`) || []) {
+      const c = regCat(g) && appCond(regCat(g), g.name, g.key); if (c) push(c, 'ref', r.rank); else unmapped.add(`${regCat(g)} ${g.name}`);
     }
     if (out.length) { obj.condsUsed = out; nObj++; by[key.split(':')[0]] = (by[key.split(':')[0]] || 0) + 1; }
   };
@@ -3587,7 +3652,7 @@ const { spellGrants, relicUltimates, ultimateRoutes } = (() => {
   for (const r of relics) used(`relic:${r.id}`, r);
   for (const x of spells) used(`spell:${x.key}`, x);
   for (const u of unmapped) err(`buffs/debuffs used: ${u} has no app status effect`);
-  console.log(`  buffs/debuffs used (code named / condition_ids): ${nObj} objects · ${Object.entries(by).map(([k, n]) => `${k} ${n}`).join(' · ')} · ${nInferred} inferred names left out · ${minionGroup.size} minion-group rows without a named minion`);
+  console.log(`  buffs/debuffs used (code named / condition_ids): ${nObj} objects · ${Object.entries(by).map(([k, n]) => `${k} ${n}`).join(' · ')} · ${nCorrob} inferred names confirmed by the call-site trace · ${nInferred} inferred names left out · ${nRef} checked-not-applied refs · ${nTokMiss} unmapped CONDNAME tokens · ${minionGroup.size} minion-group rows without a named minion`);
 }
 
 // ── Rodian Creature Masters per realm — code (_su_extract master_realms.json, S28–S28c; code/MASTER_SPAWN_FINDINGS.md,

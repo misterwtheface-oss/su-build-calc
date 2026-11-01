@@ -4,6 +4,25 @@ Every dated change entry, newest first (moved verbatim from Progress.md on 2026-
 to their own section and sorted by their date). Current state and open work: `Progress.md`, `BACKLOG.md`.
 New entries go at the TOP.
 
+## 2026-11-01 — Relic rank drop-downs: the missing buffs, debuffs and spells
+- User: the relic rank drop-downs were missing lots of buffs and spells. 106 of the 310 rank rows lacked a status effect or
+  spell their text names; now 3 do (see BACKLOG § G6), plus 6 false alarms from name overlaps such as "Death" in "Death Blossom".
+- Four code sources added to `build-data.mjs`, still with no text matching:
+  - **Inferred apply tags confirmed by the call-site trace.** The afflict-on-attack ranks (Blazefury Burning, Rosenthorne
+    Blind, Void Essence Stone and others) were tagged "inferred" and dropped. They now ship when the buff / debuff call
+    trace (`_su_extract/code/adhoc_debuff_source/source_sites.json`) shows a call gated by the same site with the same condition.
+  - **Apply tags that carry only a status marker** (Wintermaul rank 10 Frozen).
+  - **Status effects the code checks rather than applies:** immunity, triggers, strengthen, bypass, scales-with and
+    "Named" tags, plus each relic rank's own condition reads from `relic_signatures.json`. For example, Triumvir now shows
+    Arcane on every rank that involves it.
+  - **Relic spells read from the exe:** new extract script `code/build_relic_gem_spells.py` reads the spell-id literal each
+    relic rank passes to its gem-creation call. It adds Healing (Arbiter 40), Black Ice (Wintermaul 50), Soothing Breeze
+    (Salus 40), Lacerate (Fleshripper 100) and Petrify (Void Essence 30). Its other 26 results match the existing data,
+    and random picks are refused.
+- The same build function feeds perk and trait rows, so 32 more perks / traits gained cards too.
+- `tools/smoke.mjs` (headless-Chrome runner) + `tools/smoke_relic_rows.mjs` promoted from session scratchpads.
+- Checked: effects 51/51, build I/O 27/27, the headless relic run (no JS errors, no horizontal scroll at 390 px), and no duplicate cards.
+
 ## 2026-10-31 — Appendix › Speed › Dodge: four tables (user layout)
 - The Dodge group is now: (1) the Speed ratio table; (2) **More of the Speed part** — the shares that scale the Speed-derived
   chance and so its 30% at most (Agility Aura +40%; Clutcher p1 +5%; Agile

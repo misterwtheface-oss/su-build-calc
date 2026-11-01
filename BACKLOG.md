@@ -98,6 +98,12 @@ a decompile → write `_su_extract/code/HANDOFF_<topic>.md` and don't guess.
   **2026-10-18 (user: "see what surfaces at 2 and is dropped with 3"):** preview from the per-rank CODE signatures (Action/Mechanic
   level only, Relic mechanic excluded, 30 of 31 relics — Arbiter has no signatures): **37 features at 3+ ranks, 34 more surface at
   exactly 2**. Re-run the same comparison on the real per-rank tags when they land, then the user picks.
+- [ ] **Relic rank drop-downs: the last code gaps** (2026-11-01). Everything else on the 310 rank rows now comes from code.
+  Still missing: (1) Ripplevein rank 30 "gains 1 stack of Spiderlings" has no gate in the code index (no CritHasRelicPerk
+  26 / perk 3 in `gate_refs.json`), so its Spiderlings card is absent; (2) Ripplevein rank 90's trigger list (Zombies,
+  Spiderlings, Unstable Horror, Dire Wolves) only has Zombies + Unstable Horror tagged, and the "one of the four horsemen"
+  result is a group, which by rule names no single minion; (3) Moonfire & Sunfury rank 60 reacts to its own Meteor Shower
+  cast, but no code tag ties that rank to the spell. Each needs an extract decode, not a text match.
 - [ ] **In-game checks: relic self-conflicts** (extract S65, `RELIC_SIGNATURES.md` § Relic self-conflicts; notes already shipped,
   code-certain). Confirm when convenient: (1) Brambleskin rank 100: does the bearer ever resurrect on death? (code: never).
   (2) Fable rank 80: do the bearer's on-death effects activate twice? (code: once). If one disagrees, retract its note and tell
