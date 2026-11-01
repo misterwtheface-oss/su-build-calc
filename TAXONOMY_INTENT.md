@@ -306,3 +306,6 @@ damage-taken routines in `_su_extract`)._
 - Initial All coverage is the independently audited spell population; other objects and marker families are not backfilled. New universal classifications require code evidence.
 - Same day, extract S76c: All backfilled on the audited trait / perk / card sites (combined-pool reads, the shared no-charge flag,
   the per-gem update routine, id-tested seal immunity); code-site Seal tags added on the sealing traits. Unaudited sites stay unmarked.
+
+- **Named Spell from code (user 2026-11-01, extract S77):** Mega Magic gets `Named Spell::Mega Magic` on the objects whose code
+  creates or casts it (ten Zantai traits, Fable r100). Spell Kind is not used for it: Kind is a group, Mega Magic is one spell.

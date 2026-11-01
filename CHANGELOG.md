@@ -4,6 +4,11 @@ Every dated change entry, newest first (moved verbatim from Progress.md on 2026-
 to their own section and sorted by their date). Current state and open work: `Progress.md`, `BACKLOG.md`.
 New entries go at the TOP.
 
+## 2026-11-01 — Named Spell: Mega Magic
+- User: Mega Magic had no Spell Kind / Named Spell taxonomy. The ten Zantai traits and Fable (rank 100) now carry
+  `Named Spell::Mega Magic`, from the extract's S77 code pass (the spell id the code creates / casts). Mega Magic joins the
+  Named Spell filter list. Side effect by the existing theme rule: seven Zantai traits gain the Cast theme.
+
 ## 2026-11-01 — Relic rank drop-downs: the missing buffs, debuffs and spells
 - User: the relic rank drop-downs were missing lots of buffs and spells. 106 of the 310 rank rows lacked a status effect or
   spell their text names; now 3 do (see BACKLOG § G6), plus 6 false alarms from name overlaps such as "Death" in "Death Blossom".

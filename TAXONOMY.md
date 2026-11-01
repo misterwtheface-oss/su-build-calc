@@ -295,6 +295,7 @@ Which spell **class / kind / named spell** an effect references.
 - **Kind:** Arrow · Arsenal · Booze · Damaging ⚠ · Ethereal · Non-Ethereal · Healing · Minion · Multi-Target ⚠ ·
   Scourge · Single-Target ⚠ · Ultimate · Non-Ultimate Spells.
 - **Named:** 27 specific spells (Bone Spear, Chain Lightning, Fireball, …) referenced by `{SPELL_*}`/`[icons]`.
+  v2 adds code-layer names from the spell id a Gain Gem / Auto Cast site creates or casts (S77: Mega Magic).
 
 ⚠ For a **spell**: Single/Multi-Target derive from `Spell_REF.target` (`field`); Damaging = potency + a damage
 reference (not a healing/utility spell). For a trait/perk, Damaging = an explicit "damaging spell" mention.
