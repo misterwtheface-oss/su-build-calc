@@ -309,3 +309,7 @@ damage-taken routines in `_su_extract`)._
 
 - **Named Spell from code (user 2026-11-01, extract S77):** Mega Magic gets `Named Spell::Mega Magic` on the objects whose code
   creates or casts it (ten Zantai traits, Fable r100). Spell Kind is not used for it: Kind is a group, Mega Magic is one spell.
+- **Multi-effect support (user 2026-11-01, general rule):** a tag value is added only when several effects support it, never for
+  a standalone explicit reference by one effect.
+- **Open decision (user, later; raise when touching spell / cast taxonomy):** extend S77 Named Spell to the parked spells the
+  code names (extract RESUME.md, CODE_TAXO.md § S77). Under the rule above only the 132 spells named by 2+ objects are eligible.
