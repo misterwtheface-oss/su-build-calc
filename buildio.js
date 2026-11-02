@@ -72,19 +72,19 @@
     // ids are code-grounded (creatures, relics, trait items, specs, skins); spells + gem properties travel by KEY so
     // a data rebuild that renumbers them can't scramble a shared build.
     function payloadFromApp(build, libs) {
-      const art = (id) => libs.artifacts.find(a => a.id === id), stone = (id) => libs.nether.find(n => n.id === id), gem = (id) => libs.spellGems.find(g => g.id === id);
+      const stone = (id) => libs.nether.find(n => n.id === id);   // artifacts + gems are the creature's own; stones live in the library
       const spellKey = (id) => (env.SPELL.get(id) || {}).key || null;
       const stoneOut = (n) => n ? { name: n.name, icon: n.icon || null, rarity: n.rarity ?? null,
         props: (n.props || []).map(p => p.cat === "spell" ? { cat: "spell", spell: spellKey(p.key), trigger: p.trigger || null } : { cat: p.cat, key: p.key, value: p.value ?? null }) } : null;
       return { v: 1, spec: build.specId ?? null, perkAlloc: build.perkAlloc || {}, anoints: (build.anoints || []).map(a => ({ specId: a.specId, key: a.key })),
         slots: build.slots.map(s => {
           if (!s || s.cid == null) return null;
-          const a = s.artifactId != null ? art(s.artifactId) : null;
+          const a = s.artifact || null;
           return { cid: s.cid, fusion: s.fusion ?? null, personality: s.personality || null, scrolls: s.scrolls || {}, skinId: s.skinId ?? null, fuseColor: s.fuseColor ?? null,
             relic: s.relic ? { id: s.relic.id, rank: s.relic.rank } : null,
             artifact: a ? { name: a.name, rank: a.rank || 50, primary: a.primary || null, stat: a.stat || [], trick: a.trick || [], traits: a.traits || [],
               spells: (a.spells || []).map(spellKey).filter(Boolean), nether: stoneOut(stone((a.netherIds || [])[0])) } : null,
-            gems: (s.spellGemIds || []).map(gem).filter(Boolean).map(g => ({ name: "", spell: spellKey(g.spellId), tier: g.tier ?? null,
+            gems: (s.gems || []).map(g => ({ name: "", spell: spellKey(g.spellId), tier: g.tier ?? null,
               props: (g.propIds || []).map(pid => (env.SPELLPROP.get(pid) || {}).key).filter(Boolean) })) };
         }) };
     }

@@ -4,11 +4,19 @@ Standing decisions the user made about how the app models the game. Don't "fix" 
 the assistant's working notes on 2026-10-08 (they existed nowhere in the repo). Add new rulings here when they're made.
 Taxonomy category definitions themselves live in `TAXONOMY.md`.
 
+## Creature-owned spell gems and artifacts (2026-11-02)
+- A creature owns its spell gems and artifact (stored on the party slot). The Spell Gems and Artifacts libraries are saved
+  designs: Equip copies a design onto the creature, with no link back (user picked "copy", not "stay linked"). Saving to
+  the library is optional, from the creature's Spells / Artifact page or the builder.
+- Migration keeps every library entry; equipped items become the creature's own copies (user picked "keep all").
+- Nether Stones stay library-only: they are random drops and can't be built freely (user). The one-equipped-artifact-per-
+  stone rule still applies across the party.
+
 ## Spell gems: one gem per spell per creature (2026-10-29)
 - The game refuses a second gem with the same spell on one creature (`inv_CritCanEquipSpellGem` rule 1, code-certain,
   `_su_extract/code/SPELL_GEMS.md`). The app enforces it on Equip and in the builder opened from a creature (same-spell rows
   faded, not clickable). The prune pass keeps the first same-spell gem on a creature and drops later ones (startup / load /
-  delete), same as it drops deleted gems. User ask 2026-10-29: fade out already-equipped spells when building from a creature.
+  import). Gems are the creature's own copies since 2026-11-02, so a library delete no longer touches them. User ask 2026-10-29: fade out already-equipped spells when building from a creature.
 
 ## S73 open items (2026-10-25)
 - Targeting::All only where the code loops over the side: Judgment and Conquest's Triumph have none (one call on the caster).

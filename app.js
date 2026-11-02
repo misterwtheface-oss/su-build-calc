@@ -323,7 +323,8 @@
   const jload = (k, dflt) => { try { const v = JSON.parse(localStorage.getItem(k)); return v == null ? dflt : v; } catch { return dflt; } };
   const jsave = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} };
 
-  const emptySlot = () => ({ cid: null, fusion: null, artifactId: null, relic: null, spellGemIds: [], personality: null, scrolls: {}, skinId: null });
+  // a creature OWNS its artifact and spell gems (copies); the Artifacts / Spell Gems libraries are saved designs to copy from
+  const emptySlot = () => ({ cid: null, fusion: null, artifact: null, relic: null, gems: [], personality: null, scrolls: {}, skinId: null });
   const freshBuild = () => ({ schema: 3, specIds: 2, skinIds: 2, specId: null, perkAlloc: {}, anoints: [], slots: Array.from({ length: 6 }, emptySlot) });
   let build = jload(LS.build, null);
   // schema 2 stored perkAlloc as a binary de-allocation map ({key:1} = deallocated).
@@ -340,7 +341,7 @@
   build.anoints = Array.isArray(build.anoints) ? build.anoints : [];   // equipped anointments [{specId,key}], max 5
   while (build.slots.length < 6) build.slots.push(emptySlot());
   build.slots = build.slots.map(s => Object.assign(emptySlot(), s));
-  build.slots.forEach(s => { if (!Array.isArray(s.spellGemIds)) s.spellGemIds = []; if (!s.scrolls || typeof s.scrolls !== "object") s.scrolls = {}; if (!("personality" in s)) s.personality = null; });
+  build.slots.forEach(s => { if (!Array.isArray(s.gems)) s.gems = []; if (!s.scrolls || typeof s.scrolls !== "object") s.scrolls = {}; if (!("personality" in s)) s.personality = null; });
 
   let cards = jload(LS.cards, null);                        // { levels: {cardId: 0..3} } — absent == 3 (max)
   if (!cards || !cards.levels) cards = { levels: {} };
@@ -482,17 +483,33 @@
   let nextNetherId = nether.reduce((m, n) => Math.max(m, n.id || 0), 0) + 1;
   let nextArtId = artifacts.reduce((m, a) => Math.max(m, a.id || 0), 0) + 1;
   let nextSpellGemId = spellGems.reduce((m, g) => Math.max(m, g.id || 0), 0) + 1;
-  // drop a build's references to deleted spell gems / artifacts. Ids are reused after a reload (max + 1), so a stale
-  // id left in a saved build would later equip an unrelated new item. Runs on delete, on load, and once at startup.
+  // creature-owned copies: picking a library design puts a COPY on the creature (no link back); "Save to library" adds a
+  // copy the other way. A library entry counts as "the same" when its content matches (gems: spell + level + properties;
+  // artifacts: SU_BUILDIO.sameArtifactBody + the same socketed stone).
+  const copyGem = (g) => ({ spellId: g.spellId, tier: g.tier ?? GT.max, propIds: [...(g.propIds || [])] });
+  const copyArtifact = (a) => { const c = JSON.parse(JSON.stringify(a)); delete c.id; return c; };
+  const sameGem = (a, b) => a.spellId === b.spellId && (a.tier ?? GT.max) === (b.tier ?? GT.max)
+    && [...(a.propIds || [])].sort().join() === [...(b.propIds || [])].sort().join();
+  const libGemOf = (g) => (g ? spellGems.find(x => sameGem(x, g)) || null : null);
+  const libArtOf = (a) => (a ? artifacts.find(x => window.SU_BUILDIO.sameArtifactBody(x, a) && (x.netherIds || [])[0] === (a.netherIds || [])[0]) || null : null);
+  const slotGems = (slot) => (slot && slot.gems) || [];
+  // older saves pointed at library ids (artifactId / spellGemIds): turn them into the creature's own copies (the library
+  // keeps its entries), then drop a second gem of the same spell (game rule). Runs on load, on every saved build and import.
   const pruneBuildRefs = (b) => {
     let changed = false;
     for (const s of (b && b.slots) || []) {
       if (!s) continue;
-      const ids = s.spellGemIds || [], seenSpell = new Set();
-      const kept = ids.filter(id => { const g = spellGems.find(x => x.id === id); if (!g) return false;   // deleted gem
-        const sp = gemSpell(g); if (sp && seenSpell.has(sp.id)) return false; if (sp) seenSpell.add(sp.id); return true; });   // second gem of the same spell (game rule)
-      if (kept.length !== ids.length) { s.spellGemIds = kept; changed = true; }
-      if (s.artifactId != null && !artifacts.some(a => a.id === s.artifactId)) { s.artifactId = null; changed = true; }
+      if ("artifactId" in s) { const a = s.artifactId != null ? artifacts.find(x => x.id === s.artifactId) : null;
+        if (a && !s.artifact) s.artifact = copyArtifact(a); delete s.artifactId; changed = true; }
+      if ("spellGemIds" in s) { if (!Array.isArray(s.gems) || !s.gems.length)
+          s.gems = (s.spellGemIds || []).map(id => spellGems.find(x => x.id === id)).filter(Boolean).map(copyGem);
+        delete s.spellGemIds; changed = true; }
+      if (!Array.isArray(s.gems)) { s.gems = []; changed = true; }
+      if (s.artifact === undefined) s.artifact = null;
+      const seenSpell = new Set();
+      const kept = s.gems.filter(g => { const sp = gemSpell(g); if (!sp) return false;
+        if (seenSpell.has(sp.id)) return false; seenSpell.add(sp.id); return true; });
+      if (kept.length !== s.gems.length) { s.gems = kept; changed = true; }
     }
     return changed;
   };
@@ -796,7 +813,7 @@
   }
 
   // ── stat computation (fusion + artifact + socketed nether) ─────────────────
-  function resolveArtifact(slot) { return slot.artifactId != null ? artifacts.find(a => a.id === slot.artifactId) : null; }
+  function resolveArtifact(slot) { return (slot && slot.artifact) || null; }
   // effect engine (effects.js / EFFECT_ENGINE.md): every stat source + perk/trait rule lives there; the
   // functions below are thin adapters so call sites stay unchanged.
   const FX = window.SU_EFFECTS.create({
@@ -810,12 +827,10 @@
     slotClass: (slot) => (baseStats(slot) || {}).cls || null,
     SPELL, spellGrants: D.spellGrants || [], relicUltimates: D.relicUltimates || {}, ultimateRoutes: D.ultimateRoutes || [],
   });
-  // "equipped in the current build" tests, for the saved-list Hide-equipped filter
+  // "equipped in the current build" test, for the Nether Stone library's Hide-equipped filter
   // `slots` defaults to the current party; hideSlots(st) widens it to every saved build for "Hide used in builds"
-  const artifactEquippedInBuild = (id, slots = build.slots) => slots.some(s => s && s.artifactId === id);
   const netherEquippedInBuild = (id, slots = build.slots) => slots.some(s => { const a = s && resolveArtifact(s); return a && (a.netherIds || []).includes(id); });
-  const spellGemEquippedInBuild = (id, slots = build.slots) => slots.some(s => s && (s.spellGemIds || []).includes(id));   // gems only slot into creatures now
-  // library "Hide" button, one per library (Artifacts, Nether Stones, Spell Gems): cycles off → Hide equipped (current party) →
+  // Nether Stone library "Hide" button: cycles off → Hide equipped (current party) →
   // Hide used in builds (current party + every saved build) → off (user 2026-10-24)
   const hideSlots = (st) => st.hideEquipped === 2 ? [...build.slots, ...builds.flatMap(b => (b.build && b.build.slots) || [])] : build.slots;
   const hideBtn = (st, action) => `<button class="facet ${st.hideEquipped ? "on" : ""}" data-action="${action}">${st.hideEquipped === 2 ? "Hide used in builds" : "Hide equipped"}</button>`;
@@ -906,9 +921,9 @@
   }
   const canEquipGemOn = (slot, g) => { const allowed = spellEquipClasses(slot); if (allowed === null) return true; const cls = gemClass(g); return !cls || allowed.has(cls); };
   // spells already on the creature's equipped gems (inv_CritCanEquipSpellGem rule 1: never a second gem with the same spell);
-  // exceptGemId = the gem being edited, whose own spell doesn't count against it
-  const creatureSpellIds = (slot, exceptGemId = null) => new Set(((slot && slot.spellGemIds) || [])
-    .filter(id => id !== exceptGemId).map(id => { const g = spellGems.find(x => x.id === id); const sp = g && gemSpell(g); return sp ? sp.id : null; }).filter(x => x != null));
+  // exceptIdx = the creature's gem being edited, whose own spell doesn't count against it
+  const creatureSpellIds = (slot, exceptIdx = null) => new Set(slotGems(slot)
+    .filter((g, i) => i !== exceptIdx).map(g => { const sp = gemSpell(g); return sp ? sp.id : null; }).filter(x => x != null));
 
   // low-key availability labels from an entity's Realm Depth + secondary favor/guild gate:
   // "RD 25", "Favor 14", "Rep 40". Works for creatures / traits / trait-materials / spells.
@@ -2057,12 +2072,12 @@
     const primary = CREA.get(st.primaryId); if (!primary) return "";
     const secondary = st.fusionId != null ? CREA.get(st.fusionId) : null;
     const tempSlot = { cid: st.primaryId, fusion: st.fusionId, personality: st.personality, scrolls: st.scrolls || {},
-                       artifactId: null, relic: null, spellGemIds: [] };
+                       artifact: null, relic: null, gems: [] };
     const fs = finalStats(tempSlot), b = fs.base;
     // baseline = the primary WITHOUT fusion (same scrolls/personality) so each bar's coloured segment
     // shows exactly what fusing this partner does to the stat: green = raised, red = lowered.
     const soloSlot = { cid: st.primaryId, fusion: null, personality: st.personality, scrolls: st.scrolls || {},
-                       artifactId: null, relic: null, spellGemIds: [] };
+                       artifact: null, relic: null, gems: [] };
     const fs0 = finalStats(soloSlot);
     const pers = st.personality ? PERS.get(st.personality) : null;
     const mark = (k) => { if (!pers) return ""; if (pers.raise === k) return ` <span class="growth up" title="Personality +33%">↑</span>`;
@@ -2585,57 +2600,42 @@
           }
         }
       }
-      const gemNames = (slot.spellGemIds || []).map(id => { const g = spellGems.find(x => x.id === id); return g && gemSpell(g) ? gemSpell(g).name : null; }).filter(Boolean);
+      const gemNames = slotGems(slot).map(g => gemSpell(g) ? gemSpell(g).name : null).filter(Boolean);
       return { final: fs.final, cls: base.cls, traits, artLines, stoneLines, traitSlot, gemNames };
     });
   }
   async function exportBuildText(b) {
-    const libs = { artifacts, nether, spellGems };
+    const libs = { nether };
     return bio().exportText(bio().payloadFromApp(b, libs), exportViews(b));
   }
-  // payload → current party. Artifacts / stones / gems are added to the libraries, reusing an exact duplicate
-  // already there (SU_BUILDIO.sameStone / sameArtifactBody) instead of adding a copy. Each library item is claimed
-  // at most once per import: the source party is assumed legal (one artifact per creature, no stone in two
-  // artifacts), so a second identical artifact / stone in the import gets its own library entry.
+  // payload → current party. Artifacts and gems land on their creatures (creature-owned, the libraries are untouched).
+  // Nether Stones live only in their library: an exact duplicate already there (SU_BUILDIO.sameStone) is reused, each
+  // claimed at most once per import (the source party is assumed legal: no stone in two artifacts).
   function applyImportedBuild(payload, warnings) {
-    const usedGems = new Set(), usedArts = new Set(), usedStones = new Set();
-    const { sameStone, sameArtifactBody } = window.SU_BUILDIO;
+    const usedStones = new Set();
+    const { sameStone } = window.SU_BUILDIO;
     const spellId = (key) => { const s = bio().SPELL_BY_KEY.get(key); return s ? s.id : null; };
     const stoneBody = (n) => {
       const props = (n.props || []).map(p => p.cat === "spell" ? { cat: "spell", key: spellId(p.spell), trigger: p.trigger || "On Attack" } : { cat: p.cat, key: p.key, value: p.value ?? 0 })
         .filter(p => p.key != null && (p.cat !== "trait" || TRAITITEM.has(p.key)));
       return { name: n.name || `Nether Stone ${nextNetherId}`, icon: GEM_ICONS.some(g => g.key === n.icon) ? n.icon : null, props, ...(n.rarity != null ? { rarity: n.rarity } : {}) };
     };
-    const freeStone = (id) => !usedStones.has(id) && nether.some(x => x.id === id);
-    // an existing artifact's stone matches the incoming one (both empty, or same content and not yet claimed)
-    const stoneFits = (art, sb) => { const nid = (art.netherIds || [])[0];
-      if (nid == null || !nether.some(x => x.id === nid)) return !sb;
-      return !!sb && freeStone(nid) && sameStone(nether.find(x => x.id === nid), sb); };
     const ensureStone = (sb) => {
       const hit = nether.find(x => !usedStones.has(x.id) && sameStone(x, sb));
       const id = hit ? hit.id : nextNetherId++;
       if (!hit) nether.push({ id, ...sb, icon: sb.icon || (GEM_ICONS[0] || {}).key });
       usedStones.add(id); return id;
     };
-    const ensureArtifact = (a) => {
+    const importArtifact = (a) => {
       if (!a || !a.primary) return null;
-      const sb = a.nether ? stoneBody(a.nether) : null;
-      const body = { name: a.name || `Artifact ${nextArtId}`, rank: a.rank || 50, primary: a.primary, stat: (a.stat || []).slice(0, 3), trick: (a.trick || []).slice(0, 2),
-        traits: (a.traits || []).filter(id => TRAITITEM.has(id)).slice(0, 1), spells: (a.spells || []).map(spellId).filter(x => x != null).slice(0, 1) };
-      const hit = artifacts.find(x => !usedArts.has(x.id) && sameArtifactBody(x, body) && stoneFits(x, sb));
-      if (hit) { usedArts.add(hit.id); (hit.netherIds || []).forEach(id => usedStones.add(id)); return hit.id; }
-      const stoneId = sb ? ensureStone(sb) : null;
-      const id = nextArtId++; artifacts.push({ id, ...body, netherIds: stoneId != null ? [stoneId] : [], _gemMigrated: true, _rawSpell: true });
-      usedArts.add(id); return id;
+      const sb = a.nether ? stoneBody(a.nether) : null, stoneId = sb ? ensureStone(sb) : null;
+      return { name: a.name || "Artifact", rank: a.rank || 50, primary: a.primary, stat: (a.stat || []).slice(0, 3), trick: (a.trick || []).slice(0, 2),
+        traits: (a.traits || []).filter(id => TRAITITEM.has(id)).slice(0, 1), spells: (a.spells || []).map(spellId).filter(x => x != null).slice(0, 1),
+        netherIds: stoneId != null ? [stoneId] : [], _gemMigrated: true, _rawSpell: true };
     };
-    const ensureGem = (g) => {
+    const importGem = (g) => {
       const sid = spellId(g.spell); if (sid == null) { warnings.push(`Spell "${g.spell}" not found — gem skipped.`); return null; }
-      const propIds = (g.props || []).map(k => (bio().PROP_BY_KEY.get(k) || {}).id).filter(x => x != null);
-      const body = { name: "", spellId: sid, tier: g.tier ?? GT.max, propIds };
-      const hit = spellGems.find(x => !usedGems.has(x.id) && sameContent({ name: "", spellId: x.spellId, tier: x.tier ?? GT.max, propIds: x.propIds || [] }, body));
-      const id = hit ? hit.id : nextSpellGemId++;
-      if (!hit) spellGems.push({ id, ...body });
-      usedGems.add(id); return id;
+      return { spellId: sid, tier: g.tier ?? GT.max, propIds: (g.props || []).map(k => (bio().PROP_BY_KEY.get(k) || {}).id).filter(x => x != null) };
     };
     const slots = (payload.slots || []).slice(0, 6).map(s => {
       const slot = emptySlot();
@@ -2643,13 +2643,13 @@
       Object.assign(slot, { cid: s.cid, fusion: CREA.has(s.fusion) ? s.fusion : null, personality: s.personality && PERS.has(s.personality) ? s.personality : null,
         scrolls: s.scrolls || {}, skinId: s.skinId ?? null, ...(s.fuseColor != null ? { fuseColor: s.fuseColor } : {}),
         relic: s.relic && RELIC.has(s.relic.id) ? { id: s.relic.id, rank: s.relic.rank } : null });
-      slot.artifactId = ensureArtifact(s.artifact);
-      slot.spellGemIds = (s.gems || []).map(ensureGem).filter(x => x != null);
+      slot.artifact = importArtifact(s.artifact);
+      slot.gems = (s.gems || []).map(importGem).filter(x => x != null);
       return slot;
     });
     build = normalizeBuild({ schema: 3, specIds: 2, skinIds: 2, specId: SPEC.has(payload.spec) ? payload.spec : null,
       perkAlloc: payload.perkAlloc || {}, anoints: (payload.anoints || []).filter(a => SPEC.has(a.specId)), slots });
-    clearBookmarks(); persistNether(); persistArtifacts(); persistSpellGems(); persistBuild(); render();
+    clearBookmarks(); persistNether(); persistBuild(); render();
     return { creatures: slots.filter(s => s.cid != null).length };
   }
   async function copyText(text) {
@@ -3187,7 +3187,7 @@
       // the creature is just the container; each TRAIT (innate/fusion/artifact/nether) and spell-gem spell
       // it carries is the counted effect — the creature's own name never contributes.
       for (const tid of slotTraitIds(slot)) { const tr = TRAIT[tid]; if (tr) addEffect(m, tr.name, tr, "trait"); }
-      for (const gid of slot.spellGemIds || []) { const g = spellGems.find(x => x.id === gid); const sp = g ? gemSpell(g) : null; if (sp) addEffect(m, sp.name, sp, "spell gem"); }
+      for (const g of slotGems(slot)) { const sp = gemSpell(g); if (sp) addEffect(m, sp.name, sp, "spell gem"); }
       for (const g of grantedSpellList(slot)) addEffect(m, g.sp.name, g.sp, "granted spell");
       // relic (equipped per creature; Deprived ignores relics) + nether spell props
       const rel = slot.relic && !FX.ignores("relics") ? RELIC.get(slot.relic.id) : null;
@@ -3206,7 +3206,7 @@
     for (const slot of build.slots) {
       const c = CREA.get(slot.cid); if (!c) continue;
       for (const tid of slotTraitIds(slot)) { const tr = TRAIT[tid]; if (tr) push(tr.name, richText(tr.desc || ""), tr, c.name, "Trait"); }
-      for (const gid of slot.spellGemIds || []) { const g = spellGems.find(x => x.id === gid); const sp = g ? gemSpell(g) : null; if (sp) push(sp.name, richText(sp.desc || ""), sp, c.name, "Spell"); }
+      for (const g of slotGems(slot)) { const sp = gemSpell(g); if (sp) push(sp.name, richText(sp.desc || ""), sp, c.name, "Spell"); }
       for (const g of grantedSpellList(slot)) push(g.sp.name, richText(g.sp.desc || ""), g.sp, c.name, "Spell");
       const rel = slot.relic && !FX.ignores("relics") ? RELIC.get(slot.relic.id) : null;
       if (rel) push(rel.name, rel.ranks.filter(r => r.rank <= slot.relic.rank).map(r => r.desc).join(" · "), rel, c.name, "Relic", slot.relic.rank);
@@ -4640,8 +4640,8 @@
 
   // ── artifact library (equip) ───────────────────────────────────────────────
   function openArtifactLibrary(slotIdx) {
-    // no auto-selection — tiles show equip state (purple = this creature, gold = another); user picks to act
-    ovState = { kind: "artlib", slotIdx, hideEquipped: 0, sel: null, search: "", libType: null, libSort: "type", render: renderArtifactLibrary };
+    // no auto-selection — purple = the design this creature's artifact matches; user picks to act
+    ovState = { kind: "artlib", slotIdx, sel: null, search: "", libType: null, libSort: "type", render: renderArtifactLibrary };
     openOverlay(ovState.render());
   }
   const libRow = (ico, name, sub, tail = "") => `<div class="prop-row static"><span class="prop-ico">${ico ? spriteImg(ico, "px") : ""}</span><span class="prop-name">${esc(name)}${tail}</span>${sub ? `<span class="prop-stat">${esc(sub)}</span>` : ""}</div>`;
@@ -4780,7 +4780,7 @@
   };
   // spell-gem containers for an artifact: native slot fires on the type trigger; nether stones keep their own
   function artifactSpellContainers(a, slot) {
-    slot = slot || build.slots.find(s => s && s.artifactId === a.id) || null;   // equipped → that creature's relic counts
+    slot = slot || build.slots.find(s => s && s.artifact === a) || null;   // a creature's own artifact → its relic counts
     const rows = [], typeTrig = ART_TYPE_TRIGGER[a.primary], ach = artSlotChance(a, slot);
     for (const id of a.spells || []) { const sp = SPELL.get(id); if (sp) rows.push(spellGemCard(sp, typeTrig, null, ach)); }
     for (const nid of a.netherIds || []) { const n = nether.find(x => x.id === nid); if (!n) continue;
@@ -4797,25 +4797,18 @@
       ${bonusTableHtml(core, extra)}`;
   }
   // Loadout rule (mirrors freely re-socketing stones in-game): a Nether Stone may sit in any number of saved
-  // artifacts, but only ONE artifact holding it can be equipped across the active party — same as an artifact
-  // itself can only be equipped by one creature.
-  // equipped artifacts holding stone `nid`, other than `exceptArtId` and other than the one on `exceptSlot`
-  // (the slot being equipped — its current artifact is about to be replaced) → [{art, slotIdx}]
-  const netherUsers = (nid, exceptArtId, exceptSlot = null) => {
+  // artifacts, but only ONE artifact holding it can be equipped across the active party.
+  // party artifacts holding stone `nid`, other than the one on `exceptSlot` (the creature being equipped / edited) → [{art, slotIdx}]
+  const netherUsers = (nid, exceptSlot = null) => {
     const out = [];
     build.slots.forEach((s, i) => { if (i === exceptSlot) return; const b = resolveArtifact(s);
-      if (b && b.id !== exceptArtId && (b.netherIds || []).includes(nid)) out.push({ art: b, slotIdx: i }); });
+      if (b && (b.netherIds || []).includes(nid)) out.push({ art: b, slotIdx: i }); });
     return out;
   };
-  // first socketed stone of `a` already in use by ANOTHER equipped artifact → {nid, art, slotIdx} | null
+  // first socketed stone of `a` already in use by an artifact on another creature → {nid, art, slotIdx} | null
   const artNetherClash = (a, exceptSlot = null) => {
-    for (const nid of (a && a.netherIds) || []) { const u = netherUsers(nid, a.id, exceptSlot); if (u.length) return { nid, ...u[0] }; }
+    for (const nid of (a && a.netherIds) || []) { const u = netherUsers(nid, exceptSlot); if (u.length) return { nid, ...u[0] }; }
     return null;
-  };
-  // the party slot an artifact being built/edited is (or will be, on save) equipped to; null = not in the loadout
-  const artTargetSlot = (artId, slotIdx) => {
-    const held = artId != null ? build.slots.findIndex(s => s.artifactId === artId) : -1;
-    return held >= 0 ? held : (slotIdx != null ? slotIdx : null);
   };
   const clashText = (cl) => {
     const n = nether.find(x => x.id === cl.nid), cr = CREA.get(build.slots[cl.slotIdx].cid);
@@ -4826,13 +4819,14 @@
     ...(a.traits || []).flatMap(id => { const t = TRAITITEM.get(id); return t ? [t.name, t.traitName || ""] : []; }),
     ...(a.spells || []).map(id => (SPELL.get(id) || {}).name || ""),
     ...(a.netherIds || []).map(id => { const n = nether.find(x => x.id === id); return n ? n.name : ""; })].join(" ").toLowerCase();
+  // two modes: the library (Menu; slotIdx null) and the picker opened from a creature, where Equip puts a COPY of the
+  // design on that creature. Purple = the design the creature's artifact matches.
   function renderArtifactLibrary() {
     const st = ovState, manage = st.slotIdx == null;
     const slot = manage ? null : build.slots[st.slotIdx], c = slot ? CREA.get(slot.cid) : null;
-    const equippedId = slot ? slot.artifactId : null;
+    const mine = slot ? libArtOf(resolveArtifact(slot)) : null;
     const q = (st.search || "").trim().toLowerCase(), sortK = st.libSort || "recent", d = sortSign(st.libSortRev);
     let list = artifacts.filter(a => (!st.libType || a.primary === st.libType) && (!q || artSearchText(a).includes(q)));
-    if (st.hideEquipped) { const hs = hideSlots(st); list = list.filter(a => !artifactEquippedInBuild(a.id, hs) || a.id === equippedId); }
     list = list.slice().sort(sortK === "name" ? (x, y) => d * x.name.localeCompare(y.name)
       : sortK === "rank" ? (x, y) => d * ((y.rank || 50) - (x.rank || 50)) || x.name.localeCompare(y.name)
       : sortK === "type" ? (x, y) => d * String(x.primary || "").localeCompare(String(y.primary || "")) || x.name.localeCompare(y.name)
@@ -4843,24 +4837,16 @@
         <span class="sg-sort-gap"></span>
         ${libSortSeg(st, [["recent", "Recent", true], ["name", "A–Z", false], ["rank", "Rank", true], ["type", "Type", false]])}</div>`;
     const sel = st.sel != null ? artifacts.find(a => a.id === st.sel) : null;
-    // tile equip-state: purple = equipped by THIS creature. Equipped by ANOTHER creature is dimmed +
-    // not equippable in the equip wizard (mirrors an off-class spell); in manage/Menu mode it keeps the
-    // neutral "equipped somewhere" marker so you can still edit/delete it.
     const tiles = list.map(a => {
-      const eqHere = !manage && a.id === equippedId;
-      const eqOtherRaw = !eqHere && artifactEquippedInBuild(a.id);
-      const blocked = !manage && eqOtherRaw;    // equip wizard: on another creature → can't equip here
-      const eqOther = manage && eqOtherRaw;     // library marker only
-      const clash = artNetherClash(a, manage ? null : st.slotIdx);
-      const clashBlocked = !manage && !eqHere && !blocked && !!clash;   // its stone is in use on another creature
-      const title = [eqHere ? "Equipped by this creature" : blocked ? "Equipped by another creature — not available" : eqOther ? "Equipped by another creature" : "",
-        clash ? clashText(clash) + (clashBlocked ? " — not available" : "") : ""].filter(Boolean).join(" · ");
+      const eqHere = !!mine && mine.id === a.id;
+      const clash = manage ? null : artNetherClash(a, st.slotIdx);   // its stone is in an artifact on another creature
+      const title = eqHere ? "Equipped by this creature" : clash ? clashText(clash) + " — not available" : "";
       return `
-      <div class="pick-tile ${st.sel === a.id ? "selected" : ""}${eqHere ? " eq-here" : ""}${blocked || clashBlocked ? " disabled" : ""}${eqOther ? " eq-other" : ""}${clash ? " nether-clash" : ""}" data-action="artlib-sel" data-id="${a.id}"${title ? ` title="${esc(title)}"` : ""}>
+      <div class="pick-tile ${st.sel === a.id ? "selected" : ""}${eqHere ? " eq-here" : ""}${clash ? " disabled nether-clash" : ""}" data-action="artlib-sel" data-id="${a.id}"${title ? ` title="${esc(title)}"` : ""}>
         <div class="pt-sprite">${spriteImg(artIcon(a), "px")}</div>
         <div class="pt-name">${esc(a.name)}</div></div>`; }).join("")
       || `<div class="slot-sub" style="padding:10px">No artifacts${artifacts.length ? " match" : " yet — build one"}.</div>`;
-    const equippedHere = sel && equippedId === sel.id;
+    const selClash = !manage && sel ? artNetherClash(sel, st.slotIdx) : null;
     let info;
     if (sel) {
       // two views: Bonuses (resolved stat table + trait & spell-gem containers) | Sockets (raw socketed items)
@@ -4870,25 +4856,16 @@
         <span class="av-pipe">|</span>
         <button class="av-tab ${view === "sockets" ? "on" : ""}" data-action="art-view" data-v="sockets">Sockets</button></div>`;
       const viewBody = view === "sockets" ? `<div class="prop-list">${artContentRows(sel, { empties: true, emptyAction: `data-action="art-edit" data-id="${sel.id}"` })}</div>` : artifactBonusView(sel);
-      const selClash = artNetherClash(sel, manage ? null : st.slotIdx);
-      const otherNote = (!manage && !equippedHere && artifactEquippedInBuild(sel.id)
-        ? `<div class="slot-sub sg-clsnote" style="padding:8px 0">Equipped by another creature — unequip it there first to use it here.</div>` : "")
-        + (selClash ? `<div class="slot-sub sg-clsnote clash-note">${esc(clashText(selClash))}${!manage && !equippedHere ? " — unequip that artifact first to use this one here" : ""}.</div>` : "");
       info = `<div class="ns-info-head"><span class="ns-info-icon">${spriteImg(artIcon(sel), "px")}</span><h3>${esc(sel.name)}</h3></div>
-        ${otherNote}${toggle}${viewBody}`;
+        ${selClash ? `<div class="slot-sub sg-clsnote clash-note">${esc(clashText(selClash))} — unequip that artifact first to use this one here.</div>` : ""}${toggle}${viewBody}`;
     }
-    // footer selector bar (mirrors Builds): Edit/Delete act on the selection; the confirm button
-    // switches between Equip (artifact selected, equip mode) and ＋ Build new artifact (none selected).
-    const selOnOther = !manage && sel && !equippedHere && artifactEquippedInBuild(sel.id);   // on another creature
-    const selStoneClash = !manage && sel && !equippedHere && !!artNetherClash(sel, st.slotIdx);   // a stone is in use elsewhere
-    const selBlocked = selOnOther || selStoneClash;
-    const canEquip = !manage && sel && !selBlocked;
-    // single context-aware primary button: Unequip (this one is equipped) / Equip (a different selection) /
-    // Build (manage mode, or nothing selected to equip).
-    const onCreature = manage && sel && artifactEquippedInBuild(sel.id);   // menu mode: can't equip, but can unequip
-    const holder = onCreature ? build.slots.map(s => s.artifactId === sel.id && CREA.get(s.cid)).find(Boolean) : null;
-    const confAction = onCreature ? "art-unequip-any" : !canEquip ? "art-new" : equippedHere ? "art-unequip" : "art-equip";
-    const confLabel = onCreature ? "Unequip" : !canEquip ? "Build" : equippedHere ? "Unequip" : "Equip";
+    // footer: Edit/Delete act on the library selection; the confirm is Equip (creature picker + selection; Replace when the
+    // creature already has one) or Build (library, or nothing selected)
+    const canEquip = !manage && !!sel && !selClash;
+    const confirm = !manage && sel && selClash
+      ? `<button class="btn-confirm" style="min-width:96px" disabled title="Its Nether Stone is socketed in an artifact equipped on another creature">Can't equip</button>`
+      : canEquip ? `<button class="btn-confirm" style="min-width:96px" data-action="art-equip" data-id="${sel.id}">${resolveArtifact(slot) ? "Replace" : "Equip"}</button>`
+      : `<button class="btn-confirm" style="min-width:96px" data-action="art-new">Build</button>`;
     return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel">
       <div class="overlay-header"><h2>Artifacts${manage ? "" : " — " + esc(c ? c.name : "")}</h2>
         <input class="ovl-search" placeholder="Search name or socketed item…" value="${esc(st.search || "")}" data-action="lib-search">
@@ -4897,34 +4874,30 @@
         <div class="ovl-center" data-action="lib-deselect">${libBar}<div class="ovl-center-scroll"><div class="pick-grid equip-grid">${tiles}</div></div></div>
         ${sel ? `<div class="ovl-right lib-info">${info}</div>` : ""}
       </div>
-      <div class="overlay-footer">${hideBtn(st, "artlib-hide-equipped")}
+      <div class="overlay-footer">${!manage && resolveArtifact(slot) ? `<button class="btn-ghost" data-action="art-mine">‹ Equipped</button>` : `<span class="foot-info"></span>`}
         <div>
           <button class="btn-ghost" data-action="art-edit" data-id="${sel ? sel.id : ""}" ${sel ? "" : "disabled"}>Edit</button>
           <button class="btn-ghost danger" data-action="art-del" data-id="${sel ? sel.id : ""}" ${sel ? "" : "disabled"}>Delete</button>
-          ${selBlocked
-            ? `<button class="btn-confirm" style="min-width:96px" disabled title="${selOnOther ? "Equipped by another creature" : "Its Nether Stone is socketed in an artifact equipped on another creature"}">Can't equip</button>`
-            : `<button class="btn-confirm" style="min-width:96px" data-action="${confAction}"${confAction === "art-equip" || confAction === "art-unequip-any" ? ` data-id="${sel.id}"` : ""}${holder ? ` title="Unequip from ${esc(holder.name)}"` : ""}>${confLabel}</button>`}
+          ${confirm}
         </div></div>
     </div></div>`;
   }
 
-  // full-screen artifact page (detail overlay on top of the library list; ‹ Artifacts backs out to the list)
-  function openArtifactPage(artId, slotIdx) {
-    dovState = { kind: "artpage", artId, slotIdx, view: "bonuses", render: renderArtifactPage };
+  // full-screen page for a creature's OWN artifact (detail overlay on top of the picker; ‹ Artifacts backs out to the list)
+  function openArtifactPage(slotIdx) {
+    dovState = { kind: "artpage", slotIdx, view: "bonuses", render: renderArtifactPage };
     openDetail(dovState.render());
   }
   function renderArtifactPage() {
-    const st = dovState, a = artifacts.find(x => x.id === st.artId);
+    const st = dovState, slot = build.slots[st.slotIdx], a = resolveArtifact(slot);
     if (!a) { closeDetail(); return ""; }
-    const slot = st.slotIdx != null ? build.slots[st.slotIdx] : null;
-    const equippedHere = !!slot && slot.artifactId === a.id;
-    const holder = build.slots.findIndex(s => s.artifactId === a.id), holderC = holder >= 0 ? CREA.get(build.slots[holder].cid) : null;
+    const c = CREA.get(slot.cid), inLib = !!libArtOf(a);
     const view = st.view === "sockets" ? "sockets" : "bonuses";
     const toggle = `<div class="art-view-toggle">
       <button class="av-tab ${view === "bonuses" ? "on" : ""}" data-action="artpage-view" data-v="bonuses">Bonuses</button>
       <span class="av-pipe">|</span>
       <button class="av-tab ${view === "sockets" ? "on" : ""}" data-action="artpage-view" data-v="sockets">Sockets</button></div>`;
-    const clash = artNetherClash(a);
+    const clash = artNetherClash(a, st.slotIdx);
     const p = PRIMARY.find(x => x.property === a.primary);
     return `<div class="ovl-backdrop" data-action="detail-backdrop"><div class="overlay-panel detail">
       <div class="overlay-header"><button class="btn-ghost" data-action="artpage-back">‹ Artifacts</button>
@@ -4933,26 +4906,31 @@
         <div class="gs-detail-head">
           <div class="gs-god-sprite">${spriteImg(artIcon(a), "px")}</div>
           <div class="gs-god-name">${esc(a.name)}</div>
-          <div class="slot-sub">${esc(a.primary || "—")}${p ? ` · ${esc(p.stat)} +${p.perRank[a.rank || 50] || 0}%` : ""} · Rank ${a.rank || 50}${holderC ? ` · equipped by ${esc(holderC.name)}` : ""}</div></div>
+          <div class="slot-sub">${esc(a.primary || "—")}${p ? ` · ${esc(p.stat)} +${p.perRank[a.rank || 50] || 0}%` : ""} · Rank ${a.rank || 50}${c ? ` · ${esc(c.name)}` : ""}</div></div>
         <div class="ovl-center-scroll artpage-body">
           ${clash ? `<div class="slot-sub sg-clsnote clash-note">${esc(clashText(clash))}.</div>` : ""}
           ${toggle}${view === "sockets" ? `<div class="prop-list">${artContentRows(a, { empties: true })}</div>` : artifactBonusView(a)}</div>
       </div></div>
       <div class="overlay-footer"><button class="btn-ghost" data-action="artpage-back">‹ Back</button>
         <div><button class="btn-ghost" data-action="artpage-edit">Edit</button>
-        ${equippedHere ? `<button class="btn-confirm" data-action="artpage-unequip">Unequip</button>` : ""}</div></div>
+        <button class="btn-ghost" data-action="artpage-savelib" ${inLib ? "disabled" : ""}>${inLib ? "In library" : "Save to library"}</button>
+        <button class="btn-ghost danger" data-action="artpage-unequip">Unequip</button></div></div>
     </div></div>`;
   }
 
   // ── artifact builder — guided wizard: 1) pick artifact  2) fill slots  3) name ──
-  function openArtifactBuilder(artId, slotIdx) {
+  // artId = a library design to edit; own = edit the creature's own artifact on slotIdx; neither = a new one (onto the
+  // creature when opened from its picker, into the library from the Menu). toSlot = the creature the draft lands on.
+  function openArtifactBuilder(artId, slotIdx, own = false) {
     let draft;
-    if (artId != null) draft = JSON.parse(JSON.stringify(artifacts.find(a => a.id === artId)));
+    if (own) draft = copyArtifact(resolveArtifact(build.slots[slotIdx]));
+    else if (artId != null) draft = JSON.parse(JSON.stringify(artifacts.find(a => a.id === artId)));
     else draft = { id: null, name: `Artifact ${nextArtId}`, rank: 50, primary: null, stat: [], trick: [], traits: [], spells: [], netherIds: [] };
-    // editing an existing artifact jumps straight to the slots step. retLib = the library view we came from
-    // (filters / sort / selection), restored on Save or Cancel so the overlay never drops back to the home screen.
+    const toSlot = own || (artId == null && slotIdx != null) ? slotIdx : null;
+    // editing jumps straight to the slots step. retLib = the library view we came from (filters / sort / selection),
+    // restored on Save or Cancel so the overlay never drops back to the home screen.
     const retLib = ovState && ovState.kind === "artlib" ? ovState : null;
-    ovState = { kind: "artbuild", artId, slotIdx, draft, step: artId != null ? "slots" : "type", pickType: null, search: "", retLib, render: renderArtifactBuilder };
+    ovState = { kind: "artbuild", artId, slotIdx, own, toSlot, saveLib: false, draft, step: own || artId != null ? "slots" : "type", pickType: null, search: "", retLib, render: renderArtifactBuilder };
     openOverlay(ovState.render());
   }
   function backToArtLib(st, selId) {
@@ -5057,8 +5035,7 @@
     } else {
       // nether stones: filters (has trait / has spell / hide in use) + sort (recent · name · a core stat %)
       const sum = (n) => netherBonusRows(n).core;
-      const tgt = artTargetSlot(a.id, st.slotIdx);
-      const inUse = (n) => netherUsers(n.id, a.id, tgt);
+      const inUse = (n) => netherUsers(n.id, st.toSlot);
       const list = nether.filter(n => (!q || netherSearchText(n).includes(q))
           && (!st.nsTrait || (n.props || []).some(p => p.cat === "trait"))
           && nsSpellMatch(n, st.nsSpell)
@@ -5215,7 +5192,8 @@
     } else { // name
       body = `<div class="ovl-center"><div class="ovl-center-scroll">
         <div class="build-section"><h3>Name your artifact</h3>
-          <input class="ovl-search name-field" placeholder="Artifact name" value="${esc(a.name)}" data-action="artb-name" style="max-width:320px"></div>
+          <input class="ovl-search name-field" placeholder="Artifact name" value="${esc(a.name)}" data-action="artb-name" style="max-width:320px">
+          ${st.toSlot != null ? `<div style="margin-top:8px"><button class="facet${st.saveLib ? " on" : ""}" data-action="artb-savelib">Save to library</button></div>` : ""}</div>
         <div class="build-section"><h3>Live bonus (rank ${rank})</h3><div class="stat-grid">
           ${STAT_KEYS.map(k => `<div class="stat-row ${preview[k] ? "hl-med" : ""}"><span class="stat-name">${STAT_LABEL[k]}</span>
             <span class="stat-val art" style="grid-column:2/5">${preview[k] ? "+" + preview[k] + "%" : "—"}</span></div>`).join("")}</div></div>
@@ -5414,7 +5392,7 @@
   function gatherSlotSpells(slot, citrine = {}, citSpells = []) {
     const out = [], seen = new Set();
     const add = (sp) => { if (sp && !sp.noManual && !seen.has(sp.id)) { seen.add(sp.id); out.push(sp); } };
-    for (const gid of slot.spellGemIds || []) { const g = spellGems.find(x => x.id === gid); if (!g) continue;
+    for (const g of slotGems(slot)) {
       const acts = [...new Set((g.propIds || []).map(pid => CITRINE_ACTION[(SPELLPROP.get(pid) || {}).key]).filter(Boolean))];
       if (acts.length) { acts.forEach(a => citrine[a] = (citrine[a] || 0) + 1);
         const sp = gemSpell(g); if (sp && !sp.noManual) citSpells.push({ sp, acts }); continue; }
@@ -5427,7 +5405,7 @@
   const mLine = (en, why, chain) => ({ en, why, chain: !!chain });
   const castOn = (s) => s.multi ? `cast ${s.name}` : s.sp.aim === "self" ? `cast ${s.name} on this creature` : `cast ${s.name} on that creature`;
   // spells cast per cast of a recast spell: Replicate's count, or Glory's chance × its other gems (capped)
-  const recastValue = (x, s) => s.recast.n || Math.min(s.recast.max, s.recast.pct * Math.max(0, (x.slot.spellGemIds || []).length - 1));
+  const recastValue = (x, s) => s.recast.n || Math.min(s.recast.max, s.recast.pct * Math.max(0, slotGems(x.slot).length - 1));
   const relicText = (slot) => { const r = slot.relic ? RELIC.get(slot.relic.id) : null;
     return r ? r.ranks.filter(k => k.rank <= slot.relic.rank).map(k => k.desc).join(" ") : ""; };
   // per-creature context every rule reads from — classify once, expose grouped spells + action flags
@@ -5781,7 +5759,7 @@
         by.get("damage").push({ kind: "artprop", prop, value, unit, art });
     }
     // equipped spell gems' trigger properties
-    for (const gid of slot.spellGemIds || []) { const g = spellGems.find(x => x.id === gid), sp = gemSpell(g); if (!sp) continue;
+    for (const g of slotGems(slot)) { const sp = gemSpell(g); if (!sp) continue;
       for (const pid of g.propIds || []) { const p = SPELLPROP.get(pid), k = p && TRIG_GEM_PROP[p.key]; if (k) by.get(k).push({ kind: "gemprop", g, sp, p }); } }
     // spec perks (allocated rank) + anointments (full rank) whose trigger scope covers this creature
     const perks = new Map(), spec = curSpec();
@@ -6187,17 +6165,15 @@
 
   // ── spell gems: library + stepped wizard (1 spell + up to 3 property items) ──
   function openSpellGems() {   // library (manage mode when equipCtx is null)
-    ovState = { kind: "spellgemlib", equipCtx: null, hideEquipped: 0, sel: null, search: "", libCls: null, libSort: "cls", render: renderSpellGemLib };
+    ovState = { kind: "spellgemlib", equipCtx: null, sel: null, search: "", libCls: null, libSort: "cls", render: renderSpellGemLib };
     openOverlay(ovState.render());
   }
   function renderSpellGemLib() {
-    const st = ovState, ctx = st.equipCtx;   // {kind:'artifact'|'creature'} when equipping
-    const equipped = ctx ? new Set(ctx.equipped()) : null;
+    const st = ovState, ctx = st.equipCtx;   // {kind:'creature', slotIdx} when picking for a creature: Equip adds a COPY
     const q = (st.search || "").trim().toLowerCase(), sortK = st.libSort || "cls", d = sortSign(st.libSortRev);
     const gemText = (g) => { const sp = gemSpell(g); return [gemName(g), sp ? sp.name : "", sp ? sp.desc || "" : "",
       ...(g.propIds || []).map(pid => (SPELLPROP.get(pid) || {}).name || "")].join(" ").toLowerCase(); };
     let list = spellGems.filter(g => (!st.libCls || gemClass(g) === st.libCls) && (!q || gemText(g).includes(q)) && TagFilter.match(st, "spell", gemSpell(g)));
-    if (st.hideEquipped) { const hs = hideSlots(st); list = list.filter(g => !spellGemEquippedInBuild(g.id, hs) || (equipped && equipped.has(g.id))); }
     const potOf = (g) => { const sp = gemSpell(g); return sp ? potencyRank(sp) : POTENCY_ORDER.length; };
     // game class order: the gem's current class (Opal swap counts), or with libSortBase the spell's own class
     const clsRank = (g) => { const i = SPELL_CLASSES.indexOf(st.libSortBase ? (gemSpell(g) || {}).cls : gemClass(g)); return i < 0 ? SPELL_CLASSES.length : i; };
@@ -6221,25 +6197,23 @@
     const creatureCls = creatureSlot ? (baseStats(creatureSlot) || {}).cls : null;
     const allowedCls = creatureSlot ? spellEquipClasses(creatureSlot) : null;   // null = any class permitted
     const gemAllowed = (g) => !creatureSlot || allowedCls === null || allowedCls.has(gemClass(g));
-    const haveSpells = creatureSlot ? creatureSpellIds(creatureSlot) : new Set();   // spells on this creature's equipped gems
-    const dupSpell = (g) => !!creatureSlot && !equipped.has(g.id) && !!gemSpell(g) && haveSpells.has(gemSpell(g).id);
-    // tile equip-state highlight: purple = equipped on THIS creature, gold = equipped on another
-    // (in manage/Menu mode every equipped gem is "another")
+    const mine = slotGems(creatureSlot);                                            // the creature's own gems
+    const haveSpells = creatureSlot ? creatureSpellIds(creatureSlot) : new Set();   // spells on this creature's gems
+    const full = !!creatureSlot && mine.length >= creatureSlotMax(creatureSlot);
+    // purple = a design this creature's gem matches; it and any other gem of that spell can't be added again
+    const eqHereOf = (g) => mine.some(m => sameGem(m, g));
+    const dupSpell = (g) => !!creatureSlot && !eqHereOf(g) && !!gemSpell(g) && haveSpells.has(gemSpell(g).id);
     const tiles = list.map(g => {
-      const eqHere = !!ctx && equipped.has(g.id);
-      const eqOther = !eqHere && spellGemEquippedInBuild(g.id);
+      const eqHere = !!creatureSlot && eqHereOf(g);
       const wrongClass = creatureSlot && !eqHere && !gemAllowed(g);
-      const blockOther = !!ctx && eqOther;        // equip wizard: on another creature → not equippable
       const dupHere = dupSpell(g);                // same spell already on this creature
-      const blocked = wrongClass || blockOther || dupHere;
-      const eqOtherMarker = !ctx && eqOther;      // manage library marker only
+      const blocked = wrongClass || dupHere;
       const gcls = gemClass(g);
       const title = wrongClass ? `${gcls || "This"} spell — can't equip on a ${creatureCls || "different"}-class creature`
-        : blockOther ? "Equipped on another creature — not available"
         : dupHere ? "Spell already equipped on this creature"
-        : eqHere ? "Equipped on this creature" : eqOtherMarker ? "Equipped on another creature" : "";
+        : eqHere ? "Equipped on this creature" : "";
       return `
-      <div class="pick-tile ${st.sel === g.id ? "selected" : ""}${eqHere ? " eq-here" : ""}${blocked ? " disabled" : ""}${eqOtherMarker ? " eq-other" : ""}" data-action="sg-sel" data-id="${g.id}"${title ? ` title="${esc(title)}"` : ""}>
+      <div class="pick-tile ${st.sel === g.id ? "selected" : ""}${eqHere ? " eq-here" : ""}${blocked ? " disabled" : ""}" data-action="sg-sel" data-id="${g.id}"${title ? ` title="${esc(title)}"` : ""}>
         ${gemSwapClass(g) ? `<span class="pt-cls sg-opal" style="--pt-cls:${clsColor((gemSpell(g) || {}).cls)}" title="Opal: ${esc((gemSpell(g) || {}).cls || "")} spell, now ${esc(gcls)}"></span>` : ""}
         <div class="pt-sprite">${spriteImg(gemIcon(g), "px")}</div>
         <div class="pt-name">${esc(gemName(g))}</div></div>`; }).join("")
@@ -6255,23 +6229,21 @@
            ${spellStatsHtml(sp, sel)}`
         : `<div class="slot-sub" style="padding:6px">No spell chosen.</div>`;
       const gcls = gemClass(sel);
-      const clsNote = creatureSlot && !equipped.has(sel.id) && !gemAllowed(sel)
+      const clsNote = creatureSlot && !eqHereOf(sel) && !gemAllowed(sel)
         ? `<div class="slot-sub sg-clsnote" style="padding:8px 0">${esc(gcls || "This")}-class spell — a ${esc(creatureCls || "different")}-class creature can't equip it (an Opal or the right trait is needed).</div>`
-        : (ctx && !equipped.has(sel.id) && spellGemEquippedInBuild(sel.id)
-          ? `<div class="slot-sub sg-clsnote" style="padding:8px 0">Equipped on another creature — unequip it there first to use it here.</div>`
-          : dupSpell(sel) ? `<div class="slot-sub sg-clsnote" style="padding:8px 0">This spell is already equipped on this creature — a creature can't hold two gems of the same spell.</div>` : "");
+        : dupSpell(sel) ? `<div class="slot-sub sg-clsnote" style="padding:8px 0">This spell is already equipped on this creature — a creature can't hold two gems of the same spell.</div>` : "";
       info = `<div class="ns-info-head"><span class="ns-info-icon">${spriteImg(gemIcon(sel), "px")}</span><h3>${esc(gemName(sel))}</h3><span class="rank-badge">Lv ${gemTier(sel)}</span></div>
         ${clsNote}${spellBlock}
         ${propRows ? `<div class="section-label">Enchants</div><div class="prop-list">${propRows}</div>` : ""}`;
     }
-    // footer selector bar (mirrors Artifacts/Builds): Edit/Delete act on the selection; the confirm
-    // switches between Equip (equip context + selection) and ＋ Build new (manage mode / no selection).
-    const on = ctx && sel ? equipped.has(sel.id) : false;
-    const selWrongClass = creatureSlot && sel && !on && !gemAllowed(sel);       // wrong-class, no permission
-    const selOnOther = !!ctx && sel && !on && spellGemEquippedInBuild(sel.id);  // already on another creature
-    const selDup = !!sel && dupSpell(sel);                                       // same spell already on this creature
-    const selBlocked = selWrongClass || selOnOther || selDup;
-    const canEquip = !!ctx && !!sel && !selBlocked;
+    // footer selector bar (mirrors Artifacts/Builds): Edit/Delete act on the library selection; the confirm
+    // switches between Equip (creature picker + selection: adds a copy) and ＋ Build new (manage mode / no selection).
+    const selHere = !!creatureSlot && !!sel && eqHereOf(sel);
+    const selWrongClass = creatureSlot && sel && !selHere && !gemAllowed(sel);   // wrong-class, no permission
+    const selDup = !!sel && (selHere || dupSpell(sel));                          // same spell already on this creature
+    const selFull = !!sel && full;                                               // every spell slot is taken
+    const selBlocked = !!creatureSlot && (selWrongClass || selDup || selFull);
+    const canEquip = !!creatureSlot && !!sel && !selBlocked;
     // only render the info panel when there's something selected (no empty placeholder panel)
     const infoPanel = sel ? `<div class="ovl-right lib-info">${info}</div>` : "";
     return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel">
@@ -6282,28 +6254,35 @@
         <div class="ovl-center" data-action="lib-deselect">${libBar}<div class="ovl-center-scroll"><div class="pick-grid equip-grid">${tiles}</div></div></div>
         ${infoPanel}
       </div>
-      <div class="overlay-footer">${hideBtn(st, "sg-hide-equipped")}
+      <div class="overlay-footer">${mine.length || (creatureSlot && grantedSpellList(creatureSlot).length) ? `<button class="btn-ghost" data-action="sg-mine">‹ Equipped</button>` : `<span class="foot-info"></span>`}
         <div>
           <button class="btn-ghost" data-action="sg-edit" data-id="${sel ? sel.id : ""}" ${sel ? "" : "disabled"}>Edit</button>
           <button class="btn-ghost danger" data-action="sg-del" data-id="${sel ? sel.id : ""}" ${sel ? "" : "disabled"}>Delete</button>
-          ${ctx && selBlocked
-            ? `<button class="btn-confirm" style="min-width:96px" disabled title="${selOnOther ? "Equipped on another creature" : selDup ? "Spell already equipped on this creature" : "Wrong class for this creature"}">Can't equip</button>`
-            : `<button class="btn-confirm" style="min-width:96px" data-action="${canEquip ? "sg-equip" : "sg-new"}" ${canEquip ? `data-id="${sel.id}"` : ""}>${canEquip ? (on ? "Unequip" : "Equip") : "＋ Build new"}</button>`}
+          ${sel && selBlocked
+            ? `<button class="btn-confirm" style="min-width:96px" disabled title="${selDup ? "Spell already equipped on this creature" : selFull ? "No free spell slot" : "Wrong class for this creature"}">Can't equip</button>`
+            : `<button class="btn-confirm" style="min-width:96px" data-action="${canEquip ? "sg-equip" : "sg-new"}" ${canEquip ? `data-id="${sel.id}"` : ""}>${canEquip ? "Equip" : "＋ Build new"}</button>`}
         </div></div>
     </div></div>`;
   }
-  // retSlot = the creature whose equip list opened the builder (null = the plain library); Save / Cancel go back there
-  function openSpellGemBuilder(id, retSlot = null) {
-    const draft = id != null ? JSON.parse(JSON.stringify(spellGems.find(g => g.id === id)))
-      : { id: null, name: "", spellId: null, tier: GT.max, propIds: [] };
-    ovState = { kind: "sgbuild", editId: id, retSlot, draft, step: id != null ? "props" : "spell", search: "", render: renderSpellGemBuilder };
+  // retSlot = the creature whose picker opened the builder (null = the plain library); Save / Cancel go back there.
+  // libId = a library gem to edit; ownIdx = edit that creature's own gem #ownIdx. toCreature: the gem lands on the
+  // creature (its own gem, or a new one built from its picker while it has a free slot) instead of the library.
+  function openSpellGemBuilder(libId, retSlot = null, ownIdx = null) {
+    const own = retSlot != null && ownIdx != null ? slotGems(build.slots[retSlot])[ownIdx] : null;
+    const draft = own ? copyGem(own) : libId != null ? JSON.parse(JSON.stringify(spellGems.find(g => g.id === libId)))
+      : { id: null, spellId: null, tier: GT.max, propIds: [] };
+    const sl = retSlot != null ? build.slots[retSlot] : null;
+    const toCreature = !!own || (libId == null && !!sl && slotGems(sl).length < creatureSlotMax(sl));
+    ovState = { kind: "sgbuild", editId: libId, ownIdx: own ? ownIdx : null, toCreature, saveLib: false, retSlot, draft,
+      step: own || libId != null ? "props" : "spell", search: "", render: renderSpellGemBuilder };
     openOverlay(ovState.render());
   }
-  // back from the builder to the list it came from, optionally with a gem selected (a creature's list keeps its
-  // equip context, so a freshly built gem shows Equip straight away)
-  function backToGemList(retSlot, selId) {
+  // back from the builder to the list it came from, optionally with a library gem selected; a creature's own gem
+  // goes back to its Spells page
+  function backToGemList(retSlot, selId, toPage = false) {
     if (retSlot != null && build.slots[retSlot] && build.slots[retSlot].cid != null) openCreatureSpells(retSlot); else openSpellGems();
     if (selId != null) { ovState.sel = selId; refreshOverlay(); }
+    if (toPage && retSlot != null && build.slots[retSlot] && build.slots[retSlot].cid != null) openSpellsPage(retSlot);
   }
   const gemListRetSlot = () => (ovState && ovState.equipCtx && ovState.equipCtx.kind === "creature" ? ovState.equipCtx.slotIdx : null);
   function renderSpellGemBuilder() {
@@ -6311,7 +6290,7 @@
     let body = "", footer = "";
     if (st.step === "spell") {
       // built from a creature's list: spells already on that creature's other gems are faded out (the game refuses a second gem with the same spell)
-      const dup = st.retSlot != null ? creatureSpellIds(build.slots[st.retSlot], st.editId) : new Set();
+      const dup = st.retSlot != null ? creatureSpellIds(build.slots[st.retSlot], st.ownIdx) : new Set();
       const rows = spellPickRows(st, spellPickList(st), s => spellRow(s, { chosen: g.spellId === s.id, off: dup.has(s.id), attrs: `data-action="sg-spell" data-id="${s.id}"` }));
       // right info panel — preview the highlighted spell's full effect + stats before committing to it
       // (only shown once a spell is chosen; no empty placeholder panel)
@@ -6364,8 +6343,11 @@
           ${overCount ? `<div class="slot-sub ns-issue" style="text-align:left;padding-top:6px">⚠ Level ${tier} has ${slots} property slot${slots === 1 ? "" : "s"} — remove ${overCount} or raise the level.</div>` : ""}
         </div>
         ${picker}</div>`;
+      // onto a creature: its class rule applies (an Opal can re-class the gem, so it's checked here, not at the spell step)
+      const wrongCls = st.toCreature && !canEquipGemOn(build.slots[st.retSlot], g);
       footer = `<button class="btn-ghost" data-action="sgb-back">‹ Back</button>
-        <button class="btn-confirm" data-action="sg-save" ${overCount ? `disabled title="More properties than this level allows"` : ""}>Save Spell Gem</button>`;
+        ${st.toCreature ? `<button class="facet${st.saveLib ? " on" : ""}" data-action="sg-savelib">Save to library</button>` : ""}
+        <button class="btn-confirm" data-action="sg-save" ${overCount ? `disabled title="More properties than this level allows"` : wrongCls ? `disabled title="Wrong class for this creature"` : ""}>Save Spell Gem</button>`;
     }
     // opened from a creature's spell list: keep that creature's slot pips (spellSlotDots) in the header
     const pipSlot = st.retSlot != null && build.slots[st.retSlot] && build.slots[st.retSlot].cid != null ? build.slots[st.retSlot] : null;
@@ -6393,15 +6375,15 @@
 
   // the tile's Spells button: equipped gems / slots, then +N granted spells (they use no slot)
   function spellsBtn(slot, i) {
-    const n = (slot.spellGemIds || []).length, gr = grantedSpellList(slot).length;
+    const n = slotGems(slot).length, gr = grantedSpellList(slot).length;
     return `<button class="slot-mini ${n || gr ? "on" : ""}" data-action="creature-spells" data-slot="${i}" title="Spell gems">Spells${n ? ` ${n}/${creatureSlotMax(slot)}` : ""}${gr ? ` +${gr}` : ""}</button>`;
   }
   // creature spell-slot header: one circle per equipped gem in its spell's base class colour, then an outlined
   // "empty" circle per open slot (total = the creature's slot count incl. perk/trait grants). Shared by the Spells
   // page and the equip list opened from a creature's Spells button.
   function spellSlotDots(slot) {
-    const max = creatureSlotMax(slot), ids = slot.spellGemIds || [];
-    const dots = ids.map(id => { const sp = gemSpell(spellGems.find(x => x.id === id)), cls = sp ? sp.cls : null;
+    const max = creatureSlotMax(slot), ids = slotGems(slot);
+    const dots = ids.map(g => { const sp = gemSpell(g), cls = sp ? sp.cls : null;
       return `<span class="sdot" style="--dc:${clsColor(cls)}" title="${esc(sp ? `${sp.name} · ${cls || "—"}` : "Spell gem")}"></span>`; });
     for (let i = ids.length; i < max; i++) dots.push(`<span class="sdot empty" title="Empty spell slot"></span>`);
     return `<span class="spell-dots" title="${ids.length}/${max} spell slots">${dots.join("")}</span>`;
@@ -6410,15 +6392,16 @@
     const slot = build.slots[slotIdx], c = CREA.get(slot.cid);
     return `${lead}<h2 class="spells-hdr-title">Spells — ${esc(c ? c.name : "")}</h2>${spellSlotDots(slot)}`;
   };
-  // full-screen Spells page (detail overlay over the equip list): one tile per equipped gem — spell description,
-  // spell stats and the gem's properties at its level. ‹ Spell Gems backs out to the list.
+  // full-screen Spells page (detail overlay over the library picker): one tile per gem the creature owns — spell
+  // description, spell stats and the gem's properties at its level, with Edit / Save to library / Remove. ‹ Spell Gems
+  // backs out to the library to add more.
   function openSpellsPage(slotIdx) {
     dovState = { kind: "spellpage", slotIdx, render: renderSpellsPage };
     openDetail(dovState.render());
   }
   function renderSpellsPage() {
     const st = dovState, slot = build.slots[st.slotIdx];
-    const gems = (slot.spellGemIds || []).map(id => spellGems.find(g => g.id === id)).filter(Boolean);
+    const gems = slotGems(slot);
     const granted = grantedSpellList(slot);
     if (!gems.length && !granted.length) { closeDetail(); return ""; }
     const tiles = gems.map((g, gi) => {
@@ -6428,29 +6411,30 @@
       const swapped = gemSwapClass(g);
       // ▲▼ reorder the equipped gems (the header's class-colour dots follow the same order)
       const mv = gems.length > 1 ? moveBtns("spt-move", "spellpage-move", `data-i="${gi}"`, gi, gems.length - 1, true) : "";
-      return `<div class="art-spellcard spell-page-tile apx-clickable" data-action="spellpage-sel" data-id="${g.id}" title="Show in the Spell Gems list">
+      const inLib = !!libGemOf(g);
+      const acts = `<div class="spt-acts"><button class="btn-ghost" data-action="sgp-edit" data-i="${gi}">Edit</button>
+        <button class="btn-ghost" data-action="sgp-lib" data-i="${gi}" ${inLib ? "disabled" : ""}>${inLib ? "In library" : "Save to library"}</button>
+        <button class="btn-ghost danger" data-action="sgp-rm" data-i="${gi}">Remove</button></div>`;
+      return `<div class="art-spellcard spell-page-tile">
         <div class="art-spellcard-head">${mv}<span class="prop-ico">${spriteImg(gemIcon(g), "px")}</span>
           <b>${esc(gemName(g))}</b>${sp && gemName(g) !== sp.name ? `<span class="slot-sub">${esc(sp.name)}</span>` : ""}
           <span class="spt-tags">${sp ? clsTag(sp.cls, swapped ? ` → ${esc(swapped)}` : "") : ""}<span class="rank-badge">Lv ${tier}</span></span></div>
         ${sp && sp.desc ? `<div class="trait-desc">${perkText(sp.desc)}</div>` : ""}
         ${sp ? spellStatsHtml(sp, g) : ""}
-        ${props ? `<div class="prop-list spt-props">${props}</div>` : ""}</div>`;
+        ${props ? `<div class="prop-list spt-props">${props}</div>` : ""}${acts}</div>`;
     }).join("");
     return `<div class="ovl-backdrop" data-action="detail-backdrop"><div class="overlay-panel detail">
       <div class="overlay-header spells-hdr">${spellsHeaderHtml(st.slotIdx, `<button class="btn-ghost" data-action="spellpage-back">‹ Spell Gems</button>`)}<button class="ovl-close" data-action="close-detail">✕</button></div>
       <div class="overlay-body"><div class="ovl-center"><div class="ovl-center-scroll"><div class="spell-page-list">${tiles}${granted.length ? `<div class="section-label">Granted</div>${granted.map(grantedTile).join("")}` : ""}</div></div></div></div>
       <div class="overlay-footer"><button class="btn-ghost" data-action="spellpage-back">‹ Back</button>
-        <button class="btn-confirm" data-action="spellpage-done">Done</button></div>
+        <div>${gems.length < creatureSlotMax(slot) ? `<button class="btn-ghost" data-action="sgp-new">＋ New</button>` : ""}
+        <button class="btn-confirm" data-action="spellpage-done">Done</button></div></div>
     </div></div>`;
   }
 
-  // creature spell slots (up to 3 equipped spell gems) — equip from the library
+  // a creature's spell gems: the library as a picker (Equip adds a copy), with its own gems on the Spells page on top
   function openCreatureSpells(slotIdx) {
-    ovState = { kind: "spellgemlib", hideEquipped: 0, sel: null, search: "", libCls: null, libSort: "cls", equipCtx: {
-      kind: "creature", slotIdx,
-      equipped: () => build.slots[slotIdx].spellGemIds,
-      max: creatureSlotMax(build.slots[slotIdx]),
-    }, render: renderSpellGemLib };
+    ovState = { kind: "spellgemlib", sel: null, search: "", libCls: null, libSort: "cls", equipCtx: { kind: "creature", slotIdx }, render: renderSpellGemLib };
     openOverlay(ovState.render());
   }
 
@@ -6469,14 +6453,18 @@
       case "pick-creature": { const si = +t.dataset.slot; if (si >= creatureCap()) break; openCreaturePicker(si); break; }
       // with something equipped, open its page first; backing out lands on the list to pick another
       case "equip-artifact": { const si = +t.dataset.slot; openArtifactLibrary(si);
-        const a = resolveArtifact(build.slots[si]); if (a) { ovState.sel = a.id; refreshOverlay(); openArtifactPage(a.id, si); } break; }
+        const a = resolveArtifact(build.slots[si]); if (a) { const m = libArtOf(a); if (m) { ovState.sel = m.id; refreshOverlay(); } openArtifactPage(si); } break; }
       case "build-relic": { const si = +t.dataset.slot; openRelicBuilder(si);
         const r = build.slots[si].relic; if (r && RELIC.get(r.id)) openRelicDetail(r.id); break; }
       case "artpage-back": closeDetail(); break;
       case "artpage-view": dovState.view = t.dataset.v; refreshDetail(); break;
-      case "artpage-edit": { const { artId, slotIdx } = dovState; closeDetail(); openArtifactBuilder(artId, slotIdx);
+      case "artpage-edit": { const { slotIdx } = dovState; closeDetail(); openArtifactBuilder(null, slotIdx, true);
         if (t.dataset.t) { ovState.pickType = t.dataset.t; refreshOverlay(true); } break; }   // empty-slot box → open that slot's picker
-      case "artpage-unequip": build.slots[dovState.slotIdx].artifactId = null; persistBuild(); closeDetail(); render(); refreshOverlay(); break;
+      // a creature-only artifact (no matching library design) is lost on Unequip → two taps
+      case "artpage-unequip": { const sl = build.slots[dovState.slotIdx], go = () => { sl.artifact = null; persistBuild(); closeDetail(); render(); refreshOverlay(); };
+        libArtOf(resolveArtifact(sl)) ? go() : armOrDo(t, go); break; }
+      case "artpage-savelib": { const a = resolveArtifact(build.slots[dovState.slotIdx]); if (!a || libArtOf(a)) break;
+        const c = { ...copyArtifact(a), id: nextArtId++ }; artifacts.push(c); persistArtifacts(); if (ovState) ovState.sel = c.id; refreshDetail(); refreshOverlay(); break; }
       case "relic-unequip": build.slots[dovState.slotIdx].relic = null; persistBuild(); closeDetail(); closeOverlay(); render(); break;
       case "creature-detail": openCreatureDetail(+t.dataset.slot); break;
       case "crea-info": e.stopPropagation(); openCreaturePreview(+t.dataset.cid); break;
@@ -6766,16 +6754,15 @@
       // artifact library + builder
       case "artlib-sel": { const id = +t.dataset.id; ovState.sel = ovState.sel === id ? null : id; refreshOverlay(); break; }
       case "art-view": ovState.artView = t.dataset.v; refreshOverlay(); break;
-      case "artlib-hide-equipped": e.stopPropagation(); ovState.hideEquipped = ((+ovState.hideEquipped || 0) + 1) % 3; refreshOverlay(); break;
-      case "art-equip": { const id = +t.dataset.id; if (artifactEquippedInBuild(id)) break;   // exclusive: already on another creature
-        if (artNetherClash(artifacts.find(a => a.id === id), ovState.slotIdx)) break;          // exclusive: its stone is in use elsewhere
-        build.slots[ovState.slotIdx].artifactId = id; persistBuild(); closeOverlay(); render(); break; }
-      case "art-unequip": build.slots[ovState.slotIdx].artifactId = null; persistBuild(); render(); refreshOverlay(); break;   // stay → pick another
-      case "art-unequip-any": { const id = +t.dataset.id; build.slots.forEach(s => { if (s.artifactId === id) s.artifactId = null; });
-        persistBuild(); render(); refreshOverlay(); break; }
+      // Equip = a copy of the design onto the creature; replacing a creature-only artifact (not in the library) takes two taps
+      case "art-equip": { const a = artifacts.find(x => x.id === +t.dataset.id), sl = build.slots[ovState.slotIdx]; if (!a || !sl) break;
+        if (artNetherClash(a, ovState.slotIdx)) break;          // exclusive: its stone is in use on another creature
+        const go = () => { sl.artifact = copyArtifact(a); persistBuild(); closeOverlay(); render(); };
+        const cur = resolveArtifact(sl); cur && !libArtOf(cur) ? armOrDo(t, go) : go(); break; }
+      case "art-mine": openArtifactPage(ovState.slotIdx); break;
       case "art-new": openArtifactBuilder(null, ovState.slotIdx); break;
       case "art-edit": openArtifactBuilder(+t.dataset.id, ovState.slotIdx); break;
-      case "art-del": armOrDo(t, () => { const id = +t.dataset.id; artifacts = artifacts.filter(a => a.id !== id); pruneAllBuildRefs(); if (ovState.sel === id) ovState.sel = null; persistArtifacts(); render(); refreshOverlay(); }); break;   // render(): the home tile drops the artifact
+      case "art-del": armOrDo(t, () => { const id = +t.dataset.id; artifacts = artifacts.filter(a => a.id !== id); if (ovState.sel === id) ovState.sel = null; persistArtifacts(); refreshOverlay(); }); break;   // creatures keep their own copies
       case "artb-next": ovState.step = ovState.step === "type" ? "slots" : "name"; ovState.pickType = null; ovState.preview = null; ovState.search = ""; refreshOverlay(true); break;
       case "artb-back": ovState.step = ovState.step === "name" ? "slots" : "type"; ovState.pickType = null; ovState.preview = null; ovState.search = ""; refreshOverlay(true); break;
       case "artb-closecat": ovState.pickType = null; ovState.preview = null; ovState.search = ""; ovState.bkOnly = false; refreshOverlay(true); break;
@@ -6799,8 +6786,7 @@
         const type = t.dataset.t, sl = ART_SLOTS.find(s => s.pick === type), arr = ovState.draft[sl.key];
         const v = (type === "stat" || type === "trick") ? t.dataset.v : +t.dataset.v;
         // a stone in use on another creature can't join an artifact that is (or will be) in the loadout
-        if (type === "nether" && arr[0] !== v) { const tgt = artTargetSlot(ovState.draft.id, ovState.slotIdx);
-          if (tgt != null && netherUsers(v, ovState.draft.id, tgt).length) break; }
+        if (type === "nether" && arr[0] !== v && ovState.toSlot != null && netherUsers(v, ovState.toSlot).length) break;
         const open = artOpen(sl, ovState.draft.rank);
         if (!open) break;                                                       // tier hasn't unlocked this group
         if (sl.max === 1) { arr[0] === v ? (arr.length = 0) : (arr[0] = v); }   // single slot toggles/replaces
@@ -6816,16 +6802,22 @@
         if (i >= 0 && i < arr.length) arr.splice(i, 1);
         refreshOverlay(); break;
       }
-      case "artb-cancel": backToArtLib(ovState, ovState.artId); break;
+      case "artb-cancel": { const st = ovState; backToArtLib(st, st.artId); if (st.own) openArtifactPage(st.slotIdx); break; }
+      case "artb-savelib": ovState.saveLib = !ovState.saveLib; refreshOverlay(); break;
       case "artb-save": {
-        const d = ovState.draft;
+        const st = ovState, d = st.draft;
         if (!d.name || !d.name.trim()) d.name = `Artifact ${nextArtId}`;
+        if (st.toSlot != null) {   // the creature's own artifact (built from its picker, or its copy edited)
+          const own = copyArtifact(d);
+          if (st.saveLib && !libArtOf(own)) { artifacts.push({ ...copyArtifact(own), id: nextArtId++ }); persistArtifacts(); }
+          build.slots[st.toSlot].artifact = own; persistBuild(); render();
+          if (st.own) { backToArtLib(st, null); openArtifactPage(st.toSlot); } else closeOverlay();
+          break;
+        }
         const isNew = d.id == null;
         if (isNew) { d.id = nextArtId++; artifacts.push(d); }
         else { const idx = artifacts.findIndex(a => a.id === d.id); if (idx >= 0) artifacts[idx] = d; }
-        persistArtifacts();
-        if (isNew && ovState.slotIdx != null) { build.slots[ovState.slotIdx].artifactId = d.id; persistBuild(); closeOverlay(); render(); break; }
-        render(); backToArtLib(ovState, d.id); break;   // edits (and menu builds) go back to the library
+        persistArtifacts(); backToArtLib(st, d.id); break;   // library edits go back to the library
       }
 
       // relic
@@ -6848,7 +6840,10 @@
       case "ns-view": ovState.nsView = t.dataset.v; refreshOverlay(); break;
       case "nether-hide-equipped": e.stopPropagation(); ovState.hideEquipped = ((+ovState.hideEquipped || 0) + 1) % 3; refreshOverlay(); break;
       case "nether-edit": openNetherBuilder(+t.dataset.id); break;
-      case "nether-del": armOrDo(t, () => { const id = +t.dataset.id; nether = nether.filter(n => n.id !== id); artifacts.forEach(a => a.netherIds = (a.netherIds || []).filter(x => x !== id)); if (ovState.sel === id) ovState.sel = null; persistNether(); persistArtifacts(); refreshOverlay(); }); break;
+      case "nether-del": armOrDo(t, () => { const id = +t.dataset.id; nether = nether.filter(n => n.id !== id);
+        const unsock = (a) => { if (a) a.netherIds = (a.netherIds || []).filter(x => x !== id); };   // library designs + every creature's own artifact
+        artifacts.forEach(unsock); build.slots.forEach(s => unsock(resolveArtifact(s))); builds.forEach(b => ((b.build && b.build.slots) || []).forEach(s => unsock(s && s.artifact)));
+        if (ovState.sel === id) ovState.sel = null; persistNether(); persistArtifacts(); persistBuild(); persistBuilds(); render(); refreshOverlay(); }); break;
       case "nether-cancel": openNether(); break;
       case "nether-icon": ovState.draft.icon = t.dataset.k; refreshOverlay(); break;
       case "nether-addprop": ovState.picking = ovState.picking && t.classList.contains("art-slot") ? false : "menu";   // the ＋ tile toggles; ‹ Category goes back
@@ -6875,25 +6870,32 @@
       // spell gems: library + wizard + equip
       case "open-spellgems": openSpellGems(); break;
       case "creature-spells": { const si = +t.dataset.slot; openCreatureSpells(si);
-        if ((build.slots[si].spellGemIds || []).some(id => spellGems.some(g => g.id === id)) || grantedSpellList(build.slots[si]).length) openSpellsPage(si); break; }
+        if (slotGems(build.slots[si]).length || grantedSpellList(build.slots[si]).length) openSpellsPage(si); break; }
       case "spellpage-back": closeDetail(); break;
       case "spellpage-done": closeDetail(); closeOverlay(); break;
-      case "spellpage-move": { const ids = build.slots[dovState.slotIdx].spellGemIds, i = +t.dataset.i, j = i + +t.dataset.d;
+      case "spellpage-move": { const ids = slotGems(build.slots[dovState.slotIdx]), i = +t.dataset.i, j = i + +t.dataset.d;
         if (j < 0 || j >= ids.length) break;
         [ids[i], ids[j]] = [ids[j], ids[i]]; persistBuild(); refreshDetail(); refreshOverlay(); render(); break; }
-      case "spellpage-sel": { const id = +t.dataset.id; closeDetail(); if (ovState) { ovState.sel = id; refreshOverlay(); } break; }
+      case "sg-mine": openSpellsPage(ovState.equipCtx.slotIdx); break;
+      // the Spells page acts on the creature's own gems: edit its copy, save a copy to the library, remove it
+      // (a gem with no matching library design is lost on Remove → two taps)
+      case "sgp-edit": { const si = dovState.slotIdx; closeDetail(); openSpellGemBuilder(null, si, +t.dataset.i); break; }
+      case "sgp-new": { const si = dovState.slotIdx; closeDetail(); openSpellGemBuilder(null, si); break; }
+      case "sgp-lib": { const g = slotGems(build.slots[dovState.slotIdx])[+t.dataset.i]; if (!g || libGemOf(g)) break;
+        spellGems.push({ id: nextSpellGemId++, ...copyGem(g) }); persistSpellGems(); refreshDetail(); refreshOverlay(); break; }
+      case "sgp-rm": { const gems = slotGems(build.slots[dovState.slotIdx]), i = +t.dataset.i, g = gems[i]; if (!g) break;
+        const go = () => { gems.splice(i, 1); persistBuild(); render(); refreshOverlay(); refreshDetail(); };
+        libGemOf(g) ? go() : armOrDo(t, go); break; }
       case "sg-sel": { const id = +t.dataset.id; ovState.sel = ovState.sel === id ? null : id; refreshOverlay(); break; }
-      case "sg-hide-equipped": e.stopPropagation(); ovState.hideEquipped = ((+ovState.hideEquipped || 0) + 1) % 3; refreshOverlay(); break;
       case "sg-new": openSpellGemBuilder(null, gemListRetSlot()); break;
       case "sg-edit": openSpellGemBuilder(+t.dataset.id, gemListRetSlot()); break;
       case "sg-del": armOrDo(t, () => { const id = +t.dataset.id; spellGems = spellGems.filter(g => g.id !== id);
-        artifacts.forEach(a => a.spells = (a.spells || []).filter(x => x !== id));
-        pruneAllBuildRefs();
         if (ovState.sel === id) ovState.sel = null;
-        persistSpellGems(); persistArtifacts(); render(); refreshOverlay(); }); break;   // render(): home "Spells n/m" chip loses the gem
-      case "sg-cancel": backToGemList(ovState.retSlot, ovState.editId); break;
+        persistSpellGems(); refreshOverlay(); }); break;   // creatures keep their own copies
+      case "sg-cancel": backToGemList(ovState.retSlot, ovState.editId, ovState.ownIdx != null); break;
+      case "sg-savelib": ovState.saveLib = !ovState.saveLib; refreshOverlay(); break;
       case "sg-spell": { const d = ovState.draft;
-        if (ovState.retSlot != null && creatureSpellIds(build.slots[ovState.retSlot], ovState.editId).has(+t.dataset.id)) break;   // already on this creature
+        if (ovState.retSlot != null && creatureSpellIds(build.slots[ovState.retSlot], ovState.ownIdx).has(+t.dataset.id)) break;   // already on this creature
         d.spellId = d.spellId === +t.dataset.id ? null : +t.dataset.id;
         const sp = gemSpell(d); if (sp) d.propIds = d.propIds.filter(pid => { const p = SPELLPROP.get(pid); return p && gemPropOk(sp, p); });   // drop what the new spell can't take
         refreshOverlay(); break; }
@@ -6918,23 +6920,23 @@
         if (d.spellId == null) break;
         if (d.propIds.length > gemSlots(d)) break;   // more properties than the level allows
         delete d.name;
-        if (ovState.editId != null) { const idx = spellGems.findIndex(g => g.id === ovState.editId); if (idx >= 0) spellGems[idx] = d; }
-        else { d.id = nextSpellGemId++; spellGems.push(d); }
-        persistSpellGems(); backToGemList(ovState.retSlot, d.id); break;
-      }
-      case "sg-equip": {
-        const id = +t.dataset.id, ctx = ovState.equipCtx; if (!ctx) break;
-        const arr = ctx.equipped(); const i = arr.indexOf(id);
-        if (i >= 0) arr.splice(i, 1);                          // unequip is always allowed
-        else {                                                 // equip — enforce the creature's class rule
-          const g = spellGems.find(x => x.id === id);
-          if (ctx.kind === "creature" && g && !canEquipGemOn(build.slots[ctx.slotIdx], g)) break;
-          if (ctx.kind === "creature" && g && gemSpell(g) && creatureSpellIds(build.slots[ctx.slotIdx]).has(gemSpell(g).id)) break;   // no second gem with the same spell
-          if (spellGemEquippedInBuild(id)) break;   // exclusive: already on another creature
-          if (arr.length < ctx.max) arr.push(id);
-          else if (ctx.max === 1) arr[0] = id;
+        const st = ovState;
+        if (st.toCreature) {   // the creature's own gem (edited copy, or a new one into a free slot)
+          const sl = build.slots[st.retSlot], gems = slotGems(sl), own = copyGem(d);
+          if (!canEquipGemOn(sl, own)) break;
+          if (st.ownIdx != null) gems[st.ownIdx] = own; else if (gems.length < creatureSlotMax(sl)) gems.push(own); else break;
+          if (st.saveLib && !libGemOf(own)) { spellGems.push({ id: nextSpellGemId++, ...copyGem(own) }); persistSpellGems(); }
+          persistBuild(); render(); backToGemList(st.retSlot, null, true); break;
         }
-        persistBuild(); persistArtifacts(); render(); refreshOverlay(); break;   // render(): home "Spells n/m" chip
+        if (st.editId != null) { const idx = spellGems.findIndex(g => g.id === st.editId); if (idx >= 0) spellGems[idx] = d; }
+        else { d.id = nextSpellGemId++; spellGems.push(d); }
+        persistSpellGems(); backToGemList(st.retSlot, d.id); break;
+      }
+      case "sg-equip": {   // a copy of the library gem onto the creature — its class rule, one gem per spell, a free slot
+        const ctx = ovState.equipCtx, g = spellGems.find(x => x.id === +t.dataset.id); if (!ctx || !g) break;
+        const sl = build.slots[ctx.slotIdx], gems = slotGems(sl);
+        if (!canEquipGemOn(sl, g) || (gemSpell(g) && creatureSpellIds(sl).has(gemSpell(g).id)) || gems.length >= creatureSlotMax(sl)) break;
+        gems.push(copyGem(g)); persistBuild(); render(); refreshOverlay(); break;   // render(): home "Spells n/m" chip
       }
       case "lib-deselect": clearHeldSelection(); break;
       case "dlib-deselect": if (dovState && dovState.sel != null) { dovState.sel = null; refreshDetail(); } break;

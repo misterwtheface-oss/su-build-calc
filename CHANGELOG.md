@@ -4,6 +4,21 @@ Every dated change entry, newest first (moved verbatim from Progress.md on 2026-
 to their own section and sorted by their date). Current state and open work: `Progress.md`, `BACKLOG.md`.
 New entries go at the TOP.
 
+## 2026-11-02 — Spell gems and artifacts belong to the creature
+- User: spell gems were getting out of hand. A creature now owns its spell gems and its artifact. The Spell Gems and Artifacts
+  libraries become saved designs: Equip from a library puts a copy on the creature; editing the creature's copy never
+  touches the library, deleting a library entry never strips a creature, and one design can go on any number of creatures.
+- Spells page (per creature): Edit / Save to library / Remove on each gem, ＋ New when a slot is free. Artifact page: Edit /
+  Save to library / Unequip. The builders, opened from a creature, save onto it with an optional "Save to library".
+  Removing or replacing something that isn't in the library takes two taps. Library pickers show the creature's matching
+  design in purple and a "‹ Equipped" button back to its own items; the libraries' Hide-equipped buttons are gone.
+- Game rules kept: one gem per spell per creature, the class rule (checked on save from a creature too), the spell-slot
+  count, and a Nether Stone in only one equipped artifact. Nether Stones stay library-only (user ruling).
+- Migration: saved parties and saved builds turn their library ids into the creature's own copies; every library entry
+  stays. Build export/import carry the creature's items; import no longer adds gems or artifacts to the libraries (stones
+  still go to theirs, reusing an identical one).
+- Check: `tools/smoke_owned_gear.mjs` (legacy seed from `tools/smoke_owned_gear_seed.mjs`).
+
 ## 2026-11-01 — Named Spell: Mega Magic
 - User: Mega Magic had no Spell Kind / Named Spell taxonomy. The ten Zantai traits and Fable (rank 100) now carry
   `Named Spell::Mega Magic`, from the extract's S77 code pass (the spell id the code creates / casts). Mega Magic joins the

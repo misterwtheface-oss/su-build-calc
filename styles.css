@@ -380,6 +380,7 @@ h1, h2, h3 { margin: 0; }
   border-radius: 9px; padding: 8px 18px; font-size: 14px;
 }
 .btn-confirm:disabled { opacity: .4; cursor: not-allowed; }
+.btn-confirm.armed { background: var(--bad); color: #1a1230; }   /* tap again to confirm (e.g. Replace a creature-only artifact) */
 .btn-ghost {
   background: transparent; color: var(--text-dim);
   border: 1px solid var(--border-dim); border-radius: 9px; padding: 8px 14px; font-size: 14px;
@@ -1570,6 +1571,7 @@ select.app-select { background: var(--surface); border: 1px solid var(--border-d
 .spell-page-tile .spt-tags { margin-left: auto; display: inline-flex; align-items: center; gap: 6px; }
 .spell-page-tile .rank-badge { min-width: 0; }
 .spell-page-tile .spt-props { margin-top: 6px; }
+.spell-page-tile .spt-acts { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; margin-top: 8px; }
 
 /* build import / export pop-out (Riddle Dwarf style) */
 .bio-pop { width: 460px; }
