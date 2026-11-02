@@ -372,6 +372,10 @@ Known limits + planned work, roughly in priority order (all now cheap to impleme
   valid). Re-check whether any player-facing same-name pair is still shown twice; otherwise delete this item.
 
 ## Parked
+### 💤 PARKED — Creature-owned Nether Stones (user, 2026-11-02)
+- [ ] Spell gems and artifacts became creature-owned (CHANGELOG 2026-11-02). Nether Stones stay library-only because they are
+  random drops that can't be built freely "at least not yet"; revisit only if stones become buildable.
+
 ### 💤 PARKED — Player-customized spell availability list (+ dependent nether spell restriction)
 - [ ] **Player-customized spell availability list:** the player marks which spells/recipes they own.
 - [ ] **Depends on the list above** (probably not worth it): restrict Nether Stone spells to owned recipes, as the game
