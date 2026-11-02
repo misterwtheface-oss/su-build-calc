@@ -4,6 +4,16 @@ Every dated change entry, newest first (moved verbatim from Progress.md on 2026-
 to their own section and sorted by their date). Current state and open work: `Progress.md`, `BACKLOG.md`.
 New entries go at the TOP.
 
+## 2026-11-02 — Independent dodges (BACKLOG #31, extract S79)
+- Taxonomy: Hit Resolution › Dodge Chance gets a **Roll: Independent** toggle: effects whose dodge is its own roll (or a sure
+  dodge) after the main roll, outside the 90% cap. 32 objects (perks, traits, Prime & Ventus ranks 20 / 40, Clutcher power 2,
+  Agile); the same objects' shares inside the main roll stay unmarked (Clutcher power 1, Agile's Aspect-card share).
+  `tools/taxo-v2.mjs` carries `dodge_roll` as `dr` (in the de-dup key).
+- Appendix › Speed › Dodge: the closing "Independent dodges …" line is now an **Independent dodges ›** link that opens the
+  Taxonomy page on that tag + marker, with ‹ Appendix / ‹ Back returning to the Speed page (`openAppendix(tags, back)`).
+- Data rebuilt (also picks up the decoded attack-pipeline rows 172-175 / 193 / 202 in Effect Order). Check:
+  `tools/smoke_dodge_link.mjs`.
+
 ## 2026-11-02 — Spell gems and artifacts belong to the creature
 - User: spell gems were getting out of hand. A creature now owns its spell gems and its artifact. The Spell Gems and Artifacts
   libraries become saved designs: Equip from a library puts a copy on the creature; editing the creature's copy never

@@ -8,7 +8,7 @@ Deployed at **https://misterwtheface-oss.github.io/su-build-calc/** (repo `miste
 Pages on `master`/root, Cloudflare analytics active with the shared github.io token). Auto-deploys on push.
 No verify-before-push ceremony (no real users yet) — but every change is checked before commit with `node tools/effects_test.mjs`,
 `node tools/buildio_test.mjs` and the headless-Chrome runner `node tools/smoke.mjs off HYDRANOX <check module>` (example
-check: `tools/smoke_relic_rows.mjs`; creature-owned gems/artifacts: `node tools/smoke_owned_gear_seed.mjs data.js seed.json`, then `SEED=seed.json node tools/smoke.mjs off HYDRANOX tools/smoke_owned_gear.mjs`). Relic rank drop-down gaps vs rank text: `node tools/relic_rows_coverage.mjs`. Shipped tags by name / tag-value counts / diff vs an older data.js: `node tools/data_query.mjs`. The old jsdom suite lived only in a session scratchpad and is gone (2026-11-01).
+check: `tools/smoke_relic_rows.mjs`; creature-owned gems/artifacts: `node tools/smoke_owned_gear_seed.mjs data.js seed.json`, then `SEED=seed.json node tools/smoke.mjs off HYDRANOX tools/smoke_owned_gear.mjs`). Independent-dodge link: `tools/smoke_dodge_link.mjs`. Relic rank drop-down gaps vs rank text: `node tools/relic_rows_coverage.mjs`. Shipped tags by name / tag-value counts / diff vs an older data.js: `node tools/data_query.mjs`. The old jsdom suite lived only in a session scratchpad and is gone (2026-11-01).
 
 ### ⚠ Cache-bust is ENFORCED by a git pre-commit hook (do not bypass)
 The service worker serves `app.js`/`styles.css`/`data.js` **cache-first**, keyed by their `?v=` token

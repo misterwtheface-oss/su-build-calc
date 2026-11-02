@@ -650,10 +650,12 @@
     { a: "sh", any: "Any share", label: (v) => `Share: ${v}`, title: "Whole: the original creature takes nothing. Split: it keeps part. Copy: it keeps the whole hit and others take extra", vals: (e) => e.sh ? [e.sh] : [] },
     // S76 (user 2026-10-30): the Spell Gem kind the code reads on this tag. Ethereal: gained in battle. Permanent: equipped
     { a: "gk", any: "Any gems", label: (v) => `Gems: ${v}`, title: "Narrow by gem-kind coverage: Permanent only, Ethereal only, or All (both kinds without exclusivity). Any gems applies no restriction.", vals: (e) => e.gk ? [e.gk] : [] },
+    // S79 (user 2026-10-31): a dodge rolled on its own after the main roll, outside its 90% cap
+    { a: "dr", any: "Any roll", label: (v) => `Roll: ${v}`, title: "Independent: its own dodge roll (or a sure dodge) after the main roll, outside the 90% cap", vals: (e) => e.dr ? [e.dr] : [] },
   ];
   const REFINE_ORDER = (D.taxonomy2 && D.taxonomy2.attributes) || {};
   const REFINE_ATTR = { s: null, so: "source", p: "phase", d: "delivery" };   // value order from taxonomy2.attributes
-  const keyParse = (k) => { const ref = {}; const base = k.replace(/@(s|tg|so|p|d|cf|co|cn|ig|x|ev|st|sk|cl|ra|sh|gk)=([^@]+)/g, (_, a, v) => { ref[a] = v; return ""; }); return { base, ref }; };
+  const keyParse = (k) => { const ref = {}; const base = k.replace(/@(s|tg|so|p|d|cf|co|cn|ig|x|ev|st|sk|cl|ra|sh|gk|dr)=([^@]+)/g, (_, a, v) => { ref[a] = v; return ""; }); return { base, ref }; };
   const keyBuild = (base, ref) => base + REFINE.map(R => ref[R.a] ? `@${R.a}=${ref[R.a]}` : "").join("");
   const keyBase = (k) => keyParse(k).base;
   const entryKeys = (e) => { const rk = roleKey(e); return rk ? [e.t, rk] : [e.t]; };
@@ -2867,9 +2869,12 @@
     return TRAIT_SOURCES;
   }
   // Taxonomy page (internal ids say "appendix"/"apx", its old name; the page now titled Appendix is openErrata)
-  function openAppendix() {
+  // tags + back: a deep link from another overlay page (Appendix › Speed › Dodge) opens the results for these tags
+  function openAppendix(tags, back) {
     ovState = { kind: "appendix", search: "", browsing: false, bkScope: null,
       collapsed: new Set(), expanded: new Set(), render: renderAppendix };
+    if (tags) ovState.tf = { appendix: tags };
+    if (back) ovState.back = back;
     openOverlay(ovState.render()); maybeFocusSearch(OV);
   }
   function renderAppendix() {
@@ -3005,7 +3010,7 @@
       body = body_sections || `<div class="slot-sub" style="padding:10px">Nothing matches${q ? ` “${esc(st.search.trim())}”` : " these filters"}.</div>`;
     }
     return `<div class="ovl-backdrop" data-action="backdrop"><div class="overlay-panel">
-      <div class="overlay-header"><h2>Taxonomy</h2>
+      <div class="overlay-header">${st.back ? `<button class="btn-ghost ovl-nav-back" data-action="ovl-back">‹ ${st.back.st.page === "order" ? "Effect Order" : "Appendix"}</button>` : ""}<h2>Taxonomy</h2>
         <input class="ovl-search" placeholder="${placeholder}" value="${esc(st.search)}" data-action="appendix-search">
         <button class="ovl-close" data-action="close-ovl">✕</button></div>
       <div class="overlay-body"><div class="ovl-center">
@@ -3016,6 +3021,7 @@
           ? `<button class="btn-ghost${st.bkScope ? " on" : ""}" data-action="appendix-bkscope" data-scope="all" title="Show only bookmarked objects">★ ${bkCount} Bookmarked</button>`
           : `<span class="foot-info"></span>`}
         ${bkCount ? `<button class="btn-ghost tb-danger" data-action="appendix-clear-bk" title="Remove all ${bkCount} bookmark${bkCount === 1 ? "" : "s"}">Clear bookmarks</button>` : ""}
+        ${st.back ? `<button class="btn-ghost" data-action="ovl-back">‹ Back</button>` : ""}
         <button class="btn-confirm" data-action="close-ovl">Done</button></div>
     </div></div>`;
   }
@@ -3066,7 +3072,7 @@
   function entityTaxHtmlV2(e) {
     const groups = new Map(), seen = new Map();
     for (const x of e.taxo2 || []) {
-      const id = [x.t, x.s, x.tg, x.so, x.r, x.p, x.d, x.cf, x.co, x.cn, x.ig, x.ra, x.sh, x.gk, ...["x", "ev", "st", "sk", "cl"].map(a => (x[a] || []).join(",")), x.v].join("|");
+      const id = [x.t, x.s, x.tg, x.so, x.r, x.p, x.d, x.cf, x.co, x.cn, x.ig, x.ra, x.sh, x.gk, x.dr, ...["x", "ev", "st", "sk", "cl"].map(a => (x[a] || []).join(",")), x.v].join("|");
       if (seen.has(id)) { if (x.rk != null) seen.get(id).n++; continue; }
       const y = { ...x, n: x.rk != null ? 1 : 0 }; seen.set(id, y);
       for (const g of taxoGroupsOf(x.t)) { if (!groups.has(g)) groups.set(g, []); groups.get(g).push(y); }
@@ -3079,7 +3085,7 @@
       <div class="etax-cat">${esc(gn)}</div>
       <div class="etax-vals">${groups.get(gn).sort(chipSort).map(x => {
         const k = roleKey(x) || x.t, attrs = [x.s, x.tg ? `Target: ${x.tg}` : null, x.so, x.p && x.p !== "After" ? x.p : null, x.d && x.d !== "Event" ? x.d : null,
-          x.cf, x.co, x.cn, x.ig ? `Ignores ${x.ig}` : null, ...(x.x || []), ...(x.ev || []), ...(x.st || []), ...(x.sk || []), ...(x.cl || []), x.ra ? `Resolves as ${x.ra}` : null, x.sh ? `Share: ${x.sh}` : null, x.gk ? `Gems: ${x.gk}` : null].filter(Boolean);
+          x.cf, x.co, x.cn, x.ig ? `Ignores ${x.ig}` : null, ...(x.x || []), ...(x.ev || []), ...(x.st || []), ...(x.sk || []), ...(x.cl || []), x.ra ? `Resolves as ${x.ra}` : null, x.sh ? `Share: ${x.sh}` : null, x.gk ? `Gems: ${x.gk}` : null, x.dr ? `Roll: ${x.dr}` : null].filter(Boolean);
         const unv = x.v === "unverified";
         return `<button class="etax-tag${unv ? " etax-unv" : ""}" data-action="etax-filter" data-k="${esc(k)}" title="${unv ? "Unverified: the game code hasn't settled this tag. " : ""}Filter the Taxonomy to “${esc(taxoValName(k))}”">${esc(taxoCatName(k) + ": " + taxoValName(k))}${x.n >= 2 ? `<span class="etax-mult">×${x.n}</span>` : ""}${attrs.length ? `<span class="etax-attr">${esc(attrs.join(" · "))}</span>` : ""}${FEATURES.taxoSource && x.v ? `<span class="apx-src s-${esc(x.v)}">${esc(x.v)}</span>` : ""}</button>`;
       }).join("")}</div>
@@ -3951,8 +3957,8 @@
         <div class="nd-wrap"><div class="nd-table">
           <div class="nd-row spd-row3 nd-hd"><span>Step</span><span>Adds</span><span>Total</span></div>
           ${agg.map(([lab, add, tot]) => `<div class="nd-row spd-row3"><span>${lab}</span><span>${add}</span><span>${tot}</span></div>`).join("")}
-        </div></div>
-        <div class="slot-sub nd-note">Independent dodges (Protective Winds, Fluster, the Call of the Aspect family …) are separate rolls outside this cap.</div>`,
+        </div></div>`,
+        `<button class="facet spd-link" data-action="apx-tag-link" data-k="Hit Resolution::Dodge Chance@dr=Independent">Independent dodges ›</button>`,
         eoLink("Attack", "Attack Order"),
       ].join("");
     }
@@ -6561,6 +6567,7 @@
       case "riddle-search": break;   // handled in onInput
       case "open-errata": openErrata(); break;
       case "open-effect-order": openErrata("order", t.dataset.sec, ovSnapshot()); break;
+      case "apx-tag-link": openAppendix([t.dataset.k], ovSnapshot()); break;
       case "ovl-back": ovBack(); reconcileHistory(); break;
       case "errata-search": break;   // handled in onInput
       case "open-bosses": openBosses(); break;
