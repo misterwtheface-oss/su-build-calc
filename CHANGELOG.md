@@ -4,6 +4,12 @@ Every dated change entry, newest first (moved verbatim from Progress.md on 2026-
 to their own section and sorted by their date). Current state and open work: `Progress.md`, `BACKLOG.md`.
 New entries go at the TOP.
 
+## 2026-11-03 — Fix: Artifact builder couldn't add Nether Stones
+- User: Nether Stones couldn't be added to an artifact. The 2026-11-02 creature-owned refactor left one reference to a
+  removed variable in the builder's Nether Stone list, so the list crashed whenever any party artifact already held a
+  stone. It now uses the builder's target creature (same rule as the confirm step). Check: `tools/smoke_owned_gear.mjs`
+  › "builder nether list".
+
 ## 2026-11-02 — Independent dodges (BACKLOG #31, extract S79)
 - Taxonomy: Hit Resolution › Dodge Chance gets a **Roll: Independent** toggle: effects whose dodge is its own roll (or a sure
   dodge) after the main roll, outside the 90% cap. 32 objects (perks, traits, Prime & Ventus ranks 20 / 40, Clutcher power 2,

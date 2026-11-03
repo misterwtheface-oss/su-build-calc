@@ -71,6 +71,9 @@ export default async ({ act, evalJS, sleep, out, shot, viewport }) => {
   await act("equip-artifact", { slot: "1" });
   await act("art-equip", { id: String(lib[0].id) });
   check("stone clash blocks equip", (await ls("subc.build")).slots[1].artifact, null);
+  // the builder's Nether Stone list still renders while a party artifact holds a stone; that stone shows locked
+  await act("art-new"); await act("artb-next"); await act("art-slot", { t: "nether" });
+  check("builder nether list", await evalJS(`[document.querySelectorAll('.art-side .prop-row').length > 0, !!document.querySelector('.art-side .prop-row.locked.nether-clash')]`), [true, true]);
   await act("close-ovl");
 
   // 8. export → import round trip: the creature's own gems + artifact come back; the stone is reused, not duplicated

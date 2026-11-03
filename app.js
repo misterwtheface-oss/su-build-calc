@@ -5052,7 +5052,7 @@
         : (x, y) => nd * (y.id - x.id));
       rows = list.map(n => {
         const used = inUse(n), core = STAT_KEYS.includes(sortK) ? sum(n) : null;
-        const lock = used.length && tgt != null && !has(n.id);   // this artifact is in the loadout → can't double up
+        const lock = used.length && st.toSlot != null && !has(n.id);   // this artifact is in the loadout → can't double up
         const usedTitle = used.length ? `Already socketed in ${used.map(u => u.art.name).join(", ")} (equipped)${lock ? " — unequip it there first" : ""}` : "";
         return `<div class="prop-row rich ${has(n.id) ? "chosen" : ""}${used.length ? " nether-clash" : ""}${lock ? " locked" : ""}"${lock ? "" : ` data-action="art-preview" data-t="nether" data-v="${n.id}"`}${usedTitle ? ` title="${esc(usedTitle)}"` : ""}>
           <span class="prop-ico">${spriteImg(gemSrc(n), "px")}</span>
