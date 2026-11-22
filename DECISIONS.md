@@ -308,6 +308,11 @@ a flat modifier to base: raised **×4/3 (+33%)**, lowered **×2/3 (−33%)**, ot
 
 
 ## Realm yield model = the user's rules (2026-10-10)
+- 2026-11-22 (user): every Yield row expands to its sources and follows the Weighted | Full value toggle. Session
+  calls: generic sources use the app's existing labels (Treasure Chests, Resource Nodes, Breakable Objects, Emblem Spawns,
+  Guaranteed Nemesis Creatures) plus Treasure Golem / Dumpling / Backer / Treasure Map / Pandemonium Shrine / God Altar /
+  Realm Quest; the Mimic share sits in Treasure Chests; a Golem's treasure and fight sit in Treasure Golem whatever
+  spawned it; capped boosts split across sources in proportion to their uncapped share.
 - 2026-11-22 (user): Weighted | Full value toggle on every Yield column. Full value = every outcome of an INTERACTION
   at full value; spawn chances (shrine / golem / dumpling / Mimic / Backer / Treasure Map placement) and averaged
   quantity rolls stay weighted. Session calls (not yet confirmed by the user): a reward paid on both branches of a split

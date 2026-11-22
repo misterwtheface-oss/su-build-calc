@@ -4,6 +4,16 @@ Every dated change entry, newest first (moved verbatim from Progress.md on 2026-
 to their own section and sorted by their date). Current state and open work: `Progress.md`, `BACKLOG.md`.
 New entries go at the TOP.
 
+## 2026-11-22 — Realm yields: every Yield row expands to its sources
+- Realms → realm → Yield: every row with a value (Treasure, Resources, Emblems, boosts, Golem / Dumpling, ...) now
+  expands to what makes it up, largest first: each realm object plus Treasure Chests, Resource Nodes, Breakable Objects,
+  Emblem Spawns, Treasure Golem, Dumpling, Backer, Treasure Map, Pandemonium Shrine, God Altar, Realm Quest and
+  Guaranteed Nemesis Creatures. Follows the rank slider, difficulty and Weighted | Full value. Capped boosts (Buff /
+  Debuff / Minion, max 5) are split across their sources in proportion. Replaces the Favor-only breakdown.
+- Data: lazy-loaded per realm from `assets/yield/<realm>.json` (content-hashed ?v=, precached for offline; data.js no
+  longer carries the Favor breakdown). Model: `generic.Row` books every change to its source (`x.src` per object).
+  Check: `tools/smoke_favor_parts.mjs`.
+
 ## 2026-11-22 — Realm yields: Weighted | Full value toggle
 - Realms → Yield and Compare: a **Weighted | Full value** switch next to Relaxed / Normal / Ruthless. Weighted = each
   outcome of an interaction × its chance (unchanged). Full value = every outcome of an interaction counted in full, as if

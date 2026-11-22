@@ -4199,14 +4199,26 @@
   function favBarPct(col, v) { const mx = D.favorColMax && D.favorColMax[yMode()] && D.favorColMax[yMode()][yDiff()]; const max = (mx && mx[col.key]) || 1;
     return v == null || v <= 0 ? 0 : Math.max(3, Math.min(100, Math.round((v / max) * 100))); }
   function favBar(col, v) { return `<span class="rcat-mag"><i style="width:${favBarPct(col, v)}%"></i></span><span class="rcat-val">${fmtFav(col, v)}</span>`; }
-  // Favor breakdown under the Yield tab's Favor row: each source's favor at `rank`, largest first; bars scale to the
-  // largest source shown (magnitude-bar rule). Rebuilt in place by favorLiveUpdate while the slider is dragged.
-  function favorPartsRows(realm, rank) {
-    const fp = realm.favorParts && realm.favorParts[yMode()]; if (!fp) return "";
-    const vals = fp.ranks[rank] || fp.ranks[100], col = favUnique()[0] || {};
-    const rows = fp.sources.map((s, i) => ({ s, v: vals[i] })).filter(p => p.v > 0).sort((a, b) => b.v - a.v);
-    const max = rows.length ? rows[0].v : 1;
-    return rows.map(p => `<div class="rcat-row rcat-static rcat-part"><span class="rcat-name">${esc(p.s)}</span><span class="rcat-mag"><i style="width:${Math.max(3, Math.round(p.v / max * 100))}%"></i></span><span class="rcat-val">${fmtFav(col, p.v)}</span></div>`).join("");
+  // Yield breakdown: what makes up a yield column (realm objects, Treasure Chests, Resource Nodes, God Altar, Realm
+  // Quest ...). Lazy-loaded per realm from realm.yieldFile on first expand; mode → column → {s: sources, d: difficulty
+  // → step runs [rank, values]} (a missing difficulty = same as Normal).
+  const _yieldParts = {};
+  function loadYieldParts(realm) {
+    if (!realm.yieldFile || _yieldParts[realm.id]) return;
+    _yieldParts[realm.id] = fetch(realm.yieldFile).then(r => r.json())
+      .then(j => { _yieldParts[realm.id] = j; if (ovState && ovState.kind === "realms") refreshOverlay(); })
+      .catch(e => { delete _yieldParts[realm.id]; console.error("yield breakdown failed to load", e); });
+  }
+  // rows for column `ci` at `rank`: each source's value, largest first; bars scale to the largest source shown
+  // (magnitude-bar rule). Rebuilt in place by favorLiveUpdate while the slider is dragged.
+  function yieldPartsRows(realm, ci, rank) {
+    const all = _yieldParts[realm.id], p = all && all.then === undefined && all[yMode()] && all[yMode()][ci]; if (!p) return "";
+    const runs = p.d[yDiff()] || p.d.normal; let vals = runs[0][1];
+    for (const [r, vs] of runs) { if (r > rank) break; vals = vs; }
+    const col = favUnique()[ci] || {};
+    const rows = p.s.map((s, i) => ({ s, v: vals[i] })).filter(x => x.v).sort((a, b) => Math.abs(b.v) - Math.abs(a.v));
+    const max = rows.length ? Math.abs(rows[0].v) : 1;
+    return rows.map(x => `<div class="rcat-row rcat-static rcat-part"><span class="rcat-name">${esc(x.s)}</span><span class="rcat-mag"><i style="width:${Math.max(3, Math.round(Math.abs(x.v) / max * 100))}%"></i></span><span class="rcat-val">${fmtFav(col, x.v)}</span></div>`).join("");
   }
   // in-place slider update: recompute [data-ci] bar rows + condense [data-rank] list rows to the slider's
   // value WITHOUT a full re-render, so dragging the range stays smooth (the slider is never replaced mid-drag).
@@ -4221,7 +4233,7 @@
       const val = el.querySelector(".rcat-val"); if (val) val.textContent = fmtFav(col, v);
     });
     root.querySelectorAll(".fav-tier[data-rank]").forEach(el => { el.style.display = (+el.dataset.rank <= sv) ? "" : "none"; });
-    root.querySelectorAll("[data-parts-rid]").forEach(el => { const realm = D.realms[+el.dataset.partsRid]; if (realm) el.innerHTML = favorPartsRows(realm, sv); });
+    root.querySelectorAll("[data-parts-rid]").forEach(el => { const realm = D.realms[+el.dataset.partsRid]; if (realm) el.innerHTML = yieldPartsRows(realm, +el.dataset.partsCi, sv); });
   }
   // shared favor-rank slider (0..100) — `cur` is the rank it shows/edits (a realm's tracked rank in detail)
   function favorSlider(cur = favRank()) {
@@ -4385,10 +4397,11 @@
     const interactionsView = `${creatures}${resources}${objects}`;
     const barsView = `${yieldDiffToggle()}${favorSlider(rank)}${rankNote}${commonToggle}
       <div class="rcat-list">${uCols.map((c, i) => { const v = favVal(sel, i, rank);
-        // the Favor row expands to what makes up the total (objects, Realm Quest, God Altar, Pandemonium Shrine)
-        if (c.key === "favor" && sel.favorParts) { const open = !!ovState.favPartsOpen;
-          return `<div class="rcat-row rcat-static rcat-expand${v ? "" : " rcat-empty"}" data-action="realm-favparts" data-rid="${sel.id}" data-ci="${i}"><span class="rcat-name"><span class="rcat-chev">${open ? "▾" : "▸"}</span>${esc(c.label)}</span>${favBar(c, v)}</div>`
-            + (open ? `<div class="rcat-parts" data-parts-rid="${sel.id}">${favorPartsRows(sel, rank)}</div>` : ""); }
+        // every row with a value expands to what makes it up (objects, Treasure Chests, God Altar, Realm Quest ...)
+        if (v && sel.yieldFile) { const open = !!(ovState.partsOpen && ovState.partsOpen.has(c.key));
+          if (open) loadYieldParts(sel);
+          return `<div class="rcat-row rcat-static rcat-expand" data-action="realm-parts" data-k="${c.key}" data-rid="${sel.id}" data-ci="${i}"><span class="rcat-name"><span class="rcat-chev">${open ? "▾" : "▸"}</span>${esc(c.label)}</span>${favBar(c, v)}</div>`
+            + (open ? `<div class="rcat-parts" data-parts-rid="${sel.id}" data-parts-ci="${i}">${yieldPartsRows(sel, i, rank)}</div>` : ""); }
         return `<div class="rcat-row rcat-static${v ? "" : " rcat-empty"}" data-rid="${sel.id}" data-ci="${i}"><span class="rcat-name">${esc(c.label)}</span>${favBar(c, v)}</div>`; }).join("")}</div>
       ${ovState.showCommon ? `<div class="section-label">Common bonuses (every realm)</div>
         <div class="rcat-list">${gCols.map((c, j) => { const i = uCols.length + j, v = favVal(sel, i, rank);
@@ -6614,7 +6627,8 @@
       case "realm-sort": sortPick(ovState, "sortBy", "sortRev", t.dataset.v); refreshOverlay(); break;
       case "realm-mode": ovState.mode = t.dataset.v; ovState.search = ""; refreshOverlay(true); maybeFocusSearch(OV); break;
       case "realm-favview": ovState.favorView = t.dataset.v; refreshOverlay(); break;
-      case "realm-favparts": ovState.favPartsOpen = !ovState.favPartsOpen; refreshOverlay(); break;
+      case "realm-parts": { const k = t.dataset.k; ovState.partsOpen = ovState.partsOpen || new Set();
+        ovState.partsOpen.has(k) ? ovState.partsOpen.delete(k) : ovState.partsOpen.add(k); refreshOverlay(); break; }
       case "realm-usecustom": ovState.useCustom = t.dataset.v === "1"; favorPrefs.use = ovState.useCustom; persistFavorPrefs(); refreshOverlay(); break;
       case "realm-editranks": ovState.editingRanks = true; ovState.search = ""; refreshOverlay(); maybeFocusSearch(OV); break;
       case "realm-editdone": ovState.editingRanks = false; ovState.search = ""; refreshOverlay(); break;

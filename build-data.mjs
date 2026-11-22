@@ -2087,15 +2087,21 @@ for (const rm of realms) rm.hasShop = shopGods.has(rm.godName);   // cross-link 
 }
 // join the Favor-track matrix to each realm by name (Favor_MTX realm names == D.realms[].realm)
 let favorJoined = 0;
+fs.rmSync(path.join(ROOT, 'assets', 'yield'), { recursive: true, force: true });   // rewritten below, per realm
 for (const rm of realms) {
   if (favorModes.every(md => favorMatrix[md][rm.realm])) { rm.favor = Object.fromEntries(favorModes.map(md => [md, favorMatrix[md][rm.realm]])); favorJoined++; }
   else warn(`realm "${rm.realm}" has no yield-model entry`);
-  // Favor breakdown (yield model generic.add_favor), per mode: sources = object names + Realm Quest / God Altar /
-  // Pandemonium Shrine; ranks → one value per source. Favor is the same at every difficulty, so one breakdown per mode.
-  const fps = favorModes.map(md => [md, _ym.favor_parts[md] && _ym.favor_parts[md][rm.realm]]);
-  if (fps.every(([, fp]) => fp)) rm.favorParts = Object.fromEntries(fps.map(([md, fp]) => [md, { sources: fp.sources,
-    ranks: Object.fromEntries(Object.entries(fp.ranks).map(([r, vs]) => [r, vs.map(v => Math.round(v * 100) / 100)])) }]));
-  else warn(`realm "${rm.realm}" has no favor breakdown`); }
+  // What makes up each yield column (yield model generic.Row sources: realm objects + Treasure Chests / Resource Nodes /
+  // God Altar / Realm Quest ...), per mode → column index → {s: sources, d: difficulty → step runs [rank, values]}.
+  // Too big for data.js (~1.7 MB, mostly resources), so each realm gets a lazy-loaded file under assets/yield/
+  // (content-hashed ?v=, cache-first + precached by sw.js like the sprites); the app fetches it on first expand.
+  if (favorModes.every(md => _ym.yield_parts[md] && _ym.yield_parts[md][rm.realm])) {
+    const body = JSON.stringify(Object.fromEntries(favorModes.map(md => [md, _ym.yield_parts[md][rm.realm]])));
+    const rel = `assets/yield/${rm.realm.toLowerCase().replace(/[^a-z0-9]+/g, '-')}.json`;
+    fs.mkdirSync(path.join(ROOT, 'assets', 'yield'), { recursive: true });
+    fs.writeFileSync(path.join(ROOT, rel), body);
+    rm.yieldFile = `${rel}?v=${crypto.createHash('md5').update(body).digest('hex').slice(0, 8)}`;
+  } else warn(`realm "${rm.realm}" has no yield breakdown`); }
 { console.log(`  realms: ${realms.length} · ${realms.reduce((n, r) => n + r.objects.length, 0)} realm objects · ${realms.filter(r => r.hasShop).length} w/ god shop`);
   console.log(`  favor matrix joined: ${favorJoined}/${realms.length} realms`); }
 console.log(`  realm object sprites: ${realmObjHits} matched · ${realmObjMiss} need a slug/override`);
@@ -4135,7 +4141,7 @@ const SU_DATA = {
   favorCols,                // { unique:[{key,col,label,unit}], generic:[...] } — the Favor_MTX column groups
   favorColMax,              // mode → difficulty → rank-100 cross-realm max per yield column key — scales the magnitude bars
   favorDiffs,               // ['relaxed','normal','ruthless'] — realm.favor is keyed by these
-  favorModes,               // ['weighted','full'] — realm.favor / realm.favorParts are keyed by mode first
+  favorModes,               // ['weighted','full'] — realm.favor and the realm.yieldFile breakdown are keyed by mode first
   favorCommonVals,          // rank → [value per common column] (identical in every realm)
   pandShrine: _ym.pandemonium_shrine,   // Pandemonium shrine outcome table (code: obj_demonstatue, 1/13 each)
   favorCommon,              // Favor_REF: [{rank,effect,blessing}] — the shared favor-rank tier schedule
