@@ -1718,6 +1718,8 @@ select.app-select { background: var(--surface); border: 1px solid var(--border-d
 /* glossary: Nether Stone drop breakpoints */
 .nd-wrap { margin: 8px 0 4px; }
 .nd-diff { margin-bottom: 8px; }
+.yield-toggles { display: flex; flex-wrap: wrap; gap: 6px 8px; align-items: center; }
+.rcmp-controls .yield-toggles { justify-content: center; }
 .nd-table { border: 1px solid rgba(154,123,214,.45); border-radius: var(--radius); overflow: hidden; background: var(--surface); }
 .nd-row { display: grid; grid-template-columns: 1.2fr 1fr 1fr; gap: 8px; align-items: center; padding: 7px 12px; font-variant-numeric: tabular-nums; font-size: 13.5px; }
 .nd-row + .nd-row { border-top: 1px solid rgba(154,123,214,.2); }

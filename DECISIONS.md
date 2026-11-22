@@ -308,6 +308,11 @@ a flat modifier to base: raised **×4/3 (+33%)**, lowered **×2/3 (−33%)**, ot
 
 
 ## Realm yield model = the user's rules (2026-10-10)
+- 2026-11-22 (user): Weighted | Full value toggle on every Yield column. Full value = every outcome of an INTERACTION
+  at full value; spawn chances (shrine / golem / dumpling / Mimic / Backer / Treasure Map placement) and averaged
+  quantity rolls stay weighted. Session calls (not yet confirmed by the user): a reward paid on both branches of a split
+  counts once; Fruit / Squash / Tarot buff-debuff results count once per floor (only 3 of each object exist); Meteor
+  counts both its next-battle and chest outcomes; Music Crystal / Alchemy 1+3 and 2+3 extra buffs count as two sources.
 - 2026-11-22 (user): Favor includes the realm quest (+200, one per floor), and the realm page shows the Favor breakdown
   by source.
 - The Yield and Compare views read `_su_extract/data/model/realm_yield_model.json` (community copy

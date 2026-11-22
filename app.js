@@ -4180,26 +4180,29 @@
   const rankFor = (realm) => ovState.useCustom && realm ? (favorPrefs.ranks[realm.id] != null ? favorPrefs.ranks[realm.id] : favRank()) : favRank();
   // yield difficulty (Relaxed / Normal / Ruthless) — realm.favor is keyed by difficulty
   const yDiff = () => ovState.yieldDiff || "normal";
+  // yield outcome mode: weighted (each outcome of an interaction × its chance) | full (every outcome counted in full)
+  const yMode = () => ovState.yieldMode || "weighted";
   // value of column at flat index `i` for a realm at a given favor rank: yield columns per realm × difficulty,
   // common columns (identical in every realm) from D.favorCommonVals
   const favVal = (realm, i, rank = favRank()) => { const u = favUnique().length;
     if (i >= u) { const c = D.favorCommonVals && D.favorCommonVals[rank]; return c ? c[i - u] : null; }
-    const m = realm.favor && realm.favor[yDiff()]; if (!m) return null; const row = m[rank] || m[100]; return row ? row[i] : null; };
+    const m = realm.favor && realm.favor[yMode()] && realm.favor[yMode()][yDiff()]; if (!m) return null; const row = m[rank] || m[100]; return row ? row[i] : null; };
   function fmtFav(col, v) { if (v == null || v === 0) return "—";
     const n = Math.abs(v) >= 1000 ? Math.round(v).toLocaleString() : Number.isInteger(v) ? v : +(+v).toFixed(2);
     return col.unit === "%" ? `${n}%` : col.unit === "bool" ? "✓" : `${n}`; }
-  // Relaxed | Normal | Ruthless toggle for the yield views
-  function yieldDiffToggle() { const d = yDiff();
-    return `<div class="seg nd-diff">${[["relaxed", "Relaxed"], ["normal", "Normal"], ["ruthless", "Ruthless"]].map(([v, l]) =>
-      `<button class="seg-btn ${d === v ? "on" : ""}" data-action="realm-diff" data-v="${v}">${l}</button>`).join("")}</div>`; }
+  // Relaxed | Normal | Ruthless and Weighted | Full value toggles for the yield views
+  function yieldDiffToggle() { const d = yDiff(), md = yMode();
+    const seg = (opts, cur, action) => `<div class="seg">${opts.map(([v, l]) =>
+      `<button class="seg-btn ${cur === v ? "on" : ""}" data-action="${action}" data-v="${v}">${l}</button>`).join("")}</div>`;
+    return `<div class="nd-diff yield-toggles">${seg([["relaxed", "Relaxed"], ["normal", "Normal"], ["ruthless", "Ruthless"]], d, "realm-diff")}${seg([["weighted", "Weighted"], ["full", "Full value"]], md, "realm-ymode")}</div>`; }
   // bar fill % for a unique column (scaled to the rank-100 cross-realm max so bars grow with the rank)
-  function favBarPct(col, v) { const max = (D.favorColMax && D.favorColMax[yDiff()] && D.favorColMax[yDiff()][col.key]) || 1;
+  function favBarPct(col, v) { const mx = D.favorColMax && D.favorColMax[yMode()] && D.favorColMax[yMode()][yDiff()]; const max = (mx && mx[col.key]) || 1;
     return v == null || v <= 0 ? 0 : Math.max(3, Math.min(100, Math.round((v / max) * 100))); }
   function favBar(col, v) { return `<span class="rcat-mag"><i style="width:${favBarPct(col, v)}%"></i></span><span class="rcat-val">${fmtFav(col, v)}</span>`; }
   // Favor breakdown under the Yield tab's Favor row: each source's favor at `rank`, largest first; bars scale to the
   // largest source shown (magnitude-bar rule). Rebuilt in place by favorLiveUpdate while the slider is dragged.
   function favorPartsRows(realm, rank) {
-    const fp = realm.favorParts; if (!fp) return "";
+    const fp = realm.favorParts && realm.favorParts[yMode()]; if (!fp) return "";
     const vals = fp.ranks[rank] || fp.ranks[100], col = favUnique()[0] || {};
     const rows = fp.sources.map((s, i) => ({ s, v: vals[i] })).filter(p => p.v > 0).sort((a, b) => b.v - a.v);
     const max = rows.length ? rows[0].v : 1;
@@ -6599,6 +6602,7 @@
       case "proj-search": break;     // handled in onInput
       case "proj-diff": ovState.ruthless = t.dataset.v === "ruthless"; refreshOverlay(true); break;
       case "realm-diff": ovState.yieldDiff = t.dataset.v; refreshOverlay(); break;
+      case "realm-ymode": ovState.yieldMode = t.dataset.v; refreshOverlay(); break;
       case "proj-group-toggle": { const g = t.dataset.g; ovState.collapsed.has(g) ? ovState.collapsed.delete(g) : ovState.collapsed.add(g); refreshOverlay(); break; }
       case "sob-members": ovState.sobMembers = !ovState.sobMembers; refreshOverlay(); break;
       case "sob-step": { const k = t.dataset.k; ovState.sobOpen = ovState.sobOpen || new Set(); ovState.sobOpen.has(k) ? ovState.sobOpen.delete(k) : ovState.sobOpen.add(k); refreshOverlay(); break; }

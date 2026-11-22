@@ -15,5 +15,12 @@ export default async ({ act, evalJS, sleep, out, shot, viewport }) => {
   // drag the slider to 0 (live update path, no re-render)
   await evalJS(`(() => { const s = document.querySelector('.fav-range'); s.value = 0; s.dispatchEvent(new Event('input', { bubbles: true })); })()`); await sleep(300);
   out.r0 = await evalJS(read);
+  // Weighted | Full value toggle: totals switch mode, the breakdown still sums to the total
+  await evalJS(`document.querySelector('[data-action="realm-ymode"][data-v="full"]').click()`); await sleep(300);
+  out.fullOn = await evalJS(`document.querySelector('[data-action="realm-ymode"].on')?.textContent`);
+  out.full_r0 = await evalJS(read);
+  await act("realm-back"); await act("realm-mode", { v: "compare" });
+  out.compareToggle = await evalJS(`document.querySelector('.rcmp-controls [data-action="realm-ymode"].on')?.textContent`);
   out.scrollW = await evalJS(`[document.documentElement.scrollWidth, innerWidth]`);
+  if (process.env.SHOT) await shot(process.env.SHOT.replace(".png", "_compare.png"));
 };

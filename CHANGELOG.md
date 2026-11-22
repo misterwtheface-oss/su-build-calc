@@ -4,6 +4,14 @@ Every dated change entry, newest first (moved verbatim from Progress.md on 2026-
 to their own section and sorted by their date). Current state and open work: `Progress.md`, `BACKLOG.md`.
 New entries go at the TOP.
 
+## 2026-11-22 — Realm yields: Weighted | Full value toggle
+- Realms → Yield and Compare: a **Weighted | Full value** switch next to Relaxed / Normal / Ruthless. Weighted = each
+  outcome of an interaction × its chance (unchanged). Full value = every outcome of an interaction counted in full, as if
+  each happened (75% Favor / 25% fight altars give both, "35% chance of an emblem" gives the emblem, every minigame combo
+  and Pandemonium Shrine outcome counts). Spawn chances stay weighted. Applies to every Yield column and the Favor
+  breakdown. Model: `generic.oc()` + `MODE`; data `realm_yield_model.json` keyed by mode; community copy
+  `Realm_Yields_FULL_CODE.csv`. Yield values ship at 2 decimals (data.js +0.6 MB). Check: `tools/smoke_favor_parts.mjs`.
+
 ## 2026-11-22 — Realm Favor: realm quest counted + Favor breakdown
 - Favor now includes the realm quest: +200 Favor with the realm's god, once per floor (`scr_GodAddFavor(realm god, 200)`
   in the quest payout, `_su_extract/code/LOOT.md`). Every realm's Favor is 200 higher at every rank; nothing else changed.

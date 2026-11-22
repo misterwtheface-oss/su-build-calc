@@ -2020,16 +2020,20 @@ const _ym = readJSON(path.join(MODEL, 'realm_yield_model.json'));
 const favorCols = { unique: _ym.columns.yield.map(c => ({ ...c, group: 'unique' })),
                     generic: _ym.columns.common.map(c => ({ ...c, group: 'generic' })) };
 const favorDiffs = _ym.difficulties;
-const favorMatrix = _ym.realms;                              // realm → difficulty → rank → [yield values]
+const favorModes = _ym.modes;                                // weighted (outcomes × chance) | full (every outcome in full)
+// mode → realm → difficulty → rank → [yield values]; 2 decimals (the app shows at most 2)
+const favorMatrix = Object.fromEntries(Object.entries(_ym.realms).map(([md, rs]) => [md, Object.fromEntries(Object.entries(rs).map(([rn, ds]) =>
+  [rn, Object.fromEntries(Object.entries(ds).map(([d, rows]) => [d, Object.fromEntries(Object.entries(rows).map(([rk, vs]) => [rk, vs.map(v => Math.round(v * 100) / 100)]))]))]))]));
 const favorCommonVals = _ym.common;                          // rank → [common values]
 // rank-100 cross-realm max per yield column and difficulty (scales the magnitude bars so they grow with rank)
 const favorColMax = {};
-for (const d of favorDiffs) { favorColMax[d] = {};
-  favorCols.unique.forEach((c, i) => { favorColMax[d][c.key] = Math.max(1, ...Object.values(favorMatrix).map(m => (m[d]['100'] || [])[i] || 0)); }); }
+for (const md of favorModes) { favorColMax[md] = {};
+  for (const d of favorDiffs) { favorColMax[md][d] = {};
+    favorCols.unique.forEach((c, i) => { favorColMax[md][d][c.key] = Math.max(1, ...Object.values(favorMatrix[md]).map(m => (m[d]['100'] || [])[i] || 0)); }); } }
 // common favor-rank schedule from Favor_REF: rank → {effect, blessing?} (blessing = a realm-unique tier)
 const _ref = parseFavorCSV('Favor_REF.csv');
 const favorCommon = _ref.slice(1).filter(r => r[0]).map(r => ({ rank: +r[0], effect: (r[1] || '').trim(), blessing: /Realm Blessing/i.test(r[1] || '') }));
-console.log(`  yield model: ${Object.keys(favorMatrix).length} realms × ${favorDiffs.length} difficulties × 101 ranks · ${favorCols.unique.length} yield + ${favorCols.generic.length} common cols · ${favorCommon.filter(c => !c.blessing).length} common tiers`);
+console.log(`  yield model: ${Object.keys(favorMatrix.weighted).length} realms × ${favorModes.length} modes × ${favorDiffs.length} difficulties × 101 ranks · ${favorCols.unique.length} yield + ${favorCols.generic.length} common cols · ${favorCommon.filter(c => !c.blessing).length} common tiers`);
 const realms = realmArr.map((r, i) => {
   const godFull = (r.god || '').trim();
   const godName = godFull.split(',')[0].trim();               // short name (matches god-shop `god`)
@@ -2083,12 +2087,14 @@ for (const rm of realms) rm.hasShop = shopGods.has(rm.godName);   // cross-link 
 }
 // join the Favor-track matrix to each realm by name (Favor_MTX realm names == D.realms[].realm)
 let favorJoined = 0;
-for (const rm of realms) { if (favorMatrix[rm.realm]) { rm.favor = favorMatrix[rm.realm]; favorJoined++; }
+for (const rm of realms) {
+  if (favorModes.every(md => favorMatrix[md][rm.realm])) { rm.favor = Object.fromEntries(favorModes.map(md => [md, favorMatrix[md][rm.realm]])); favorJoined++; }
   else warn(`realm "${rm.realm}" has no yield-model entry`);
-  // Favor breakdown (yield model generic.add_favor): sources = object names + Realm Quest / God Altar / Pandemonium
-  // Shrine; ranks → one value per source. Favor is the same at every difficulty, so one breakdown per realm.
-  const fp = _ym.favor_parts && _ym.favor_parts[rm.realm];
-  if (fp) rm.favorParts = { sources: fp.sources, ranks: Object.fromEntries(Object.entries(fp.ranks).map(([r, vs]) => [r, vs.map(v => Math.round(v * 100) / 100)])) };
+  // Favor breakdown (yield model generic.add_favor), per mode: sources = object names + Realm Quest / God Altar /
+  // Pandemonium Shrine; ranks → one value per source. Favor is the same at every difficulty, so one breakdown per mode.
+  const fps = favorModes.map(md => [md, _ym.favor_parts[md] && _ym.favor_parts[md][rm.realm]]);
+  if (fps.every(([, fp]) => fp)) rm.favorParts = Object.fromEntries(fps.map(([md, fp]) => [md, { sources: fp.sources,
+    ranks: Object.fromEntries(Object.entries(fp.ranks).map(([r, vs]) => [r, vs.map(v => Math.round(v * 100) / 100)])) }]));
   else warn(`realm "${rm.realm}" has no favor breakdown`); }
 { console.log(`  realms: ${realms.length} · ${realms.reduce((n, r) => n + r.objects.length, 0)} realm objects · ${realms.filter(r => r.hasShop).length} w/ god shop`);
   console.log(`  favor matrix joined: ${favorJoined}/${realms.length} realms`); }
@@ -4127,8 +4133,9 @@ const SU_DATA = {
   realms,                   // 30 realms: denizens/resources + Realm Objects (w/ rank-0 base); each carries a
                             //   `favor` matrix { rank(0..100) → [value per favorAllCols] } from Favor_MTX
   favorCols,                // { unique:[{key,col,label,unit}], generic:[...] } — the Favor_MTX column groups
-  favorColMax,              // difficulty → rank-100 cross-realm max per yield column key — scales the magnitude bars
+  favorColMax,              // mode → difficulty → rank-100 cross-realm max per yield column key — scales the magnitude bars
   favorDiffs,               // ['relaxed','normal','ruthless'] — realm.favor is keyed by these
+  favorModes,               // ['weighted','full'] — realm.favor / realm.favorParts are keyed by mode first
   favorCommonVals,          // rank → [value per common column] (identical in every realm)
   pandShrine: _ym.pandemonium_shrine,   // Pandemonium shrine outcome table (code: obj_demonstatue, 1/13 each)
   favorCommon,              // Favor_REF: [{rank,effect,blessing}] — the shared favor-rank tier schedule
