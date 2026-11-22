@@ -4,6 +4,13 @@ Every dated change entry, newest first (moved verbatim from Progress.md on 2026-
 to their own section and sorted by their date). Current state and open work: `Progress.md`, `BACKLOG.md`.
 New entries go at the TOP.
 
+## 2026-11-22 — Realm Favor: realm quest counted + Favor breakdown
+- Favor now includes the realm quest: +200 Favor with the realm's god, once per floor (`scr_GodAddFavor(realm god, 200)`
+  in the quest payout, `_su_extract/code/LOOT.md`). Every realm's Favor is 200 higher at every rank; nothing else changed.
+- Realms → realm → Yield: tap the Favor row to see what makes up the total, largest first: each realm object, Realm
+  Quest, God Altar and Pandemonium Shrine. Follows the rank slider. Data: `favor_parts` in the yield model
+  (`generic.add_favor`). Check: `tools/smoke_favor_parts.mjs`.
+
 ## 2026-11-03 — Fix: Artifact builder couldn't add Nether Stones
 - User: Nether Stones couldn't be added to an artifact. The 2026-11-02 creature-owned refactor left one reference to a
   removed variable in the builder's Nether Stone list, so the list crashed whenever any party artifact already held a

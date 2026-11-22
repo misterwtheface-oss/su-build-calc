@@ -2084,7 +2084,12 @@ for (const rm of realms) rm.hasShop = shopGods.has(rm.godName);   // cross-link 
 // join the Favor-track matrix to each realm by name (Favor_MTX realm names == D.realms[].realm)
 let favorJoined = 0;
 for (const rm of realms) { if (favorMatrix[rm.realm]) { rm.favor = favorMatrix[rm.realm]; favorJoined++; }
-  else warn(`realm "${rm.realm}" has no yield-model entry`); }
+  else warn(`realm "${rm.realm}" has no yield-model entry`);
+  // Favor breakdown (yield model generic.add_favor): sources = object names + Realm Quest / God Altar / Pandemonium
+  // Shrine; ranks → one value per source. Favor is the same at every difficulty, so one breakdown per realm.
+  const fp = _ym.favor_parts && _ym.favor_parts[rm.realm];
+  if (fp) rm.favorParts = { sources: fp.sources, ranks: Object.fromEntries(Object.entries(fp.ranks).map(([r, vs]) => [r, vs.map(v => Math.round(v * 100) / 100)])) };
+  else warn(`realm "${rm.realm}" has no favor breakdown`); }
 { console.log(`  realms: ${realms.length} · ${realms.reduce((n, r) => n + r.objects.length, 0)} realm objects · ${realms.filter(r => r.hasShop).length} w/ god shop`);
   console.log(`  favor matrix joined: ${favorJoined}/${realms.length} realms`); }
 console.log(`  realm object sprites: ${realmObjHits} matched · ${realmObjMiss} need a slug/override`);

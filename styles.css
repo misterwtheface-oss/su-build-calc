@@ -1149,6 +1149,13 @@ button.apx-owner { background: none; border: 0; cursor: pointer; font: inherit; 
 .rcat-mag > i { display: block; height: 100%; background: var(--accent); opacity: .6; border-radius: 3px; transition: width .12s ease; }
 .rcat-val { text-align: right; font-size: 12px; font-weight: 700; color: var(--accent2); font-variant-numeric: tabular-nums; min-width: 34px; }
 .rcat-val.rcat-val-wide { min-width: 52px; color: var(--text); }
+/* Favor row → its breakdown (one indented row per source) */
+.rcat-row.rcat-expand { cursor: pointer; }
+@media (hover: hover) { .rcat-row.rcat-expand:hover { background: var(--surface2); } }
+.rcat-chev { display: inline-block; width: 14px; opacity: .6; font-size: 11px; }
+.rcat-parts { display: flex; flex-direction: column; gap: 3px; margin: 0 0 4px 14px; }
+.rcat-row.rcat-part { padding: 5px 10px; background: transparent; border-left: 2px solid var(--surface2); border-radius: 0 7px 7px 0; }
+.rcat-part .rcat-name { font-weight: 500; font-size: 12.5px; color: var(--text-dim, var(--text)); }
 /* LIST view — the favor reward track as a rank→effect ladder */
 .fav-tiers { display: flex; flex-direction: column; gap: 3px; }
 .fav-tier { display: grid; grid-template-columns: 34px 1fr auto; gap: 10px; align-items: baseline;

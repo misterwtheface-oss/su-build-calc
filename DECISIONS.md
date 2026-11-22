@@ -308,6 +308,8 @@ a flat modifier to base: raised **×4/3 (+33%)**, lowered **×2/3 (−33%)**, ot
 
 
 ## Realm yield model = the user's rules (2026-10-10)
+- 2026-11-22 (user): Favor includes the realm quest (+200, one per floor), and the realm page shows the Favor breakdown
+  by source.
 - The Yield and Compare views read `_su_extract/data/model/realm_yield_model.json` (community copy
   `audit_community_csv/Realm_Yields_CODE.csv`), built rank by rank with the user from code
   (`_su_extract/code/data_dump/s27/walk/`, rules in `_su_extract/code/REALM_YIELDS.md`). It replaces
