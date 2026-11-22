@@ -151,6 +151,9 @@ source of truth), called by both `build-data.mjs` and the **`.githooks/pre-commi
   `SPEC_PLAN.md`, pipeline in `WIKI_CONTEXT.md`.
 
 ### Shipped since 2026-09-24 (headings from CHANGELOG.md; details there)
+- 2026-11-22 — realm Favor counts the realm quest · Weighted | Full value toggle · every Yield row expands to its sources
+  (session: user asked what Favor counts, then for these three; siralim/ made local history only. Open: the calls listed
+  in BACKLOG § Realm yields)
 - 2026-10-12 — Boss pages trimmed: sprite first, no chips before Threats, no own traits / base creatures, duo sprites, six-copy threats
 - 2026-10-11 — Nether Boss + Gate of the Gods pages, boss-type toggle, stat bars
 - 2026-10-11 — Bosses page (False Gods)
