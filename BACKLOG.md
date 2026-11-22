@@ -5,6 +5,13 @@ Progress.md; original text kept, with a status note where later work changed thi
 recorded in `CHANGELOG.md`. Full pre-consolidation text: `archive/Progress_until_2026-10-08.md`.
 Extract-side research questions live in `_su_extract/RESUME.md`.
 
+## Realm yields: user calls to confirm (2026-11-22)
+- [ ] Realm quest: also count its 5 treasure bundles per floor in Treasure? (only its +200 Favor is counted now)
+- [ ] Full value mode: shared rewards on both branches count once; Fruit / Squash / Tarot buff-debuff once per floor;
+  Meteor counts both outcomes; Music Crystal / Alchemy extra buffs = two sources (DECISIONS.md, 2026-11-22).
+- [ ] Yield breakdown: Mimic inside Treasure Chests; Golem rewards under Treasure Golem whatever spawned it; capped
+  boosts split in proportion.
+
 ## Currencies: in-game checks (2026-10-24, extract S54)
 - [ ] Code exists but reachability isn't confirmed (hard-coded English, no creator found), so it's left out of the Currencies
   section: breeding / summoning menus (Brimstone + Crystal), the gambling-dwarf minigames (Hot Hands, Think Fast, Treasure
